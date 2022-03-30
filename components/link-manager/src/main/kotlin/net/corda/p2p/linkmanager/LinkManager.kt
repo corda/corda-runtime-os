@@ -41,8 +41,8 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFro
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
@@ -60,6 +60,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.*
@@ -119,6 +120,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         configurationReaderService,
         lifecycleCoordinatorFactory,
         configuration,
+        inboundAssignmentListener,
         linkManagerHostingMap,
     )
 
@@ -231,6 +233,27 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
+        companion object {
+             fun recordsForNewSessions(
+                state: SessionState.NewSessionsNeeded,
+                inboundAssignmentListener: InboundAssignmentListener,
+                logger: Logger
+            ): List<Record<String, *>> {
+                val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                return if (partitions.isEmpty()) {
+                    val sessionIds = state.messages.map { it.first }
+                    logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                            " Sessions: $sessionIds will not be initiated.")
+                    emptyList()
+                } else {
+                    state.messages.flatMap {
+                        listOf(Record(LINK_OUT_TOPIC, generateKey(), it.second),
+                            Record(SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions)))
+                    }
+                }
+            }
+        }
+
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
@@ -288,10 +311,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
                 when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
-                    is SessionState.NewSessionNeeded -> {
+                    is SessionState.NewSessionsNeeded -> {
                         logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                                 "Initiating a new one.." }
-                        recordsForNewSession(state)
+                        recordsForNewSessions(state)
                     }
                     is SessionState.SessionEstablished -> {
                         logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
@@ -305,20 +328,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                 }
             } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
-        }
-
-        private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
-            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
-            return if(partitions.isEmpty()) {
-                logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
-                        " Session ${state.sessionId} will not be initiated.")
-                emptyList()
-            } else {
-                listOf(
-                    Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage),
-                    Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))
-                )
-            }
         }
 
         private fun recordsForSessionEstablished(
@@ -342,6 +351,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
             val marker = AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
             return Record(P2P_OUT_MARKERS, messageId, marker)
+        }
+
+        private fun recordsForNewSessions(state: SessionState.NewSessionsNeeded): List<Record<String, *>> {
+            return recordsForNewSessions(state, inboundAssignmentListener, logger)
         }
     }
 

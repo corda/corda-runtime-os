@@ -51,11 +51,13 @@ internal class PermissionCacheImplTest {
 
     private val permissionSummary1 = UserPermissionSummary(
         "userlogin1",
+        true,
         listOf(PermissionSummary("id1", null, null, "", PermissionType.ALLOW)),
         Instant.now()
     )
     private val permissionSummary2 = UserPermissionSummary(
         "userlogin2",
+        true,
         listOf(PermissionSummary("id2", null, null, "", PermissionType.DENY)),
         Instant.now()
     )

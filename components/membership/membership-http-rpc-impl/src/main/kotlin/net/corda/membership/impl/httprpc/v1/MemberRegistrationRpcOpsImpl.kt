@@ -10,7 +10,7 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
-import net.corda.membership.impl.httprpc.v1.lifecycle.RegistrationRpcOpsLifecycleHandler
+import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -44,9 +44,10 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         protocolVersion.toString()
     )
 
-    private val lifecycleHandler = RegistrationRpcOpsLifecycleHandler(
+    private val lifecycleHandler = RpcOpsLifecycleHandler(
         ::activate,
-        ::deactivate
+        ::deactivate,
+        setOf(LifecycleCoordinatorName.forComponent<MemberOpsClient>())
     )
 
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)

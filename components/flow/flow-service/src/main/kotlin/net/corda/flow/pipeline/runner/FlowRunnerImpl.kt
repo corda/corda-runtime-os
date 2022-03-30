@@ -19,6 +19,8 @@ import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.utils.getHoldingIdentity
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.serialization.checkpoint.CheckpointSerializer
@@ -33,7 +35,7 @@ import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
-@Suppress("unused")
+@Suppress("unused", "LongParameterList")
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberFactory::class)
@@ -46,7 +48,9 @@ class FlowRunnerImpl @Activate constructor(
     private val flowFactory: FlowFactory,
     // Don't think the flow session factory should live here, try refactor out later
     @Reference(service = FlowSessionFactory::class)
-    private val flowSessionFactory: FlowSessionFactory
+    private val flowSessionFactory: FlowSessionFactory,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : FlowRunner {
     private companion object {
         val log = contextLogger()
@@ -143,7 +147,8 @@ class FlowRunnerImpl @Activate constructor(
             flowStackServiceFactory.create(checkpoint),
             sandboxGroupContext.getCheckpointSerializer(),
             sandboxGroupContext,
-            checkpoint.flowStartContext.identity
+            checkpoint.getHoldingIdentity(),
+            membershipGroupReaderProvider.getGroupReader(checkpoint.getHoldingIdentity().toCorda())
         )
     }
 
@@ -164,7 +169,7 @@ class FlowRunnerImpl @Activate constructor(
     }
 
     private fun getSandbox(checkpoint: Checkpoint): SandboxGroupContext {
-        return flowSandboxService.get(HoldingIdentity(checkpoint.flowKey.identity.x500Name, checkpoint.flowKey.identity.groupId))
+        return flowSandboxService.get(checkpoint.getHoldingIdentity().toCorda())
     }
 
     private fun SandboxGroupContext.getCheckpointSerializer(): CheckpointSerializer {

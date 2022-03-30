@@ -1,0 +1,64 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-app'
+}
+
+description 'Custom AMQP serializer Proof of Concept'
+
+configurations {
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
+
+    implementation "net.corda:corda-packaging"
+    implementation "net.corda:corda-serialization"
+    implementation project(':libs:serialization:serialization-internal')
+    implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
+    implementation project(":libs:sandbox")
+    implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
+    implementation project(":libs:utilities")
+    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':components:virtual-node:cpk-read-service')
+
+    // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
+    // Constraints block can be removed when Avro is upgraded to the next version
+    constraints {
+        implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion") {
+            because 'sonatype-2021-4682'
+        }
+    }
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.google.guava:guava:$guavaVersion"
+    implementation "org.apache.qpid:proton-j:$protonjVersion"
+    implementation 'org.slf4j:slf4j-api'
+
+    implementation project(":osgi-framework-api")
+
+    implementation project(':libs:serialization:serialization-amqp')
+
+    cpks project(path: ':applications:examples:amqp-custom-serializer-poc:cpk-a', configuration: 'cordaCPK')
+    cpks project(path: ':applications:examples:amqp-custom-serializer-poc:cpk-b', configuration: 'cordaCPK')
+
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    runtimeOnly project(':libs:crypto:crypto-impl')
+    runtimeOnly project(':libs:sandbox-internal')
+}

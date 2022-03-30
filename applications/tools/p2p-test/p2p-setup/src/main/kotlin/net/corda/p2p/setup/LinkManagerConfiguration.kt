@@ -60,6 +60,12 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
     )
     var sessionTimeoutMilliSecs = 10_000L
 
+    @Option(
+        names = ["--sessionsPerPeer"],
+        description = ["The number of sessions between two peers"]
+    )
+    var sessionsPerPeer = 4L
+
     override fun call(): Collection<Record<String, Configuration>> {
         val configuration = ConfigFactory.empty()
             .withValue(
@@ -85,6 +91,10 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
             .withValue(
                 LinkManagerConfiguration.SESSION_TIMEOUT_KEY,
                 ConfigValueFactory.fromAnyRef(sessionTimeoutMilliSecs)
+            )
+            .withValue(
+                LinkManagerConfiguration.SESSIONS_PER_PEER_KEY,
+                ConfigValueFactory.fromAnyRef(sessionsPerPeer)
             )
 
         return listOf(

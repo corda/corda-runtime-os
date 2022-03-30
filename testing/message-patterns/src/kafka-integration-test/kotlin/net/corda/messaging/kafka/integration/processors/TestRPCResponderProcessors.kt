@@ -4,8 +4,8 @@ import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import java.lang.Exception
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class TestRPCResponderProcessor : RPCResponderProcessor<String, String> {
@@ -14,10 +14,10 @@ class TestRPCResponderProcessor : RPCResponderProcessor<String, String> {
     }
 }
 
-class TestRPCAvroResponderProcessor : RPCResponderProcessor<RPCRequest, RPCResponse> {
+class TestRPCAvroResponderProcessor(val time: Instant) : RPCResponderProcessor<RPCRequest, RPCResponse> {
 
     override fun onNext(request: RPCRequest, respFuture: CompletableFuture<RPCResponse>) {
-        respFuture.complete(RPCResponse("test", 0L, ResponseStatus.OK, ByteBuffer.wrap("test".encodeToByteArray())))
+        respFuture.complete(RPCResponse("test", time, ResponseStatus.OK, ByteBuffer.wrap("test".encodeToByteArray())))
     }
 }
 

@@ -193,7 +193,8 @@ The file should look like:
       "MaxMessages": 100
     },
     "heartbeatMessagePeriod": 2000,
-    "sessionTimeout": 10000
+    "sessionTimeout": 10000,
+    "sessionsPerPeer": 4
   },
   "gatewayConfig": {
     "hostAddress": "0.0.0.0",

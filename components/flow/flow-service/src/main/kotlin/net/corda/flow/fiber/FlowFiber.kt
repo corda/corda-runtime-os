@@ -3,14 +3,14 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.FlowKey
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowId
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import java.util.*
 import java.util.concurrent.Future
 
 @DoNotImplement
 interface FlowFiber<FLOWRESULT> {
-    val flowId: FlowId
+    val flowId: UUID
     val flowKey: FlowKey
     val flowLogic: Flow<FLOWRESULT>
 

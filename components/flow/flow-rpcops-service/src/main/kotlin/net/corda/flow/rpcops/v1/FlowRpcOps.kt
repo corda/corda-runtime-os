@@ -4,7 +4,7 @@ import net.corda.flow.rpcops.v1.response.HTTPFlowStatusResponse
 import net.corda.flow.rpcops.v1.response.HTTPStartFlowResponse
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -24,8 +24,8 @@ interface FlowRpcOps : RpcOps {
      */
     fun initialise(config: SmartConfig)
 
-    @HttpRpcPOST(
-        path = "start/{holderShortId}/{clientRequestId}/{flowClassName}",
+    @HttpRpcPUT(
+        path = "{holderShortId}/{clientRequestId}/{flowClassName}",
         title = "Start Flow",
         description = "Instructs Corda to start a new instance of the specified flow",
         responseDescription = "The initial status of the flow, if the flow already exists the status of the existing" +
@@ -43,7 +43,7 @@ interface FlowRpcOps : RpcOps {
     ): HTTPStartFlowResponse
 
     @HttpRpcGET(
-        path = "status/{holderShortId}/{clientRequestId}",
+        path = "{holderShortId}/{clientRequestId}",
         title = "Get Flow Status",
         description = "Gets the current status for a given flow.",
         responseDescription = "The status of the flow."

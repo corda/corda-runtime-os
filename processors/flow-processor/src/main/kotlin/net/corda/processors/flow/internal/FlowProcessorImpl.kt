@@ -14,6 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.session.mapper.service.FlowMapperService
@@ -46,6 +47,8 @@ class FlowProcessorImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : FlowProcessor {
 
     private companion object {
@@ -61,7 +64,8 @@ class FlowProcessorImpl @Activate constructor(
         ::flowP2PFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
-        ::sandboxGroupContextComponent
+        ::sandboxGroupContextComponent,
+        ::membershipGroupReaderProvider
     )
 
     override fun start(bootConfig: SmartConfig) {

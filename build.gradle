@@ -161,19 +161,6 @@ allprojects {
                     includeGroup 'antlr'
                 }
             }
-
-            // temporarily for the Liquibase patch
-            // TODO: REMOVE when patched merged https://r3-cev.atlassian.net/browse/CORE-2723
-            exclusiveContent {
-                forRepository {
-                    maven {
-                        url "$artifactoryContextUrl/corda-dependencies-dev"
-                    }
-                }
-                filter {
-                    includeGroup 'org.liquibase'
-                }
-            }
         }
     }
 

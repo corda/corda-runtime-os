@@ -230,6 +230,7 @@ class PermissionValidatorImplTest {
 
         val userPermissionSummary = UserPermissionSummary(
             user.loginName,
+            true,
             listOf(PermissionSummary("id1", null, null, "POST:.*$permissionString",
                 PermissionType.ALLOW)),
             Instant.now()
@@ -250,6 +251,7 @@ class PermissionValidatorImplTest {
 
         val userPermissionSummary = UserPermissionSummary(
             userWithPermDenied.loginName,
+            true,
             listOf(PermissionSummary("id2",null, null, "POST:.*$permissionString",
                 PermissionType.DENY)),
             Instant.now()

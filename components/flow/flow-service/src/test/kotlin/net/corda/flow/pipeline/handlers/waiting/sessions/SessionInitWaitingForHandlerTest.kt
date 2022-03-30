@@ -1,15 +1,14 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -43,13 +42,11 @@ class SessionInitWaitingForHandlerTest {
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 sessions = listOf(sessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = sessionEvent,
-            outputRecords = emptyList()
+            inputEventPayload = sessionEvent
         )
 
         val continuation = sessionInitWaitingForHandler.runOrContinue(inputContext, WaitingForSessionInit(SESSION_ID))
@@ -59,13 +56,11 @@ class SessionInitWaitingForHandlerTest {
 
     @Test
     fun `Throws an exception if the session being waited for does not exist in the checkpoint`() {
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 sessions = emptyList()
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
         assertThrows<FlowProcessingException> {
             sessionInitWaitingForHandler.runOrContinue(inputContext, WaitingForSessionInit(SESSION_ID))
@@ -80,13 +75,11 @@ class SessionInitWaitingForHandlerTest {
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(null)
 
-        val inputContext = FlowEventContext(
+        val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
                 sessions = listOf(sessionState)
             },
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
+            inputEventPayload = Unit
         )
         assertThrows<FlowProcessingException> {
             sessionInitWaitingForHandler.runOrContinue(inputContext, WaitingForSessionInit(SESSION_ID))
@@ -95,12 +88,7 @@ class SessionInitWaitingForHandlerTest {
 
     @Test
     fun `Throws an exception if there is no checkpoint`() {
-        val inputContext = FlowEventContext(
-            checkpoint = null,
-            inputEvent = FlowEvent(FLOW_KEY, Unit),
-            inputEventPayload = Unit,
-            outputRecords = emptyList()
-        )
+        val inputContext = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
 
         assertThrows<FlowProcessingException> {
             sessionInitWaitingForHandler.runOrContinue(inputContext, WaitingForSessionInit(SESSION_ID))
