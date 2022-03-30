@@ -14,7 +14,7 @@ import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,8 +27,8 @@ import org.osgi.service.component.annotations.Reference
 class RoleEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PermissionServiceComponent::class)
-    private val permissionServiceComponent: PermissionServiceComponent
+    @Reference(service = PermissionManagementService::class)
+    private val permissionManagementService: PermissionManagementService
 ) : RoleEndpoint, PluggableRPCOps<RoleEndpoint>, Lifecycle {
 
     private companion object {
@@ -47,7 +47,7 @@ class RoleEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val createRoleResult = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val createRoleResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
             createRole(createRoleType.convertToDto(principal))
         }
 
@@ -58,7 +58,7 @@ class RoleEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val roleResponseDto = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val roleResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getRole(GetRoleRequestDto(principal, id))
         }
 
@@ -69,7 +69,7 @@ class RoleEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val updatedRoleResult = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val updatedRoleResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
             addPermissionToRole(roleId, permissionId, principal)
         }
 
@@ -80,7 +80,7 @@ class RoleEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val updatedRoleResult = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val updatedRoleResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
             removePermissionFromRole(roleId, permissionId, principal)
         }
 

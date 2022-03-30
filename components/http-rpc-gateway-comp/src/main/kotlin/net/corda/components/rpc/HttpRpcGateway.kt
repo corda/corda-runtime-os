@@ -11,7 +11,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,8 +32,8 @@ class HttpRpcGateway @Activate constructor(
     rbacSecurityManagerService: RBACSecurityManagerService,
     @Reference(service = SslCertReadServiceFactory::class)
     sslCertReadServiceFactory: SslCertReadServiceFactory,
-    @Reference(service = PermissionServiceComponent::class)
-    permissionServiceComponent: PermissionServiceComponent
+    @Reference(service = PermissionManagementService::class)
+    permissionManagementService: PermissionManagementService
 ) : Lifecycle {
 
     private companion object {
@@ -48,7 +48,7 @@ class HttpRpcGateway @Activate constructor(
     private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>> = mutableListOf()
 
     private val handler = HttpRpcGatewayEventHandler(
-        permissionServiceComponent,
+        permissionManagementService,
         configurationReadService,
         httpRpcServerFactory,
         rbacSecurityManagerService,

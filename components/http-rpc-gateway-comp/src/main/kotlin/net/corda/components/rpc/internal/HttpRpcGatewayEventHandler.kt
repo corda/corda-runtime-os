@@ -25,7 +25,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ADDRESS
 import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_ID
@@ -43,7 +43,7 @@ import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 internal class HttpRpcGatewayEventHandler(
-    private val permissionServiceComponent: PermissionServiceComponent,
+    private val permissionManagementService: PermissionManagementService,
     private val configurationReadService: ConfigurationReadService,
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
@@ -78,14 +78,14 @@ internal class HttpRpcGatewayEventHandler(
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>(),
+                        LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>()
                     )
                 )
 
                 log.info("Starting permission service and RBAC security manager.")
-                permissionServiceComponent.start()
+                permissionManagementService.start()
                 rbacSecurityManagerService.start()
             }
             is RegistrationStatusChangeEvent -> {
@@ -112,7 +112,7 @@ internal class HttpRpcGatewayEventHandler(
                 registration = null
                 sub?.close()
                 sub = null
-                permissionServiceComponent.stop()
+                permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
                 server?.close()
                 server = null

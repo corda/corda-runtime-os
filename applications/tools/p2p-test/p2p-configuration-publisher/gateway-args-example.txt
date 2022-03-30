@@ -1,5 +1,0 @@
-# An example of an arguments file that can be used to configure the gateway
-gateway
---keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks
---keyStorePassword password
---port 3123

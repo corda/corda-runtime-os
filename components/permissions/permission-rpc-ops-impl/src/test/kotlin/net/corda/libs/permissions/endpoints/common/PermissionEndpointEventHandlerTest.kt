@@ -6,7 +6,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -26,20 +26,20 @@ internal class PermissionEndpointEventHandlerTest {
     fun setUp() {
         whenever(coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
+                LifecycleCoordinatorName.forComponent<PermissionManagementService>()
             )
         )).thenReturn(registrationHandle)
     }
 
     @Test
-    fun `processing a start event follows permission service component for status updates`() {
+    fun `processing a start event follows permission management service for status updates`() {
         assertNull(handler.registration)
 
         handler.processEvent(StartEvent(), coordinator)
 
         verify(coordinator).followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
+                LifecycleCoordinatorName.forComponent<PermissionManagementService>()
             )
         )
         assertNotNull(handler.registration)
