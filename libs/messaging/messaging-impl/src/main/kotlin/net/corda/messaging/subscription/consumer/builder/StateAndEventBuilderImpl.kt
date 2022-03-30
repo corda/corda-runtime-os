@@ -1,27 +1,32 @@
 package net.corda.messaging.subscription.consumer.builder
 
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.consumer.listener.StateAndEventRebalanceListener
 import net.corda.messaging.subscription.factory.MapFactory
+import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
-class StateAndEventBuilderImpl @Activate constructor(
+internal class StateAndEventBuilderImpl @Activate constructor(
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = CordaProducerBuilder::class)
@@ -30,11 +35,13 @@ class StateAndEventBuilderImpl @Activate constructor(
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    override fun createProducer(config: StateAndEventConfig): CordaProducer =
-        cordaProducerBuilder.createProducer(config.producerConfig)
+    override fun createProducer(config: ResolvedSubscriptionConfig): CordaProducer {
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.SAE_PRODUCER)
+        return cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+    }
 
     override fun <K : Any, S : Any, E : Any> createStateEventConsumerAndRebalanceListener(
-        config: StateAndEventConfig,
+        config: ResolvedSubscriptionConfig,
         kClazz: Class<K>,
         sClazz: Class<S>,
         eClazz: Class<E>,
@@ -42,8 +49,10 @@ class StateAndEventBuilderImpl @Activate constructor(
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, CordaConsumerRebalanceListener> {
-        val stateConsumer = cordaConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz, onStateError)
-        val eventConsumer = cordaConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz, onEventError)
+        val stateConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_STATE)
+        val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.messageBusConfig, kClazz, sClazz, onStateError)
+        val eventConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_EVENT)
+        val eventConsumer = cordaConsumerBuilder.createConsumer(eventConsumerConfig, config.messageBusConfig, kClazz, eClazz, onEventError)
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =
@@ -70,15 +79,15 @@ class StateAndEventBuilderImpl @Activate constructor(
     }
 
     private fun <K : Any, S : Any, E : Any> validateConsumers(
-        config: StateAndEventConfig,
+        config: ResolvedSubscriptionConfig,
         stateConsumer: CordaConsumer<K, S>,
         eventConsumer: CordaConsumer<K, E>
     ) {
-        val consumerThreadStopTimeout = config.consumerThreadStopTimeout
+        val consumerTimeout = config.pollTimeout
         val statePartitions =
-            stateConsumer.getPartitions(config.stateTopic, Duration.ofSeconds(consumerThreadStopTimeout))
+            stateConsumer.getPartitions(getStateAndEventStateTopic(config.topic), consumerTimeout)
         val eventPartitions =
-            eventConsumer.getPartitions(config.eventTopic, Duration.ofSeconds(consumerThreadStopTimeout))
+            eventConsumer.getPartitions(config.topic, consumerTimeout)
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {

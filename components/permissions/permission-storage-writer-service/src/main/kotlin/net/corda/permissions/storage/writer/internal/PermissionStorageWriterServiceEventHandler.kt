@@ -95,7 +95,7 @@ class PermissionStorageWriterServiceEventHandler(
                 requestType = PermissionManagementRequest::class.java,
                 responseType = PermissionManagementResponse::class.java
             ),
-            nodeConfig = messagingConfig,
+            messagingConfig = messagingConfig,
             responderProcessor = permissionStorageWriterProcessorFactory.create(
                 entityManagerFactoryCreator(),
                 readerService.permissionStorageReader!!

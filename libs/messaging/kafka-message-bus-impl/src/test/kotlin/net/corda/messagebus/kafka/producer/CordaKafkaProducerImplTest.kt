@@ -1,9 +1,9 @@
 package net.corda.messagebus.kafka.producer
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
+import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -26,14 +26,14 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Duration
 
 class CordaKafkaProducerImplTest {
 
-    private val config: Config = mock()
+    private val config = ResolvedProducerConfig("clientId", 1, "prefix")
+    private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()
-    private val cordaConsumer: CordaKafkaConsumerImpl<*, *> = CordaKafkaConsumerImpl(config, consumer, null)
+    private val cordaConsumer = CordaKafkaConsumerImpl(consumerConfig, consumer, null)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")
@@ -41,21 +41,24 @@ class CordaKafkaProducerImplTest {
     @BeforeEach
     fun setup() {
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        doReturn("").whenever(config).getString(TOPIC_PREFIX_PATH)
         cordaKafkaProducer = CordaKafkaProducerImpl(config, producer)
     }
 
     @Test
     fun testSendRecord() {
+        val records = listOf(record, record, record)
+        val expectedPublishedRecords =
+            records.map { ProducerRecord(config.topicPrefix + it.topic, null, it.key, it.value) }
         cordaKafkaProducer.sendRecords(listOf(record, record, record))
         verify(producer, times(3)).send(any())
+        expectedPublishedRecords.forEach { verify(producer, atLeastOnce()).send(it) }
     }
 
     @Test
     fun testSendRecordsToPartitions() {
         val recordsWithPartitions = listOf((1 to record), (2 to record), (3 to record))
         val expectedPublishedRecords = recordsWithPartitions.map { (partition, record) ->
-            ProducerRecord(record.topic, partition, record.key, record.value)
+            ProducerRecord(config.topicPrefix + record.topic, partition, record.key, record.value)
         }
 
         cordaKafkaProducer.sendRecordsToPartitions(recordsWithPartitions)
@@ -133,30 +136,38 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testSendAllOffsetsToTransactionsFatal() {
-        doThrow(IllegalStateException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+        doThrow(IllegalStateException()).whenever(producer)
+            .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
         assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
     @Test
     fun testSendAllOffsetsToTransactionsIntermittent() {
-        doThrow(CommitFailedException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
+        doThrow(CommitFailedException()).whenever(producer)
+            .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+        assertThrows<CordaMessageAPIIntermittentException> {
+            cordaKafkaProducer.sendAllOffsetsToTransaction(
+                cordaConsumer
+            )
+        }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
     @Test
     fun testSendRecordOffsetsToTransaction() {
         val mockConsumerRecords = generateMockConsumerRecordList(3, "TOPIC1", 0) +
-            generateMockConsumerRecordList(4, "TOPIC", 1) + generateMockConsumerRecordList(2, "TOPIC2", 0)
-        val mockCordaConsumerRecords = mockConsumerRecords.map { CordaConsumerRecord(
-            it.topic(),
-            it.partition(),
-            it.offset(),
-            it.key(),
-            it.value(),
-            it.timestamp()
-        ) }
+                generateMockConsumerRecordList(4, "TOPIC", 1) + generateMockConsumerRecordList(2, "TOPIC2", 0)
+        val mockCordaConsumerRecords = mockConsumerRecords.map {
+            CordaConsumerRecord(
+                it.topic(),
+                it.partition(),
+                it.offset(),
+                it.key(),
+                it.value(),
+                it.timestamp()
+            )
+        }
 
         cordaKafkaProducer.sendRecordOffsetsToTransaction(cordaConsumer, mockCordaConsumerRecords)
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
@@ -164,7 +175,8 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testSendRecordOffsetsToTransactionsFatal() {
-        doThrow(IllegalStateException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+        doThrow(IllegalStateException()).whenever(producer)
+            .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
         assertThrows<CordaMessageAPIFatalException> {
             cordaKafkaProducer.sendRecordOffsetsToTransaction(
                 cordaConsumer,
@@ -179,16 +191,19 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testSendRecordOffsetsToTransactionsIntermittent() {
-        doThrow(CommitFailedException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+        doThrow(CommitFailedException()).whenever(producer)
+            .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
         val mockConsumerRecords = generateMockConsumerRecordList(3, "TOPIC1", 0)
-        val mockCordaConsumerRecords = mockConsumerRecords.map { CordaConsumerRecord(
-            it.topic(),
-            it.partition(),
-            it.offset(),
-            it.key(),
-            it.value(),
-            it.timestamp()
-        ) }
+        val mockCordaConsumerRecords = mockConsumerRecords.map {
+            CordaConsumerRecord(
+                it.topic(),
+                it.partition(),
+                it.offset(),
+                it.key(),
+                it.value(),
+                it.timestamp()
+            )
+        }
 
         assertThrows<CordaMessageAPIIntermittentException> {
             cordaKafkaProducer.sendRecordOffsetsToTransaction(cordaConsumer, mockCordaConsumerRecords)
@@ -199,6 +214,6 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testClose() {
         cordaKafkaProducer.close()
-        verify(producer, times(1)).close(Mockito.any(Duration::class.java))
+        verify(producer, times(1)).close()
     }
 }

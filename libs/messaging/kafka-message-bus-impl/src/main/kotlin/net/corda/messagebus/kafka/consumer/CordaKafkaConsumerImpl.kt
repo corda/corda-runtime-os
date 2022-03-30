@@ -1,23 +1,16 @@
 package net.corda.messagebus.kafka.consumer
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLOSE_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.COMMIT_OFFSET_MAX_RETRIES
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.POLL_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.SUBSCRIBE_MAX_RETRIES
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.utils.toCordaTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.v5.base.util.contextLogger
-import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
@@ -41,7 +34,7 @@ import java.time.Duration
  */
 @Suppress("TooManyFunctions")
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
-    config: Config,
+    private val config: ResolvedConsumerConfig,
     private val consumer: Consumer<K, V>,
     private var defaultListener: CordaConsumerRebalanceListener? = null,
 ) : CordaConsumer<K, V> {
@@ -50,33 +43,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         private val log: Logger = contextLogger()
     }
 
-    private val consumerPollTimeout = Duration.ofMillis(config.getLong(POLL_TIMEOUT))
-    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CLOSE_TIMEOUT))
-    private val consumerSubscribeMaxRetries = config.getLong(SUBSCRIBE_MAX_RETRIES)
-    private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
-    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
-    private val topic = config.getString(TOPIC_NAME)
-    private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
-
     override fun close() {
         try {
-            consumer.close(consumerCloseTimeout)
+            consumer.close()
         } catch (ex: Exception) {
-            log.error("CordaKafkaConsumer failed to close consumer from group $groupName for topic $topic.", ex)
+            log.error("CordaKafkaConsumer failed to close consumer from group ${config.group}.", ex)
         }
-    }
-
-    override fun close(timeout: Duration) {
-        try {
-            consumer.close(timeout)
-        } catch (ex: Exception) {
-            log.error("CordaKafkaConsumer failed to close consumer from group $groupName for topic $topic.", ex)
-        }
-    }
-
-    override fun poll(): List<CordaConsumerRecord<K, V>> {
-        return poll(consumerPollTimeout)
-
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -92,20 +64,20 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is ArithmeticException,
                 is FencedInstanceIdException,
                 is InvalidOffsetException -> {
-                    logErrorAndThrowFatalException("Error attempting to poll from topic $topic", ex)
+                    logErrorAndThrowFatalException("Error attempting to poll.", ex)
                 }
                 is WakeupException,
                 is InterruptException,
                 is KafkaException -> {
-                    logWarningAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
+                    logWarningAndThrowIntermittentException("Error attempting to poll.", ex)
                 }
-                else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
+                else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
             }
         }
 
         return consumerRecords.map {
             CordaConsumerRecord(
-                it.topic().removePrefix(topicPrefix),
+                it.topic().removePrefix(config.topicPrefix),
                 it.partition(),
                 it.offset(),
                 it.key(),
@@ -135,9 +107,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        val topicPartition = TopicPartition(topicPrefix + event.topic, event.partition)
+        val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
         offsets[topicPartition] = OffsetAndMetadata(event.offset + 1, metaData)
-        var attempts = 0L
         var attemptCommit = true
 
         while (attemptCommit) {
@@ -148,11 +119,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 when (ex) {
                     is InterruptException,
                     is TimeoutException -> {
-                        attempts++
-                        handleErrorRetry(
-                            "Failed to commitSync offsets for record $event on topic $topic",
-                            attempts, consumerCommitOffsetMaxRetries, ex
-                        )
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
                     }
                     is CommitFailedException,
                     is AuthenticationException,
@@ -160,14 +127,14 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     is IllegalArgumentException,
                     is FencedInstanceIdException -> {
                         logErrorAndThrowFatalException(
-                            "Error attempting to commitSync offsets for record $event on topic $topic",
+                            "Error attempting to commitSync offsets for record $event.",
                             ex
                         )
                     }
                     else -> {
                         logErrorAndThrowFatalException(
                             "Unexpected error attempting to commitSync offsets " +
-                                    "for record $event on topic $topic", ex
+                                    "for record $event.", ex
                         )
                     }
                 }
@@ -180,20 +147,19 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         val newTopics = topics.map {
-            if (!it.contains(topicPrefix)) {
-                topicPrefix + it
+            if (!it.contains(config.topicPrefix)) {
+                config.topicPrefix + it
             } else {
                 it
             }
         }
-        var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
                 subscribeToTopics(listener, newTopics)
                 attemptSubscription = false
             } catch (ex: Exception) {
-                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
+                val message = "CordaKafkaConsumer failed to subscribe a consumer from group ${config.group}."
                 when (ex) {
                     is IllegalStateException -> {
                         logErrorAndThrowFatalException(
@@ -203,10 +169,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     }
                     is IllegalArgumentException -> {
                         logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
-                    }
-                    is KafkaException -> {
-                        attempts++
-                        handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
                     }
                     else -> {
                         logErrorAndThrowFatalException("$message. Unexpected error.", ex)
@@ -240,7 +202,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
-            consumer.partitionsFor(topicPrefix + topic, timeout)
+            consumer.partitionsFor(config.topicPrefix + topic, timeout)
         } catch (ex: Exception) {
             when (ex) {
                 is AuthenticationException,
@@ -264,19 +226,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
 
         return listOfPartitions.map {
-            CordaTopicPartition(it.topic().removePrefix(topicPrefix), it.partition())
-        }
-    }
-
-    /**
-     * Handle retry logic. If max attempts have not been reached log a warning.
-     * otherwise throw [CordaMessageAPIFatalException]
-     */
-    private fun handleErrorRetry(errorMessage: String, currentAttempt: Long, maxRetries: Long, ex: Exception) {
-        if (currentAttempt < maxRetries) {
-            log.warn("$errorMessage. Retrying.", ex)
-        } else {
-            logErrorAndThrowFatalException("$errorMessage. Max Retries exceeded.", ex)
+            CordaTopicPartition(it.topic().removePrefix(config.topicPrefix), it.partition())
         }
     }
 
@@ -305,16 +255,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             when (ex) {
                 is ConcurrentModificationException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to assign on topic $topic",
+                        "Intermittent error attempting to assign.",
                         ex
                     )
                 }
                 is IllegalArgumentException,
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to assign on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to assign.", ex)
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to resume on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to resume.", ex)
                 }
             }
         }
@@ -326,16 +276,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get assignment on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get assignment.", ex)
                 }
                 is ConcurrentModificationException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get assignment on topic $topic",
+                        "Intermittent error attempting to get assignment.",
                         ex
                     )
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to get assignment on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to get assignment.", ex)
                 }
             }
         }
@@ -350,19 +300,19 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is AuthorizationException,
                 is InvalidOffsetException,
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get position on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get position.", ex)
                 }
                 is InterruptException,
                 is WakeupException,
                 is TimeoutException,
                 is KafkaException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get position on topic $topic",
+                        "Intermittent error attempting to get position.",
                         ex
                     )
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to get position on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to get position.", ex)
                 }
             }
         }
@@ -375,17 +325,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             when (ex) {
                 is IllegalArgumentException,
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset.", ex)
                 }
                 is ConcurrentModificationException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get the first offset on topic $topic",
+                        "Intermittent error attempting to get the first offset.",
                         ex
                     )
                 }
                 else -> {
                     logErrorAndThrowFatalException(
-                        "Unexpected error attempting to get the first offset on topic $topic",
+                        "Unexpected error attempting to get the first offset.",
                         ex
                     )
                 }
@@ -400,17 +350,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             when (ex) {
                 is IllegalArgumentException,
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset.", ex)
                 }
                 is ConcurrentModificationException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get the first offset on topic $topic",
+                        "Intermittent error attempting to get the first offset.",
                         ex
                     )
                 }
                 else -> {
                     logErrorAndThrowFatalException(
-                        "Unexpected error attempting to get the first offset on topic $topic",
+                        "Unexpected error attempting to get the first offset.",
                         ex
                     )
                 }
@@ -425,17 +375,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             when (ex) {
                 is IllegalArgumentException,
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset.", ex)
                 }
                 is ConcurrentModificationException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get the first offset on topic $topic",
+                        "Intermittent error attempting to get the first offset.",
                         ex
                     )
                 }
                 else -> {
                     logErrorAndThrowFatalException(
-                        "Unexpected error attempting to get the first offset on topic $topic",
+                        "Unexpected error attempting to get the first offset.",
                         ex
                     )
                 }
@@ -454,16 +404,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is IllegalStateException,
                 is AuthenticationException,
                 is AuthorizationException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets.", ex)
                 }
                 is TimeoutException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get end offsets on topic $topic",
+                        "Intermittent error attempting to get end offsets.",
                         ex
                     )
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to get end offsets on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to get end offsets.", ex)
                 }
             }
         }
@@ -481,16 +431,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is IllegalStateException,
                 is AuthenticationException,
                 is AuthorizationException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets.", ex)
                 }
                 is TimeoutException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get end offsets on topic $topic",
+                        "Intermittent error attempting to get end offsets.",
                         ex
                     )
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to get end offsets on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to get end offsets.", ex)
                 }
             }
         }
@@ -502,10 +452,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to resume on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to resume.", ex)
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to resume on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to resume.", ex)
                 }
             }
         }
@@ -517,10 +467,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to pause on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to pause.", ex)
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to pause on topic $topic", ex)
+                    logErrorAndThrowFatalException("Unexpected error attempting to pause.", ex)
                 }
             }
         }
@@ -532,17 +482,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get paused on topic $topic", ex)
+                    logErrorAndThrowFatalException("Fatal error attempting to get paused.", ex)
                 }
                 is ConcurrentModificationException -> {
                     logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to get paused on topic $topic",
+                        "Intermittent error attempting to get paused.",
                         ex
                     )
                 }
                 else -> {
                     logErrorAndThrowFatalException(
-                        "Unexpected error attempting to get paused on topic $topic",
+                        "Unexpected error attempting to get paused.",
                         ex
                     )
                 }
@@ -562,10 +512,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         this.defaultListener = defaultListener
     }
 
-    private fun CordaTopicPartition.toTopicPartition() = toTopicPartition(topicPrefix)
-    private fun Collection<CordaTopicPartition>.toTopicPartitions() = this.map { it.toTopicPartition(topicPrefix) }
-    private fun TopicPartition.toCordaTopicPartition() = toCordaTopicPartition(topicPrefix)
-    private fun Collection<TopicPartition>.toCordaTopicPartitions() = this.map { it.toCordaTopicPartition(topicPrefix) }
+    private fun CordaTopicPartition.toTopicPartition() = toTopicPartition(config.topicPrefix)
+    private fun Collection<CordaTopicPartition>.toTopicPartitions() = this.map { it.toTopicPartition(config.topicPrefix) }
+    private fun TopicPartition.toCordaTopicPartition() = toCordaTopicPartition(config.topicPrefix)
+    private fun Collection<TopicPartition>.toCordaTopicPartitions() = this.map { it.toCordaTopicPartition(config.topicPrefix) }
 }
 
 fun CordaConsumerRebalanceListener.toKafkaListener(): ConsumerRebalanceListener {

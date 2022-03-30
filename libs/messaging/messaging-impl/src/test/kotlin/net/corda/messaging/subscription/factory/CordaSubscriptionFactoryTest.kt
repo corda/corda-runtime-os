@@ -1,10 +1,10 @@
 package net.corda.messaging.subscription.factory
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -23,13 +23,15 @@ class CordaSubscriptionFactoryTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var factory: CordaSubscriptionFactory
-    private lateinit var config: Config
+    private lateinit var config: SmartConfig
+    private lateinit var smartConfigFactory: SmartConfigFactory
     private val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
 
     @BeforeEach
     fun setup() {
         doReturn(cordaAvroSerializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(any())
-        config = ConfigFactory.load()
+        smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+        config = smartConfigFactory.create(ConfigFactory.load("config/test.conf"))
         factory = CordaSubscriptionFactory(
             cordaAvroSerializationFactory,
             lifecycleCoordinatorFactory,
@@ -42,17 +44,17 @@ class CordaSubscriptionFactoryTest {
 
     @Test
     fun createCompacted() {
-        factory.createCompactedSubscription<Any, Any>(subscriptionConfig, mock())
+        factory.createCompactedSubscription<Any, Any>(subscriptionConfig, mock(), config)
     }
 
     @Test
     fun createPubSub() {
-        factory.createPubSubSubscription<Any, Any>(subscriptionConfig, mock(), null)
+        factory.createPubSubSubscription<Any, Any>(subscriptionConfig, mock(), null, config)
     }
 
     @Test
     fun createDurableSub() {
-        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(), SmartConfigImpl.empty(), null)
+        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(), config, null)
     }
 
     @Test
@@ -60,7 +62,7 @@ class CordaSubscriptionFactoryTest {
         assertThrows<CordaMessageAPIFatalException> {
             factory.createDurableSubscription<Any, Any>(
                 SubscriptionConfig("group1", "event"),
-                mock(), SmartConfigImpl.empty(), null
+                mock(), config, null
             )
         }
     }
@@ -68,6 +70,6 @@ class CordaSubscriptionFactoryTest {
     @Test
     fun createStateAndEventSub() {
         val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
-        factory.createStateAndEventSubscription<Any, Any, Any>(subscriptionConfig, mock())
+        factory.createStateAndEventSubscription<Any, Any, Any>(subscriptionConfig, mock(), config)
     }
 }

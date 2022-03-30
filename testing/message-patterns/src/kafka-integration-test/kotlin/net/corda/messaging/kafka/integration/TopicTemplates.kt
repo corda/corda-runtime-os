@@ -105,14 +105,23 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val PUBLISHER_TEST_DURABLE_TOPIC2 = "PublisherTestDurableTopic2"
-        const val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
-                    { 
-                        topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC2" 
-                        numPartitions = 2 
-                        replicationFactor = 3 
-                    } 
-                ]"""
+    const val PUBLISHER_TEST_DURABLE_TOPIC2 = "PublisherTestDurableTopic2"
+    const val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC2" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
+
+    const val PUBLISHER_TEST_DURABLE_TOPIC3 = "PublisherTestDurableTopic3"
+    const val PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE = """topics = [ 
+            { 
+                topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC3" 
+                numPartitions = 2 
+                replicationFactor = 3 
+            } 
+        ]"""
 
         const val EVENT_TOPIC1 = "EventTopic1"
         val EVENT_TOPIC1_DLQ = getStateAndEventDLQTopic(EVENT_TOPIC1)

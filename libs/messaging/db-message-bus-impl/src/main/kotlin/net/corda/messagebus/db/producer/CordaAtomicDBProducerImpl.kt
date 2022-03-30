@@ -14,7 +14,6 @@ import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.time.Duration
 import javax.persistence.RollbackException
 import kotlin.math.abs
 
@@ -44,7 +43,6 @@ class CordaAtomicDBProducerImpl(
         initialiseWithAtomicTransaction()
     }
 
-    private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
@@ -121,10 +119,9 @@ class CordaAtomicDBProducerImpl(
         throwNonTransactionalLogic()
     }
 
-    override fun close(timeout: Duration) {
+    override fun close() {
+        log.info("Closing producer which had access to following partitions: $topicPartitionMap")
     }
-
-    override fun close() = close(defaultTimeout)
 
     private fun throwNonTransactionalLogic() {
         throw CordaMessageAPIFatalException("Non transactional producer can't do transactional logic.")

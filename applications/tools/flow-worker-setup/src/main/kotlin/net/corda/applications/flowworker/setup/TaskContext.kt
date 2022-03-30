@@ -5,6 +5,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.concurrent.getOrThrow
+import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import java.util.*
@@ -67,7 +68,7 @@ class TaskContext(
     private fun getKafkaProperties(): Properties {
         val kafkaProperties = Properties()
         // Hacked for now, need to improve
-        kafkaProperties["bootstrap.servers"] = "localhost:9092"
+        kafkaProperties[BOOTSTRAP_SERVERS_CONFIG] = "localhost:9092"
         return kafkaProperties
     }
 }

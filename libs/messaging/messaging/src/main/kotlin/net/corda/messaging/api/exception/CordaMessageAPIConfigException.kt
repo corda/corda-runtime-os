@@ -1,8 +1,9 @@
 package net.corda.messaging.api.exception
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
+
 /**
- * Exception thrown when provided configuration map does not contain all required sections of configuration to set up
- * the patterns library.
+ * Exception thrown when configuration provided to the patterns library is invalid.
  */
-class CordaMessageAPIConfigException(missingKey: String) :
-    RuntimeException("Could not generate a messaging patterns configuration due to missing key: $missingKey")
+class CordaMessageAPIConfigException(msg: String, cause: Exception? = null) :
+    CordaRuntimeException(msg, cause)

@@ -172,7 +172,7 @@ class KafkaInfrastructure {
                     stop.countDown()
                 }
             },
-            nodeConfig = SmartConfigImpl.empty()
+            messagingConfig = SmartConfigImpl.empty()
         ).use {
             it.start()
             stop.await(2, TimeUnit.SECONDS)

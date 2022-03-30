@@ -1,18 +1,16 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCER_CLIENT_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -21,12 +19,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_PRODUCER
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
-import net.corda.messaging.utils.render
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
@@ -54,40 +48,26 @@ import kotlin.concurrent.withLock
  */
 
 @Suppress("LongParameterList")
-class EventLogSubscriptionImpl<K : Any, V : Any>(
-    private val config: Config,
+internal class EventLogSubscriptionImpl<K : Any, V : Any>(
+    private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(
-        "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
-    )
-
-    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
     @Volatile
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val topic = config.getString(TOPIC_NAME)
-    private val groupName = config.getString(CONSUMER_GROUP_ID)
-    private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
     private lateinit var deadLetterRecords: MutableList<ByteArray>
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "$groupName-KafkaDurableSubscription-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(INSTANCE_ID)
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
-    private val errorMsg = "Failed to read and process records from topic $topic, group $groupName, producerClientId " +
-            "$producerClientId."
+    private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
+            "${config.clientId}."
 
 
     /**
@@ -107,7 +87,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -116,7 +96,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "durable processing thread $groupName-$topic",
+                    name = "durable processing thread ${config.group}-${config.topic}",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -148,7 +128,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
+        thread?.join(config.threadStopTimeout.toMillis())
     }
 
     @Suppress("NestedBlockDepth")
@@ -161,34 +141,25 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
             try {
                 log.debug { "Attempt: $attempts" }
                 deadLetterRecords = mutableListOf()
-                consumer = if (partitionAssignmentListener != null) {
-                    val consumerGroup = config.getString(CONSUMER_GROUP_ID)
-                    val rebalanceListener =
-                        ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
-                    cordaConsumerBuilder.createDurableConsumer(
-                        config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass,
-                        processor.valueClass,
-                        { data ->
-                            log.error("Failed to deserialize record from $topic")
-                            deadLetterRecords.add(data)
-                        },
-                        cordaConsumerRebalanceListener = rebalanceListener
-                    )
-                } else {
-                    cordaConsumerBuilder.createDurableConsumer(
-                        config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass,
-                        processor.valueClass,
-                        { data ->
-                            log.error("Failed to deserialize record from $topic")
-                            deadLetterRecords.add(data)
-                        }
-                    )
+                val rebalanceListener = partitionAssignmentListener?.let {
+                    ForwardingRebalanceListener(config.topic, config.group, it)
                 }
-                producer = cordaProducerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
+                consumer = cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
+                    config.messageBusConfig,
+                    processor.keyClass,
+                    processor.valueClass,
+                    { data ->
+                        log.error("Failed to deserialize record from ${config.topic}")
+                        deadLetterRecords.add(data)
+                    },
+                    rebalanceListener
+                )
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.EVENT_LOG)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 consumer.use { cordaConsumer ->
-                    cordaConsumer.subscribe(topic)
+                    cordaConsumer.subscribe(config.topic)
                     producer.use { cordaProducer ->
                         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                         pollAndProcessRecords(cordaConsumer, cordaProducer)
@@ -229,7 +200,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
         var attempts = 0
         while (!stopped) {
             try {
-                processDurableRecords(consumer.poll(), producer, consumer)
+                processDurableRecords(consumer.poll(config.pollTimeout), producer, consumer)
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
@@ -242,8 +213,8 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $topic, " +
-                                    "group $groupName, producerClientId $producerClientId. " +
+                            "Failed to process records from topic ${config.topic}, " +
+                                    "group ${config.group}, producerClientId ${config.clientId}. " +
                                     "Unexpected error occurred in this transaction. Closing producer.", ex
                         )
                     }
@@ -261,16 +232,16 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
         consumer: CordaConsumer<K, V>,
         ex: Exception
     ) {
-        if (attempts <= consumerPollAndProcessRetries) {
+        if (attempts <= config.processorRetries) {
             log.warn(
-                "Failed to read and process records from topic $topic, group $groupName, " +
-                        "producerClientId $producerClientId. " +
+                "Failed to read and process records from topic ${config.topic}, group ${config.group}, " +
+                        "producerClientId ${config.clientId}. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
         } else {
-            val message = "Failed to read and process records from topic $topic, group $groupName, " +
-                    "producerClientId $producerClientId. " +
+            val message = "Failed to read and process records from topic ${config.topic}, group ${config.group}, " +
+                    "producerClientId ${config.clientId}. " +
                     "Attempts: $attempts. Max reties for poll and process exceeded."
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)
@@ -299,7 +270,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
-                        getStateAndEventDLQTopic(topic),
+                        getStateAndEventDLQTopic(config.topic),
                         UUID.randomUUID().toString(),
                         it
                     )
@@ -315,8 +286,8 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
                 }
                 else -> {
                     throw CordaMessageAPIFatalException(
-                        "Failed to process records from topic $topic, " +
-                                "group $groupName, producerClientId $producerClientId. " +
+                        "Failed to process records from topic ${config.topic}, " +
+                                "group ${config.group}, producerClientId ${config.clientId}. " +
                                 "Unexpected error occurred in this transaction. Closing producer.", ex
                     )
                 }

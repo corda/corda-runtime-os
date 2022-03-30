@@ -1,31 +1,26 @@
 package net.corda.messaging.publisher.factory
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_PRODUCER
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ProducerRoles
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
-import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
-import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.config.MessagingConfigResolver
+import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.publisher.CordaRPCSenderImpl
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
-import net.corda.messaging.utils.ConfigUtils.Companion.resolvePublisherConfiguration
-import net.corda.messaging.utils.toConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Patterns implementation for Publisher Factory.
@@ -43,24 +38,17 @@ class CordaPublisherFactory @Activate constructor(
 ) : PublisherFactory {
 
     // Used to ensure that each subscription has a unique client.id
-    private val clientIdCounter = AtomicInteger()
+    private val clientIdCounter = AtomicLong()
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
         kafkaConfig: SmartConfig
     ): Publisher {
-        var config = resolvePublisherConfiguration(
-            publisherConfig.toConfig(),
-            kafkaConfig,
-            clientIdCounter.getAndIncrement(),
-            PATTERN_PUBLISHER
-        )
-
-        if(publisherConfig.instanceId == null) {
-            config = config.withoutPath(PRODUCER_TRANSACTIONAL_ID)
-        }
-
-        val producer = cordaProducerBuilder.createProducer(config.getConfig(CORDA_PRODUCER))
+        val configBuilder = MessagingConfigResolver(kafkaConfig.factory)
+        val config = configBuilder.buildPublisherConfig(publisherConfig, kafkaConfig)
+        // TODO 3781 - topic prefix
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.PUBLISHER)
+        val producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
         return CordaPublisherImpl(config, producer)
     }
 
@@ -69,23 +57,19 @@ class CordaPublisherFactory @Activate constructor(
         kafkaConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
 
-        val publisherConfiguration = ConfigFactory.empty()
-            .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
-            .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
-            .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-
-        val publisherConfig = resolvePublisherConfiguration(
-            publisherConfiguration,
+        val configResolver = MessagingConfigResolver(kafkaConfig.factory)
+        val subscriptionConfig = SubscriptionConfig(rpcConfig.groupName, rpcConfig.requestTopic)
+        val config = configResolver.buildSubscriptionConfig(
+            SubscriptionType.RPC_SENDER,
+            subscriptionConfig,
             kafkaConfig,
-            clientIdCounter.getAndIncrement(),
-            PATTERN_RPC_SENDER
-        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
-
-        val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> {  }
+            clientIdCounter.getAndIncrement()
+        )
+        val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> { }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)
 
         return CordaRPCSenderImpl(
-            publisherConfig,
+            config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
             serializer,

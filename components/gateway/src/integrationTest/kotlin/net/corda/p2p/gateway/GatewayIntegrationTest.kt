@@ -93,7 +93,7 @@ class GatewayIntegrationTest : TestBase() {
     private val sessionId = "session-1"
     private val instanceId = AtomicInteger(0)
 
-    private val nodeConfig = SmartConfigImpl.empty()
+    private val messagingConfig = SmartConfigImpl.empty()
 
     private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -135,7 +135,7 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = SmartConfigImpl.empty(),
+                messagingConfig = SmartConfigImpl.empty(),
                 partitionAssignmentListener = null
             ).use {
                 it.start()
@@ -175,7 +175,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
+                messagingConfig,
                 instanceId.incrementAndGet(),
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
@@ -268,7 +268,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    nodeConfig,
+                    messagingConfig,
                     instanceId.incrementAndGet(),
                 ).use { gateway ->
                     gateway.start()
@@ -344,7 +344,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
+                messagingConfig,
                 instanceId.incrementAndGet(),
             ).use {
                 it.startAndWaitForStarted()
@@ -450,7 +450,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
+                messagingConfig,
                 instanceId.incrementAndGet(),
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
@@ -499,7 +499,7 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = SmartConfigImpl.empty(),
+                messagingConfig = SmartConfigImpl.empty(),
                 partitionAssignmentListener = null
             )
             bobSubscription.start()
@@ -518,7 +518,7 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = SmartConfigImpl.empty(),
+                messagingConfig = SmartConfigImpl.empty(),
                 partitionAssignmentListener = null
             )
             aliceSubscription.start()
@@ -538,7 +538,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    nodeConfig,
+                    messagingConfig,
                     instanceId.incrementAndGet(),
                 ),
                 Gateway(
@@ -553,7 +553,7 @@ class GatewayIntegrationTest : TestBase() {
                     bob.subscriptionFactory,
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
-                    nodeConfig,
+                    messagingConfig,
                     instanceId.incrementAndGet(),
                 )
             ).onEach {
@@ -619,7 +619,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
+                messagingConfig,
                 instanceId.incrementAndGet(),
             ).use { gateway ->
                 val port = getOpenPort()
@@ -747,7 +747,7 @@ class GatewayIntegrationTest : TestBase() {
                 server.subscriptionFactory,
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
-                nodeConfig,
+                messagingConfig,
                 instanceId.incrementAndGet(),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
@@ -867,7 +867,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
+                messagingConfig,
                 instanceId.incrementAndGet(),
             )
 
