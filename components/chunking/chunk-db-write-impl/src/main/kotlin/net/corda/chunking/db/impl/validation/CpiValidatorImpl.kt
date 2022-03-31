@@ -38,7 +38,10 @@ class CpiValidatorImpl(
         publisher.update(requestId, "Validating CPI")
         val cpi: CPI = validationFunctions.checkCpi(fileInfo)
 
-        publisher.update(requestId, "Validating group id")
+        publisher.update(requestId, "Checking group id in CPI")
+        validationFunctions.getGroupId(cpi)
+
+        publisher.update(requestId, "Validating group id against DB")
         validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
 
         publisher.update(requestId, "Persisting CPI")
