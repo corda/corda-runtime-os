@@ -104,7 +104,7 @@ internal class StubMembershipGroupReader(
         ]
 
     private fun MemberInfoEntry.toMemberInfo(): LinkManagerInternalTypes.MemberInfo {
-        val publicKey = publicKeyReader.loadPublicKey(this.publicKey)
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return LinkManagerInternalTypes.MemberInfo(
             LinkManagerInternalTypes.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             publicKey,
@@ -114,7 +114,7 @@ internal class StubMembershipGroupReader(
     }
 
     private fun MemberInfoEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
-        val publicKey = publicKeyReader.loadPublicKey(this.publicKey)
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return GroupIdWithPublicKeyHash(
             this.holdingIdentity.groupId,
             ByteBuffer.wrap(keyHasher.hash(publicKey)),

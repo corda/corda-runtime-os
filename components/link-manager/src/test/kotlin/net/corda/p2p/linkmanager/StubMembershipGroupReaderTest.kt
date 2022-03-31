@@ -71,20 +71,20 @@ class StubMembershipGroupReaderTest {
     private val carolHash = byteArrayOf(30, 32)
     private val alicePublicKey = mock<PublicKey> {
         on { algorithm } doReturn "EC"
-        on { encoded } doReturn alice.publicKey.toByteArray()
+        on { encoded } doReturn alice.sessionPublicKey.toByteArray()
     }
     private val bobPublicKey = mock<PublicKey> {
         on { algorithm } doReturn "RSA"
-        on { encoded } doReturn bob.publicKey.toByteArray()
+        on { encoded } doReturn bob.sessionPublicKey.toByteArray()
     }
     private val carolPublicKey = mock<PublicKey> {
         on { algorithm } doReturn "RSA"
-        on { encoded } doReturn carol.publicKey.toByteArray()
+        on { encoded } doReturn carol.sessionPublicKey.toByteArray()
     }
     private val keyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
-        whenever(mock.loadPublicKey(bob.publicKey)).doReturn(bobPublicKey)
-        whenever(mock.loadPublicKey(alice.publicKey)).doReturn(alicePublicKey)
-        whenever(mock.loadPublicKey(carol.publicKey)).doReturn(carolPublicKey)
+        whenever(mock.loadPublicKey(bob.sessionPublicKey)).doReturn(bobPublicKey)
+        whenever(mock.loadPublicKey(alice.sessionPublicKey)).doReturn(alicePublicKey)
+        whenever(mock.loadPublicKey(carol.sessionPublicKey)).doReturn(carolPublicKey)
     }
     private val keyHasher = mockConstruction(KeyHasher::class.java) { mock, _ ->
         whenever(mock.hash(alicePublicKey)).doReturn(aliceHash)

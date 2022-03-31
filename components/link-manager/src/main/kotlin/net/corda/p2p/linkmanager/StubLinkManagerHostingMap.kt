@@ -112,7 +112,7 @@ class StubLinkManagerHostingMap(
     }
 
     private fun HostedIdentityEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
-        val publicKey = publicKeyReader.loadPublicKey(this.publicKey)
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return GroupIdWithPublicKeyHash(
             this.holdingIdentity.groupId,
             ByteBuffer.wrap(keyHasher.hash(publicKey)),
@@ -125,7 +125,7 @@ class StubLinkManagerHostingMap(
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
             sessionKeyTenantId = entry.sessionKeyTenantId,
-            publicKey = publicKeyReader.loadPublicKey(entry.publicKey)
+            publicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey)
         )
         locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toHoldingIdentity()] = info
         publicHashToIdentityInfo[entry.toGroupIdWithPublicKeyHash()] = info
