@@ -5,7 +5,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
@@ -50,15 +49,14 @@ internal class VirtualNodeRPCOpsConfigHandler(
             virtualNodeRPCOps.setTimeout(timeoutMillis)
         }
 
-        if (config.hasPath(BOOTSTRAP_SERVERS)) {
-            try {
-                virtualNodeRPCOps.createAndStartRpcSender(config)
-            } catch (e: Exception) {
-                coordinator.updateStatus(ERROR)
-                throw VirtualNodeRPCOpsServiceException(
-                    "Could not start the RPC sender for incoming HTTP RPC virtual node management requests", e
-                )
-            }
+        try {
+            virtualNodeRPCOps.createAndStartRpcSender(config)
+        } catch (e: Exception) {
+            coordinator.updateStatus(ERROR)
+            throw VirtualNodeRPCOpsServiceException(
+                "Could not start the RPC sender for incoming HTTP RPC virtual node management requests", e
+            )
         }
+
     }
 }
