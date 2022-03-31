@@ -157,6 +157,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         builder.setProgramArguments(javaArgs)
         builder.setEntrypoint("java",
+                "-Dbla.bla=\$LOG4J_FILE",
                 "-Dlog4j.configurationFile=${log4jConfigName.get()}",
                 "-jar", CONTAINER_LOCATION + projectName +".jar")
 
