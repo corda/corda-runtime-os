@@ -238,7 +238,7 @@ class StubLinkManagerHostingMapTest {
                 entryOne.holdingIdentity,
                 entryOne.tlsCertificates,
                 entryOne.tlsTenantId,
-                entryOne.identityTenantId,
+                entryOne.sessionKeyTenantId,
                 publicKeyOne,
             )
         )
