@@ -127,8 +127,9 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
     command:
-      - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9092
+    - --messagingParams
+    - kafkaProperties.common.bootstrap.servers=kafka:9092
+    - bus.busType=KAFKA
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
@@ -169,7 +170,8 @@ services:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008"
     command:
       - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9092
+      - kafkaProperties.common.bootstrap.servers=kafka:9092
+      - bus.busType=KAFKA
       - --workspace-dir=/tmp/corda
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
@@ -189,7 +191,8 @@ services:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     command:
       - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9092
+      - kafkaProperties.common.bootstrap.servers=kafka:9092
+      - bus.busType=KAFKA
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
@@ -207,7 +210,8 @@ services:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5009"
     command:
       - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9092
+      - kafkaProperties.common.bootstrap.servers=kafka:9092
+      - bus.busType=KAFKA
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
