@@ -196,7 +196,7 @@ open class SessionManagerImpl(
         )
     }
 
-    override fun processOutboundMessage(message: AuthenticatedMessageAndKey, queueMessageIfNoActiveSession: Boolean): SessionState {
+    override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
                 val counterparties = getSessionCounterpartiesFromMessage(message.message)
@@ -204,9 +204,6 @@ open class SessionManagerImpl(
                 return@read when (val status = outboundSessionPool.getNextSession(counterparties)) {
                     is OutboundSessionPool.SessionPoolStatus.SessionActive -> SessionState.SessionEstablished(status.session)
                     is OutboundSessionPool.SessionPoolStatus.SessionPending -> {
-                        if (queueMessageIfNoActiveSession) {
-                            pendingOutboundSessionMessageQueues.queueMessage(message, counterparties)
-                        }
                         SessionState.SessionAlreadyPending
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
@@ -215,9 +212,6 @@ open class SessionManagerImpl(
                         outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
                         val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
                             ?: return@read SessionState.CannotEstablishSession
-                        if (queueMessageIfNoActiveSession) {
-                            pendingOutboundSessionMessageQueues.queueMessage(message, counterparties)
-                        }
                         SessionState.NewSessionsNeeded(messages)
                     }
                 }
@@ -375,7 +369,7 @@ open class SessionManagerImpl(
                 "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the members map. " +
                         "The sessionInit message was not sent."
             )
-            return null
+            return emptyList()
         }
 
         val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
