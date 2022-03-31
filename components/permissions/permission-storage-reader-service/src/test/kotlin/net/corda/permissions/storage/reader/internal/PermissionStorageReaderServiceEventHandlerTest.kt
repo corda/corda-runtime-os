@@ -2,7 +2,6 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
@@ -185,12 +184,12 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         verify(publisher).start()
         verify(permissionStorageReader).start()
-        assertNotNull(handler.reconciliationTaskInterval)
+        assertNotNull(handler.reconciliationTaskIntervalMs)
     }
 
     @Test
     fun `processing a ReconcilePermissionSummaryEvent executes reconciliation task and schedules next run`() {
-        handler.reconciliationTaskInterval = Duration.ofSeconds(20)
+        handler.reconciliationTaskIntervalMs = 20L
         handler.permissionStorageReader = permissionStorageReader
 
         handler.processEvent(ReconcilePermissionSummaryEvent("PermissionStorageReaderServiceEventHandler"), coordinator)

@@ -33,6 +33,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import net.corda.messaging.api.config.toMessagingConfig
 
 class CpkWriteServiceImplTest {
     private lateinit var cpkWriteServiceImpl: CpkWriteServiceImpl
@@ -144,6 +145,9 @@ class CpkWriteServiceImplTest {
         val config = mock<Map<String, SmartConfig>>()
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        val mockConfig = mock<SmartConfig>()
+        whenever(config.toMessagingConfig()).thenReturn(mockConfig)
+        whenever(mockConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 
         assertNull(cpkWriteServiceImpl.configReadServiceRegistration)

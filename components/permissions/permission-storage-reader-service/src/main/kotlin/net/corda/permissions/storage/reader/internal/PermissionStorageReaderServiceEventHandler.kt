@@ -1,6 +1,5 @@
 package net.corda.permissions.storage.reader.internal
 
-import java.time.Duration
 import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -24,7 +23,9 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -42,7 +43,6 @@ class PermissionStorageReaderServiceEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        // Is this right?
         const val CLIENT_NAME = "user.permissions.management"
         val log = contextLogger()
     }
@@ -60,7 +60,7 @@ class PermissionStorageReaderServiceEventHandler(
     internal var crsSub: AutoCloseable? = null
 
     @VisibleForTesting
-    internal var reconciliationTaskInterval: Duration? = null
+    internal var reconciliationTaskIntervalMs: Long? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -143,8 +143,11 @@ class PermissionStorageReaderServiceEventHandler(
     @VisibleForTesting
     internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
 
-        reconciliationTaskInterval = Duration.ofSeconds(60)
-        log.trace { "Permission summary reconciliation interval set to ${reconciliationTaskInterval!!.toMillis()} ms." }
+        reconciliationTaskIntervalMs = messagingConfig
+            .getConfig(DB_CONFIG)
+            .getLong(RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS)
+
+        log.info("Permission summary reconciliation interval set to $reconciliationTaskIntervalMs ms.")
 
         publisher?.close()
         publisher = publisherFactory.createPublisher(
@@ -172,7 +175,7 @@ class PermissionStorageReaderServiceEventHandler(
     private fun scheduleNextReconciliationTask(coordinator: LifecycleCoordinator) {
         coordinator.setTimer(
             PermissionStorageReaderServiceEventHandler::class.simpleName!!,
-            reconciliationTaskInterval!!.toMillis()
+            reconciliationTaskIntervalMs!!
         ) { key ->
             ReconcilePermissionSummaryEvent(key)
         }

@@ -81,7 +81,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var timeout: Duration? = null
     @VisibleForTesting
-    internal var timerEventInterval: Duration? = null
+    internal var timerEventInterval: Long? = null
     @VisibleForTesting
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
@@ -149,7 +149,10 @@ class CpkWriteServiceImpl @Activate constructor(
         val config = event.config.toMessagingConfig()
         // TODO fill the following with configuration once we know where they lie?
         timeout = 20.seconds
-        timerEventInterval = 10.seconds
+        timerEventInterval = config
+            .getConfig(ConfigKeys.DB_CONFIG)
+            .getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)
+        logger.info("CPK write reconciliation interval set to $timerEventInterval ms.")
 
         try {
             createCpkChunksPublisher(config)
@@ -178,7 +181,7 @@ class CpkWriteServiceImpl @Activate constructor(
         logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
         coordinator.setTimer(
             "${CpkWriteServiceImpl::class.simpleName}",
-            timerEventInterval!!.toMillis()
+            timerEventInterval!!
         ) { ReconcileCpkEvent(it) }
     }
 
