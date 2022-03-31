@@ -121,7 +121,7 @@ pipeline {
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
+                    junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                 }
                 unsuccessful {
                     sh '''
