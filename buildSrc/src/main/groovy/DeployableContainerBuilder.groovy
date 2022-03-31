@@ -101,10 +101,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             getObjects().property(String).convention('11')
 
     @Input
-    final Property<String> log4jConfigName =
-            getObjects().property(String).convention('log4j2-console.xml')
-
-    @Input
     final ListProperty<String> arguments =
             getObjects().listProperty(String)
 
@@ -155,11 +151,15 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
 
+        builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
+
         builder.setProgramArguments(javaArgs)
-        builder.setEntrypoint("java",
-                "-Dbla.bla=\$LOG4J_FILE",
-                "-Dlog4j.configurationFile=${log4jConfigName.get()}",
-                "-jar", CONTAINER_LOCATION + projectName +".jar")
+        builder.setEntrypoint(
+                "/bin/sh",
+                "-c",
+                "exec java -Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE} -jar " +
+                        CONTAINER_LOCATION + projectName + ".jar"
+        )
 
         if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${projectName}"

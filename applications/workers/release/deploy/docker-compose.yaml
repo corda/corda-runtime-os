@@ -145,7 +145,6 @@ services:
       - "7002:7000" # healthcheck port
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
-      LOG4J_FILE: "log4j2-console.xml"
     command:
       - -mkafka.common.bootstrap.servers=kafka:9092
       - -spassphrase=bad passphrase

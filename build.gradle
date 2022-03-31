@@ -372,10 +372,6 @@ subprojects {
             if (project.hasProperty('baseImage')) {
                 baseImageName = baseImage
             }
-
-            if (project.hasProperty('log4jConfigFile')) {
-                log4jConfigName = log4jConfigFile
-            }
         }
     }
 }
