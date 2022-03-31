@@ -59,13 +59,13 @@ class User(
     /**
      * Users have properties.
      */
-    @OneToMany(mappedBy = "userRef", orphanRemoval = true, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "userRef", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var userProperties: MutableSet<UserProperty> = mutableSetOf()
 
     /**
      * Users can also be directly associated with roles.
      */
-    @OneToMany(mappedBy = "user", orphanRemoval = true, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "user", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var roleUserAssociations: MutableSet<RoleUserAssociation> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {
