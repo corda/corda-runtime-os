@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription.consumer.builder
 
 import com.typesafe.config.Config
+import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP_ID
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -51,6 +52,7 @@ class CordaConsumerBuilderImpl @Activate constructor(
         val listener = cordaConsumerRebalanceListener ?: LoggingConsumerRebalanceListener(
             consumerConfig.getString(TOPIC_NAME),
             consumerConfig.getString(GROUP_ID),
+            consumerConfig.getString(CLIENT_ID)
         )
         return messageBusConsumerBuilder.createConsumer(consumerConfig, kClazz, vClazz, onError, listener)
     }

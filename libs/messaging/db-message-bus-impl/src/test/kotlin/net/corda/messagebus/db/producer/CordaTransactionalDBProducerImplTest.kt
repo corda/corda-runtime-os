@@ -9,11 +9,12 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -68,7 +69,7 @@ internal class CordaTransactionalDBProducerImplTest {
     @Test
     fun `transactional producer correctly handles abort`() {
         val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
+        whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
@@ -91,7 +92,7 @@ internal class CordaTransactionalDBProducerImplTest {
     @Test
     fun `transactional producer sends correct entry to database`() {
         val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
+        whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
         whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 5))
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
