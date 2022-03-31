@@ -369,7 +369,7 @@ open class SessionManagerImpl(
                 "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the members map. " +
                         "The sessionInit message was not sent."
             )
-            return emptyList()
+            return null
         }
 
         val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
