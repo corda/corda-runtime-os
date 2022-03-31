@@ -145,7 +145,8 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
     command:
-      - -mkafka.common.bootstrap.servers=kafka:9092
+      - -mbus.kafkaProperties.common.bootstrap.servers=kafka:9092
+      - -mbus.busType=KAFKA
       - -spassphrase=bad passphrase
       - -ssalt=not so random
       - -ddatabase.user=user
