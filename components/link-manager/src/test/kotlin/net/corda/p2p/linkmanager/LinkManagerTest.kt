@@ -253,10 +253,10 @@ class LinkManagerTest {
     private fun initiatorHelloMessage(): InitiatorHelloMessage {
         return InitiatorHelloMessage.newBuilder().apply {
             header = CommonHeader(MessageType.INITIATOR_HELLO, 0, SESSION_ID, 1, 1)
-            initiatorPublicKey = ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded)
+            initiatorPublicKey = ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.sessionPublicKey.encoded)
             supportedModes = listOf(ProtocolMode.AUTHENTICATION_ONLY)
             source = InitiatorHandshakeIdentity(
-                ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded),
+                ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.sessionPublicKey.encoded),
                 FIRST_DEST_MEMBER_INFO.holdingIdentity.groupId
             )
         }.build()

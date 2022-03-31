@@ -179,7 +179,7 @@ class SessionManagerTest {
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
         sessionKeyTenantId = "id",
-        publicKey = OUR_KEY.public
+        sessionPublicKey = OUR_KEY.public
     )
 
     private val counterparties = SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)

@@ -59,7 +59,7 @@ class StubLinkManagerHostingMapTest {
     private val publicKeyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
         whenever(mock.loadPublicKey("pem")).thenReturn(publicKeyOne)
     }
-    private val keyHasher = mockConstruction(KeyHasher::class.java) {mock, _ ->
+    private val keyHasher = mockConstruction(KeyHasher::class.java) { mock, _ ->
         whenever(mock.hash(publicKeyOne)).thenReturn(byteArrayOf(5, 6, 7))
     }
 
@@ -170,7 +170,7 @@ class StubLinkManagerHostingMapTest {
     }
 
     @Test
-    fun `getInfo return the correct data`() {
+    fun `getInfo by public key hashreturn the correct data`() {
         processor.firstValue.onSnapshot(
             mapOf(
                 "key" to entryOne
@@ -189,10 +189,10 @@ class StubLinkManagerHostingMapTest {
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
-                    publicKey = publicKeyOne
+                    sessionPublicKey = publicKeyOne
                 )
             )
-            it.assertThat(testObject.getInfo(LinkManagerInternalTypes.HoldingIdentity("", ""))).isNull()
+            it.assertThat(testObject.getInfo(byteArrayOf(1, 2, 2), "nop")).isNull()
         }
     }
 
@@ -211,7 +211,7 @@ class StubLinkManagerHostingMapTest {
                     tlsCertificates = listOf("cert1", "cert2"),
                     tlsTenantId = "id1",
                     sessionKeyTenantId = "id2",
-                    publicKey = publicKeyOne
+                    sessionPublicKey = publicKeyOne
                 )
             )
             it.assertThat(testObject.getInfo(LinkManagerInternalTypes.HoldingIdentity("", ""))).isNull()

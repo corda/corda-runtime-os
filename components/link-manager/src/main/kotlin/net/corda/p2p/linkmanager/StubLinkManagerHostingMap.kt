@@ -125,7 +125,7 @@ class StubLinkManagerHostingMap(
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
             sessionKeyTenantId = entry.sessionKeyTenantId,
-            publicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey)
+            sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey)
         )
         locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toHoldingIdentity()] = info
         publicHashToIdentityInfo[entry.toGroupIdWithPublicKeyHash()] = info

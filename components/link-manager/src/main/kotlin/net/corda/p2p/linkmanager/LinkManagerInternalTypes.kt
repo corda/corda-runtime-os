@@ -20,7 +20,7 @@ object LinkManagerInternalTypes {
 
     data class MemberInfo(
         val holdingIdentity: HoldingIdentity,
-        val publicKey: PublicKey,
+        val sessionPublicKey: PublicKey,
         val publicKeyAlgorithm: KeyAlgorithm,
         val endPoint: EndPoint,
     )
