@@ -120,6 +120,9 @@ pipeline {
                 '''
             }
             post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                }
                 unsuccessful {
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
@@ -133,7 +136,6 @@ pipeline {
     }
     post {
         always {
-            junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
             findBuildScans()
             splunkLogGenerator()
             script{
