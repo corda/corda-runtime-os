@@ -47,7 +47,7 @@ class StubMembershipGroupReaderTest {
             "Alice",
             "GROUP-1"
         ),
-        "alice.pem",
+        "alice_pem",
         "alice.com",
     )
     private val bob = MemberInfoEntry(
@@ -55,7 +55,7 @@ class StubMembershipGroupReaderTest {
             "Bob",
             "GROUP-2"
         ),
-        "bob.pem",
+        "bob_pem",
         "bob.net"
     )
     private val carol = MemberInfoEntry(
@@ -63,7 +63,7 @@ class StubMembershipGroupReaderTest {
             "Carol",
             "GROUP-3"
         ),
-        "carol.pem",
+        "carol_pem",
         "carol.org"
     )
     private val aliceHash = byteArrayOf(1)
