@@ -44,9 +44,9 @@ class VirtualNodeRpcTest {
         // Holding identity(-ies)
         private const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
 
-        // Max wait duration for calls - arbitrarily picked - we might want this higher for slower code,
-        // or configurable and injected in.
-        private val WAIT_DURATION = Duration.ofMillis(2000L)
+        // BUG:  https://r3-cev.atlassian.net/browse/CORE-3966 and https://r3-cev.atlassian.net/browse/CORE-3968
+        // Max wait duration CPI to arrive for flow - arbitrarily picked.
+        private val FLOW_WAIT_DURATION = Duration.ofSeconds(30)
     }
 
     private val clusterUri = URI(System.getProperty("rpcHost"))
@@ -229,7 +229,7 @@ class VirtualNodeRpcTest {
 
             // BUG:  Due to a bug in the flow worker, we *still* have to wait for a while for the CPI to be assembled
             // otherwise the flow-worker just stops responding if a flow is requested before the CPI.
-            Thread.sleep(WAIT_DURATION.multipliedBy(5L).toMillis())
+            Thread.sleep(FLOW_WAIT_DURATION.toMillis())
 
             // Depends on the flows in the cpi
             val className = "net.corda.testing.calculator.CalculatorFlow"
