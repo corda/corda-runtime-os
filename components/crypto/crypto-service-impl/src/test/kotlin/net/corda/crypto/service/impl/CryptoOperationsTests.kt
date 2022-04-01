@@ -6,6 +6,7 @@ import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.impl._utils.TestFactory
 import net.corda.crypto.service.impl._utils.generateKeyPair
+import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -38,6 +39,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.security.KeyPair
 import java.security.PublicKey
 import java.security.SignatureException
@@ -310,7 +313,7 @@ class CryptoOperationsTests {
     }
 
     @Test
-    fun `All supported by SoftCryptoService schemes should be defined in cipher suite`() {
+    fun `SoftCryptoService should support only schemes defined in cipher suite`() {
         assertTrue(cryptoService.supportedSchemes().isNotEmpty())
         cryptoService.supportedSchemes().forEach {
             assertTrue(schemeMetadata.schemes.contains(it))
@@ -721,6 +724,16 @@ class CryptoOperationsTests {
         assertThrows<CryptoServiceBadRequestException> {
             info.signingService.sign(UUID.randomUUID().toString(), info.publicKey, testData)
         }
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
+            val customSignatureByPublicKey = info.signingService.sign(
+                tenantId,
+                info.publicKey,
+                signatureSpec,
+                testData
+            )
+            assertEquals(info.publicKey, customSignatureByPublicKey.by)
+            validateSignature(info.publicKey, signatureSpec, customSignatureByPublicKey.bytes, testData)
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -738,93 +751,71 @@ class CryptoOperationsTests {
         assertThrows<CryptoServiceBadRequestException> {
             info.signingService.sign(UUID.randomUUID().toString(), info.publicKey, testData)
         }
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
+            val customSignatureByPublicKey = info.signingService.sign(
+                tenantId,
+                info.publicKey,
+                signatureSpec,
+                testData
+            )
+            assertEquals(info.publicKey, customSignatureByPublicKey.by)
+            validateSignature(info.publicKey, signatureSpec, customSignatureByPublicKey.bytes, testData)
+        }.runAndValidate()
     }
 
-/*
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    @Suppress("MaxLineLength")
-    fun `Signing service should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
+    fun `Signing service should use first known aliased key from CompositeKey when signing for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
-        val signingService = services.createSigningService(signatureScheme)
-        val alias = newAlias()
-        val data = UUID.randomUUID().toString().toByteArray()
-        val alicePublicKey = mock<PublicKey>()
-        whenever(alicePublicKey.encoded).thenReturn(ByteArray(0))
-        val bobPublicKey = signingService.generateKeyPair(services.category, alias)
-        verifyGeneratedAliasedKeyRecord(bobPublicKey, alias, signatureScheme)
+        val info = signingAliasedKeys.getValue(signatureScheme)
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val alicePublicKey = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val bobPublicKey = info.publicKey
+        verifyCachedKeyRecord(bobPublicKey, info.alias, null, signatureScheme)
         val aliceAndBob = CompositeKey.Builder()
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
             .build(threshold = 2)
-        val signature = signingService.sign(aliceAndBob, data)
+        val signature = info.signingService.sign(tenantId, aliceAndBob, testData)
         assertEquals(bobPublicKey, signature.by)
-        validateSignature(signature.by, signature.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
-            val customSignatureByPublicKey = signingService.sign(bobPublicKey, signatureSpec, data)
-            assertEquals(bobPublicKey, customSignatureByPublicKey.by)
-            validateSignature(bobPublicKey, signatureSpec, customSignatureByPublicKey.bytes, data)
-        }.runAndValidate()
+        validateSignature(signature.by, signature.bytes, testData)
     }
 
     @ParameterizedTest
-    @MethodSource("supportedWrappingSchemes")
-    @Suppress("MaxLineLength")
-    fun `Fresh key service should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
+    @MethodSource("supportedSchemes")
+    fun `Signing service should use first known fresh key from CompositeKey when signing for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
-        val freshKeyService = services.createSigningService(signatureScheme)
-        val alicePublicKey = mock<PublicKey>()
-        whenever(alicePublicKey.encoded).thenReturn(ByteArray(0))
-        val bobPublicKey = freshKeyService.freshKey()
-        verifyFreshKeyRecord(bobPublicKey, null, signatureScheme)
-        val data = UUID.randomUUID().toString().toByteArray()
+        val info = signingFreshKeys.getValue(signatureScheme)
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val alicePublicKey = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val bobPublicKey = info.publicKey
+        verifyCachedKeyRecord(bobPublicKey, null, info.externalId, signatureScheme)
         val aliceAndBob = CompositeKey.Builder()
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
             .build(threshold = 2)
-        val signature = freshKeyService.sign(aliceAndBob, data)
+        val signature = info.signingService.sign(tenantId, aliceAndBob, testData)
         assertEquals(bobPublicKey, signature.by)
-        validateSignature(signature.by, signature.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
-            val customSignatureByPublicKey = freshKeyService.sign(bobPublicKey, signatureSpec, data)
-            assertEquals(bobPublicKey, customSignatureByPublicKey.by)
-            validateSignature(bobPublicKey, signatureSpec, customSignatureByPublicKey.bytes, data)
-        }.runAndValidate()
+        validateSignature(signature.by, signature.bytes, testData)
     }
 
     @ParameterizedTest
-    @MethodSource("supportedWrappingSchemes")
-    fun `Should fail generating fresh key with unknown wrapping key for all supported schemes`(
-        signatureScheme: SignatureScheme
-    ) {
-        val freshKeyService = services.createSigningService(
-            signatureScheme = signatureScheme,
-            effectiveWrappingKeyAlias = UUID.randomUUID().toString()
-        )
-        assertThrows<CryptoServiceBadRequestException> {
-            freshKeyService.freshKey()
-        }
-        assertThrows<CryptoServiceBadRequestException> {
-            freshKeyService.freshKey(UUID.randomUUID())
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("supportedWrappingSchemes")
+    @MethodSource("supportedSchemes")
     fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
-        val freshKeyService = services.createSigningService(signatureScheme)
-        val freshKey1 = freshKeyService.freshKey()
-        val freshKey2 = freshKeyService.freshKey(UUID.randomUUID())
+        val info = signingFreshKeys.getValue(signatureScheme)
         assertThrows<NotImplementedError> {
-            freshKeyService.filterMyKeys(mutableListOf(freshKey1, freshKey2))
+            info.signingService.filterMyKeys(tenantId, emptyList())
         }
     }
-*/
-    //----------------------
+
     /*
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
