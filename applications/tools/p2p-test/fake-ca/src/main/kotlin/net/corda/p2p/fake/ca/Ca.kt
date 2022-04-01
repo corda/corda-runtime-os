@@ -24,6 +24,9 @@ import java.time.Duration
     subcommandsRepeatable = true,
 )
 class Ca {
+    companion object {
+        internal const val CA_NAME = "ca"
+    }
     @Option(
         names = ["-m", "--home"],
         description = ["The CA home directory where certificates/keys will be generated"],
@@ -107,7 +110,7 @@ class Ca {
         }
         CertificateAuthorityFactory.createFileSystemLocalAuthority(
             definitions,
-            File(home, "ca/.ca"),
+            File(home, "$CA_NAME/.ca"),
             Duration.ofDays(certificatesDurationInDays.toLong())
         )
     }

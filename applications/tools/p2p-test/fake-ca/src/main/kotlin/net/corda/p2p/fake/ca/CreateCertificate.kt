@@ -1,6 +1,7 @@
 package net.corda.p2p.fake.ca
 
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.p2p.fake.ca.Ca.Companion.CA_NAME
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -37,8 +38,8 @@ class CreateCertificate : Runnable {
             throw FakeCaException("Please create the CA before attempting to create certificates")
         }
         val actualName = name ?: dnsNames.first()
-        if (actualName == "ca") {
-            throw FakeCaException("The name 'ca' can not be used")
+        if (actualName == CA_NAME) {
+            throw FakeCaException("The name '$CA_NAME' can not be used")
         }
         val dir = File(ca.home, actualName).also {
             it.mkdirs()
