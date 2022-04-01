@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.v1.FlowRpcOps
+import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -43,8 +44,8 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private var isUp = false;
-    private var isCacheLoaded = false;
+    private var isUp = false
+    private var isCacheLoaded = false
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowRPCOpsService>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
@@ -66,6 +67,12 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
                 if(!isUp){
                     isUp=true
                     signalUpStatus()
+                }
+            }
+            is CustomEvent -> {
+                val cacheLoadCompeted = event.payload as? CacheLoadCompleteEvent
+                if (cacheLoadCompeted != null) {
+                    lifecycleCoordinator.postEvent(cacheLoadCompeted)
                 }
             }
             is CacheLoadCompleteEvent -> {
