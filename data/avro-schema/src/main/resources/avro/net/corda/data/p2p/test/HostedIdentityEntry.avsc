@@ -25,6 +25,11 @@
         "type": "array",
         "items": "string"
       }
+    },
+    {
+      "doc": "The session initiation public key (in PEM format)",
+      "name": "sessionPublicKey",
+      "type": "string"
     }
   ]
 }

@@ -1,6 +1,0 @@
-{
-  "type": "enum",
-  "name": "KeyAlgorithm",
-  "namespace": "net.corda.p2p.test",
-  "symbols": [ "RSA", "ECDSA" ]
-}

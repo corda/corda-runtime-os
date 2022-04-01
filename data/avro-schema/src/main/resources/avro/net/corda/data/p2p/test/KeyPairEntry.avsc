@@ -4,16 +4,9 @@
   "namespace": "net.corda.p2p.test",
   "fields": [
     {
-      "name": "keyAlgo",
-      "type": "net.corda.p2p.test.KeyAlgorithm"
-    },
-    {
-      "name": "publicKey",
-      "type": "bytes"
-    },
-    {
-      "name": "privateKey",
-      "type": "bytes"
+      "doc": "The key pair (in PEM format)",
+      "name": "keyPair",
+      "type": "string"
     }
   ]
 }

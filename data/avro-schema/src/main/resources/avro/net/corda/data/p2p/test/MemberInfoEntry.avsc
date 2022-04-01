@@ -9,14 +9,9 @@
       "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
-      "doc": "The encoded public key",
-      "name": "publicKey",
-      "type": "bytes"
-    },
-    {
-      "doc": "The public key algorithm",
-      "name": "publicKeyAlgorithm",
-      "type": "net.corda.p2p.test.KeyAlgorithm"
+      "doc": "The session initiation public key (in PEM format)",
+      "name": "sessionPublicKey",
+      "type": "string"
     },
     {
       "doc": "The identity address",
