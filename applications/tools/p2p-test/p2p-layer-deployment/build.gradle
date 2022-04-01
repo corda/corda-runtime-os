@@ -11,6 +11,7 @@ dependencies {
     implementation project(':libs:crypto:certificate-generation')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation "net.corda:corda-topic-schema"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
