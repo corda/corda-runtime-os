@@ -8,44 +8,50 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.virtualnode.datamodel.*
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import javax.persistence.EntityManagerFactory
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeCryptoEntitiesIntegrationTest {
+    private val dbConfig = DbUtils.getEntityManagerConfiguration("vnode_crypto_db")
+    private val entityManagerFactory: EntityManagerFactory
+
     private companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-crypto/db.changelog-master.xml"
-        private lateinit var entityManagerFactory: EntityManagerFactory
+    }
 
-        /**
-         * Creates an in-memory database, applies the relevant migration scripts, and initialises
-         * [entityManagerFactory].
-         */
-        @Suppress("Unused")
-        @BeforeAll
-        @JvmStatic
-        private fun prepareDatabase() {
-            val dbConfig = DbUtils.getEntityManagerConfiguration("vnode_crypto_db")
-
-            val dbChange = ClassloaderChangeLog(
-                linkedSetOf(
-                    ChangeLogResourceFiles(
-                        DbSchema::class.java.packageName,
-                        listOf(MIGRATION_FILE_LOCATION),
-                        DbSchema::class.java.classLoader
-                    )
+    /**
+     * Creates an in-memory database, applies the relevant migration scripts, and initialises
+     * [entityManagerFactory].
+     */
+    init {
+        val dbChange = ClassloaderChangeLog(
+            linkedSetOf(
+                ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf(MIGRATION_FILE_LOCATION),
+                    DbSchema::class.java.classLoader
                 )
             )
-            dbConfig.dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-            }
-            entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-                "test_unit",
-                CryptoEntities.classes.toList(),
-                dbConfig
-            )
+        )
+        dbConfig.dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
+        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CryptoEntities.classes.toList(),
+            dbConfig
+        )
+    }
+
+    @Suppress("Unused")
+    @AfterAll
+    private fun cleanup() {
+        dbConfig.close()
+        entityManagerFactory.close()
     }
 
     @Test
@@ -72,7 +78,8 @@ class VirtualNodeCryptoEntitiesIntegrationTest {
 
         assertEquals(
             certificate,
-            entityManagerFactory.createEntityManager().find(CertificateEntity::class.java, certificate.holdingIdentityId)
+            entityManagerFactory.createEntityManager()
+                .find(CertificateEntity::class.java, certificate.holdingIdentityId)
         )
     }
 }
