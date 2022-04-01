@@ -2,13 +2,13 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.deployment.pods.InfrastructureDetails
 import net.corda.p2p.deployment.pods.LbType
 import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
 import net.corda.p2p.deployment.pods.P2PDeploymentDetails
 import net.corda.p2p.deployment.pods.ResourceRequest
-import net.corda.p2p.test.KeyAlgorithm
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 

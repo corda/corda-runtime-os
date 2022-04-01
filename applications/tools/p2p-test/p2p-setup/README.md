@@ -81,7 +81,8 @@ To publish an entry for a locally hosted identity:
   "data": {
     "tlsTenantId": "cluster",
     "sessionKeyTenantId": "alice",
-    "tlsCertificates":["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"]
+    "tlsCertificates":["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"],
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----"
   }
 }
 ```
@@ -89,6 +90,8 @@ To publish an entry for a locally hosted identity:
 * The `tlsCertificates` should contain the content of the certificates (in PEM format).
 * The `tlsCertificatesFiles` can be used as an alternative to `tlsCertificates` with a path to a valid certificate file (in PEM format).
 * The `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
+* `publicKey` is the public key in PEM format
+* `publicKeyFile` can be an alternative to `publicKey` with path to the public key in PEM format.
 
 4. Run the command:
 ```bash
@@ -229,7 +232,7 @@ The file should look like:
       "x500name": "O=Alice, L=London, C=GB",
       "groupId": "group-1",
       "data": {
-        "publicKeyFile": "<path_to_the_public_key_pem_file>",
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
         "address": "http://alice.com:8080"
       }
     }
@@ -241,7 +244,8 @@ The file should look like:
       "data": {
         "tlsTenantId": "cluster",
         "sessionKeyTenantId": "alice",
-        "tlsCertificates": ["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"]
+        "tlsCertificates": ["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"],
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----"
       }
     }
   ],

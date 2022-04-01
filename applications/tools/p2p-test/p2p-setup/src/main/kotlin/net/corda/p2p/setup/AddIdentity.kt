@@ -36,6 +36,14 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
             } catch (e: Missing) {
                 dataConfig.getStringList("tlsCertificates")
             }
+            val publicKey = try {
+                dataConfig.getString("publicKeyFile").let {
+                    File(it).readText()
+                }
+            } catch (e: Missing) {
+                dataConfig.getString("publicKey")
+            }
+            publicKey.verifyPublicKey()
 
             return Record(
                 topic, "$x500Name-$groupId",
@@ -43,7 +51,8 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
                     HoldingIdentity(x500Name, groupId),
                     tlsTenantId,
                     sessionKeyTenantId,
-                    tlsCertificates
+                    tlsCertificates,
+                    publicKey,
                 )
             )
         }
