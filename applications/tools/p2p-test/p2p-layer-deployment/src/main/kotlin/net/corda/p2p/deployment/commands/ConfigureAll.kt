@@ -1,16 +1,17 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
-import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
 import net.corda.p2p.test.KeyAlgorithm
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.security.KeyPairGenerator
 
 @Command(
     name = "configure",
@@ -90,26 +91,39 @@ class ConfigureAll : Runnable {
 
     private fun KeyAlgorithm.signatureScheme() = when (this) {
         KeyAlgorithm.RSA -> RSA_SHA256_TEMPLATE
-        KeyAlgorithm.ECDSA -> ECDSA_SECP256K1_SHA256_TEMPLATE
+        KeyAlgorithm.ECDSA -> ECDSA_SECP256R1_SHA256_TEMPLATE
     }
 
-    private fun keyStoreFile(name: String): File {
-        return File(keyStoreDir.absolutePath, "$name.identity.keystore.jks").also { keyStoreFile ->
-            if (!keyStoreFile.exists()) {
-                keyStoreDir.mkdirs()
-                // There is no real need for a Certificate Authority. Java KeyStore need to have a certificate
-                // with the public key in order to publish a key pair. So this in memory authority is created just
-                // in order to use its key pair to key store facility.
-                val authority = CertificateAuthorityFactory.createMemoryAuthority(algo.signatureScheme())
-                val keyStore = authority.asKeyStore("identity")
-                keyStoreFile.outputStream().use {
-                    keyStore.store(it, PASSWORD.toCharArray())
+    private fun identityKeyFilePair(name: String): Pair<File, File> {
+        val privateKeyFile = File(keyStoreDir.absolutePath, "$name.identity.private.key.pem")
+        val publicKeyFile = File(keyStoreDir.absolutePath, "$name.identity.public.key.pem")
+        if (!privateKeyFile.exists()) {
+            privateKeyFile.parentFile.mkdirs()
+            val signatureSchemeTemplate = algo.signatureScheme()
+            val keysFactory = KeyPairGenerator.getInstance(signatureSchemeTemplate.algorithmName, BouncyCastleProvider())
+            if (signatureSchemeTemplate.algSpec != null) {
+                keysFactory.initialize(signatureSchemeTemplate.algSpec)
+            }
+            val pair = keysFactory.generateKeyPair()
+
+            privateKeyFile.writer().use { writer ->
+                JcaPEMWriter(writer).use {
+                    it.writeObject(pair)
+                }
+            }
+            publicKeyFile.writer().use { writer ->
+                JcaPEMWriter(writer).use {
+                    it.writeObject(pair.public)
                 }
             }
         }
+        return privateKeyFile to publicKeyFile
     }
-    private val keyStoreFile by lazy {
-        keyStoreFile(host)
+    private fun publicKeyFile(name: String): File {
+        return identityKeyFilePair(name).second
+    }
+    private fun privateKeyFile(name: String): File {
+        return identityKeyFilePair(name).first
     }
 
     private val tenantId by lazy {
@@ -125,13 +139,13 @@ class ConfigureAll : Runnable {
     }
 
     private fun createSslKeys(host: String) {
-        val keyStoreFile = File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks")
+        val sslPrivateKeyFile = File(keyStoreDir.absolutePath, "$host.ssl.keystore.pem")
         val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.pem")
         val tlsCertificates = File(keyStoreDir.absolutePath, "$host.tlsCertificates.pem")
-        if ((!keyStoreFile.exists()) || (!trustStoreFile.exists())) {
+        if ((!sslPrivateKeyFile.exists()) || (!trustStoreFile.exists())) {
             keyStoreDir.mkdirs()
             val creator = CreateStores(
-                sslStoreFile = keyStoreFile,
+                sslPrivateKeyFile = sslPrivateKeyFile,
                 trustStoreFile = trustStoreFile,
                 tlsCertificates = tlsCertificates,
                 trustStoreLocation = if (trustStoreType == Deploy.TrustStoreType.TINY_CERT) {
@@ -144,8 +158,8 @@ class ConfigureAll : Runnable {
         }
     }
 
-    private val sslKeyStore by lazy {
-        File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks").also {
+    private val sslPrivateKeyFile by lazy {
+        File(keyStoreDir.absolutePath, "$host.ssl.keystore.pem").also {
             if (!it.exists()) {
                 createSslKeys(host)
             }
@@ -169,37 +183,30 @@ class ConfigureAll : Runnable {
                 "x500name" to x500name,
                 "groupId" to groupId,
                 "data" to mapOf(
-                    "publicKeyStoreFile" to keyStoreFile.absolutePath,
-                    "publicKeyAlias" to "identity",
-                    "keystorePassword" to PASSWORD,
+                    "publicKey" to publicKeyFile(host).readText(),
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
-                    "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                    "trustRootCertificates" to listOf(trustStoreFile.absolutePath),
                 )
             )
 
-        val configurationMap = mapOf(
-            "membersToAdd" to listOf(entry),
-            "membersToDelete" to emptyList(),
-            "groupsToAdd" to emptyList(),
-            "groupsToDelete" to emptyList(),
-        )
-        jsonWriter.writeValue(configurationFile, configurationMap)
+        jsonWriter.writeValue(configurationFile, entry)
         namespaces.keys.forEach { nameSpace ->
             println("Publishing $namespaceName to $nameSpace")
             RunJar(
-                "network-map-creator",
+                "p2p-setup",
                 listOf(
-                    "network-map",
-                    "--netmap-file", configurationFile.absolutePath, "--kafka",
-                    RunJar.kafkaFile(nameSpace).absolutePath
+                    "-k",
+                    RunJar.kafkaServers(nameSpace),
+                    "add-member",
+                    configurationFile.absolutePath
                 )
             ).run()
         }
     }
 
-    private fun publishGroup() {
+    private fun groupCommands(): Collection<String> {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
         }
@@ -208,28 +215,18 @@ class ConfigureAll : Runnable {
             "data" to mapOf(
                 "networkType" to "CORDA_5",
                 "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
-                "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
+                "trustRootCertificates" to listOf(trustStoreFile.readText()),
             )
         )
-        val configurationMap = mapOf(
-            "membersToAdd" to emptyList(),
-            "membersToDelete" to emptyList(),
-            "groupsToAdd" to listOf(entriesToAdd),
-            "groupsToDelete" to emptyList(),
+        jsonWriter.writeValue(configurationFile, entriesToAdd)
+
+        return listOf(
+            "add-group",
+            configurationFile.absolutePath
         )
-        jsonWriter.writeValue(configurationFile, configurationMap)
-        println("Publishing groups to $namespaceName")
-        RunJar(
-            "network-map-creator",
-            listOf(
-                "network-map",
-                "--netmap-file", configurationFile.absolutePath,
-                "--kafka", RunJar.kafkaFile(namespaceName).absolutePath
-            )
-        ).run()
     }
 
-    private fun publishLocallyHostedIdentities() {
+    private fun locallyHostedIdentitiesCommands(): List<String> {
         val configurationFile = File.createTempFile("hosting-map.", ".conf").also {
             it.deleteOnExit()
         }
@@ -239,38 +236,26 @@ class ConfigureAll : Runnable {
                 "groupId" to groupId,
                 "data" to mapOf(
                     "tlsTenantId" to tenantId,
-                    "identityTenantId" to tenantId,
-                    "tlsCertificates" to listOf(tlsCertificates(host).absolutePath),
+                    "sessionKeyTenantId" to tenantId,
+                    "tlsCertificates" to listOf(tlsCertificates(host).readText()),
                 )
             )
 
-        val configurationMap = mapOf(
-            "entriesToAdd" to listOf(entry),
-            "entriesToDelete" to emptyList()
+        jsonWriter.writeValue(configurationFile, entry)
+        return listOf(
+            "add-identity",
+            configurationFile.absolutePath
         )
-        jsonWriter.writeValue(configurationFile, configurationMap)
-        println("Publishing locally hosted map")
-        RunJar(
-            "network-map-creator",
-            listOf(
-                "locally-hosted-map",
-                "--hosting-map-file", configurationFile.absolutePath, "--kafka",
-                RunJar.kafkaFile(namespaceName).absolutePath
-            )
-        ).run()
     }
 
-    private fun publishOthersToMySelf() {
-        val configurationFile = File.createTempFile("network-map.", ".conf").also {
-            it.deleteOnExit()
-        }
+    private fun othersToMySelfCommands(): List<String> {
         val otherNamespaces = namespaces.filterKeys {
             it != namespaceName
         }
         if (otherNamespaces.isEmpty()) {
-            return
+            return emptyList()
         }
-        val otherEntriesToAdd = otherNamespaces
+        return otherNamespaces
             .values
             .map { annotations ->
                 val host = annotations["host"] as String
@@ -278,109 +263,87 @@ class ConfigureAll : Runnable {
                     "x500name" to annotations["x500-name"],
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
-                        "publicKeyStoreFile" to keyStoreFile(host).absolutePath,
-                        "publicKeyAlias" to "identity",
-                        "keystorePassword" to PASSWORD,
+                        "publicKey" to publicKeyFile(host).readText(),
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
-                        "trustStoreCertificates" to listOf(trustStoreFile.absolutePath),
                     )
                 )
+            }.map { configurationMap ->
+                File.createTempFile("network-map.", ".conf").also { file ->
+                    file.deleteOnExit()
+                    jsonWriter.writeValue(file, configurationMap)
+                }
+            }.flatMap { configurationFile ->
+                listOf("add-member", configurationFile.absolutePath)
             }
-        val configurationMap = mapOf(
-            "membersToAdd" to otherEntriesToAdd,
-            "membersToDelete" to emptyList(),
-            "groupsToAdd" to emptyList(),
-            "groupsToDelete" to emptyList(),
-        )
-        jsonWriter.writeValue(configurationFile, configurationMap)
-        println("Publishing ${otherNamespaces.keys} to $namespaceName")
-        RunJar(
-            "network-map-creator",
-            listOf(
-                "network-map",
-                "--netmap-file", configurationFile.absolutePath, "--kafka",
-                RunJar.kafkaFile(namespaceName).absolutePath
-            )
-        ).run()
     }
 
-    private fun publishNetworkMap() {
-        publishMySelfToOthers()
-        publishOthersToMySelf()
-        publishGroup()
-    }
-
-    private fun publishKeys() {
-        val configurationFile = File.createTempFile("keys.", ".conf").also {
+    private fun keysCommands(): List<String> {
+        val keyStoreFile = File.createTempFile("keys.", ".conf").also {
             it.deleteOnExit()
-        }
-        val configurationMap = mapOf(
-            "keys" to listOf(
+            jsonWriter.writeValue(
+                it,
                 mapOf(
-                    "keystoreFile" to keyStoreFile.absolutePath,
-                    "password" to PASSWORD,
+                    "keys" to privateKeyFile(host).readText(),
                     "tenantId" to tenantId,
                     "publishAlias" to "$x500name.$groupId.ec",
-                ),
+                )
+            )
+        }
+        val sslKeyStoreFile = File.createTempFile("keys.", ".conf").also {
+            it.deleteOnExit()
+            jsonWriter.writeValue(
+                it,
                 mapOf(
-                    "keystoreFile" to sslKeyStore.absolutePath,
-                    "password" to PASSWORD,
+                    "keys" to sslPrivateKeyFile.readText(),
                     "tenantId" to tenantId,
                     "publishAlias" to "$host.$x500name.rsa"
                 )
-            ),
-        )
-        jsonWriter.writeValue(configurationFile, configurationMap)
-        println("Publishing keys to $namespaceName")
-        RunJar(
-            "cryptoservice-key-creator",
-            listOf(
-                "--keys-config", configurationFile.absolutePath, "--kafka",
-                RunJar.kafkaFile(namespaceName).absolutePath
             )
-        ).run()
+        }
+        return listOf(
+            "add-keys", keyStoreFile.absolutePath,
+            "add-keys", sslKeyStoreFile.absolutePath,
+        )
     }
 
-    private fun configureLinkManager() {
-        println("Configure link manager of $namespaceName")
-        RunJar(
-            "p2p-configuration-publisher",
-            listOf(
-                "-k",
-                RunJar.kafkaServers(namespaceName),
-                "link-manager",
-            ) + linkManagerExtraArguments
-        ).run()
-    }
-
-    private fun configureGateway() {
-        println("Configure gateway of $namespaceName")
+    private fun configurationCommands(): Collection<String> {
         val gatewayArguments = if (trustStoreType == Deploy.TrustStoreType.LOCAL) {
             gatewayArguments
         } else {
             // Adding revocationCheck when using TinyCert to allow CRL usage
             gatewayArguments + "--revocationCheck=HARD_FAIL"
         }
-        RunJar(
-            "p2p-configuration-publisher",
+        return listOf(
+            "config-link-manager"
+        ) + linkManagerExtraArguments +
             listOf(
-                "-k",
-                RunJar.kafkaServers(namespaceName),
-                "gateway",
+                "config-gateway",
                 "--hostAddress=0.0.0.0",
                 "--port=${Port.Gateway.port}",
             ) + gatewayArguments
-        ).run()
+    }
+
+    private fun setUp() {
+        val commands = locallyHostedIdentitiesCommands() +
+            othersToMySelfCommands() + groupCommands() +
+            keysCommands() + configurationCommands()
+
+        println("Setting up...")
+        RunJar(
+            "p2p-setup",
+            listOf(
+                "-k",
+                RunJar.kafkaServers(namespaceName)
+            ) + commands
+        )
+            .run()
     }
 
     override fun run() {
         RunJar.startTelepresence()
-        publishLocallyHostedIdentities()
-        publishNetworkMap()
-        publishKeys()
-        configureLinkManager()
-        configureGateway()
+        publishMySelfToOthers()
+        setUp()
     }
 }

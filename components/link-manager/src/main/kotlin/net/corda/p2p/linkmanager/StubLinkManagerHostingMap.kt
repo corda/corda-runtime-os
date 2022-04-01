@@ -97,12 +97,12 @@ class StubLinkManagerHostingMap(
     }
 
     private fun addEntry(entry: HostedIdentityEntry) {
-        locallyHostedIdentityToTenantId[entry.holdingIdentity.toHoldingIdentity()] = entry.identityTenantId
+        locallyHostedIdentityToTenantId[entry.holdingIdentity.toHoldingIdentity()] = entry.sessionKeyTenantId
         val info = HostingMapListener.IdentityInfo(
             holdingIdentity = entry.holdingIdentity,
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
-            identityTenantId = entry.identityTenantId
+            sessionKeyTenantId = entry.sessionKeyTenantId
         )
         listeners.forEach {
             it.identityAdded(info)

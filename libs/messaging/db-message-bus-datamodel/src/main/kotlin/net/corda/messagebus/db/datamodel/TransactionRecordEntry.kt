@@ -40,4 +40,8 @@ class TransactionRecordEntry(
         result = 31 * result + state.hashCode()
         return result
     }
+
+    override fun toString(): String {
+        return "TransactionRecordEntry(transactionId='$transactionId', state=$state)"
+    }
 }

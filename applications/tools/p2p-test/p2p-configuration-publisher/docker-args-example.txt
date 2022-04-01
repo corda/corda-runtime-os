@@ -1,7 +1,0 @@
-# An example of an arguments file that can be used to configure the gateway from docker
-gateway
---keyStore /keystore.jks
---keyStorePassword password
---trustStore /truststore.jks
---trustStorePassword password
---port 3123

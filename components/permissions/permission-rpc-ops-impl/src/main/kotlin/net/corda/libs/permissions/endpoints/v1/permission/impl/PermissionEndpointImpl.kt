@@ -14,7 +14,7 @@ import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,8 +27,8 @@ import org.osgi.service.component.annotations.Reference
 class PermissionEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PermissionServiceComponent::class)
-    private val permissionServiceComponent: PermissionServiceComponent
+    @Reference(service = PermissionManagementService::class)
+    private val permissionManagementService: PermissionManagementService,
 ) : PermissionEndpoint, PluggableRPCOps<PermissionEndpoint>, Lifecycle {
 
     private companion object {
@@ -47,7 +47,7 @@ class PermissionEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val createPermissionResult = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val createPermissionResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
             createPermission(createPermissionType.convertToDto(principal))
         }
 
@@ -58,7 +58,7 @@ class PermissionEndpointImpl @Activate constructor(
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
-        val permissionResponseDto = withPermissionManager(permissionServiceComponent.permissionManager, logger) {
+        val permissionResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getPermission(GetPermissionRequestDto(principal, id))
         }
 

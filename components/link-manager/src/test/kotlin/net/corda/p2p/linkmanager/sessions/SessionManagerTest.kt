@@ -40,7 +40,7 @@ import net.corda.p2p.linkmanager.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.test.stub.crypto.processor.CouldNotFindPrivateKey
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
@@ -84,6 +84,7 @@ class SessionManagerTest {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
+        const val SESSIONS_PER_COUNTERPARTIES = 2
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
@@ -130,6 +131,7 @@ class SessionManagerTest {
         sessionManager.stop()
         loggingInterceptor.reset()
         resources.close()
+        outboundSessionPool.close()
     }
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
@@ -171,6 +173,7 @@ class SessionManagerTest {
         on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
+    private val counterparties = SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
     private val linkManagerHostingMap = mock<LinkManagerHostingMap> {
         on { getTenantId(any()) } doReturn "id"
     }
@@ -179,21 +182,28 @@ class SessionManagerTest {
     }
     private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
     private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
-    private val protocolInitiator = mock<AuthenticationProtocolInitiator>()
+    private val protocolInitiator = mock<AuthenticationProtocolInitiator> {
+        on { sessionId } doReturn "sessionId"
+    }
+    private val secondProtocolInitiator = mock<AuthenticationProtocolInitiator> {
+        on { sessionId } doReturn "anotherSessionId"
+    }
     private val protocolResponder = mock<AuthenticationProtocolResponder>()
     private val protocolFactory = mock<ProtocolFactory> {
-        on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator
+        on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator doReturn secondProtocolInitiator
         on { createResponder(any(), any(), any()) } doReturn protocolResponder
     }
     private val resources = ResourcesHolder()
 
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
+    private val outboundSessionPool = Mockito.mockConstruction(OutboundSessionPool::class.java)
 
     private val sessionManager = SessionManagerImpl(
         groups,
         members,
         cryptoService,
         pendingSessionMessageQueues,
+        mock(),
         mock(),
         mock(),
         mock(),
@@ -205,7 +215,10 @@ class SessionManagerTest {
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+            SessionManagerImpl.SessionManagerConfig(
+                MAX_MESSAGE_SIZE,
+                SESSIONS_PER_COUNTERPARTIES
+            ),
             null,
             mock(),
         )
@@ -246,51 +259,37 @@ class SessionManagerTest {
 
     @Test
     fun `when no session exists, processing outbound message creates a new session`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-        assertThat(sessionState.sessionInitMessage.payload).isEqualTo(initiatorHello)
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionsNeeded
+        assertThat(sessionState.messages).extracting<Any> {
+            it.second.payload
+        }.containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
 
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
-            verify(sessionReplayer).addMessageForReplay(
+            verify(sessionReplayer, times(2)).addMessageForReplay(
                 any(),
                 this.capture(),
-                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
+                eq(counterparties)
             )
-            assertThat(this.allValues.size).isEqualTo(1)
-            assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
-            assertThat(this.firstValue.dest).isEqualTo(PEER_PARTY)
-            assertThat(this.firstValue.message).isEqualTo(initiatorHello)
+            assertThat(this.allValues.size).isEqualTo(2)
+            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.source }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.dest }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
+                .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
         }
     }
 
     @Test
-    fun `when no session exists, if network type is missing from network map no message is sent`() {
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
-
-        val sessionState = sessionManager.processOutboundMessage(message)
-        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
-                " The sessionInit message was not sent.")
-    }
-
-    @Test
-    fun `when no session exists, if protocol mode is missing from network map no message is sent`() {
-        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
-
-        val sessionState = sessionManager.processOutboundMessage(message)
-        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
-                " The sessionInit message was not sent.")
-    }
-
-    @Test
     fun `when no session exists, if source member info is missing from network map no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         whenever(members.getMemberInfo(OUR_PARTY)).thenReturn(null)
-
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
@@ -300,23 +299,28 @@ class SessionManagerTest {
 
     @Test
     fun `when no session exists, if destination member info is missing from network map no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
         whenever(members.getMemberInfo(PEER_PARTY)).thenReturn(null)
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
 
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
-            verify(sessionReplayer).addMessageForReplay(
+            verify(sessionReplayer, times(2)).addMessageForReplay(
                 any(),
                 this.capture(),
-                any()
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
             )
-            assertThat(this.allValues.size).isEqualTo(1)
-            assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
-            assertThat(this.firstValue.dest).isEqualTo(PEER_PARTY)
-            assertThat(this.firstValue.message).isEqualTo(initiatorHello)
+            assertThat(this.allValues.size).isEqualTo(2)
+            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.source }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.dest }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
+                .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
         }
 
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
@@ -324,9 +328,43 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when messages already queued for a peer, there is already a pending session`() {
+    fun `when no session exists, if network type is missing from network map no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
+        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
+
+        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
+                " The sessionInit message was not sent.")
+    }
+
+    @Test
+    fun `when no session exists, if protocol mode is missing from network map no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
+        whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
+
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
+        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
+        loggingInterceptor.assertSingleWarning("Could not find the group information in the GroupPolicyProvider for groupId $GROUP_ID." +
+                " The sessionInit message was not sent.")
+    }
+
+    @Test
+    fun `when messages already queued for a peer, there is already a pending session`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.SessionPending)
         sessionManager.processOutboundMessage(message)
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
@@ -334,40 +372,44 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when messages already queued for a peer, if we applyNewConfiguration then NewSessionNeeded`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-        sessionManager.processOutboundMessage(message)
-        val sessionState = sessionManager.processOutboundMessage(message)
-        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
+    fun `when we applyNewConfiguration, then all queues are destroyed and the outbound session pool is cleared`() {
+        val sessionIds = listOf("firstSession", "anotherSession")
+        whenever(outboundSessionPool.constructed().first().getAllSessionIds()).thenReturn(sessionIds)
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
-            null,
+            SessionManagerImpl.SessionManagerConfig(
+                MAX_MESSAGE_SIZE,
+                SESSIONS_PER_COUNTERPARTIES
+            ),
+            SessionManagerImpl.SessionManagerConfig(
+                MAX_MESSAGE_SIZE,
+                SESSIONS_PER_COUNTERPARTIES
+            ),
             mock(),
         )
-        val sessionStateAfterUpdate = sessionManager.processOutboundMessage(message)
-        assertThat(sessionStateAfterUpdate).isInstanceOf(NewSessionNeeded::class.java)
-        //Once when we first get a config, once when config is updated
-        verify(pendingSessionMessageQueues, times(2)).destroyAllQueues()
+        verify(pendingSessionMessageQueues, times(1)).destroyAllQueues()
+        verify(outboundSessionPool.constructed().first(), times(1)).clearPool()
+        publisherWithDominoLogicByClientId["session-manager"]!!.forEach { publisher ->
+            verify(publisher).publish(sessionIds.map { Record(SESSION_OUT_PARTITIONS, it, null)}.toList())
+        }
     }
 
     @Test
     fun `when session is established with a peer, it is returned when processing a new message for the same peer`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(protocolInitiator.getSession()).thenReturn(session)
-        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+        val session = mock<Session> {
+            on { sessionId } doReturn "sessionId"
+        }
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.SessionActive(session)
+        )
+        whenever(outboundSessionPool.constructed().first().getSession(session.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.ActiveSession(counterparties, session)
+        )
 
         val newSessionState = sessionManager.processOutboundMessage(message)
         assertThat(newSessionState).isInstanceOfSatisfying(SessionManager.SessionState.SessionEstablished::class.java) {
             assertThat(it.session).isEqualTo(session)
         }
-        assertThat(sessionManager.getSessionById(sessionState.sessionId))
+        assertThat(sessionManager.getSessionById(session.sessionId))
             .isInstanceOfSatisfying(SessionManager.SessionDirection.Outbound::class.java) {
                 assertThat(it.session).isEqualTo(session)
             }
@@ -375,7 +417,11 @@ class SessionManagerTest {
 
     @Test
     fun `when no session exists for a session id, get session returns nothing`() {
-        assertThat(sessionManager.getSessionById("some-session-id")).isInstanceOf(SessionManager.SessionDirection.NoSession::class.java)
+        val sessionId = "some-session-id"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            null
+        )
+        assertThat(sessionManager.getSessionById(sessionId)).isInstanceOf(SessionManager.SessionDirection.NoSession::class.java)
     }
 
     @Test
@@ -461,25 +507,27 @@ class SessionManagerTest {
 
     @Test
     fun `when responder hello is received with an existing session, an initiator handshake is returned`() {
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
         verify(sessionReplayer).removeMessageFromReplay(
-            "${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
-            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+            "${sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            counterparties
         )
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer).addMessageForReplay(
-                eq("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"),
+                eq("${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"),
                 this.capture(),
-                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
+                eq(counterparties)
             )
             assertThat(this.allValues.size).isEqualTo(1)
             assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
@@ -490,88 +538,96 @@ class SessionManagerTest {
 
     @Test
     fun `when responder hello is received, but our member info is missing from network map, message is dropped`() {
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
         whenever(members.getMemberInfo(OUR_PARTY)).thenReturn(null)
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} but cannot find public key for our identity $OUR_PARTY. The message was discarded.")
+        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId but " +
+                "cannot find public key for our identity $OUR_PARTY. The message was discarded.")
     }
 
     @Test
     fun `when responder hello is received, but peer's member info is missing from network map, message is dropped`() {
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
         whenever(members.getMemberInfo(PEER_PARTY)).thenReturn(null)
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} from peer $PEER_PARTY which is not in the members map. The message was discarded.")
+        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId from " +
+                "peer $PEER_PARTY which is not in the members map. The message was discarded.")
     }
 
     @Test
     fun `when responder hello is received, but private key cannot be found to sign, message is dropped`() {
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any()))
             .thenThrow(CouldNotFindPrivateKey())
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("The ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} was discarded.")
+        loggingInterceptor.assertSingleWarningContains("The ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId was" +
+                " discarded.")
     }
 
     @Test
     fun `when responder hello is received, but tenant ID cannot be found to sign, message is dropped`() {
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        whenever(linkManagerHostingMap.getTenantId(any())).thenReturn(null)
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
+        whenever(linkManagerHostingMap.getTenantId(any())).thenReturn(null)
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains(
-            "Received ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} but $OUR_PARTY has no tenant ID." +
-                " The message was discarded."
-        )
+        loggingInterceptor.assertSingleWarningContains("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId "
+                + "but $OUR_PARTY has no tenant ID. The message was discarded.")
     }
 
     @Test
     fun `when responder hello is received, but network type is missing from network map, message is dropped`() {
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
         whenever(groups.getGroupInfo(GROUP_ID)).thenReturn(null)
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
         assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the " +
-                "GroupPolicyProvider for groupId $GROUP_ID." +
-                " The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionState.sessionId} was discarded.")
+        loggingInterceptor.assertSingleWarningContains("Could not find the group information in the GroupPolicyProvider for groupId " +
+            "$GROUP_ID. The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionId} was discarded.")
     }
 
     @Test
@@ -648,10 +704,11 @@ class SessionManagerTest {
         ) {
             assertThat(it.session).isEqualTo(session)
         }
+        sessionManager.inboundSessionEstablished(sessionId)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
-            null,
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, SESSIONS_PER_COUNTERPARTIES),
+            mock(),
             mock(),
         )
         assertThat(sessionManager.getSessionById(sessionId)).isEqualTo(SessionManager.SessionDirection.NoSession)
@@ -849,52 +906,21 @@ class SessionManagerTest {
 
     @Test
     fun `when responder handshake is received, no message is returned and session is established`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(protocolInitiator.getSession()).thenReturn(session)
-        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
-
-        assertThat(sessionManager.getSessionById(sessionState.sessionId))
-            .isInstanceOfSatisfying(SessionManager.SessionDirection.Outbound::class.java) {
-                assertThat(it.session).isEqualTo(session)
-            }
-        verify(sessionReplayer).removeMessageFromReplay(
-            "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
-            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
-        verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(sessionManager,
-                SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
-                session,
-                groups, members
-            )
-    }
 
-    @Test
-    fun `when applyNewConfiguration, after the outbound session is established, the session is removed`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         val session = mock<Session>()
         whenever(protocolInitiator.getSession()).thenReturn(session)
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
-        assertThat(sessionManager.getSessionById(sessionState.sessionId))
-            .isInstanceOfSatisfying(SessionManager.SessionDirection.Outbound::class.java) {
-                assertThat(it.session).isEqualTo(session)
-            }
+        verify(outboundSessionPool.constructed().first()).updateAfterSessionEstablished(session)
         verify(sessionReplayer).removeMessageFromReplay(
-            "${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            "${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
@@ -902,18 +928,9 @@ class SessionManagerTest {
                 sessionManager,
                 SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY),
                 session,
-                groups, members
+                groups,
+                members
             )
-
-        configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
-            null,
-            mock(),
-        )
-        assertThat(sessionManager.getSessionById(sessionState.sessionId)).isEqualTo(SessionManager.SessionDirection.NoSession)
-        publisherWithDominoLogicByClientId["session-manager"]!!.forEach {
-            verify(it).publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
-        }
     }
 
     @Test
@@ -929,28 +946,28 @@ class SessionManagerTest {
 
     @Test
     fun `when responder handshake is received, but peer's member info is missing from network map, the message is dropped`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         whenever(members.getMemberInfo(PEER_PARTY)).thenReturn(null)
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
-                "${sessionState.sessionId} from peer $PEER_PARTY which is not in the members map. The message was discarded.")
+        loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId " +
+                "from peer $PEER_PARTY which is not in the members map. The message was discarded.")
     }
 
     @Test
     fun `when responder handshake is received, but validation fails due to invalid key hash, the message is dropped`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         whenever(
             protocolInitiator.validatePeerHandshakeMessage(
@@ -966,12 +983,12 @@ class SessionManagerTest {
 
     @Test
     fun `when responder handshake is received, but validation fails due to invalid handshake, the message is dropped`() {
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         whenever(
             protocolInitiator.validatePeerHandshakeMessage(
@@ -998,13 +1015,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1014,17 +1032,23 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().last().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.SessionPending
+        )
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-        assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
+        verify(outboundSessionPool.constructed().last()).replaceSession(sessionId, protocolInitiator)
+
         sessionManager.stop()
         resourceHolder.close()
     }
@@ -1041,13 +1065,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1060,20 +1085,31 @@ class SessionManagerTest {
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        sessionManager.processOutboundMessage(message)
+        whenever(outboundSessionPool.constructed().last().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+        val header = CommonHeader(
+            MessageType.RESPONDER_HANDSHAKE,
+            1,
+            protocolInitiator.sessionId,
+            4,
+            Instant.now().toEpochMilli()
+        )
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         val session = mock<Session>()
         whenever(protocolInitiator.getSession()).thenReturn(session)
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
-        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-        assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
+        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null)))
 
         sessionManager.stop()
         resourceHolder.close()
@@ -1099,13 +1135,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1123,22 +1160,31 @@ class SessionManagerTest {
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        sessionManager.processOutboundMessage(message)
+        whenever(outboundSessionPool.constructed().last().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
 
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(protocolInitiator.getSession()).thenReturn(session)
+        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
+        whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
-
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.SessionActive(authenticatedSession)
+        )
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-        assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
+        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null)))
         sessionManager.stop()
         resourcesHolder.close()
 
@@ -1169,13 +1215,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1189,24 +1236,13 @@ class SessionManagerTest {
             }
         }
         sessionManager.start()
-
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
-        whenever(authenticatedSession.createMac(any())).thenReturn(AuthenticationResult(
-            CommonHeader(MessageType.DATA, 1, sessionState.sessionId, 5, Instant.now().toEpochMilli()),
-            RANDOM_BYTES.array()
-        ))
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(protocolInitiator.getSession()).thenReturn(session)
-        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
-
-        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
+        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
         sessionManager.dataMessageSent(authenticatedSession)
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
@@ -1245,13 +1281,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1266,44 +1303,35 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
-        whenever(authenticatedSession.createMac(any())).thenReturn(
-            AuthenticationResult(
-                CommonHeader(MessageType.DATA, 1, sessionState.sessionId, 5, Instant.now().toEpochMilli()),
-                RANDOM_BYTES.array()
-            )
-        )
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(protocolInitiator.getSession()).thenReturn(session)
-        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
-
-        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
+        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
         sessionManager.dataMessageSent(authenticatedSession)
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
-            null,
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1),
             resourcesHolder,
         )
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         assertThat(linkOutMessages).isEqualTo(2)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, authenticatedSession.sessionId, null)))
 
         resourcesHolder.close()
         sessionManager.stop()
     }
+
     @Test
     fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
         val resourcesHolder = ResourcesHolder()
@@ -1326,13 +1354,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1347,41 +1376,30 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-
-        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
-        whenever(authenticatedSession.createMac(any())).thenReturn(AuthenticationResult(
-            CommonHeader(MessageType.DATA, 1, sessionState.sessionId, 5, Instant.now().toEpochMilli()),
-            RANDOM_BYTES.array()
-        ))
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(protocolInitiator.getSession()).thenReturn(session)
-        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
-
-        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-
+        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
+        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
         sessionManager.dataMessageSent(authenticatedSession)
+
         // sum of heartbeats extending over the session timeout
         val numberOfHeartbeats = configWithHeartbeat.let {
             (2 * (it.sessionTimeout.toMillis() / it.heartbeatPeriod.toMillis())).toInt()
         }
         repeat(numberOfHeartbeats) {
             mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
-            sessionManager.messageAcknowledged(sessionState.sessionId)
+            sessionManager.messageAcknowledged(protocolInitiator.sessionId)
         }
         assertThat(messages).hasSize(numberOfHeartbeats)
-        synchronized(messages) {
-            for (message in messages) {
-                val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
-                assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
-            }
+        for (message in messages) {
+            val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
+            assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
         }
-        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
         sessionManager.stop()
         resourcesHolder.close()
@@ -1410,13 +1428,14 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
+            linkManagerHostingMap,
             protocolFactory,
             sessionReplayer,
             mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
                 null,
                 mock(),
             )
@@ -1426,12 +1445,14 @@ class SessionManagerTest {
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { publish() }
         }
-
         sessionManager.start()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        val sessionState = sessionManager.processOutboundMessage(message)
-        whenever(authenticatedSession.sessionId).thenReturn((sessionState as NewSessionNeeded).sessionId)
-
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
+        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
         sessionManager.dataMessageSent(authenticatedSession)
 
         repeat(3) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }

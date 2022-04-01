@@ -9,70 +9,100 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description 'Kafka Messaging Patterns Test'
-
-sourceSets {
-    kafkaIntegrationTest {
-        kotlin {
-            srcDirs = [ 'src/kafka-integration-test/kotlin' ]
-        }
-        resources {
-            srcDirs = [ 'src/kafka-integration-test/resources' ]
-        }
-    }
-}
+description 'Messaging Patterns Test'
 
 configurations {
-    kafkaIntegrationTestApi.extendsFrom integrationTestApi
-    kafkaIntegrationTestCompileOnly.extendsFrom integrationTestCompileOnly
-    kafkaIntegrationTestImplementation.extendsFrom integrationTestImplementation
     kafkaIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+
+    dbIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeClasspath
 }
 
 dependencies {
-    kafkaIntegrationTestCompileOnly 'org.osgi:osgi.core'
-    kafkaIntegrationTestCompileOnly 'org.osgi:org.osgi.service.component.annotations'
+    integrationTestCompileOnly 'org.osgi:osgi.core'
+    integrationTestCompileOnly 'org.osgi:org.osgi.service.component.annotations'
+    integrationTestImplementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    kafkaIntegrationTestImplementation project(":components:kafka-topic-admin")
+    integrationTestImplementation project(":components:kafka-topic-admin")
 
-    kafkaIntegrationTestImplementation project(":libs:configuration:configuration-core")
-    kafkaIntegrationTestImplementation project(":libs:messaging:messaging")
-    kafkaIntegrationTestImplementation project(":libs:messaging:messaging-impl")
-    kafkaIntegrationTestImplementation project(":libs:lifecycle:lifecycle")
-    kafkaIntegrationTestImplementation project(":libs:schema-registry:schema-registry")
-    kafkaIntegrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(":libs:configuration:configuration-core")
+    integrationTestImplementation project(":libs:lifecycle:lifecycle")
+    integrationTestImplementation project(":libs:messaging:messaging")
+    integrationTestImplementation project(":libs:messaging:messaging-impl")
+    integrationTestImplementation project(":libs:messaging:topic-admin")
+    integrationTestImplementation project(":libs:schema-registry:schema-registry")
+    integrationTestImplementation project(":testing:test-utilities")
 
-    kafkaIntegrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
-    kafkaIntegrationTestImplementation "net.corda:corda-avro-schema"
-    kafkaIntegrationTestImplementation "net.corda:corda-base"
-    kafkaIntegrationTestImplementation 'net.corda:corda-topic-schema'
-    kafkaIntegrationTestImplementation 'net.corda:corda-config-schema'
-    kafkaIntegrationTestImplementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
+    integrationTestImplementation "net.corda:corda-avro-schema"
+    integrationTestImplementation "net.corda:corda-base"
+    integrationTestImplementation 'net.corda:corda-config-schema'
+    integrationTestImplementation 'net.corda:corda-topic-schema'
 
-    kafkaIntegrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
-    kafkaIntegrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    kafkaIntegrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    kafkaIntegrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    kafkaIntegrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
+    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
+    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    integrationTestImplementation "javax.persistence:javax.persistence-api"
+
+    integrationTestImplementation project(":components:kafka-topic-admin")
+    integrationTestImplementation 'net.corda:corda-db-schema'
+    integrationTestImplementation project(":libs:db:db-core")
+    integrationTestImplementation project(":libs:db:db-admin")
+    integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:db:db-orm")
+    integrationTestImplementation project(":libs:db:db-orm-impl")
+    integrationTestImplementation project(":libs:messaging:db-message-bus-datamodel")
+    integrationTestImplementation project(":testing:db-testkit")
+    integrationTestImplementation project(":libs:messaging:topic-admin")
 
     //runtime implementation dependencies
-    kafkaIntegrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
-    kafkaIntegrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
-    kafkaIntegrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+
+    kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-topic-admin-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-message-bus-impl")
-    kafkaIntegrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
-    kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-    kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    kafkaIntegrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    dbIntegrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
+    dbIntegrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
+    dbIntegrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    dbIntegrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
-def resolve = tasks.register('resolve', Resolve) {
-    dependsOn jar, kafkaTestingBundle
-    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = file('test.bndrun')
-    outputBndrun = layout.buildDirectory.file('resolved-test.bndrun')
+def testingBundle = tasks.register('testingBundle', Bundle) {
+    archiveClassifier = 'tests'
+    from sourceSets.integrationTest.output
+    sourceSet = sourceSets.integrationTest
+
+    bnd """\
+Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
+    Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+"""
+}
+
+def dbResolve = tasks.register('dbResolve', Resolve) {
+    dependsOn jar, testingBundle
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.dbIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
+    bndrun = file('test.db.bndrun')
+    outputBndrun = layout.buildDirectory.file('resolved-test.db.bndrun')
+    doFirst {
+        //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+        System.setProperty('bnd.home.dir', "$rootDir/bnd/")
+    }
+}
+
+def kafkaResolve = tasks.register('kafkaResolve', Resolve) {
+    dependsOn jar, testingBundle
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.kafkaIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
+    bndrun = file('test.kafka.bndrun')
+    outputBndrun = layout.buildDirectory.file('resolved-test.kafka.bndrun')
     doFirst {
         //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
         System.setProperty('bnd.home.dir', "$rootDir/bnd/")
@@ -86,21 +116,33 @@ tasks.register('kafkaIntegrationTest', TestOSGi) {
         languageVersion = of(11)
     }
     resultsDirectory = file("$testResultsDir/kafkaIntegrationTest")
-    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = resolve.flatMap { it.outputBndrun }
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.kafkaIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
+    bndrun = kafkaResolve.flatMap { it.outputBndrun }
 }
 
-def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
-    archiveClassifier = 'tests'
-    from sourceSets.kafkaIntegrationTest.output
-    sourceSet = sourceSets.kafkaIntegrationTest
+tasks.register('dbIntegrationTest', TestOSGi) {
+    description = "Runs DB Message Bus OSGi integration tests."
+    group = "verification"
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = of(11)
+    }
+    resultsDirectory = file("$testResultsDir/dbIntegrationTest")
+    bundles = files(configurations.integrationTestRuntimeClasspath, configurations.dbIntegrationTestRuntimeOnly, configurations.archives.artifacts.files)
+    bndrun = dbResolve.flatMap { it.outputBndrun }
+}
 
-    bnd """\
-Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-    Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE} 
-"""
+tasks.named('integrationTest') {
+    // By default this is expected to run against the in-memory db, effectively
+    // running an in-mem version of the message pattern tests
+    dependsOn dbIntegrationTest
+    enabled = false
+}
+
+tasks.named('check') {
+    // We'll need to figure out how to check kafka when we know a broker is available
+    dependsOn dbIntegrationTest
 }
 
 artifacts {
-    archives kafkaTestingBundle
+    archives testingBundle
 }

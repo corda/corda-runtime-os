@@ -1,0 +1,16 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-base"
+    implementation project(":libs:messaging:message-bus")
+}
+
+description 'Topic Util API'

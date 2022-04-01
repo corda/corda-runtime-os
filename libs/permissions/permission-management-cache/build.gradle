@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Definition of the Permission Management Cache.'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api "net.corda:corda-avro-schema"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    api project(":libs:lifecycle:lifecycle")
+    api project(":libs:permissions:permission-cache-common")
+}

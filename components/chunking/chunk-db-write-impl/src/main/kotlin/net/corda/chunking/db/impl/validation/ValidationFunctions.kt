@@ -115,8 +115,8 @@ class ValidationFunctions(
      * @throws CordaRuntimeException if there is no group policy json.
      * @return `groupId`
      */
-    private fun getGroupId(cpi: CPI): String {
-        if (cpi.metadata.groupPolicy == null) throw ValidationException("CPI is missing a group policy file")
+    fun getGroupId(cpi: CPI): String {
+        if (cpi.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
         return GroupPolicyParser.groupId(cpi.metadata.groupPolicy!!)
     }
 

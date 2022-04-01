@@ -1,0 +1,2 @@
+1. Expose the RPC endpoint on localhost by running this command:
+kubectl port-forward --namespace {{ .Release.Namespace }} deployment/{{ include "corda.fullname" . }}-rpc-worker 8888
