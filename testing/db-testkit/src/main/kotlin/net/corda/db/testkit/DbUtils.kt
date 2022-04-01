@@ -66,8 +66,8 @@ object DbUtils {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
-        // reduce poolsize to 2 when testing
-        return PostgresDataSourceFactory().create(jdbcUrl, user, password, maximumPoolSize = 2)
+        // reduce poolsize when testing
+        return PostgresDataSourceFactory().create(jdbcUrl, user, password, maximumPoolSize = 5)
     }
 
     fun createConfig(inMemoryDbName: String, dbUser:String? = null, dbPassword: String? = null): Config {
