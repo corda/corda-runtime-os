@@ -2,6 +2,7 @@ package net.corda.membership.httprpc.v1
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
@@ -26,11 +27,12 @@ interface MemberLookupRpcOps : RpcOps {
      * @return The known information of ACTIVE members.
      */
     @HttpRpcGET(
+        path = "{holdingIdentityId}",
         description = "Lists the active members in the membership group."
     )
     @Suppress("LongParameterList")
     fun lookup(
-        @HttpRpcQueryParameter(description = "ID of the holding identity to be checked.")
+        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
         holdingIdentityId: String,
         @HttpRpcQueryParameter(
             name = "cn",
