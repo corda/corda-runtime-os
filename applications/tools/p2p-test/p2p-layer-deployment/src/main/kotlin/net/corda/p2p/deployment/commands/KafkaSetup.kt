@@ -12,6 +12,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
@@ -37,7 +38,7 @@ class KafkaSetup(
             getStateAndEventStateTopic(P2P_OUT_MARKERS),
         )
         private val nonCompactedTopics = listOf(
-            "app.received_msg",
+            APP_RECEIVED_MESSAGES_TOPIC,
             LINK_IN_TOPIC,
             LINK_OUT_TOPIC,
             P2P_IN_TOPIC,
