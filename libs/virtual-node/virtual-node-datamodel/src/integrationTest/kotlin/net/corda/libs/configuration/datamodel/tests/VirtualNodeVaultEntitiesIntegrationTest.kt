@@ -11,8 +11,10 @@ import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import javax.persistence.EntityManagerFactory
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeVaultEntitiesIntegrationTest {
     private val dbConfig = DbUtils.getEntityManagerConfiguration("vnode_vault_db")
     private val entityManagerFactory: EntityManagerFactory
