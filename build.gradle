@@ -14,7 +14,6 @@ ext.pluginsDir = "$buildDir/plugins"
 
 subprojects {
 
-    def baseVersion = "$cliHostVersion"
     if (System.getenv("RELEASE_VERSION")?.trim()) {
         version = System.getenv("RELEASE_VERSION")
     } else {
@@ -22,7 +21,7 @@ subprojects {
         if (System.getenv('VERSION_SUFFIX')) {
             versionSuffix = System.getenv('VERSION_SUFFIX')
         }
-        version = "$baseVersion$versionSuffix"
+        version = "$cliHostVersion$versionSuffix"
     }
     group = 'net.corda.cli'
 
