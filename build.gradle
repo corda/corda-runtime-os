@@ -8,6 +8,7 @@ plugins {
     id 'jacoco' // test coverage
     id 'maven-publish'
     id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
+    id 'com.r3.internal.gradle.plugins.r3-docker' apply false
 }
 
 ext.pluginsDir = "$buildDir/plugins"
