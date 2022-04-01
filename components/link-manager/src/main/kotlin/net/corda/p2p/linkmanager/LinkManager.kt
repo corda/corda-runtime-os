@@ -211,7 +211,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
-        private var isTtlExpired = false
+        //private var isTtlExpired = false
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
@@ -269,7 +269,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
-            isTtlExpired = ttlExpired(messageAndKey.message.header.ttl)
+            val isTtlExpired = ttlExpired(messageAndKey.message.header.ttl)
             logger.trace {
                 "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                         "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
@@ -279,7 +279,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return if (isTtlExpired) {
                 recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
             } else {
-                return if (isHostedLocally) {
+                if (isHostedLocally) {
                     mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
                 } else {
                     return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {

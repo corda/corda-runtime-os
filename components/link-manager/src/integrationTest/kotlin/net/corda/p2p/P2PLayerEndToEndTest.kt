@@ -205,6 +205,7 @@ class P2PLayerEndToEndTest {
             eventually(10.seconds) {
                 (1..10).forEach { messageNo ->
                     assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                    //TODO - check we receive a sent and received marker (put in both E2E tests)
                 }
             }
 
@@ -293,9 +294,15 @@ class P2PLayerEndToEndTest {
                         assertThat(msg.key.equals(i))
                     }
                     val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
-                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(initialMessages.size)
-                    assertThat(markers.filterIsInstance<TtlExpiredMarker>()).hasSize(initialMessages.size)
-                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty()
+                    assertTrue(
+                        ((markers.filterIsInstance<LinkManagerSentMarker>()).size == (initialMessages.size))
+                    )
+                    assertTrue(
+                        ((markers.filterIsInstance<TtlExpiredMarker>()).size == (initialMessages.size))
+                    )
+                    assertTrue(
+                        ((markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty())
+                    )
                 }
             }
 
