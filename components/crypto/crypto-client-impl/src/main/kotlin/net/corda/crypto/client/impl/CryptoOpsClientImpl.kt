@@ -5,7 +5,6 @@ import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys
-import net.corda.data.crypto.wire.CryptoSignature
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -17,12 +16,9 @@ import net.corda.data.crypto.wire.ops.rpc.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByAliasRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByPublicKeyRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.PublicKeyRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithAliasRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithAliasSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
@@ -61,25 +57,6 @@ internal class CryptoOpsClientImpl(
         )
         val response = request.execute(CryptoSignatureSchemes::class.java)
         return response!!.codes
-    }
-
-    fun findPublicKey(tenantId: String, alias: String): PublicKey? {
-        logger.info(
-            "Sending '{}'(tenant={},alias={})",
-            PublicKeyRpcQuery::class.java.simpleName,
-            tenantId,
-            alias
-        )
-        val request = createRequest(
-            tenantId = tenantId,
-            request = PublicKeyRpcQuery(alias)
-        )
-        val response = request.execute(CryptoPublicKey::class.java, allowNoContentValue = true)
-        return if (response != null) {
-            schemeMetadata.decodePublicKey(response.key.array())
-        } else {
-            null
-        }
     }
 
     fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
@@ -249,52 +226,6 @@ internal class CryptoOpsClientImpl(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
         )
-    }
-
-    fun sign(tenantId: String, alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
-        logger.info(
-            "Sending '{}'(tenant={},alias={})",
-            SignWithAliasRpcCommand::class.java.simpleName,
-            tenantId,
-            alias
-        )
-        val request = createRequest(
-            tenantId,
-            SignWithAliasRpcCommand(
-                alias,
-                ByteBuffer.wrap(data),
-                context.toWire()
-            )
-        )
-        val response = request.execute(CryptoSignature::class.java)
-        return response!!.bytes.array()
-    }
-
-    fun sign(
-        tenantId: String,
-        alias: String,
-        signatureSpec: SignatureSpec,
-        data: ByteArray,
-        context: Map<String, String>
-    ): ByteArray {
-        logger.info(
-            "Sending '{}'(tenant={},alias={},signatureSpec={})",
-            SignWithAliasSpecRpcCommand::class.java.simpleName,
-            tenantId,
-            alias,
-            signatureSpec
-        )
-        val request = createRequest(
-            tenantId,
-            SignWithAliasSpecRpcCommand(
-                alias,
-                signatureSpec.toWire(),
-                ByteBuffer.wrap(data),
-                context.toWire()
-            )
-        )
-        val response = request.execute(CryptoSignature::class.java)
-        return response!!.bytes.array()
     }
 
     fun signProxy(

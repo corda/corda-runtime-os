@@ -2,9 +2,6 @@ package net.corda.crypto.persistence.messaging.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.persistence.KeyValueMutator
-import net.corda.crypto.persistence.KeyValuePersistence
-import net.corda.crypto.persistence.SigningKeysPersistenceProvider
 import net.corda.crypto.persistence.config.CryptoPersistenceConfig
 import net.corda.crypto.persistence.config.signingPersistence
 import net.corda.data.crypto.persistence.SigningKeysRecord

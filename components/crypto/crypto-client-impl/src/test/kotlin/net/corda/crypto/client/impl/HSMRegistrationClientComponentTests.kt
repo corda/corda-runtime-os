@@ -86,7 +86,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
                 "Test HSM",
                 "default",
                 null,
-                listOf(CryptoConsts.Categories.LEDGER, CryptoConsts.Categories.TLS),
+                listOf(CryptoConsts.HsmCategories.LEDGER, CryptoConsts.HsmCategories.TLS),
                 11,
                 5500,
                 listOf(ECDSA_SECP256K1_CODE_NAME, ECDSA_SECP256R1_CODE_NAME, EDDSA_ED25519_CODE_NAME),
@@ -116,7 +116,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
         val result = publisher.act {
             component.assignHSM(
                 tenantId = "some-tenant",
-                category = CryptoConsts.Categories.LEDGER,
+                category = CryptoConsts.HsmCategories.LEDGER,
                 defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
             )
         }
@@ -129,7 +129,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
         val req = assertRequestContext(result, "some-tenant")
         assertEquals("some-tenant", req.context.tenantId)
         val command = assertOperationType<AssignHSMCommand>(result)
-        assertEquals (CryptoConsts.Categories.LEDGER, command.category)
+        assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
         assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
@@ -141,7 +141,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
         val result = publisher.act {
             component.assignSoftHSM(
                 tenantId = "some-tenant",
-                category = CryptoConsts.Categories.LEDGER,
+                category = CryptoConsts.HsmCategories.LEDGER,
                 passphrase = "1234",
                 defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
             )
@@ -155,7 +155,7 @@ class HSMRegistrationClientComponentTests : ComponentTestsBase<HSMRegistrationCl
         val req = assertRequestContext(result, "some-tenant")
         assertEquals("some-tenant", req.context.tenantId)
         val command = assertOperationType<AssignSoftHSMCommand>(result)
-        assertEquals (CryptoConsts.Categories.LEDGER, command.category)
+        assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
         assertEquals ("1234", command.passphrase)
         assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
         assertNotNull(command.context)

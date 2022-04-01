@@ -2,9 +2,6 @@ package net.corda.crypto.persistence.messaging.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.crypto.persistence.EntityKeyInfo
-import net.corda.crypto.persistence.KeyValueMutator
-import net.corda.crypto.persistence.KeyValuePersistence
 import java.util.concurrent.TimeUnit
 
 class MessagingKeyValuePersistence<V, E>(

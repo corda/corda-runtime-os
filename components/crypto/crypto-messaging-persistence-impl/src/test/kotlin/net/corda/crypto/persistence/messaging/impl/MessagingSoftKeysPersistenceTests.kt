@@ -1,8 +1,5 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.persistence.EntityKeyInfo
-import net.corda.crypto.persistence.KeyValuePersistence
-import net.corda.crypto.persistence.CachedSoftKeysRecord
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.schema.Schemas
 import org.junit.jupiter.api.AfterEach

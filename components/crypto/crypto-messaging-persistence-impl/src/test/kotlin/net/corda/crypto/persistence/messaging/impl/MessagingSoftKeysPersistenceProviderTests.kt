@@ -1,7 +1,6 @@
 package net.corda.crypto.persistence.messaging.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.persistence.CachedSoftKeysRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG

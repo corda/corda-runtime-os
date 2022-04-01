@@ -6,9 +6,9 @@ import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_TOPIC
-import net.corda.crypto.service.impl.ActResult
-import net.corda.crypto.service.impl.ActResultTimestamps
-import net.corda.crypto.service.impl.act
+import net.corda.crypto.service.impl._utils.ActResult
+import net.corda.crypto.service.impl._utils.ActResultTimestamps
+import net.corda.crypto.service.impl._utils.act
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue

@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.persistence.EntityKeyInfo
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout

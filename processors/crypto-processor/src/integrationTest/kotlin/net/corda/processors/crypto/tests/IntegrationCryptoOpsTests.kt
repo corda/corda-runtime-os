@@ -260,10 +260,10 @@ class IntegrationCryptoOpsTests {
 
     private fun `Should be able to get supported schemes for all categories`() {
         val categories = listOf(
-            CryptoConsts.Categories.LEDGER,
-            CryptoConsts.Categories.FRESH_KEYS,
-            CryptoConsts.Categories.AUTHENTICATION,
-            CryptoConsts.Categories.TLS
+            CryptoConsts.HsmCategories.LEDGER,
+            CryptoConsts.HsmCategories.FRESH_KEYS,
+            CryptoConsts.HsmCategories.SESSION,
+            CryptoConsts.HsmCategories.TLS
         )
         categories.forEach { category ->
             logger.info("category=$category")
@@ -275,7 +275,7 @@ class IntegrationCryptoOpsTests {
     private fun `Should generate new key pair for LEDGER`(keyAlias: String): PublicKey {
         return opsClient.generateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
+            category = CryptoConsts.HsmCategories.LEDGER,
             alias = keyAlias
         )
     }
@@ -283,7 +283,7 @@ class IntegrationCryptoOpsTests {
     private fun `Should generate new key pair for TLS`(keyAlias: String): PublicKey {
         return opsClient.generateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
+            category = CryptoConsts.HsmCategories.LEDGER,
             alias = keyAlias
         )
     }

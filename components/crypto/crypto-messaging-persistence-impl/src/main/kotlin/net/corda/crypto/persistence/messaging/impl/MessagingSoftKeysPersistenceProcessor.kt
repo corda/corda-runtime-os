@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.persistence.EntityKeyInfo
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor

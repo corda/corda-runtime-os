@@ -7,12 +7,13 @@ object CryptoConsts {
     const val CLUSTER_TENANT_ID = "cluster"
 
     /**
-     * Constants defining most common categories for the signing service.
+     * Constants defining HSM categories.
      */
-    object Categories {
-        const val LEDGER = "LEDGER"
+    object HsmCategories {
         const val FRESH_KEYS = "FRESH_KEYS"
-        const val AUTHENTICATION = "AUTHENTICATION"
+        const val LEDGER = "LEDGER"
+        const val NOTARY = "NOTARY"
+        const val SESSION = "SESSION"
         const val TLS = "TLS"
     }
 }

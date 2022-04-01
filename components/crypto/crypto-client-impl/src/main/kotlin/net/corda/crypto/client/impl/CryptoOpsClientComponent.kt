@@ -56,9 +56,6 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         resources.instance.getSupportedSchemes(tenantId, category)
 
-    override fun findPublicKey(tenantId: String, alias: String): PublicKey? =
-        resources.instance.findPublicKey(tenantId, alias)
-
     override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> =
         resources.instance.filterMyKeys(tenantId, candidateKeys)
 
@@ -92,18 +89,6 @@ class CryptoOpsClientComponent @Activate constructor(
         context: Map<String, String>
     ): DigitalSignature.WithKey =
         resources.instance.sign(tenantId, publicKey, signatureSpec, data, context)
-
-    override fun sign(tenantId: String, alias: String, data: ByteArray, context: Map<String, String>): ByteArray =
-        resources.instance.sign(tenantId, alias, data, context)
-
-    override fun sign(
-        tenantId: String,
-        alias: String,
-        signatureSpec: SignatureSpec,
-        data: ByteArray,
-        context: Map<String, String>
-    ): ByteArray =
-        resources.instance.sign(tenantId, alias, signatureSpec, data, context)
 
     override fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? =
         resources.instance.findHSMKey(tenantId, alias)

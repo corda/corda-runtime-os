@@ -96,21 +96,6 @@ class AesUtilsTests {
     }
 
     @Test
-    fun `Should generate same HMAC(SHA256) for the streams with sizes around buffer size`() {
-        val random = Random(Instant.now().toEpochMilli())
-        for ( len in (STREAM_BUFFER_SIZE - 5)..(STREAM_BUFFER_SIZE + 5)) {
-            val data = random.nextBytes(len)
-            val secret = ManagedSecret.generate()
-            val stream = ByteArrayInputStream(data)
-            val hmac1 = secret.hmac256Of(data)
-            val hmac2 = secret.hmac256Of(stream)
-            assertEquals(32, hmac1.size)
-            assertEquals(32, hmac2.size)
-            assertArrayEquals(hmac1, hmac2)
-        }
-    }
-
-    @Test
     fun `Should generate same HMAC(SHA512) for the same byte array data`() {
         val random = Random(Instant.now().toEpochMilli())
         val data = random.nextBytes(random.nextInt(1, 193))
@@ -184,21 +169,6 @@ class AesUtilsTests {
         val random = Random(Instant.now().toEpochMilli())
         for ( i in 1..100) {
             val len = random.nextInt(37_794, 63_987)
-            val data = random.nextBytes(len)
-            val secret = ManagedSecret.generate()
-            val stream = ByteArrayInputStream(data)
-            val hmac1 = secret.hmac512Of(data)
-            val hmac2 = secret.hmac512Of(stream)
-            assertEquals(64, hmac1.size)
-            assertEquals(64, hmac2.size)
-            assertArrayEquals(hmac1, hmac2)
-        }
-    }
-
-    @Test
-    fun `Should generate same HMAC(SHA512) for the streams with sizes around buffer size`() {
-        val random = Random(Instant.now().toEpochMilli())
-        for ( len in (STREAM_BUFFER_SIZE - 5)..(STREAM_BUFFER_SIZE + 5)) {
             val data = random.nextBytes(len)
             val secret = ManagedSecret.generate()
             val stream = ByteArrayInputStream(data)

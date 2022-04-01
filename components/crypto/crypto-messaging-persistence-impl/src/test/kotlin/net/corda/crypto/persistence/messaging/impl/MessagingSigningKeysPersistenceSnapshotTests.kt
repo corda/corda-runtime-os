@@ -1,7 +1,6 @@
 package net.corda.crypto.persistence.messaging.impl
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.crypto.persistence.messaging.impl.KafkaInfrastructure.Companion.wait
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.schema.Schemas
@@ -56,7 +55,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
         kafka = KafkaInfrastructure()
         original1 = SigningKeysRecord(
             tenantId,
-            CryptoConsts.Categories.LEDGER,
+            CryptoConsts.HsmCategories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap(publicKey1.encoded),
@@ -69,7 +68,7 @@ class MessagingSigningKeysPersistenceSnapshotTests {
         )
         original2 = SigningKeysRecord(
             tenantId,
-            CryptoConsts.Categories.LEDGER,
+            CryptoConsts.HsmCategories.LEDGER,
             alias2,
             Base32.toBase32String((tenantId + alias2).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap(publicKey2.encoded),

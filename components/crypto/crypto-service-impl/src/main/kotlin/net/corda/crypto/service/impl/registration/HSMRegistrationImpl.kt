@@ -3,7 +3,6 @@ package net.corda.crypto.service.impl.registration
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.impl.dev.DevCryptoServiceProviderImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoServiceProviderImpl
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
@@ -36,29 +35,17 @@ class HSMRegistrationImpl : HSMRegistration {
                 1,
                 "default",
                 "Dummy configuration",
-                if(id == "dummy-${CryptoConsts.Categories.TLS}") {
-                    SoftCryptoServiceProviderImpl.SERVICE_NAME
-                } else {
-                    DevCryptoServiceProviderImpl.SERVICE_NAME
-                },
+                SoftCryptoServiceProviderImpl.SERVICE_NAME,
                 null,
                 listOf(
-                    CryptoConsts.Categories.LEDGER,
-                    CryptoConsts.Categories.TLS,
-                    CryptoConsts.Categories.FRESH_KEYS,
-                    CryptoConsts.Categories.AUTHENTICATION
+                    CryptoConsts.HsmCategories.FRESH_KEYS,
+                    CryptoConsts.HsmCategories.LEDGER,
+                    CryptoConsts.HsmCategories.NOTARY,
+                    CryptoConsts.HsmCategories.SESSION,
+                    CryptoConsts.HsmCategories.TLS
                 ),
                 0,
                 5000,
-                listOf(
-                    RSA_CODE_NAME,
-                    ECDSA_SECP256K1_CODE_NAME,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    EDDSA_ED25519_CODE_NAME,
-                    SPHINCS256_CODE_NAME,
-                    SM2_CODE_NAME,
-                    GOST3410_GOST3411_CODE_NAME
-                ),
                 listOf(
                     RSA_CODE_NAME,
                     ECDSA_SECP256K1_CODE_NAME,
@@ -82,20 +69,30 @@ class HSMRegistrationImpl : HSMRegistration {
 
     override fun getTenantConfig(tenantId: String, category: String): TenantHSMConfig {
         return when(category) {
-            CryptoConsts.Categories.TLS -> TenantHSMConfig(
+            CryptoConsts.HsmCategories.TLS -> TenantHSMConfig(
                 tenantId,
                 "dummy-$category",
                 category,
                 RSA_CODE_NAME,
-                "wrapping-key"
+                "wrapping-key",
+                null
             )
             else -> TenantHSMConfig(
                 tenantId,
                 "dummy-$category",
                 category,
                 ECDSA_SECP256R1_CODE_NAME,
-                "wrapping-key"
+                "wrapping-key",
+                null
             )
         }
+    }
+
+    override val isRunning: Boolean = true
+
+    override fun start() {
+    }
+
+    override fun stop() {
     }
 }

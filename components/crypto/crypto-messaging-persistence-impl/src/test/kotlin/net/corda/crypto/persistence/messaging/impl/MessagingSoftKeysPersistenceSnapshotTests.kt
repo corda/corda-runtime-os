@@ -1,7 +1,5 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.persistence.KeyValuePersistence
-import net.corda.crypto.persistence.CachedSoftKeysRecord
 import net.corda.crypto.persistence.messaging.impl.KafkaInfrastructure.Companion.wait
 import net.corda.data.crypto.persistence.SoftKeysRecord
 import net.corda.schema.Schemas

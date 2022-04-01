@@ -1,8 +1,6 @@
 package net.corda.crypto.persistence.messaging.impl
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.persistence.EntityKeyInfo
-import net.corda.crypto.persistence.KeyValuePersistence
 import net.corda.data.crypto.persistence.SigningKeysRecord
 import net.corda.schema.Schemas
 import net.corda.v5.crypto.sha256Bytes
@@ -70,7 +68,7 @@ class MessagingSigningKeysPersistenceTests {
     fun `Should round trip persist and get signing cache value`() {
         val original = SigningKeysRecord(
             tenantId,
-            CryptoConsts.Categories.LEDGER,
+            CryptoConsts.HsmCategories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap("Hello World!".toByteArray()),
@@ -110,7 +108,7 @@ class MessagingSigningKeysPersistenceTests {
     fun `Should fetch and cache record from subscription when it's not cached yet`() {
         val original = SigningKeysRecord(
             tenantId,
-            CryptoConsts.Categories.LEDGER,
+            CryptoConsts.HsmCategories.LEDGER,
             alias1,
             Base32.toBase32String((tenantId + alias1).encodeToByteArray().sha256Bytes()).take(30).toLowerCase(),
             ByteBuffer.wrap("Hello World!".toByteArray()),

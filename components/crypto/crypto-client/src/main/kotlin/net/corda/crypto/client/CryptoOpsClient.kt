@@ -24,16 +24,6 @@ interface CryptoOpsClient : Lifecycle {
     fun getSupportedSchemes(tenantId: String, category: String): List<String>
 
     /**
-     * Returns the public key for the given alias.
-     *
-     * @param tenantId The tenant owning the key.
-     * @param alias The key alias assigned by tenant.
-     *
-     * @return The [PublicKey] if of the pair if it's found, otherwise null.
-     */
-    fun findPublicKey(tenantId: String, alias: String): PublicKey?
-
-    /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
      *
      * @param tenantId The tenant owning the key.
@@ -111,35 +101,6 @@ interface CryptoOpsClient : Lifecycle {
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
-
-    /**
-     * Sign a byte array using the private key identified by the input alias.
-     * Returns the signature bytes formatted according to the signature scheme (signAlgorithm).
-     * Default signature scheme for the key scheme is used.
-     * Note that the alias is scoped to tenant, so it would be enough for the system to figure out which HSM to use
-     * without having category as parameter.
-     */
-    fun sign(
-        tenantId: String,
-        alias: String,
-        data: ByteArray,
-        context: Map<String, String> = EMPTY_CONTEXT
-    ): ByteArray
-
-    /**
-     * Sign a byte array using the private key identified by the input alias.
-     * Returns the signature bytes formatted according to the signature scheme (signAlgorithm).
-     * The [signatureSpec] is used to override the default signature scheme
-     * Note that the alias is scoped to tenant, so it would be enough for the system to figure out which HSM to use
-     * without having category as parameter.
-     */
-    fun sign(
-        tenantId: String,
-        alias: String,
-        signatureSpec: SignatureSpec,
-        data: ByteArray,
-        context: Map<String, String> = EMPTY_CONTEXT
-    ): ByteArray
 
     /**
      * Looks up key details by its alias.

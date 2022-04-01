@@ -1,6 +1,5 @@
 package net.corda.crypto.persistence.messaging.impl
 
-import net.corda.crypto.persistence.EntityKeyInfo
 import java.util.concurrent.CompletableFuture
 
 interface MessagingPersistenceProcessor<E> : AutoCloseable {
