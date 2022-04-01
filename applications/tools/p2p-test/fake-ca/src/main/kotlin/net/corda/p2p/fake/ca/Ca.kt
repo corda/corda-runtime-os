@@ -16,14 +16,17 @@ import java.time.Duration
     mixinStandardHelpOptions = true,
     versionProvider = VersionProvider::class,
     showDefaultValues = true,
-    subcommands = [CreateCertificate::class],
+    subcommands = [
+        CreateCa::class,
+        CreateCertificate::class,
+    ],
     showAtFileInUsageHelp = true,
     subcommandsRepeatable = true,
 )
 class Ca {
     @Option(
         names = ["-m", "--home"],
-        description = ["The CA home directory"],
+        description = ["The CA home directory where certificates/keys will be generated"],
     )
     internal var home = File(File(System.getProperty("user.home")), ".fake.ca")
 
@@ -35,14 +38,17 @@ class Ca {
 
     @Option(
         names = ["-a", "--algorithm", "--alg"],
-        description = ["The Algorithm"],
+        description = [
+            "The algorithm to be used for the generated keys",
+            "(one of: \${COMPLETION-CANDIDATES})"
+        ],
     )
     private var algorithm: Algorithm = Algorithm.EC
 
     @Option(
         names = ["-s", "--key-size"],
         description = [
-            "The Key size (one of 2048, 3072 or 4096).",
+            "The key size in number of bits (one of 2048, 3072 or 4096).",
             "Valid only for RSA algorithm."
         ],
     )
@@ -101,7 +107,7 @@ class Ca {
         }
         CertificateAuthorityFactory.createFileSystemLocalAuthority(
             definitions,
-            File(home, ".ca"),
+            File(home, "ca/.ca"),
             Duration.ofDays(certificatesDurationInDays.toLong())
         )
     }

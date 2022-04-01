@@ -8,7 +8,8 @@ import picocli.CommandLine.ParentCommand
 import java.io.File
 
 @Command(
-    name = "create",
+    name = "add-certificate",
+    aliases = ["add", "certificate", "cert"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     description = ["Create TLS certificates"],
@@ -17,14 +18,14 @@ import java.io.File
 )
 class CreateCertificate : Runnable {
     @Parameters(
-        description = ["The names of the hosts"],
+        description = ["The DNS names that will be set as subject alternative names in the certificate."],
         arity = "1..*",
     )
-    private lateinit var hosts: List<String>
+    private lateinit var dnsNames: List<String>
 
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the certificate (default to the first host name)"]
+        description = ["The filename of the certificate (defaults to the first host name)"]
     )
     private var name: String? = null
 
@@ -32,18 +33,18 @@ class CreateCertificate : Runnable {
     private lateinit var ca: Ca
 
     override fun run() {
-        val keysAndCertificate = ca.authority.generateKeyAndCertificate(hosts)
-        ca.authority.save()
-        val actualName = name ?: hosts.first()
+        if (!ca.home.isDirectory) {
+            throw FakeCaException("Please create the CA before adding certificates")
+        }
+        val actualName = name ?: dnsNames.first()
+        if (actualName == "ca") {
+            throw FakeCaException("The name 'ca' can not be used")
+        }
         val dir = File(ca.home, actualName).also {
             it.mkdirs()
         }
-        File(ca.home, "root-certificate.pem").also {
-            if (!it.exists()) {
-                it.writeText(ca.authority.caCertificate.toPem())
-                println("Wrote CA root certificate to $it")
-            }
-        }
+        val keysAndCertificate = ca.authority.generateKeyAndCertificate(dnsNames)
+        ca.authority.save()
         File(dir, "certificate.pem").also {
             it.writeText(keysAndCertificate.certificatePem())
             println("Wrote certificate to $it")
