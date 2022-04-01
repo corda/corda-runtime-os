@@ -4,8 +4,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteConfigHandler
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteEventHandler
@@ -26,7 +26,7 @@ class VirtualNodeWriteConfigHandlerTests {
     @Test
     fun `sets coordinator to up and creates and starts virtual node writer if RPC config is provided`() {
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
         }
 
         val coordinator = mock<LifecycleCoordinator>()
@@ -50,7 +50,7 @@ class VirtualNodeWriteConfigHandlerTests {
         }
         val configHandler = VirtualNodeWriteConfigHandler(eventHandler, mock(), mock())
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
@@ -71,7 +71,7 @@ class VirtualNodeWriteConfigHandlerTests {
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
@@ -105,7 +105,7 @@ class VirtualNodeWriteConfigHandlerTests {
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
         }
 
         configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))

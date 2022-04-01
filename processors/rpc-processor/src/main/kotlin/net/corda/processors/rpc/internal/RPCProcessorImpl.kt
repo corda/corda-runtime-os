@@ -23,8 +23,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -109,9 +109,9 @@ class RPCProcessorImpl @Activate constructor(
                 val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
                 publisher.start()
                 publisher.use {
-                    val bootstrapServersConfig = if (event.config.hasPath(BOOTSTRAP_SERVERS)) {
-                        val bootstrapServers = event.config.getString(BOOTSTRAP_SERVERS)
-                        "\n$BOOTSTRAP_SERVERS=\"$bootstrapServers\""
+                    val bootstrapServersConfig = if (event.config.hasPath(BOOTSTRAP_SERVER)) {
+                        val bootstrapServers = event.config.getString(BOOTSTRAP_SERVER)
+                        "\n$BOOTSTRAP_SERVER=\"$bootstrapServers\""
                     } else {
                         ""
                     }

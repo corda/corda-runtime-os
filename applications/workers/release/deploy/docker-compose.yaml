@@ -79,7 +79,7 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic membership.members --config "cleanup.policy=compact"
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic membership.rpc.ops
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic membership.rpc.ops.resp
-      
+
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.ops.rpc
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.ops.rpc.resp
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic crypto.key.soft
@@ -127,8 +127,8 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
     command:
-    - -mbus.kafkaProperties.common.bootstrap.servers=kafka:9092
-    - -mbus.busType=KAFKA
+      - -mbus.kafkaProperties.common.bootstrap.servers=kafka:9092
+      - -mbus.busType=KAFKA
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s
@@ -157,9 +157,6 @@ services:
       interval: 5s
       timeout: 1s
       retries: 20
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
 
   flow-worker:
     container_name: flow-worker
@@ -179,9 +176,6 @@ services:
       interval: 5s
       timeout: 1s
       retries: 20
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
 
   rpc-worker:
     container_name: rpc-worker
@@ -201,9 +195,6 @@ services:
       interval: 5s
       timeout: 1s
       retries: 20
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
 
   member-worker:
     container_name: member-worker
@@ -222,6 +213,3 @@ services:
       interval: 5s
       timeout: 1s
       retries: 20
-    depends_on:
-      init-kafka:
-        condition: service_completed_successfully
