@@ -56,6 +56,7 @@ spec:
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.ops.rpc.resp
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.key.soft
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.key.info
+              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.ops.flow
               echo -e 'Successfully created the following topics:'
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --list
       restartPolicy: Never
