@@ -10,7 +10,7 @@ import java.io.File
     aliases = ["ca"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
-    description = ["Create TLS certificates authority"],
+    description = ["Create TLS certificate authority"],
     showAtFileInUsageHelp = true,
     subcommandsRepeatable = true,
 )
