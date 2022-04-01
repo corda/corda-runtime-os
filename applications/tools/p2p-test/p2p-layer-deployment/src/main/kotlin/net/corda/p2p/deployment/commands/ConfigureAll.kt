@@ -1,9 +1,9 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -238,6 +238,7 @@ class ConfigureAll : Runnable {
                     "tlsTenantId" to tenantId,
                     "sessionKeyTenantId" to tenantId,
                     "tlsCertificates" to listOf(tlsCertificates(host).readText()),
+                    "publicKey" to publicKeyFile(host).readText(),
                 )
             )
 

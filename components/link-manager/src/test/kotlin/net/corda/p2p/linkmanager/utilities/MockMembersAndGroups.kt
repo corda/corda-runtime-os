@@ -40,7 +40,7 @@ fun mockMembers(members: Collection<LinkManagerInternalTypes.HoldingIdentity>): 
         return digest()
     }
     val hashToInfo = identities.values.associateBy {
-        val publicKeyHash = messageDigest.hash(it.publicKey.encoded)
+        val publicKeyHash = messageDigest.hash(it.sessionPublicKey.encoded)
         (publicKeyHash to it.holdingIdentity.groupId)
     }
     return object : LinkManagerMembershipGroupReader {
