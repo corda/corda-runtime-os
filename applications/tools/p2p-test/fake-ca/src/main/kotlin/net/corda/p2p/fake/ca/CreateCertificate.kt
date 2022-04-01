@@ -34,7 +34,7 @@ class CreateCertificate : Runnable {
 
     override fun run() {
         if (!ca.home.isDirectory) {
-            throw FakeCaException("Please create the CA before adding certificates")
+            throw FakeCaException("Please create the CA before attempting to create certificates")
         }
         val actualName = name ?: dnsNames.first()
         if (actualName == "ca") {
