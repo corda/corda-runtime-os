@@ -43,8 +43,11 @@ class CreateCertificate : Runnable {
         val dir = File(ca.home, actualName).also {
             it.mkdirs()
         }
+
         val keysAndCertificate = ca.authority.generateKeyAndCertificate(dnsNames)
+        // Save the authority because the serial number had changed.
         ca.authority.save()
+
         File(dir, "certificate.pem").also {
             it.writeText(keysAndCertificate.certificatePem())
             println("Wrote certificate to $it")
