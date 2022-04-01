@@ -204,7 +204,6 @@ open class SessionManagerImpl(
                 return@read when (val status = outboundSessionPool.getNextSession(counterparties)) {
                     is OutboundSessionPool.SessionPoolStatus.SessionActive -> SessionState.SessionEstablished(status.session)
                     is OutboundSessionPool.SessionPoolStatus.SessionPending -> {
-                        pendingOutboundSessionMessageQueues.queueMessage(message, counterparties)
                         SessionState.SessionAlreadyPending
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
@@ -213,7 +212,6 @@ open class SessionManagerImpl(
                         outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
                         val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
                             ?: return@read SessionState.CannotEstablishSession
-                        pendingOutboundSessionMessageQueues.queueMessage(message, counterparties)
                         SessionState.NewSessionsNeeded(messages)
                     }
                 }
