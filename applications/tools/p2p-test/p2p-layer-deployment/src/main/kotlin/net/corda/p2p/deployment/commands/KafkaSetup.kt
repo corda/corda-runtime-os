@@ -27,25 +27,6 @@ class KafkaSetup(
     private val defaultPartitionsCount: Int,
 ) : Runnable {
     companion object {
-        private val topicsToCompacted = mapOf(
-            APP_RECEIVED_MESSAGES_TOPIC to false,
-            CONFIG_TOPIC to true,
-            CRYPTO_KEYS_TOPIC to true,
-            GATEWAY_TLS_CERTIFICATES to true,
-            GATEWAY_TLS_TRUSTSTORES to true,
-            GROUP_POLICIES_TOPIC to true,
-            HOSTED_MAP_TOPIC to true,
-            LINK_IN_TOPIC to false,
-            LINK_OUT_TOPIC to false,
-            MEMBER_INFO_TOPIC to true,
-            P2P_IN_TOPIC to false,
-            P2P_OUT_MARKERS to false,
-            getStateAndEventDLQTopic(P2P_OUT_MARKERS) to false,
-            getStateAndEventStateTopic(P2P_OUT_MARKERS) to true,
-            P2P_OUT_TOPIC to false,
-            SESSION_OUT_PARTITIONS to true,
-        )
-
         private val compactedConfig = mapOf(
             "cleanup" to mapOf("policy" to "compact"),
             "segment" to mapOf("ms" to 300000),
@@ -59,17 +40,30 @@ class KafkaSetup(
         private val simpleConfig = mapOf(
             "cleanup" to mapOf("policy" to "delete"),
         )
+        private val topicsToConfig = mapOf(
+            APP_RECEIVED_MESSAGES_TOPIC to simpleConfig,
+            CONFIG_TOPIC to compactedConfig,
+            CRYPTO_KEYS_TOPIC to compactedConfig,
+            GATEWAY_TLS_CERTIFICATES to compactedConfig,
+            GATEWAY_TLS_TRUSTSTORES to compactedConfig,
+            GROUP_POLICIES_TOPIC to compactedConfig,
+            HOSTED_MAP_TOPIC to compactedConfig,
+            LINK_IN_TOPIC to simpleConfig,
+            LINK_OUT_TOPIC to simpleConfig,
+            MEMBER_INFO_TOPIC to compactedConfig,
+            P2P_IN_TOPIC to simpleConfig,
+            P2P_OUT_MARKERS to simpleConfig,
+            getStateAndEventDLQTopic(P2P_OUT_MARKERS) to simpleConfig,
+            getStateAndEventStateTopic(P2P_OUT_MARKERS) to compactedConfig,
+            P2P_OUT_TOPIC to simpleConfig,
+            SESSION_OUT_PARTITIONS to compactedConfig,
+        )
     }
 
     internal fun createConfiguration(): String {
         val config = mapOf(
             "topics" to
-                topicsToCompacted.map { (name, compacted) ->
-                    val config = if (compacted) {
-                        compactedConfig
-                    } else {
-                        simpleConfig
-                    }
+                topicsToConfig.map { (name, config) ->
                     mapOf(
                         "topicName" to name,
                         "numPartitions" to defaultPartitionsCount,
