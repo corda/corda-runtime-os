@@ -20,7 +20,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assumptions
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
@@ -28,15 +27,14 @@ import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")
+    private val dbConfig: EntityManagerConfiguration
 
     init {
         // comment this out if you want to run the test against a real postgres
         //  NOTE: the blob storage doesn't work in HSQL, hence skipping the majority of the test.
-//        System.setProperty("postgresPort", "5432")
-    }
-    @BeforeAll
-    private fun prepareDatabase() {
+        // System.setProperty("postgresPort", "5432")
+        dbConfig = DbUtils.getEntityManagerConfiguration("cpi_db")
+
         val dbChange = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
