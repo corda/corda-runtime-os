@@ -6,15 +6,16 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
+import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -55,20 +56,16 @@ class FlowEventPipelineFactoryImplTest {
     @Test
     fun `Creates a FlowEventPipeline instance`() {
         val checkpoint = Checkpoint()
+        val config = mock<SmartConfig>()
         val expected = FlowEventPipelineImpl(
             flowEventHandler,
             mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowWaitingForHandler),
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
             flowGlobalPostProcessor,
-            FlowEventContext(
-                checkpoint,
-                flowEvent,
-                flowEvent.payload,
-                emptyList()
-            )
+            buildFlowEventContext(checkpoint, flowEvent.payload, config)
         )
-        assertEquals(expected, factory.create(checkpoint, flowEvent))
+        assertEquals(expected, factory.create(checkpoint, flowEvent, config))
     }
 
     @Test
@@ -81,7 +78,7 @@ class FlowEventPipelineFactoryImplTest {
             listOf(flowRequestHandler)
         )
         assertThrows<FlowProcessingException> {
-            factory.create(Checkpoint(), flowEvent)
+            factory.create(Checkpoint(), flowEvent, mock())
         }
     }
 }

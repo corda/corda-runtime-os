@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.commands
 
+import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
 import java.io.File
 import java.nio.file.Files
@@ -67,8 +68,11 @@ class RunJar(
         val jarFile = jarToRun(jarName)
         val java = "${System.getProperty("java.home")}/bin/java"
         val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments
-        ProcessRunner.follow(
+        val success = ProcessRunner.follow(
             commands
         )
+        if (!success) {
+            throw DeploymentException("Can not run ${arguments.joinToString()}")
+        }
     }
 }

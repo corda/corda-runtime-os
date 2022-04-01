@@ -18,8 +18,11 @@ dependencies {
     implementation 'net.corda:corda-base'
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:flow:dummy-link-manager")
     implementation project(":components:flow:flow-mapper-service")
     implementation project(":components:flow:flow-service")
+    implementation project(":components:flow:flow-p2p-filter-service")
+    implementation project(":components:membership:membership-group-read")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
@@ -31,6 +34,7 @@ dependencies {
 
     runtimeOnly "net.corda:corda-avro-schema"
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
     runtimeOnly project(":libs:application:application-impl")

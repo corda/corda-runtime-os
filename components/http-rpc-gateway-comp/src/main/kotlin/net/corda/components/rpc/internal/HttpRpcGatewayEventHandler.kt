@@ -25,7 +25,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ADDRESS
 import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_ID
 import net.corda.schema.configuration.ConfigKeys.RPC_AZUREAD_CLIENT_SECRET
@@ -34,22 +35,27 @@ import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_DESCRIPTION
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_TITLE
 import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
+import net.corda.utilities.PathProvider
+import net.corda.utilities.TempPathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 internal class HttpRpcGatewayEventHandler(
-    private val permissionServiceComponent: PermissionServiceComponent,
+    private val permissionManagementService: PermissionManagementService,
     private val configurationReadService: ConfigurationReadService,
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rbacSecurityManagerService: RBACSecurityManagerService,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
     private val dynamicRpcOps: List<PluggableRPCOps<out RpcOps>>,
+    private val tempPathProvider: PathProvider = TempPathProvider()
 ) : LifecycleEventHandler {
 
     private companion object {
         val log = contextLogger()
+
+        const val MULTI_PART_DIR = "multipart"
     }
 
     @VisibleForTesting
@@ -72,14 +78,14 @@ internal class HttpRpcGatewayEventHandler(
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>(),
+                        LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>()
                     )
                 )
 
                 log.info("Starting permission service and RBAC security manager.")
-                permissionServiceComponent.start()
+                permissionManagementService.start()
                 rbacSecurityManagerService.start()
             }
             is RegistrationStatusChangeEvent -> {
@@ -106,7 +112,7 @@ internal class HttpRpcGatewayEventHandler(
                 registration = null
                 sub?.close()
                 sub = null
-                permissionServiceComponent.stop()
+                permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
                 server?.close()
                 server = null
@@ -123,7 +129,11 @@ internal class HttpRpcGatewayEventHandler(
         if (RPC_CONFIG in changedKeys) {
             log.info("RPC config received. Recreating HTTP RPC Server.")
 
-            createAndStartHttpRpcServer(currentConfigurationSnapshot[RPC_CONFIG]!!)
+            val config = currentConfigurationSnapshot[RPC_CONFIG]!!.withFallback(
+                currentConfigurationSnapshot[BOOT_CONFIG]
+            )
+
+            createAndStartHttpRpcServer(config)
         }
     }
 
@@ -151,11 +161,14 @@ internal class HttpRpcGatewayEventHandler(
             maxContentLength = config.retrieveMaxContentLength()
         )
 
+        val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
+
         log.info("Starting HTTP RPC Server.")
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = dynamicRpcOps.toList(),
             rpcSecurityManager = rbacSecurityManagerService.securityManager,
-            httpRpcSettings = httpRpcSettings
+            httpRpcSettings = httpRpcSettings,
+            multiPartDir = multiPartDir
         ).also { it.start() }
 
         val numberOfRpcOps = dynamicRpcOps.filterIsInstance<Lifecycle>()

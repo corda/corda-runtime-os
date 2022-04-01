@@ -4,7 +4,6 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.FlowStatusKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
@@ -13,7 +12,7 @@ import net.corda.flow.acceptance.dsl.MockFlowFiber
 import net.corda.flow.acceptance.dsl.MockFlowRunner
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.test.utils.buildFlowEventContext
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -50,8 +49,6 @@ class MockFlowRunnerTest {
         .setFlowStartArgs(" { \"json\": \"args\" }")
         .build()
 
-    private val startFlowEvent = FlowEvent(flowKey, startRPCFlowPayload)
-
     private val checkpoint = Checkpoint.newBuilder()
         .setFlowKey(flowKey)
         .setFiber(ByteBuffer.wrap(byteArrayOf()))
@@ -66,12 +63,7 @@ class MockFlowRunnerTest {
         fiber.queueSuspension(FlowIORequest.ForceCheckpoint)
         runner.addFlowFiber(fiber)
         val future = runner.runFlow(
-            context = FlowEventContext(
-                checkpoint,
-                inputEvent = startFlowEvent,
-                inputEventPayload = startRPCFlowPayload,
-                outputRecords = emptyList()
-            ),
+            context = buildFlowEventContext(checkpoint, inputEventPayload = startRPCFlowPayload),
             flowContinuation = FlowContinuation.Run(Unit)
         )
         assertTrue(future.isDone)
@@ -83,11 +75,9 @@ class MockFlowRunnerTest {
         runner.addFlowFiber(fiber)
         assertThatThrownBy {
             runner.runFlow(
-                context = FlowEventContext(
+                context = buildFlowEventContext(
                     checkpoint.apply { flowKey = null },
-                    inputEvent = startFlowEvent,
-                    inputEventPayload = startRPCFlowPayload,
-                    outputRecords = emptyList()
+                    inputEventPayload = startRPCFlowPayload
                 ),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
@@ -100,11 +90,9 @@ class MockFlowRunnerTest {
         runner.addFlowFiber(fiber)
         assertThatThrownBy {
             runner.runFlow(
-                context = FlowEventContext(
+                context = buildFlowEventContext(
                     checkpoint.also { flowKey.flowId = null },
-                    inputEvent = startFlowEvent,
-                    inputEventPayload = startRPCFlowPayload,
-                    outputRecords = emptyList()
+                    inputEventPayload = startRPCFlowPayload
                 ),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
@@ -116,11 +104,9 @@ class MockFlowRunnerTest {
     fun `runFlow throws if there are no registered fibers`() {
         assertThatThrownBy {
             runner.runFlow(
-                context = FlowEventContext(
+                context = buildFlowEventContext(
                     checkpoint,
-                    inputEvent = startFlowEvent,
-                    inputEventPayload = startRPCFlowPayload,
-                    outputRecords = emptyList()
+                    inputEventPayload = startRPCFlowPayload
                 ),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
@@ -133,11 +119,9 @@ class MockFlowRunnerTest {
         runner.addFlowFiber(MockFlowFiber("another id").apply { queueSuspension(FlowIORequest.ForceCheckpoint) })
         assertThatThrownBy {
             runner.runFlow(
-                context = FlowEventContext(
+                context = buildFlowEventContext(
                     checkpoint,
-                    inputEvent = startFlowEvent,
-                    inputEventPayload = startRPCFlowPayload,
-                    outputRecords = emptyList()
+                    inputEventPayload = startRPCFlowPayload
                 ),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
@@ -154,22 +138,18 @@ class MockFlowRunnerTest {
         runner.addFlowFiber(fiber2)
 
         val future1 = runner.runFlow(
-            context = FlowEventContext(
+            context = buildFlowEventContext(
                 checkpoint,
-                inputEvent = startFlowEvent,
-                inputEventPayload = startRPCFlowPayload,
-                outputRecords = emptyList()
+                inputEventPayload = startRPCFlowPayload
             ),
             flowContinuation = FlowContinuation.Run(Unit)
         )
         assertEquals(future1.get(), FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.ForceCheckpoint))
 
         val future2 = runner.runFlow(
-            context = FlowEventContext(
+            context = buildFlowEventContext(
                 checkpoint.also { flowKey.flowId = "another id" },
-                inputEvent = startFlowEvent,
-                inputEventPayload = startRPCFlowPayload,
-                outputRecords = emptyList()
+                inputEventPayload = startRPCFlowPayload
             ),
             flowContinuation = FlowContinuation.Run(Unit)
         )

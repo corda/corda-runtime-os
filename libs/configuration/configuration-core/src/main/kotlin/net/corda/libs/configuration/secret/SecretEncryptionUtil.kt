@@ -1,12 +1,13 @@
 package net.corda.libs.configuration.secret
 
 import net.corda.crypto.core.Encryptor
+import net.corda.crypto.core.aes.AesKey
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 
 class SecretEncryptionUtil(
     private val encryptorFactory:
-        (p: String, s: String) -> Encryptor = { p, s -> Encryptor.derive(p, s) }
+        (p: String, s: String) -> Encryptor = { p, s -> AesKey.derive(p, s).encryptor }
 ): SecretEncryptor, SecretDecryptor {
     // cache the encryptors as creating them is expensive.
     private val encryptors = ConcurrentHashMap<Pair<String,String>, Encryptor>()

@@ -1,8 +1,9 @@
 package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.connection.manager.DbConnectionOps
+import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -28,14 +29,14 @@ class DbConnectionOpsImpl(
         private val logger = contextLogger()
     }
 
-    override fun getClusterDataSource(): DataSource =
+    override fun getClusterDataSource(): CloseableDataSource =
         dbConnectionsRepository.getClusterDataSource()
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
-        dbConnectionsRepository.get(name, privilege)
+        dbConnectionsRepository.create(name, privilege)
 
-    override fun getDataSource(config: SmartConfig): DataSource =
-        dbConnectionsRepository.get(config)
+    override fun getDataSource(config: SmartConfig): CloseableDataSource =
+        dbConnectionsRepository.create(config)
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID =
@@ -64,12 +65,16 @@ class DbConnectionOpsImpl(
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
         logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege")
-        val ds = dbConnectionsRepository.get(name, privilege) ?:
+        val dataSource = dbConnectionsRepository.create(name, privilege) ?:
         throw DBConfigurationException("Details for $name/$privilege cannot be found")
-        return createManagerFactory(name, ds)
+        return entityManagerFactoryFactory.create(
+            name,
+            entitiesSet.classes.toList(),
+            DbEntityManagerConfiguration(dataSource),
+        )
     }
 
-    private fun createManagerFactory(name: String, dataSource: DataSource): EntityManagerFactory {
+    private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,
             entitiesRegistry.get(name)?.classes?.toList() ?:

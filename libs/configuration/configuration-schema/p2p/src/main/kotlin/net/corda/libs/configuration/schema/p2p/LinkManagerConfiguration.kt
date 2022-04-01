@@ -17,6 +17,7 @@ class LinkManagerConfiguration {
         const val MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX = "MaxMessages"
         const val HEARTBEAT_MESSAGE_PERIOD_KEY = "heartbeatMessagePeriod"
         const val SESSION_TIMEOUT_KEY = "sessionTimeout"
+        const val SESSIONS_PER_PEER_KEY = "sessionsPerPeer"
     }
 
 }

@@ -8,7 +8,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -95,7 +94,7 @@ class MembershipGroupReaderProviderImplTest {
 
     @Test
     fun `Get group reader throws exception if component hasn't started`() {
-        val e = assertThrows<CordaRuntimeException> {
+        val e = assertThrows<IllegalStateException> {
             membershipGroupReaderProvider.getGroupReader(HoldingIdentity(memberName.toString(), GROUP_ID_1))
         }
         assertEquals(MembershipGroupReaderProviderImpl.ILLEGAL_ACCESS, e.message)

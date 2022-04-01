@@ -16,6 +16,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -25,8 +26,6 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -49,6 +48,7 @@ class LinkManagerIntegrationTest {
             .withValue("$MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX", ConfigValueFactory.fromAnyRef(100))
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
+            .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
@@ -78,24 +78,6 @@ class LinkManagerIntegrationTest {
             configReadService,
             bootstrapConfig,
             1,
-            StubNetworkMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubLinkManagerHostingMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubCryptoProcessor(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            )
         )
 
         linkManager.use {
@@ -153,24 +135,6 @@ class LinkManagerIntegrationTest {
             configReadService,
             bootstrapConfig,
             1,
-            StubNetworkMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubLinkManagerHostingMap(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            ),
-            StubCryptoProcessor(
-                lifecycleCoordinatorFactory,
-                subscriptionFactory,
-                1,
-                bootstrapConfig
-            )
         )
 
         assertDoesNotThrow {

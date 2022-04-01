@@ -3,22 +3,24 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
+import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
-
+import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import java.nio.file.Path
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -32,9 +34,10 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl()),
+                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl()),
                 securityManager,
                 httpRpcSettings,
+                multipartDir,
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
@@ -94,11 +97,36 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         assertDoesNotThrow { ZonedDateTime.parse(timeProperty.example.toString()) }
 
         // Check that generic type parameter for `plusOne` is correctly represented
-        val plusOnePath = openAPI.paths["/health/plusone"]
-        assertNotNull(plusOnePath)
-        val parameters = plusOnePath.get.parameters
-        val schema = parameters[0].schema as ArraySchema
-        assertThat(schema.items.type).isEqualTo("string")
+        with(openAPI.paths["/health/plusone"]) {
+            assertNotNull(this)
+            val parameters = get.parameters
+            val schema = parameters[0].schema as ArraySchema
+            assertThat(schema.items.type).isEqualTo("string")
+        }
+
+        // Check OpenAPI for TestEntity
+        with(openAPI.paths["/testentity"]) {
+            assertNotNull(this)
+            val getParams = get.parameters
+            assertEquals("query", getParams[0].name)
+
+            val postParams = post.parameters
+            assertTrue(postParams.isEmpty())
+            assertEquals(
+                "#/components/schemas/CreateRequest",
+                post.requestBody.content["application/json"]?.schema?.`$ref`
+            )
+
+            val putParams = put.parameters
+            assertTrue(putParams.isEmpty())
+            assertEquals(
+                "#/components/schemas/UpdateRequest",
+                put.requestBody.content["application/json"]?.schema?.`$ref`
+            )
+
+            val deleteParams = delete.parameters
+            assertEquals("query", deleteParams[0].name)
+        }
     }
 
     @Test

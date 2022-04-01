@@ -6,7 +6,9 @@ import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.orm.utils.transaction
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -23,8 +25,12 @@ class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
 
+    private val defaultNumPartitions = 1
+    private val autoCreate = true
+
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
     fun getMaxCommittedPositions(
@@ -61,10 +67,8 @@ class DBAccess(
         val maxOffsetsPerTopic = mutableMapOf<CordaTopicPartition, Long>()
 
         executeWithErrorHandling("retrieve max offsets per topic") { entityManager ->
-            data class Result(val topic: String, val partition: Int, val offset: Long)
-
             val builder = entityManager.criteriaBuilder
-            val select = builder.createQuery(Result::class.java)
+            val select = builder.createTupleQuery()
             val root = select.from(TopicRecordEntry::class.java)
             select.multiselect(
                 root.get<String>(TopicRecordEntry::topic.name),
@@ -77,8 +81,11 @@ class DBAccess(
             )
             val results = entityManager.createQuery(select).resultList
             results.forEach {
-                val topicPartition = CordaTopicPartition(it.topic, it.partition)
-                maxOffsetsPerTopic[topicPartition] = it.offset
+                val topic = it.get(0, String::class.java)
+                val partition: Int = uncheckedCast(it.get(1))
+                val offset: Long = uncheckedCast(it.get(2))
+                val topicPartition = CordaTopicPartition(topic, partition)
+                maxOffsetsPerTopic[topicPartition] = offset
             }
         }
 
@@ -91,14 +98,24 @@ class DBAccess(
         }
     }
 
-    fun getTopicPartitionMapFor(topic: String): TopicEntry {
+    /**
+     * If auto topic creation is enabled then will create the topic
+     */
+    fun getTopicPartitionMapFor(topic: String): Set<CordaTopicPartition> {
         return executeWithErrorHandling("retrieve topic partitions") { entityManager ->
-            val builder = entityManager.criteriaBuilder
-            val query = builder.createQuery(TopicEntry::class.java)
-            val root = query.from(TopicEntry::class.java)
-            query.multiselect(root.get<String>(TopicEntry::topic.name), root.get<Int>(TopicEntry::numPartitions.name))
-            query.where(builder.equal(root.get<String>(TopicEntry::topic.name), topic))
-            entityManager.createQuery(query).singleResult
+            val topicEntry = entityManager.find(TopicEntry::class.java, topic)
+                ?: if (autoCreate) {
+                    val topicEntry = TopicEntry(topic, defaultNumPartitions)
+                    entityManager.persist(topicEntry)
+                    topicEntry
+                } else {
+                    throw CordaMessageAPIFatalException("Cannot find topic $topic")
+                }
+            val topicPartitions = mutableSetOf<CordaTopicPartition>()
+            repeat(topicEntry.numPartitions) { partition ->
+                topicPartitions.add(CordaTopicPartition(topic, partition))
+            }
+            topicPartitions
         }
     }
 
@@ -167,8 +184,20 @@ class DBAccess(
         }
     }
 
+    /**
+     * Special case for writing Atomic Txn Record. We check first if it's in the database as this isn't
+     * an error for this one txn record
+     */
+    fun writeAtomicTransactionRecord() {
+        executeWithErrorHandling("write atomic transaction record") { entityManager ->
+            if (entityManager.find(TransactionRecordEntry::class.java, ATOMIC_TRANSACTION.transactionId) == null) {
+                entityManager.persist(ATOMIC_TRANSACTION)
+            }
+        }
+    }
+
     fun writeTransactionRecord(entry: TransactionRecordEntry) {
-        executeWithErrorHandling("write transaction records") { entityManager ->
+        executeWithErrorHandling("write transaction record $entry") { entityManager ->
             entityManager.persist(entry)
         }
     }
@@ -208,7 +237,7 @@ class DBAccess(
                     FROM topic_record 
                     WHERE ${TopicRecordEntry::topic.name} = '${topicPartition.topic}'
                     AND ${TopicRecordEntry::partition.name} = ${topicPartition.partition}
-                    AND ${TopicRecordEntry::recordOffset.name} > $fromOffset
+                    AND ${TopicRecordEntry::recordOffset.name} >= $fromOffset
                     ORDER BY ${TopicRecordEntry::recordOffset.name}
                     """,
                 TopicRecordEntry::class.java

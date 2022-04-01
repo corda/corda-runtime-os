@@ -1,10 +1,13 @@
 package net.corda.httprpc.client.connect
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.RPCSinceVersion
+import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
 import net.corda.httprpc.client.connect.remote.RemoteClient
@@ -12,8 +15,9 @@ import net.corda.httprpc.client.connect.stream.HttpRpcFiniteDurableCursorClientB
 import net.corda.httprpc.client.processing.endpointHttpVerb
 import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest
+import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -66,24 +70,23 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
     @Suppress("ComplexMethod")
     override fun invoke(proxy: Any, method: Method, args: Array<out Any?>?): Any? {
         log.trace { """Invoke "${method.name}".""" }
-        val isExemptFromChecks = staticExposedGetMethods.any { it.equals(method.name, true) }
+        val isExemptFromChecks = method.isStaticallyExposedGet()
         if (!isExemptFromChecks) {
-            if (method.annotations.none { it is HttpRpcGET || it is HttpRpcPOST }) {
+            if (method.annotations.none { it.isRpcEndpointAnnotation() }) {
                 throw UnsupportedOperationException(
-                    "Http RPC proxy can not make remote calls for functions not annotated with HttpRpcGET," +
-                            " HttpRpcPOST or known as implicitly exposed."
+                    "Http RPC proxy can not make remote calls for functions not annotated or known as implicitly exposed."
                 )
             }
 
             checkServerProtocolVersion(method)
         }
 
-        val resourceName = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)?.toLowerCase()
+        val resourcePath = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)
             ?: throw UnsupportedOperationException(
                 "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
             )
-        val endpointName = method.endpointPath
-        val rawPath = "$resourceName/$endpointName".toLowerCase().replace("/+".toRegex(), "/")
+
+        val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath).toLowerCase()
 
         if (method.returnsDurableCursorBuilder()) {
             return HttpRpcFiniteDurableCursorClientBuilderImpl(
@@ -103,16 +106,18 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         }.also { log.trace { """Invoke "${method.name}" completed.""" } }
     }
 
-    private val Method.endpointPath: String
+    private val Method.endpointPath: String?
         get() =
-            this.annotations.singleOrNull { it is HttpRpcPOST || it is HttpRpcGET }.let {
+            this.annotations.singleOrNull { it.isRpcEndpointAnnotation() }.let {
                 when (it) {
                     is HttpRpcGET -> it.path(this)
-                    is HttpRpcPOST -> it.path(this)
-                    else -> if (staticExposedGetMethods.contains(this.name)) {
+                    is HttpRpcPOST -> it.path()
+                    is HttpRpcPUT -> it.path()
+                    is HttpRpcDELETE -> it.path()
+                    else -> if (isStaticallyExposedGet()) {
                         this.name
                     } else {
-                        throw IllegalArgumentException("Unknown endpoint path")
+                        throw IllegalArgumentException("Unknown endpoint path for: '$name'")
                     }
                 }
             }

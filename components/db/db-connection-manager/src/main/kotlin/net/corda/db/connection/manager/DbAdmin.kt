@@ -25,7 +25,8 @@ interface DbAdmin {
     )
 
     /**
-     * Create "logical" DB (Schema) with [schemaName] for [user] and the given [privilege]
+     * Create "logical" DB (Schema) with [schemaName] for [user] and the given [privilege]. In case of DML privilege,
+     * DDL user should be provided as [grantee].
      */
     @Suppress("LongParameterList")
     fun createDbAndUser(
@@ -33,7 +34,15 @@ interface DbAdmin {
         user: String,
         password: String,
         privilege: DbPrivilege,
+        grantee: String? = null
     )
+
+    /**
+     * Delete DB schema
+     *
+     * @param schemaName Schema name
+     */
+    fun deleteSchema(schemaName: String)
 
     /**
      * Check whether user exists in DB
@@ -44,12 +53,11 @@ interface DbAdmin {
     fun userExists(user: String): Boolean
 
     /**
-     * Delete DB schema and user
+     * Delete DB user
      *
-     * @param schemaName Schema name
      * @param user Username
      */
-    fun deleteSchemaAndUser(schemaName: String, user: String)
+    fun deleteUser(user: String)
 
     /**
      * Configure JDBC URL to use given DB schema

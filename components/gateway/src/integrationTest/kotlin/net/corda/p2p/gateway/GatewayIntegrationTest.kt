@@ -2,6 +2,11 @@ package net.corda.p2p.gateway
 
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.toKeystore
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -38,9 +43,8 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
-import net.corda.p2p.gateway.messaging.http.StubCertificatesAuthority
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
@@ -51,6 +55,8 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
@@ -640,8 +646,10 @@ class GatewayIntegrationTest : TestBase() {
                 eventually(duration = 20.seconds) {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
-                assertThrows<ConnectException> {
-                    Socket(host, port).close()
+                eventually(duration = 20.seconds) {
+                    assertThrows<ConnectException> {
+                        Socket(host, port).close()
+                    }
                 }
 
                 logger.info("Publishing good config again")
@@ -665,8 +673,10 @@ class GatewayIntegrationTest : TestBase() {
                 eventually(duration = 20.seconds) {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
                 }
-                assertThrows<ConnectException> {
-                    Socket(host, anotherPort).close()
+                eventually(duration = 20.seconds) {
+                    assertThrows<ConnectException> {
+                        Socket(host, anotherPort).close()
+                    }
                 }
             }
         }
@@ -700,6 +710,21 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
 
+        private fun CertificateAuthority.toGatewayTrustStore(): GatewayTruststore {
+            return GatewayTruststore(
+                listOf(
+                    this.caCertificate.toPem()
+                )
+            )
+        }
+
+        fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
+            return KeyStoreWithPassword(
+                this.toKeyStore(),
+                CertificateAuthority.PASSWORD
+            )
+        }
+
         @Test
         @Timeout(120)
         fun `key store can change dynamically`() {
@@ -726,28 +751,28 @@ class GatewayIntegrationTest : TestBase() {
                 instanceId.incrementAndGet(),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
-                val firstCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.RSA)
+                val firstCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(RSA_SHA256_TEMPLATE)
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                 }
 
                 // Publish the trust store
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, firstCertificatesAuthority.gatewayTrustStore),
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, firstCertificatesAuthority.toGatewayTrustStore()),
                 )
 
                 // Client should fail without any keys
                 assertThrows<RuntimeException> {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                 }
 
                 // Publish the first key pair
-                val keyStore = firstCertificatesAuthority.createKeyStore(aliceAddress.host)
+                val keyStore = firstCertificatesAuthority.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
-                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // Delete the first pair
                 server.publish(
@@ -761,7 +786,7 @@ class GatewayIntegrationTest : TestBase() {
                 // Client should fail again...
                 eventually {
                     assertThrows<RuntimeException> {
-                        testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                        testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                     }
                 }
 
@@ -769,7 +794,7 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
-                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // Delete the certificates
                 val subject = PrincipalUtil.getSubjectX509Principal(
@@ -784,50 +809,50 @@ class GatewayIntegrationTest : TestBase() {
                 )
                 eventually {
                     assertThrows<RuntimeException> {
-                        testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                        testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                     }
                 }
 
                 // publish it again
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
-                testClientWith(aliceAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // Change the host
                 configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
-                val bobKeyStore = firstCertificatesAuthority.createKeyStore(bobAddress.host)
+                val bobKeyStore = firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
 
                 // Client should pass with new host
-                testClientWith(bobAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // new trust store...
-                val secondCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.ECDSA)
+                val secondCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.gatewayTrustStore),
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
 
                 // replace the first pair
-                val newKeyStore = secondCertificatesAuthority.createKeyStore(bobAddress.host)
+                val newKeyStore = secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
-                testClientWith(bobAddress, secondCertificatesAuthority.trustStoreKeyStore)
+                testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
 
                 // verify that the old trust store will fail
                 eventually {
                     assertThrows<RuntimeException> {
-                        testClientWith(bobAddress, firstCertificatesAuthority.trustStoreKeyStore)
+                        testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
                     }
                 }
 
                 // new trust store and pair...
-                val thirdCertificatesAuthority = StubCertificatesAuthority("password", KeyAlgorithm.ECDSA)
+                val thirdCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
                 server.publish(
-                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.gatewayTrustStore),
+                    Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )
 
                 // publish new pair with new alias
-                val newerKeyStore = thirdCertificatesAuthority.createKeyStore(bobAddress.host)
+                val newerKeyStore = thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore)
-                testClientWith(bobAddress, thirdCertificatesAuthority.trustStoreKeyStore)
+                testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
             }
         }
     }

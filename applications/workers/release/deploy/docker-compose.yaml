@@ -46,7 +46,10 @@ services:
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.management.request
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.management.request.resp
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.topic --config "cleanup.policy=compact"
-      
+
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic p2p.in
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic p2p.out
+
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic virtual.node.creation.request.resp
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic virtual.node.info --config "cleanup.policy=compact"
@@ -166,6 +169,7 @@ services:
     command:
       - --messagingParams
       - kafka.common.bootstrap.servers=kafka:9092
+      - --workspace-dir=/tmp/corda
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
       interval: 5s

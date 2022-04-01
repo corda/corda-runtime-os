@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.publish.CordaConfigurationKey
 import net.corda.libs.configuration.publish.CordaConfigurationVersion
@@ -28,7 +29,6 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas
@@ -41,13 +41,19 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.PrincipalUtil
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
+import java.net.BindException
 import java.net.ServerSocket
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 open class TestBase {
+    companion object {
+        private val lastUsedPort = AtomicInteger(3000)
+    }
+
     private fun readKeyStore(fileName: String, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
             javaClass.classLoader.getResource("$fileName.jks")!!.openStream().use {
@@ -70,9 +76,15 @@ open class TestBase {
         TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore
     }
 
-    protected fun getOpenPort() : Int {
-        return ServerSocket(0).use {
-            it.localPort
+    protected fun getOpenPort(): Int {
+        while (true) {
+            try {
+                ServerSocket(lastUsedPort.incrementAndGet()).use {
+                    return it.localPort
+                }
+            } catch (e: BindException) {
+                // Go to next port...
+            }
         }
     }
 
@@ -204,18 +216,14 @@ open class TestBase {
                 name,
                 GatewayTlsCertificates(tenantId, pems)
             )
-            val privateKey = keyStoreWithPassword.keyStore.getKey(alias, keyStoreWithPassword.password.toCharArray())
-            val publicKey = keyStoreWithPassword.keyStore.getCertificate(alias).publicKey
-            val keyAlgorithm: KeyAlgorithm = when (publicKey.algorithm) {
-                "RSA" -> KeyAlgorithm.RSA
-                "EC" -> KeyAlgorithm.ECDSA
-                else -> throw RuntimeException("Unsupported algorithm: ${publicKey.algorithm}")
-            }
+            val privateKey = keyStoreWithPassword
+                .keyStore
+                .getKey(alias,
+                    keyStoreWithPassword.password.toCharArray())
+                .toPem()
 
             val keyPair = KeyPairEntry(
-                keyAlgorithm,
-                ByteBuffer.wrap(publicKey.encoded),
-                ByteBuffer.wrap(privateKey.encoded)
+                privateKey,
             )
             val keysRecord = Record(
                 TestSchema.CRYPTO_KEYS_TOPIC,

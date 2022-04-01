@@ -3,15 +3,17 @@ package net.corda.httprpc.server.impl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.server.impl.utils.multipartDir
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
-import kotlin.test.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
+import kotlin.test.assertEquals
 
 class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
     companion object {
@@ -21,7 +23,13 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
         @Suppress("Unused")
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
-            server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true).apply { start() }
+            server = HttpRpcServerImpl(
+                listOf(TestHealthCheckAPIImpl()),
+                securityManager,
+                httpRpcSettings,
+                multipartDir,
+                true
+            ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 

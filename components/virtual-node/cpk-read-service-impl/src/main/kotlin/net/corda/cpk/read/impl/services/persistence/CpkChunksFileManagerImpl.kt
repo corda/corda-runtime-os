@@ -11,12 +11,12 @@ import net.corda.utilities.outputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.util.TreeSet
+import java.util.SortedSet
 
 /**
  * Creates resources on disk, that something needs to clear them on shutdown.
  */
-class CpkChunksFileManagerImpl(private val cpksAssembleCacheDir: Path) : CpkChunksFileManager {
+class CpkChunksFileManagerImpl(private val cpkCacheDir: Path) : CpkChunksFileManager {
     companion object {
         val logger = contextLogger()
 
@@ -34,14 +34,14 @@ class CpkChunksFileManagerImpl(private val cpksAssembleCacheDir: Path) : CpkChun
     }
 
     override fun chunkFileExists(chunkId: CpkChunkId): CpkChunkFileLookUp {
-        val cpkXDir = cpksAssembleCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
+        val cpkXDir = cpkCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
         val filePath = cpkXDir.resolve(chunkId.toFileName())
         return CpkChunkFileLookUp(Files.exists(filePath), filePath)
     }
 
     override fun writeChunkFile(chunkId: CpkChunkId, chunk: Chunk) {
         logger.debug { "Writing CPK chunk file ${chunkId.toFileName()}" }
-        val cpkXDir = cpksAssembleCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
+        val cpkXDir = cpkCacheDir.resolve(chunkId.cpkChecksum.toCorda().toCpkDirName())
         if (!Files.exists(cpkXDir)) {
             logger.debug { "Creating CPK directory: $cpkXDir" }
             Files.createDirectory(cpkXDir)
@@ -54,8 +54,8 @@ class CpkChunksFileManagerImpl(private val cpksAssembleCacheDir: Path) : CpkChun
     }
 
     // TODO need to take care of incomplete CPK assemble as per https://r3-cev.atlassian.net/browse/CORE-4155
-    override fun assembleCpk(cpkChecksum: SecureHash, chunkParts: TreeSet<CpkChunkId>): Path? {
-        val cpkXDir = cpksAssembleCacheDir.resolve(cpkChecksum.toCpkDirName())
+    override fun assembleCpk(cpkChecksum: SecureHash, chunkParts: SortedSet<CpkChunkId>): Path? {
+        val cpkXDir = cpkCacheDir.resolve(cpkChecksum.toCpkDirName())
         logger.info("Assembling CPK on disk: $cpkXDir")
         if (!Files.exists(cpkXDir)) {
             logger.warn("CPK directory should exist but it does not: $cpkXDir")

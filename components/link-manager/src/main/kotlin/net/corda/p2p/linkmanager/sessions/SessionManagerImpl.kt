@@ -18,6 +18,7 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.SessionPartitions
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
@@ -29,27 +30,32 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.InboundAssignmentListener
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
+import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.PublicKeyReader.Companion.getSignatureSpec
+import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindProtocolModes
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.alreadySessionWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindGroupInfo
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noTenantId
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInMembersMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -71,13 +77,15 @@ import kotlin.concurrent.write
 
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
-    private val networkMap: LinkManagerNetworkMap,
+    private val groups: LinkManagerGroupPolicyProvider,
+    private val members: LinkManagerMembershipGroupReader,
     private val cryptoProcessor: CryptoProcessor,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
+    private val inboundAssignmentListener: InboundAssignmentListener,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
@@ -85,7 +93,8 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap
+        groups,
+        members,
     ),
     clock: Clock = Clock.systemUTC(),
     executorServiceFactory: () -> ScheduledExecutorService = {Executors.newSingleThreadScheduledExecutor()},
@@ -99,11 +108,6 @@ open class SessionManagerImpl(
         }
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
-
-    private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionCounterparties, AuthenticationProtocolInitiator>>()
-    private val pendingOutboundSessionCounterparties = ConcurrentHashMap.newKeySet<SessionCounterparties>()
-    private val activeOutboundSessions = ConcurrentHashMap<SessionCounterparties, Session>()
-    private val activeOutboundSessionsById = ConcurrentHashMap<String, Pair<SessionCounterparties, Session>>()
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionCounterparties, Session>>()
@@ -119,11 +123,13 @@ open class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
-        ::destroyOutboundSession,
+        groups,
+        members,
+        ::refreshOutboundSession,
         clock,
         executorServiceFactory
     )
+    private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -135,8 +141,9 @@ open class SessionManagerImpl(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
+        ::createResources,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoProcessor.dominoTile,
+            heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
@@ -146,6 +153,7 @@ open class SessionManagerImpl(
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
+        val sessionsPerCounterparties: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler: ConfigurationChangeHandler<SessionManagerConfig>(
@@ -161,7 +169,21 @@ open class SessionManagerImpl(
             val configUpdateResult = CompletableFuture<Unit>()
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
-                destroyAllSessions()
+                if (oldConfiguration != null) {
+                    logger.info("The Session Manager got new config. All sessions will be cleaned up.")
+                    sessionReplayer.removeAllMessagesFromReplay()
+                    heartbeatManager.stopTrackingAllSessions()
+                    val tombstoneRecords = (outboundSessionPool.getAllSessionIds() + activeInboundSessions.keys
+                            + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
+                    outboundSessionPool.clearPool()
+                    activeInboundSessions.clear()
+                    pendingInboundSessions.clear()
+                    //This is suboptimal we could instead restart session negotiation
+                    pendingOutboundSessionMessageQueues.destroyAllQueues()
+                    if (tombstoneRecords.isNotEmpty()) {
+                        publisher.publish(tombstoneRecords)
+                    }
+                }
             }
             configUpdateResult.complete(Unit)
             return configUpdateResult
@@ -170,25 +192,29 @@ open class SessionManagerImpl(
 
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
-            config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY)
+            config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
         )
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
-                val key = getSessionCounterpartiesFromMessage(message.message)
+                val counterparties = getSessionCounterpartiesFromMessage(message.message)
 
-                val activeSession = activeOutboundSessions[key]
-                if (activeSession != null) {
-                    return@read SessionState.SessionEstablished(activeSession)
-                }
-                pendingOutboundSessionMessageQueues.queueMessage(message, key)
-                if (pendingOutboundSessionCounterparties.contains(key)) {
-                    return@read SessionState.SessionAlreadyPending
-                } else {
-                    val (sessionId, initMessage) = getSessionInitMessage(key) ?: return@read SessionState.CannotEstablishSession
-                    return@read SessionState.NewSessionNeeded(sessionId, initMessage)
+                return@read when (val status = outboundSessionPool.getNextSession(counterparties)) {
+                    is OutboundSessionPool.SessionPoolStatus.SessionActive -> SessionState.SessionEstablished(status.session)
+                    is OutboundSessionPool.SessionPoolStatus.SessionPending -> {
+                        SessionState.SessionAlreadyPending
+                    }
+                    is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
+                        val initMessages = genSessionInitMessages(counterparties, config.get().sessionsPerCounterparties)
+                        if (initMessages.isEmpty()) return@read SessionState.CannotEstablishSession
+                        outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
+                        val messages = linkOutMessagesFromSessionInitMessages(counterparties, initMessages)
+                            ?: return@read SessionState.CannotEstablishSession
+                        SessionState.NewSessionsNeeded(messages)
+                    }
                 }
             }
         }
@@ -200,9 +226,9 @@ open class SessionManagerImpl(
             if (inboundSession != null) {
                 return@withLifecycleLock SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
             }
-            val outboundSession = activeOutboundSessionsById[uuid]
-            return@withLifecycleLock if (outboundSession != null) {
-                SessionManager.SessionDirection.Outbound(outboundSession.first, outboundSession.second)
+            val outboundSession = outboundSessionPool.getSession(uuid)
+            return@withLifecycleLock if (outboundSession is OutboundSessionPool.SessionType.ActiveSession) {
+                SessionManager.SessionDirection.Outbound(outboundSession.sessionCounterparties, outboundSession.session)
             } else {
                 SessionManager.SessionDirection.NoSession
             }
@@ -240,35 +266,34 @@ open class SessionManagerImpl(
         }
     }
 
-    private fun destroyAllSessions() {
-        sessionReplayer.removeAllMessagesFromReplay()
-        heartbeatManager.stopTrackingAllSessions()
-        val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
-                + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
-        activeOutboundSessions.clear()
-        activeOutboundSessionsById.clear()
-        pendingOutboundSessions.clear()
-        pendingOutboundSessionCounterparties.clear()
-
-        activeInboundSessions.clear()
-        pendingInboundSessions.clear()
-        //This is suboptimal we could instead restart session negotiation
-        pendingOutboundSessionMessageQueues.destroyAllQueues()
-        if (tombstoneRecords.isNotEmpty()) {
-            publisher.publish(tombstoneRecords)
+    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+        inboundAssignmentListener.registerCallbackForTopic(Schemas.P2P.LINK_IN_TOPIC) { partitions ->
+            val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
+            val records = sessionIds.map { sessionId ->
+                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
+            }
+            if (records.isNotEmpty()) publisher.publish(records)
         }
+        return CompletableFuture.completedFuture(Unit)
     }
 
-    private fun destroyOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
+    private fun refreshOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
         sessionNegotiationLock.write {
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
-            activeOutboundSessions.remove(counterparties)
-            activeOutboundSessionsById.remove(sessionId)
-            pendingOutboundSessions.remove(sessionId)
-            pendingOutboundSessionCounterparties.remove(counterparties)
-            pendingOutboundSessionMessageQueues.destroyQueue(counterparties)
-            publisher.publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null)))
+            val sessionInitMessage = genSessionInitMessages(counterparties, 1)
+            if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
+                //If the session was not replaced do not send a initiatorHello
+                return
+            }
+            val records = linkOutMessagesFromSessionInitMessages(counterparties, sessionInitMessage) ?.let {
+                LinkManager.OutboundMessageProcessor.recordsForNewSessions(
+                    SessionState.NewSessionsNeeded(it),
+                    inboundAssignmentListener,
+                    logger
+                ) + listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null))
+            }
+            records?.let {publisher.publish(records)}
         }
     }
 
@@ -280,120 +305,147 @@ open class SessionManagerImpl(
         return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
-    private fun getSessionInitMessage(counterparties: SessionCounterparties): Pair<String, LinkOutMessage>? {
-        val sessionId = UUID.randomUUID().toString()
+    private fun genSessionInitMessages(counterparties: SessionCounterparties, multiplicity: Int)
+        : List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
 
-        val networkType = networkMap.getNetworkType(counterparties.ourId.groupId)
-        if (networkType == null) {
+        val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
+        if (groupInfo == null) {
             logger.warn(
-                "Could not find the network type in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
+                "Could not find the group information in the GroupPolicyProvider for groupId ${counterparties.ourId.groupId}." +
                         " The sessionInit message was not sent."
             )
-            return null
+            return emptyList()
         }
 
-        val ourMemberInfo = networkMap.getMemberInfo(counterparties.ourId)
-        if (ourMemberInfo == null) {
+        val ourIdentityInfo = linkManagerHostingMap.getInfo(counterparties.ourId)
+        if (ourIdentityInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer ${counterparties.counterpartyId} but our identity " +
-                        "${counterparties.ourId} is not in the network map. The sessionInit message was not sent."
+                        "${counterparties.ourId} is not in the members map. The sessionInit message was not sent."
             )
-            return null
-        }
-
-        val protocolModes = networkMap.getProtocolModes(counterparties.ourId.groupId)
-        if (protocolModes == null) {
-            logger.warn(
-                "Could not find the protocol modes in the NetworkMap for groupId ${counterparties.ourId.groupId}." +
-                        " The sessionInit message was not sent."
-            )
-            return null
+            return emptyList()
         }
 
         val sessionManagerConfig = config.get()
-        val session = protocolFactory.createInitiator(
-            sessionId,
-            protocolModes,
-            sessionManagerConfig.maxMessageSize,
-            ourMemberInfo.publicKey,
-            ourMemberInfo.holdingIdentity.groupId
-        )
-
-        pendingOutboundSessionCounterparties.add(counterparties)
-        pendingOutboundSessions[sessionId] = Pair(counterparties, session)
-        logger.info("Local identity (${counterparties.ourId}) initiating new session $sessionId with remote identity " +
-            "${counterparties.counterpartyId}"
-        )
-
-        val sessionInitPayload = session.generateInitiatorHello()
-        sessionReplayer.addMessageForReplay(
-            initiatorHelloUniqueId(sessionId),
-            InMemorySessionReplayer.SessionMessageReplay(
-                sessionInitPayload,
+        val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
+        (1..multiplicity).map {
+            val sessionId = UUID.randomUUID().toString()
+            val session = protocolFactory.createInitiator(
                 sessionId,
-                counterparties.ourId,
-                counterparties.counterpartyId,
-                heartbeatManager::sessionMessageSent
-            ),
-            counterparties
-        )
+                groupInfo.protocolModes,
+                sessionManagerConfig.maxMessageSize,
+                ourIdentityInfo.sessionPublicKey,
+                ourIdentityInfo.holdingIdentity.groupId
+            )
+            messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
+        }
+        return messagesAndProtocol
+    }
 
-        val responderMemberInfo = networkMap.getMemberInfo(counterparties.counterpartyId)
+    private fun linkOutMessagesFromSessionInitMessages(
+        counterparties: SessionCounterparties,
+        messages: List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>
+    ): List<Pair<String, LinkOutMessage>>? {
+        val sessionIds = messages.map { it.first.sessionId }
+        logger.info("Local identity (${counterparties.ourId}) initiating new sessions with Ids $sessionIds with remote identity " +
+            "${counterparties.counterpartyId}")
+
+        for (message in messages) {
+            sessionReplayer.addMessageForReplay(
+                initiatorHelloUniqueId(message.first.sessionId),
+                InMemorySessionReplayer.SessionMessageReplay(
+                    message.second,
+                    message.first.sessionId,
+                    counterparties.ourId,
+                    counterparties.counterpartyId,
+                    heartbeatManager::sessionMessageSent
+                ),
+                counterparties
+            )
+        }
+
+        val responderMemberInfo = members.getMemberInfo(counterparties.counterpartyId)
         if (responderMemberInfo == null) {
             logger.warn(
-                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the network map. " +
+                "Attempted to start session negotiation with peer ${counterparties.counterpartyId} which is not in the members map. " +
                         "The sessionInit message was not sent."
             )
             return null
         }
-        heartbeatManager.sessionMessageSent(counterparties, sessionId)
 
-        val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
-        return sessionId to message
+        val groupInfo = groups.getGroupInfo(counterparties.ourId.groupId)
+        if (groupInfo == null) {
+            logger.warn(
+                "Could not find the group information in the GroupPolicyProvider for groupId ${counterparties.ourId.groupId}." +
+                        " The sessionInit message was not sent."
+            )
+            return emptyList()
+        }
+
+        val linkOutMessages = mutableListOf<Pair<String, LinkOutMessage>>()
+        for (message in messages) {
+            heartbeatManager.sessionMessageSent(counterparties, message.first.sessionId)
+            linkOutMessages.add(
+                Pair(
+                    message.first.sessionId,
+                    createLinkOutMessage(message.second, responderMemberInfo, groupInfo.networkType.toLMNetworkType())
+                )
+            )
+        }
+        return linkOutMessages
     }
 
     private fun ByteArray.toBase64(): String {
         return Base64.getEncoder().encodeToString(this)
     }
 
+    @Suppress("ComplexMethod")
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
-        val (sessionInfo, session) = pendingOutboundSessions[message.header.sessionId] ?: run {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
+
+        val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
+        }
+
+        val (sessionInfo, session) = when (sessionType) {
+            is OutboundSessionPool.SessionType.ActiveSession -> {
+                logger.alreadySessionWarning(message::class.java.simpleName, message.header.sessionId)
+                return null
+            }
+            is OutboundSessionPool.SessionType.PendingSession -> {
+                Pair(sessionType.sessionCounterparties, sessionType.protocol)
+            }
         }
 
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
 
-        val ourMemberInfo = networkMap.getMemberInfo(sessionInfo.ourId)
-        if (ourMemberInfo == null) {
-            logger.ourIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
+        val ourIdentityInfo = linkManagerHostingMap.getInfo(sessionInfo.ourId)
+        if (ourIdentityInfo == null) {
+            logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
             return null
         }
 
-        val responderMemberInfo = networkMap.getMemberInfo(sessionInfo.counterpartyId)
+        val responderMemberInfo = members.getMemberInfo(sessionInfo.counterpartyId)
         if (responderMemberInfo == null) {
-            logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
+            logger.peerNotInTheMembersMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.counterpartyId)
             return null
         }
 
-        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
-        if(tenantId == null) {
-            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
-            return null
-        }
+        val tenantId = ourIdentityInfo.sessionKeyTenantId
 
         val signWithOurGroupId = { data: ByteArray ->
             cryptoProcessor.sign(
                 tenantId,
-                ourMemberInfo.publicKey,
-                ourMemberInfo.getSignatureSpec(),
+                ourIdentityInfo.sessionPublicKey,
+                ourIdentityInfo.sessionPublicKey.toKeyAlgorithm().getSignatureSpec(),
                 data
             )
         }
         val payload = try {
             session.generateOurHandshakeMessage(
-                responderMemberInfo.publicKey,
+                responderMemberInfo.sessionPublicKey,
                 signWithOurGroupId
             )
         } catch (exception: CryptoProcessorException) {
@@ -419,28 +471,39 @@ open class SessionManagerImpl(
             sessionInfo
         )
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity.groupId)
+        if (groupInfo == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity.groupId)
             return null
         }
         heartbeatManager.sessionMessageSent(
-            SessionCounterparties(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
+            SessionCounterparties(ourIdentityInfo.holdingIdentity.toHoldingIdentity(), responderMemberInfo.holdingIdentity),
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, responderMemberInfo, networkType)
+        return createLinkOutMessage(payload, responderMemberInfo, groupInfo.networkType.toLMNetworkType())
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
-        val (sessionCounterparties, session) = pendingOutboundSessions[message.header.sessionId] ?: run {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
+        val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
 
-        val memberInfo = networkMap.getMemberInfo(sessionCounterparties.counterpartyId)
+        val (sessionCounterparties, session) = when (sessionType) {
+            is OutboundSessionPool.SessionType.ActiveSession -> {
+                logger.alreadySessionWarning(message::class.java.simpleName, message.header.sessionId)
+                return null
+            }
+            is OutboundSessionPool.SessionType.PendingSession -> {
+                Pair(sessionType.sessionCounterparties, sessionType.protocol)
+            }
+        }
+
+        val memberInfo = members.getMemberInfo(sessionCounterparties.counterpartyId)
         if (memberInfo == null) {
-            logger.peerNotInTheNetworkMapWarning(
+            logger.peerNotInTheMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 sessionCounterparties.counterpartyId
@@ -449,7 +512,7 @@ open class SessionManagerImpl(
         }
 
         try {
-            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.getSignatureSpec())
+            session.validatePeerHandshakeMessage(message, memberInfo.sessionPublicKey, memberInfo.publicKeyAlgorithm.getSignatureSpec())
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -461,15 +524,13 @@ open class SessionManagerImpl(
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
         sessionNegotiationLock.write {
-            activeOutboundSessions[sessionCounterparties] = authenticatedSession
-            activeOutboundSessionsById[message.header.sessionId] = Pair(sessionCounterparties, authenticatedSession)
-            pendingOutboundSessions.remove(message.header.sessionId)
-            pendingOutboundSessionCounterparties.remove(sessionCounterparties)
+            outboundSessionPool.updateAfterSessionEstablished(authenticatedSession)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(
                 this,
                 sessionCounterparties,
                 authenticatedSession,
-                networkMap
+                groups,
+                members
             )
         }
         logger.info("Outbound session ${authenticatedSession.sessionId} established " +
@@ -478,26 +539,27 @@ open class SessionManagerImpl(
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val sessionManagerConfig = config.get()
-        val peer = networkMap.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
+        val peer = members.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
+            logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 message.source.initiatorPublicKeyHash.array().toBase64()
             )
             return null
         }
-        val protocolModes = networkMap.getProtocolModes(peer.holdingIdentity.groupId)
-        if (protocolModes == null) {
-            logger.couldNotFindProtocolModes(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(peer.holdingIdentity.groupId)
+        if (groupInfo == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
             return null
         }
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
             val session = protocolFactory.createResponder(
                 sessionId,
-                protocolModes,
+                groupInfo.protocolModes,
                 sessionManagerConfig.maxMessageSize
             )
             session.receiveInitiatorHello(message)
@@ -505,14 +567,8 @@ open class SessionManagerImpl(
         }
         val responderHello = session.generateResponderHello()
 
-        val networkType = networkMap.getNetworkType(peer.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
-            return null
-        }
-
         logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, peer, networkType)
+        return createLinkOutMessage(responderHello, peer, groupInfo.networkType.toLMNetworkType())
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -521,11 +577,12 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
+        logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
 
         val initiatorIdentityData = session.getInitiatorIdentity()
-        val peer = networkMap.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
+        val peer = members.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
         if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
+            logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
@@ -535,7 +592,7 @@ open class SessionManagerImpl(
 
         session.generateHandshakeSecrets()
         val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.getSignatureSpec())
+            session.validatePeerHandshakeMessage(message, peer.sessionPublicKey, peer.publicKeyAlgorithm.getSignatureSpec())
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             return null
@@ -548,9 +605,9 @@ open class SessionManagerImpl(
             return null
         }
         //Find the correct Holding Identity to use (using the public key hash).
-        val ourMemberInfo = networkMap.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
-        if (ourMemberInfo == null) {
-            logger.ourHashNotInNetworkMapWarning(
+        val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
+        if (ourIdentityInfo == null) {
+            logger.ourHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 ourIdentityData.responderPublicKeyHash.toBase64()
@@ -558,25 +615,21 @@ open class SessionManagerImpl(
             return null
         }
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
+        val groupInfo = groups.getGroupInfo(ourIdentityInfo.holdingIdentity.groupId)
+        if (groupInfo == null) {
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity.groupId)
             return null
         }
 
-        val tenantId = linkManagerHostingMap.getTenantId(ourMemberInfo.holdingIdentity)
-        if(tenantId == null) {
-            logger.noTenantId(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
-            return null
-        }
+        val tenantId = ourIdentityInfo.sessionKeyTenantId
 
         val response = try {
-            val ourPublicKey = ourMemberInfo.publicKey
+            val ourPublicKey = ourIdentityInfo.sessionPublicKey
             val signData = { data: ByteArray ->
                 cryptoProcessor.sign(
                     tenantId,
-                    ourMemberInfo.publicKey,
-                    ourMemberInfo.getSignatureSpec(),
+                    ourIdentityInfo.sessionPublicKey,
+                    ourIdentityInfo.sessionPublicKey.toKeyAlgorithm().getSignatureSpec(),
                     data
                 )
             }
@@ -590,16 +643,16 @@ open class SessionManagerImpl(
         }
 
         activeInboundSessions[message.header.sessionId] = Pair(
-            SessionCounterparties(ourMemberInfo.holdingIdentity, peer.holdingIdentity),
+            SessionCounterparties(ourIdentityInfo.holdingIdentity.toHoldingIdentity(), peer.holdingIdentity),
             session.getSession()
         )
         logger.info("Inbound session ${message.header.sessionId} established " +
-                "(local=${ourMemberInfo.holdingIdentity}, remote=${peer.holdingIdentity}).")
+                "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity}).")
         /**
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, peer, networkType)
+        return createLinkOutMessage(response, peer, groupInfo.networkType.toLMNetworkType())
     }
 
     class HeartbeatManager(
@@ -607,7 +660,8 @@ open class SessionManagerImpl(
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
-        private val networkMap: LinkManagerNetworkMap,
+        private val groups : LinkManagerGroupPolicyProvider,
+        private val members : LinkManagerMembershipGroupReader,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
         private val executorServiceFactory: () -> ScheduledExecutorService
@@ -673,10 +727,18 @@ open class SessionManagerImpl(
             this::class.java.simpleName,
             coordinatorFactory,
             ::createResources,
-            dependentChildren = setOf(networkMap.dominoTile, publisher.dominoTile),
+            dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
+
+        /**
+         * Calculates a weight for a Session.
+         * Sessions for which an acknowledgement was recently received have a small weight.
+         */
+        fun calculateWeightForSession(sessionId: String): Long? {
+            return trackedSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
+        }
 
         /**
          * For each Session we track the following.
@@ -801,7 +863,7 @@ open class SessionManagerImpl(
 
         private fun sendHeartbeatMessage(source: HoldingIdentity, dest: HoldingIdentity, session: Session) {
             val heartbeatMessage = HeartbeatMessage()
-            val message = MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap)
+            val message = MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, groups, members)
             if (message == null) {
                 logger.warn("Failed to send a Heartbeat between $source and $dest.")
                 return

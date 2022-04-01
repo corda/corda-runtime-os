@@ -41,6 +41,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
+import java.nio.file.Path
 import javax.security.auth.login.FailedLoginException
 import javax.servlet.MultipartConfigElement
 
@@ -50,8 +51,8 @@ internal class HttpRpcServerInternal(
     private val securityManager: HttpRpcSecurityManager,
     private val configurationsProvider: HttpRpcSettingsProvider,
     private val openApiInfoProvider: OpenApiInfoProvider,
-
-    ) {
+    multiPartDir: Path
+) {
 
     internal companion object {
         private val log = contextLogger()
@@ -121,7 +122,7 @@ internal class HttpRpcServerInternal(
         MultipartUtil.preUploadFunction = { req ->
             req.setAttribute("org.eclipse.jetty.multipartConfig",
                 MultipartConfigElement(
-                    System.getProperty("java.io.tmpdir"),
+                    multiPartDir.toString(),
                     configurationsProvider.maxContentLength().toLong(),
                     configurationsProvider.maxContentLength().toLong(),
                     1024))
@@ -175,48 +176,82 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    private fun authorize(authorizingSubject: AuthorizingSubject, fullPath: String) {
+    private fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
         val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$fullPath\"." }
-        if (!authorizingSubject.isPermitted(fullPath))
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
+        if (!authorizingSubject.isPermitted(resourceAccessString))
             throw ForbiddenResponse("User not authorized.")
-        log.trace { "Authorize \"$principal\" for \"$fullPath\" completed." }
+        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
     private fun Javalin.addRoutes() {
-        fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
-            try {
-                log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-                // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
-                //  once "multipart/form-data" support gets implemented correctly.
-                if (routeInfo.fullPath == "//api/v1/cpi//") {
-                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
-                } else {
-                    addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
-                }
-                log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
-            } catch (e: Exception) {
-                "Error during Add GET and POST routes".let {
-                    log.error("$it: ${e.message}")
-                    throw Exception(it, e)
-                }
-            }
-        }
+
         try {
-            log.trace { "Add GET and POST routes." }
+            log.trace { "Add routes by method." }
+            // It is important to add no authentication get routes first such that
+            // handler for GET "testEntity/getprotocolversion" will be found before GET "testEntity/:id" handler.
             resourceProvider.httpNoAuthRequiredGetRoutes.map { routeInfo ->
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
-            resourceProvider.httpGetRoutes.map { routeInfo ->
 
+            resourceProvider.httpGetRoutes.map { routeInfo ->
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), routeInfo.fullPath)
+                    // Make an additional check that the path is not exempt from permissions check.
+                    // This is necessary due to "before" matching logic cannot tell path "testEntity/:id" from
+                    // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
+                    // Javalin provides no way for modifying "before" handler finding logic.
+                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
+                            it.method() == "GET") {
+                        authorize(authenticate(it), getResourceAccessString(it))
+                    } else {
+                        log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
+                    }
                 }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
-            resourceProvider.httpPostRoutes.map { routeInfo ->
-                before(routeInfo.fullPath) {
+
+            addRouteWithContentLengthRestriction(resourceProvider.httpPostRoutes, HandlerType.POST)
+
+            addRouteWithContentLengthRestriction(resourceProvider.httpPutRoutes, HandlerType.PUT)
+
+            addRouteWithContentLengthRestriction(resourceProvider.httpDeleteRoutes, HandlerType.DELETE)
+
+            log.trace { "Add routes by method completed." }
+        } catch (e: Exception) {
+            "Error during Add GET and POST routes".let {
+                log.error("$it: ${e.message}")
+                throw Exception(it, e)
+            }
+        }
+    }
+
+    private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
+        try {
+            log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
+            // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
+            //  once "multipart/form-data" support gets implemented correctly as part of CORE-3813.
+            if (routeInfo.fullPath == "/api/v1/cpi" && handlerType == HandlerType.POST) {
+                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
+            } else {
+                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+            }
+            log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
+        } catch (e: Exception) {
+            "Error during adding routes".let {
+                log.error("$it: ${e.message}")
+                throw Exception(it, e)
+            }
+        }
+    }
+
+    private fun Javalin.addRouteWithContentLengthRestriction(routes: List<RouteInfo>, handlerType: HandlerType) {
+        routes.map { routeInfo ->
+            before(routeInfo.fullPath) {
+                // For "before" handlers we have a global space of handlers in Javalin regardless of which method was actually
+                // used. In case when two separate handlers created for GET and for DELETE for the same resource, without "if"
+                // condition below both handlers will be used - which will be redundant.
+                if(it.method() == handlerType.name) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
                             CONTENT_LENGTH_EXCEEDS_LIMIT.format(
@@ -225,17 +260,19 @@ internal class HttpRpcServerInternal(
                             )
                         )
                     }
-                    authorize(authenticate(it), routeInfo.fullPath)
+                    authorize(authenticate(it), getResourceAccessString(it))
                 }
-                registerHandlerForRoute(routeInfo, HandlerType.POST)
             }
-            log.trace { "Add GET and POST routes completed." }
-        } catch (e: Exception) {
-            "Error during Add GET and POST routes".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
-            }
+            registerHandlerForRoute(routeInfo, handlerType)
         }
+    }
+
+    private fun getResourceAccessString(context: Context): String {
+        val queryString = context.queryString()
+        // Examples of strings will look like:
+        // GET:/api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
+        // POST:/api/v1/user/createuser
+        return context.method() + ":" + context.path() + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 
     private fun Javalin.addOpenApiRoute() {
@@ -379,6 +416,7 @@ internal class HttpRpcServerInternal(
             val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
             addConnector(ServerConnector(this, ssl, http11).apply {
                 port = configurationsProvider.getHostAndPort().port
+                host = configurationsProvider.getHostAndPort().host
             })
         }
 

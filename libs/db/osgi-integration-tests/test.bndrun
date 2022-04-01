@@ -2,10 +2,12 @@
 -runfw: org.apache.felix.framework;
 -runee: JavaSE-11
 -runtrace: true
+
 -runsystempackages: \
     sun.security.x509
+
 -runrequires: \
-	bnd.identity;id='osgi-integration-tests-tests',\
+    bnd.identity;id='osgi-integration-tests-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.corda.db-orm-impl',\
@@ -15,9 +17,11 @@
     bnd.identity;id='org.postgresql.jdbc',\
     bnd.identity;id='net.corda.testing-cats',\
     bnd.identity;id='net.corda.testing-dogs'
+
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
+
 -runproperties: \
     org.osgi.framework.bsnversion=multiple,\
     postgresHost=${project.postgresHost},\
@@ -25,56 +29,3 @@
     postgresDb=${project.postgresDb},\
     postgresUser=${project.postgresUser},\
     postgresPassword=${project.postgresPassword}
-# NOTE: everything after -runbundles: \ is auto generated
--runbundles: \
-	antlr.osgi;version='[2.7.7,2.7.8)',\
-	com.fasterxml.classmate;version='[1.5.1,1.5.2)',\
-	com.sun.activation.javax.activation;version='[1.2.0,1.2.1)',\
-	com.typesafe.config;version='[1.4.1,1.4.2)',\
-	com.zaxxer.HikariCP;version='[5.0.0,5.0.1)',\
-	javax.interceptor-api;version='[1.2.0,1.2.1)',\
-	javax.persistence-api;version='[2.2.0,2.2.1)',\
-	jaxb-api;version='[2.3.1,2.3.2)',\
-	junit-jupiter-api;version='[5.8.2,5.8.3)',\
-	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
-	junit-jupiter-params;version='[5.8.2,5.8.3)',\
-	junit-platform-commons;version='[1.8.2,1.8.3)',\
-	junit-platform-engine;version='[1.8.2,1.8.3)',\
-	junit-platform-launcher;version='[1.8.2,1.8.3)',\
-	net.bytebuddy.byte-buddy;version='[1.11.20,1.11.21)',\
-	net.corda.base;version='[5.0.0,5.0.1)',\
-	net.corda.db-admin;version='[5.0.0,5.0.1)',\
-	net.corda.db-admin-impl;version='[5.0.0,5.0.1)',\
-	net.corda.db-core;version='[5.0.0,5.0.1)',\
-	net.corda.db-orm;version='[5.0.0,5.0.1)',\
-	net.corda.db-orm-impl;version='[5.0.0,5.0.1)',\
-	net.corda.db-testkit;version='[5.0.0,5.0.1)',\
-	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
-	net.corda.testing-cats;version='[5.0.0,5.0.1)',\
-	net.corda.testing-dogs;version='[5.0.0,5.0.1)',\
-	org.apache.aries.spifly.dynamic.bundle;version='[1.3.2,1.3.3)',\
-	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
-	org.assertj.core;version='[3.12.2,3.12.3)',\
-	org.hibernate.common.hibernate-commons-annotations;version='[5.1.2,5.1.3)',\
-	org.hibernate.orm.core;version='[5.6.2,5.6.3)',\
-	org.hibernate.orm.osgi;version='[5.6.2,5.6.3)',\
-	org.hsqldb.hsqldb;version='[2.5.2,2.5.3)',\
-	org.jboss.jandex;version='[2.2.3,2.2.4)',\
-	org.jboss.logging.jboss-logging;version='[3.4.2,3.4.3)',\
-	org.jboss.spec.javax.transaction.jboss-transaction-api_1.2_spec;version='[1.1.1,1.1.2)',\
-	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
-	org.liquibase.core;version='[4.5.0,4.5.1)',\
-	org.objectweb.asm;version='[9.0.0,9.0.1)',\
-	org.objectweb.asm.commons;version='[9.0.0,9.0.1)',\
-	org.objectweb.asm.tree;version='[9.0.0,9.0.1)',\
-	org.objectweb.asm.tree.analysis;version='[9.0.0,9.0.1)',\
-	org.objectweb.asm.util;version='[9.0.0,9.0.1)',\
-	org.opentest4j;version='[1.2.0,1.2.1)',\
-	org.osgi.test.common;version='[1.0.1,1.0.2)',\
-	org.osgi.test.junit5;version='[1.0.1,1.0.2)',\
-	org.osgi.util.function;version='[1.1.0,1.1.1)',\
-	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
-	org.postgresql.jdbc;version='[42.3.2,42.3.3)',\
-	osgi-integration-tests-tests;version='[5.0.0,5.0.1)',\
-	slf4j.api;version='[1.7.32,1.7.33)',\
-	slf4j.simple;version='[1.7.32,1.7.33)'

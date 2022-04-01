@@ -30,7 +30,6 @@ class CordaTransactionalDBProducerImpl(
     }
 
     private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     private val _transaction = ThreadLocal<TransactionRecordEntry>()
@@ -59,8 +58,7 @@ class CordaTransactionalDBProducerImpl(
         sendRecordsToPartitions(records.map {
             // Determine the partition
             val topic = it.topic
-            val numberOfPartitions = topicPartitionMap[topic]
-                ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
+            val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
             val partition = getPartition(it.key, numberOfPartitions)
             Pair(partition, it)
         })

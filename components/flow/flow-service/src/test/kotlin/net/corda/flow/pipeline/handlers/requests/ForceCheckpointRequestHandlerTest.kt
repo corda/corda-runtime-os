@@ -7,8 +7,8 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,8 +20,6 @@ class ForceCheckpointRequestHandlerTest {
 
     private val flowKey = FlowKey("flow id", HoldingIdentity("x500 name", "group id"))
 
-    private val flowEvent = FlowEvent()
-
     private val handler = ForceCheckpointRequestHandler()
 
     @Test
@@ -30,7 +28,7 @@ class ForceCheckpointRequestHandlerTest {
             flowState = StateMachineState()
             flowKey = this@ForceCheckpointRequestHandlerTest.flowKey
         }
-        val inputContext = FlowEventContext<Any>(checkpoint, flowEvent, "doesn't matter", emptyList())
+        val inputContext = buildFlowEventContext<Any>(checkpoint, "doesn't matter")
         val waitingFor = handler.getUpdatedWaitingFor(inputContext, FlowIORequest.ForceCheckpoint)
         assertTrue(waitingFor.value is net.corda.data.flow.state.waiting.Wakeup)
     }
@@ -41,7 +39,7 @@ class ForceCheckpointRequestHandlerTest {
             flowState = StateMachineState()
             flowKey = this@ForceCheckpointRequestHandlerTest.flowKey
         }
-        val inputContext = FlowEventContext<Any>(checkpoint, flowEvent, "doesn't matter", emptyList())
+        val inputContext = buildFlowEventContext<Any>(checkpoint, "doesn't matter")
         val outputContext = handler.postProcess(inputContext, FlowIORequest.ForceCheckpoint)
         assertEquals(
             listOf(Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, Wakeup()))),
@@ -51,7 +49,7 @@ class ForceCheckpointRequestHandlerTest {
 
     @Test
     fun `Throws if there is no checkpoint`() {
-        val inputContext = FlowEventContext<Any>(checkpoint = null, flowEvent, "doesn't matter", emptyList())
+        val inputContext = buildFlowEventContext<Any>(checkpoint = null, "doesn't matter")
         assertThrows<FlowProcessingException> {
             handler.postProcess(inputContext, FlowIORequest.ForceCheckpoint)
         }

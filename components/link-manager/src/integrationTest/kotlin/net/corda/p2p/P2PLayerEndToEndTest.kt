@@ -17,6 +17,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -43,33 +44,43 @@ import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
+import net.corda.p2p.test.GroupPolicyEntry
 import net.corda.p2p.test.HostedIdentityEntry
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.NetworkMapEntry
+import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
+import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.crypto.util.PrivateKeyFactory
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.StringWriter
 import java.nio.ByteBuffer
+import java.security.Key
+import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.time.Instant
 import java.util.*
+import java.security.PrivateKey
+import java.security.spec.PKCS8EncodedKeySpec
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -80,6 +91,15 @@ class P2PLayerEndToEndTest {
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
+
+        fun Key.toPem(): String {
+            return StringWriter().use { str ->
+                JcaPEMWriter(str).use { writer ->
+                    writer.writeObject(this)
+                }
+                str.toString()
+            }
+        }
     }
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
@@ -143,7 +163,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            KeyAlgorithm.RSA,
+            RSA_SHA256_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -153,7 +173,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                KeyAlgorithm.RSA,
+                RSA_SHA256_TEMPLATE,
             ).use { hostB ->
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
@@ -221,7 +241,7 @@ class P2PLayerEndToEndTest {
             "ec_truststore",
             bootstrapConfig,
             false,
-            KeyAlgorithm.ECDSA,
+            ECDSA_SECP256R1_SHA256_TEMPLATE,
         ).use { hostA ->
             Host(
                 "www.sender.net",
@@ -231,7 +251,7 @@ class P2PLayerEndToEndTest {
                 "ec_truststore",
                 bootstrapConfig,
                 false,
-                KeyAlgorithm.ECDSA,
+                ECDSA_SECP256R1_SHA256_TEMPLATE,
             ).use { hostB ->
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
@@ -393,12 +413,19 @@ class P2PLayerEndToEndTest {
         trustStoreFileName: String,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
-        private val identitiesKeyAlgorithm: KeyAlgorithm,
+        signatureTemplate: SignatureSchemeTemplate,
     ) : AutoCloseable {
+
         private val sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
-        val keyPair = KeyPairGenerator.getInstance(identitiesKeyAlgorithm.generatorName).genKeyPair()
+        val keyPair = KeyPairGenerator.getInstance(signatureTemplate.algorithmName, BouncyCastleProvider())
+            .also {
+                if (signatureTemplate.algSpec != null) {
+                    it.initialize(signatureTemplate.algSpec)
+                }
+            }
+            .genKeyPair()
         val topicService = TopicServiceImpl()
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
@@ -412,7 +439,7 @@ class P2PLayerEndToEndTest {
         val tlsTenantId by lazy {
             GROUP_ID
         }
-        val identityTenantId by lazy {
+        val sessionKeyTenantId by lazy {
             x500Name
         }
         val linkManagerConfig by lazy {
@@ -423,6 +450,7 @@ class P2PLayerEndToEndTest {
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX", ConfigValueFactory.fromAnyRef(100))
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
+                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
         }
 
         private fun readKeyStore(fileName: String): ByteArray {
@@ -444,24 +472,6 @@ class P2PLayerEndToEndTest {
                 configReadService,
                 bootstrapConfig,
                 1,
-                StubNetworkMap(
-                    lifecycleCoordinatorFactory,
-                    subscriptionFactory,
-                    1,
-                    bootstrapConfig
-                ),
-                StubLinkManagerHostingMap(
-                    lifecycleCoordinatorFactory,
-                    subscriptionFactory,
-                    1,
-                    bootstrapConfig
-                ),
-                StubCryptoProcessor(
-                    lifecycleCoordinatorFactory,
-                    subscriptionFactory,
-                    1,
-                    bootstrapConfig
-                )
             )
 
         val gateway =
@@ -520,33 +530,36 @@ class P2PLayerEndToEndTest {
                     }
                 }
             }
+        private val groupPolicyEntry = GroupPolicyEntry(
+            GROUP_ID,
+            NetworkType.CORDA_5,
+            listOf(
+                ProtocolMode.AUTHENTICATION_ONLY,
+                ProtocolMode.AUTHENTICATED_ENCRYPTION,
+            ),
+            listOf(String(readKeyStore("$trustStoreFileName.pem"))),
+        )
 
-        private val networkMapEntry =
-            NetworkMapEntry(
+        private val memberInfoEntry =
+            MemberInfoEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
-                ByteBuffer.wrap(keyPair.public.encoded),
-                identitiesKeyAlgorithm,
+                keyPair.public.toPem(),
                 "http://$p2pAddress:$p2pPort",
-                NetworkType.CORDA_5,
-                listOf(
-                    ProtocolMode.AUTHENTICATION_ONLY,
-                    ProtocolMode.AUTHENTICATED_ENCRYPTION,
-                ),
-                listOf(String(readKeyStore("$trustStoreFileName.pem"))),
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
             val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
             val networkMapEntries = mapOf(
-                "$x500Name-$GROUP_ID" to networkMapEntry,
-                "${otherHost.x500Name}-$GROUP_ID" to otherHost.networkMapEntry
+                "$x500Name-$GROUP_ID" to memberInfoEntry,
+                "${otherHost.x500Name}-$GROUP_ID" to otherHost.memberInfoEntry,
             )
-            val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
+            val networkMapRecords = networkMapEntries.map { Record(MEMBER_INFO_TOPIC, it.key, it.value) }
             val HostedIdentityEntry = HostedIdentityEntry(
                 HoldingIdentity(x500Name, GROUP_ID),
                 GROUP_ID,
                 x500Name,
-                tlsCertificatesPem
+                tlsCertificatesPem,
+                keyPair.public.toPem(),
             )
             publisherForHost.use { publisher ->
                 publisher.start()
@@ -557,13 +570,16 @@ class P2PLayerEndToEndTest {
                             CRYPTO_KEYS_TOPIC,
                             "key-1",
                             TenantKeys(
-                                identityTenantId,
+                                sessionKeyTenantId,
                                 KeyPairEntry(
-                                    identitiesKeyAlgorithm,
-                                    ByteBuffer.wrap(keyPair.public.encoded),
-                                    ByteBuffer.wrap(keyPair.private.encoded)
+                                    keyPair.private.toPem()
                                 )
                             )
+                        ),
+                        Record(
+                            GROUP_POLICIES_TOPIC,
+                            GROUP_ID,
+                            groupPolicyEntry,
                         ),
                         Record(
                             HOSTED_MAP_TOPIC,
@@ -577,18 +593,13 @@ class P2PLayerEndToEndTest {
 
         fun publishTlsKeys() {
             val records = keyStore.aliases().toList().map { alias ->
-                val privateKey = keyStore.getKey(alias, "password".toCharArray())
-                val publicKey = keyStore.getCertificate(alias).publicKey
-                val keyAlgorithm: KeyAlgorithm = when (publicKey.algorithm) {
-                    "RSA" -> KeyAlgorithm.RSA
-                    "EC" -> KeyAlgorithm.ECDSA
-                    else -> throw RuntimeException("Unsupported algorithm: ${publicKey.algorithm}")
+                val privateKey = keyStore.getKey(alias, "password".toCharArray()).let {
+                    KeyFactory.getInstance(it.algorithm, BouncyCastleProvider()).generatePrivate(
+                        PKCS8EncodedKeySpec(it.encoded))
                 }
 
                 val keyPair = KeyPairEntry(
-                    keyAlgorithm,
-                    ByteBuffer.wrap(publicKey.encoded),
-                    ByteBuffer.wrap(privateKey.encoded)
+                    privateKey.toPem()
                 )
                 Record(
                     CRYPTO_KEYS_TOPIC,
@@ -634,8 +645,3 @@ class P2PLayerEndToEndTest {
         }
     }
 }
-val KeyAlgorithm.generatorName
-    get() = when (this) {
-        KeyAlgorithm.ECDSA -> "EC"
-        KeyAlgorithm.RSA -> "RSA"
-    }

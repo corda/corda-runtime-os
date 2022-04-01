@@ -1,5 +1,6 @@
 package net.corda.crypto.client.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -27,10 +28,12 @@ import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase58
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -100,6 +103,20 @@ internal class CryptoOpsClientImpl(
         }
     }
 
+    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoPublicKeys {
+        logger.info(
+            "Sending '{}'(tenant={},candidateKeys={})",
+            FilterMyKeysRpcQuery::class.java.simpleName,
+            tenantId,
+            candidateKeys.joinToString { it.array().sha256Bytes().toBase58().take(12) + ".." }
+        )
+        val request = createRequest(
+            tenantId = tenantId,
+            request = FilterMyKeysRpcQuery(candidateKeys.toList())
+        )
+        return request.execute(CryptoPublicKeys::class.java)!!
+    }
+
     fun generateKeyPair(
         tenantId: String,
         category: String,
@@ -148,6 +165,33 @@ internal class CryptoOpsClientImpl(
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
+    }
+
+    fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey {
+        logger.info(
+            "Sending '{}'(tenant={})",
+            GenerateFreshKeyRpcCommand::class.java.simpleName,
+            tenantId
+        )
+        val request = createRequest(
+            tenantId = tenantId,
+            request = GenerateFreshKeyRpcCommand(null, context)
+        )
+        return request.execute(CryptoPublicKey::class.java)!!
+    }
+
+    fun freshKeyProxy(tenantId: String, externalId: UUID, context: KeyValuePairList): CryptoPublicKey {
+        logger.info(
+            "Sending '{}'(tenant={},externalId={})",
+            GenerateFreshKeyRpcCommand::class.java.simpleName,
+            tenantId,
+            externalId
+        )
+        val request = createRequest(
+            tenantId = tenantId,
+            request = GenerateFreshKeyRpcCommand(externalId.toString(), context)
+        )
+        return request.execute(CryptoPublicKey::class.java)!!
     }
 
     fun sign(
@@ -251,6 +295,29 @@ internal class CryptoOpsClientImpl(
         )
         val response = request.execute(CryptoSignature::class.java)
         return response!!.bytes.array()
+    }
+
+    fun signProxy(
+        tenantId: String,
+        publicKey: ByteBuffer,
+        data: ByteBuffer,
+        context: KeyValuePairList
+    ): CryptoSignatureWithKey {
+        logger.info(
+            "Sending '{}'(tenant={},publicKey={}..)",
+            SignRpcCommand::class.java.simpleName,
+            tenantId,
+            publicKey.array().sha256Bytes().toBase58().take(12)
+        )
+        val request = createRequest(
+            tenantId,
+            SignRpcCommand(
+                publicKey,
+                data,
+                context
+            )
+        )
+        return request.execute(CryptoSignatureWithKey::class.java)!!
     }
 
     fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? {

@@ -25,12 +25,14 @@ pipeline {
         CORDA_USE_CACHE = "corda-remotes"
         KUBECONFIG = credentials("e2e-tests-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
+        CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAMESPACE = "run-${UUID.randomUUID().toString()}"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
+        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE}"
     }
 
     options {
@@ -64,7 +66,7 @@ pipeline {
                     sh '''
                         echo $PASSWORD | helm registry login corda-os-docker.software.r3.com -u $USER --password-stdin
                         helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-prereqs \
-                            -f .ci/e2eTests/prereqs.yaml -n $NAMESPACE --wait
+                            -f .ci/e2eTests/prereqs.yaml -n $NAMESPACE --wait --timeout 600s
                     '''
                 }
             }
@@ -84,12 +86,12 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                }
-               sh 'helm install corda ./charts/corda --set imageTag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
+               sh 'helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
             }
             post {
                 unsuccessful {
                     sh '''
-                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
                     archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
@@ -106,20 +108,24 @@ pipeline {
 
                 sh '''
                     # Forward RPC worker port
-                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc 8888 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 8888 > forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-flow-worker 7003:7000 >> forward.txt 2>&1 &
+                    nohup kubectl port-forward -n ${NAMESPACE} deploy/corda-rpc-worker 7004:7000 >> forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
-                    ./gradlew cleanE2eTest :applications:workers:release:rpc-worker:e2eTest
+                    ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: '**/test-results/e2eTest/TEST-*.xml'
+                    junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                 }
                 unsuccessful {
                     sh '''
-                        kubectl logs -lfamily=e2e -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''
                     archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
@@ -130,7 +136,15 @@ pipeline {
     }
     post {
         always {
+            findBuildScans()
             splunkLogGenerator()
+            script{
+                writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
+                archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
+
+                def splunkK8URL = "https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/kubernetes_overview?form.period.earliest=-4h%40m&form.period.latest=now&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*"
+                echo "Splunk K8 Url: $splunkK8URL"
+            }
         }        
         success {
             // Only delete namespace if we're successful (though it'll get pruned in 3 hours anyway)

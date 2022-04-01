@@ -5,7 +5,7 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 
 interface SessionManager: LifecycleWithDominoTile {
     fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState
@@ -16,12 +16,12 @@ interface SessionManager: LifecycleWithDominoTile {
     fun messageAcknowledged(sessionId: String)
 
     data class SessionCounterparties(
-        val ourId: LinkManagerNetworkMap.HoldingIdentity,
-        val counterpartyId: LinkManagerNetworkMap.HoldingIdentity
+        val ourId: LinkManagerInternalTypes.HoldingIdentity,
+        val counterpartyId: LinkManagerInternalTypes.HoldingIdentity
     )
 
     sealed class SessionState {
-        data class NewSessionNeeded(val sessionId: String, val sessionInitMessage: LinkOutMessage): SessionState()
+        data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>): SessionState()
         object SessionAlreadyPending: SessionState()
         data class SessionEstablished(val session: Session): SessionState()
         object CannotEstablishSession: SessionState()

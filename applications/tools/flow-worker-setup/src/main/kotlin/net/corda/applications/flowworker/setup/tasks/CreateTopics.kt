@@ -8,6 +8,8 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
@@ -15,6 +17,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_RESP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
+import net.corda.schema.Schemas.VirtualNode.Companion.CPK_FILE_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import org.apache.kafka.clients.admin.NewTopic
 
@@ -26,6 +29,8 @@ class CreateTopics(private val context: TaskContext) : Task {
         val topics = listOf(
             createTopic(CONFIG_TOPIC, 1, 3, compactOption),
 
+            createTopic(P2P_IN_TOPIC, 3, 3),
+            createTopic(P2P_OUT_TOPIC, 3, 3),
             createTopic(FLOW_EVENT_TOPIC, 3, 3),
             createTopic(FLOW_STATUS_TOPIC , 3, 3, compactOption),
             createTopic(getStateAndEventDLQTopic(FLOW_EVENT_TOPIC), 3, 3),
@@ -37,6 +42,7 @@ class CreateTopics(private val context: TaskContext) : Task {
 
             createTopic(CPI_INFO_TOPIC, 3, 3, compactOption),
             createTopic(VIRTUAL_NODE_INFO_TOPIC, 3, 3, compactOption),
+            createTopic(CPK_FILE_TOPIC, 3, 3, compactOption),
 
             createTopic(RPC_PERM_MGMT_REQ_TOPIC, 1, 1),
             createTopic(RPC_PERM_MGMT_RESP_TOPIC, 1, 1),

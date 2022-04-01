@@ -8,3 +8,5 @@ abstract class CryptoProcessorException(message: String) : RuntimeException(mess
 class CouldNotFindPrivateKey : CryptoProcessorException("Could not find private key")
 
 class UnsupportedAlgorithm(key: Key) : CryptoProcessorException("Unsupported algorithm ${key.algorithm}")
+
+class CouldNotReadKey(pem: String) : CryptoProcessorException("Could not read key pair from $pem")

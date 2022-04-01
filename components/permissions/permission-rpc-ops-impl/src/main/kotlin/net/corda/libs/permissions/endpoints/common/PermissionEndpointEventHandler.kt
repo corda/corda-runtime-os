@@ -9,7 +9,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.service.PermissionServiceComponent
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -48,7 +48,7 @@ internal class PermissionEndpointEventHandler(private val endpointName: String) 
 
         registration = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
+                LifecycleCoordinatorName.forComponent<PermissionManagementService>()
             )
         )
     }

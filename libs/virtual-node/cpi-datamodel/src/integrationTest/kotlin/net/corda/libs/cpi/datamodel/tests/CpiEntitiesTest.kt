@@ -17,9 +17,9 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assumptions
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
@@ -32,11 +32,9 @@ class CpiEntitiesIntegrationTest {
     init {
         // comment this out if you want to run the test against a real postgres
         //  NOTE: the blob storage doesn't work in HSQL, hence skipping the majority of the test.
-//        System.setProperty("postgresPort", "5432")
+        // System.setProperty("postgresPort", "5432")
         dbConfig = DbUtils.getEntityManagerConfiguration("cpi_db")
-    }
-    @BeforeAll
-    private fun prepareDatabase() {
+
         val dbChange = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
@@ -49,6 +47,11 @@ class CpiEntitiesIntegrationTest {
         dbConfig.dataSource.connection.use { connection ->
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
+    }
+
+    @AfterAll
+    private fun cleanUp() {
+        dbConfig.close()
     }
 
     @Test

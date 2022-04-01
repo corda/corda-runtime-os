@@ -1,7 +1,9 @@
 package net.corda.flow.pipeline.handlers.waiting
 
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.FlowProcessingException
 
 interface FlowWaitingForHandler<T> {
 
@@ -27,4 +29,17 @@ interface FlowWaitingForHandler<T> {
      * @return A [FlowContinuation] that represents whether to start or resume a flow's fiber.
      */
     fun runOrContinue(context: FlowEventContext<*>, waitingFor: T): FlowContinuation
+}
+
+/**
+ * Throws a [FlowProcessingException] if the passed in [context]'s checkpoint is null.
+ *
+ * @param context The [FlowEventContext] with a possibly null [Checkpoint].
+ *
+ * @return A non-null [Checkpoint].
+ *
+ * @throws FlowProcessingException if the passed in [checkpoint] is null.
+ */
+fun FlowWaitingForHandler<*>.requireCheckpoint(context: FlowEventContext<*>): Checkpoint {
+    return context.checkpoint ?: throw FlowProcessingException("${this::class.java.name} requires a non-null checkpoint as input")
 }

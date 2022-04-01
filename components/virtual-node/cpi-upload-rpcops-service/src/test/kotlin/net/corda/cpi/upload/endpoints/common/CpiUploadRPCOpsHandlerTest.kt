@@ -1,6 +1,7 @@
 package net.corda.cpi.upload.endpoints.common
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.RegistrationHandle
@@ -32,7 +33,8 @@ class CpiUploadRPCOpsHandlerTest {
         val registrationHandle = mock<RegistrationHandle>()
         whenever(coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>()
+                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>(),
+                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )).thenReturn(registrationHandle)
 

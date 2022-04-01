@@ -12,5 +12,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation project(':libs:kafka-utils:topic-admin')
+    implementation project(':libs:messaging:topic-admin')
 }

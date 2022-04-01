@@ -20,10 +20,13 @@ import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
+import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.isRpcEndpointAnnotation
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.annotations.extensions.title
-import net.corda.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.isStaticallyExposedGet
 import java.lang.reflect.Method
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
@@ -34,7 +37,7 @@ import kotlin.reflect.jvm.kotlinFunction
  * generating a list of [Resource].
  */
 @Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
-class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
+internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
     private companion object {
         private val log = contextLogger()
     }
@@ -136,8 +139,8 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
     }
 
     private fun getEndpointsByAnnotations(methods: Array<Method>) =
-        methods.filter {
-            hasEndpointAnnotation(it)
+        methods.filter { method ->
+            method.annotations.singleOrNull { it.isRpcEndpointAnnotation() } != null
         }.map { method ->
             method.toEndpoint()
         }
@@ -165,49 +168,23 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
 
     private fun isImplicitlyExposedGETMethod(method: Method): Boolean {
         log.debug { "Is implicitly exposed method check for method \"${method.name} \"." }
-        val matchingMethod = staticExposedGetMethods.firstOrNull { it.equals(method.name, true) }
-        return (matchingMethod != null)
+        return (method.isStaticallyExposedGet())
             .also {
                 log.trace { "Is implicitly exposed method check for method \"${method.name} \", " +
-                        "result \"$it\", matching method name \"$matchingMethod\" completed." }
+                        "result \"$it\" completed." }
             }
-    }
-
-    @SuppressWarnings("ComplexMethod")
-    private fun hasEndpointAnnotation(method: Method): Boolean {
-        try {
-            log.trace { "Has endpoint annotation check for method \"${method.name}\"." }
-            val countGET = method.annotations.count { annotation -> annotation is HttpRpcGET }
-            val countPOST = method.annotations.count { annotation -> annotation is HttpRpcPOST }
-            val count = countGET.plus(countPOST)
-            return when (count) {
-                1 -> true
-                0 -> false
-                else -> throw IllegalArgumentException("Only one of ${HttpRpcPOST::class.simpleName}, " +
-                        "${HttpRpcGET::class.simpleName} can be specified on an endpoint")
-            }.also {
-                val annotationTypeText = if (countGET > 0) "HttpRpcGET" else "HttpRpcPOST"
-                log.trace {
-                    "Has endpoint annotation check for method \"${method.name}\" " +
-                            "with annotation $annotationTypeText found completed."
-                }
-            }
-        } catch (e: Exception) {
-            "Error during endpoint annotation check for method \"${method.name}\" ".let {
-                log.error("$it: ${e.message}")
-                throw e
-            }
-        }
     }
 
     private fun Method.toEndpoint(): Endpoint {
         try {
             log.trace { "Method \"${this.name}\" to endpoint." }
-            val annotation = this.annotations.single { it is HttpRpcPOST || it is HttpRpcGET }
+            val annotation = this.annotations.single { it.isRpcEndpointAnnotation() }
             return when (annotation) {
                 is HttpRpcGET -> this.toGETEndpoint(annotation)
                 is HttpRpcPOST -> this.toPOSTEndpoint(annotation)
-                else -> throw IllegalArgumentException("Unknown endpoint type")
+                is HttpRpcPUT -> this.toPUTEndpoint(annotation)
+                is HttpRpcDELETE -> this.toDELETEEndpoint(annotation)
+                else -> throw IllegalArgumentException("Unknown endpoint type for: ${this.name}")
             }.also { log.trace { "Method \"${this.name}\" to endpoint completed." } }
         } catch (e: Exception) {
             "Error during Method \"${this.name}\" to endpoint".let {
@@ -232,6 +209,23 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             ),
             this.getInvocationMethod()
         ).also { log.trace { """"Method "$name" to GET endpoint completed.""" } }
+    }
+
+    private fun Method.toDELETEEndpoint(annotation: HttpRpcDELETE): Endpoint {
+        log.trace { """Method "$name" to DELETE endpoint.""" }
+        return Endpoint(
+            EndpointMethod.DELETE,
+            annotation.title(this),
+            annotation.description,
+            annotation.path(),
+            retrieveParameters(),
+            ResponseBody(
+                annotation.responseDescription,
+                this.toClassAndParameterizedTypes().first,
+                this.toClassAndParameterizedTypes().second
+            ),
+            this.getInvocationMethod()
+        ).also { log.trace { """"Method "$name" to DELETE endpoint completed.""" } }
     }
 
     private fun Method.toPOSTEndpoint(annotation: HttpRpcPOST): Endpoint {
@@ -264,11 +258,48 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             EndpointMethod.POST,
             annotation.title(this),
             annotation.description,
-            annotation.path(this),
+            annotation.path(),
             retrieveParameters(true),
             responseBody,
             this.getInvocationMethod()
         ).also { log.trace { "Method \"${this.name}\" to POST endpoint completed." } }
+    }
+
+    private fun Method.toPUTEndpoint(annotation: HttpRpcPUT): Endpoint {
+        log.trace { "Method \"${this.name}\" to PUT endpoint." }
+        val responseBody = when {
+            this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
+                ResponseBody(
+                    annotation.responseDescription,
+                    DurableReturnResult::class.java,
+                    this.toClassAndParameterizedTypes().second
+                )
+            }
+            this.isFiniteDurableStreamsMethod() -> {
+                ResponseBody(
+                    annotation.responseDescription,
+                    FiniteDurableReturnResult::class.java,
+                    this.toClassAndParameterizedTypes().second
+                )
+            }
+            else -> {
+                ResponseBody(
+                    annotation.responseDescription,
+                    this.toClassAndParameterizedTypes().first,
+                    this.toClassAndParameterizedTypes().second
+                )
+            }
+        }
+
+        return Endpoint(
+            EndpointMethod.PUT,
+            annotation.title(this),
+            annotation.description,
+            annotation.path(),
+            retrieveParameters(true),
+            responseBody,
+            this.getInvocationMethod()
+        ).also { log.trace { "Method \"${this.name}\" to PUT endpoint completed." } }
     }
 
     private fun Method.getInvocationMethod(clazz: Class<out RpcOps>? = null): InvocationMethod {

@@ -97,6 +97,7 @@ virtualenv/
 # Files you may find useful to have in your working directory.
 PLAN*
 NOTES*
+!charts/**/templates/NOTES.txt
 TODO*
 
 # gradle-dependx plugin

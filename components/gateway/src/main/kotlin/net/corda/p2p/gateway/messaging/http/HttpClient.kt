@@ -162,6 +162,9 @@ class HttpClient(
                 connectionConfiguration.acquireTimeout.toMillis().toInt()
             )
             .channel(NioSocketChannel::class.java)
+            // using a name resolver that selects randomly an IP to ensure load will be distributed across the recipient
+            //   gateways, even though the sending gateways don't share state.
+            .resolver(RandomSelectionAddressResolver())
             .handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)

@@ -113,7 +113,7 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key).isEqualTo("$inputKey-INITIATED")
+        assertThat(outputEvent.key).isEqualTo(inputKey)
         assertThat(state?.flowKey).isNotNull
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
@@ -159,7 +159,7 @@ class FlowMapperIntegrationTest {
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
-        assertThat(outputEvent.key).isEqualTo("$inputKey-INITIATED")
+        assertThat(outputEvent.key).isEqualTo(inputKey)
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputMapperEvent: FlowMapperEvent = uncheckedCast(outputEventPayload)
@@ -193,7 +193,7 @@ class FlowMapperIntegrationTest {
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
-        assertThat(outputEvent.key).isEqualTo("sessionId")
+        assertThat(outputEvent.key).isEqualTo(inputKey)
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputMapperEvent: FlowMapperEvent = uncheckedCast(outputEventPayload)

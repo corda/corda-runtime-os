@@ -3,6 +3,8 @@ package net.corda.libs.permissions.endpoints.v1.user
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -32,7 +34,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Get a user by loginName in the RBAC permission system.
      */
-    @HttpRpcGET(description = "Get a User by Login Name", path = "")
+    @HttpRpcGET(description = "Get a User by Login Name")
     fun getUser(
         @HttpRpcQueryParameter(description = "Login Name of the user to be returned.")
         loginName: String
@@ -41,7 +43,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Assign a Role to a User in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Assign a Role to a User")
+    @HttpRpcPUT(path = "addRole", description = "Assign a Role to a User")
     fun addRole(
         @HttpRpcRequestBodyParameter(description = "User login name to be changed")
         loginName: String,
@@ -52,7 +54,7 @@ interface UserEndpoint : RpcOps {
     /**
      * Un-assign a Role from a User in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Un-assign a role from a user")
+    @HttpRpcPUT(path = "removeRole", description = "Un-assign a role from a user")
     fun removeRole(
         @HttpRpcRequestBodyParameter(description = "User login name to be changed")
         loginName: String,
@@ -63,10 +65,9 @@ interface UserEndpoint : RpcOps {
     /**
      * Get a summary of a user's permissions.
      */
-    @HttpRpcGET(description = "Get a summary of a User's permissions")
+    @HttpRpcGET(path = "permissionSummary/{loginName}", description = "Get a summary of a User's permissions")
     fun getPermissionSummary(
-        @HttpRpcQueryParameter(description = "Login Name of the user.")
+        @HttpRpcPathParameter(description = "Login Name of the user.")
         loginName: String
     ): UserPermissionSummaryResponseType
-
 }

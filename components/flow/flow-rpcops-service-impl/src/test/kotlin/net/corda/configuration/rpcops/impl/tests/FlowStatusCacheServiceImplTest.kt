@@ -161,7 +161,7 @@ class FlowStatusCacheServiceImplTest {
 
         flowStatusCacheService.onSnapshot(mapOf(key to value))
 
-        verify(lifecycleCoordinator).postEvent(isA<CacheLoadCompleteEvent>())
+        verify(lifecycleCoordinator).postCustomEventToFollowers(isA<CacheLoadCompleteEvent>())
     }
 
     @Test

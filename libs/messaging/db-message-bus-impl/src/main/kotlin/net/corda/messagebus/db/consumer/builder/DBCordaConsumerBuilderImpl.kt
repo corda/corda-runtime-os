@@ -2,9 +2,11 @@ package net.corda.messagebus.db.consumer.builder
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.configuration.ConfigProperties
+import net.corda.messagebus.api.configuration.getStringOrDefault
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
+import net.corda.messagebus.db.consumer.ConsumerGroup.Companion.NULL_GROUP_ID
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
@@ -53,14 +55,10 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             )
         )
 
-        val consumerGroup = if (consumerConfig.hasPath(ConfigProperties.GROUP_ID)) {
-            consumerGroupFactory.getGroupFor(
-                consumerConfig.getString(ConfigProperties.GROUP_ID),
-                dbAccess
-            )
-        } else {
-            null
-        }
+        val consumerGroup = consumerGroupFactory.getGroupFor(
+            consumerConfig.getStringOrDefault(ConfigProperties.GROUP_ID, NULL_GROUP_ID),
+            dbAccess
+        )
 
         return DBCordaConsumerImpl(
             consumerConfig,

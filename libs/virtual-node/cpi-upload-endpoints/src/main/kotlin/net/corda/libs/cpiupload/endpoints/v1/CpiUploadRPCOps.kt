@@ -14,7 +14,7 @@ import java.io.InputStream
 )
 interface CpiUploadRPCOps : RpcOps {
     /** Simple class to return some information back to the caller regarding the upload request */
-    data class UploadResponse(val id: String, val cpiFileChecksum: String)
+    data class UploadResponse(val id: String)
 
     /**
      * HTTP POST resource to upload a CPI to Kafka.
@@ -22,7 +22,6 @@ interface CpiUploadRPCOps : RpcOps {
      * Please note that this method will not close [cpiContent] input stream, the caller must close it.
      */
     @HttpRpcPOST(
-        path = "/",
         title = "Upload a CPI",
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
@@ -30,7 +29,7 @@ interface CpiUploadRPCOps : RpcOps {
     fun cpi(cpiFileName: String, cpiContent: InputStream): UploadResponse
 
     /** Simple class to return the status of the upload request */
-    data class Status(val status: String)
+    data class Status(val status: String, val checksum: String)
 
     /**
      * Get the status of the upload.
@@ -49,9 +48,7 @@ interface CpiUploadRPCOps : RpcOps {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
-    // TODO use proper/consistent resource naming (e.g. this should be mapped under /cpis)
     @HttpRpcGET(
-        path = "list",
         title = "List all CPIs uploaded to the cluster",
         description = "List all CPIs uploaded to the cluster.",
         responseDescription = "List details of the all CPIs uploaded to the cluster."

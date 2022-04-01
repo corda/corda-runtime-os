@@ -5,26 +5,26 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
 import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.reflect.jvm.javaMethod
 
 class EndpointNameConflictValidatorTest {
 
     @Test
     fun `validate withEndpointNameConflictOnSamePath errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
+        abstract class TestInterface : RpcOps {
+            @HttpRpcGET("/test")
+            @Suppress("unused")
+            abstract fun test()
 
             @HttpRpcGET("/test")
-            fun test() {
-            }
-
-            @HttpRpcGET("/test")
-            fun test2() {
-            }
+            @Suppress("unused")
+            abstract fun test2()
         }
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
@@ -35,17 +35,14 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnDifferentMethodType errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
-
+        abstract class TestInterface : RpcOps {
             @HttpRpcGET("/test")
-            fun test() {
-            }
+            @Suppress("unused")
+            abstract fun test()
 
             @HttpRpcPOST("/test")
-            fun test2() {
-            }
+            @Suppress("unused")
+            abstract fun test2()
         }
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
@@ -56,15 +53,13 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnMissingEndpointAnnotation errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
-
-            fun test() {}
+        abstract class TestInterface : RpcOps {
+            @Suppress("unused")
+            abstract fun test()
 
             @HttpRpcPOST("/test")
-            fun test2() {
-            }
+            @Suppress("unused")
+            abstract fun test2()
         }
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
@@ -75,100 +70,118 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnOverload errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
+        abstract class TestInterface : RpcOps {
+            @HttpRpcGET(path = "test")
+            @Suppress("unused")
+            abstract fun test()
 
-            @HttpRpcGET
-            fun test() {
-            }
+            @HttpRpcGET(path = "test")
+            @Suppress("unused")
+            abstract fun test(@HttpRpcQueryParameter foo: String)
 
-            @HttpRpcGET
-            fun test(@HttpRpcQueryParameter foo: String) {
-                foo.toLowerCase()
-            }
-
-            @HttpRpcGET
-            fun test(@HttpRpcQueryParameter foo: Int, @HttpRpcQueryParameter bar: String = "") {
-                foo + 1
-                bar.toLowerCase()
-            }
+            @HttpRpcGET(path = "test")
+            @Suppress("unused")
+            abstract fun test(@HttpRpcQueryParameter foo: Int, @HttpRpcQueryParameter bar: String = "")
         }
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(2, result.errors.size)
+        assertThat(result.errors).hasSize(2).allMatch { error ->
+            error == error("test", EndpointType.GET, TestInterface::class.java.methods.first { it.name == "test" }) }
     }
 
     @Test
     fun `validate withEndpointNameConflictOnSamePathWithDefaultName errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
-
+        abstract class TestInterface : RpcOps {
             @HttpRpcGET
-            fun test() {
-            }
+            @Suppress("unused")
+            abstract fun test()
 
-            @HttpRpcGET("test")
-            fun test2() {
-            }
+            @HttpRpcGET("")
+            abstract fun test2()
         }
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(1, result.errors.size)
+        assertThat(result.errors).hasSize(1).contains(error("null", EndpointType.GET, TestInterface::test2.javaMethod!!))
     }
 
     @Test
     fun `validate withEndpointNameConflictWithCapitalization errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
-            
-            @HttpRpcGET
-            fun teSt() {
-            }
+        abstract class TestInterface : RpcOps {
+            @HttpRpcGET("teSt")
+            @Suppress("unused")
+            abstract fun teSt()
 
             @HttpRpcGET("tEst")
-            fun test2() {
-            }
+            @Suppress("unused")
+            abstract fun test2()
 
             @HttpRpcGET("test")
-            fun test3() {
-            }
+            @Suppress("unused")
+            abstract fun test3()
 
             @HttpRpcGET("TEST")
-            fun test4() {
-            }
+            @Suppress("unused")
+            abstract fun test4()
         }
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(3, result.errors.size)
+        assertThat(result.errors).hasSize(3).contains(
+            error("test", EndpointType.GET, TestInterface::test2.javaMethod!!),
+            error("test", EndpointType.GET, TestInterface::test3.javaMethod!!),
+            error("test", EndpointType.GET, TestInterface::test4.javaMethod!!)
+        )
     }
 
     @Test
     fun `validate withEndpointNameConflictOnSamePathWithStaticMethod errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RpcOps {
-            override val protocolVersion: Int
-                get() = 1
-
+        abstract class TestInterface : RpcOps {
             @HttpRpcGET("Getprotocolversion")
-            fun test() {
-            }
+            @Suppress("unused")
+            abstract fun test()
 
             @HttpRpcPOST("Getprotocolversion")
-            fun test2() {
-            }
+            @Suppress("unused")
+            abstract fun test2()
         }
 
         val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
 
-        assertEquals(1, result.errors.size)
-        assert(result.errors.single().contains(EndpointNameConflictValidator.error("getprotocolversion", EndpointType.GET)))
+        assertThat(result.errors).hasSize(1).contains(error("getprotocolversion", EndpointType.GET,
+            TestInterface::test.javaMethod!!))
+    }
+
+    @Test
+    fun `validate double GET and POST with default path`() {
+        @HttpRpcResource
+        abstract class TestInterface : RpcOps {
+            @HttpRpcGET
+            @Suppress("unused")
+            abstract fun test()
+
+            @HttpRpcGET
+            @Suppress("unused")
+            abstract fun test2()
+
+            @HttpRpcPOST
+            @Suppress("unused")
+            abstract fun test3()
+
+            @HttpRpcPOST
+            @Suppress("unused")
+            abstract fun test4()
+        }
+
+        val result = HttpRpcInterfaceValidator.validate(TestInterface::class.java)
+
+        assertThat(result.errors).hasSize(2).
+            contains(
+                error("null", EndpointType.GET, TestInterface::test2.javaMethod!!),
+                error("null", EndpointType.POST, TestInterface::test4.javaMethod!!))
     }
 }

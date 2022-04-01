@@ -3,6 +3,7 @@ package net.corda.messagebus.api.configuration
 import com.typesafe.config.Config
 
 fun Config.getStringOrNull(path: String) = if (hasPath(path)) getString(path) else null
+fun Config.getStringOrDefault(path: String, default: String): String = if (hasPath(path)) getString(path) else default
 
 class ConfigProperties {
     companion object {

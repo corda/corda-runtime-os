@@ -179,9 +179,24 @@ internal class DBCordaConsumerImplTest {
         )
 
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0, partition1, partition2) }
-        whenever(dbAccess.readRecords(any(), eq(partition0), any())).thenAnswer { nextRecord(partition0, partition0Offset++) }
-        whenever(dbAccess.readRecords(any(), eq(partition1), any())).thenAnswer { nextRecord(partition1, partition1Offset++) }
-        whenever(dbAccess.readRecords(any(), eq(partition2), any())).thenAnswer { nextRecord(partition2, partition2Offset++) }
+        whenever(dbAccess.readRecords(any(), eq(partition0), any())).thenAnswer {
+            nextRecord(
+                partition0,
+                partition0Offset++
+            )
+        }
+        whenever(dbAccess.readRecords(any(), eq(partition1), any())).thenAnswer {
+            nextRecord(
+                partition1,
+                partition1Offset++
+            )
+        }
+        whenever(dbAccess.readRecords(any(), eq(partition2), any())).thenAnswer {
+            nextRecord(
+                partition2,
+                partition2Offset++
+            )
+        }
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer {
             mapOf(
                 partition0 to 0L,
@@ -293,17 +308,16 @@ internal class DBCordaConsumerImplTest {
         val valueDeserializer = mock<CordaAvroDeserializer<String>>()
         whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
         whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
-        val consumer = DBCordaConsumerImpl(
-            defaultConfig,
-            dbAccess,
-            null,
-            keyDeserializer,
-            valueDeserializer,
-            null
-        )
-
+        val config = defaultConfig.withoutPath("group.id")
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            consumer.subscribe(topic)
+            DBCordaConsumerImpl(
+                config,
+                dbAccess,
+                mock(),
+                keyDeserializer,
+                valueDeserializer,
+                null
+            )
         }
     }
 

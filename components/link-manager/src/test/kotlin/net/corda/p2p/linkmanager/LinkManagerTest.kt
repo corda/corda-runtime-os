@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -38,7 +37,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
@@ -47,7 +46,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionCounterpartiesFromMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.utilities.MockNetworkMap
+import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -95,8 +94,8 @@ class LinkManagerTest {
         private const val FAKE_ADDRESS = "http://10.0.0.1/"
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        private val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint(FAKE_ADDRESS)
-        val FIRST_DEST_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(
+        private val FAKE_ENDPOINT = LinkManagerInternalTypes.EndPoint(FAKE_ADDRESS)
+        val FIRST_DEST_MEMBER_INFO = LinkManagerInternalTypes.MemberInfo(
             FIRST_DEST.toHoldingIdentity(),
             keyPairGenerator.generateKeyPair().public,
             KeyAlgorithm.ECDSA,
@@ -108,13 +107,11 @@ class LinkManagerTest {
             whenever(it.isHostedLocally(FIRST_SOURCE.toHoldingIdentity())).thenReturn(true)
             whenever(it.isHostedLocally(LOCAL_PARTY.toHoldingIdentity())).thenReturn(true)
         }
-        private val netMap = MockNetworkMap(
-            listOf(
-                FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
-                FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity(),
-                FAKE_SOURCE.toHoldingIdentity(), LOCAL_PARTY.toHoldingIdentity()
-            )
-        ).getSessionNetworkMapForNode(FIRST_SOURCE.toHoldingIdentity())
+        private val membersAndGroups = mockMembersAndGroups(
+            FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
+            FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity(),
+            FAKE_SOURCE.toHoldingIdentity(), LOCAL_PARTY.toHoldingIdentity()
+        )
 
         private const val MAX_MESSAGE_SIZE = 1000000
         private const val GROUP_ID = "myGroup"
@@ -123,6 +120,7 @@ class LinkManagerTest {
         private const val MESSAGE_ID = "MessageId"
         private val PAYLOAD = ByteBuffer.wrap("PAYLOAD".toByteArray())
         private const val SESSION_ID = "SessionId"
+        private const val ANOTHER_SESSION_ID = "AnotherSessionId"
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -255,10 +253,10 @@ class LinkManagerTest {
     private fun initiatorHelloMessage(): InitiatorHelloMessage {
         return InitiatorHelloMessage.newBuilder().apply {
             header = CommonHeader(MessageType.INITIATOR_HELLO, 0, SESSION_ID, 1, 1)
-            initiatorPublicKey = ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded)
+            initiatorPublicKey = ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.sessionPublicKey.encoded)
             supportedModes = listOf(ProtocolMode.AUTHENTICATION_ONLY)
             source = InitiatorHandshakeIdentity(
-                ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded),
+                ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.sessionPublicKey.encoded),
                 FIRST_DEST_MEMBER_INFO.holdingIdentity.groupId
             )
         }.build()
@@ -298,7 +296,7 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener(mock<LifecycleCoordinatorFactory>())
+        val listener = InboundAssignmentListener(mock())
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }
@@ -328,24 +326,30 @@ class LinkManagerTest {
 
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
 
-        val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
-        Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+        val members = mock<LinkManagerMembershipGroupReader> {
+            on { getMemberInfo(any()) } doReturn FIRST_DEST_MEMBER_INFO
+        }
+        val groupInfo = mock<GroupPolicyListener.GroupInfo> {
+            on { networkType } doReturn NetworkType.CORDA_5
+        }
+        val groups = mock<LinkManagerGroupPolicyProvider> {
+            on { getGroupInfo(any()) } doReturn groupInfo
+        }
 
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
 
-        queue.queueMessage(message1, sessionCounterparties1)
-        queue.queueMessage(message2, sessionCounterparties1)
+        queue.queueMessage(message1)
+        queue.queueMessage(message2)
 
-        queue.queueMessage(message3, sessionCounterparties2)
-        queue.queueMessage(message4, sessionCounterparties2)
-        queue.queueMessage(message5, sessionCounterparties2)
+        queue.queueMessage(message3)
+        queue.queueMessage(message4)
+        queue.queueMessage(message5)
 
         // Session is ready for messages 3, 4, 5
         val sessionPair = createSessionPair()
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties2, sessionPair.initiatorSession, mockNetworkMap)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties2, sessionPair.initiatorSession, groups, members)
         assertThat(testPublisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
 
@@ -353,7 +357,7 @@ class LinkManagerTest {
 
         testPublisher.list = mutableListOf()
         // Session is ready for messages 1, 2
-        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties1, sessionPair.initiatorSession, mockNetworkMap)
+        queue.sessionNegotiatedCallback(sessionManager, sessionCounterparties1, sessionPair.initiatorSession, groups, members)
         assertThat(testPublisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
@@ -365,8 +369,10 @@ class LinkManagerTest {
         val processor = LinkManager.OutboundMessageProcessor(
             Mockito.mock(SessionManagerImpl::class.java),
             hostingMap,
-            netMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
             assignedListener(listOf(1)),
+            mock()
         )
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
@@ -401,8 +407,10 @@ class LinkManagerTest {
         val processor = LinkManager.OutboundMessageProcessor(
             Mockito.mock(SessionManagerImpl::class.java),
             hostingMap,
-            netMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
             assignedListener(listOf(1)),
+            mock()
         )
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
@@ -424,7 +432,11 @@ class LinkManagerTest {
     fun `OutboundMessageProcessor forwards unauthenticated messages directly to link out topic`() {
         val processor = LinkManager.OutboundMessageProcessor(
             Mockito.mock(SessionManagerImpl::class.java),
-            hostingMap, netMap, assignedListener(listOf(1)),
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1)),
+            mock()
         )
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
@@ -444,14 +456,18 @@ class LinkManagerTest {
 
     @Test
     fun `OutboundMessageProcessor produces only a LinkManagerSent maker (per flowMessage) if SessionAlreadyPending`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
-            netMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
             assignedListener(listOf(1)),
+            pendingSessionMessageQueues
         )
 
         val numberOfMessages = 3
@@ -466,7 +482,10 @@ class LinkManagerTest {
         val keys = records.map { it.key }
         for (i in 0 until numberOfMessages) {
             assertThat(keys).contains("MessageId$i")
+            verify(pendingSessionMessageQueues)
+                .queueMessage(AuthenticatedMessageAndKey(messages[i].value?.message as AuthenticatedMessage?, messages[i].key))
         }
+
         for (record in records) {
             assertEquals(P2P_OUT_MARKERS, record.topic)
             assert(record.value is AppMessageMarker)
@@ -476,50 +495,133 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcess produces a session init message, a LinkManagerSent maker and a list of partitions if NewSessionNeeded`() {
-        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+    fun `processReplayedAuthenticatedMessage produces no records and queues no messages if SessionAlreadyPending`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending)
 
-        val sessionInitMessage = LinkOutMessage()
-        val state = SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1)),
+            pendingSessionMessageQueues
+        )
+
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID),
+            KEY
+        )
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        assertThat(records).isEmpty()
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
+    }
+
+    @Test
+    fun `OutboundMessageProcessor produces session init messages, a LinkManagerSent maker and lists of partitions if NewSessionsNeeded`() {
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+
+        val firstSessionInitMessage = mock<LinkOutMessage>()
+        val secondSessionInitMessage = mock<LinkOutMessage>()
+        val state = SessionManager.SessionState.NewSessionsNeeded(
+            listOf(SESSION_ID to firstSessionInitMessage,
+                ANOTHER_SESSION_ID to secondSessionInitMessage
+            )
+        )
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
 
         val inboundSubscribedTopics = listOf(1, 5, 9)
 
         val processor = LinkManager.OutboundMessageProcessor(
-            mockSessionManager, hostingMap, netMap, assignedListener(inboundSubscribedTopics),
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(inboundSubscribedTopics),
+            pendingSessionMessageQueues
         )
-        val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
+        val appMessage = AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID))
+        val messages = listOf(EventLogRecord(TOPIC, KEY, appMessage, 0, 0))
         val records = processor.onNext(messages)
 
-        assertThat(records).hasSize(3 * messages.size)
+        assertThat(records).hasSize(2 * state.messages.size + messages.size)
 
-        assertThat(records).filteredOn { it.topic == LINK_OUT_TOPIC }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.topic == LINK_OUT_TOPIC }.hasSize(state.messages.size)
             .extracting<LinkOutMessage> { it.value as LinkOutMessage }
-            .allSatisfy { assertThat(it).isSameAs(sessionInitMessage) }
+            .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
 
-        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(messages.size)
-            .allSatisfy { assertThat(it.key).isSameAs(SESSION_ID) }
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(state.messages.size)
             .extracting<SessionPartitions> { it.value as SessionPartitions }
             .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(state.messages.size)
+            .extracting<String> { it.key as String }.containsExactlyInAnyOrder(SESSION_ID, ANOTHER_SESSION_ID)
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+
+        verify(pendingSessionMessageQueues)
+            .queueMessage(AuthenticatedMessageAndKey(appMessage.message as AuthenticatedMessage?, KEY))
+    }
+
+    @Test
+    fun `processReplayedAuthenticatedMessage produces the correct records if NewSessionsNeeded`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        val firstSessionInitMessage = mock<LinkOutMessage>()
+        val secondSessionInitMessage = mock<LinkOutMessage>()
+
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
+            SessionManager.SessionState.NewSessionsNeeded(
+                listOf(SESSION_ID to firstSessionInitMessage, ANOTHER_SESSION_ID to secondSessionInitMessage)
+            )
+        )
+        val inboundSubscribedTopics = listOf(1, 5, 9)
+
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(inboundSubscribedTopics),
+            pendingSessionMessageQueues
+        )
+
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID),
+            KEY
+        )
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        assertThat(records).hasSize(4)
+        assertThat(records).filteredOn { it.topic == LINK_OUT_TOPIC }.hasSize(2)
+            .extracting<LinkOutMessage> { it.value as LinkOutMessage }
+            .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(2)
+            .extracting<SessionPartitions> { it.value as SessionPartitions }
+            .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
     }
 
     @Test
     fun `OutboundMessageProcessor produces a LinkOutMessage and a LinkManagerSentMarker per message if SessionEstablished`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
-
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
-            netMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
             assignedListener(listOf(1)),
+            pendingSessionMessageQueues
         )
         val messageIds = listOf("Id1", "Id2", "Id3")
 
@@ -573,18 +675,54 @@ class LinkManagerTest {
             .containsExactly(*messageIds.toTypedArray())
 
         verify(mockSessionManager, times(messages.size)).dataMessageSent(state.session)
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
+    }
+
+    @Test
+    fun `processReplayedAuthenticatedMessage produces a LinkOutMessage and doesn't queue messages if SessionEstablished`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
+
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1)),
+            pendingSessionMessageQueues
+        )
+
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID),
+            KEY
+        )
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+        assertThat(records).hasSize(1)
+
+        assertThat(records).filteredOn { it.topic == LINK_OUT_TOPIC }
+            .extracting<LinkOutMessage> { it.value as LinkOutMessage }
+            .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
+
+        verify(mockSessionManager, times(1)).dataMessageSent(state.session)
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
     }
 
     @Test
     fun `OutboundMessageProcessor produces only a LinkManagerSentMarker if CannotEstablishSession`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.CannotEstablishSession)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
-            netMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
             assignedListener(listOf(1)),
+            pendingSessionMessageQueues
         )
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
@@ -595,25 +733,57 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
+    }
+
+    @Test
+    fun `processReplayedAuthenticatedMessage doesn't queue messages when CannotEstablishSession`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.CannotEstablishSession)
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1)),
+            pendingSessionMessageQueues
+        )
+        val records = processor.processReplayedAuthenticatedMessage(
+            authenticatedMessageAndKey(
+                FIRST_SOURCE,
+                FIRST_DEST,
+                ByteBuffer.wrap("0".toByteArray()),
+                MESSAGE_ID
+            )
+        )
+        assertThat(records).isEmpty()
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
     }
 
     @Test
     fun `OutboundMessageProcessor produces only a LinkManagerSentMarker if SessionEstablished and receiver is not in the network map`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
 
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
-        val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_SOURCE.toHoldingIdentity())).thenReturn(FIRST_DEST_MEMBER_INFO)
-        Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(null)
+        val mockMembers = mock<LinkManagerMembershipGroupReader> {
+            on { getMemberInfo(FIRST_SOURCE.toHoldingIdentity()) } doReturn FIRST_DEST_MEMBER_INFO
+            on { getMemberInfo(FIRST_DEST.toHoldingIdentity()) } doReturn null
+        }
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
-            mockNetworkMap,
+            membersAndGroups.second,
+            mockMembers,
             assignedListener(listOf(1)),
+            pendingSessionMessageQueues
         )
-        val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
+        val appMessage = AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID))
+        val messages = listOf(EventLogRecord(TOPIC, KEY, appMessage, 0, 0))
         val records = processor.onNext(messages)
 
         assertThat(records).hasSize(messages.size)
@@ -622,6 +792,7 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+        verify(pendingSessionMessageQueues, never()).queueMessage(any())
     }
 
     @Test
@@ -638,7 +809,8 @@ class LinkManagerTest {
 
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
-            Mockito.mock(LinkManagerNetworkMap::class.java),
+            mock(),
+            mock(),
             assignedListener(listOf(1))
         )
         val messages = listOf(
@@ -668,7 +840,8 @@ class LinkManagerTest {
 
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
-            Mockito.mock(LinkManagerNetworkMap::class.java),
+            mock(),
+            mock(),
             assignedListener(listOf(1))
         )
         val messages = listOf(
@@ -689,7 +862,12 @@ class LinkManagerTest {
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
+            messageAndKey,
+            session.initiatorSession,
+            membersAndGroups.second,
+            membersAndGroups.first,
+        )
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(
@@ -706,7 +884,12 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
 
         val records = processor.onNext(messages)
         assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
@@ -761,7 +944,8 @@ class LinkManagerTest {
             FIRST_SOURCE,
             FIRST_DEST,
             session.initiatorSession,
-            netMap
+            membersAndGroups.second,
+            membersAndGroups.first,
         )
         val message = LinkInMessage(linkOutMessage?.payload)
 
@@ -773,7 +957,12 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
 
         assertThat(records).hasSize(0)
@@ -788,7 +977,8 @@ class LinkManagerTest {
             FIRST_SOURCE,
             FIRST_DEST,
             session.initiatorSession,
-            netMap
+            membersAndGroups.second,
+            membersAndGroups.first,
         )
         val message = LinkInMessage(linkOutMessage?.payload)
 
@@ -800,7 +990,12 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
 
         assertThat(records).hasSize(1)
@@ -819,7 +1014,12 @@ class LinkManagerTest {
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
         val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
+            flowMessageWrapper,
+            session.initiatorSession,
+            membersAndGroups.second,
+            membersAndGroups.first,
+        )
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(
@@ -835,10 +1035,12 @@ class LinkManagerTest {
             )
         )
 
-        val networkMapAfterRemoval = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(networkMapAfterRemoval.getMemberInfo(FIRST_SOURCE.toHoldingIdentity())).thenReturn(null)
+        val networkMapAfterRemoval = mock<LinkManagerMembershipGroupReader> {
+            on { getMemberInfo(FIRST_SOURCE.toHoldingIdentity()) } doReturn null
+        }
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
+            membersAndGroups.second,
             networkMapAfterRemoval,
             assignedListener(listOf(1))
         )
@@ -864,7 +1066,12 @@ class LinkManagerTest {
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "", "system-1")
         val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
+            flowMessageWrapper,
+            session.initiatorSession,
+            membersAndGroups.second,
+            membersAndGroups.first,
+        )
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0))
@@ -872,7 +1079,12 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(SessionManager.SessionDirection.NoSession)
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
@@ -890,7 +1102,12 @@ class LinkManagerTest {
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
         val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
+            flowMessageWrapper,
+            session.initiatorSession,
+            membersAndGroups.second,
+            membersAndGroups.first,
+        )
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0))
@@ -903,7 +1120,12 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
@@ -920,7 +1142,8 @@ class LinkManagerTest {
             FIRST_SOURCE,
             FIRST_DEST,
             session.initiatorSession,
-            netMap
+            membersAndGroups.second,
+            membersAndGroups.first,
         )
         val message = LinkInMessage(linkOutMessage?.payload)
 
@@ -932,7 +1155,12 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
         assertEquals(records.size, 0)
 
@@ -944,7 +1172,12 @@ class LinkManagerTest {
     private fun sendDataMessageWithSpoofedIdentity(session: SessionPair, source: HoldingIdentity, destination: HoldingIdentity) {
         val header = AuthenticatedMessageHeader(destination, source, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
+            messageAndKey,
+            session.initiatorSession,
+            membersAndGroups.second,
+            membersAndGroups.first,
+        )
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(
@@ -960,7 +1193,12 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1))
+        )
 
         val records = processor.onNext(messages)
         assertThat(records).isEmpty()
@@ -1015,14 +1253,16 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val sessionInitMessage = LinkOutMessage()
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
-            SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+            SessionManager.SessionState.NewSessionsNeeded(listOf(SESSION_ID to sessionInitMessage))
         )
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
-            netMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
             assignedListener(emptyList()),
+            mock()
         )
         val messages = listOf(
             EventLogRecord(
@@ -1043,7 +1283,7 @@ class LinkManagerTest {
 
         loggingInterceptor.assertSingleWarning(
             "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
-                    " Session $SESSION_ID will not be initiated."
+                    " Sessions: [$SESSION_ID] will not be initiated."
         )
     }
 
@@ -1061,7 +1301,8 @@ class LinkManagerTest {
 
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
-            Mockito.mock(LinkManagerNetworkMap::class.java),
+            mock(),
+            mock(),
             assignedListener(emptyList())
         )
         val messages = listOf(

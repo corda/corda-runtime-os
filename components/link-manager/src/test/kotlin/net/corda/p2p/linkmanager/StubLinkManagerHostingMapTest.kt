@@ -10,7 +10,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.test.HostedIdentityEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -22,6 +22,8 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.security.PublicKey
 import java.util.concurrent.CompletableFuture
 
 class StubLinkManagerHostingMapTest {
@@ -44,12 +46,22 @@ class StubLinkManagerHostingMapTest {
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as? ((ResourcesHolder) -> CompletableFuture<Unit>)
     }
+    private val publicKeyOne = mock<PublicKey> {
+        on { encoded } doReturn byteArrayOf(0, 1, 2)
+    }
     private val entryOne = HostedIdentityEntry(
         HoldingIdentity("x500", "group"),
         "id1",
         "id2",
-        listOf("cert1", "cert2")
+        listOf("cert1", "cert2"),
+        "pem"
     )
+    private val publicKeyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
+        whenever(mock.loadPublicKey("pem")).thenReturn(publicKeyOne)
+    }
+    private val keyHasher = mockConstruction(KeyHasher::class.java) { mock, _ ->
+        whenever(mock.hash(publicKeyOne)).thenReturn(byteArrayOf(5, 6, 7))
+    }
 
     private val testObject = StubLinkManagerHostingMap(
         lifecycleCoordinatorFactory,
@@ -62,6 +74,8 @@ class StubLinkManagerHostingMapTest {
     fun cleanUp() {
         subscriptionTile.close()
         dominoTile.close()
+        publicKeyReader.close()
+        keyHasher.close()
     }
 
     @Test
@@ -87,7 +101,7 @@ class StubLinkManagerHostingMapTest {
 
         assertThat(
             testObject.isHostedLocally(
-                LinkManagerNetworkMap.HoldingIdentity(
+                LinkManagerInternalTypes.HoldingIdentity(
                     "x500", "another group"
                 )
             )
@@ -131,7 +145,7 @@ class StubLinkManagerHostingMapTest {
 
         assertThat(
             testObject.isHostedLocally(
-                LinkManagerNetworkMap.HoldingIdentity(
+                LinkManagerInternalTypes.HoldingIdentity(
                     "x500", "group"
                 )
             )
@@ -148,7 +162,7 @@ class StubLinkManagerHostingMapTest {
 
         assertThat(
             testObject.isHostedLocally(
-                LinkManagerNetworkMap.HoldingIdentity(
+                LinkManagerInternalTypes.HoldingIdentity(
                     "x500", "group"
                 )
             )
@@ -156,7 +170,7 @@ class StubLinkManagerHostingMapTest {
     }
 
     @Test
-    fun `getTenantId return the correct data`() {
+    fun `getInfo by public key hashreturn the correct data`() {
         processor.firstValue.onSnapshot(
             mapOf(
                 "key" to entryOne
@@ -164,8 +178,43 @@ class StubLinkManagerHostingMapTest {
         )
 
         assertSoftly {
-            it.assertThat(testObject.getTenantId(entryOne.holdingIdentity.toHoldingIdentity())).isEqualTo("id2")
-            it.assertThat(testObject.getTenantId(LinkManagerNetworkMap.HoldingIdentity("", ""))).isNull()
+            it.assertThat(
+                testObject.getInfo(
+                    byteArrayOf(5, 6, 7),
+                    entryOne.holdingIdentity.groupId,
+                )
+            ).isEqualTo(
+                HostingMapListener.IdentityInfo(
+                    holdingIdentity = entryOne.holdingIdentity,
+                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsTenantId = "id1",
+                    sessionKeyTenantId = "id2",
+                    sessionPublicKey = publicKeyOne
+                )
+            )
+            it.assertThat(testObject.getInfo(byteArrayOf(1, 2, 2), "nop")).isNull()
+        }
+    }
+
+    @Test
+    fun `getInfo by public key return the correct data`() {
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key" to entryOne
+            )
+        )
+
+        assertSoftly {
+            it.assertThat(testObject.getInfo(entryOne.holdingIdentity.toHoldingIdentity())).isEqualTo(
+                HostingMapListener.IdentityInfo(
+                    holdingIdentity = entryOne.holdingIdentity,
+                    tlsCertificates = listOf("cert1", "cert2"),
+                    tlsTenantId = "id1",
+                    sessionKeyTenantId = "id2",
+                    sessionPublicKey = publicKeyOne
+                )
+            )
+            it.assertThat(testObject.getInfo(LinkManagerInternalTypes.HoldingIdentity("", ""))).isNull()
         }
     }
 
@@ -189,7 +238,8 @@ class StubLinkManagerHostingMapTest {
                 entryOne.holdingIdentity,
                 entryOne.tlsCertificates,
                 entryOne.tlsTenantId,
-                entryOne.identityTenantId,
+                entryOne.sessionKeyTenantId,
+                publicKeyOne,
             )
         )
     }

@@ -8,19 +8,23 @@ description "P2P Testing tools - P2P layer deployment"
 
 dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
+    implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:p2p-crypto')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-cipher-suite'
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'
 }
 
 def binaryProjects = [
-        'p2p-test:network-map-creator',
-        'p2p-test:p2p-configuration-publisher',
-        'p2p-test:cryptoservice-key-creator',
+        'p2p-test:p2p-setup',
         'kafka-setup'
 ]
 

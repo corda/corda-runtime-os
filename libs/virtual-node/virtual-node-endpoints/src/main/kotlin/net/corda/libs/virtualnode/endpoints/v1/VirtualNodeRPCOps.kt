@@ -24,7 +24,6 @@ interface VirtualNodeRPCOps : RpcOps {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcPOST(
-        path = "create",
         title = "Create virtual node",
         description = "Creates a new virtual node.",
         responseDescription = "The details of the created virtual node."
@@ -39,12 +38,10 @@ interface VirtualNodeRPCOps : RpcOps {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
-    // TODO use proper/consistent resource naming (e.g. this should be mapped under /virtualnodes)
     @HttpRpcGET(
-        path = "list",
         title = "List all virtual nodes in the cluster",
         description = "List all virtual nodes in the cluster.",
         responseDescription = "List details of the all virtual nodes in the cluster."
     )
-    fun getAllVirtualNodes (): HTTPGetVirtualNodesResponse
+    fun getAllVirtualNodes(): HTTPGetVirtualNodesResponse
 }
