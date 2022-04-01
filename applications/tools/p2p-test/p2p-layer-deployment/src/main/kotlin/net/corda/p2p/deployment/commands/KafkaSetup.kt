@@ -18,6 +18,7 @@ import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import java.io.File
+import java.io.StringWriter
 import java.lang.Integer.min
 
 class KafkaSetup(
@@ -26,64 +27,68 @@ class KafkaSetup(
     private val defaultPartitionsCount: Int,
 ) : Runnable {
     companion object {
-        private val compactedTopics = listOf(
-            CONFIG_TOPIC,
-            GATEWAY_TLS_CERTIFICATES,
-            GATEWAY_TLS_TRUSTSTORES,
-            CRYPTO_KEYS_TOPIC,
-            GROUP_POLICIES_TOPIC,
-            HOSTED_MAP_TOPIC,
-            SESSION_OUT_PARTITIONS,
-            MEMBER_INFO_TOPIC,
-            getStateAndEventStateTopic(P2P_OUT_MARKERS),
+        private val topicsToCompacted = mapOf(
+            APP_RECEIVED_MESSAGES_TOPIC to false,
+            CONFIG_TOPIC to true,
+            CRYPTO_KEYS_TOPIC to true,
+            GATEWAY_TLS_CERTIFICATES to true,
+            GATEWAY_TLS_TRUSTSTORES to true,
+            GROUP_POLICIES_TOPIC to true,
+            HOSTED_MAP_TOPIC to true,
+            LINK_IN_TOPIC to false,
+            LINK_OUT_TOPIC to false,
+            MEMBER_INFO_TOPIC to true,
+            P2P_IN_TOPIC to false,
+            P2P_OUT_MARKERS to false,
+            getStateAndEventDLQTopic(P2P_OUT_MARKERS) to false,
+            getStateAndEventStateTopic(P2P_OUT_MARKERS) to true,
+            P2P_OUT_TOPIC to false,
+            SESSION_OUT_PARTITIONS to true,
         )
-        private val nonCompactedTopics = listOf(
-            APP_RECEIVED_MESSAGES_TOPIC,
-            LINK_IN_TOPIC,
-            LINK_OUT_TOPIC,
-            P2P_IN_TOPIC,
-            P2P_OUT_TOPIC,
-            P2P_OUT_MARKERS,
-            getStateAndEventDLQTopic(P2P_OUT_MARKERS),
+
+        private val compactedConfig = mapOf(
+            "cleanup" to mapOf("policy" to "compact"),
+            "segment" to mapOf("ms" to 300000),
+            "delete" to mapOf("retention" to mapOf("ms" to 300000)),
+            "min" to mapOf(
+                "compaction" to mapOf("lag" to mapOf("ms" to 60000)),
+                "cleanable" to mapOf("dirty" to mapOf("ratio" to 0.5))
+            ),
+            "max" to mapOf("compaction" to mapOf("lag" to mapOf("ms" to 300000)))
         )
+        private val simpleConfig = mapOf(
+            "cleanup" to mapOf("policy" to "delete"),
+        )
+    }
+
+    internal fun createConfiguration(): String {
+        val config = mapOf(
+            "topics" to
+                topicsToCompacted.map { (name, compacted) ->
+                    val config = if (compacted) {
+                        compactedConfig
+                    } else {
+                        simpleConfig
+                    }
+                    mapOf(
+                        "topicName" to name,
+                        "numPartitions" to defaultPartitionsCount,
+                        "replicationFactor" to min(3, kafkaBrokersCount),
+                        "config" to config
+                    )
+                }
+        )
+        return StringWriter().use {
+            ObjectMapper().writer().writeValue(it, config)
+            it.toString()
+        }
     }
 
     override fun run() {
         println("Setting up kafka topics...")
-        val topics = compactedTopics.map {
-            mapOf(
-                "topicName" to it,
-                "numPartitions" to defaultPartitionsCount,
-                "replicationFactor" to min(3, kafkaBrokersCount),
-                "config" to mapOf(
-                    "cleanup" to mapOf("policy" to "compact"),
-                    "segment" to mapOf("ms" to 300000),
-                    "min" to mapOf(
-                        "compaction" to
-                            mapOf("lag" to mapOf("ms" to 60000)),
-                        "cleanable" to
-                            mapOf(
-                                "dirty" to mapOf("ratio" to 0.5)
-                            )
-                    ),
-                )
-            )
-        } + nonCompactedTopics.map {
-            mapOf(
-                "topicName" to it,
-                "numPartitions" to defaultPartitionsCount,
-                "replicationFactor" to min(3, kafkaBrokersCount),
-                "config" to mapOf(
-                    "cleanup" to mapOf("policy" to "delete"),
-                )
-            )
-        }
-        val config = mapOf(
-            "topics" to topics
-        )
         val configurationFile = File.createTempFile("kafka-setup", ".json")
         configurationFile.deleteOnExit()
-        ObjectMapper().writer().writeValue(configurationFile, config)
+        configurationFile.writeText(createConfiguration())
 
         RunJar.startTelepresence()
         RunJar(
