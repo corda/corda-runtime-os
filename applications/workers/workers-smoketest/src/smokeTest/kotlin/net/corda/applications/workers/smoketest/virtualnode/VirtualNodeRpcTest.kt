@@ -240,7 +240,7 @@ class VirtualNodeRpcTest {
 
             val json = assertWithRetry {
                 command { flowStatus(id, counter) }
-                timeout(Duration.ofSeconds(10))
+                timeout(FLOW_WAIT_DURATION)
                 condition { it.code == 200 && it.toJson()["flowStatus"].textValue() == "COMPLETED" }
             }.toJson()
 
