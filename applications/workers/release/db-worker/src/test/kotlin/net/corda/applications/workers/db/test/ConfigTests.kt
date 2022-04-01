@@ -37,6 +37,8 @@ class ConfigTests {
             KEY_TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
             "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"
@@ -63,20 +65,34 @@ class ConfigTests {
         val config = processor.config!!
 
         // Instance ID and topic prefix are always present, with default values if none are provided.
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX, WORKSPACE_DIR, TEMP_DIR)
+        val expectedKeys = setOf(
+            KEY_INSTANCE_ID,
+            KEY_TOPIC_PREFIX,
+            WORKSPACE_DIR,
+            TEMP_DIR,
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+        )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
     }
 
     @Test
-    fun `defaults are provided for instance Id, topic prefix, workspace dir and temp dir`() {
+    fun `defaults are provided for instance Id, topic prefix, workspace dir, temp dir and reconciliation`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), DummyHealthMonitor())
         val args = arrayOf<String>()
         dbWorker.startup(args)
         val config = processor.config!!
 
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX, WORKSPACE_DIR, TEMP_DIR)
+        val expectedKeys = setOf(
+            KEY_INSTANCE_ID,
+            KEY_TOPIC_PREFIX,
+            WORKSPACE_DIR,
+            TEMP_DIR,
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+        )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 

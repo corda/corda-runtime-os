@@ -26,6 +26,8 @@ internal const val CUSTOM_KEY_TWO = "customKeyTwo"
 internal const val CUSTOM_VAL_TWO = "customValTwo"
 internal const val WORKSPACE_DIR = "dir.workspace"
 internal const val TEMP_DIR = "dir.tmp"
+internal const val RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS = "reconciliation.permissionSummary.intervalMs"
+internal const val RECONCILIATION_CPK_WRITE_INTERVAL_MS = "reconciliation.cpkwrite.intervalMs"
 
 internal const val DEFAULT_TOPIC_PREFIX = ""
 internal const val MSG_CONFIG_PATH = "messaging"
