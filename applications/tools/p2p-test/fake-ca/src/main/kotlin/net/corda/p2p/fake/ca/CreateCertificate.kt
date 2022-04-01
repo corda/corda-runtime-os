@@ -8,8 +8,8 @@ import picocli.CommandLine.ParentCommand
 import java.io.File
 
 @Command(
-    name = "add-certificate",
-    aliases = ["add", "certificate", "cert"],
+    name = "create-certificate",
+    aliases = ["certificate", "cert"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     description = ["Create TLS certificates"],
