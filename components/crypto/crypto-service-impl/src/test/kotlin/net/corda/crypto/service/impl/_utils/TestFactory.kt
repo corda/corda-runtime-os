@@ -18,7 +18,7 @@ import java.security.PublicKey
 object TestFactory {
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    val digest: DigestService by lazy {
+    private val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
     }
 
@@ -26,11 +26,11 @@ object TestFactory {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
-    val wrappingKeyAlias = "wrapping-key-alias"
+    const val wrappingKeyAlias = "wrapping-key-alias"
 
-    private val passphrase = "PASSPHRASE"
+    private const val passphrase = "PASSPHRASE"
 
-    private val salt = "SALT"
+    private const val salt = "SALT"
 
     private val signingCacheProvider = TestSigningKeyCacheProvider().also { it.start() }
 

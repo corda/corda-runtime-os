@@ -97,7 +97,9 @@ class TestSigningKeyCacheActions(
         keys[publicKeyIdOf(publicKey)]
 
     override fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
-        TODO("Not yet implemented")
+        return candidateKeys.filter {
+            keys.containsKey(publicKeyIdOf(it))
+        }
     }
 
     override fun lookup(
@@ -111,7 +113,31 @@ class TestSigningKeyCacheActions(
         createdAfter: Instant?,
         createdBefore: Instant?
     ): List<SigningCachedKey> {
-        TODO("Not yet implemented")
+        val filtered = keys.values.filter {
+            if(category != null && it.category != category) {
+                false
+            } else if(schemeCodeName != null && it.schemeCodeName != schemeCodeName) {
+                false
+            } else if(alias != null && it.alias != alias) {
+                false
+            } else if(masterKeyAlias != null && it.masterKeyAlias != masterKeyAlias) {
+                false
+            } else if(createdAfter != null && it.created < createdAfter) {
+                false
+            } else !(createdBefore != null && it.created > createdBefore)
+        }
+        return when(orderBy) {
+            SigningKeyOrderBy.CREATED -> filtered.sortedBy { it.created }
+            SigningKeyOrderBy.CATEGORY -> filtered.sortedBy { it.category }
+            SigningKeyOrderBy.SCHEME_CODE_NAME -> filtered.sortedBy { it.schemeCodeName }
+            SigningKeyOrderBy.ALIAS -> filtered.sortedBy { it.alias }
+            SigningKeyOrderBy.MASTER_KEY_ALIAS -> filtered.sortedBy { it.masterKeyAlias }
+            SigningKeyOrderBy.CREATED_DESC -> filtered.sortedByDescending { it.created }
+            SigningKeyOrderBy.CATEGORY_DESC -> filtered.sortedByDescending { it.category }
+            SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> filtered.sortedByDescending { it.schemeCodeName }
+            SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }
+            SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> filtered.sortedByDescending { it.masterKeyAlias }
+        }.drop(skip).take(take)
     }
 
     override fun lookup(ids: List<String>): List<SigningCachedKey> {

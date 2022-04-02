@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.impl._utils.TestFactory
@@ -32,6 +33,11 @@ import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.CoreMatchers.hasItem
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.collection.IsCollectionWithSize
+import org.hamcrest.collection.IsEmptyCollection
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeAll
@@ -95,7 +101,7 @@ class CryptoOperationsTests {
         )
 
         class SigningFreshKeyInfo(
-            val externalId: String,
+            val externalId: String?,
             val publicKey: PublicKey,
             val signingService: SigningService
         )
@@ -103,6 +109,8 @@ class CryptoOperationsTests {
         private lateinit var signingAliasedKeys: Map<SignatureScheme, SigningAliasedKeyInfo>
 
         private lateinit var signingFreshKeys: Map<SignatureScheme, SigningFreshKeyInfo>
+
+        private lateinit var signingFreshKeysWithoutExternalId: Map<SignatureScheme, SigningFreshKeyInfo>
 
         private lateinit var unknownKeyPairs: Map<SignatureScheme, KeyPair>
 
@@ -162,6 +170,14 @@ class CryptoOperationsTests {
                         tenantId = tenantId,
                         externalId = externalId
                     )
+                )
+            }
+            signingFreshKeysWithoutExternalId = supportedSchemes().associateWith {
+                val signingService = TestFactory.createSigningService(it)
+                SigningFreshKeyInfo(
+                    externalId = null,
+                    signingService = signingService,
+                    publicKey = signingService.freshKey(tenantId = tenantId)
                 )
             }
             unknownKeyPairs = supportedSchemes().associateWith {
@@ -685,6 +701,62 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
+    fun `Should return empty collection when looking up for not existing ids in all supported schemes`(
+        signatureScheme: SignatureScheme
+    ) {
+        val info = signingAliasedKeys.getValue(signatureScheme)
+        val returned = info.signingService.lookup(
+            tenantId, listOf(publicKeyIdOf(UUID.randomUUID().toString().toByteArray()))
+        )
+        assertEquals(0, returned.size)
+    }
+
+    @ParameterizedTest
+    @MethodSource("supportedSchemes")
+    fun `Should lookup for key in all supported schemes`(
+        signatureScheme: SignatureScheme
+    ) {
+        val info = signingAliasedKeys.getValue(signatureScheme)
+        val returned = info.signingService.lookup(
+            skip = 0,
+            take = 50,
+            orderBy = KeyOrderBy.ALIAS,
+            tenantId = tenantId,
+            category = null,
+            alias = info.alias,
+            schemeCodeName = null,
+            masterKeyAlias = null,
+            createdAfter = null,
+            createdBefore = null
+        )
+        assertEquals(1, returned.size)
+        verifySigningKeyInfo(info.publicKey, info.alias, signatureScheme, returned[0])
+        verifyCachedKeyRecord(info.publicKey, info.alias, null, signatureScheme)
+    }
+
+    @ParameterizedTest
+    @MethodSource("supportedSchemes")
+    fun `Should return empty collection when looking up for noy matching key parameters in all supported schemes`(
+        signatureScheme: SignatureScheme
+    ) {
+        val info = signingAliasedKeys.getValue(signatureScheme)
+        val returned = info.signingService.lookup(
+            skip = 0,
+            take = 50,
+            orderBy = KeyOrderBy.ALIAS,
+            tenantId = tenantId,
+            category = null,
+            alias = info.alias,
+            schemeCodeName = null,
+            masterKeyAlias = UUID.randomUUID().toString(),
+            createdAfter = null,
+            createdBefore = null
+        )
+        assertEquals(0, returned.size)
+    }
+
+    @ParameterizedTest
+    @MethodSource("supportedSchemes")
     fun `Should not find public key when key pair hasn't been generated yet for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -765,6 +837,23 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
+    fun `Should generate fresh keys without external id and then sign and verify for all supported schemes`(
+        signatureScheme: SignatureScheme
+    ) {
+        val info = signingFreshKeysWithoutExternalId.getValue(signatureScheme)
+        val testData = UUID.randomUUID().toString().toByteArray()
+        verifyCachedKeyRecord(info.publicKey, null, null, signatureScheme)
+        validatePublicKeyAlgorithm(signatureScheme, info.publicKey)
+        val signatureByPublicKey = info.signingService.sign(tenantId, info.publicKey, testData)
+        assertEquals(info.publicKey, signatureByPublicKey.by)
+        validateSignature(info.publicKey, signatureByPublicKey.bytes, testData)
+        assertThrows<CryptoServiceBadRequestException> {
+            info.signingService.sign(UUID.randomUUID().toString(), info.publicKey, testData)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("supportedSchemes")
     fun `Signing service should use first known aliased key from CompositeKey when signing for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -805,49 +894,33 @@ class CryptoOperationsTests {
         validateSignature(signature.by, signature.bytes, testData)
     }
 
-    @ParameterizedTest
-    @MethodSource("supportedSchemes")
-    fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
-        signatureScheme: SignatureScheme
-    ) {
-        val info = signingFreshKeys.getValue(signatureScheme)
-        assertThrows<NotImplementedError> {
-            info.signingService.filterMyKeys(tenantId, emptyList())
+    @Test
+    fun `Filtering correctly our keys`() {
+        val key1 = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
-    }
-
-    /*
-    @ParameterizedTest
-    @MethodSource("supportedWrappingSchemes")
-    fun `Should fail filtering my keys as it's not implemented yet for all supported schemes`(
-        signatureScheme: SignatureScheme
-    ) {
-        val freshKeyService = createFreshKeyService(signatureScheme, wrappingKeyAlias1)
-        val freshKey1 = freshKeyService.freshKey()
-        val freshKey2 = freshKeyService.freshKey(UUID.randomUUID())
-        val ourKeys = freshKeyService.filterMyKeys(mutableListOf(freshKey1, freshKey2)).toList()
-        assertThat(ourKeys, IsCollectionWithSize.hasSize(2))
-        assertThat(ourKeys, hasItem(freshKey1))
-        assertThat(ourKeys, hasItem(freshKey2))
+        val key2 = signingFreshKeys.values.first().publicKey
+        val ourKeys = signingFreshKeys.values.first().signingService.filterMyKeys(
+            tenantId,
+            mutableListOf(key1, key2)
+        ).toList()
+        assertThat(ourKeys, IsCollectionWithSize.hasSize(1))
+        assertThat(ourKeys, hasItem(key2))
     }
 
     @Test
-    fun `Keys are correctly filtered - none keys belong to us`() {
-        val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
-        val freshKey2 = keyManagementBackend1.freshKey()
-        val ourKeys = keyManagementBackend1.filterMyKeys(mutableListOf(freshKey1, freshKey2)).toList()
-        MatcherAssert.assertThat(ourKeys, IsCollectionWithSize.hasSize(1))
-        MatcherAssert.assertThat(ourKeys, hasItem(freshKey2))
+    fun `Filter our keys returns empty collection as none of the keys belong to us`() {
+        val key1 = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val key2 = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val ourKeys = signingFreshKeys.values.first().signingService.filterMyKeys(
+            tenantId,
+            mutableListOf(key1, key2)
+        ).toList()
+        assertThat(ourKeys, `is`(IsEmptyCollection.empty()))
     }
-
-    @Test
-    fun `Keys are correctly filtered - some of the keys belong to us`() {
-        val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
-        val freshKey2 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
-
-        val ourKeys = keyManagementBackend1.filterMyKeys(mutableListOf(freshKey1, freshKey2)).toList()
-        MatcherAssert.assertThat(ourKeys, `is`(IsEmptyCollection.empty()))
-    }
-*/
 }
 

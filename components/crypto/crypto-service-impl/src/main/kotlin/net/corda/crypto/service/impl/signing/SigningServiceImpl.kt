@@ -77,6 +77,9 @@ open class SigningServiceImpl(
 
     override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
         logger.debug("filterMyKeys(tenantId={}, ids=[{}])", tenantId, candidateKeys.joinToString { publicKeyIdOf(it) })
+        require(candidateKeys.count() <= 20) {
+            "Number of item must not exceed 20, submitted ${candidateKeys.count()}"
+        }
         return cache.act(tenantId) {
             it.filterMyKeys(candidateKeys)
         }
@@ -220,6 +223,11 @@ open class SigningServiceImpl(
             KeyOrderBy.SCHEME_CODE_NAME -> SigningKeyOrderBy.SCHEME_CODE_NAME
             KeyOrderBy.ALIAS -> SigningKeyOrderBy.ALIAS
             KeyOrderBy.MASTER_KEY_ALIAS -> SigningKeyOrderBy.MASTER_KEY_ALIAS
+            KeyOrderBy.CREATED_DESC -> SigningKeyOrderBy.CREATED_DESC
+            KeyOrderBy.CATEGORY_DESC -> SigningKeyOrderBy.CATEGORY_DESC
+            KeyOrderBy.SCHEME_CODE_NAME_DESC -> SigningKeyOrderBy.SCHEME_CODE_NAME_DESC
+            KeyOrderBy.ALIAS_DESC -> SigningKeyOrderBy.ALIAS_DESC
+            KeyOrderBy.MASTER_KEY_ALIAS_DESC -> SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC
         }
 
     private fun SigningCachedKey.toSigningKeyInfo(): SigningKeyInfo =
