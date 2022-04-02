@@ -38,17 +38,11 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.StubLinkManagerHostingMap
-import net.corda.p2p.linkmanager.StubNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
-import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.p2p.test.HostedIdentityEntry
-import net.corda.p2p.test.KeyPairEntry
-import net.corda.p2p.test.MemberInfoEntry
-import net.corda.p2p.test.TenantKeys
+import net.corda.p2p.test.*
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
@@ -64,7 +58,6 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.crypto.util.PrivateKeyFactory
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -76,11 +69,9 @@ import java.security.Key
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Instant
 import java.util.*
-import java.security.PrivateKey
-import java.security.spec.PKCS8EncodedKeySpec
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -338,7 +329,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            KeyAlgorithm.RSA,
+            RSA_SHA256_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -348,7 +339,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                KeyAlgorithm.RSA,
+                RSA_SHA256_TEMPLATE,
             ).use { hostB ->
                 testMessagesBetweenTwoHosts(hostA, hostB)
             }
