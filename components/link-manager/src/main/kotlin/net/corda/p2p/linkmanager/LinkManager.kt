@@ -48,6 +48,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.*
+import kotlin.collections.ArrayList
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -382,16 +383,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             isReplay: Boolean,
             isTtlExpired: Boolean
         ): List<Record<String, *>> {
-            val markers = mutableListOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-            if (isHostedLocally) markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
-            else if (isTtlExpired) {
+            val markers: ArrayList<Record<String, *>> = ArrayList()
+            if (isHostedLocally) {
+                markers.add(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
+                markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            }
+            if (isReplay && isTtlExpired) {
                 markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
-                if (isReplay) markers.remove(
-                    recordForLMSentMarker(
-                        messageAndKey,
-                        messageAndKey.message.header.messageId
-                    )
-                )
+            }
+            if (isTtlExpired && !isReplay) {
+                markers.add(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
+                markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
             }
             return markers
         }
