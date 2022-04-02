@@ -388,7 +388,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 markers.add(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
                 markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
             }
-            if (isReplay && isTtlExpired) {
+            if (isTtlExpired && isReplay) {
                 markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
             }
             if (isTtlExpired && !isReplay) {
