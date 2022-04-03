@@ -432,6 +432,50 @@ class SigningServiceGeneralTests {
     }
 
     @Test
+    fun `Should pass order by to lookup function`() {
+        KeyOrderBy.values().forEach { orderBy ->
+            val skip = 17
+            val take = 21
+            val tenantId: String = UUID.randomUUID().toString()
+            val actions = mock<SigningKeyCacheActions>()
+            val cache = mock<SigningKeyCache> {
+                on { act(tenantId) } doReturn actions
+                on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            }
+            val signingService = SigningServiceImpl(
+                cache = cache,
+                cryptoServiceFactory = mock(),
+                schemeMetadata = schemeMetadata
+            )
+            val result = signingService.lookup(
+                skip,
+                take,
+                orderBy,
+                tenantId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+            assertNotNull(result)
+            assertEquals(0, result.size)
+            Mockito.verify(actions, times(1)).lookup(
+                skip,
+                take,
+                SigningKeyOrderBy.valueOf(orderBy.toString()) ,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        }
+    }
+
+    @Test
     fun `Should save generated key with alias`() {
         val generatedKey = GeneratedPublicKey(
             publicKey = mock(),
