@@ -68,8 +68,8 @@ fun CryptoServiceRef.sign(
     context: Map<String, String>
 ): ByteArray {
     val spec = if(record.keyMaterial != null) {
-        require(record.keyMaterial != null && record.keyMaterial!!.isNotEmpty()) {
-            "The hsm assigned alias is missing."
+        require(record.keyMaterial!!.isNotEmpty()) {
+            "The key material is empty."
         }
         require(record.encodingVersion != null) {
             "The encoding version is missing."
