@@ -6,9 +6,13 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions
 import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.SigningPublicKeySaveContext
+import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.BeforeAll
@@ -16,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -423,6 +428,53 @@ class SigningServiceGeneralTests {
             masterKeyAlias,
             createdAfter,
             createdBefore
+        )
+    }
+
+    @Test
+    fun `Should save generated key with alias`() {
+        val generatedKey = GeneratedPublicKey(
+            publicKey = mock(),
+            hsmAlias = UUID.randomUUID().toString()
+        )
+        val tenantId = UUID.randomUUID().toString()
+        val expectedAlias = UUID.randomUUID().toString()
+        val actions = mock<SigningKeyCacheActions>()
+        val cache = mock<SigningKeyCache> {
+            on { act(tenantId) } doReturn actions
+            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+        }
+        val ref = CryptoServiceRef(
+            tenantId = UUID.randomUUID().toString(),
+            category = CryptoConsts.HsmCategories.LEDGER,
+            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            masterKeyAlias = UUID.randomUUID().toString(),
+            aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            instance = mock {
+                on { generateKeyPair(any(), any()) } doReturn generatedKey
+            }
+        )
+        val signingService = SigningServiceImpl(
+            cache = cache,
+            cryptoServiceFactory = mock {
+                on { this.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER) } doReturn ref
+            },
+            schemeMetadata = schemeMetadata
+        )
+        val result = signingService.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.HsmCategories.LEDGER,
+            alias = expectedAlias
+        )
+        assertSame(generatedKey.publicKey, result)
+        Mockito.verify(actions, times(1)).save(
+            argThat {
+                this as SigningPublicKeySaveContext
+                key == generatedKey &&
+                        alias == expectedAlias &&
+                        signatureScheme == ref.signatureScheme &&
+                        category == ref.category
+            }
         )
     }
 }
