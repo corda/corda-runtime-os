@@ -217,18 +217,7 @@ open class SigningServiceImpl(
         cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
 
     private fun KeyOrderBy.toSigningKeyOrderBy(): SigningKeyOrderBy =
-        when (this) {
-            KeyOrderBy.CREATED -> SigningKeyOrderBy.CREATED
-            KeyOrderBy.CATEGORY -> SigningKeyOrderBy.CATEGORY
-            KeyOrderBy.SCHEME_CODE_NAME -> SigningKeyOrderBy.SCHEME_CODE_NAME
-            KeyOrderBy.ALIAS -> SigningKeyOrderBy.ALIAS
-            KeyOrderBy.MASTER_KEY_ALIAS -> SigningKeyOrderBy.MASTER_KEY_ALIAS
-            KeyOrderBy.CREATED_DESC -> SigningKeyOrderBy.CREATED_DESC
-            KeyOrderBy.CATEGORY_DESC -> SigningKeyOrderBy.CATEGORY_DESC
-            KeyOrderBy.SCHEME_CODE_NAME_DESC -> SigningKeyOrderBy.SCHEME_CODE_NAME_DESC
-            KeyOrderBy.ALIAS_DESC -> SigningKeyOrderBy.ALIAS_DESC
-            KeyOrderBy.MASTER_KEY_ALIAS_DESC -> SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC
-        }
+        SigningKeyOrderBy.valueOf(name)
 
     private fun SigningCachedKey.toSigningKeyInfo(): SigningKeyInfo =
         SigningKeyInfo(

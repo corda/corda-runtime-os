@@ -1,13 +1,15 @@
 package net.corda.crypto.client
 
 import net.corda.data.crypto.config.HSMInfo
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
+import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.PublicKey
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -103,22 +105,40 @@ interface CryptoOpsClient : Lifecycle {
     ): DigitalSignature.WithKey
 
     /**
-     * Looks up key details by its alias.
-     * Note that the alias is scoped to tenant, so it would be enough for the system to figure out which HSM to use
-     * without having category as parameter.
+     * Returns list of keys satisfying the filter condition. All filter values are combined as AND.
      *
-     * @return The key details if it's found otherwise null.
+     * @param skip the response paging information, number of records to skip.
+     * @param take the response paging information, number of records to return, the actual number may be less than
+     * requested.
+     * @param orderBy the order by.
+     * @param tenantId the tenant's id which the keys belong to.
+     * @param category the HSM's category which handles the keys.
+     * @param schemeCodeName the key's signature scheme name.
+     * @param alias the alias which is assigned by the tenant.
+     * @param masterKeyAlias the wrapping key alias.
+     * @param createdAfter specifies inclusive time after which a key was created.
+     * @param createdAfter specifies inclusive time before which a key was created.
      */
-    fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails?
+    fun lookup(
+        skip: Int,
+        take: Int,
+        orderBy: CryptoKeyOrderBy,
+        tenantId: String,
+        category: String?,
+        schemeCodeName: String?,
+        alias: String?,
+        masterKeyAlias: String?,
+        createdAfter: Instant?,
+        createdBefore: Instant?
+    ): List<CryptoSigningKey>
 
     /**
-     * Looks up key details by its public key.
-     * Note that the alias is scoped to tenant, so it would be enough for the system to figure out which HSM to use
-     * without having category as parameter.
+     * Returns list of keys for provided key ids.
      *
-     * @return The key details if it's found otherwise null.
+     * @param tenantId the tenant's id which the keys belong to.
+     * @param ids The list of the key ids to look up for, the maximum number of items is 20.
      */
-    fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails?
+    fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
 
     /**
      * Looks up information about the assigned HSM.

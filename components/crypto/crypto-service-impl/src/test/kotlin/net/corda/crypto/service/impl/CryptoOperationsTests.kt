@@ -5,7 +5,7 @@ import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.impl._utils.TestFactory
+import net.corda.crypto.service.impl._utils.TestServicesFactory
 import net.corda.crypto.service.impl._utils.generateKeyPair
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
@@ -117,12 +117,12 @@ class CryptoOperationsTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadata = TestFactory.schemeMetadata
-            verifier = TestFactory.verifier
+            schemeMetadata = TestServicesFactory.schemeMetadata
+            verifier = TestServicesFactory.verifier
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.HsmCategories.LEDGER
-            wrappingKeyAlias = TestFactory.wrappingKeyAlias
-            cryptoService = TestFactory.cryptoService
+            wrappingKeyAlias = TestServicesFactory.wrappingKeyAlias
+            cryptoService = TestServicesFactory.cryptoService
             softAliasedKeys = supportedSchemes().associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
@@ -148,7 +148,7 @@ class CryptoOperationsTests {
                 ) as GeneratedWrappedKey
             }
             signingAliasedKeys = supportedSchemes().associateWith {
-                val signingService = TestFactory.createSigningService(it)
+                val signingService = TestServicesFactory.createSigningService(it)
                 val alias = UUID.randomUUID().toString()
                 SigningAliasedKeyInfo(
                     alias = alias,
@@ -161,7 +161,7 @@ class CryptoOperationsTests {
                 )
             }
             signingFreshKeys = supportedSchemes().associateWith {
-                val signingService = TestFactory.createSigningService(it)
+                val signingService = TestServicesFactory.createSigningService(it)
                 val externalId = UUID.randomUUID().toString()
                 SigningFreshKeyInfo(
                     externalId = externalId,
@@ -173,7 +173,7 @@ class CryptoOperationsTests {
                 )
             }
             signingFreshKeysWithoutExternalId = supportedSchemes().associateWith {
-                val signingService = TestFactory.createSigningService(it)
+                val signingService = TestServicesFactory.createSigningService(it)
                 SigningFreshKeyInfo(
                     externalId = null,
                     signingService = signingService,
@@ -218,7 +218,7 @@ class CryptoOperationsTests {
             uuid: String?,
             signatureScheme: SignatureScheme
         ) {
-            val generatedKeyData = TestFactory.getSigningCachedKey(tenantId, publicKey)
+            val generatedKeyData = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
             assertNotNull(generatedKeyData)
             assertEquals(tenantId, generatedKeyData.tenantId)
             if(generatedKeyData.alias == null) {

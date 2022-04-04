@@ -1,6 +1,7 @@
 package net.corda.crypto.service
 
 enum class KeyOrderBy {
+    NONE,
     CREATED,
     CATEGORY,
     SCHEME_CODE_NAME,

@@ -15,7 +15,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
 
-object TestFactory {
+object TestServicesFactory {
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
     private val digest: DigestService by lazy {

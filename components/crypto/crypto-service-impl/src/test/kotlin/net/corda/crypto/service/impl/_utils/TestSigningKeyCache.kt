@@ -137,6 +137,7 @@ class TestSigningKeyCacheActions(
             SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> filtered.sortedByDescending { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> filtered.sortedByDescending { it.masterKeyAlias }
+            SigningKeyOrderBy.NONE -> filtered
         }.drop(skip).take(take)
     }
 
