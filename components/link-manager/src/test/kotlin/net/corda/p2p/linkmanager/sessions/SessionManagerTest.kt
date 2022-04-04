@@ -267,6 +267,29 @@ class SessionManagerTest {
         }
     }
 
+    /**
+     * Send the [sessionManager] an authenticatedMessage and a [ResponderHandshakeMessage] so that it starts sending Heartbeats.
+     */
+    private fun startSendingHeartbeats(sessionManager: SessionManager) {
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+
+        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
+            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
+        )
+        sessionManager.processOutboundMessage(message)
+        whenever(outboundSessionPool.constructed().last().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
+        whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
+        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
+        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
+    }
+
     @Test
     fun `when no session exists, processing outbound message creates a new session`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
@@ -897,21 +920,26 @@ class SessionManagerTest {
 
     @Test
     fun `when responder handshake is received, no message is returned and session is established`() {
-        val sessionId = "some-session"
-        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+        val someSessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(someSessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
 
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, someSessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
+        val session = mock<Session> {
+            on { sessionId } doReturn someSessionId
+        }
         whenever(protocolInitiator.getSession()).thenReturn(session)
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
         verify(outboundSessionPool.constructed().first()).updateAfterSessionEstablished(session)
         verify(sessionReplayer).removeMessageFromReplay(
-            "${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            "${someSessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
         verify(pendingSessionMessageQueues)
@@ -1092,6 +1120,7 @@ class SessionManagerTest {
         )
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         val session = mock<Session>()
+        whenever(session.sessionId).doAnswer { protocolInitiator.sessionId }
         whenever(protocolInitiator.getSession()).thenReturn(session)
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
@@ -1107,7 +1136,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when a data message is sent, heartbeats are sent, if these are not acknowledged the session times out`() {
+    fun `when a responder handshake message is received, heartbeats are sent, if these are not acknowledged the session times out`() {
         val messages = mutableListOf<AuthenticatedDataMessage>()
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             val record = records.single()
@@ -1147,31 +1176,10 @@ class SessionManagerTest {
             }
         }
         sessionManager.start()
-
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-
-        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
-            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
-        )
-        sessionManager.processOutboundMessage(message)
-        whenever(outboundSessionPool.constructed().last().getSession(protocolInitiator.sessionId)).thenReturn(
-            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
-        )
-
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
-        whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
-        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
-        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
-            OutboundSessionPool.SessionPoolStatus.SessionActive(authenticatedSession)
-        )
-        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-        sessionManager.dataMessageSent(authenticatedSession)
+        startSendingHeartbeats(sessionManager)
 
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
-        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
         verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
@@ -1179,6 +1187,7 @@ class SessionManagerTest {
         sessionManager.stop()
         resourcesHolder.close()
 
+        assertThat(messages.size).isGreaterThanOrEqualTo(1)
         for (message in messages) {
             val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
             assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
@@ -1186,7 +1195,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when a data message is sent, heartbeats are sent, this continues even if the heartbeat manager gets a new config`() {
+    fun `when a responder handshake message is received, heartbeats are sent, this continues if the heartbeat manager gets a new config`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
@@ -1227,14 +1236,7 @@ class SessionManagerTest {
             }
         }
         sessionManager.start()
-        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
-            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
-        )
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
-        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
-        sessionManager.dataMessageSent(authenticatedSession)
+        startSendingHeartbeats(sessionManager)
 
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
@@ -1251,7 +1253,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when a data message is sent, heartbeats are sent, this stops if the session manager gets a new config`() {
+    fun `when a responder handshake message is received, heartbeats are sent, this stops if the session manager gets a new config`() {
         var linkOutMessages = 0
         val resourcesHolder = ResourcesHolder()
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
@@ -1294,16 +1296,9 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
-        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
-            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
-        )
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
-        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
-        sessionManager.dataMessageSent(authenticatedSession)
+        startSendingHeartbeats(sessionManager)
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(linkOutMessages).isEqualTo(2)
@@ -1324,7 +1319,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
+    fun `when a responder handshake message is received, heartbeats are sent, if these are acknowledged the session does not time out`() {
         val resourcesHolder = ResourcesHolder()
 
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
@@ -1367,16 +1362,9 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
-        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
-            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
-        )
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
-        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
-        sessionManager.dataMessageSent(authenticatedSession)
+        startSendingHeartbeats(sessionManager)
 
         // sum of heartbeats extending over the session timeout
         val numberOfHeartbeats = configWithHeartbeat.let {
@@ -1437,14 +1425,10 @@ class SessionManagerTest {
             whenever(it.publish(any())).doAnswer { publish() }
         }
         sessionManager.start()
-        whenever(outboundSessionPool.constructed().last().getNextSession(counterparties)).thenReturn(
-            OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded
-        )
-        val initiatorHello = mock<InitiatorHelloMessage>()
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-        val sessionId = (sessionManager.processOutboundMessage(message) as NewSessionsNeeded).messages.single().first
-        whenever(authenticatedSession.sessionId).thenReturn(sessionId)
-        sessionManager.dataMessageSent(authenticatedSession)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
+
+        startSendingHeartbeats(sessionManager)
 
         repeat(3) { mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis)) }
         assertThat(sentHeartbeats).isEqualTo(3)
