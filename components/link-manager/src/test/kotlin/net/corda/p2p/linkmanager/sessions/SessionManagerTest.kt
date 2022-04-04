@@ -286,6 +286,7 @@ class SessionManagerTest {
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
         whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
+        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
     }
 
@@ -1186,6 +1187,7 @@ class SessionManagerTest {
         sessionManager.stop()
         resourcesHolder.close()
 
+        assertThat(messages.size).isGreaterThanOrEqualTo(1)
         for (message in messages) {
             val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
             assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
