@@ -138,7 +138,7 @@ pipeline {
         always {
             findBuildScans()
             splunkLogGenerator()
-            rtp(parserName: 'HTML', stableText: "<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/kubernetes_overview?form.period.earliest=-4h%40m&form.period.latest=now&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*'>Splunk K8s E2E Dashboard</a>")
+            rtp(parserName: 'HTML', stableText: "<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/kubernetes_overview?form.period.earliest=0&form.period.latest=&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*'>Splunk K8s E2E Dashboard</a>")
             script{
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
