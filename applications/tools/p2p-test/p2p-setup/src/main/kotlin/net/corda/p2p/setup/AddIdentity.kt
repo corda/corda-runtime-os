@@ -18,6 +18,7 @@ import java.util.concurrent.Callable
     description = ["Publish locally hosted identity"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
     companion object {

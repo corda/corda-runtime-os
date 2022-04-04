@@ -18,6 +18,7 @@ import java.security.KeyPairGenerator
     showDefaultValues = true,
     description = ["configure a cluster (and the other cluster to know about it)"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class ConfigureAll : Runnable {
     @Option(

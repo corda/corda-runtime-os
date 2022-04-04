@@ -18,6 +18,7 @@ import java.util.concurrent.Callable
     description = ["Add a group member"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
     companion object {

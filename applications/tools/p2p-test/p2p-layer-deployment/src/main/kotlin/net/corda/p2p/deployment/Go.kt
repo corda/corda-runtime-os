@@ -26,7 +26,8 @@ import kotlin.system.exitProcess
     header = ["Deployer for p2p layer"],
     name = "p2p-layer-deployment",
     mixinStandardHelpOptions = true,
-    versionProvider = VersionProvider::class
+    versionProvider = VersionProvider::class,
+    usageHelpAutoWidth = true,
 )
 class Go
 @Suppress("SpreadOperator")

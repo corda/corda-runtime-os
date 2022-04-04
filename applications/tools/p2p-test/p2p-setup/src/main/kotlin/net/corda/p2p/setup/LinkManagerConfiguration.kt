@@ -16,6 +16,7 @@ import java.util.concurrent.Callable
     description = ["Configure the P2P Link Manager"],
     showAtFileInUsageHelp = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class LinkManagerConfiguration : Callable<Collection<Record<String, Configuration>>> {
     @Option(
@@ -23,6 +24,12 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
         description = ["The configuration topic"]
     )
     var topic: String = Schemas.Config.CONFIG_TOPIC
+
+    @Option(
+        names = ["--replayAlgorithm"],
+        description = ["The algorithm used to schedule messages for replay."]
+    )
+    var replayAlgorithm = ReplayAlgorithm.Constant
 
     @Option(
         names = ["--maxMessageSize"],
@@ -65,6 +72,10 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
         description = ["The number of sessions between two peers"]
     )
     var sessionsPerPeer = 4L
+
+    enum class ReplayAlgorithm {
+        Constant, ExponentialBackoff
+    }
 
     override fun call(): Collection<Record<String, Configuration>> {
         val configuration = ConfigFactory.empty()

@@ -17,6 +17,7 @@ import picocli.CommandLine.Option
     showDefaultValues = true,
     description = ["Deploy P2P layer cluster for K8S"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Deploy : Runnable {
     @Option(

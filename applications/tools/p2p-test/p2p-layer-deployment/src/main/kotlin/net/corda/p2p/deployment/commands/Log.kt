@@ -9,6 +9,7 @@ import kotlin.concurrent.thread
     showDefaultValues = true,
     description = ["print the logs of the pods in the namespace"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Log : Runnable {
     @Option(
