@@ -9,7 +9,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-class MemberLookupServiceImplTest {
+class MemberLookupImplTest {
     private val flowFiberService = MockFlowFiberService()
     private val membershipGroupReader = flowFiberService.flowFiberExecutionContext.membershipGroupReader
     private val virtualNodeX500Name = flowFiberService.flowFiberExecutionContext.memberX500Name
@@ -23,7 +23,7 @@ class MemberLookupServiceImplTest {
 
         whenever(membershipGroupReader.lookup()).thenReturn(listOf(member1, member2))
 
-        val target = MemberLookupServiceImpl(flowFiberService)
+        val target = MemberLookupImpl(flowFiberService)
 
         assertThat(target.lookup()).hasSameElementsAs(expected)
     }
@@ -39,7 +39,7 @@ class MemberLookupServiceImplTest {
 
         whenever(membershipGroupReader.lookup(keyHash)).thenReturn(member1)
 
-        val target = MemberLookupServiceImpl(flowFiberService)
+        val target = MemberLookupImpl(flowFiberService)
 
         assertThat(target.lookup(key)).isSameAs(member1)
     }
@@ -50,7 +50,7 @@ class MemberLookupServiceImplTest {
 
         whenever(membershipGroupReader.lookup(ALICE_X500_NAME)).thenReturn(member1)
 
-        val target = MemberLookupServiceImpl(flowFiberService)
+        val target = MemberLookupImpl(flowFiberService)
 
         assertThat(target.lookup(ALICE_X500_NAME)).isSameAs(member1)
     }
@@ -61,7 +61,7 @@ class MemberLookupServiceImplTest {
 
         whenever(membershipGroupReader.lookup(virtualNodeX500Name)).thenReturn(member1)
 
-        val target = MemberLookupServiceImpl(flowFiberService)
+        val target = MemberLookupImpl(flowFiberService)
 
         assertThat(target.myInfo()).isSameAs(member1)
     }
