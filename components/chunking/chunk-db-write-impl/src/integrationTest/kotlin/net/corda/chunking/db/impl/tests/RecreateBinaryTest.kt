@@ -13,55 +13,27 @@ import net.corda.db.testkit.DbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
-import javax.persistence.EntityManagerFactory
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecreateBinaryTest {
-    companion object {
-        // N.B.  We're pulling in the config tables as well.
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
-        private lateinit var entityManagerFactory: EntityManagerFactory
-        private lateinit var persistence: DatabaseChunkPersistence
-
-        /**
-         * Creates an in-memory database, applies the relevant migration scripts, and initialises
-         * [entityManagerFactory].
-         */
-        @Suppress("Unused")
-        @BeforeAll
-        @JvmStatic
-        private fun prepareDatabase() {
-            val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
-
-            val dbChange = ClassloaderChangeLog(
-                linkedSetOf(
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        DbSchema::class.java.packageName,
-                        listOf(MIGRATION_FILE_LOCATION),
-                        DbSchema::class.java.classLoader
-                    )
-                )
-            )
-            emConfig.dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-            }
-            entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-                "test_unit",
-                ChunkingEntities.classes.toList(),
-                emConfig
-            )
-            persistence = DatabaseChunkPersistence(entityManagerFactory)
-        }
-
-        val loremIpsum = """
+    private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+        "test_unit",
+        ChunkingEntities.classes.toList(),
+        emConfig
+    )
+    private val persistence = DatabaseChunkPersistence(entityManagerFactory)
+    private val loremIpsum = """
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor 
             condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem 
             ornare nibh, id rutrum mi elit in metus. Sed ac tincidunt elit. Aliquam quis 
@@ -73,22 +45,52 @@ class RecreateBinaryTest {
             finibus. 
         """.trimIndent()
 
-        private fun randomFileName(): String = UUID.randomUUID().toString()
+    private fun randomFileName(): String = UUID.randomUUID().toString()
 
-        private fun createChunks(someFile: String, tempFile: Path): MutableList<Chunk> {
-            val divisor = 10
-            val chunkSize = loremIpsum.length / divisor
+    companion object {
+        // N.B.  We're pulling in the config tables as well.
+        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
+    }
 
-            val chunks = mutableListOf<Chunk>()
-            val writer = ChunkWriterFactory.create(chunkSize).apply {
-                onChunk { chunks.add(it) }
-            }
-            // end of setup...
-
-            // This is what we'd write in one of our components
-            writer.write(someFile, Files.newInputStream(tempFile))
-            return chunks
+    /**
+     * Creates an in-memory database, applies the relevant migration scripts, and initialises
+     * [entityManagerFactory].
+     */
+    init {
+        val dbChange = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf(MIGRATION_FILE_LOCATION),
+                    DbSchema::class.java.classLoader
+                )
+            )
+        )
+        emConfig.dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
+    }
+
+    @Suppress("Unused")
+    @AfterAll
+    fun cleanup() {
+        emConfig.close()
+        entityManagerFactory.close()
+    }
+
+    private fun createChunks(someFile: String, tempFile: Path): MutableList<Chunk> {
+        val divisor = 10
+        val chunkSize = loremIpsum.length / divisor
+
+        val chunks = mutableListOf<Chunk>()
+        val writer = ChunkWriterFactory.create(chunkSize).apply {
+            onChunk { chunks.add(it) }
+        }
+        // end of setup...
+
+        // This is what we'd write in one of our components
+        writer.write(someFile, Files.newInputStream(tempFile))
+        return chunks
     }
 
     lateinit var fs: FileSystem

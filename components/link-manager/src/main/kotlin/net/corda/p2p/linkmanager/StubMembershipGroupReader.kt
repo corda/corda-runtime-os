@@ -9,15 +9,11 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
-import net.corda.p2p.test.KeyAlgorithm
+import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.p2p.test.stub.crypto.processor.KeyDeserialiser
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -29,7 +25,9 @@ internal class StubMembershipGroupReader(
 ) : LinkManagerMembershipGroupReader {
 
     private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC, instanceId)
-    private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
+
+    private val publicKeyReader = PublicKeyReader()
+    private val keyHasher = KeyHasher()
 
     private val subscription = subscriptionFactory.createCompactedSubscription(
         subscriptionConfig,
@@ -57,10 +55,11 @@ internal class StubMembershipGroupReader(
             currentData: Map<String, MemberInfoEntry>,
         ) {
             val newValue = newRecord.value
-            if (newValue == null) {
-                membersInformation.remove(oldValue?.holdingIdentity?.toHoldingIdentity())
-                publicHashToMemberInformation.remove(oldValue?.toGroupIdWithPublicKeyHash())
-            } else {
+            if (oldValue != null) {
+                publicHashToMemberInformation.remove(oldValue.toGroupIdWithPublicKeyHash())
+                membersInformation.remove(oldValue.holdingIdentity.toHoldingIdentity())
+            }
+            if (newValue != null) {
                 addMember(newValue)
             }
         }
@@ -76,8 +75,6 @@ internal class StubMembershipGroupReader(
         emptySet(),
         emptySet()
     )
-    private val keyDeserialiser = KeyDeserialiser()
-
     private val readyFuture = CompletableFuture<Unit>()
 
     override val dominoTile = ComplexDominoTile(
@@ -93,54 +90,34 @@ internal class StubMembershipGroupReader(
     }
 
     private val membersInformation = ConcurrentHashMap<LinkManagerInternalTypes.HoldingIdentity, LinkManagerInternalTypes.MemberInfo>()
-    private val publicHashToMemberInformation = ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerInternalTypes.MemberInfo>()
+    private val publicHashToMemberInformation =
+        ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerInternalTypes.MemberInfo>()
 
-    private data class GroupIdWithPublicKeyHash(
-        val groupId: String,
-        val hash: ByteBuffer
-    )
+    override fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity) = membersInformation[holdingIdentity]
 
-    override fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity): LinkManagerInternalTypes.MemberInfo? {
-        return membersInformation[holdingIdentity]
-    }
-
-    override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerInternalTypes.MemberInfo? {
-        return publicHashToMemberInformation[
+    override fun getMemberInfo(hash: ByteArray, groupId: String) =
+        publicHashToMemberInformation[
             GroupIdWithPublicKeyHash(
                 groupId,
                 ByteBuffer.wrap(hash)
             )
         ]
-    }
 
     private fun MemberInfoEntry.toMemberInfo(): LinkManagerInternalTypes.MemberInfo {
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return LinkManagerInternalTypes.MemberInfo(
             LinkManagerInternalTypes.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
-            keyDeserialiser.toPublicKey(this.publicKey.array(), this.publicKeyAlgorithm),
-            this.publicKeyAlgorithm.toKeyAlgorithm(),
+            publicKey,
+            publicKey.toKeyAlgorithm(),
             LinkManagerInternalTypes.EndPoint(this.address),
         )
     }
 
-    private fun KeyAlgorithm.toKeyAlgorithm(): net.corda.p2p.crypto.protocol.api.KeyAlgorithm {
-        return when (this) {
-            KeyAlgorithm.ECDSA -> net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA
-            KeyAlgorithm.RSA -> net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA
-        }
-    }
-    private fun calculateHash(publicKey: ByteArray): ByteArray {
-        messageDigest.reset()
-        messageDigest.update(publicKey)
-        return messageDigest.digest()
-    }
     private fun MemberInfoEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
         return GroupIdWithPublicKeyHash(
             this.holdingIdentity.groupId,
-            ByteBuffer.wrap(
-                calculateHash(
-                    this.publicKey.array()
-                )
-            )
+            ByteBuffer.wrap(keyHasher.hash(publicKey)),
         )
     }
 }

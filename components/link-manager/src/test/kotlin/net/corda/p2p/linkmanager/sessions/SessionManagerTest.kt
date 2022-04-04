@@ -34,6 +34,7 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.GroupPolicyListener
+import net.corda.p2p.linkmanager.HostingMapListener
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerHostingMap
@@ -173,9 +174,18 @@ class SessionManagerTest {
         on { getMemberInfo(PEER_PARTY) } doReturn PEER_MEMBER_INFO
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
+    private val hostingIdentity = HostingMapListener.IdentityInfo(
+        holdingIdentity = OUR_PARTY.toHoldingIdentity(),
+        tlsCertificates = emptyList(),
+        tlsTenantId = "tlsId",
+        sessionKeyTenantId = "id",
+        sessionPublicKey = OUR_KEY.public
+    )
+
     private val counterparties = SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
     private val linkManagerHostingMap = mock<LinkManagerHostingMap> {
-        on { getTenantId(any()) } doReturn "id"
+        on { getInfo(OUR_PARTY) } doReturn hostingIdentity
+        on { getInfo(messageDigest.hash(OUR_KEY.public.encoded), OUR_PARTY.groupId) } doReturn hostingIdentity
     }
     private val cryptoService = mock<StubCryptoProcessor> {
         on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
@@ -289,7 +299,7 @@ class SessionManagerTest {
     fun `when no session exists, if source member info is missing from network map no message is sent`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
-        whenever(members.getMemberInfo(OUR_PARTY)).thenReturn(null)
+        whenever(linkManagerHostingMap.getInfo(OUR_PARTY)).thenReturn(null)
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
@@ -368,7 +378,6 @@ class SessionManagerTest {
         sessionManager.processOutboundMessage(message)
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
-        verify(pendingSessionMessageQueues, times(2)).queueMessage(message, SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
     }
 
     @Test
@@ -545,6 +554,7 @@ class SessionManagerTest {
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
+        whenever(linkManagerHostingMap.getInfo(OUR_PARTY)).thenReturn(null)
         whenever(members.getMemberInfo(OUR_PARTY)).thenReturn(null)
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
@@ -590,25 +600,6 @@ class SessionManagerTest {
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("The ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId was" +
                 " discarded.")
-    }
-
-    @Test
-    fun `when responder hello is received, but tenant ID cannot be found to sign, message is dropped`() {
-        val sessionId = "some-session"
-        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
-            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
-        )
-
-        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
-        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
-        whenever(linkManagerHostingMap.getTenantId(any())).thenReturn(null)
-        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
-        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
-        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
-
-        assertThat(responseMessage).isNull()
-        loggingInterceptor.assertSingleWarningContains("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId "
-                + "but $OUR_PARTY has no tenant ID. The message was discarded.")
     }
 
     @Test
@@ -817,7 +808,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(initiatorHandshake, PEER_KEY.public, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC))
             .thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
-        whenever(members.getMemberInfo(responderPublicKeyHash, GROUP_ID)).thenReturn(null)
+        whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, GROUP_ID)).thenReturn(null)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -885,7 +876,7 @@ class SessionManagerTest {
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
         whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
-        whenever(linkManagerHostingMap.getTenantId(any())).doReturn(null)
+        whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, OUR_PARTY.groupId)).doReturn(null)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),

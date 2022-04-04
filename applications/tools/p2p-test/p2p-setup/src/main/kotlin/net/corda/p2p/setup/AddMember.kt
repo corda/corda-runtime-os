@@ -11,7 +11,6 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
-import java.nio.ByteBuffer
 import java.util.concurrent.Callable
 
 @Command(
@@ -30,14 +29,14 @@ class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
 
             val publicKey = try {
                 val publicKeyFile = dataConfig.getString("publicKeyFile")
-                File(publicKeyFile).readPublicKey() ?: throw SetupException("Could not read public key from $publicKeyFile")
+                File(publicKeyFile).readText()
             } catch (e: Missing) {
-                dataConfig.getString("publicKey").reader().readPublicKey() ?: throw SetupException("Could not read public key")
+                dataConfig.getString("publicKey")
             }
+            publicKey.verifyPublicKey()
             val networkMapEntry = MemberInfoEntry(
                 HoldingIdentity(x500Name, groupId),
-                ByteBuffer.wrap(publicKey.encoded),
-                publicKey.toAlgorithm(),
+                publicKey,
                 address,
             )
             return Record(topic, "$x500Name-$groupId", networkMapEntry)

@@ -9,6 +9,7 @@ description "P2P Testing tools - P2P layer deployment"
 dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
     implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:p2p-crypto')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"

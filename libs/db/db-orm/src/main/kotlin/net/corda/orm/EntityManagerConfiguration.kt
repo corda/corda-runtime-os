@@ -7,6 +7,10 @@ import net.corda.db.core.CloseableDataSource
  *
  */
 interface EntityManagerConfiguration {
+    fun close() {
+        dataSource.close()
+    }
+
     val dataSource: CloseableDataSource
     val showSql: Boolean
         get() = false
