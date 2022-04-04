@@ -19,7 +19,7 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-cipher-suite'
     testImplementation "com.typesafe:config:$typeSafeConfigVersion"
-    testImplementation project(':applications:tools:p2p-test:p2p-setup')
+    testRuntimeOnly project(':applications:tools:p2p-test:p2p-setup')
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 application {
@@ -45,7 +45,16 @@ binaryProjects.forEach {name->
     }
     processResources.dependsOn(copyJars)
 }
-
+jacocoTestReport {
+    dependsOn test
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, includes: [
+                    "net/corda/**",
+            ])
+        }))
+    }
+}
 sourceSets {
     main {
         resources {

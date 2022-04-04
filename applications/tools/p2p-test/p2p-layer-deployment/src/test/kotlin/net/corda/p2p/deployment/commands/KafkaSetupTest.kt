@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test
 class KafkaSetupTest {
     @Test
     fun `example file is correct`() {
-        val exampleData = ClassLoader.getSystemResource("p2p-kafka-setup-example.conf")
-            .openStream()
+        val exampleData = ClassLoader.getSystemResourceAsStream("p2p-kafka-setup-example.conf")!!
             .reader()
             .use {
                 ConfigFactory.parseReader(it)
