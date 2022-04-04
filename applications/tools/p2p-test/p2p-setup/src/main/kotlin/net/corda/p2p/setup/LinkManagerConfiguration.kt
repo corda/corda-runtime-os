@@ -26,12 +26,6 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
     var topic: String = Schemas.Config.CONFIG_TOPIC
 
     @Option(
-        names = ["--replayAlgorithm"],
-        description = ["The algorithm used to schedule messages for replay."]
-    )
-    var replayAlgorithm = ReplayAlgorithm.Constant
-
-    @Option(
         names = ["--maxMessageSize"],
         description = ["The maximal message size in bytes"]
     )
@@ -72,10 +66,6 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
         description = ["The number of sessions between two peers"]
     )
     var sessionsPerPeer = 4L
-
-    enum class ReplayAlgorithm {
-        Constant, ExponentialBackoff
-    }
 
     override fun call(): Collection<Record<String, Configuration>> {
         val configuration = ConfigFactory.empty()
