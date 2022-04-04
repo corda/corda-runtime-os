@@ -11,9 +11,9 @@ import java.util.List;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class MemberLookupServiceJavaApiTest {
+public class MemberLookupJavaApiTest {
 
-    private final MemberLookupService memberLookupService = mock(MemberLookupService.class);
+    private final MemberLookup memberLookup = mock(MemberLookup.class);
 
     private final MemberX500Name bobName = new MemberX500Name("Bob Plc", "Rome", "IT");
     private final MemberInfo memberInfo = mock(MemberInfo.class);
@@ -21,9 +21,9 @@ public class MemberLookupServiceJavaApiTest {
 
     @Test
     public void myInfo() {
-        when(memberLookupService.myInfo()).thenReturn(memberInfo);
+        when(memberLookup.myInfo()).thenReturn(memberInfo);
 
-        MemberInfo test = memberLookupService.myInfo();
+        MemberInfo test = memberLookup.myInfo();
 
         Assertions.assertThat(test).isNotNull();
         Assertions.assertThat(test).isEqualTo(memberInfo);
@@ -31,9 +31,9 @@ public class MemberLookupServiceJavaApiTest {
 
     @Test
     public void lookupMemberX500Name() {
-        when(memberLookupService.lookup(bobName)).thenReturn(memberInfo);
+        when(memberLookup.lookup(bobName)).thenReturn(memberInfo);
 
-        MemberInfo test = memberLookupService.lookup(bobName);
+        MemberInfo test = memberLookup.lookup(bobName);
 
         Assertions.assertThat(test).isNotNull();
         Assertions.assertThat(test).isEqualTo(memberInfo);
@@ -41,9 +41,9 @@ public class MemberLookupServiceJavaApiTest {
 
     @Test
     public void lookupPublicKey() {
-        when(memberLookupService.lookup(bobPublicKey)).thenReturn(memberInfo);
+        when(memberLookup.lookup(bobPublicKey)).thenReturn(memberInfo);
 
-        MemberInfo test = memberLookupService.lookup(bobPublicKey);
+        MemberInfo test = memberLookup.lookup(bobPublicKey);
 
         Assertions.assertThat(test).isNotNull();
         Assertions.assertThat(test).isEqualTo(memberInfo);
@@ -52,9 +52,9 @@ public class MemberLookupServiceJavaApiTest {
     @Test
     public void lookupMemberInfo() {
         List<MemberInfo> memberInfos = List.of(memberInfo);
-        when(memberLookupService.lookup()).thenReturn(memberInfos);
+        when(memberLookup.lookup()).thenReturn(memberInfos);
 
-        List<MemberInfo> test = memberLookupService.lookup();
+        List<MemberInfo> test = memberLookup.lookup();
 
         Assertions.assertThat(test).isNotNull();
         Assertions.assertThat(test).isEqualTo(memberInfos);

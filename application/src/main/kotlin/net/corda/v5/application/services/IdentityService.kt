@@ -17,7 +17,7 @@ import java.util.*
  * The service supports two types of identities:
  *
  * - A well-known identity, represented by a [Party] structure, which is a public identity currently or previously registered under
- * the specific X.500 name in the membership group. See [MemberLookupService] for retrieving actual and historic well-known identities
+ * the specific X.500 name in the membership group. See [MemberLookup] for retrieving actual and historic well-known identities
  * from the membership group.
  *
  * - A confidential identity, represented by [AnonymousParty] structure, which is only distributed on a "need-to-know" basis (typically
@@ -42,7 +42,7 @@ interface IdentityService : CordaServiceInjectable, CordaFlowInjectable {
 
     /**
      * Resolves a party name to the well-known identity [Party] instance for this name. Where possible well-known identity lookup by name
-     * should be done using [MemberLookupService] instead, as it is the authoritative source of well-known identities.
+     * should be done using [MemberLookup] instead, as it is the authoritative source of well-known identities.
      *
      * @param name The [MemberX500Name] to determine well known identity for.
      *

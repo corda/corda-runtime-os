@@ -15,7 +15,7 @@ import java.security.PublicKey
  *
  */
 @DoNotImplement
-interface MemberLookupService : CordaFlowInjectable, CordaServiceInjectable {
+interface MemberLookup : CordaFlowInjectable, CordaServiceInjectable {
 
     /** Returns our own [MemberInfo] **/
     fun myInfo(): MemberInfo
