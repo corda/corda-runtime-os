@@ -85,6 +85,11 @@ allprojects {
             excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
         }
 
+        distribution {
+            enabled = true
+            maxRemoteExecutors = 0
+        }
+
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
         }
