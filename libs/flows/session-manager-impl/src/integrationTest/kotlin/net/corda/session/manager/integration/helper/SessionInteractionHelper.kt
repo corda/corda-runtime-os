@@ -27,9 +27,6 @@ fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
     initiator.assertStatus(SessionStateType.CONFIRMED)
     initiated.assertStatus(SessionStateType.CONFIRMED)
 
-    initiator.assertIsInitiator(true)
-    initiated.assertIsInitiator(false)
-
     initiated.assertAllMessagesDelivered()
     initiator.assertAllMessagesDelivered()
 

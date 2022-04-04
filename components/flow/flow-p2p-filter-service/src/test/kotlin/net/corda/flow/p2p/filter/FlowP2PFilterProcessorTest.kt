@@ -26,27 +26,26 @@ class FlowP2PFilterProcessorTest {
 
     private lateinit var processor: FlowP2PFilterProcessor
     private lateinit var factory: CordaAvroSerializationFactory
-    private lateinit var deserializer: CordaAvroDeserializer<FlowMapperEvent>
+    private lateinit var deserializer: CordaAvroDeserializer<SessionEvent>
 
     @BeforeEach
     fun setup() {
         factory = mock()
         deserializer = mock()
-        whenever(factory.createAvroDeserializer<FlowMapperEvent>(anyOrNull(), anyOrNull())).thenReturn(deserializer)
+        whenever(factory.createAvroDeserializer<SessionEvent>(anyOrNull(), anyOrNull())).thenReturn(deserializer)
     }
+
     @Test
     fun `validate flow session filter logic transforms sessionId and ignores other subsystems`() {
         val testValue = "test"
         val identity = HoldingIdentity(testValue, testValue)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, testValue, testValue, "flowSession")
-        val flowEvent = FlowMapperEvent(
-            SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), testValue, 1, 0, listOf(), SessionInit(
-                    testValue, testValue, null, identity,
-                    identity, ByteBuffer.wrap("".toByteArray())
-                )
+        val flowEvent = SessionEvent(
+            MessageDirection.OUTBOUND, Instant.now(), testValue, 1, identity, identity, 0, listOf(), SessionInit(
+                testValue, testValue, null, ByteBuffer.wrap("".toByteArray())
             )
         )
+
         val flowEventMockData: ByteArray = "flowEvent".toByteArray()
         whenever(deserializer.deserialize(flowEventMockData)).thenReturn(flowEvent)
 

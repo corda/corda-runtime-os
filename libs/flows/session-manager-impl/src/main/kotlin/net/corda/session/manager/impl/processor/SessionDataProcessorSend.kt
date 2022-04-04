@@ -31,7 +31,7 @@ class SessionDataProcessorSend(
         if (sessionState == null) {
             val errorMessage = "Tried to send SessionData for sessionState which was null. Key: $key, SessionEvent: $sessionEvent"
             logger.error(errorMessage)
-            return generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
+            return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         }
 
         return when (val currentStatus = sessionState.status) {
@@ -61,6 +61,7 @@ class SessionDataProcessorSend(
                         sendEventsState.undeliveredMessages.plus(
                             generateErrorEvent(
                                 sessionState,
+                                sessionEvent,
                                 errorMessage,
                                 "SessionData-InvalidStatus",
                                 instant
