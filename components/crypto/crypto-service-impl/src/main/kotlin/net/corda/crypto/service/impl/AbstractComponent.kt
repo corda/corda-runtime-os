@@ -17,12 +17,12 @@ abstract class AbstractComponent<IMPL: AutoCloseable>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     myName: LifecycleCoordinatorName,
     @Volatile
-    protected var impl: IMPL,
+    internal var impl: IMPL,
     private val dependencies: Set<LifecycleCoordinatorName>
 ) : Lifecycle {
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
+    internal val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
 
     @Volatile
     private var registrationHandle: RegistrationHandle? = null

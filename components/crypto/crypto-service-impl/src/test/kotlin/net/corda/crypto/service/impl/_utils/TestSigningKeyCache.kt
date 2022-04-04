@@ -9,29 +9,39 @@ import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
-class TestSigningKeyCacheProvider : SigningKeyCacheProvider {
+class TestSigningKeyCacheProvider(
+    coordinatorFactory: LifecycleCoordinatorFactory
+) : SigningKeyCacheProvider {
     private val instance = TestSigningKeyCache()
+
+    private val coordinator = coordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName.forComponent<SigningKeyCacheProvider>()
+    ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        coordinator.start()
+    }
+
+    override fun stop() {
+        coordinator.stop()
+    }
 
     override fun getInstance(): SigningKeyCache {
         check(isRunning) {
             "The provider is in invalid state."
         }
         return instance
-    }
-
-    override var isRunning: Boolean = false
-        private set
-
-    override fun start() {
-        isRunning = true
-    }
-
-    override fun stop() {
-        isRunning = false
     }
 }
 

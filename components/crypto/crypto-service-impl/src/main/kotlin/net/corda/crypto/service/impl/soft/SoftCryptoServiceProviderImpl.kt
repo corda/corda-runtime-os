@@ -53,12 +53,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     override fun getInstance(config: SoftCryptoServiceConfig): CryptoService =
         impl.getInstance(config)
 
-    private class InactiveImpl : Impl {
+    internal class InactiveImpl : Impl {
         override fun getInstance(config: SoftCryptoServiceConfig): CryptoService =
             throw IllegalStateException("The component is in invalid state")
     }
 
-    private class ActiveImpl(
+    internal class ActiveImpl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: DigestService,
         private val cacheProvider: SoftCryptoKeyCacheProvider

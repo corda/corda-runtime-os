@@ -150,6 +150,7 @@ class CryptoOpsRpcProcessorTests {
             )
     }
 
+    private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var signingService: SigningService
@@ -159,11 +160,12 @@ class CryptoOpsRpcProcessorTests {
 
     private fun setup(schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
         tenantId = UUID.randomUUID().toString()
-        schemeMetadata = TestServicesFactory.schemeMetadata
-        signingService = TestServicesFactory.createSigningService(
+        factory = TestServicesFactory()
+        schemeMetadata = factory.schemeMetadata
+        signingService = factory.createSigningService(
             schemeMetadata.findSignatureScheme(schemeCode)
         )
-        verifier = TestServicesFactory.verifier
+        verifier = factory.verifier
         signingFactory = mock {
             on { getInstance() }.thenReturn(SigningServiceWrapper(signingService))
         }
@@ -313,7 +315,7 @@ class CryptoOpsRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
@@ -396,7 +398,7 @@ class CryptoOpsRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
@@ -505,7 +507,7 @@ class CryptoOpsRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertNull(info.externalId)
@@ -544,7 +546,7 @@ class CryptoOpsRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertEquals(externalId, UUID.fromString(info.externalId))
@@ -584,7 +586,7 @@ class CryptoOpsRpcProcessorTests {
         assertResponseContext(context1, result1.context)
         assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // sign using invalid custom scheme

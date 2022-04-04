@@ -9,16 +9,20 @@ import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoService
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
+import kotlin.test.assertTrue
 
-object TestServicesFactory {
+class TestServicesFactory {
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    private val digest: DigestService by lazy {
+    val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
     }
 
@@ -26,15 +30,27 @@ object TestServicesFactory {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
-    const val wrappingKeyAlias = "wrapping-key-alias"
+    val wrappingKeyAlias = "wrapping-key-alias"
 
-    private const val passphrase = "PASSPHRASE"
+    private val passphrase = "PASSPHRASE"
 
-    private const val salt = "SALT"
+    private val salt = "SALT"
 
-    private val signingCacheProvider = TestSigningKeyCacheProvider().also { it.start() }
+    val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    private val softCacheProvider = TestSoftCryptoKeyCacheProvider().also { it.start() }
+    val signingCacheProvider = TestSigningKeyCacheProvider(coordinatorFactory).also {
+        it.start()
+        eventually {
+            assertTrue(it.isRunning)
+        }
+    }
+
+    val softCacheProvider = TestSoftCryptoKeyCacheProvider(coordinatorFactory).also {
+        it.start()
+        eventually {
+            assertTrue(it.isRunning)
+        }
+    }
 
     private val signingCache = signingCacheProvider.getInstance()
 

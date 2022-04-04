@@ -46,12 +46,12 @@ class SigningServiceFactoryImpl @Activate constructor(
     override fun getInstance(): SigningService =
         impl.getInstance()
 
-    private class InactiveImpl : Impl {
+    internal class InactiveImpl : Impl {
         override fun getInstance(): SigningService =
             throw IllegalStateException("The component is in invalid state.")
     }
 
-    private class ActiveImpl(
+    internal class ActiveImpl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val cacheProvider: SigningKeyCacheProvider,
         private val cryptoServiceFactory: CryptoServiceFactory
@@ -59,24 +59,25 @@ class SigningServiceFactoryImpl @Activate constructor(
         private val lock = Any()
 
         @Volatile
-        private var signingServices: SigningService? = null
+        private var signingService: SigningService? = null
 
         override fun getInstance(): SigningService {
             return try {
                 logger.debug("Getting the signing service.")
-                if(signingServices != null) {
-                    signingServices!!
+                if(signingService != null) {
+                    signingService!!
                 } else {
                     synchronized(lock) {
-                        if (signingServices != null) {
-                            signingServices!!
+                        if (signingService != null) {
+                            signingService!!
                         } else {
                             logger.info("Creating the signing service.")
-                            SigningServiceImpl(
+                            signingService = SigningServiceImpl(
                                 cache = cacheProvider.getInstance(),
                                 cryptoServiceFactory = cryptoServiceFactory,
                                 schemeMetadata = schemeMetadata
                             )
+                            signingService!!
                         }
                     }
                 }

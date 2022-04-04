@@ -106,23 +106,22 @@ class CryptoOperationsTests {
             val signingService: SigningService
         )
 
+        private lateinit var factory: TestServicesFactory
         private lateinit var signingAliasedKeys: Map<SignatureScheme, SigningAliasedKeyInfo>
-
         private lateinit var signingFreshKeys: Map<SignatureScheme, SigningFreshKeyInfo>
-
         private lateinit var signingFreshKeysWithoutExternalId: Map<SignatureScheme, SigningFreshKeyInfo>
-
         private lateinit var unknownKeyPairs: Map<SignatureScheme, KeyPair>
 
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadata = TestServicesFactory.schemeMetadata
-            verifier = TestServicesFactory.verifier
+            factory = TestServicesFactory()
+            schemeMetadata = factory.schemeMetadata
+            verifier = factory.verifier
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.HsmCategories.LEDGER
-            wrappingKeyAlias = TestServicesFactory.wrappingKeyAlias
-            cryptoService = TestServicesFactory.cryptoService
+            wrappingKeyAlias = factory.wrappingKeyAlias
+            cryptoService = factory.cryptoService
             softAliasedKeys = supportedSchemes().associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
@@ -148,7 +147,7 @@ class CryptoOperationsTests {
                 ) as GeneratedWrappedKey
             }
             signingAliasedKeys = supportedSchemes().associateWith {
-                val signingService = TestServicesFactory.createSigningService(it)
+                val signingService = factory.createSigningService(it)
                 val alias = UUID.randomUUID().toString()
                 SigningAliasedKeyInfo(
                     alias = alias,
@@ -161,7 +160,7 @@ class CryptoOperationsTests {
                 )
             }
             signingFreshKeys = supportedSchemes().associateWith {
-                val signingService = TestServicesFactory.createSigningService(it)
+                val signingService = factory.createSigningService(it)
                 val externalId = UUID.randomUUID().toString()
                 SigningFreshKeyInfo(
                     externalId = externalId,
@@ -173,7 +172,7 @@ class CryptoOperationsTests {
                 )
             }
             signingFreshKeysWithoutExternalId = supportedSchemes().associateWith {
-                val signingService = TestServicesFactory.createSigningService(it)
+                val signingService = factory.createSigningService(it)
                 SigningFreshKeyInfo(
                     externalId = null,
                     signingService = signingService,
@@ -218,7 +217,7 @@ class CryptoOperationsTests {
             uuid: String?,
             signatureScheme: SignatureScheme
         ) {
-            val generatedKeyData = TestServicesFactory.getSigningCachedKey(tenantId, publicKey)
+            val generatedKeyData = factory.getSigningCachedKey(tenantId, publicKey)
             assertNotNull(generatedKeyData)
             assertEquals(tenantId, generatedKeyData.tenantId)
             if(generatedKeyData.alias == null) {
