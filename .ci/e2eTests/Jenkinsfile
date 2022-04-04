@@ -71,13 +71,13 @@ pipeline {
                 }
             }
             post {
-                unsuccessful {
+                allways {
                     sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logsPrereqs.txt
+                        kubectl describe all -n ${NAMESPACE} > describePrereqs.txt
                     '''
-                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'logsPrereqs.txt, describePrereqs.txt', allowEmptyArchive: true
+                    sh 'rm -f logsPrereqs.txt describePrereqs.txt'
                 }
             }
         }
@@ -89,13 +89,13 @@ pipeline {
                sh 'helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s'
             }
             post {
-                unsuccessful {
+                allways {
                     sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logsDeploy.txt
+                        kubectl describe all -n ${NAMESPACE} > describeDeploy.txt
                     '''
-                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'logsDeploy.txt, describeDeploy.txt', allowEmptyArchive: true
+                    sh 'rm -f logsDeploy.txt describeDeploy.txt'
                 }
             }
         }
@@ -122,14 +122,12 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-                }
-                unsuccessful {
                     sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logsFull.txt
+                        kubectl describe all -n ${NAMESPACE} > describeFull.txt
                     '''
-                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f forward.txt logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'forward.txt, logsFull.txt, describeFull.txt', allowEmptyArchive: true
+                    sh 'rm -f forward.txt logsFull.txt describeFull.txt'
                 }
             }
         }
