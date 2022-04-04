@@ -12,11 +12,14 @@ dependencies {
     implementation project(':libs:p2p-crypto')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation "net.corda:corda-topic-schema"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-cipher-suite'
+    testImplementation "com.typesafe:config:$typeSafeConfigVersion"
+    testRuntimeOnly project(':applications:tools:p2p-test:p2p-setup')
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 application {
@@ -42,7 +45,16 @@ binaryProjects.forEach {name->
     }
     processResources.dependsOn(copyJars)
 }
-
+jacocoTestReport {
+    dependsOn test
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, includes: [
+                    "net/corda/**",
+            ])
+        }))
+    }
+}
 sourceSets {
     main {
         resources {
