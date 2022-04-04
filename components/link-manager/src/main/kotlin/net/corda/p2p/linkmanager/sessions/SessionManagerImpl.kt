@@ -523,6 +523,7 @@ open class SessionManagerImpl(
         val authenticatedSession = session.getSession()
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
+        heartbeatManager.startSendingHeartbeats(authenticatedSession)
         sessionNegotiationLock.write {
             outboundSessionPool.updateAfterSessionEstablished(authenticatedSession)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(
@@ -782,13 +783,12 @@ open class SessionManagerImpl(
             }
         }
 
-        fun dataMessageSent(session: Session) {
+        fun startSendingHeartbeats(session: Session) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
                 }
                 trackedSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
-                    trackedSession.lastSendTimestamp = timeStamp()
                     if (!trackedSession.sendingHeartbeats) {
                         executorService.schedule(
                             { sendHeartbeat(trackedSession.identityData, session) },
@@ -797,6 +797,18 @@ open class SessionManagerImpl(
                         )
                         trackedSession.sendingHeartbeats = true
                     }
+                    trackedSession
+                } ?: throw IllegalStateException("A message was sent on session with Id ${session.sessionId} which is not tracked.")
+            }
+        }
+
+        fun dataMessageSent(session: Session) {
+            dominoTile.withLifecycleLock {
+                if (!isRunning) {
+                    throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
+                }
+                trackedSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
+                    trackedSession.lastSendTimestamp = timeStamp()
                     trackedSession
                 } ?: throw IllegalStateException("A message was sent on session with Id ${session.sessionId} which is not tracked.")
             }
