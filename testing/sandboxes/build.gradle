@@ -19,10 +19,12 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(':components:membership:membership-group-read')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
 
+    implementation project(':libs:membership:membership-internal')
     implementation project(':libs:virtual-node:packaging-core')
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
