@@ -69,6 +69,12 @@ tasks.named("publishOSGiImage").configure{
     overrideEntryName = 'cli'
     overrideContainerName = 'cli'
     arguments = Arrays.asList("-Dpf4j.pluginsDir=/opt/override/plugins")
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+    if (project.hasProperty('baseImage')) {
+        baseImageName = baseImage
+    }
     environment = Map.of(
         "CORDA_CLI_HOME_DIR", "/opt/override/home"
     )

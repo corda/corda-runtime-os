@@ -54,7 +54,7 @@ pluginManagement {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
-        id "com.r3.internal.gradle.plugins.r3-docker" version "0.1-alpha-1648814833553"
+        id 'com.r3.internal.gradle.plugins.r3-docker' version internalDockerVersion
     }
 }
 
