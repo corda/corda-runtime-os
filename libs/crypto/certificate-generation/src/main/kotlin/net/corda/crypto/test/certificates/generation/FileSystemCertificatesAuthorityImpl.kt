@@ -1,25 +1,24 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.time.Duration
 
 internal class FileSystemCertificatesAuthorityImpl(
-    signatureSchemeTemplate: SignatureSchemeTemplate,
+    keysFactoryDefinitions: KeysFactoryDefinitions,
     validDuration: Duration,
     defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
     private val home: File,
     firstSerialNumber: Long,
 ) : LocalCertificatesAuthority(
-    signatureSchemeTemplate, validDuration, defaultPrivateKeyAndCertificate, firstSerialNumber
+    keysFactoryDefinitions, validDuration, defaultPrivateKeyAndCertificate, firstSerialNumber
 ),
     FileSystemCertificatesAuthority {
     companion object {
         fun loadOrGenerate(
-            signatureSchemeTemplate: SignatureSchemeTemplate,
+            keysFactoryDefinitions: KeysFactoryDefinitions,
             validDuration: Duration,
             home: File,
         ): FileSystemCertificatesAuthority {
@@ -42,7 +41,7 @@ internal class FileSystemCertificatesAuthorityImpl(
                 1L to null
             }
             return FileSystemCertificatesAuthorityImpl(
-                signatureSchemeTemplate,
+                keysFactoryDefinitions,
                 validDuration,
                 defaultPrivateKeyAndCertificate,
                 home,

@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toKeystore
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
@@ -751,7 +752,8 @@ class GatewayIntegrationTest : TestBase() {
                 instanceId.incrementAndGet(),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
-                val firstCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(RSA_SHA256_TEMPLATE)
+                val firstCertificatesAuthority = CertificateAuthorityFactory
+                    .createMemoryAuthority(RSA_SHA256_TEMPLATE.toFactoryDefinitions())
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
@@ -826,7 +828,8 @@ class GatewayIntegrationTest : TestBase() {
                 testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // new trust store...
-                val secondCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
+                val secondCertificatesAuthority = CertificateAuthorityFactory
+                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -844,7 +847,8 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // new trust store and pair...
-                val thirdCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
+                val thirdCertificatesAuthority = CertificateAuthorityFactory
+                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )
