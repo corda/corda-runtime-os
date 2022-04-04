@@ -35,12 +35,7 @@
     {
       "name": "counterpartyIdentity",
       "type": "net.corda.data.identity.HoldingIdentity",
-      "doc": "Identity of the session counterparty"
-    },
-    {
-      "name": "isInitiator",
-      "type": "boolean",
-      "doc": "True if this party initiated the session, false otherwise"
+      "doc": "Identity of the counterparty in the session."
     },
     {
       "name": "sendAck",

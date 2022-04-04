@@ -20,6 +20,12 @@
           "type": "integer",
           "minimum": 600000,
           "default": 3600000
+        },
+        "p2pTTL": {
+          "description": "TTL set on on messages passed to the P2P layer to be sent to a counterparty.",
+          "type": "integer",
+          "minimum": 10000,
+          "default": 60000
         }
       }
     }

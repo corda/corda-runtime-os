@@ -38,6 +38,16 @@
       "doc": "Unique id for a message sent to a party. sequenceNum is not bidirectional. Each party will track outbound/inbound sequence numbers separately."
     },
     {
+      "name": "initiatingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Identity of party who started a session."
+    },
+    {
+      "name": "initiatedIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Identity of party in the session who was initiated."
+    },
+    {
       "name": "receivedSequenceNum",
       "type": "int",
       "doc": "Sequence number of the last contiguous message received from a counterparty. 0 if no messages received."
