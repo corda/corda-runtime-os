@@ -9,19 +9,19 @@ class FakeTopicGateway : TopicGateway {
 
     private val topics = mutableMapOf<String, TopicDescription>()
 
-    override fun create(topicDefinition: TopicDefinition) {
-        topicMustNotExist(topicDefinition.name)
+    override fun create(topicDefinition: TopicDefinition): Boolean {
+        if (topicDefinition.name in topics) return false
         topics[topicDefinition.name] = TopicDescription(
             UUID.randomUUID().toString(),
             topicDefinition.name,
             topicDefinition.partitions ?: 1,
             topicDefinition.replicationFactor ?: 1
         )
+        return true
     }
 
-    override fun removeByName(name: String) {
-        topicMustExist(name)
-        topics.remove(name)
+    override fun removeByName(name: String): Boolean {
+        return topics.remove(name) != null
     }
 
     override fun findAll(): Set<String> {

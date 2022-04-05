@@ -1,6 +1,5 @@
 package net.corda.introspiciere.http
 
-import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.ResponseResultOf
 import com.github.kittinunf.fuel.httpDelete
 import com.github.kittinunf.fuel.httpGet
@@ -80,12 +79,12 @@ class IntrospiciereHttpClient(private val endpoint: String) {
 
     private fun <T> ResponseResultOf<T>.getOrThrow(): T {
         val (request, response, result) = this
+        println(request)
+        println(response)
+        println(result)
         return when (result) {
             is Result.Success -> result.get()
             is Result.Failure -> throw IntrospiciereHttpClientException(request, response, result)
         }
     }
 }
-
-private fun String.httpGet(vararg parameters: Pair<String, Any?>): Request =
-    httpGet(parameters.toList())

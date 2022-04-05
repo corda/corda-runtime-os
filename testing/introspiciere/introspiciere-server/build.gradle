@@ -14,6 +14,7 @@ dependencies {
     implementation project(':testing:introspiciere:introspiciere-payloads')
     implementation project(':testing:introspiciere:introspiciere-domain')
 
+    integrationTestImplementation "net.corda:corda-avro-schema:$cordaApiVersion"
     integrationTestImplementation 'io.rest-assured:rest-assured:4.5.1'
 }
 

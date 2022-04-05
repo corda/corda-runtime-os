@@ -25,7 +25,7 @@ data class KafkaMessage(
     }
 }
 
-private fun ByteBuffer.toByteArray(): ByteArray {
+fun ByteBuffer.toByteArray(): ByteArray {
     val array = ByteArray(remaining())
     get(array)
     return array
