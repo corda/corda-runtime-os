@@ -89,8 +89,10 @@ class KafkaSetup(
             "kafka-setup",
             listOf(
                 "--topic", configurationFile.absolutePath,
-                "--kafka",
-                RunJar.kafkaFile(namespaceName).absolutePath
+            ),
+            properties = mapOf(
+                "bootstrap.servers" to
+                    RunJar.kafkaServers(namespaceName)
             )
         ).run()
     }
