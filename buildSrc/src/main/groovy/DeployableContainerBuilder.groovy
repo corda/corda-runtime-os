@@ -158,7 +158,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 "/bin/sh",
                 "-c",
                 "exec java -Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE} -jar " +
-                        CONTAINER_LOCATION + projectName + ".jar \$@"
+                        CONTAINER_LOCATION + projectName + ".jar \$@",
+                "\$@"
         )
 
         if (preTest.get()) {
