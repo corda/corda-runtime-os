@@ -1,12 +1,14 @@
-# P2p Link Manager Application
-A standalone Link Manager application
+# P2P Link Manager worker
+The p2p link manager worker.
 
-## Building
+## Building the worker
 To build run:
-`./gradlew :applications:p2p-link-manager:clean :applications:p2p-link-manager:appJar`
-This will create an executable jar in `applications/p2p-link-manager/build/bin/` 
+```
+./gradlew :applications:p2p-link-manager:clean :applications:p2p-link-manager:appJar
+```
+This will create an executable jar in `applications/p2p-link-manager/build/bin/`. 
 
-## Running
+## Running the worker
 Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
 To run the application use:
 `java -jar ./applications/p2p-link-manager/build/bin/corda-p2p-link-manager-5.0.0.0-SNAPSHOT.jar`

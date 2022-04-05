@@ -1,9 +1,12 @@
+# P2P Setup tool
 This is a tool that can be used to setup a P2P deployment. 
 
 ## Building the tool
+To build run:
 ```
 ./gradlew applications:tools:p2p-test:p2p-setup:clean applications:tools:p2p-test:p2p-setup:appJar
 ```
+This will create an executable jar in `applications/tools/p2p-test/p2p-setup/build/bin/`.
 
 ## Running the tool
 

@@ -1,11 +1,17 @@
+# Fake Certificate Authority tool
 A tool that can act as a fake Certificate Authority to create TLS certificates (without revocation)
 
 **⚠ WARNING:** This tool is not safe for production use, and it should only be used for testing purposes.
 
+## Building the tool
+
 To build, run:
 ```bash
-./gradlew :applications:tools:p2p-test:fake-ca:install
+./gradlew :applications:tools:p2p-test:fake-ca:clean :applications:tools:p2p-test:fake-ca:install
 ```
+This will create an executable in `applications/tools/p2p-test/fake-ca/build/install/fake-ca/bin/fake-ca`.
+
+## Running the tool
 
 To create an authority run:
 ```bash
