@@ -151,9 +151,16 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
 
-        builder.setProgramArguments(javaArgs)
-        builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + projectName +".jar")
+        builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
 
+        builder.setProgramArguments(javaArgs)
+        builder.setEntrypoint(
+                "/bin/sh",
+                "-c",
+                "exec java -Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE} -jar " +
+                        CONTAINER_LOCATION + projectName + ".jar \$@",
+                "\$@"
+        )
 
         if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${projectName}"
@@ -268,4 +275,3 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
     }
 }
-
