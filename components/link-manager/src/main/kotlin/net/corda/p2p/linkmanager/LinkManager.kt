@@ -241,7 +241,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
-        //private var isTtlExpired = false
 
         companion object {
             fun recordsForNewSessions(
@@ -332,62 +331,42 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                         "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
             }
-            val isHostedLocally =
-                linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
-            return if (isTtlExpired) {
-                recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
+            val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
+            if (isTtlExpired) {
+                return recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
+            } else if (isHostedLocally){
+                return mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
-                if (isHostedLocally) {
-                    mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
-                } else {
-                    return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
-                        is SessionState.NewSessionsNeeded -> {
-                            logger.trace {
-                                "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                        "Initiating a new one.."
-                            }
-                            if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
-                            recordsForNewSessions(state)
+                return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
+                    is SessionState.NewSessionsNeeded -> {
+                        logger.trace {
+                            "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                    "Initiating a new one.."
                         }
-                        is SessionState.SessionEstablished -> {
-                            logger.trace {
-                                "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
-                                        " Using this to send outbound message."
-                            }
-                            recordsForSessionEstablished(state, messageAndKey)
+                        if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                        recordsForNewSessions(state)
+                    }
+                    is SessionState.SessionEstablished -> {
+                        logger.trace {
+                            "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                    " Using this to send outbound message."
                         }
-                        is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
-                            logger.trace {
-                                "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                        "Message queued until session is established."
-                            }
-                            if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
-                            emptyList()
+                        recordsForSessionEstablished(state, messageAndKey)
+                    }
+                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
+                        logger.trace {
+                            "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                    "Message queued until session is established."
                         }
-                        is SessionState.CannotEstablishSession -> {
-                            emptyList()
-                        }
-                        else -> emptyList()
+                        if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                        emptyList()
+                    }
+                    is SessionState.CannotEstablishSession -> {
+                        emptyList()
                     }
                 }
             }
         }
-
-/*        private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
-            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
-            return if (partitions.isEmpty()) {
-                logger.warn(
-                    "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
-                            " Session ${state.sessionId} will not be initiated."
-                )
-                emptyList()
-            } else {
-                listOf(
-                    Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage),
-                    Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))
-                )
-            }
-        }*/
 
         private fun recordsForSessionEstablished(
             state: SessionState.SessionEstablished,
@@ -439,7 +418,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return recordsForNewSessions(state, inboundAssignmentListener, logger)
         }
     }
-
 
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
