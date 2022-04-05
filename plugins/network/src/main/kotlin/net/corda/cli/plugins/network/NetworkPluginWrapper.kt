@@ -34,6 +34,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         @Mixin
         override lateinit var service: HttpService
 
+        @Suppress("LongParameterList")
         @CommandLine.Command(
             name = "members-list",
             description = ["Shows the list of members on the network."]
@@ -43,10 +44,56 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
                 names = ["-h", "--holding-identity-id"],
                 arity = "1",
                 description = ["ID of the holding identity to be checked."]
-            ) holdingIdentityId: String?
+            ) holdingIdentityId: String?,
+            @CommandLine.Option(
+                names = ["-cn"],
+                arity = "0..1",
+                description = ["Optional. Common Name (CN) attribute of the X.500 name to filter members by."]
+            ) commonName: String?,
+            @CommandLine.Option(
+                names = ["-ou"],
+                arity = "0..1",
+                description = ["Optional. Organisation Unit (OU) attribute of the X.500 name to filter members by."]
+            ) organisationUnit: String?,
+            @CommandLine.Option(
+                names = ["-o"],
+                arity = "0..1",
+                description = ["Optional. Organisation (O) attribute of the X.500 name to filter members by."]
+            ) organisation: String?,
+            @CommandLine.Option(
+                names = ["-l"],
+                arity = "0..1",
+                description = ["Optional. Locality (L) attribute of the X.500 name to filter members by."]
+            ) locality: String?,
+            @CommandLine.Option(
+                names = ["-st"],
+                arity = "0..1",
+                description = ["Optional. State (ST) attribute of the X.500 name to filter members by."]
+            ) state: String?,
+            @CommandLine.Option(
+                names = ["-c"],
+                arity = "0..1",
+                description = ["Optional. Country (C) attribute of the X.500 name to filter members by."]
+            ) country: String?
         ) {
             require(holdingIdentityId != null)
-            service.get("/members?holdingIdentityId=$holdingIdentityId")
+            val params = mapOf(
+                "cn" to commonName,
+                "ou" to organisationUnit,
+                "o" to organisation,
+                "l" to locality,
+                "st" to state,
+                "c" to country
+            )
+
+            val url = "/members/$holdingIdentityId" + params.filter {
+                it.value != null
+            }.entries.mapIndexed { index, entry ->
+                val prefix = if (index == 0) "?" else ""
+                prefix + "${entry.key}=${entry.value}"
+            }.joinToString("&")
+
+            service.get(url)
         }
     }
 }
