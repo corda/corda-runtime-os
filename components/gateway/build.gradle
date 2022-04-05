@@ -62,3 +62,14 @@ tasks.named('integrationTest') {
     final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
 }
+
+test {
+    distribution {
+        enabled = true
+        remoteExecutionPreferred = true
+        waitTimeout = Duration.ofMinutes(2)
+        maxLocalExecutors = 1
+        maxRemoteExecutors = 10
+        requirements = ["jdk=11","os=linux"]
+    }
+}
