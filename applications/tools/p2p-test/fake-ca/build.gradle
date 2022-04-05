@@ -19,12 +19,28 @@ application {
     mainClass = 'net.corda.p2p.fake.ca.CaMainKt'
 }
 
+task appJar(type: Jar) {
+    destinationDirectory = file("$buildDir/bin")
+    archiveBaseName = "corda-${project.name}"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+    manifest {
+        attributes 'Main-Class': "net.corda.p2p.fake.ca.CaMainKt"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
             groupId project.group
             artifact distZip
             artifact distTar
+            artifact appJar
         }
     }
 }
