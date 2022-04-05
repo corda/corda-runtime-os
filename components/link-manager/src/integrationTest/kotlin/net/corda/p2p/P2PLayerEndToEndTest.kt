@@ -113,8 +113,15 @@ class P2PLayerEndToEndTest {
                 bootstrapConfig,
                 null
             )
+            val hostAExpiryMarkers =  Collections.synchronizedList<Record<*, *>>(mutableListOf())
+            val subForP2POutMarkers = hostA.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(hostAExpiryMarkers),
+                bootstrapConfig,
+                null
+            )
             hostAApplicationReader.start()
             hostBApplicationReaderWriter.start()
+            subForP2POutMarkers.start()
 
             val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
             val initialMessages = (1..10).map { index ->
@@ -139,6 +146,13 @@ class P2PLayerEndToEndTest {
             eventually(10.seconds) {
                 (1..10).forEach { messageNo ->
                     assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                }
+            }
+            eventually(10.seconds) {
+                synchronized(hostAExpiryMarkers) {
+                    val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                    //assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == (initialMessages.size))
+                    assertTrue((markers.filterIsInstance<LinkManagerReceivedMarker>()).size == (initialMessages.size))
                 }
             }
 
@@ -190,8 +204,15 @@ class P2PLayerEndToEndTest {
                 bootstrapConfig,
                 null
             )
+            val hostAExpiryMarkers =  Collections.synchronizedList<Record<*, *>>(mutableListOf())
+            val subForP2POutMarkers = hostA.subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(hostAExpiryMarkers),
+                bootstrapConfig,
+                null
+            )
             hostAApplicationReader.start()
             hostBApplicationReaderWriter.start()
+            subForP2POutMarkers.start()
 
             val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
             val initialMessages = (1..10).map { index ->
@@ -216,7 +237,13 @@ class P2PLayerEndToEndTest {
             eventually(10.seconds) {
                 (1..10).forEach { messageNo ->
                     assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
-                    //TODO - check we receive a sent and received marker (put in both E2E tests)
+                }
+            }
+            eventually(10.seconds) {
+                synchronized(hostAExpiryMarkers) {
+                    val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
+                    //assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == (initialMessages.size))
+                    assertTrue((markers.filterIsInstance<LinkManagerReceivedMarker>()).size == (initialMessages.size))
                 }
             }
 
@@ -268,7 +295,6 @@ class P2PLayerEndToEndTest {
                 bootstrapConfig,
                 null
             )
-
             val hostAExpiryMarkers =  Collections.synchronizedList<Record<*, *>>(mutableListOf())
             val subForP2POutMarkers = hostA.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(hostAExpiryMarkers),
@@ -305,15 +331,9 @@ class P2PLayerEndToEndTest {
                         assertThat(msg.key.equals(i))
                     }
                     val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
-                    assertTrue(
-                        ((markers.filterIsInstance<LinkManagerSentMarker>()).size == (initialMessages.size))
-                    )
-                    assertTrue(
-                        ((markers.filterIsInstance<TtlExpiredMarker>()).size == (initialMessages.size))
-                    )
-                    assertTrue(
-                        ((markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty())
-                    )
+                    assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == (initialMessages.size))
+                    assertTrue((markers.filterIsInstance<TtlExpiredMarker>()).size == (initialMessages.size))
+                    assertTrue((markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty())
                 }
             }
 
