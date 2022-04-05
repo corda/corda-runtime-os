@@ -71,7 +71,7 @@ pipeline {
                 }
             }
             post {
-                allways {
+                always {
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
                         kubectl describe all -n ${NAMESPACE} > prereqsDescribe.txt
