@@ -27,7 +27,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
     private val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
     private val nodeConfig = SmartConfigImpl.empty()
     private val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-    private val expectedCertificatePem = truststoreCertificatePem
+    private val expectedCertificatePem = truststoreCertificatePem.replace("\r\n", "\n")
 
     @Test
     fun `TrustStoresMap creates correct certificate`() {
