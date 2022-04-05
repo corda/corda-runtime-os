@@ -80,6 +80,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class LinkManagerTest {
@@ -121,6 +122,7 @@ class LinkManagerTest {
         private val PAYLOAD = ByteBuffer.wrap("PAYLOAD".toByteArray())
         private const val SESSION_ID = "SessionId"
         private const val ANOTHER_SESSION_ID = "AnotherSessionId"
+        private val TTL = Instant.now().toEpochMilli() + 9999999999
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -186,7 +188,7 @@ class LinkManagerTest {
             data: ByteBuffer,
             messageId: String = ""
         ): AuthenticatedMessageAndKey {
-            val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
+            val header = AuthenticatedMessageHeader(dest, source, TTL, messageId, "", "system-1")
             return AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), KEY)
         }
     }
@@ -246,7 +248,7 @@ class LinkManagerTest {
         data: String,
         messageId: String
     ): AuthenticatedMessage {
-        val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
+        val header = AuthenticatedMessageHeader(dest, source, TTL, messageId, "", "system-1")
         return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
     }
 
@@ -376,7 +378,7 @@ class LinkManagerTest {
         )
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
-            AuthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, null, "message-id", "trace-id", "system-1"),
+            AuthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, TTL, "message-id", "trace-id", "system-1"),
             ByteBuffer.wrap(payload.toByteArray())
         )
         val appMessage = AppMessage(authenticatedMsg)
@@ -859,7 +861,7 @@ class LinkManagerTest {
 
     private fun testDataMessagesWithInboundMessageProcessor(session: SessionPair) {
 
-        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, TTL, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
@@ -1011,7 +1013,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor produces a FlowMessage only if the sender is removed from the network map before creating an ACK`() {
         val session = createSessionPair()
 
-        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, TTL, MESSAGE_ID, "", "system-1")
         val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
@@ -1063,7 +1065,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards messages with unknown sessionId`() {
         val session = createSessionPair()
 
-        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "", "system-1")
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, TTL, "", "", "system-1")
         val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
@@ -1099,7 +1101,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards a FlowMessage on a OutboundSession`() {
         val session = createSessionPair()
 
-        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, TTL, MESSAGE_ID, "", "system-1")
         val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
@@ -1170,7 +1172,7 @@ class LinkManagerTest {
     }
 
     private fun sendDataMessageWithSpoofedIdentity(session: SessionPair, source: HoldingIdentity, destination: HoldingIdentity) {
-        val header = AuthenticatedMessageHeader(destination, source, null, MESSAGE_ID, "", "system-1")
+        val header = AuthenticatedMessageHeader(destination, source, TTL, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(
             messageAndKey,
