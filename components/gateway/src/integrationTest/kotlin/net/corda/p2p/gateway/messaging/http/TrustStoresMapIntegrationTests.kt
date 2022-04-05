@@ -69,7 +69,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
                     writer.writeObject(certificate)
                 }
                 str.toString()
-            }
+            }.replace("\r\n", "\n")
 
             assertThat(pemCertificate).isEqualTo(expectedCertificatePem)
         }
