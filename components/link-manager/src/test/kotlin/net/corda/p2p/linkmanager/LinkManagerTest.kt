@@ -414,7 +414,7 @@ class LinkManagerTest {
         )
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE),
+            UnauthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, "subsystem"),
             ByteBuffer.wrap(payload.toByteArray())
         )
         val appMessage = AppMessage(unauthenticatedMsg)
@@ -440,8 +440,8 @@ class LinkManagerTest {
         )
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE),
-            ByteBuffer.wrap(payload.toByteArray())
+            UnauthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, "subsystem"),
+            ByteBuffer.wrap(payload.toByteArray()),
         )
         val appMessage = AppMessage(unauthenticatedMsg)
 
