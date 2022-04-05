@@ -10,6 +10,11 @@
     {
       "name": "source",
       "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "subsystem",
+      "doc": "The subsystem that this message is sent from and should be received by.",
+      "type": "string"
     }
   ]
 }
