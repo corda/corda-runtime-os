@@ -287,7 +287,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                     }
                 }
                 endsWith(".yaml") || endsWith(".yml") -> {
-                    Yaml().load(file.inputStream())
+                    Yaml().load(file.readText())
                         ?: throw IllegalArgumentException("Could not read static network information from $this.")
                 }
                 else -> throw IllegalArgumentException("Input file format not supported.")

@@ -1,0 +1,18 @@
+plugins {
+    id 'org.jetbrains.kotlin.kapt'
+}
+
+dependencies {
+    compileOnly project(":api")
+
+    implementation "org.pf4j:pf4j:${pf4jVersion}"
+    kapt "org.pf4j:pf4j:${pf4jVersion}"
+
+    testImplementation project(":api")
+    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+}
+
+test {
+    useJUnitPlatform()
+}

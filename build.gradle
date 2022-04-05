@@ -13,8 +13,18 @@ plugins {
 ext.pluginsDir = "$buildDir/plugins"
 
 subprojects {
+
+    if (System.getenv("RELEASE_VERSION")?.trim()) {
+        version = System.getenv("RELEASE_VERSION")
+    } else {
+        def versionSuffix = '-SNAPSHOT'
+        if (System.getenv('VERSION_SUFFIX')) {
+            versionSuffix = System.getenv('VERSION_SUFFIX')
+        }
+        version = "$cliHostVersion$versionSuffix"
+    }
     group = 'net.corda.cli'
-    version = '0.0.1-beta'
+
 
     pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
         apply plugin: 'io.gitlab.arturbosch.detekt'
