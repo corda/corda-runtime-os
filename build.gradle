@@ -85,9 +85,14 @@ allprojects {
             excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
         }
 
+
         distribution {
             enabled = true
-            maxRemoteExecutors = 0
+            remoteExecutionPreferred = true
+            waitTimeout = Duration.ofMinutes(2)
+            maxLocalExecutors = 1
+            maxRemoteExecutors = 10
+            requirements = ["jdk=11","os=linux"]
         }
 
         doFirst {
