@@ -12,6 +12,7 @@ dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:lifecycle:lifecycle")

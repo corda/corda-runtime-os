@@ -28,13 +28,14 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val cacheProvider: SoftCryptoKeyCacheProvider
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>(),
+    lifecycleCoordinatorName,
     InactiveImpl(),
     setOf(LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>())
 ), SoftCryptoServiceProvider {
     companion object {
         const val SERVICE_NAME = "soft"
         private val logger: Logger = contextLogger()
+        private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
     interface Impl : AutoCloseable {
@@ -52,6 +53,9 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     override fun getInstance(config: SoftCryptoServiceConfig): CryptoService =
         impl.getInstance(config)
+
+    override val lifecycleName: LifecycleCoordinatorName
+        get() = lifecycleCoordinatorName
 
     internal class InactiveImpl : Impl {
         override fun getInstance(config: SoftCryptoServiceConfig): CryptoService =

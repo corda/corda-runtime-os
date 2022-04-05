@@ -6,6 +6,7 @@ import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.CryptoFlowOpsService
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
@@ -52,7 +53,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = CryptoFlowOpsService::class)
     private val cryptoFlowOpsService: CryptoFlowOpsService,
     @Reference(service = CryptoServiceFactory::class)
-    private val cryptoServiceFactory: CryptoServiceFactory
+    private val cryptoServiceFactory: CryptoServiceFactory,
+    @Reference(service = HSMRegistration::class)
+    private val hsmRegistration: HSMRegistration
 ) : CryptoProcessor {
     private companion object {
         val log = contextLogger()
@@ -70,7 +73,8 @@ class CryptoProcessorImpl @Activate constructor(
         ::cryptoOspService,
         ::cryptoFlowOpsService,
         ::softCryptoServiceProviders,
-        ::cryptoServiceFactory
+        ::cryptoServiceFactory,
+        ::hsmRegistration
     )
 
     override val isRunning: Boolean

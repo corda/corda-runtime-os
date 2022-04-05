@@ -1,9 +1,9 @@
-package net.corda.crypto.service.impl.registration
+package net.corda.crypto.service.impl._utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SoftCryptoServiceConfig
+import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.impl.soft.SoftCryptoServiceProviderImpl
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
@@ -19,14 +19,10 @@ import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
 
-@Component(service = [HSMRegistration::class])
-class HSMRegistrationImpl(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class TestHSMRegistration(
     coordinatorFactory: LifecycleCoordinatorFactory
 ) : HSMRegistration {
     companion object {

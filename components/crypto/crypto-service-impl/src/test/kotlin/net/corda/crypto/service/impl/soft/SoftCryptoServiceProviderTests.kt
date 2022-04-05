@@ -2,11 +2,13 @@ package net.corda.crypto.service.impl.soft
 
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl._utils.TestServicesFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -42,6 +44,7 @@ class SoftCryptoServiceProviderTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(
@@ -69,6 +72,7 @@ class SoftCryptoServiceProviderTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance(
@@ -95,12 +99,16 @@ class SoftCryptoServiceProviderTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
+        eventually {
+            assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
+        }
     }
 }

@@ -1,12 +1,14 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.service.impl._utils.TestServicesFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
@@ -37,6 +39,7 @@ class SigningServiceFactoryTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         Assertions.assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(
@@ -54,6 +57,7 @@ class SigningServiceFactoryTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         Assertions.assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance()
@@ -71,11 +75,13 @@ class SigningServiceFactoryTests {
         component.start()
         eventually {
             assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         Assertions.assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         Assertions.assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
     }

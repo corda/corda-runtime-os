@@ -8,10 +8,10 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.impl.AbstractComponent
-import net.corda.crypto.service.impl.registration.HSMRegistration
+import net.corda.crypto.service.HSMRegistration
+import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.TenantHSMConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
@@ -46,8 +46,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
     InactiveImpl(),
     setOf(LifecycleCoordinatorName.forComponent<HSMRegistration>()) +
-            cryptoServiceProviders.filterIsInstance(Lifecycle::class.java).map {
-                LifecycleCoordinatorName(it::class.java.name)
+            cryptoServiceProviders.filterIsInstance(LifecycleNameProvider::class.java).map {
+                it.lifecycleName
             }
 ), CryptoServiceFactory {
     companion object {
@@ -70,12 +70,12 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun getInstance(tenantId: String, category: String): CryptoServiceRef =
         impl.getInstance(tenantId, category)
 
-    private class InactiveImpl : Impl {
+    internal class InactiveImpl : Impl {
         override fun getInstance(tenantId: String, category: String) =
             throw IllegalStateException("The component is in invalid state.")
     }
 
-    private class ActiveImpl(
+    internal class ActiveImpl(
         private val hsmRegistrar: HSMRegistration,
         private val schemeMetadata: CipherSchemeMetadata,
         cryptoServiceProviders: List<CryptoServiceProvider<*>>

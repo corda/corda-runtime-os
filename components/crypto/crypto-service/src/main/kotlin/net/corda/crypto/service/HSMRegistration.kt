@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.registration
+package net.corda.crypto.service
 
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.TenantHSMConfig
