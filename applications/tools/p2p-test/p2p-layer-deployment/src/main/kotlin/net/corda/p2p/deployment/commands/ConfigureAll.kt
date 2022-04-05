@@ -184,7 +184,7 @@ class ConfigureAll : Runnable {
                 "x500name" to x500name,
                 "groupId" to groupId,
                 "data" to mapOf(
-                    "publicKey" to publicKeyFile(host).readText(),
+                    "publicSessionKey" to publicKeyFile(host).readText(),
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
@@ -239,7 +239,7 @@ class ConfigureAll : Runnable {
                     "tlsTenantId" to tenantId,
                     "sessionKeyTenantId" to tenantId,
                     "tlsCertificates" to listOf(tlsCertificates(host).readText()),
-                    "publicKey" to publicKeyFile(host).readText(),
+                    "publicSessionKey" to publicKeyFile(host).readText(),
                 )
             )
 
@@ -265,7 +265,7 @@ class ConfigureAll : Runnable {
                     "x500name" to annotations["x500-name"],
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
-                        "publicKey" to publicKeyFile(host).readText(),
+                        "publicSessionKey" to publicKeyFile(host).readText(),
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),

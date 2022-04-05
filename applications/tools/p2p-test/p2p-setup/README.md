@@ -43,15 +43,15 @@ To publish a group member:
   "x500name": "O=Alice, L=London, C=GB",
   "groupId": "group-1",
   "data": {
-       "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
+       "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
        "address": "http://alice.com:8080"
   }
 }
 ```
 Where:
-* `publicKey` is the public key in PEM format
+* `publicSessionKey` is the session public key in PEM format
 * `address` is the HTTP address of the member (In the format: `http://<host>:<port>/`)
-* `publicKeyFile` can be an alternative to `publicKey` with path to the public key in PEM format.
+* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with path to the session public key in PEM format.
 
 5. Run the command:
 ```bash
@@ -90,8 +90,8 @@ To publish an entry for a locally hosted identity:
 * The `tlsCertificates` should contain the content of the certificates (in PEM format).
 * The `tlsCertificatesFiles` can be used as an alternative to `tlsCertificates` with a path to a valid certificate file (in PEM format).
 * The `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
-* `publicKey` is the public key in PEM format
-* `publicKeyFile` can be an alternative to `publicKey` with path to the public key in PEM format.
+* `publicSessionKey` is the session public key in PEM format
+* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with path to the session public key in PEM format.
 
 4. Run the command:
 ```bash
