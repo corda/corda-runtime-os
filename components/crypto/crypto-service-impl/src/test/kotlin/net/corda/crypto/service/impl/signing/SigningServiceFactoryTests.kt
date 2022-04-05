@@ -3,11 +3,10 @@ package net.corda.crypto.service.impl.signing
 import net.corda.crypto.service.impl._utils.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -25,14 +24,14 @@ class SigningServiceFactoryTests {
             factory.coordinatorFactory,
             factory.schemeMetadata,
             factory.signingCacheProvider,
-            mock()
+            factory.createCryptoServiceFactory()
         )
     }
 
     @Test
     fun `Should start component and use active implementation only after the component is up`() {
         assertFalse(component.isRunning)
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance()
         }
@@ -41,7 +40,7 @@ class SigningServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(
             component.getInstance()
         )
@@ -50,7 +49,7 @@ class SigningServiceFactoryTests {
     @Test
     fun `getInstance should return same instance each time`() {
         assertFalse(component.isRunning)
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
             component.getInstance()
         }
@@ -59,7 +58,7 @@ class SigningServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         val i1 = component.getInstance()
         val i2 = component.getInstance()
         val i3 = component.getInstance()
@@ -71,18 +70,18 @@ class SigningServiceFactoryTests {
     @Test
     fun `Should deactivate implementation when component is stopped`() {
         assertFalse(component.isRunning)
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        Assertions.assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningServiceFactoryImpl.InactiveImpl::class.java, component.impl)
     }
 }

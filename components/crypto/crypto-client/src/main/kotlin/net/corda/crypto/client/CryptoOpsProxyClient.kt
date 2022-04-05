@@ -4,6 +4,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
 import java.nio.ByteBuffer
 import java.security.KeyPair
@@ -15,7 +16,7 @@ import java.util.UUID
  * Don't use it unless you exactly know what you are doing, the use case is to proxy the Flow OPS to the
  * [CryptoOpsClient] service implementation.
  */
-interface CryptoOpsProxyClient {
+interface CryptoOpsProxyClient : CryptoOpsClient {
     /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
      *

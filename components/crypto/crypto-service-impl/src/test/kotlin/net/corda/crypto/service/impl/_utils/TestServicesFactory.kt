@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl._utils
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
@@ -13,6 +14,7 @@ import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.HSMRegistration
+import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoService
 import net.corda.crypto.service.impl.soft.SoftCryptoServiceProviderImpl
@@ -102,6 +104,31 @@ class TestServicesFactory {
             digestService = digest
         ).also { it.createWrappingKey(wrappingKeyAlias, true, emptyMap()) }
     }
+
+    fun createCryptoServiceFactory(): CryptoServiceFactory =
+        CryptoServiceFactoryImpl(
+            coordinatorFactory,
+            registration,
+            schemeMetadata,
+            listOf(
+                softCryptoKeyCacheProvider
+            )
+        ).also {
+            it.start()
+            eventually {
+                assertTrue(it.isRunning)
+            }
+        }
+
+    fun createConfigurationReadService(): ConfigurationReadService =
+        TestConfigurationReadService(
+            coordinatorFactory
+        ).also {
+            it.start()
+            eventually {
+                assertTrue(it.isRunning)
+            }
+        }
 
     fun createSigningService(
         signatureScheme: SignatureScheme,

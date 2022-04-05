@@ -43,7 +43,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         const val GROUP_NAME = "crypto.ops.flow"
     }
 
-    private val lifecycleCoordinator =
+    internal val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoFlowOpsService>(::eventHandler)
 
     @Volatile
@@ -53,7 +53,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
     private var registrationHandle: RegistrationHandle? = null
 
     @Volatile
-    private var subscription: Subscription<String, FlowOpsRequest>? = null
+    internal var subscription: Subscription<String, FlowOpsRequest>? = null
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 
@@ -85,7 +85,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
                 registrationHandle = null
                 configHandle?.close()
                 configHandle = null
-                deleteResources()
+                deactivate()
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -97,13 +97,13 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
                 } else {
                     configHandle?.close()
                     configHandle = null
-                    deleteResources()
+                    deactivate()
                     logger.info("Setting status DOWN.")
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
             is ConfigChangedEvent -> {
-                createResources(event)
+                activate(event)
                 logger.info("Setting status UP.")
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
@@ -113,7 +113,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         }
     }
 
-    private fun deleteResources() {
+    private fun deactivate() {
         val current = subscription
         subscription = null
         if(current != null) {
@@ -122,7 +122,7 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         }
     }
 
-    private fun createResources(event: ConfigChangedEvent) {
+    private fun activate(event: ConfigChangedEvent) {
         logger.info("Creating durable subscription for '{}' topic", FLOW_OPS_MESSAGE_TOPIC)
         val messagingConfig = event.config.toMessagingConfig()
         val processor = CryptoFlowOpsProcessor(

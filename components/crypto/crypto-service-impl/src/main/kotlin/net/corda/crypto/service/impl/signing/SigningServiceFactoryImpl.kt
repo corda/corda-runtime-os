@@ -28,7 +28,10 @@ class SigningServiceFactoryImpl @Activate constructor(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
     InactiveImpl(),
-    setOf(LifecycleCoordinatorName.forComponent<SigningKeyCacheProvider>())
+    setOf(
+        LifecycleCoordinatorName.forComponent<SigningKeyCacheProvider>(),
+        LifecycleCoordinatorName.forComponent<CryptoServiceFactory>()
+    )
 ), SigningServiceFactory {
     companion object {
         private val logger = contextLogger()

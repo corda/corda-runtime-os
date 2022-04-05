@@ -45,7 +45,7 @@ class CryptoOpsServiceImpl @Activate constructor(
         const val CLIENT_NAME = "crypto.ops.rpc"
     }
 
-    private val lifecycleCoordinator =
+    internal val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoOpsService>(::eventHandler)
 
     @Volatile
@@ -55,7 +55,7 @@ class CryptoOpsServiceImpl @Activate constructor(
     private var registrationHandle: RegistrationHandle? = null
 
     @Volatile
-    private var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>? = null
+    internal var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>? = null
 
     override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
 

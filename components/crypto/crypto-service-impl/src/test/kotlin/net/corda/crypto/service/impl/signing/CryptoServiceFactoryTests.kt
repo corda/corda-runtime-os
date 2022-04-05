@@ -12,6 +12,8 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class CryptoServiceFactoryTests {
@@ -49,6 +51,46 @@ class CryptoServiceFactoryTests {
         assertNotNull(
             component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
         )
+    }
+
+    @Test
+    fun `getInstance should return same instance which resolves to the same HSM config id`() {
+        assertFalse(component.isRunning)
+        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        val i1 = component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+        val i2 = component.getInstance(UUID.randomUUID().toString(), CryptoConsts.HsmCategories.LEDGER)
+        val i3 = component.getInstance(UUID.randomUUID().toString(), CryptoConsts.HsmCategories.LEDGER)
+        assertNotNull(i1)
+        assertSame(i1, i2)
+        assertSame(i1, i3)
+    }
+
+    @Test
+    fun `getInstance should return different instance which resolves to different HSM config id`() {
+        assertFalse(component.isRunning)
+        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        val i1 = component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+        val i2 = component.getInstance(tenantId, CryptoConsts.HsmCategories.TLS)
+        assertNotNull(i1)
+        assertNotSame(i1, i2)
     }
 
     @Test
