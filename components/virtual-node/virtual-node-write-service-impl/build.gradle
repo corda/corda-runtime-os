@@ -44,3 +44,15 @@ dependencies {
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
+
+
+test {
+    distribution {
+        enabled = true
+        remoteExecutionPreferred = true
+        waitTimeout = Duration.ofMinutes(2)
+        maxLocalExecutors = 1
+        maxRemoteExecutors = 10
+        requirements = ["jdk=11","os=linux"]
+    }
+}

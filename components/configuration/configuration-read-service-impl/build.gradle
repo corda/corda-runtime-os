@@ -34,3 +34,14 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
+
+test {
+    distribution {
+        enabled = true
+        remoteExecutionPreferred = true
+        waitTimeout = Duration.ofMinutes(2)
+        maxLocalExecutors = 1
+        maxRemoteExecutors = 10
+        requirements = ["jdk=11","os=linux"]
+    }
+}
