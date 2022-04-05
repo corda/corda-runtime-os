@@ -4,6 +4,8 @@ import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.db.connection.manager.DbConnectionManager
@@ -12,12 +14,15 @@ import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
@@ -30,12 +35,18 @@ import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader
+import net.corda.reconciliation.Reconciler
+import net.corda.reconciliation.ReconcilerFactory
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import java.time.Duration
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
@@ -64,6 +75,12 @@ class DBProcessorImpl @Activate constructor(
     private val cpkReadService: CpkReadService,
     @Reference(service = FlowPersistenceService::class)
     private val flowPersistenceService: FlowPersistenceService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = CpiInfoWriteService::class)
+    private val cpiInfoWriteService: CpiInfoWriteService,
+    @Reference(service = ReconcilerFactory::class)
+    private val reconcilerFactory: ReconcilerFactory
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -92,8 +109,14 @@ class DBProcessorImpl @Activate constructor(
         ::chunkReadService,
         ::cpkWriteService,
         ::cpkReadService,
-        ::flowPersistenceService
+        ::flowPersistenceService,
+        ::cpkReadService,
+        ::cpiInfoReadService,
+        ::cpiInfoWriteService
     )
+
+    private val reconcilers = mutableListOf<Reconciler>()
+
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
     private var dbManagerRegistrationHandler: RegistrationHandle? = null
@@ -134,6 +157,9 @@ class DBProcessorImpl @Activate constructor(
                 } else {
                     log.info("DB processor is ${event.status}")
                     coordinator.updateStatus(event.status)
+                    if (event.status == LifecycleStatus.UP) {
+                        startUpReconciliations()
+                    }
                 }
             }
             is BootConfigEvent -> {
@@ -145,6 +171,7 @@ class DBProcessorImpl @Activate constructor(
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
+                reconcilers.forEach { it.stop() }
                 dbManagerRegistrationHandler?.close()
                 dbManagerRegistrationHandler = null
             }
@@ -152,6 +179,19 @@ class DBProcessorImpl @Activate constructor(
                 log.error("Unexpected event $event!")
             }
         }
+    }
+
+    private fun startUpReconciliations() {
+        val cpiInfoDbReader = CpiInfoDbReader(coordinatorFactory, dbConnectionManager)
+        val reconciler = reconcilerFactory.create(
+            dbReader = cpiInfoDbReader,
+            kafkaReader = cpiInfoReadService,
+            writer = cpiInfoWriteService,
+            keyClass = CpiIdentifier::class.java,
+            valueClass = CpiMetadata::class.java,
+            reconciliationInterval = Duration.ofMillis(5000) // TODO make configurable
+        )
+        reconcilers.add(reconciler.also { it.start() })
     }
 }
 

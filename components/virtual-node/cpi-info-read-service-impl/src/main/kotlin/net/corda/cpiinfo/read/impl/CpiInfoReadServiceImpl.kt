@@ -6,9 +6,10 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.common.ConfigChangedEvent
@@ -50,7 +51,9 @@ class CpiInfoReadServiceImpl @Activate constructor(
         this::onConfigChangeEvent
     )
 
-    private val coordinator = coordinatorFactory.createCoordinator<CpiInfoReadService>(eventHandler)
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+
+    private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, eventHandler)
 
     /** The processor calls this method on snapshot, and it updates the status of the coordinator. */
     private fun setStatusToUp() = coordinator.updateStatus(LifecycleStatus.UP)
@@ -83,6 +86,15 @@ class CpiInfoReadServiceImpl @Activate constructor(
     }
 
     override fun getAll(): List<CpiMetadata> = cpiInfoProcessor.getAll()
+
+    override fun getAllVersionedRecords() =
+        getAll().asSequence().map {
+            VersionedRecord(
+                it.version,
+                it.cpiId,
+                it
+            )
+        }
 
     override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)
 

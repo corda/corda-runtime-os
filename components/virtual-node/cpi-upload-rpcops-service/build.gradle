@@ -19,6 +19,7 @@ dependencies {
     implementation project(':libs:virtual-node:cpi-upload-manager')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:packaging:packaging-core')
+    implementation project(":components:reconciliation:reconciliation")
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-crypto'

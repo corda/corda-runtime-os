@@ -9,6 +9,8 @@ import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.reconciliation.VersionedRecord
 
 @Suppress("unused")
 @Component
@@ -17,6 +19,17 @@ class CpiInfoServiceImpl @Activate constructor(
     private val loader: CpiLoader
 ): CpiInfoReadService {
     private val logger = loggerFor<CpiInfoServiceImpl>()
+
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+
+    override fun getAllVersionedRecords() =
+        getAll().asSequence().map {
+            VersionedRecord(
+                it.version,
+                it.cpiId,
+                it
+            )
+        }
 
     override val isRunning: Boolean
         get() = true

@@ -31,6 +31,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(":osgi-framework-api")
+    implementation project(":components:reconciliation:reconciliation")
 
     runtimeOnly "net.corda:corda-avro-schema"
     runtimeOnly project(":components:configuration:configuration-read-service-impl")

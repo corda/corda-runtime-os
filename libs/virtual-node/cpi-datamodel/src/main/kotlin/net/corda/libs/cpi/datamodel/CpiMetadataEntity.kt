@@ -1,16 +1,25 @@
 package net.corda.libs.cpi.datamodel
 
 import net.corda.db.schema.DbSchema
+import net.corda.db.schema.DbSchema.CPI_REVERSION_SEQUENCE
+import net.corda.db.schema.DbSchema.CPI_REVERSION_SEQUENCE_ALLOC_SIZE
 import java.io.Serializable
 import java.time.Instant
+import java.util.stream.Stream
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
+import javax.persistence.EntityManager
 import javax.persistence.FetchType
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.OneToMany
+import javax.persistence.SequenceGenerator
 import javax.persistence.Table
+
+private const val CPI_REVERSION_GENERATOR = "cpi_reversion_generator"
 
 /**
  * Cpi entity
@@ -27,7 +36,8 @@ import javax.persistence.Table
 @Entity
 @Table(name = "cpi", schema = DbSchema.CONFIG)
 @IdClass(CpiMetadataEntityKey::class)
-data class CpiMetadataEntity(
+@Suppress("LongParameterList")
+class CpiMetadataEntity private constructor(
     @Id
     @Column(name = "name", nullable = false)
     val name: String,
@@ -47,7 +57,36 @@ data class CpiMetadataEntity(
     val groupId: String,
     @Column(name = "file_upload_request_id", nullable = false)
     val fileUploadRequestId: String,
+    @SequenceGenerator(
+        name = CPI_REVERSION_GENERATOR,
+        sequenceName = CPI_REVERSION_SEQUENCE,
+        allocationSize = CPI_REVERSION_SEQUENCE_ALLOC_SIZE
+    )
+    @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
+    @Column(name = "reversion", nullable = false)
+    val reversion: Int
 ) {
+    constructor(
+        name: String,
+        version: String,
+        signerSummaryHash: String,
+        fileName: String,
+        fileChecksum: String,
+        groupPolicy: String,
+        groupId: String,
+        fileUploadRequestId: String,
+    ) : this(
+        name,
+        version,
+        signerSummaryHash,
+        fileName,
+        fileChecksum,
+        groupPolicy,
+        groupId,
+        fileUploadRequestId,
+        -1 // this value will not get persisted
+    )
+
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
             "", "", "", "", "", "", "", "")
@@ -68,3 +107,9 @@ data class CpiMetadataEntityKey(
     private val version: String,
     private val signerSummaryHash: String,
 ): Serializable
+
+// Although the following query is currently simple (so maybe it doesn't make sense to be here), however,
+// in subsequent work where we add timestamps this will also take timestamp and maybe then it is worth
+// testing the query, which should happen in this module.
+fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> =
+    createQuery("SELECT * from cpi", CpiMetadataEntity::class.java).resultStream
