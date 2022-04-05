@@ -71,13 +71,13 @@ pipeline {
                 }
             }
             post {
-                unsuccessful {
+                always {
                     sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
+                        kubectl describe all -n ${NAMESPACE} > prereqsDescribe.txt
                     '''
-                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
+                    sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
                 }
             }
         }
@@ -122,8 +122,6 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-                }
-                unsuccessful {
                     sh '''
                         kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
