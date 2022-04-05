@@ -71,7 +71,7 @@ class InMemorySessionReplayerTest {
     private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        replayCallback = context.arguments()[4] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     }
 
     private val groupsAndMembers = mockMembersAndGroups(US, COUNTER_PARTY)

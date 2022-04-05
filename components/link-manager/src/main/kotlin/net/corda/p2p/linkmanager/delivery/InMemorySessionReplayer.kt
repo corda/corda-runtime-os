@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -45,8 +44,7 @@ class InMemorySessionReplayer(
         configuration
     )
 
-    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        false, LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX, ::replayMessage)
+    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService, false, ::replayMessage)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
