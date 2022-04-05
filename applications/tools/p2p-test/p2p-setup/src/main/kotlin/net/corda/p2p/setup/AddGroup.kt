@@ -19,6 +19,7 @@ import java.util.concurrent.Callable
     description = ["Create a membership group"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
     companion object {

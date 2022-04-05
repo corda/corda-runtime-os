@@ -8,6 +8,7 @@ import picocli.CommandLine.Option
     showDefaultValues = true,
     description = ["Delete a running namespace"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Destroy : Runnable {
     companion object {
