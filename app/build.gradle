@@ -2,6 +2,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' 
     id 'application'
     id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'com.r3.internal.gradle.plugins.r3-docker'
 }
 
 dependencies {
@@ -20,6 +21,7 @@ dependencies {
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 }
 
+version rootProject.version
 group = "net.corda.cli.host"
 
 test {
@@ -59,6 +61,24 @@ def fatJar = tasks.register('fatJar', Jar) {
     }
 
     archiveBaseName = 'corda-cli'
+}
+
+tasks.named("publishOSGiImage").configure{
+    sourceTasks = Arrays.asList(fatJar.get())
+    dependsOn(fatJar)
+    overrideEntryName = 'cli'
+    overrideContainerName = 'cli'
+    arguments = Arrays.asList("-Dpf4j.pluginsDir=/opt/override/plugins")
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+    if (project.hasProperty('baseImage')) {
+        baseImageName = baseImage
+    }
+    environment = Map.of(
+        "CORDA_CLI_HOME_DIR", "/opt/override/home"
+    )
+    setEntry = true
 }
 
 artifacts {
