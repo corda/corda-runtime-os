@@ -1,9 +1,6 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,15 +14,12 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.integration.IntegrationTestProperties
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC2
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC2_TEMPLATE
-import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
@@ -39,6 +33,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -72,13 +67,6 @@ class CompactedSubscriptionIntegrationTest {
         ) {
             if (bundleContext.isDBBundle()) {
                 DBSetup.setupEntities(CLIENT_ID)
-                // Dodgy remove prefix for DB code
-                compactedTopic1Config = ConfigFactory.parseString(
-                    COMPACTED_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-                compactedTopic2Config = ConfigFactory.parseString(
-                    COMPACTED_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
             }
         }
 

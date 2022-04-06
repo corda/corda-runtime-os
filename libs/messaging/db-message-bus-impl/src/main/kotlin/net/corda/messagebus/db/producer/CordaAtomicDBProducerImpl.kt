@@ -11,10 +11,7 @@ import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import java.time.Duration
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import javax.persistence.RollbackException
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
@@ -27,7 +24,10 @@ class CordaAtomicDBProducerImpl(
         dbAccess.writeAtomicTransactionRecord()
     }
 
-    private val defaultTimeout: Duration = Duration.ofSeconds(1)
+    private companion object {
+        private val log = contextLogger()
+    }
+
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 

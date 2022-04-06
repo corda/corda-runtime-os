@@ -3,8 +3,6 @@ package net.corda.messaging.integration.subscription
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -19,24 +17,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
-import net.corda.messaging.integration.TopicTemplates
-import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1
-import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
-import net.corda.messaging.integration.getDemoRecords
-import net.corda.messaging.integration.getKafkaProperties
-import net.corda.messaging.integration.getStringRecords
-import net.corda.messaging.integration.processors.TestDurableProcessor
-import net.corda.messaging.integration.processors.TestDurableStringProcessor
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Bus.CONSUMER_MAX_POLL_INTERVAL
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.integration.KafkaOnly
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
-import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
@@ -44,7 +28,8 @@ import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableStringProcessor
 import net.corda.messaging.integration.util.DBSetup
-import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_INTERVAL
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -52,6 +37,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -81,12 +67,7 @@ class DurableSubscriptionIntegrationTest {
         private var isDB = false
 
         fun getTopicConfig(topicTemplate: String): Config {
-            val template = if (isDB) {
-                topicTemplate.replace(TEST_TOPIC_PREFIX,"")
-            } else {
-                topicTemplate
-            }
-            return ConfigFactory.parseString(template)
+            return ConfigFactory.parseString(topicTemplate)
         }
 
         @Suppress("unused")
@@ -150,7 +131,7 @@ class DurableSubscriptionIntegrationTest {
 
         val triggerRebalanceQuicklyConfig = TEST_CONFIG
             .withValue(
-                CONSUMER_MAX_POLL_INTERVAL,
+                KAFKA_CONSUMER_MAX_POLL_INTERVAL,
                 ConfigValueFactory.fromAnyRef(1000)
             )
             .withValue(

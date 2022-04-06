@@ -1,7 +1,6 @@
 package net.corda.messagebus.db.consumer
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConfigProperties
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import java.util.concurrent.ConcurrentHashMap
@@ -100,7 +99,7 @@ class ConsumerGroup(
 
     private fun verifyValid() {
         if (groupId == NULL_GROUP_ID) {
-            throw CordaMessageAPIFatalException("Cannot subscribe when '${ConfigProperties.GROUP_ID}' is not configured.")
+            throw CordaMessageAPIFatalException("Cannot subscribe when consumer group is not set.")
         }
     }
 }

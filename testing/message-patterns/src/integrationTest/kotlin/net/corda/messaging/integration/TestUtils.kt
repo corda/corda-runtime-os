@@ -3,6 +3,7 @@ package net.corda.messaging.integration
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
+import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.junit.jupiter.api.extension.ConditionEvaluationResult
 import org.junit.jupiter.api.extension.ExecutionCondition
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,7 +39,7 @@ fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Recor
 
 fun getKafkaProperties(): Properties {
     val kafkaProperties = Properties()
-    kafkaProperties[IntegrationTestProperties.BOOTSTRAP_SERVERS] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
+    kafkaProperties[BOOTSTRAP_SERVERS_CONFIG] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
     kafkaProperties[CLIENT_ID] = "test"
     return kafkaProperties
 }

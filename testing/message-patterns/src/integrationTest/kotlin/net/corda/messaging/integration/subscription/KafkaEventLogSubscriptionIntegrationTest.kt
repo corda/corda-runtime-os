@@ -3,8 +3,6 @@ package net.corda.messaging.integration.subscription
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -22,16 +20,10 @@ import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_
 import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
-import net.corda.messaging.integration.processors.TestEventLogProcessor
-import net.corda.schema.configuration.MessagingConfig
-import net.corda.messaging.integration.IntegrationTestProperties
-import net.corda.messaging.integration.TopicTemplates
-import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
-import net.corda.messaging.integration.getDemoRecords
-import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestEventLogProcessor
 import net.corda.messaging.integration.util.DBSetup
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -39,6 +31,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -56,7 +49,6 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "eventLogTestPublisher"
@@ -68,12 +60,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         private var isDB = false
 
         fun getTopicConfig(topicTemplate: String): Config {
-            val template = if (isDB) {
-                    topicTemplate.replace(TEST_TOPIC_PREFIX,"")
-            } else {
-                topicTemplate
-            }
-            return ConfigFactory.parseString(template)
+            return ConfigFactory.parseString(topicTemplate)
         }
 
         @Suppress("unused")

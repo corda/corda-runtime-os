@@ -1,12 +1,12 @@
 package net.corda.messagebus.db.consumer
 
 import net.corda.data.CordaAvroDeserializer
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.db.configuration.ResolvedConsumerConfig
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
@@ -19,7 +19,7 @@ import java.time.Duration
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
-    private val consumerConfig: SmartConfig,
+    private val consumerConfig: ResolvedConsumerConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup,
     private val keyDeserializer: CordaAvroDeserializer<K>,
@@ -29,21 +29,14 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     enum class SubscriptionType { NONE, ASSIGNED, SUBSCRIBED }
 
-    companion object {
-        const val MAX_POLL_RECORDS = "max.poll.records"
-        const val AUTO_OFFSET_RESET = "auto.offset.reset"
-        const val CLIENT_ID = "client.id"
-        const val GROUP_ID = "group.id"
-    }
 
     // Also used by the consumer group
-    internal val clientId = consumerConfig.getString(CLIENT_ID)
-
-    private val groupId = consumerConfig.getString(GROUP_ID)
+    internal val clientId = consumerConfig.clientId
     private val log: Logger = LoggerFactory.getLogger(clientId)
-    private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
-    private val autoResetStrategy =
-        CordaOffsetResetStrategy.valueOf(consumerConfig.getString(AUTO_OFFSET_RESET).toUpperCase())
+
+    private val groupId = consumerConfig.group
+    private val maxPollRecords = consumerConfig.maxPollSize
+    private val autoResetStrategy = consumerConfig.offsetResetStrategy
     private var subscriptionType = SubscriptionType.NONE
 
     private var topicPartitions = emptySet<CordaTopicPartition>()
@@ -54,9 +47,6 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         checkNotAssigned()
-        if (consumerGroup == null) {
-            throw CordaMessageAPIFatalException("Cannot subscribe when '${GROUP_ID}' is not configured.")
-        }
         consumerGroup.subscribe(this, topics)
         topics.forEach { partitionListeners[it] = listener }
         subscriptionType = SubscriptionType.SUBSCRIBED
@@ -179,7 +169,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     @Synchronized
     override fun close() {
-        log.info("Closing consumer ${consumerConfig.getString(CLIENT_ID)}")
+        log.info("Closing consumer $clientId")
         consumerGroup.unsubscribe(this)
         updateTopicPartitions() // Will trigger the callback for removed topic partitions
     }
