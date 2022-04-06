@@ -4,7 +4,7 @@ import net.corda.crypto.persistence.SigningKeyCacheProvider
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.impl.AbstractComponent
+import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger

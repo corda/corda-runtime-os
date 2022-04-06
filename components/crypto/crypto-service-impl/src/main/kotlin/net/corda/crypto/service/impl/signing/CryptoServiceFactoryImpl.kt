@@ -7,7 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.impl.AbstractComponent
+import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.config.HSMConfig

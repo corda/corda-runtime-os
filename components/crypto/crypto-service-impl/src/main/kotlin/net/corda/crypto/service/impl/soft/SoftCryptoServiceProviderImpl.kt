@@ -3,7 +3,7 @@ package net.corda.crypto.service.impl.soft
 import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
-import net.corda.crypto.service.impl.AbstractComponent
+import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger

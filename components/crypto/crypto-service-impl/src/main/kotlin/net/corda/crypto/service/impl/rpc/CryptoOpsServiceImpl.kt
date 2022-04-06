@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.impl.AbstractConfigurableComponent
+import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
