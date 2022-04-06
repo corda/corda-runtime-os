@@ -12,8 +12,10 @@ import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -23,7 +25,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -70,53 +71,62 @@ class CryptoFlowOpsServiceTests {
     @Test
     fun `Should create subscription only after the component is up`() {
         assertFalse(component.isRunning)
-        assertNull(component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.impl.subscription
+        }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertSame(subscription, component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.ActiveImpl::class.java, component.impl)
     }
 
     @Test
     fun `Should close subscription when component is stopped`() {
         assertFalse(component.isRunning)
-        assertNull(component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertSame(subscription, component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.ActiveImpl::class.java, component.impl)
+        assertSame(subscription, component.impl.subscription)
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertNull(component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.impl.subscription
+        }
         Mockito.verify(subscription, times(1)).close()
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertNull(component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.InactiveImpl::class.java, component.impl)
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertSame(subscription, component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.ActiveImpl::class.java, component.impl)
+        assertSame(subscription, component.impl.subscription)
         clientCoordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertNull(component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.InactiveImpl::class.java, component.impl)
         clientCoordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertSame(subscription, component.subscription)
+        assertInstanceOf(CryptoFlowOpsServiceImpl.ActiveImpl::class.java, component.impl)
+        assertSame(subscription, component.impl.subscription)
     }
 }

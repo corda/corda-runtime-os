@@ -37,6 +37,5 @@ dependencies {
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
-    testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testImplementation project(":testing:test-utilities")
 }
