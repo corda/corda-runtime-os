@@ -40,7 +40,7 @@ class ConfigTests {
             WORKSPACE_DIR,
             TEMP_DIR,
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
-            "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
+            MSG_KEY_ONE,
             "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
@@ -48,7 +48,7 @@ class ConfigTests {
 
         assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(INSTANCE_ID))
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
-        assertEquals(MSG_VAL_ONE, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_ONE"))
+        assertEquals(MSG_VAL_ONE, config.getAnyRef(MSG_KEY_ONE))
         assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
         assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
     }
@@ -97,8 +97,8 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = processor.config!!
 
-        assertEquals(MSG_VAL_ONE, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_ONE"))
-        assertEquals(MSG_VAL_TWO, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_TWO"))
+        assertEquals(MSG_VAL_ONE, config.getAnyRef(MSG_KEY_ONE))
+        assertEquals(MSG_VAL_TWO, config.getAnyRef(MSG_KEY_TWO))
     }
 
     @Test

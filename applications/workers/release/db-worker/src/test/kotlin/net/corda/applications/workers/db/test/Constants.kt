@@ -26,5 +26,4 @@ internal const val WORKSPACE_DIR = "dir.workspace"
 internal const val TEMP_DIR = "dir.tmp"
 
 internal const val DEFAULT_TOPIC_PREFIX = ""
-internal const val MSG_CONFIG_PATH = "messaging"
 internal const val CUSTOM_CONFIG_PATH = "custom"
