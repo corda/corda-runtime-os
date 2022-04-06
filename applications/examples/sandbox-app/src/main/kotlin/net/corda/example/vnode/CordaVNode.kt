@@ -35,6 +35,7 @@ import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
@@ -49,10 +50,13 @@ import java.nio.file.LinkPermission
 import java.time.Instant
 import java.util.PropertyPermission
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 const val VNODE_SERVICE = "vnode"
+const val SHUTDOWN_GRACE = 30L
 
 @Suppress("unused", "LongParameterList")
 @Component(reference = [
@@ -89,6 +93,7 @@ class CordaVNode @Activate constructor(
         private val smartConfig = configFactory.create(config)
     }
 
+    private val appName: String = System.getProperty("app.name", "heap")
     private val logger = loggerFor<CordaVNode>()
 
     private val counter = AtomicInteger()
@@ -99,6 +104,9 @@ class CordaVNode @Activate constructor(
     )
 
     private val vnode: VNodeService = fetchService(VNODE_SERVICE, TIMEOUT_MILLIS)
+    private val application = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "Application")
+    }
 
     private inline fun <reified T> fetchService(name: String, timeout: Long): T {
         return fetchService(name, T::class.java, timeout)
@@ -121,7 +129,7 @@ class CordaVNode @Activate constructor(
     }
 
     private fun dumpHeap(tag: String) {
-        val dumpFileName = "heap-${Instant.now().epochSecond}-${counter.incrementAndGet()}-$tag.hprof"
+        val dumpFileName = "$appName-${Instant.now().epochSecond}-${counter.incrementAndGet()}-$tag.hprof"
         mxBean.dumpHeap(dumpFileName, true)
     }
 
@@ -182,8 +190,17 @@ class CordaVNode @Activate constructor(
         logger.info("Unloaded CPI")
     }
 
-    @Suppress("NestedBlockDepth")
+    @Deactivate
+    fun terminate() {
+        logger.info("Terminated")
+    }
+
     override fun startup(args: Array<String>) {
+        application.submit(::process)
+    }
+
+    @Suppress("NestedBlockDepth")
+    private fun process() {
         logger.info("Starting")
         try {
             securityManager.start()
@@ -191,6 +208,7 @@ class CordaVNode @Activate constructor(
                 // OSGi permissions.
                 AdminPermission(),
                 ServicePermission("*", GET),
+                ServicePermission("net.corda.v5.*", REGISTER),
                 PackagePermission("net.corda", "$EXPORTONLY,$IMPORT"),
                 PackagePermission("net.corda.*", "$EXPORTONLY,$IMPORT"),
 
@@ -224,6 +242,8 @@ class CordaVNode @Activate constructor(
             executeSandbox("client-1", EXAMPLE_CPI_RESOURCE)
             executeSandbox("client-2", EXAMPLE_CPI_RESOURCE)
             executeSandbox("client-3", EXAMPLE_CPI_RESOURCE)
+        } catch (e: Exception) {
+            logger.error("Application error", e)
         } finally {
             dumpHeap("finished")
             shutdown.shutdown(componentContext.usingBundle)
@@ -251,6 +271,12 @@ class CordaVNode @Activate constructor(
 
     override fun shutdown() {
         logger.info("Terminating")
+        with(application) {
+            shutdown()
+            if (!awaitTermination(SHUTDOWN_GRACE, SECONDS)) {
+                shutdownNow()
+            }
+        }
         dumpHeap("shutdown")
     }
 }
