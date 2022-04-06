@@ -17,7 +17,7 @@
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
-    bnd.identity;id='net.corda.crypto-messaging-persistence-impl',\
+    bnd.identity;id='net.corda.crypto-db-persistence-impl',\
     bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
