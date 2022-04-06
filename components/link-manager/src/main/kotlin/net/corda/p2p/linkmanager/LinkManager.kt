@@ -275,7 +275,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun ttlExpired(ttl: Long): Boolean {
+        private fun ttlExpired(ttl: Long?): Boolean {
+            if(ttl == null) return false
             val currentTimeInTimeMillis = Instant.now().toEpochMilli()
             return currentTimeInTimeMillis >= ttl
         }
