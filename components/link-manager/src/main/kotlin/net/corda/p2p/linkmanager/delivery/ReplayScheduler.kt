@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -120,7 +120,7 @@ internal class ReplayScheduler<M>(
         ): ReplaySchedulerConfig(maxReplayingMessages) {
             constructor(config: Config, innerConfig: Config): this(
                 innerConfig.getDuration(BASE_REPLAY_PERIOD_KEY),
-                innerConfig.getDuration(CUTOFF_REPLAY_KEY),
+                innerConfig.getDuration(REPLAY_PERIOD_CUTOFF_KEY),
                 config.getInt(MAX_REPLAYING_MESSAGES_PER_PEER)
             )
         }
@@ -149,7 +149,7 @@ internal class ReplayScheduler<M>(
                     if (newConfiguration.baseReplayPeriod.isNegative || newConfiguration.cutOff.isNegative) {
                         configUpdateResult.completeExceptionally(
                             IllegalArgumentException("The duration configurations (with keys $BASE_REPLAY_PERIOD_KEY and " +
-                                "$CUTOFF_REPLAY_KEY) must be positive.")
+                                "$REPLAY_PERIOD_CUTOFF_KEY) must be positive.")
                         )
                         return configUpdateResult
                     }

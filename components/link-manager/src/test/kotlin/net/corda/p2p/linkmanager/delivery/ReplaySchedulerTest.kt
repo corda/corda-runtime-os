@@ -100,7 +100,7 @@ class ReplaySchedulerTest {
         val replayScheduler = ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }) { 0 }
         val inner = ConfigFactory.empty()
             .withValue(LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
-            .withValue(LinkManagerConfiguration.CUTOFF_REPLAY_KEY, ConfigValueFactory.fromAnyRef(cutOff))
+            .withValue(LinkManagerConfiguration.REPLAY_PERIOD_CUTOFF_KEY, ConfigValueFactory.fromAnyRef(cutOff))
         val config = ConfigFactory.empty()
             .withValue(LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff.configKeyName(), inner.root())
             .withValue(LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(MAX_REPLAYING_MESSAGES))

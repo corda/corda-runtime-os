@@ -114,10 +114,10 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
                     LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY,
                     ConfigValueFactory.fromAnyRef(messageReplayPeriodBaseMilliSecs)
                 ).withValue(
-                    LinkManagerConfiguration.CUTOFF_REPLAY_KEY,
+                    LinkManagerConfiguration.REPLAY_PERIOD_CUTOFF_KEY,
                     ConfigValueFactory.fromAnyRef(messageReplayPeriodCutoffMilliSecs)
                 )
-           }
+            }
         }
         val configuration = baseConfiguration.withValue(replayAlgorithm.configKeyName(), replayAlgorithmInnerConfig.root())
 
