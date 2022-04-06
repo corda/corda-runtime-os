@@ -51,15 +51,14 @@ internal class ConfigRPCOpsConfigHandler(
             configRPCOps.setTimeout(timeoutMillis)
         }
 
-        if (config.hasPath(BOOTSTRAP_SERVER)) {
-            try {
-                configRPCOps.createAndStartRPCSender(config)
-            } catch (e: Exception) {
-                coordinator.updateStatus(ERROR)
-                throw ConfigRPCOpsServiceException(
-                    "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
-                )
-            }
+        try {
+            configRPCOps.createAndStartRPCSender(config)
+        } catch (e: Exception) {
+            coordinator.updateStatus(ERROR)
+            throw ConfigRPCOpsServiceException(
+                "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
+            )
         }
+
     }
 }
