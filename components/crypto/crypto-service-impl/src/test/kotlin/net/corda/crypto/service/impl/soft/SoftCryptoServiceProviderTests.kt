@@ -111,4 +111,26 @@ class SoftCryptoServiceProviderTests {
             assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
         }
     }
+
+    @Test
+    fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
+        assertFalse(component.isRunning)
+        assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
+        factory.softCacheProvider.coordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
+        factory.softCacheProvider.coordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
+    }
 }

@@ -15,7 +15,7 @@ class TestSoftCryptoKeyCacheProvider(
 ) : SoftCryptoKeyCacheProvider {
     private val instance = TestSoftCryptoKeyCache()
 
-    private val coordinator = coordinatorFactory.createCoordinator(
+    val coordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 

@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl._utils
 
-import net.corda.configuration.read.ConfigurationReadService
+import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
@@ -18,8 +18,11 @@ import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoService
 import net.corda.crypto.service.impl.soft.SoftCryptoServiceProviderImpl
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -36,19 +39,22 @@ class TestServicesFactory {
 
     private val salt = "SALT"
 
-    val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
+    private val emptyConfig: SmartConfig =
+        SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+
+    val schemeMetadata = CipherSchemeMetadataImpl()
 
     val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    val digest: DigestService by lazy {
+    val digest by lazy {
         DigestServiceImpl(schemeMetadata, null)
     }
 
-    val verifier: SignatureVerificationService by lazy {
+    val verifier by lazy {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
-    val signingCacheProvider: SigningKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val signingCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestSigningKeyCacheProvider(coordinatorFactory).also {
             it.start()
             eventually {
@@ -57,7 +63,7 @@ class TestServicesFactory {
         }
     }
 
-    val softCacheProvider: SoftCryptoKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val softCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestSoftCryptoKeyCacheProvider(coordinatorFactory).also {
             it.start()
             eventually {
@@ -66,7 +72,7 @@ class TestServicesFactory {
         }
     }
 
-    val registration: HSMRegistration by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val registration by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestHSMRegistration(coordinatorFactory).also {
             it.start()
             eventually {
@@ -75,7 +81,7 @@ class TestServicesFactory {
         }
     }
 
-    val softCryptoKeyCacheProvider: SoftCryptoServiceProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val softCryptoKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         SoftCryptoServiceProviderImpl(
             coordinatorFactory,
             schemeMetadata,
@@ -89,15 +95,15 @@ class TestServicesFactory {
         }
     }
 
-    private val signingCache: SigningKeyCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val signingCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
         signingCacheProvider.getInstance()
     }
 
-    private val softCache: SoftCryptoKeyCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val softCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
         softCacheProvider.getInstance(passphrase, salt)
     }
 
-    val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val cryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
         SoftCryptoService(
             cache = softCache,
             schemeMetadata = schemeMetadata,
@@ -105,7 +111,7 @@ class TestServicesFactory {
         ).also { it.createWrappingKey(wrappingKeyAlias, true, emptyMap()) }
     }
 
-    fun createCryptoServiceFactory(): CryptoServiceFactory =
+    fun createCryptoServiceFactory() =
         CryptoServiceFactoryImpl(
             coordinatorFactory,
             registration,
@@ -120,9 +126,15 @@ class TestServicesFactory {
             }
         }
 
-    fun createConfigurationReadService(): ConfigurationReadService =
+    fun createConfigurationReadService(
+        configUpdates: List<Pair<String, SmartConfig>> = listOf(
+            ConfigKeys.BOOT_CONFIG to emptyConfig,
+            ConfigKeys.MESSAGING_CONFIG to emptyConfig
+        )
+    ) =
         TestConfigurationReadService(
-            coordinatorFactory
+            coordinatorFactory,
+            configUpdates
         ).also {
             it.start()
             eventually {
@@ -133,7 +145,7 @@ class TestServicesFactory {
     fun createSigningService(
         signatureScheme: SignatureScheme,
         effectiveWrappingKeyAlias: String = wrappingKeyAlias
-    ): SigningService =
+    ) =
         SigningServiceImpl(
             cache = signingCache,
             cryptoServiceFactory = object : CryptoServiceFactory {

@@ -58,9 +58,6 @@ abstract class AbstractComponent<IMPL: AutoCloseable>(
                     else -> deactivate("At least one dependency is not UP.")
                 }
             }
-            else -> {
-                logger.warn("Unexpected event $event!")
-            }
         }
     }
 

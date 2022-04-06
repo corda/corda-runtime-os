@@ -1,18 +1,13 @@
 package net.corda.crypto.service.impl.rpc
 
-import com.typesafe.config.ConfigFactory
-import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.service.impl._utils.TestConfigurationReadService
 import net.corda.crypto.service.impl._utils.TestServicesFactory
 import net.corda.crypto.service.impl.signing.SigningServiceFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,14 +26,12 @@ class CryptoOpsServiceTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var emptyConfig: SmartConfig
-    private lateinit var configurationReadService: ConfigurationReadService
+    private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var component: CryptoOpsServiceImpl
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         subscription = mock()
         subscriptionFactory = mock {
             on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
@@ -52,7 +45,12 @@ class CryptoOpsServiceTests {
                 factory.schemeMetadata,
                 factory.signingCacheProvider,
                 factory.createCryptoServiceFactory()
-            ),
+            ).also {
+                it.start()
+                eventually {
+                    assertTrue(it.isRunning)
+                }
+            },
             configurationReadService
         )
     }
@@ -62,15 +60,6 @@ class CryptoOpsServiceTests {
         assertFalse(component.isRunning)
         assertNull(component.subscription)
         component.start()
-        component.lifecycleCoordinator.postEvent(
-            ConfigChangedEvent(
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
-                mapOf(
-                    ConfigKeys.BOOT_CONFIG to emptyConfig,
-                    ConfigKeys.MESSAGING_CONFIG to emptyConfig
-                )
-            )
-        )
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -83,15 +72,6 @@ class CryptoOpsServiceTests {
         assertFalse(component.isRunning)
         assertNull(component.subscription)
         component.start()
-        component.lifecycleCoordinator.postEvent(
-            ConfigChangedEvent(
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
-                mapOf(
-                    ConfigKeys.BOOT_CONFIG to emptyConfig,
-                    ConfigKeys.MESSAGING_CONFIG to emptyConfig
-                )
-            )
-        )
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
@@ -104,5 +84,27 @@ class CryptoOpsServiceTests {
         }
         assertNull(component.subscription)
         Mockito.verify(subscription, times(1)).close()
+    }
+
+    @Test
+    fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
+        assertFalse(component.isRunning)
+        assertNull(component.subscription)
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertSame(subscription, component.subscription)
+        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        eventually {
+            assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        assertNull(component.subscription)
+        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertSame(subscription, component.subscription)
     }
 }

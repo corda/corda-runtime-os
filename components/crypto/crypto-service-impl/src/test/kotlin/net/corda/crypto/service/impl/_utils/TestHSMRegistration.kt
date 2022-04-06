@@ -29,7 +29,7 @@ class TestHSMRegistration(
         private val serializer = ObjectMapper()
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(
+    val coordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<HSMRegistration>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 

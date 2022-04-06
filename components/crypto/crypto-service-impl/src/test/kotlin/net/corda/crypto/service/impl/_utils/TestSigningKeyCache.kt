@@ -22,7 +22,7 @@ class TestSigningKeyCacheProvider(
 ) : SigningKeyCacheProvider {
     private val instance = TestSigningKeyCache()
 
-    private val coordinator = coordinatorFactory.createCoordinator(
+    val coordinator = coordinatorFactory.createCoordinator(
         LifecycleCoordinatorName.forComponent<SigningKeyCacheProvider>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 

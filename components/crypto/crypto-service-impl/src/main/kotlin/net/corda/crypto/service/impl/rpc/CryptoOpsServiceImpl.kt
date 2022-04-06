@@ -109,9 +109,6 @@ class CryptoOpsServiceImpl @Activate constructor(
                 logger.info("Setting status UP.")
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
-            else -> {
-                logger.warn("Unexpected event $event!")
-            }
         }
     }
 
