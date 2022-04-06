@@ -41,6 +41,11 @@ spec:
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         securityContext:
           allowPrivilegeEscalation: false
+        {{- if .Values.workers.rpc.resources }}
+        resources: {{- toYaml .Values.workers.rpc.resources | nindent 10 }}
+        {{- else }}
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        {{- end }}
         env:
         {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
         args:
