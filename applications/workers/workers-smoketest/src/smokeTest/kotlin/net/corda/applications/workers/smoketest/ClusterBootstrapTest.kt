@@ -17,11 +17,11 @@ import java.time.Instant
 
 class ClusterBootstrapTest {
     private val healthChecks = mapOf(
-        // TODO: can take these from properties
-        "crypto-worker" to 7001,
-        "db-worker" to 7002,
-        "flow-worker" to 7003,
-        "rpc-worker" to 7004,
+        // TODO: fix up other workers so they accurately report their readiness.
+        // "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
+        "db-worker" to System.getProperty("dbWorkerHealthHttp"),
+        // "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
+        // "rpc-worker" to System.getProperty("rpcWorkerHealthHttp"),
     )
     private val client = HttpClient.newBuilder().build()
 
@@ -32,11 +32,11 @@ class ClusterBootstrapTest {
             // check all workers are up and "ready"
             healthChecks.map {
                 async {
-                    val response = tryUntil(Duration.ofSeconds(90)) { checkReady(it.key, it.value) }
+                    val response = tryUntil(Duration.ofSeconds(60)) { checkReady(it.key, it.value) }
                     if (response in 200..299)
                         println("${it.key} is ready")
                     else
-                        softly.fail("Problem with ${it.key}, \"isReady\" returns: $response")
+                        softly.fail("Problem with ${it.key} (${it.value}), \"isReady\" returns: $response")
                 }
             }.awaitAll()
 
@@ -63,8 +63,8 @@ class ClusterBootstrapTest {
         return statusCode
     }
 
-    private fun checkReady(name: String, port: Int): HttpResponse<String> {
-        val url = "http://localhost:$port/isReady"
+    private fun checkReady(name: String, endpoint: String): HttpResponse<String> {
+        val url = "${endpoint}isReady"
         println("Checking $name on $url")
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))

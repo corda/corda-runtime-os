@@ -12,7 +12,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.management.cache.PermissionManagementCacheService
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServiceEventHandler
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -21,8 +22,10 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("LongParameterList")
 @Component(service = [PermissionStorageReaderService::class])
 class PermissionStorageReaderService @Activate constructor(
-    @Reference(service = PermissionCacheService::class)
-    permissionCacheService: PermissionCacheService,
+    @Reference(service = PermissionValidationCacheService::class)
+    permissionValidationCacheService: PermissionValidationCacheService,
+    @Reference(service = PermissionManagementCacheService::class)
+    permissionManagementCacheService: PermissionManagementCacheService,
     @Reference(service = PermissionStorageReaderFactory::class)
     permissionStorageReaderFactory: PermissionStorageReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -38,7 +41,8 @@ class PermissionStorageReaderService @Activate constructor(
     val permissionStorageReader: PermissionStorageReader? get() = handler.permissionStorageReader
 
     private val handler = PermissionStorageReaderServiceEventHandler(
-        permissionCacheService,
+        permissionValidationCacheService,
+        permissionManagementCacheService,
         permissionStorageReaderFactory,
         publisherFactory,
         configurationReadService,

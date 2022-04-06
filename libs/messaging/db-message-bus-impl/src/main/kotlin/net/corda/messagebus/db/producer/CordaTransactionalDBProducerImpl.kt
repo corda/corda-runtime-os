@@ -16,8 +16,7 @@ import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.util.UUID
+import java.util.*
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
@@ -29,8 +28,6 @@ class CordaTransactionalDBProducerImpl(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val defaultTimeout: Duration = Duration.ofSeconds(1)
-    private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     private val _transaction = ThreadLocal<TransactionRecordEntry>()
@@ -59,8 +56,7 @@ class CordaTransactionalDBProducerImpl(
         sendRecordsToPartitions(records.map {
             // Determine the partition
             val topic = it.topic
-            val numberOfPartitions = topicPartitionMap[topic]
-                ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
+            val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
             val partition = getPartition(it.key, numberOfPartitions)
             Pair(partition, it)
         })

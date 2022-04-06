@@ -57,7 +57,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
@@ -820,7 +820,7 @@ class GatewayIntegrationTest : TestBase() {
                 testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
 
                 // new trust store...
-                val secondCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256K1_SHA256_TEMPLATE)
+                val secondCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -838,7 +838,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // new trust store and pair...
-                val thirdCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256K1_SHA256_TEMPLATE)
+                val thirdCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )

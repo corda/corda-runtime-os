@@ -7,14 +7,11 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import javax.persistence.RollbackException
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
@@ -23,24 +20,12 @@ class CordaAtomicDBProducerImpl(
     private val dbAccess: DBAccess
 ) : CordaProducer {
 
-    companion object {
-        val log = contextLogger()
-
-        val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
-    }
-
-    private fun initialiseWithAtomicTransaction() {
-        try {
-            // Write the transaction record for all atomic transactions
-            dbAccess.writeTransactionRecord(ATOMIC_TRANSACTION)
-        } catch (e: RollbackException) {
-            log.debug { "ATOMIC_TRANSACTION already recorded in DB." }
-            // It's already been written so do nothing
-        }
-    }
-
     init {
-        initialiseWithAtomicTransaction()
+        dbAccess.writeAtomicTransactionRecord()
+    }
+
+    private companion object {
+        private val log = contextLogger()
     }
 
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
@@ -60,8 +45,7 @@ class CordaAtomicDBProducerImpl(
         sendRecordsToPartitions(records.map {
             // Determine the partition
             val topic = it.topic
-            val numberOfPartitions = topicPartitionMap[topic]
-                ?: throw CordaMessageAPIFatalException("Cannot find topic: $topic")
+            val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
             val partition = getPartition(it.key, numberOfPartitions)
             Pair(partition, it)
         })

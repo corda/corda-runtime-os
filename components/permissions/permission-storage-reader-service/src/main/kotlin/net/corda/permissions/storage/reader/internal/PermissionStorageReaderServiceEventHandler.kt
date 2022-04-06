@@ -1,7 +1,7 @@
 package net.corda.permissions.storage.reader.internal
 
-import java.lang.Exception
 import java.time.Duration
+import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
@@ -16,22 +16,23 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.management.cache.PermissionManagementCacheService
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
-import javax.persistence.EntityManagerFactory
-import net.corda.lifecycle.TimerEvent
 import net.corda.v5.base.util.trace
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
-    private val permissionCacheService: PermissionCacheService,
+    private val permissionValidationCacheService: PermissionValidationCacheService,
+    private val permissionManagementCacheService: PermissionManagementCacheService,
     private val permissionStorageReaderFactory: PermissionStorageReaderFactory,
     private val publisherFactory: PublisherFactory,
     private val configurationReadService: ConfigurationReadService,
@@ -76,10 +77,13 @@ class PermissionStorageReaderServiceEventHandler(
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
+                LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
             )
         )
+        permissionValidationCacheService.start()
+        permissionManagementCacheService.start()
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -125,6 +129,8 @@ class PermissionStorageReaderServiceEventHandler(
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
         log.info("Stop Event received")
+        permissionValidationCacheService.stop()
+        permissionManagementCacheService.stop()
         publisher?.close()
         publisher = null
         permissionStorageReader?.stop()
@@ -150,8 +156,11 @@ class PermissionStorageReaderServiceEventHandler(
 
         permissionStorageReader?.stop()
         permissionStorageReader = permissionStorageReaderFactory.create(
-            checkNotNull(permissionCacheService.permissionCache) {
-                "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
+            checkNotNull(permissionValidationCacheService.permissionValidationCache) {
+                "The ${PermissionValidationCacheService::class.java} should be up and ready to provide the cache"
+            },
+            checkNotNull(permissionManagementCacheService.permissionManagementCache) {
+                "The ${permissionManagementCacheService::class.java} should be up and ready to provide the cache"
             },
             checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
             entityManagerFactoryCreator()

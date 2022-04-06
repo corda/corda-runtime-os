@@ -1,0 +1,41 @@
+-tester: biz.aQute.tester.junit-platform
+-runee: JavaSE-11
+-runfw: org.apache.felix.framework
+-runtrace: true
+-resolve.effective: resolve, active
+
+#uncomment to remote debug
+#-runjdb: 5005
+
+-runsystempackages: \
+    javax.xml.stream;version=1.0.0,\
+    javax.xml.stream.events;version=1.0.0,\
+    javax.xml.stream.util;version=1.0.0,\
+    sun.security.x509
+
+-runproperties: \
+    org.slf4j.simpleLogger.defaultLogLevel=info,\
+    org.slf4j.simpleLogger.showShortLogName=true,\
+    org.slf4j.simpleLogger.showThreadName=false,\
+    org.slf4j.simpleLogger.showDateTime=true,\
+    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
+
+-runrequires: \
+    bnd.identity;id='net.corda.messaging-impl',\
+    bnd.identity;id='net.corda.schema-registry-impl',\
+    bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.db-topic-admin-impl',\
+    bnd.identity;id='net.corda.messaging-impl',\
+    bnd.identity;id='net.corda.db-message-bus-impl',\
+    bnd.identity;id='net.bytebuddy.byte-buddy',\
+    bnd.identity;id='junit-jupiter-engine',\
+    bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='org.postgresql.jdbc',\
+    bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='${project.archivesBaseName}-tests'
+
+# This will help us keep -runbundles sorted
+-runstartlevel: \
+    order=sortbynameversion,\
+    begin=-1

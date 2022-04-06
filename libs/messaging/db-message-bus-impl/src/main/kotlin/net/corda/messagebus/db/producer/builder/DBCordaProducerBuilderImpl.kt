@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -31,9 +32,12 @@ class DBCordaProducerBuilderImpl @Activate constructor(
 ) : CordaProducerBuilder {
     override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
         val isTransactional = producerConfig.transactional
+        val resolver = MessageBusConfigResolver(messageBusConfig.factory)
+        val resolvedConfig = resolver.resolve(messageBusConfig, producerConfig)
+
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                messageBusConfig,
+                resolvedConfig,
                 "DB Producer for ${producerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,

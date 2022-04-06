@@ -9,6 +9,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
@@ -35,7 +36,6 @@ dependencies {
     integrationTestImplementation project(":libs:utilities")
     integrationTestImplementation project(":testing:db-testkit")
 
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

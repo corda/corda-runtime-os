@@ -30,7 +30,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.permissions.cache.PermissionCacheService
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
@@ -62,8 +61,6 @@ class DBProcessorImpl @Activate constructor(
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = PermissionCacheService::class)
-    private val permissionCacheService: PermissionCacheService,
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
@@ -103,7 +100,6 @@ class DBProcessorImpl @Activate constructor(
         ::dbConnectionManager,
         ::configWriteService,
         ::configurationReadService,
-        ::permissionCacheService,
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,

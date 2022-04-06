@@ -17,6 +17,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -231,6 +232,7 @@ class P2PLayerEndToEndTest {
         checkRevocation: Boolean,
         private val identitiesKeyAlgorithm: KeyAlgorithm,
     ) : AutoCloseable {
+
         private val sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
@@ -248,7 +250,7 @@ class P2PLayerEndToEndTest {
         val tlsTenantId by lazy {
             GROUP_ID
         }
-        val identityTenantId by lazy {
+        val sessionKeyTenantId by lazy {
             x500Name
         }
         val linkManagerConfig by lazy {
@@ -259,6 +261,7 @@ class P2PLayerEndToEndTest {
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX", ConfigValueFactory.fromAnyRef(100))
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
+                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
         }
 
         private fun readKeyStore(fileName: String): ByteArray {
@@ -376,7 +379,7 @@ class P2PLayerEndToEndTest {
                             CRYPTO_KEYS_TOPIC,
                             "key-1",
                             TenantKeys(
-                                identityTenantId,
+                                sessionKeyTenantId,
                                 KeyPairEntry(
                                     identitiesKeyAlgorithm,
                                     ByteBuffer.wrap(keyPair.public.encoded),

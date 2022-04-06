@@ -142,7 +142,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 log.debug { "Attempt: $attempts" }
                 deadLetterRecords = mutableListOf()
                 val rebalanceListener = partitionAssignmentListener?.let {
-                    ForwardingRebalanceListener(config.topic, config.group, it)
+                    ForwardingRebalanceListener(config.topic, config.group, config.clientId, it)
                 }
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
                 consumer = cordaConsumerBuilder.createConsumer(

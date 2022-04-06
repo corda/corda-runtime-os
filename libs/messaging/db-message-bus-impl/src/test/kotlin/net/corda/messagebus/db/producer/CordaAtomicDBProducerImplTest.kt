@@ -5,9 +5,8 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
-import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
-import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -33,16 +32,8 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer inserts atomic transaction record on initialization`() {
         val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
-        val serializer = mock<CordaAvroSerializer<Any>>()
-        whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
-        whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
-
-        val dbTransaction = argumentCaptor<TransactionRecordEntry>()
-        CordaAtomicDBProducerImpl(serializer, dbAccess)
-
-        verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
-        assertThat(dbTransaction.allValues.single()).isEqualTo(ATOMIC_TRANSACTION)
+        CordaAtomicDBProducerImpl(mock(), dbAccess)
+        verify(dbAccess).writeAtomicTransactionRecord()
     }
 
     @Test
@@ -57,7 +48,7 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer sends correct entry to database and topic`() {
         val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 1))
+        whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
         whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 5))
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
@@ -84,7 +75,6 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer sends correct entry to database when partition is specified`() {
         val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getTopicPartitionMap()).thenReturn(mapOf(topic to 2))
         whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 2))
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
@@ -132,9 +122,9 @@ internal class CordaAtomicDBProducerImplTest {
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.sendRecordOffsetsToTransaction(mock(), mock())
         }
-        verify(dbAccess).getTopicPartitionMap()
         verify(dbAccess).getMaxOffsetsPerTopicPartition()
-        verify(dbAccess).writeTransactionRecord(eq(ATOMIC_TRANSACTION))
+        verify(dbAccess).writeAtomicTransactionRecord()
+        verify(dbAccess).getTopicPartitionMap()
         verifyNoMoreInteractions(dbAccess)
     }
 }
