@@ -21,6 +21,17 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
+# resource limits and requests configuration for the corda worker containers
+resources:
+  # -- The cpu/memory resource limits for the corda worker containers
+  limits:
+    memory: 1250Mi
+    cpu: 1000m
+  # -- The cpu/memory resource request for the corda wokrers containers
+  requests:
+    memory: 620Mi
+    cpu: 500m
+
 # Database configuration
 db:
   # Cluster database configuration
@@ -49,7 +60,6 @@ kafka:
 
 # worker configuration
 workers:
-
   # crypto worker configuration
   crypto:
     # crypto worker image configuration
@@ -68,6 +78,15 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the crypto worker until the debugger is attached
       suspend: false
+    # -- resource limits and requests configuration for the crypto worker containers. Below is a template of the configuration, to alter unhash the comments below and set the desired state.
+    resources:
+      # requests:
+      #   memory: Mi
+      #   cpu: m
+      # limits:
+      #   memory: Mi
+      #   cpu: m
+      
 
   # DB worker configuration
   db:
@@ -88,11 +107,17 @@ workers:
       # -- if debug is enabled, suspend the DB worker until the debugger is attached
       suspend: false
     # -- DB worker salt, defaults to a value randomly-generated on install
-
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
-
-    passphrase: ""
+    passphrase: ""    
+    # -- resource limits and requests configuration for the db worker containers. Below is a template of the configuration, to alter unhash the comments below and set the desired state.
+    resources:
+      # requests:
+      #   memory: Mi
+      #   cpu: m
+      # limits:
+      #   memory: Mi
+      #   cpu: m
 
   # flow worker configuration
   flow:
@@ -112,6 +137,14 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the flow worker until the debugger is attached
       suspend: false
+     # -- resource limits and requests configuration for the flow worker containers. Below is a template of the configuration, to alter unhash the comments below and set the desired state.
+    resources:
+      # requests:
+      #   memory: Mi
+      #   cpu: m
+      # limits:
+      #   memory: Mi
+      #   cpu: m
 
   # RPC worker configuration
   rpc:
@@ -131,3 +164,11 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the RPC worker until the debugger is attached
       suspend: false
+    # -- resource limits and requests configuration for the db worker containers. Below is a template of the configuration, to alter unhash the comments below and set the desired state.
+    resources:
+      # requests:
+      #   memory: Mi
+      #   cpu: m
+      # limits:
+      #   memory: Mi
+      #   cpu: m
