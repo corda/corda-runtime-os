@@ -10,8 +10,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordinatorFactory):
-    PartitionAssignmentListener, LifecycleWithDominoTile {
+class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory): PartitionAssignmentListener, LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -22,6 +21,7 @@ class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordin
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
     private var firstAssignment = true
+    private val topicToCallback = mutableMapOf<String, MutableList<(partitions: Set<Int>) -> Unit>>()
 
     private val future: CompletableFuture<Unit> = CompletableFuture()
 
@@ -30,18 +30,20 @@ class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordin
             for ((topic, partition) in topicPartitions) {
                 topicToPartition[topic]?.remove(partition)
             }
+            callCallbacks(topicPartitions.map { it.first }.toSet())
         }
     }
 
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
-            if (firstAssignment) {
-                firstAssignment = false
-                future.complete(Unit)
-            }
             for ((topic, partition) in topicPartitions) {
                 val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
                 partitionSet.add(partition)
+            }
+            callCallbacks(topicPartitions.map { it.first }.toSet())
+            if (firstAssignment) {
+                firstAssignment = false
+                future.complete(Unit)
             }
         }
     }
@@ -49,6 +51,25 @@ class InboundAssignmentListener(private val coordinatorFactory: LifecycleCoordin
     fun getCurrentlyAssignedPartitions(topic: String) : Set<Int> {
         return lock.read {
             topicToPartition[topic] ?: emptySet()
+        }
+    }
+
+    fun registerCallbackForTopic(topic: String, callback: (partitions: Set<Int>) -> Unit) {
+        lock.write {
+            topicToCallback.compute(topic) { _, callbacks ->
+                callbacks?.apply { add(callback) } ?: mutableListOf(callback)
+            }
+            if (future.isDone) {
+                callCallbacks(setOf(topic))
+            }
+        }
+    }
+
+    private fun callCallbacks(topics: Set<String>) {
+        topics.forEach { topic ->
+            val callbacks = topicToCallback[topic]
+            val partitions = topicToPartition[topic]
+            partitions?.let { callbacks?.forEach { callback -> callback(partitions) } }
         }
     }
 

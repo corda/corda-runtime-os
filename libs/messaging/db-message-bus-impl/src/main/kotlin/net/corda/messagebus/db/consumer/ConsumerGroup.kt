@@ -1,69 +1,105 @@
 package net.corda.messagebus.db.consumer
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.write
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
+/**
+ * Used to manage partitioning of consumers across a group.
+ *
+ * The API for this class is thread-safe
+ */
 class ConsumerGroup(
     private val groupId: String,
     private val dbAccess: DBAccess,
 ) {
-    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
-    private val topicPartitions: MutableMap<String, MutableSet<CordaTopicPartition>> = mutableMapOf()
-    private val consumerMap: MutableMap<String, MutableSet<CordaConsumer<*, *>>> = mutableMapOf()
-    private val partitionsPerConsumer: MutableMap<Int, MutableSet<CordaTopicPartition>> = mutableMapOf()
 
-    fun getTopicPartitionsFor(consumer: CordaConsumer<*, *>): Set<CordaTopicPartition> {
-        return partitionsPerConsumer[consumer.hashCode()]
-            ?: throw CordaMessageAPIFatalException("Consumer not part of consumer group $groupId")
+    companion object {
+        const val NULL_GROUP_ID = "NULL"
     }
 
-    private fun getConsumersFor(topic: String) = consumerMap.computeIfAbsent(topic) { mutableSetOf() }
-    private fun getInternalPartitionListFor(consumer: CordaConsumer<*, *>) =
-        partitionsPerConsumer.computeIfAbsent(consumer.hashCode()) { mutableSetOf() }
+    /**
+     * locks all access to this class.  Specifically to protect the three maps below
+     */
+    private val apiLock = ReentrantLock()
+    private val topicPartitions: MutableMap<String, Set<CordaTopicPartition>> = ConcurrentHashMap()
+    private val topicToConsumersMap: MutableMap<String, MutableSet<DBCordaConsumerImpl<*, *>>> = ConcurrentHashMap()
+    private val partitionsPerConsumer: MutableMap<String, MutableSet<CordaTopicPartition>> = ConcurrentHashMap()
 
-    fun subscribe(
-        consumer: CordaConsumer<*, *>,
+    internal fun getTopicPartitionsFor(consumer: DBCordaConsumerImpl<*, *>): Set<CordaTopicPartition> {
+        return apiLock.withLock {
+            verifyValid()
+            partitionsPerConsumer[consumer.clientId]?.toSet()
+                ?: throw CordaMessageAPIFatalException("Consumer not part of consumer group $groupId")
+        }
+    }
+
+    private fun getConsumersFor(topic: String) = topicToConsumersMap.computeIfAbsent(topic) { mutableSetOf() }
+    private fun getInternalPartitionListFor(consumer: DBCordaConsumerImpl<*, *>) =
+        partitionsPerConsumer.computeIfAbsent(consumer.clientId) { ConcurrentHashMap.newKeySet() }
+
+    internal fun subscribe(
+        consumer: DBCordaConsumerImpl<*, *>,
         topics: Collection<String>,
     ) {
-        topics.forEach { topic ->
-            buildTopicPartitionsFor(topic)
-            getConsumersFor(topic).add(consumer)
-            try {
-                repartition(topic)
-            } catch (ex: Exception) {
-                throw CordaMessageAPIFatalException("Cannot subscribe to topic $topic", ex)
+        apiLock.withLock {
+            verifyValid()
+            topics.forEach { topic ->
+                buildTopicPartitionsFor(topic)
+                getConsumersFor(topic).add(consumer)
+                try {
+                    repartition(topic)
+                } catch (ex: Exception) {
+                    throw CordaMessageAPIFatalException("Cannot subscribe to topic $topic", ex)
+                }
             }
+        }
+    }
+
+    internal fun unsubscribe(
+        consumer: DBCordaConsumerImpl<*, *>,
+    ) {
+        return apiLock.withLock {
+            verifyValid()
+            topicToConsumersMap.filter { consumer in it.value }.forEach { (topic, consumers) ->
+                consumers.remove(consumer)
+                getInternalPartitionListFor(consumer).clear()
+                repartition(topic)
+            }
+
         }
     }
 
     private fun repartition(topic: String) {
-        lock.write {
-            val consumersToRepartition = consumerMap[topic]
-                ?: throw CordaMessageAPIFatalException("Internal error.  Topic for consumers should exist.")
-            val topicPartitionsToUpdate = topicPartitions[topic]
-                ?: throw CordaMessageAPIFatalException("Topic $topic not available. Has it been added correctly?")
+        val consumersToRepartition = getConsumersFor(topic)
+        val topicPartitionsToUpdate = topicPartitions[topic]
+            ?: throw CordaMessageAPIFatalException("Topic $topic) not available. Has it been added correctly?")
 
-            consumersToRepartition.forEach { getInternalPartitionListFor(it).clear() }
+        if (consumersToRepartition.isEmpty()) {
+            return
+        }
 
-            var consumerIterator = consumersToRepartition.iterator()
-            topicPartitionsToUpdate.forEach { topicPartition ->
-                if (!consumerIterator.hasNext()) {
-                    consumerIterator = consumersToRepartition.iterator()
-                }
-                getInternalPartitionListFor(consumerIterator.next()).add(topicPartition)
+        consumersToRepartition.forEach { getInternalPartitionListFor(it).clear() }
+
+        var consumerIterator = consumersToRepartition.iterator()
+        topicPartitionsToUpdate.forEach { topicPartition ->
+            if (!consumerIterator.hasNext()) {
+                consumerIterator = consumersToRepartition.iterator()
             }
+            getInternalPartitionListFor(consumerIterator.next()).add(topicPartition)
         }
     }
 
     private fun buildTopicPartitionsFor(topic: String) {
-        dbAccess.getTopicPartitionMapFor(topic).apply {
-            repeat(numPartitions) { partition ->
-                topicPartitions.computeIfAbsent(this.topic) { mutableSetOf() }.add(CordaTopicPartition(topic, partition))
-            }
+        topicPartitions[topic] = dbAccess.getTopicPartitionMapFor(topic)
+    }
+
+    private fun verifyValid() {
+        if (groupId == NULL_GROUP_ID) {
+            throw CordaMessageAPIFatalException("Cannot subscribe when consumer group is not set.")
         }
     }
 }

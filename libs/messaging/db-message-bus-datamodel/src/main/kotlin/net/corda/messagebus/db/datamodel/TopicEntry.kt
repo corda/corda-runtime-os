@@ -18,4 +18,8 @@ class TopicEntry(
 
     @Column(name = "num_partitions")
     val numPartitions: Int
-)
+) {
+    override fun toString(): String {
+        return "TopicEntry(topic='$topic', numPartitions=$numPartitions)"
+    }
+}

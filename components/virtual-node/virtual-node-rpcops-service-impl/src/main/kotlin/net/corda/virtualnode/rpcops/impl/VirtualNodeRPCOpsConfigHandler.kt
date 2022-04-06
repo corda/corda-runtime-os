@@ -5,9 +5,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 
@@ -35,7 +35,7 @@ internal class VirtualNodeRPCOpsConfigHandler(
      * If [RPC_ENDPOINT_TIMEOUT_MILLIS] is in [configSnapshot], updates [virtualNodeRPCOps]'s request
      * timeout.
      *
-     * If [BOOTSTRAP_SERVERS] is in [configSnapshot], creates and starts [virtualNodeRPCOps]'s RPC sender.
+     * If [BOOTSTRAP_SERVER] is in [configSnapshot], creates and starts [virtualNodeRPCOps]'s RPC sender.
      *
      * @throws VirtualNodeRPCOpsServiceException If [configSnapshot] does not contain any config for key [RPC_CONFIG],
      * or if [virtualNodeRPCOps]'s RPC sender could not be started.
@@ -50,7 +50,7 @@ internal class VirtualNodeRPCOpsConfigHandler(
             virtualNodeRPCOps.setTimeout(timeoutMillis)
         }
 
-        if (config.hasPath(BOOTSTRAP_SERVERS)) {
+        if (config.hasPath(BOOTSTRAP_SERVER)) {
             try {
                 virtualNodeRPCOps.createAndStartRpcSender(config)
             } catch (e: Exception) {

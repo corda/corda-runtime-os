@@ -7,7 +7,8 @@ import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
@@ -24,7 +25,8 @@ import net.corda.permissions.password.PasswordService
 class PermissionUserManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-    private val permissionCache: PermissionCache,
+    private val permissionManagementCache: PermissionManagementCache,
+    private val permissionValidationCache: PermissionValidationCache,
     private val passwordService: PasswordService
 ) : PermissionUserManager {
 
@@ -57,7 +59,7 @@ class PermissionUserManagerImpl(
     }
 
     override fun getUser(userRequestDto: GetUserRequestDto): UserResponseDto? {
-        val cachedUser: User = permissionCache.getUser(userRequestDto.loginName) ?: return null
+        val cachedUser: User = permissionManagementCache.getUser(userRequestDto.loginName) ?: return null
         return cachedUser.convertToResponseDto()
     }
 
@@ -97,7 +99,7 @@ class PermissionUserManagerImpl(
 
     override fun getPermissionSummary(permissionSummaryRequestDto: GetPermissionSummaryRequestDto): UserPermissionSummaryResponseDto? {
 
-        val cachedPermissionSummary = permissionCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
+        val cachedPermissionSummary = permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
 
         return UserPermissionSummaryResponseDto(
             cachedPermissionSummary.loginName,

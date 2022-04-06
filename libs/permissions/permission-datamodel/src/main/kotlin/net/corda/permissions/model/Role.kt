@@ -48,7 +48,7 @@ class Role(
     /**
      * Each role can be associated with multiple permissions. A given permission can belong to multiple roles.
      */
-    @OneToMany(mappedBy = "role", orphanRemoval = true, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "role", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var rolePermAssociations: MutableSet<RolePermissionAssociation> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {

@@ -13,3 +13,9 @@ dependencies {
 
     api "javax.persistence:javax.persistence-api"
 }
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+}

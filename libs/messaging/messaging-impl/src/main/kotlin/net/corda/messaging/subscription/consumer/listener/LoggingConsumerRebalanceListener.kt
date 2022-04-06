@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 open class LoggingConsumerRebalanceListener(
     private val topic: String,
     private val groupName: String,
+    private val clientId: String = "",
 ) : CordaConsumerRebalanceListener {
 
     /**
@@ -20,7 +21,7 @@ open class LoggingConsumerRebalanceListener(
      */
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
         val partitionIds = partitions.map{ it.partition }.joinToString(",")
-        log.info("Consumer group name $groupName for topic $topic partition revoked: $partitionIds.")
+        log.info("Consumer ($clientId) group name $groupName for topic $topic partition revoked: $partitionIds.")
     }
 
     /**
@@ -28,6 +29,6 @@ open class LoggingConsumerRebalanceListener(
      */
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
         val partitionIds = partitions.map{ it.partition }.joinToString(",")
-        log.info("Consumer group name $groupName for topic $topic partition assigned: $partitionIds.")
+        log.info("Consumer ($clientId) group name $groupName for topic $topic partition assigned: $partitionIds.")
     }
 }

@@ -18,8 +18,8 @@ object CertificateAuthorityFactory {
     fun createMemoryAuthority(
         signatureSchemeTemplate: SignatureSchemeTemplate,
         validDuration: Duration = Duration.ofDays(30),
-    ): LocalCertificatesAuthority {
-        return LocalCertificatesAuthorityImpl(signatureSchemeTemplate, validDuration, null)
+    ): CertificateAuthority {
+        return LocalCertificatesAuthority(signatureSchemeTemplate, validDuration, null)
     }
 
     /**

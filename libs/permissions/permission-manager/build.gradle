@@ -10,12 +10,13 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-avro-schema"
+    api "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
 
 
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:permissions:permission-cache")
-    implementation project(":libs:configuration:configuration-core")
+    api project(":libs:lifecycle:lifecycle")
+    api project(":libs:messaging:messaging")
+    api project(":libs:permissions:permission-management-cache")
+    api project(":libs:permissions:permission-validation-cache")
+    api project(":libs:configuration:configuration-core")
 }

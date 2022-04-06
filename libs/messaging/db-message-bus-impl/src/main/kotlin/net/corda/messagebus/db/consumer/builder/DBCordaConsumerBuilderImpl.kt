@@ -5,6 +5,7 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
@@ -41,11 +42,12 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
-        val hasConsumerGroup = consumerConfig.group.isNotBlank()
+        val resolver = MessageBusConfigResolver(messageBusConfig.factory)
+        val resolvedConfig = resolver.resolve(messageBusConfig, consumerConfig)
 
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                messageBusConfig,
+                resolvedConfig,
                 "DB Consumer for ${consumerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,
@@ -56,17 +58,13 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             )
         )
 
-        val consumerGroup = if (hasConsumerGroup) {
-            consumerGroupFactory.getGroupFor(
-                consumerConfig.group,
-                dbAccess
-            )
-        } else {
-            null
-        }
+        val consumerGroup = consumerGroupFactory.getGroupFor(
+            consumerConfig.group,
+            dbAccess
+        )
 
         return DBCordaConsumerImpl(
-            messageBusConfig,
+            resolvedConfig,
             dbAccess,
             consumerGroup,
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),

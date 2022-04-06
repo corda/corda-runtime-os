@@ -47,13 +47,13 @@ class Group(
     /**
      * Groups can have multiple roles associated with it.
      */
-    @OneToMany(mappedBy = "group", orphanRemoval = true, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "group", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var roleGroupAssociations: MutableSet<RoleGroupAssociation> = mutableSetOf()
 
     /**
      * Groups can have multiple properties associated with it.
      */
-    @OneToMany(mappedBy = "groupRef", orphanRemoval = true, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "groupRef", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var groupProperties: MutableSet<GroupProperty> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {

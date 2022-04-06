@@ -1,8 +1,17 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
 description 'Worker Smoketests'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 sourceSets {
     smokeTest {
@@ -41,9 +50,27 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
+    // But building a cpb for use in a test is ok.
+    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+
+    smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
+    smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
+    smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    smokeTestImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     smokeTestImplementation "org.assertj:assertj-core:$assertjVersion"
     smokeTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+}
+
+def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
+    // Copy the cpb(s) into resources, and strip out the version-package part so it's easier to reference in the
+    // smoke tests.
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.+)-\\d+.+-package.cpb", "\$1.cpb"
+    }
 }
 
 tasks.register('smokeTest', Test) {
@@ -53,8 +80,18 @@ tasks.register('smokeTest', Test) {
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
-    // TODO: set url/ports as properties
-//    systemProperty "postgresHost", project.getProperty("postgresHost")
+    systemProperty "rpcHost", project.getProperties().getOrDefault("rpcHost","https://localhost:8888/")
+    systemProperty "cryptoWorkerHealthHttp",
+            project.getProperties().getOrDefault("cryptoWorkerHealthHttp","http://localhost:7001/")
+    systemProperty "dbWorkerHealthHttp",
+            project.getProperties().getOrDefault("dbWorkerHealthHttp","http://localhost:7002/")
+    systemProperty "flowWorkerHealthHttp",
+            project.getProperties().getOrDefault("flowWorkerHealthHttp","http://localhost:7003/")
+    systemProperty "rpcWorkerHealthHttp",
+            project.getProperties().getOrDefault("rpcWorkerHealthHttp","http://localhost:7004/")
+}
 
-    shouldRunAfter tasks.named('test')
+
+tasks.named('smokeTest', Test) {
+    dependsOn smokeTestResources
 }
