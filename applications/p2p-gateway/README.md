@@ -1,12 +1,14 @@
-# P2p Gateway Application
-A standalone Gateway application
+# P2P Gateway worker
+The p2p gateway worker
 
-## Building
+## Building the worker
 To build run:
-`./gradlew :applications:p2p-gateway:clean :applications:p2p-gateway:appJar`
-This will create an executable jar in `applications/p2p-gateway/build/bin/` 
+```
+./gradlew :applications:p2p-gateway:clean :applications:p2p-gateway:appJar
+```
+This will create an executable jar in `applications/p2p-gateway/build/bin/`.
 
-## Running
+## Running the worker
 To run the application use:
 `java -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar`
 

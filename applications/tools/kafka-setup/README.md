@@ -1,10 +1,25 @@
-The purpose of this application is to help set up kafka topics required for configuration storage as well as pushing
+# Kafka setup tool
+
+The purpose of this tool is to help set up kafka topics required for configuration storage as well as pushing
 configuration objects onto the newly created topic.
 
-The application runs via executable java jar with some added property files
-e.g. `java -jar corda-kafka-setup-5.0.0.jar --kafka kafkaPropertiesFile --topic topicTemplateFile --config typesafeConfigurationFile`
-Command line args may also be used instead of kafkaPropertiesFile
-e.g. `java -jar  -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo build/bin/corda-kafka-setup-5.0.0.0-SNAPSHOT.jar --topic topics.conf --config config.conf`
+## Building the tool
+To build run:
+```
+./gradlew :applications:tools:kafka-setup:clean :applications:tools:kafka-setup:appJar
+```
+This will create an executable jar in `applications/tools/kafka-setup/build/bin`.
+
+## Running the tool
+To run the tool use:
+```
+java -jar corda-kafka-setup-5.0.0.jar --kafka kafkaPropertiesFile --topic topicTemplateFile --config typesafeConfigurationFile
+```
+
+Alternatively, command line args can be used instead of the `kafkaPropertiesFile`:
+```
+java -jar  -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo build/bin/corda-kafka-setup-5.0.0.0-SNAPSHOT.jar --topic topics.conf --config config.conf
+```
 
 The `kafkaPropertiesFile` will contain the properties kafka needs to connect to the broker, like
 
