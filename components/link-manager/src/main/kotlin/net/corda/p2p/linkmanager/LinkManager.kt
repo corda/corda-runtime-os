@@ -275,7 +275,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun ttlExpired(ttl: Long?): Boolean {
-            if(ttl == null) return false
+            if (ttl == null) return false
             val currentTimeInTimeMillis = Instant.now().toEpochMilli()
             return currentTimeInTimeMillis >= ttl
         }
@@ -321,7 +321,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
          * a marker for this message. If the process is restarted we reread the original marker.
          */
-
         private fun processAuthenticatedMessage(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
