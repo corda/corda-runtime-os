@@ -1,39 +1,19 @@
-package net.corda.crypto.client.impl
+package net.corda.crypto.client.impl._utils
 
-import com.typesafe.config.ConfigFactory
-import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.lessThanOrEqualTo
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.time.Instant
-import kotlin.reflect.full.memberFunctions
-import kotlin.reflect.jvm.isAccessible
 
 inline fun <reified R> Publisher.act(
     block: () -> R
@@ -100,58 +80,6 @@ data class SendActResult<REQUEST, RESPONSE>(
     val firstRequest: REQUEST get() = messages.first()
 
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
-}
-
-abstract class ComponentTestsBase<COMPONENT: Lifecycle> {
-    private var coordinatorIsRunning = false
-    private lateinit var coordinator: LifecycleCoordinator
-    protected lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    protected lateinit var configurationReadService: ConfigurationReadService
-    protected lateinit var component: COMPONENT
-    private val emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
-
-    fun setup(componentFactory: () -> COMPONENT) {
-        coordinator = mock {
-            on { start() } doAnswer {
-                coordinatorIsRunning = true
-                coordinator.postEvent(StartEvent())
-            }
-            on { stop() } doAnswer {
-                coordinatorIsRunning = false
-                coordinator.postEvent(StopEvent())
-            }
-            on { isRunning }.thenAnswer { coordinatorIsRunning }
-            on { postEvent(any()) } doAnswer {
-                val event = it.getArgument(0, LifecycleEvent::class.java)
-                component::class.memberFunctions.first { f -> f.name == "eventHandler" }.let { ff ->
-                    ff.isAccessible = true
-                    ff.call(component, event, coordinator)
-                }
-                Unit
-            }
-        }
-        coordinatorFactory = mock {
-            on { createCoordinator(any(), any()) } doReturn coordinator
-        }
-        configurationReadService = mock()
-        component = componentFactory()
-        component.start()
-        coordinator.postEvent(
-            RegistrationStatusChangeEvent(
-                registration = mock(),
-                status = LifecycleStatus.UP
-            )
-        )
-        coordinator.postEvent(
-            ConfigChangedEvent(
-                setOf(BOOT_CONFIG, MESSAGING_CONFIG),
-                mapOf(
-                    BOOT_CONFIG to emptyConfig,
-                    MESSAGING_CONFIG to emptyConfig
-                )
-            )
-        )
-    }
 }
 
 fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: String): KeyPair {

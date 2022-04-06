@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -120,5 +121,6 @@ class CryptoOpsServiceTests {
         }
         assertInstanceOf(CryptoOpsServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
+        Mockito.verify(subscription, atLeast(1)).close()
     }
 }

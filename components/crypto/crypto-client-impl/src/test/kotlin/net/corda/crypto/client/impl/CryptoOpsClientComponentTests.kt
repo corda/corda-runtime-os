@@ -1,6 +1,12 @@
 package net.corda.crypto.client.impl
 
+import net.corda.crypto.client.impl._utils.SendActResult
+import net.corda.crypto.client.impl._utils.TestConfigurationReadService
+import net.corda.crypto.client.impl._utils.act
+import net.corda.crypto.client.impl._utils.generateKeyPair
+import net.corda.crypto.client.impl._utils.signData
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -9,26 +15,25 @@ import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignature
 import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.rpc.AssignedHSMRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.FilterMyKeysRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.GenerateFreshKeyRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.GenerateKeyPairCommand
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByAliasRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByPublicKeyRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.PublicKeyRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
-import net.corda.data.crypto.wire.ops.rpc.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithAliasRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithAliasSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.FilterMyKeysRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -38,6 +43,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.empty
 import org.hamcrest.Matchers.instanceOf
 import org.hamcrest.core.IsInstanceOf
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -47,10 +53,12 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -61,18 +69,20 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertTrue
 
-class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponent>() {
+class CryptoOpsClientComponentTests {
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
     private lateinit var knownRawOperationContext: KeyValuePairList
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
+    private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var publisherFactory: PublisherFactory
+    private lateinit var component: CryptoOpsClientComponent
 
     @BeforeEach
     fun setup() {
-        super.setup {
             knownTenantId = UUID.randomUUID().toString()
             knownAlias = UUID.randomUUID().toString()
             knownOperationContext = mapOf(
@@ -85,16 +95,24 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             )
             schemeMetadata = CipherSchemeMetadataImpl()
             sender = mock()
+            coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
             publisherFactory = mock {
                 on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
             }
-            CryptoOpsClientComponent(
+            configurationReadService = TestConfigurationReadService(
+                coordinatorFactory
+            ).also {
+                it.start()
+                eventually {
+                    assertTrue(it.isRunning)
+                }
+            }
+            component = CryptoOpsClientComponent(
                 coordinatorFactory = coordinatorFactory,
                 publisherFactory = publisherFactory,
                 schemeMetadata = schemeMetadata,
                 configurationReadService = configurationReadService
             )
-        }
     }
 
     private fun setupCompletedResponse(respFactory: (RpcOpsRequest) -> Any) {
@@ -162,7 +180,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    fun `Should find public key`() {
+    fun `Should look up public key by its id`() {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         setupCompletedResponse {
             CryptoPublicKey(
@@ -170,26 +188,27 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             )
         }
         val result = sender.act {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, listOf(
+                publicKeyIdOf(keyPair.public)
+            ))
         }
         assertNotNull(result.value)
-        assertEquals(keyPair.public, result.value)
-        val query = assertOperationType<PublicKeyRpcQuery>(result)
-        assertEquals(knownAlias, query.alias)
+        assertEquals(1, result.value!!.size)
+        assertArrayEquals(keyPair.public.encoded, result.value[0].publicKey.array())
+        assertOperationType<ByIdsRpcQuery>(result)
         assertRequestContext(result)
     }
 
     @Test
-    fun `Should return null when public key is not found`() {
+    fun `Should return empty collection when public key id is not found`() {
         setupCompletedResponse {
             CryptoNoContentValue()
         }
         val result = sender.act {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, listOf(publicKeyIdOf(UUID.randomUUID().toString().toByteArray())))
         }
-        assertNull(result.value)
-        val query = assertOperationType<PublicKeyRpcQuery>(result)
-        assertEquals(knownAlias, query.alias)
+        assertEquals(0, result.value!!.size)
+        assertOperationType<ByIdsRpcQuery>(result)
         assertRequestContext(result)
     }
 
@@ -534,182 +553,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    fun `Should sign by referencing key alias`() {
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, keyPair, data)
-        setupCompletedResponse {
-            CryptoSignature(
-                ByteBuffer.wrap(signature)
-            )
-        }
-        val result = sender.act {
-            component.sign(
-                tenantId = knownTenantId,
-                alias = knownAlias,
-                data = data,
-                context = knownOperationContext
-            )
-        }
-        assertNotNull(result.value)
-        assertArrayEquals(signature, result.value)
-        val command = assertOperationType<SignWithAliasRpcCommand>(result)
-        assertNotNull(command)
-        assertEquals(knownAlias, command.alias)
-        assertArrayEquals(data, command.bytes.array())
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should sign by referencing key alias and using custom signature spec`() {
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
-        val spec = SignatureSpec(
-            signatureName =  "NONEwithECDSA",
-            customDigestName = DigestAlgorithmName.SHA2_256
-        )
-        val signature = signData(schemeMetadata, keyPair, data)
-        setupCompletedResponse {
-            CryptoSignature(
-                ByteBuffer.wrap(signature)
-            )
-        }
-        val result = sender.act {
-            component.sign(
-                tenantId = knownTenantId,
-                alias = knownAlias,
-                signatureSpec = spec,
-                data = data,
-                context = knownOperationContext
-            )
-        }
-        assertNotNull(result.value)
-        assertArrayEquals(signature, result.value)
-        val command = assertOperationType<SignWithAliasSpecRpcCommand>(result)
-        assertNotNull(command)
-        assertEquals(knownAlias, command.alias)
-        assertArrayEquals(data, command.bytes.array())
-        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNull(command.signatureSpec.params)
-        assertNotNull(command.signatureSpec.customDigestName)
-        assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should sign by referencing key alias and using custom signature spec with signature params`() {
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
-        val spec = SignatureSpec(
-            signatureName = "RSASSA-PSS",
-            params = PSSParameterSpec(
-                "SHA-256",
-                "MGF1",
-                MGF1ParameterSpec.SHA256,
-                32,
-                1
-            )
-        )
-        val signature = signData(schemeMetadata, keyPair, data)
-        setupCompletedResponse {
-            CryptoSignature(
-                ByteBuffer.wrap(signature)
-            )
-        }
-        val result = sender.act {
-            component.sign(
-                tenantId = knownTenantId,
-                alias = knownAlias,
-                signatureSpec = spec,
-                data = data,
-                context = knownOperationContext
-            )
-        }
-        assertNotNull(result.value)
-        assertArrayEquals(signature, result.value)
-        val command = assertOperationType<SignWithAliasSpecRpcCommand>(result)
-        assertNotNull(command)
-        assertEquals(knownAlias, command.alias)
-        assertArrayEquals(data, command.bytes.array())
-        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNotNull(command.signatureSpec.params)
-        assertEquals(PSSParameterSpec::class.java.name, command.signatureSpec.params.className)
-        assertTrue(command.signatureSpec.params.bytes.array().isNotEmpty())
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should find key information by referencing public key`() {
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val expectedValue = HSMKeyDetails()
-        setupCompletedResponse {
-            expectedValue
-        }
-        val result = sender.act {
-            component.findHSMKey(knownTenantId, keyPair.public)
-        }
-        assertNotNull(result.value)
-        assertEquals(expectedValue, result.value)
-        val query = assertOperationType<HSMKeyInfoByPublicKeyRpcQuery>(result)
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), query.publicKey.array())
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should return null for key information when public key is not found`() {
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        setupCompletedResponse {
-            CryptoNoContentValue()
-        }
-        val result = sender.act {
-            component.findHSMKey(knownTenantId, keyPair.public)
-        }
-        assertNull(result.value)
-        val query = assertOperationType<HSMKeyInfoByPublicKeyRpcQuery>(result)
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), query.publicKey.array())
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should find key information by referencing key alias`() {
-        val expectedValue = HSMKeyDetails()
-        setupCompletedResponse {
-            expectedValue
-        }
-        val result = sender.act {
-            component.findHSMKey(
-                tenantId = knownTenantId,
-                alias = knownAlias
-            )
-        }
-        assertNotNull(result.value)
-        assertEquals(expectedValue, result.value)
-        val query = assertOperationType<HSMKeyInfoByAliasRpcQuery>(result)
-        assertEquals(knownAlias, query.alias)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should return null for key information when key alias is not found`() {
-        setupCompletedResponse {
-            CryptoNoContentValue()
-        }
-        val result = sender.act {
-            component.findHSMKey(
-                tenantId = knownTenantId,
-                alias = knownAlias
-            )
-        }
-        assertNull(result.value)
-        val query = assertOperationType<HSMKeyInfoByAliasRpcQuery>(result)
-        assertEquals(knownAlias, query.alias)
-        assertRequestContext(result)
-    }
-
-    @Test
     fun `Should find hsm details`() {
         val expectedValue = HSMInfo()
         setupCompletedResponse {
@@ -746,14 +589,6 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
     }
 
     @Test
-    fun `Should cleanup created resources when component is stopped`() {
-        component.stop()
-        assertFalse(component.isRunning)
-        assertNull(component.resources)
-        verify(sender, atLeast(1)).stop()
-    }
-
-    @Test
     fun `Should fail when response tenant id does not match the request`() {
         whenever(
             sender.sendRequest(any())
@@ -775,7 +610,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             future
         }
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
@@ -803,7 +638,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             future
         }
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
@@ -831,7 +666,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
             future
         }
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
@@ -842,7 +677,7 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         val error = CryptoServiceLibraryException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, emptyList())
         }
         assertSame(error, exception)
     }
@@ -852,9 +687,32 @@ class CryptoOpsClientComponentTests : ComponentTestsBase<CryptoOpsClientComponen
         val error = RuntimeException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findPublicKey(knownTenantId, knownAlias)
+            component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
         assertSame(error, exception.cause)
+    }
+
+    @Test
+    fun `Should cleanup created resources when component is stopped`() {
+        kotlin.test.assertFalse(component.isRunning)
+        Assertions.assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.impl.ops
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            kotlin.test.assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        Assertions.assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
+        kotlin.test.assertNotNull(component.impl.ops)
+        component.stop()
+        eventually {
+            kotlin.test.assertFalse(component.isRunning)
+            kotlin.test.assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
+        }
+        Assertions.assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
+        Mockito.verify(sender, times(1)).close()
     }
 }

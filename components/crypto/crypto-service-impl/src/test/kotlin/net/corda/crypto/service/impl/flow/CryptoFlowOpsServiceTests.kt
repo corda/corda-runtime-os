@@ -19,6 +19,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -128,5 +129,6 @@ class CryptoFlowOpsServiceTests {
         }
         assertInstanceOf(CryptoFlowOpsServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
+        Mockito.verify(subscription, atLeast(1)).close()
     }
 }

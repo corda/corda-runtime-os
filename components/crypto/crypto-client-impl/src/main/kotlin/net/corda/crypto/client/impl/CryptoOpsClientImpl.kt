@@ -9,18 +9,20 @@ import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.rpc.AssignedHSMRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.FilterMyKeysRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.GenerateFreshKeyRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.GenerateKeyPairCommand
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByAliasRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByPublicKeyRpcQuery
+import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
-import net.corda.data.crypto.wire.ops.rpc.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.crypto.wire.ops.rpc.queries.FilterMyKeysRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
@@ -33,10 +35,11 @@ import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Instant
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
-internal class CryptoOpsClientImpl(
+class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
 ) {
@@ -251,6 +254,63 @@ internal class CryptoOpsClientImpl(
         return request.execute(CryptoSignatureWithKey::class.java)!!
     }
 
+    fun lookup(
+        skip: Int,
+        take: Int,
+        orderBy: CryptoKeyOrderBy,
+        tenantId: String,
+        category: String?,
+        schemeCodeName: String?,
+        alias: String?,
+        masterKeyAlias: String?,
+        createdAfter: Instant?,
+        createdBefore: Instant?
+    ): List<CryptoSigningKey> {
+        logger.debug(
+            "Sending '{}'({}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
+            KeysRpcQuery::class.java.simpleName,
+            skip,
+            take,
+            tenantId,
+            orderBy,
+            category,
+            schemeCodeName,
+            alias,
+            masterKeyAlias,
+            createdAfter,
+            createdBefore
+        )
+        val request = createRequest(
+            tenantId,
+            KeysRpcQuery(
+                skip,
+                take,
+                CryptoKeyOrderBy.valueOf(orderBy.name),
+                category,
+                schemeCodeName,
+                alias,
+                masterKeyAlias,
+                createdAfter,
+                createdBefore
+            )
+        )
+        return request.execute(CryptoSigningKeys::class.java)!!.keys
+    }
+
+    fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
+        logger.debug(
+            "Sending '{}'(tenant={}, ids=[{}])",
+            ByIdsRpcQuery::class.java.simpleName,
+            tenantId,
+            ids.joinToString()
+        )
+        val request = createRequest(
+            tenantId,
+            ByIdsRpcQuery(ids)
+        )
+        return request.execute(CryptoSigningKeys::class.java)!!.keys
+    }
+    /*
     fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? {
         logger.info(
             "Sending '{}'(tenant={},alias={})",
@@ -278,6 +338,8 @@ internal class CryptoOpsClientImpl(
         )
         return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
     }
+
+     */
 
     fun findHSM(tenantId: String, category: String): HSMInfo? {
         logger.info(
