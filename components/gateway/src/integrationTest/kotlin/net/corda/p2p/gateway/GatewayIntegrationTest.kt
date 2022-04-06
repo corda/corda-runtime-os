@@ -774,7 +774,9 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
-                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // Delete the first pair
                 server.publish(
@@ -796,7 +798,9 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
-                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // Delete the certificates
                 val subject = PrincipalUtil.getSubjectX509Principal(
@@ -817,7 +821,9 @@ class GatewayIntegrationTest : TestBase() {
 
                 // publish it again
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
-                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // Change the host
                 configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
@@ -825,7 +831,9 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
 
                 // Client should pass with new host
-                testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // new trust store...
                 val secondCertificatesAuthority = CertificateAuthorityFactory
@@ -837,7 +845,9 @@ class GatewayIntegrationTest : TestBase() {
                 // replace the first pair
                 val newKeyStore = secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
-                testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // verify that the old trust store will fail
                 eventually {
@@ -856,7 +866,9 @@ class GatewayIntegrationTest : TestBase() {
                 // publish new pair with new alias
                 val newerKeyStore = thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore)
-                testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
+                }
             }
         }
     }
