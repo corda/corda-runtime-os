@@ -20,7 +20,9 @@ import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_
 import net.corda.messaging.integration.KafkaOnly
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1_TEMPLATE
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC2_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords

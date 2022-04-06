@@ -109,7 +109,7 @@ class PublisherIntegrationTest {
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully`() {
         topicUtils.createTopics(publisherDurableTopic2Config)
-        publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC2", 1)
+        publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC2", true)
         val publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 
         val recordsWithPartitions = getDemoRecords(PUBLISHER_TEST_DURABLE_TOPIC2, 5, 2).map { 1 to it }
@@ -134,7 +134,7 @@ class PublisherIntegrationTest {
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully from multiple threads`() {
         topicUtils.createTopics(publisherDurableTopic3Config)
-        publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC3", 2)
+        publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC3", true)
         val publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 
         val recordsWithPartitions = getDemoRecords(PUBLISHER_TEST_DURABLE_TOPIC3, 5, 2).map { 1 to it }
