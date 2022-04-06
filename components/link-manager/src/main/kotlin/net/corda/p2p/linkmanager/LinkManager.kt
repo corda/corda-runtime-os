@@ -327,18 +327,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
-            val isTtlExpired = ttlExpired(messageAndKey.message.header.ttl)
             logger.trace {
                 "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                         "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
             }
+            val isTtlExpired = ttlExpired(messageAndKey.message.header.ttl)
             val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
-            if (isTtlExpired) {
-                return recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
-            } else if (isHostedLocally){
-                return mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
+            return if (isHostedLocally) {
+                mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
-                return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
+                when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                     is SessionState.NewSessionsNeeded -> {
                         logger.trace {
                             "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
@@ -354,7 +352,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
-                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
+                    is SessionState.SessionAlreadyPending -> {
                         logger.trace {
                             "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                                     "Message queued until session is established."
@@ -366,7 +364,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         emptyList()
                     }
                 }
-            }
+            } + recordsForMarkers(messageAndKey, isHostedLocally, isReplay, isTtlExpired)
         }
 
         private fun recordsForSessionEstablished(
@@ -382,19 +380,19 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             isReplay: Boolean,
             isTtlExpired: Boolean
         ): List<Record<String, *>> {
-            val markers: ArrayList<Record<String, *>> = ArrayList()
-            if (isHostedLocally) {
-                markers.add(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-                markers.add(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            return if (isHostedLocally) {
+                listOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            } else if (isTtlExpired && isReplay) {
+                listOf(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
+            } else if (isTtlExpired) {
+                listOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
+                    recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
+            } else if (isReplay) {
+                emptyList()
+            } else {
+                listOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
-            if (isTtlExpired && isReplay) {
-                markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
-            }
-            if (isTtlExpired && !isReplay) {
-                markers.add(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
-                markers.add(recordForTTLExpiredMarker(messageAndKey.message.header.messageId))
-            }
-            return markers
         }
 
         private fun recordForLMSentMarker(

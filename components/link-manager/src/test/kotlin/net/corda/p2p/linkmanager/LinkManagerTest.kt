@@ -246,7 +246,7 @@ class LinkManagerTest {
         data: String,
         messageId: String
     ): AuthenticatedMessage {
-        val header = AuthenticatedMessageHeader(dest, source, TTL, messageId, "", "system-1")
+        val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
         return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
     }
 

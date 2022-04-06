@@ -306,7 +306,7 @@ class P2PLayerEndToEndTest {
             subForP2POutMarkers.start()
 
             val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
-            val initialMessages = (1..10).map { index ->
+            val initialMessages = (0..9).map { index ->
                 val randomId = index.toString()
                 val messageHeader = AuthenticatedMessageHeader(
                     HoldingIdentity(hostB.x500Name, GROUP_ID),
@@ -328,7 +328,7 @@ class P2PLayerEndToEndTest {
             eventually(10.seconds) {
                 synchronized(hostAExpiryMarkers) {
                     for ((i, msg) in initialMessages.withIndex()) {
-                        assertThat(msg.key.equals(i))
+                        assertThat(msg.key).isEqualTo(i.toString())
                     }
                     val markers = hostAExpiryMarkers.filter{it.topic == P2P_OUT_MARKERS}.map { (it.value as AppMessageMarker).marker }
                     assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == (initialMessages.size))
