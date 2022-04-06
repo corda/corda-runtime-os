@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -40,7 +41,6 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
     )
 ), CryptoFlowOpsService {
     private companion object {
-        private val logger = contextLogger()
         const val GROUP_NAME = "crypto.ops.flow"
     }
 
@@ -56,12 +56,15 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         val processor = CryptoFlowOpsProcessor(
             cryptoOpsClient = cryptoOpsClient
         )
+        val bootConfig = event.config[ConfigKeys.BOOT_CONFIG]
+        val instanceId = if (bootConfig?.hasPath("instanceId") == true) bootConfig.getInt("instanceId") else 1
         impl.close()
         return ActiveImpl(
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
                     groupName = GROUP_NAME,
-                    eventTopic = FLOW_OPS_MESSAGE_TOPIC
+                    eventTopic = FLOW_OPS_MESSAGE_TOPIC,
+                    instanceId = instanceId
                 ),
                 processor = processor,
                 nodeConfig = messagingConfig,
