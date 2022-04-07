@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        mavenLocal()
         gradlePluginPortal()
         mavenCentral()
         def cordaUseCache = System.getenv("CORDA_USE_CACHE")
@@ -55,6 +56,8 @@ pluginManagement {
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
         id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin  
+        id 'com.r3.internal.gradle.plugins.r3-docker' version internalDockerVersion
+
     }
 }
 

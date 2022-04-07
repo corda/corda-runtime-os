@@ -39,11 +39,10 @@ object Boot {
 
     fun run(vararg args: String) {
 
-        //create storage dir if it doesn't exist
+        // create storage dir if it doesn't exist
         Files.cliHomeDir().mkdirs()
-        Files.profile.createNewFile()
 
-        //create http service
+        // create http service
         val httpService = HttpRpcService()
 
         // Find and load the CLI plugins
