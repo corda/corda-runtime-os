@@ -16,7 +16,7 @@ kafka:
 postgresql:
   primary:
     resources:
-      request:
+      requests:
         memory: 256Mi
         cpu: 250m
       limits:  
