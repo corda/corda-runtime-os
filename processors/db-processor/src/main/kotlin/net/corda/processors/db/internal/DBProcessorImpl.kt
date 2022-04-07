@@ -136,9 +136,6 @@ class DBProcessorImpl @Activate constructor(
                 if (event.registration == dbManagerRegistrationHandler) {
                     log.info("DB Connection Manager has been initialised")
 
-                    // TODO - remove this when cluster bootstrapping is implemented
-                    tempDbInitProcess(bootstrapConfig!!)
-
                     // ready to continue bootstrapping processor
                     log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
                     configWriteService.startProcessing(
@@ -168,64 +165,6 @@ class DBProcessorImpl @Activate constructor(
                 log.error("Unexpected event $event!")
             }
         }
-    }
-
-    private fun tempDbInitProcess(config: SmartConfig) {
-        log.info("Running Cluster DB Migration")
-        migrateDatabase(dbConnectionManager.getClusterDataSource(), listOf(
-            "net/corda/db/schema/config/db.changelog-master.xml"
-        ))
-
-        val dbConfig = config.getConfig(DB_CONFIG).withFallback(dbFallbackConfig)
-
-        // Creating RBAC DB configurations
-        if(null == dbConnectionManager.getDataSource(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DDL)) {
-            val ddlRbacUser = "rbac_ddl"
-            val ddlRbacPassword = UUID.randomUUID().toString()
-            dbAdmin.createDbAndUser(
-                CordaDb.RBAC.persistenceUnitName,
-                DbSchema.RPC_RBAC,
-                ddlRbacUser,
-                ddlRbacPassword,
-                dbConfig.getString(ConfigKeys.JDBC_URL),
-                DbPrivilege.DDL,
-                config.factory
-            )
-        }
-
-        if(null == dbConnectionManager.getDataSource(CordaDb.RBAC.persistenceUnitName, DbPrivilege.DML)) {
-            val dmlRbacUser = "rbac_dml"
-            val dmlRbacPassword = UUID.randomUUID().toString()
-            dbAdmin.createDbAndUser(
-                CordaDb.RBAC.persistenceUnitName,
-                DbSchema.RPC_RBAC,
-                dmlRbacUser,
-                dmlRbacPassword,
-                dbConfig.getString(ConfigKeys.JDBC_URL),
-                DbPrivilege.DML,
-                config.factory
-            )
-        }
-
-        log.info("Running RBAC DB Migration")
-        /** TODO - this is a bit hacky
-         *   We can't really use the DDL user created above because it does not have CREATE privileges
-         *   on the public schema, therefore, it cannot create new schemas and our Liquibase migration
-         *   currently has a IF NOT EXIST CREATE SCHEMA ... which fails if the permission is missing.
-         *   For this reason, for VNode Vault and Crypto DBs, we should not use schemas but assume the
-         *   "default" schema that is specified in the connection details.
-         *
-         *   For RBAC, CONFIG etc, we need to have a discussion and decision on how we handle this.
-         *   Maybe it doesn't actually make sense to keep DDL connection details for RBAC, and maybe we
-         *   can always assume the DB Migrations for system tables (i.e. not vault) are always handled
-         *   externally?
-         *
-         *   Until then, just use the cluster DB.
-         */
-        migrateDatabase(
-            dbConnectionManager.getClusterDataSource(),
-            listOf("net/corda/db/schema/rbac/db.changelog-master.xml"),
-            DbSchema.RPC_RBAC)
     }
 
     /**

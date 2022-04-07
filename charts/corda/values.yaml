@@ -8,7 +8,7 @@ fullnameOverride: ""
 # -- override chart name
 nameOverride: ""
 
-# worker image defaults
+# worker and cli image defaults
 image:
   # -- worker image registry
   registry: "corda-os-docker.software.r3.com"
@@ -36,6 +36,8 @@ db:
   cluster:
     # -- the cluster database host (required)
     host: ""
+    # -- the cluster database type
+    type: "postgresql"
     # -- the cluster database port
     port: 5432
     # -- the cluster database user
@@ -55,6 +57,16 @@ kafka:
   partitions: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
+
+# Configuration for the bootstrapper
+bootstrap:
+  image:
+    # -- cli image registry
+    registry: "corda-os-docker.software.r3.com"
+    # -- cli image repository
+    repository: "corda-os-plugins"
+    # -- cli default tag
+    tag: ""
 
 # worker configuration
 workers:
