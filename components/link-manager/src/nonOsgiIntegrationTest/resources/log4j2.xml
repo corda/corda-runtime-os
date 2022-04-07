@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="info" shutdownHook="disable">
+
+    <Properties>
+        <Property name="log-path">${sys:log-path:-logs}</Property>
+        <Property name="log-name">gateway-${hostName}</Property>
+        <Property name="diagnostic-log-name">diagnostic-${hostName}</Property>
+        <Property name="archive">${log-path}/archive</Property>
+        <Property name="defaultLogLevel">${sys:defaultLogLevel:-info}</Property>
+        <Property name="consoleLogLevel">${sys:consoleLogLevel:-error}</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console-Appender" target="SYSTEM_OUT">
+            <!-- use the 'MDC' pattern (with the %X) from the old "Console-Debug-Appender".  We are no longer dynamically chosing between -->
+            <!-- the two because we cannot use Nashorn / <script> in java 11 inside this configuration .-->
+            <PatternLayout pattern="%highlight{[%level{length=5}] %date{HH:mm:ss.SSS} [%t] %c{2}.%method - %msg %X%n%throwable{}}{INFO=white,WARN=red,FATAL=bright red}" />
+        </Console>
+
+        <!-- This is meant to rewrite the output of the innner appender, but we're just passing it through -->
+        <!-- and using it so we can reference the inner appender by the outer name. -->
+        <!-- This one is for 'backwards compatibility' with the old one in a prior revision in this file that was removed -->
+        <!-- due to script usage and Nashorn js engine deprecation -->
+        <!-- See https://logging.apache.org/log4j/2.x/manual/appenders.html#RewriteAppender -->
+        <Rewrite name="Console-Selector">
+            <AppenderRef ref="Console-Appender"/>
+        </Rewrite>
+
+        <!-- Required for printBasicInfo -->
+        <!-- This appender is essentially `println(msg)` and that's it  -->
+        <!-- All Corda output goes through this.  No log-level is printed -->
+        <Console name="Console-Appender-Println" target="SYSTEM_OUT">
+            <PatternLayout pattern="%msg%n%throwable{0}" />
+        </Console>
+
+        <!-- Will generate up to 500 log files for a given day. Adjust this number according to the available storage.
+             During every rollover it will delete those that are older than 60 days, but keep the most recent 10 GB -->
+        <RollingRandomAccessFile name="RollingFile-Appender"
+                                 fileName="${log-path}/${log-name}.log"
+                                 filePattern="${archive}/${log-name}.%date{yyyy-MM-dd}-%i.log.gz">
+
+            <PatternLayout pattern="[%-5level] %date{ISO8601}{UTC}Z [%t] %c{2}.%method - %msg %X%n"/>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+
+            <DefaultRolloverStrategy min="1" max="500">
+                <Delete basePath="${archive}" maxDepth="1">
+                    <IfFileName glob="${log-name}*.log.gz"/>
+                    <IfLastModified age="60d">
+                        <IfAny>
+                            <IfAccumulatedFileSize exceeds="10 GB"/>
+                        </IfAny>
+                    </IfLastModified>
+                </Delete>
+            </DefaultRolloverStrategy>
+
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <!-- Logger name = BasicInfo referenced here https://github.com/corda/corda5/blob/2d020dba6a3186fdaa64f9ba0b38fcc4010aa3c9/node/src/main/kotlin/net/corda/node/internal/Node.kt#L145 -->
+    <!-- and a few other places -->
+
+    <Loggers>
+        <Root level="${defaultLogLevel}">
+            <AppenderRef ref="Console-Appender"/>
+            <AppenderRef ref="RollingFile-Appender"/>
+        </Root>
+        <Logger name="BasicInfo" additivity="false">
+            <AppenderRef ref="Console-Appender-Println"/>
+            <AppenderRef ref="RollingFile-Appender"/>
+        </Logger>
+    </Loggers>
+</Configuration>

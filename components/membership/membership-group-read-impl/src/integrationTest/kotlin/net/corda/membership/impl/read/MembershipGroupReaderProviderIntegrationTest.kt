@@ -3,6 +3,7 @@ package net.corda.membership.impl.read
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
@@ -32,7 +33,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import kotlin.reflect.KFunction
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipGroupReaderProviderIntegrationTest {
 
     companion object {
@@ -215,3 +216,4 @@ class MembershipGroupReaderProviderIntegrationTest {
     private fun <K : Any, V : Any> Publisher.publishRecord(topic: String, key: K, value: V) =
         publish(listOf(Record(topic, key, value)))
 }
+

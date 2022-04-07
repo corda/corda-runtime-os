@@ -17,7 +17,8 @@ import kotlin.math.abs
 @Suppress("TooManyFunctions")
 class CordaAtomicDBProducerImpl(
     private val serializer: CordaAvroSerializer<Any>,
-    private val dbAccess: DBAccess
+    private val dbAccess: DBAccess,
+    private val writeOffsets: WriteOffsets
 ) : CordaProducer {
 
     init {
@@ -30,6 +31,7 @@ class CordaAtomicDBProducerImpl(
 
     private val topicPartitionMap = dbAccess.getTopicPartitionMap()
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
+    private val defaultTimeout: Duration = Duration.ofSeconds(1)
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
         sendRecords(listOf(record))

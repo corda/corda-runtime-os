@@ -27,10 +27,17 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":libs:lifecycle:registry")
 
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

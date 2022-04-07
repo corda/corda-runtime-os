@@ -42,13 +42,13 @@ dependencies {
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 
     integrationTestImplementation project(':libs:crypto:certificate-generation')
-    integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:configuration:configuration-publish")
     integrationTestImplementation project(":libs:configuration:configuration-publish-impl")
+    integrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
     integrationTestImplementation 'net.corda:corda-cipher-suite'
 }
 

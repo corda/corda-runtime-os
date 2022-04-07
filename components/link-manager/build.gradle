@@ -1,9 +1,30 @@
 plugins {
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'LinkManager for p2p communication'
+
+configurations {
+    nonOsgiIntegrationTestApi.extendsFrom integrationTestApi
+    nonOsgiIntegrationTestCompileOnly.extendsFrom integrationTestCompileOnly
+    nonOsgiIntegrationTestImplementation.extendsFrom integrationTestImplementation
+    nonOsgiIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+}
+
+sourceSets {
+    nonOsgiIntegrationTest {
+        kotlin {
+            srcDirs += [ 'src/nonOsgiIntegrationTest/kotlin' ]
+        }
+        resources {
+            srcDirs += [ 'src/nonOsgiIntegrationTest/resources' ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -34,25 +55,52 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     integrationTestImplementation project(":components:gateway")
-    integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
-    integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
-    integrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
-    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
-    integrationTestImplementation project(":libs:lifecycle:registry")
-    integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
-    integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:configuration:configuration-publish")
-    integrationTestImplementation project(":libs:configuration:configuration-publish-impl")
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
+
+    nonOsgiIntegrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
+    nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
+    nonOsgiIntegrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+    nonOsgiIntegrationTestImplementation project(":libs:lifecycle:registry")
+    nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-core")
+    nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-publish-impl")
+    nonOsgiIntegrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
+
+    integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:configuration:configuration-publish-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
-tasks.named('integrationTest', Test) {
+var nonOsgiIntegrationTest = tasks.register('nonOsgiIntegrationTest', Test) {
+    description = "Runs non-OSGi Integration tests."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["nonOsgiIntegrationTest"].output.classesDirs
+    classpath = project.sourceSets["nonOsgiIntegrationTest"].runtimeClasspath
+    outputs.upToDateWhen { false }
+
+    doFirst {
+        def hostsFilePath = file("${sourceSets.integrationTest.output.resourcesDir}/hosts").absolutePath
+        systemProperty 'jdk.net.hosts.file', hostsFilePath
+    }
+}
+
+tasks.named('integrationTest') {
+    dependsOn nonOsgiIntegrationTest
     doFirst {
         def hostsFilePath = file("${sourceSets.integrationTest.output.resourcesDir}/hosts").absolutePath
         systemProperty 'jdk.net.hosts.file', hostsFilePath

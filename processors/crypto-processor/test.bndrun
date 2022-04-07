@@ -19,6 +19,10 @@
     bnd.identity;id='net.corda.inmemory-messaging-impl',\
     bnd.identity;id='net.corda.layered-property-map',\
     bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.db-message-bus-impl',\
+    bnd.identity;id='net.corda.db-orm-impl',\
+    bnd.identity;id='net.corda.messaging-impl',\
+    bnd.identity;id='net.corda.schema-registry-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\

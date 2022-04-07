@@ -7,6 +7,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -32,7 +33,7 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer inserts atomic transaction record on initialization`() {
         val dbAccess: DBAccess = mock()
-        CordaAtomicDBProducerImpl(mock(), dbAccess)
+        CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
         verify(dbAccess).writeAtomicTransactionRecord()
     }
 
@@ -42,20 +43,23 @@ internal class CordaAtomicDBProducerImplTest {
         whenever(dbAccess.writeTransactionRecord(any())).thenAnswer {
             throw RollbackException("I already have this!")
         }
-        CordaAtomicDBProducerImpl(mock(), dbAccess)
+        CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
     }
 
     @Test
     fun `atomic producer sends correct entry to database and topic`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 5))
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaAtomicDBProducerImpl(serializer, dbAccess)
+        val producer = CordaAtomicDBProducerImpl(
+            serializer,
+            dbAccess,
+            WriteOffsets(mapOf(CordaTopicPartition(topic, 0) to 5))
+        )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.send(cordaRecord, callback)
@@ -75,13 +79,16 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer sends correct entry to database when partition is specified`() {
         val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 2))
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaAtomicDBProducerImpl(serializer, dbAccess)
+        val producer = CordaAtomicDBProducerImpl(
+            serializer,
+            dbAccess,
+            WriteOffsets(mapOf(CordaTopicPartition(topic, 0) to 2))
+        )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.send(cordaRecord, 0, callback)
@@ -102,10 +109,7 @@ internal class CordaAtomicDBProducerImplTest {
     fun `atomic producer does not allow transactional calls`() {
         val dbAccess: DBAccess = mock()
 
-        val producer = CordaAtomicDBProducerImpl(
-            mock(),
-            dbAccess
-        )
+        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.beginTransaction()
@@ -122,7 +126,6 @@ internal class CordaAtomicDBProducerImplTest {
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.sendRecordOffsetsToTransaction(mock(), mock())
         }
-        verify(dbAccess).getMaxOffsetsPerTopicPartition()
         verify(dbAccess).writeAtomicTransactionRecord()
         verify(dbAccess).getTopicPartitionMap()
         verifyNoMoreInteractions(dbAccess)

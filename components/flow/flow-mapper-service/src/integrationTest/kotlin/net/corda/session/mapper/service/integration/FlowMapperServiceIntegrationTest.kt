@@ -15,6 +15,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -41,11 +42,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowMapperServiceIntegrationTest {
 
@@ -101,7 +103,7 @@ class FlowMapperServiceIntegrationTest {
         //validate p2p out only receives 1 init
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC, 1),
             TestP2POutProcessor(testId, p2pLatch, 1), bootConfig, null
         )
         p2pOutSub.start()
@@ -111,7 +113,7 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData())
+                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray())))
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -120,7 +122,7 @@ class FlowMapperServiceIntegrationTest {
         val flowEventLatch = CountDownLatch(1)
         val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC, ),
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC, 1),
             testProcessor,
             bootConfig,
             null
@@ -152,7 +154,7 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 StartFlow(
                     context,
-                    null
+                    ""
                 )
             )
         )
@@ -162,7 +164,7 @@ class FlowMapperServiceIntegrationTest {
         val flowEventLatch = CountDownLatch(2)
         val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 2, StartFlow::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC, 1),
             testProcessor,
             bootConfig,
             null
@@ -198,7 +200,7 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData())
+                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("".toByteArray())))
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -206,7 +208,7 @@ class FlowMapperServiceIntegrationTest {
         //validate p2p out doesn't have any records
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC, 1),
             TestP2POutProcessor(testId, p2pLatch, 0), bootConfig, null
         )
         p2pOutSub.start()

@@ -10,6 +10,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigFactory
@@ -40,7 +41,7 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowFilterServiceIntegrationTest {
 
@@ -127,7 +128,7 @@ class FlowFilterServiceIntegrationTest {
         //validate mapper receives 2 inits
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
+            SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC, 1),
             TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2), bootConfig, null
         )
         p2pOutSub.start()

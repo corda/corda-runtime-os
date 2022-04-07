@@ -1,6 +1,10 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -23,14 +27,11 @@ import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC2
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
-import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestCompactedProcessor
-import net.corda.messaging.integration.util.DBSetup
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -38,15 +39,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
-import org.osgi.framework.BundleContext
-import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class, BundleContextExtension::class)
+@ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class CompactedSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
@@ -62,19 +61,16 @@ class CompactedSubscriptionIntegrationTest {
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
-        fun setup(
-            @InjectBundleContext bundleContext: BundleContext
-        ) {
-            if (bundleContext.isDBBundle()) {
-                DBSetup.setupEntities(CLIENT_ID)
+        fun setup() {
+            if (DBSetup.isDB) {
+                // Dodgy remove prefix for DB code
+                compactedTopic1Config = ConfigFactory.parseString(
+                    COMPACTED_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
+                )
+                compactedTopic2Config = ConfigFactory.parseString(
+                    COMPACTED_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
+                )
             }
-        }
-
-        @Suppress("unused")
-        @AfterAll
-        @JvmStatic
-        fun done() {
-            DBSetup.close()
         }
     }
 

@@ -14,6 +14,7 @@ import net.corda.messagebus.db.persistence.create
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
 import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
+import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
@@ -30,6 +31,9 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
+
+    private val writeOffsets: WriteOffsets = WriteOffsets(emptyMap())
+
     override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
         val isTransactional = producerConfig.transactional
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
@@ -47,15 +51,18 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                 )
             )
         )
+        writeOffsets.sync(dbAccess.getMaxOffsetsPerTopicPartition())
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                dbAccess
+                dbAccess,
+                writeOffsets
             )
         } else {
             CordaAtomicDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
-                dbAccess
+                dbAccess,
+                writeOffsets
             )
         }
     }
