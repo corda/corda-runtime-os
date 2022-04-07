@@ -50,6 +50,7 @@ import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
@@ -62,6 +63,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -248,6 +250,18 @@ class LinkManagerTest {
         val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
         return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
     }
+
+//TODO
+/*    private fun authenticatedMessageExpiredTTL(
+        source: HoldingIdentity,
+        dest: HoldingIdentity,
+        data: String,
+        messageId: String,
+        TTL: Long?
+    ): AuthenticatedMessage {
+        val header = AuthenticatedMessageHeader(dest, source, TTL, messageId, "", "system-1")
+        return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
+    }*/
 
     private fun initiatorHelloMessage(): InitiatorHelloMessage {
         return InitiatorHelloMessage.newBuilder().apply {
@@ -1318,7 +1332,35 @@ class LinkManagerTest {
 
     @Test
     fun `OutboundMessageProcessor produces TTLExpired marker if TTL expiry is true and replay is true`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending)
 
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1)),
+            pendingSessionMessageQueues
+        )
+
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID),
+            KEY
+        )
+
+        authenticatedMessageAndKey.message.header.ttl = 0L
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        for (record in records) {
+            assertEquals(P2P_OUT_MARKERS, record.topic)
+            assert(record.value is AppMessageMarker)
+            val marker = (record.value as AppMessageMarker)
+            assertTrue(marker.marker is TtlExpiredMarker)
+            assertFalse(marker.marker is LinkManagerSentMarker)
+        }
     }
 
     @Test
