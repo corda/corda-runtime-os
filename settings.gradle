@@ -350,6 +350,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:corda-services') using project(':services')
         }
     }
 }

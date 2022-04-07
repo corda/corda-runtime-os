@@ -5,10 +5,10 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.v5.application.flows.FlowInfo
-import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.application.flows.UntrustworthyData
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.v5.application.messaging.FlowInfo
+import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.UntrustworthyData
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -81,7 +81,8 @@ class FlowSessionImpl(
                     ?.sessionIds
                     ?.toMutableList()
                 sessionIds?.remove(sourceSessionId)
-                flowFiberService.getExecutingFiber().getExecutionContext().flowStackService.peek()?.sessionIds = sessionIds
+                flowFiberService.getExecutingFiber().getExecutionContext().flowStackService.peek()?.sessionIds =
+                    sessionIds
                 state = State.CLOSED
                 log.info("Closed session: $sourceSessionId")
             }
@@ -108,7 +109,10 @@ class FlowSessionImpl(
         return getSerializationService().serialize(payload).bytes
     }
 
-    private fun <R : Any> deserializeReceivedPayload(received: Map<String, ByteArray>, receiveType: Class<R>): UntrustworthyData<R> {
+    private fun <R : Any> deserializeReceivedPayload(
+        received: Map<String, ByteArray>,
+        receiveType: Class<R>
+    ): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
                 UntrustworthyData(deserialize(it, receiveType))
@@ -116,7 +120,8 @@ class FlowSessionImpl(
                 log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
                 throw e
             }
-        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+        }
+            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
     private fun <R : Any> deserialize(payload: ByteArray, receiveType: Class<R>): R {
@@ -130,9 +135,11 @@ class FlowSessionImpl(
         }
     }
 
-    override fun equals(other: Any?): Boolean = other === this || other is FlowSessionImpl && other.sourceSessionId == sourceSessionId
+    override fun equals(other: Any?): Boolean =
+        other === this || other is FlowSessionImpl && other.sourceSessionId == sourceSessionId
 
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
-    override fun toString(): String = "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, state=$state)"
+    override fun toString(): String =
+        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, state=$state)"
 }

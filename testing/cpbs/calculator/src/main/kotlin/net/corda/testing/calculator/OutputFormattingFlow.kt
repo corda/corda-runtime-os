@@ -1,8 +1,8 @@
 package net.corda.testing.calculator
 
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.injection.CordaInject
-import net.corda.v5.application.services.json.JsonMarshallingService
+import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 
 class OutputFormattingFlow(private val result: Int) : Flow<String> {

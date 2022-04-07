@@ -9,7 +9,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

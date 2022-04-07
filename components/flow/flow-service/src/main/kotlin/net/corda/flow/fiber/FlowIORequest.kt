@@ -1,8 +1,8 @@
 package net.corda.flow.fiber
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.v5.application.flows.FlowInfo
-import net.corda.v5.application.flows.FlowSession
+import net.corda.v5.application.messaging.FlowInfo
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import java.nio.ByteBuffer
 import java.time.Instant

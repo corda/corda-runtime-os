@@ -1,8 +1,8 @@
 package net.corda.membership.application
 
-import net.corda.v5.application.identity.AbstractParty
-import net.corda.v5.application.identity.AnonymousParty
-import net.corda.v5.application.identity.PartyAndReference
+import net.corda.v5.ledger.identity.AbstractParty
+import net.corda.v5.ledger.identity.AnonymousParty
+import net.corda.v5.ledger.identity.PartyAndReference
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.types.OpaqueBytes
 import java.security.PublicKey

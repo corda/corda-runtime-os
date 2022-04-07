@@ -4,7 +4,7 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.flowservices.FlowEngine
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class FlowEngineImpl @Activate constructor(
