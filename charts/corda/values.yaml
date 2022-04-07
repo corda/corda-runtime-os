@@ -82,7 +82,8 @@ workers:
     resources:
       # -- The cpu/memory resource requests for the crypto worker containers
       requests: {}
-      # -- The cpu/memory resource limits for the cryto worker containers
+      # -- the CPU/memory resource limits for the crypto worker containers
+
       limits: {}
 
   # DB worker configuration
