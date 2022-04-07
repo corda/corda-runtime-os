@@ -21,13 +21,13 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
-# resource limits and requests configuration for the corda worker containers
+# resource limits and requests configuration for the Corda worker containers
 resources:
-  # -- The cpu/memory resource limits for the corda worker containers
+  # -- The cpu/memory resource limits for the Corda worker containers
   limits:
     memory: 1250Mi
     cpu: 1000m
-  # -- The cpu/memory resource request for the corda wokrers containers
+  # -- The cpu/memory resource request for the Corda wokrers containers
   requests:
     memory: 620Mi
     cpu: 500m
@@ -157,9 +157,9 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the RPC worker until the debugger is attached
       suspend: false
-    # -- resource limits and requests configuration for the rpc worker containers.
+    # -- resource limits and requests configuration for the RPC worker containers.
     resources:
-      # -- The cpu/memory resource requests for the rpc worker containers
+      # -- The cpu/memory resource requests for the RPC worker containers
       requests: {}
-      # -- The cpu/memory resource limits for the rpc worker containers
+      # -- The cpu/memory resource limits for the RPC worker containers
       limits: {}
