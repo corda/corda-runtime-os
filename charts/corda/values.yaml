@@ -23,7 +23,8 @@ imagePullPolicy: Always
 
 # resource limits and requests configuration for the Corda worker containers
 resources:
-  # -- The cpu/memory resource limits for the Corda worker containers
+  # -- the CPU/memory resource limits for the Corda worker containers
+
   limits:
     memory: 1250Mi
     cpu: 1000m
