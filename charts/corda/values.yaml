@@ -132,7 +132,8 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the flow worker until the debugger is attached
       suspend: false
-    # -- resource limits and requests configuration for the flow worker containers.
+    # resource limits and requests configuration for the flow worker containers.
+
     resources:
       # -- The cpu/memory resource requests for the flow worker containers
       requests: {}
