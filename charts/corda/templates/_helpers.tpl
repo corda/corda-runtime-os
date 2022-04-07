@@ -127,7 +127,8 @@ Worker Kafka arguments
 {{/*
 Resources for corda workers
 */}}
-{{- define "corda.workerResources"}}
+{{- define "corda.workerResources" }}
+
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
