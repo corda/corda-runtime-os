@@ -111,7 +111,8 @@ workers:
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
     passphrase: ""    
-    # -- resource limits and requests configuration for the db worker containers.
+    # resource limits and requests configuration for the DB worker containers.
+
     resources:
       # -- The cpu/memory resource requests for the db worker containers
       requests: {}
