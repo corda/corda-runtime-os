@@ -47,11 +47,6 @@ class WorkerHelpers {
             extraParams: List<PathAndConfig> = emptyList()
         ): SmartConfig {
             val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> key.trim() }
-            logger.info("=========================================")
-            logger.info("$messagingParamsMap")
-            logger.info("=========================================")
-            logger.info("${defaultParams.messagingParams}")
-            logger.info("=========================================")
             val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.${key.trim()}" }
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }

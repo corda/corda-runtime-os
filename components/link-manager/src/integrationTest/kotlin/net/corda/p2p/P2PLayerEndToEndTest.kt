@@ -228,7 +228,7 @@ class P2PLayerEndToEndTest {
         val x500Name: String,
         private val keyStoreFileName: String,
         trustStoreFileName: String,
-        private val messagingConfig: SmartConfig,
+        private val bootConfig: SmartConfig,
         checkRevocation: Boolean,
         private val identitiesKeyAlgorithm: KeyAlgorithm,
     ) : AutoCloseable {
@@ -244,7 +244,7 @@ class P2PLayerEndToEndTest {
         val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
         val configPublisher = ConfigPublisherImpl(
             CONFIG_TOPIC,
-            publisherFactory.createPublisher(PublisherConfig("config-writer"), messagingConfig)
+            publisherFactory.createPublisher(PublisherConfig("config-writer"), bootConfig)
         )
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val tlsTenantId by lazy {
@@ -281,7 +281,7 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
-                messagingConfig,
+                bootConfig,
             )
 
         val gateway =
@@ -290,7 +290,7 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                messagingConfig,
+                bootConfig,
             )
 
         private fun publishGatewayConfig() {
@@ -358,7 +358,7 @@ class P2PLayerEndToEndTest {
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
-            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher"), messagingConfig)
+            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher"), bootConfig)
             val networkMapEntries = mapOf(
                 "$x500Name-$GROUP_ID" to memberInfoEntry,
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.memberInfoEntry,
@@ -428,7 +428,7 @@ class P2PLayerEndToEndTest {
             }
             publisherFactory.createPublisher(
                 PublisherConfig("test-runner-publisher"),
-                messagingConfig
+                bootConfig
             ).use { publisher ->
                 publisher.start()
                 publisher.publish(records).forEach { it.get() }
@@ -437,7 +437,7 @@ class P2PLayerEndToEndTest {
 
         fun startWith(otherHost: Host) {
             configReadService.start()
-            configReadService.bootstrapConfig(messagingConfig)
+            configReadService.bootstrapConfig(bootConfig)
             publishTlsKeys()
 
             linkManager.start()
