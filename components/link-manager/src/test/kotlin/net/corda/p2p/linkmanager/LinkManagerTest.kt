@@ -1316,28 +1316,23 @@ class LinkManagerTest {
         )
     }
 
-
-
-
-
-
     @Test
-    fun `ttl expiry is true and replay is true`() {
+    fun `OutboundMessageProcessor produces TTLExpired marker if TTL expiry is true and replay is true`() {
 
     }
 
     @Test
-    fun `ttl expiry is true and replay is false`() {
+    fun `OutboundMessageProcessor produces TTLExpired and LinkManagerSent markers if TTL expiry is true and replay is false`() {
 
     }
 
     @Test
-    fun `ttl expiry is false and replay is true`() {
+    fun `OutboundMessageProcessor produces no markers if TTL expiry is false and replay is true`() {
 
     }
 
     @Test
-    fun `ttl expiry is false and replay is false`() {
+    fun `OutboundMessageProcessor produces LinkManagerSent marker if TTL expiry is false and replay is false`() {
 
     }
 }
