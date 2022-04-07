@@ -32,9 +32,9 @@ class MockFlowRunnerTest {
 
     private val flowKey = FlowKey(FLOW_ID, HoldingIdentity("x500 name", "group id"))
 
-    private val holdingIdentity = HoldingIdentity("x500 name","group id")
+    private val holdingIdentity = HoldingIdentity("x500 name", "group id")
     private val startContext = FlowStartContext.newBuilder()
-        .setStatusKey(FlowStatusKey("request id",holdingIdentity))
+        .setStatusKey(FlowStatusKey("request id", holdingIdentity))
         .setInitiatorType(FlowInitiatorType.RPC)
         .setRequestId("request id")
         .setIdentity(holdingIdentity)

@@ -15,7 +15,7 @@ class MockFlowFiberService : FlowFiberService {
         mock(),
         mock(),
         mock(),
-        HoldingIdentity(BOB_X500_NAME.toString(),"group1"),
+        HoldingIdentity(BOB_X500_NAME.toString(), "group1"),
         mock()
     )
 

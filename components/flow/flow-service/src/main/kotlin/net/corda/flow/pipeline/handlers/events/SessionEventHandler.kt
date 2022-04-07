@@ -7,7 +7,6 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
@@ -64,8 +63,7 @@ class SessionEventHandler @Activate constructor(
                         "Flow [${context.checkpoint.flowKey.flowId}] already has a checkpoint while processing session init event"
                     )
                 }
-                val checkpoint =
-                    createInitiatedFlowCheckpoint(context, updatedSessionState, sessionInit, nextSessionEvent.initiatingIdentity)
+                val checkpoint = createInitiatedFlowCheckpoint(context, nextSessionEvent, sessionInit)
                 checkpoint.sessions.add(updatedSessionState)
                 return context.copy(checkpoint = checkpoint)
             }
@@ -78,12 +76,11 @@ class SessionEventHandler @Activate constructor(
 
     private fun createInitiatedFlowCheckpoint(
         context: FlowEventContext<*>,
-        sessionState: SessionState,
-        sessionInit: SessionInit,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity
+        sessionEvent: SessionEvent,
+        sessionInit: SessionInit
     ): Checkpoint {
-        val sessionId = sessionState.sessionId
-        val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(initiatingIdentity.toCorda())
+        val sessionId = sessionEvent.sessionId
+        val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(sessionEvent.initiatedIdentity.toCorda())
         val initiatedFlow = initiatingToInitiatedFlows[sessionInit.cpiId to sessionInit.flowName] ?: throw FlowProcessingException(
             "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
         )
@@ -100,7 +97,7 @@ class SessionEventHandler @Activate constructor(
             .setRequestId(sessionId)
             .setIdentity(context.inputEvent.flowKey.identity)
             .setCpiId(sessionInit.cpiId)
-            .setInitiatedBy(initiatingIdentity)
+            .setInitiatedBy(sessionEvent.initiatingIdentity)
             .setFlowClassName(initiatedFlow)
             .setCreatedTimestamp(Instant.now())
             .build()
@@ -114,8 +111,8 @@ class SessionEventHandler @Activate constructor(
             .build()
     }
 
-    private fun getInitiatingToInitiatedFlowsFromSandbox(holdingIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
-        return flowSandboxService.get(holdingIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
-            ?: throw FlowProcessingException("Sandbox for identity: $holdingIdentity has not been initialised correctly")
+    private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
+        return flowSandboxService.get(initiatedIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
+            ?: throw FlowProcessingException("Sandbox for identity: $initiatedIdentity has not been initialised correctly")
     }
 }
