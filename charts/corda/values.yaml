@@ -82,7 +82,8 @@ workers:
       suspend: false
     # -- resource limits and requests configuration for the crypto worker containers.
     resources:
-      # -- The cpu/memory resource requests for the crypto worker containers
+      # -- the CPU/memory resource requests for the crypto worker containers
+
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
 
