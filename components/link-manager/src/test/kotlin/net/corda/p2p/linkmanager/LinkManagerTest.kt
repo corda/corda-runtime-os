@@ -454,7 +454,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor produces only a LinkManagerSent maker (per flowMessage) if SessionAlreadyPending`() {
+    fun `OutboundMessageProcessor produces only a LinkManagerSent marker (per flowMessage) if SessionAlreadyPending`() {
         val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
@@ -520,7 +520,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor produces session init messages, a LinkManagerSent maker and lists of partitions if NewSessionsNeeded`() {
+    fun `OutboundMessageProcessor produces session init messages, a LinkManagerSent marker and lists of partitions if NewSessionsNeeded`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
 
@@ -1314,5 +1314,30 @@ class LinkManagerTest {
             "No partitions from topic link.in are currently assigned to the inbound message processor." +
                     " Not going to reply to session initiation for session $SESSION_ID."
         )
+    }
+
+
+
+
+
+
+    @Test
+    fun `ttl expiry is true and replay is true`() {
+
+    }
+
+    @Test
+    fun `ttl expiry is true and replay is false`() {
+
+    }
+
+    @Test
+    fun `ttl expiry is false and replay is true`() {
+
+    }
+
+    @Test
+    fun `ttl expiry is false and replay is false`() {
+
     }
 }
