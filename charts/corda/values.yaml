@@ -27,7 +27,8 @@ resources:
   limits:
     memory: 1250Mi
     cpu: 1000m
-  # -- The cpu/memory resource request for the Corda wokrers containers
+  # -- the CPU/memory resource request for the Corda worker containers
+
   requests:
     memory: 620Mi
     cpu: 500m
