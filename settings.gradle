@@ -62,6 +62,7 @@ pluginManagement {
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
+        id "com.r3.internal.gradle.plugins.r3-docker" version internalDockerVersion
     }
 }
 
@@ -327,6 +328,10 @@ include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
+include 'tools:cli'
+include 'tools:plugins:db-config'
+include 'tools:plugins:initial-config'
+include 'tools:plugins:secret-config'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
