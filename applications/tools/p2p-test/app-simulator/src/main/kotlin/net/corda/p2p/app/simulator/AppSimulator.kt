@@ -35,8 +35,6 @@ class AppSimulator @Activate constructor(
     companion object {
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
-        const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
         const val DELIVERED_MSG_TOPIC = "app.received_msg"
 
         const val DB_PARAMS_PREFIX = "dbParams"

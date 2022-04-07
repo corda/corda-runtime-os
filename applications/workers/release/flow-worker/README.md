@@ -107,7 +107,7 @@ or it can be run/debugged direct from intelliJ:
 2) Set the field with the following values
    1) Path to Jar: Set to the flow worker jar in `applications\workers\release\flow-worker\build\bin\`
    2) VM options: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008'
-   3) Program arguments: '--instanceId=1 --messagingParams kafka.common.bootstrap.servers=localhost:9093'
+   3) Program arguments: '--instanceId=1 -mbus.kafkaProperties.common.bootstrap.servers=localhost:9093 -mbus.busType=KAFKA'
    4) Leaver everything else as-is
 3) Add the following gradle task in the Before Launch section 'applications.workers.release.flow-worker.main:appJar'
 

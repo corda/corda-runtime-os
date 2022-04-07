@@ -4,6 +4,9 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -29,11 +32,6 @@ import picocli.CommandLine.Option
     subcommandsRepeatable = true,
 )
 class Command {
-    private companion object {
-        private const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
-        private const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
-        private const val TOPIC_PREFIX = "messaging.topic.prefix"
-    }
 
     @Option(
         names = ["-k", "--kafka-servers"],
@@ -46,10 +44,10 @@ class Command {
         return SmartConfigFactory.create(secretsConfig).create(
             ConfigFactory.empty()
                 .withValue(
-                    KAFKA_COMMON_BOOTSTRAP_SERVER,
+                    BOOTSTRAP_SERVER,
                     ConfigValueFactory.fromAnyRef(kafkaServers)
                 )
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("p2p-setup"))
+                .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("p2p-setup"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         )
     }
