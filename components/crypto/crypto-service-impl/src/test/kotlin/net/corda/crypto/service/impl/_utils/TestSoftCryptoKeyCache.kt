@@ -30,7 +30,7 @@ class TestSoftCryptoKeyCacheProvider(
         coordinator.stop()
     }
 
-    override fun getInstance(passphrase: String?, salt: String?): SoftCryptoKeyCache {
+    override fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache {
         check(isRunning) {
             "The provider is in invalid state."
         }
