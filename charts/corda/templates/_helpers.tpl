@@ -132,7 +132,8 @@ Resources for corda workers
 resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
-    cpu: {{ default .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu  }}
+    cpu: {{ default .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
+
   {{- end }}
   {{- if or .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
     memory: {{ default .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
