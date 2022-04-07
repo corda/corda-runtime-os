@@ -4,7 +4,6 @@ import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -13,7 +12,6 @@ import kotlin.test.assertEquals
 
 class PublicKeySerializationTests {
     @Test
-    @Timeout(5)
     fun `Should serialize and then deserialize public key`() {
         val encodedPublicKey = ByteArray(1)
         val publicKey = mock<PublicKey> {

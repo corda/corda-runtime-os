@@ -10,12 +10,12 @@ import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.flow.FilterMyKeysFlowQuery
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
-import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.SignWithSpecFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.SignWithSpecFlowCommand
+import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import org.hamcrest.MatcherAssert.assertThat
