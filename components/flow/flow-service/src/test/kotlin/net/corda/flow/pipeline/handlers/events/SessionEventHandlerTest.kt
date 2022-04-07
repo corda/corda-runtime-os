@@ -44,14 +44,12 @@ class SessionEventHandlerTest {
         val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
         val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
     }
-
     private val sessionState = SessionState.newBuilder()
         .setSessionId(SESSION_ID)
         .setSessionStartTime(Instant.now())
         .setLastReceivedMessageTime(Instant.now())
         .setLastSentMessageTime(Instant.now())
         .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
-        .setIsInitiator(true)
         .setSendAck(true)
         .setReceivedEventsState(SessionProcessState(0, emptyList()))
         .setSendEventsState(SessionProcessState(0, emptyList()))
@@ -221,8 +219,6 @@ class SessionEventHandlerTest {
             .setFlowName(INITIATING_FLOW_NAME)
             .setFlowKey(FLOW_KEY)
             .setCpiId(CPI_ID)
-            .setInitiatedIdentity(HOLDING_IDENTITY)
-            .setInitiatingIdentity(HOLDING_IDENTITY)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .build()
 
@@ -234,6 +230,8 @@ class SessionEventHandlerTest {
             .setSessionId(SESSION_ID)
             .setMessageDirection(MessageDirection.INBOUND)
             .setTimestamp(Instant.now())
+            .setInitiatedIdentity(HOLDING_IDENTITY)
+            .setInitiatingIdentity(HOLDING_IDENTITY)
             .setSequenceNum(1)
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))

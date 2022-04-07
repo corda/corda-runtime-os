@@ -1,9 +1,12 @@
+# P2P Setup tool
 This is a tool that can be used to setup a P2P deployment. 
 
 ## Building the tool
+To build run:
 ```
 ./gradlew applications:tools:p2p-test:p2p-setup:clean applications:tools:p2p-test:p2p-setup:appJar
 ```
+This will create an executable jar in `applications/tools/p2p-test/p2p-setup/build/bin/`.
 
 ## Running the tool
 
@@ -43,15 +46,15 @@ To publish a group member:
   "x500name": "O=Alice, L=London, C=GB",
   "groupId": "group-1",
   "data": {
-       "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
+       "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
        "address": "http://alice.com:8080"
   }
 }
 ```
 Where:
-* `publicKey` is the public key in PEM format
+* `publicSessionKey` is the session public key in PEM format
 * `address` is the HTTP address of the member (In the format: `http://<host>:<port>/`)
-* `publicKeyFile` can be an alternative to `publicKey` with path to the public key in PEM format.
+* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with path to the session public key in PEM format.
 
 5. Run the command:
 ```bash
@@ -81,7 +84,8 @@ To publish an entry for a locally hosted identity:
   "data": {
     "tlsTenantId": "cluster",
     "sessionKeyTenantId": "alice",
-    "tlsCertificates":["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"]
+    "tlsCertificates":["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"],
+    "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----"
   }
 }
 ```
@@ -89,6 +93,8 @@ To publish an entry for a locally hosted identity:
 * The `tlsCertificates` should contain the content of the certificates (in PEM format).
 * The `tlsCertificatesFiles` can be used as an alternative to `tlsCertificates` with a path to a valid certificate file (in PEM format).
 * The `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
+* `publicSessionKey` is the session public key in PEM format
+* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with path to the session public key in PEM format.
 
 4. Run the command:
 ```bash
@@ -229,7 +235,7 @@ The file should look like:
       "x500name": "O=Alice, L=London, C=GB",
       "groupId": "group-1",
       "data": {
-        "publicKeyFile": "<path_to_the_public_key_pem_file>",
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
         "address": "http://alice.com:8080"
       }
     }
@@ -241,7 +247,8 @@ The file should look like:
       "data": {
         "tlsTenantId": "cluster",
         "sessionKeyTenantId": "alice",
-        "tlsCertificates": ["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"]
+        "tlsCertificates": ["-----BEGIN CERTIFICATE-----\nMIIDwDCCAiigAwI...tkIEaQ==\n-----END CERTIFICATE-----\n"],
+        "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----"
       }
     }
   ],

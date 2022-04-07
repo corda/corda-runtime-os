@@ -6,7 +6,6 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.AllChunksReceived
-import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.Chunk
@@ -22,10 +21,11 @@ import net.corda.packaging.CPI
 import net.corda.packaging.CPK
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -39,75 +39,21 @@ import javax.persistence.NoResultException
 import javax.persistence.NonUniqueResultException
 import javax.persistence.PersistenceException
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseChunkPersistenceTest {
     companion object {
-        // N.B.  We're pulling in the config tables as well.
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
-        private lateinit var entityManagerFactory: EntityManagerFactory
-        private lateinit var persistence: ChunkPersistence
+    }
 
-        /**
-         * Creates an in-memory database, applies the relevant migration scripts, and initialises
-         * [entityManagerFactory].
-         */
-        @Suppress("Unused")
-        @BeforeAll
-        @JvmStatic
-        private fun prepareDatabase() {
-            val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
-
-            val dbChange = ClassloaderChangeLog(
-                linkedSetOf(
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        DbSchema::class.java.packageName,
-                        listOf(MIGRATION_FILE_LOCATION),
-                        DbSchema::class.java.classLoader
-                    )
-                )
-            )
-            emConfig.dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-            }
-            entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-                "test_unit",
-                ChunkingEntities.classes.toList() + CpiEntities.classes.toList(),
-                emConfig
-            )
-            persistence = DatabaseChunkPersistence(entityManagerFactory)
-        }
-
-
-        /** Return the parts we've received - i.e. chunks with non-zero bytes */
-        fun partsReceived(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
-            return entityManagerFactory.createEntityManager().transaction {
-                it.createQuery(
-                    "SELECT count(c) FROM ${ChunkEntity::class.simpleName} c " +
-                            "WHERE c.requestId = :requestId AND c.data IS NOT NULL"
-                )
-                    .setParameter("requestId", requestId)
-                    .singleResult as Long
-            }
-        }
-
-        /** Return the expected number of parts - i.e. the part number on the zero bytes chunk */
-        fun partsExpected(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
-            return entityManagerFactory.createEntityManager().transaction {
-                try {
-                    (it.createQuery(
-                        "SELECT c.partNumber FROM ${ChunkEntity::class.simpleName} c " +
-                                "WHERE c.requestId = :requestId and c.data IS NULL"
-                    )
-                        .setParameter("requestId", requestId)
-                        .singleResult as Int).toLong()
-                } catch (ex: NoResultException) {
-                    0L
-                } catch (ex: NonUniqueResultException) {
-                    throw ex
-                }
-            }
-        }
-
-        val mockCpkContent = """
+    // N.B.  We're pulling in the config tables as well.
+    private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+        "test_unit",
+        ChunkingEntities.classes.toList() + CpiEntities.classes.toList(),
+        emConfig
+    )
+    private val persistence = DatabaseChunkPersistence(entityManagerFactory)
+    private val mockCpkContent = """
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor 
             condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem 
             ornare nibh, id rutrum mi elit in metus. Sed ac tincidunt elit. Aliquam quis 
@@ -118,6 +64,61 @@ internal class DatabaseChunkPersistenceTest {
             eu odio. Vivamus vel placerat eros, sed convallis est. Proin tristique ut odio at 
             finibus. 
         """.trimIndent()
+
+    /**
+     * Creates an in-memory database, applies the relevant migration scripts, and initialises
+     * [entityManagerFactory].
+     */
+    init {
+        val dbChange = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf(MIGRATION_FILE_LOCATION),
+                    DbSchema::class.java.classLoader
+                )
+            )
+        )
+        emConfig.dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
+        }
+    }
+
+    @Suppress("Unused")
+    @AfterAll
+    fun cleanup() {
+        emConfig.close()
+        entityManagerFactory.close()
+    }
+
+    /** Return the parts we've received - i.e. chunks with non-zero bytes */
+    fun partsReceived(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
+        return entityManagerFactory.createEntityManager().transaction {
+            it.createQuery(
+                "SELECT count(c) FROM ${ChunkEntity::class.simpleName} c " +
+                        "WHERE c.requestId = :requestId AND c.data IS NOT NULL"
+            )
+                .setParameter("requestId", requestId)
+                .singleResult as Long
+        }
+    }
+
+    /** Return the expected number of parts - i.e. the part number on the zero bytes chunk */
+    fun partsExpected(entityManagerFactory: EntityManagerFactory, requestId: RequestId): Long {
+        return entityManagerFactory.createEntityManager().transaction {
+            try {
+                (it.createQuery(
+                    "SELECT c.partNumber FROM ${ChunkEntity::class.simpleName} c " +
+                            "WHERE c.requestId = :requestId and c.data IS NULL"
+                )
+                    .setParameter("requestId", requestId)
+                    .singleResult as Int).toLong()
+            } catch (ex: NoResultException) {
+                0L
+            } catch (ex: NonUniqueResultException) {
+                throw ex
+            }
+        }
     }
 
     lateinit var fs: FileSystem
@@ -138,7 +139,6 @@ internal class DatabaseChunkPersistenceTest {
 
     private fun createChunks(someFile: String): MutableList<Chunk> {
         val tempFile = randomPathName()
-
         Files.newBufferedWriter(tempFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
             it.write(mockCpkContent)
         }
@@ -166,7 +166,7 @@ internal class DatabaseChunkPersistenceTest {
         whenever(cpk.metadata).thenReturn(metadata)
     }
 
-    private fun mockCpi(cpks: Collection<CPK>) : CPI {
+    private fun mockCpi(cpks: Collection<CPK>): CPI {
         // We need a random name here as the database primary key is (name, version, signerSummaryHash)
         // and we'd end up trying to insert the same mock cpi.
         val id = mock<CPI.Identifier>().also {
@@ -388,10 +388,10 @@ internal class DatabaseChunkPersistenceTest {
 
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456" )
+        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
 
         assertThrows<PersistenceException> {
-            persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456" )
+            persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
         }
     }
 }

@@ -62,16 +62,17 @@ class MockTimeFacilitiesProvider(initialTime: Instant = Instant.ofEpochSecond(0)
     fun advanceTime(duration: Duration) {
         now = now.plusMillis(duration.toMillis())
         val iterator = scheduledTasks.iterator()
-        val tasksToExecute = mutableListOf<Runnable>()
+        val tasksToExecute = mutableListOf<Pair<Instant, Runnable>>()
         while (iterator.hasNext()) {
             val (time, task) = iterator.next()
             if (time.isBefore(now) || time == now) {
-                tasksToExecute.add(task)
+                tasksToExecute.add(time to task)
                 iterator.remove()
             }
         }
 
         // execute them outside the loop to avoid concurrent modification (when the tasks schedule tasks themselves)
-        tasksToExecute.forEach { it.run() }
+        tasksToExecute.sortBy { it.first }
+        tasksToExecute.forEach { it.second.run() }
     }
 }

@@ -21,8 +21,8 @@ import java.util.concurrent.Callable
     description = ["Apply setup from a file"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
-
 class Apply : Callable<Collection<Record<String, *>>> {
     @Parameters(
         description = [

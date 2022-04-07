@@ -12,7 +12,9 @@ interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
     fun isHostedLocally(identity: LinkManagerInternalTypes.HoldingIdentity): Boolean
 
-    fun getTenantId(identity: LinkManagerInternalTypes.HoldingIdentity): String?
+    fun getInfo(identity: LinkManagerInternalTypes.HoldingIdentity): HostingMapListener.IdentityInfo?
+
+    fun getInfo(hash: ByteArray, groupId: String): HostingMapListener.IdentityInfo?
 
     fun registerListener(listener: HostingMapListener)
 }

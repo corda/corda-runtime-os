@@ -38,14 +38,12 @@ class InitiateFlowRequestHandler @Activate constructor(
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
 
+        val flowKey = checkpoint.flowKey
         val payload = SessionInit.newBuilder()
             // Throw an error if a non initiating flow is trying to create this session
             .setFlowName(checkpoint.flowStackItems.first().flowName)
-            .setFlowKey(checkpoint.flowKey)
+            .setFlowKey(flowKey)
             .setCpiId(checkpoint.flowStartContext.cpiId)
-            // TODO Need member lookup service to get the holding identity of the peer
-            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "flow-worker-dev"))
-            .setInitiatingIdentity(checkpoint.flowKey.identity)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .build()
 
@@ -54,6 +52,9 @@ class InitiateFlowRequestHandler @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(now)
             .setSequenceNum(null)
+            .setInitiatingIdentity(flowKey.identity)
+            // TODO Need member lookup service to get the holding identity of the peer
+            .setInitiatedIdentity(HoldingIdentity(request.x500Name.toString(), "flow-worker-dev"))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)

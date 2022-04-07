@@ -1,10 +1,10 @@
 package net.corda.flow.mapper.impl.executor
 
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -18,6 +18,7 @@ class SessionInitExecutor(
     private val sessionEvent: SessionEvent,
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
+    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -65,7 +66,7 @@ class SessionInitExecutor(
         sessionInit: SessionInit,
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
-            val flowKey = generateFlowKey(sessionInit.initiatedIdentity)
+            val flowKey = generateFlowKey(sessionEvent.initiatedIdentity)
             sessionInit.flowKey = flowKey
             SessionInitOutputs(flowKey, flowKey, FlowEvent(flowKey, sessionEvent))
         } else {
@@ -78,7 +79,7 @@ class SessionInitExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                FlowMapperEvent(sessionEvent)
+                generateAppMessage(sessionEvent, sessionEventSerializer)
             )
         }
     }

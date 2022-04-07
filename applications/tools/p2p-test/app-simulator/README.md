@@ -1,4 +1,6 @@
-This is a tool that can be used to simulate the application layer by sending/receiving messages to/from the p2p layer and writing metadata for analysis to a relational database.
+# P2P application-simulator worker
+
+This is an application that can be used to simulate the application layer by sending/receiving messages to/from the p2p layer and writing metadata for analysis to a relational database.
 
 It can be executed in three main modes:
 * `SENDER`: in this mode, the tool sends messages to the Kafka topics monitored by p2p components and (optionally) writes metadata to a postgres DB.
@@ -7,14 +9,15 @@ It can be executed in three main modes:
 
 ![Overview diagram](p2p_app_simulator.png)
 
-## Building the tool
+## Building the application
 
+To build run:
 ```
-./gradlew applications:tools:p2p-test:app-simulator:clean
-./gradlew applications:tools:p2p-test:app-simulator:appJar
+./gradlew applications:tools:p2p-test:app-simulator:clean applications:tools:p2p-test:app-simulator:appJar
 ```
+This will create an executable jar in `applications/tools/p2p-test/app-simulator/build/bin/`.
 
-## Executing the tool
+## Executing the application
 
 ```
 java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka-servers localhost:9092 --simulator-config ~/Desktop/simulator.conf

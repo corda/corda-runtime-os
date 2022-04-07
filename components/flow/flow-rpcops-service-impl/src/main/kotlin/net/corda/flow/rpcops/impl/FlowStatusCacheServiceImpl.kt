@@ -77,7 +77,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
             .filter { it.value.initiatorType == FlowInitiatorType.RPC }
             .forEach { cache[it.key] = it.value }
 
-        lifecycleCoordinator.postEvent(CacheLoadCompleteEvent())
+        lifecycleCoordinator.postCustomEventToFollowers(CacheLoadCompleteEvent())
     }
 
     override fun onNext(

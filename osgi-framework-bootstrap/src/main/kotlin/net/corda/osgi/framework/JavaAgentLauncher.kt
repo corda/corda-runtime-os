@@ -7,14 +7,14 @@ object JavaAgentLauncher {
 
     @JvmStatic
     fun premain(@Suppress("UNUSED_PARAMETER") agentArguments : String, instrumentation: Instrumentation) {
-        val cl = JavaAgentLauncher.javaClass.classLoader
+        val cl = JavaAgentLauncher::class.java.classLoader
         cl.getResources("META-INF/javaAgents.properties").asSequence().forEach { url ->
             val properties = Properties()
             url.openStream().use(properties::load)
             properties.entries.forEach { entry ->
                 val agentClassName = entry.key as String
                 val agentArgs = entry.value as String
-                val agentClass = cl.loadClass(agentClassName)
+                val agentClass = Class.forName(agentClassName, false, cl)
                 val premainMethod = agentClass.getMethod("premain", String::class.java, Instrumentation::class.java)
                 premainMethod.invoke(null, agentArgs, instrumentation)
             }

@@ -7,7 +7,8 @@ import java.nio.file.Files
 
 class RunJar(
     private val jarName: String,
-    private val arguments: Collection<String>
+    private val arguments: Collection<String>,
+    private val properties: Map<String, String> = emptyMap(),
 ) : Runnable {
     companion object {
         fun startTelepresence() {
@@ -52,22 +53,19 @@ class RunJar(
                     }
             }
         }
-
-        private val kafkaFiles = mutableMapOf<String, File>()
-        fun kafkaFile(namespace: String): File {
-            return kafkaFiles.computeIfAbsent(namespace) {
-                File.createTempFile("$namespace.kafka.", ".properties").also { file ->
-                    file.deleteOnExit()
-                    file.delete()
-                    file.writeText("bootstrap.servers=${kafkaServers(namespace)}")
-                }
-            }
-        }
     }
     override fun run() {
         val jarFile = jarToRun(jarName)
         val java = "${System.getProperty("java.home")}/bin/java"
-        val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments
+        val propertiesList =
+            properties.map { (name, value) ->
+                "-D$name=$value"
+            }
+
+        val commands = listOf(java) +
+            propertiesList +
+            listOf("-jar", jarFile.absolutePath) +
+            arguments
         val success = ProcessRunner.follow(
             commands
         )

@@ -116,7 +116,10 @@ class MessageConverterTest {
         val payload = "test"
         val us = HoldingIdentity("Alice", "test-group-id")
         val peer = HoldingIdentity("Imposter", "")
-        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(peer, us), ByteBuffer.wrap(payload.toByteArray()))
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(peer, us, "subsystem"),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
 
         val members = mockMembers(emptyList())
 
@@ -132,7 +135,10 @@ class MessageConverterTest {
         val payload = "test"
         val us = HoldingIdentity("Alice", "test-group-id")
         val peer = HoldingIdentity("Imposter", "")
-        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(peer, us), ByteBuffer.wrap(payload.toByteArray()))
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(peer, us, "subsystem"),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
 
         val members = mockMembers(listOf(us.toHoldingIdentity(), peer.toHoldingIdentity()))
         val groups = mockGroups(emptyList())

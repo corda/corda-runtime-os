@@ -1,9 +1,9 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -18,6 +18,7 @@ import java.security.KeyPairGenerator
     showDefaultValues = true,
     description = ["configure a cluster (and the other cluster to know about it)"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class ConfigureAll : Runnable {
     @Option(
@@ -183,7 +184,7 @@ class ConfigureAll : Runnable {
                 "x500name" to x500name,
                 "groupId" to groupId,
                 "data" to mapOf(
-                    "publicKey" to publicKeyFile(host).readText(),
+                    "publicSessionKey" to publicKeyFile(host).readText(),
                     "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5",
                     "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
@@ -238,6 +239,7 @@ class ConfigureAll : Runnable {
                     "tlsTenantId" to tenantId,
                     "sessionKeyTenantId" to tenantId,
                     "tlsCertificates" to listOf(tlsCertificates(host).readText()),
+                    "publicSessionKey" to publicKeyFile(host).readText(),
                 )
             )
 
@@ -263,7 +265,7 @@ class ConfigureAll : Runnable {
                     "x500name" to annotations["x500-name"],
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
-                        "publicKey" to publicKeyFile(host).readText(),
+                        "publicSessionKey" to publicKeyFile(host).readText(),
                         "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5",
                         "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),

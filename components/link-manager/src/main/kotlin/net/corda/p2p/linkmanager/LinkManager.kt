@@ -45,6 +45,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionCounterpartiesFromMessage
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -130,6 +131,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         groups,
         members,
         inboundAssignmentListener,
+        messagesPendingSession
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(
@@ -163,7 +165,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         linkManagerCryptoProcessor,
         sessionManager,
         instanceId
-    ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
+    ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
@@ -227,6 +229,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val groups : LinkManagerGroupPolicyProvider,
         private val members : LinkManagerMembershipGroupReader,
         private val inboundAssignmentListener: InboundAssignmentListener,
+        private val messagesPendingSession: PendingSessionMessageQueues
     ) : EventLogProcessor<String, AppMessage> {
 
         override val keyClass = String::class.java
@@ -294,13 +297,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             }
         }
 
+        fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>>
+            = processAuthenticatedMessage(messageAndKey, true)
+
         /**
          * processed an AuthenticatedMessage returning a list of records to be persisted.
          *
          * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
          * a marker for this message. If the process is restarted we reread the original marker.
          */
-        fun processAuthenticatedMessage(
+        private fun processAuthenticatedMessage(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
@@ -314,6 +320,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     is SessionState.NewSessionsNeeded -> {
                         logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                                 "Initiating a new one.." }
+                        if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
                         recordsForNewSessions(state)
                     }
                     is SessionState.SessionEstablished -> {
@@ -321,9 +328,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                                 " Using this to send outbound message." }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
-                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
+                    is SessionState.SessionAlreadyPending -> {
                         logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                                 "Message queued until session is established." }
+                        if (!isReplay) messagesPendingSession.queueMessage(messageAndKey)
+                        emptyList()
+                    }
+                    is SessionState.CannotEstablishSession -> {
                         emptyList()
                     }
                 }
@@ -568,7 +579,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     interface PendingSessionMessageQueues: LifecycleWithDominoTile {
-        fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties)
+        fun queueMessage(message: AuthenticatedMessageAndKey)
         fun sessionNegotiatedCallback(
             sessionManager: SessionManager,
             counterparties: SessionCounterparties,
@@ -603,7 +614,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
         */
-        override fun queueMessage(message: AuthenticatedMessageAndKey, counterparties: SessionCounterparties) {
+        override fun queueMessage(message: AuthenticatedMessageAndKey) {
+            val counterparties = getSessionCounterpartiesFromMessage(message.message)
             val oldQueue = queuedMessagesPendingSession.putIfAbsent(counterparties, LinkedList())
             if (oldQueue != null) {
                 oldQueue.add(message)

@@ -8,10 +8,6 @@ fun SessionParty.assertStatus(expectedStatus: SessionStateType?) {
     assertThat(sessionState?.status).isEqualTo(expectedStatus)
 }
 
-fun SessionParty.assertIsInitiator( isInitiator: Boolean) {
-    assertThat(sessionState?.isInitiator).isEqualTo(isInitiator)
-}
-
 fun SessionParty.assertAllMessagesDelivered() {
     this.assertSentMessagesDelivered()
     this.assertReceivedMessagesDelivered()
