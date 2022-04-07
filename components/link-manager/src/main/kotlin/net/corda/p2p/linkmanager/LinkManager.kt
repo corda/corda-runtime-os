@@ -59,6 +59,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -321,6 +322,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
          * a marker for this message. If the process is restarted we reread the original marker.
          */
+
         private fun processAuthenticatedMessage(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false

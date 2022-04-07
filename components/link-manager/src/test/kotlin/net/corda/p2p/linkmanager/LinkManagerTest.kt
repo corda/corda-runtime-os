@@ -245,23 +245,12 @@ class LinkManagerTest {
         source: HoldingIdentity,
         dest: HoldingIdentity,
         data: String,
-        messageId: String
+        messageId: String,
+        ttl: Long? = null
     ): AuthenticatedMessage {
-        val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
+        val header = AuthenticatedMessageHeader(dest, source, ttl, messageId, "", "system-1")
         return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
     }
-
-//TODO
-/*    private fun authenticatedMessageExpiredTTL(
-        source: HoldingIdentity,
-        dest: HoldingIdentity,
-        data: String,
-        messageId: String,
-        TTL: Long?
-    ): AuthenticatedMessage {
-        val header = AuthenticatedMessageHeader(dest, source, TTL, messageId, "", "system-1")
-        return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
-    }*/
 
     private fun initiatorHelloMessage(): InitiatorHelloMessage {
         return InitiatorHelloMessage.newBuilder().apply {
@@ -1331,7 +1320,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor produces TTLExpired marker if TTL expiry is true and replay is true`() {
+    fun `OutboundMessageProcessor produces TtlExpiredMarker if TTL expiry is true and replay is true`() {
         val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
@@ -1357,24 +1346,52 @@ class LinkManagerTest {
         for (record in records) {
             assertEquals(P2P_OUT_MARKERS, record.topic)
             assert(record.value is AppMessageMarker)
-            val marker = (record.value as AppMessageMarker)
+            val marker = record.value as AppMessageMarker
             assertTrue(marker.marker is TtlExpiredMarker)
             assertFalse(marker.marker is LinkManagerSentMarker)
+            assertFalse(marker.marker is LinkManagerReceivedMarker)
         }
     }
 
     @Test
-    fun `OutboundMessageProcessor produces TTLExpired and LinkManagerSent markers if TTL expiry is true and replay is false`() {
+    fun `OutboundMessageProcessor produces TtlExpiredMarker and LinkManagerSentMarker if TTL expiry is true and replay is false`() {
+        val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
+            .thenReturn(SessionManager.SessionState.SessionAlreadyPending)
 
-    }
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            membersAndGroups.second,
+            membersAndGroups.first,
+            assignedListener(listOf(1)),
+            pendingSessionMessageQueues
+        )
 
-    @Test
-    fun `OutboundMessageProcessor produces no markers if TTL expiry is false and replay is true`() {
+        val expiredTTL = 0L
+        val numberOfMessages = 3
+        val numberOfMarkers = numberOfMessages * 2
 
-    }
+        val messages = mutableListOf<EventLogRecord<String, AppMessage>>()
+        for (i in 0 until numberOfMessages) {
+            messages.add(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "$i", "MessageId$i", expiredTTL)), 0, 0))
+        }
 
-    @Test
-    fun `OutboundMessageProcessor produces LinkManagerSent marker if TTL expiry is false and replay is false`() {
+        val records = processor.onNext(messages)
 
+        val keys = records.map { it.key }
+        for (i in 0 until numberOfMessages) {
+            assertThat(keys).contains("MessageId$i")
+            verify(pendingSessionMessageQueues)
+                .queueMessage(AuthenticatedMessageAndKey(messages[i].value?.message as AuthenticatedMessage?, messages[i].key))
+        }
+
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertThat(markers).hasSize(numberOfMarkers)
+        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerSentMarker }).hasSize(numberOfMessages)
+        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker }).hasSize(numberOfMessages)
+        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
+        assertThat(markers.map { it.topic }.distinct()).containsOnly(P2P_OUT_MARKERS)
     }
 }
