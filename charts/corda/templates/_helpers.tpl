@@ -140,7 +140,8 @@ resources:
   {{- end}}
   limits:
   {{- if or .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
-    cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu  }}
+    cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
+
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
