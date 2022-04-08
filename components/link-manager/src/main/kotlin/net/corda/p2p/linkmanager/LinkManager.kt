@@ -65,6 +65,7 @@ import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.time.Instant
 import java.util.*
 
@@ -241,6 +242,7 @@ class LinkManager(
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
+        private val clock = Clock.systemUTC()
 
         companion object {
             fun recordsForNewSessions(
@@ -277,7 +279,7 @@ class LinkManager(
 
         private fun ttlExpired(ttl: Long?): Boolean {
             if (ttl == null) return false
-            val currentTimeInTimeMillis = Instant.now().toEpochMilli()
+            val currentTimeInTimeMillis = clock.instant().toEpochMilli()
             return currentTimeInTimeMillis >= ttl
         }
 
