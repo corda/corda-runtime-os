@@ -59,11 +59,11 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -1342,14 +1342,11 @@ class LinkManagerTest {
 
         authenticatedMessageAndKey.message.header.ttl = 0L
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
-
-        for (record in records) {
-            assertEquals(P2P_OUT_MARKERS, record.topic)
-            assert(record.value is AppMessageMarker)
+        assertThat(records).allSatisfy { record ->
+            assertThat(record.topic).isEqualTo(P2P_OUT_MARKERS)
+            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
             val marker = record.value as AppMessageMarker
-            assertTrue(marker.marker is TtlExpiredMarker)
-            assertFalse(marker.marker is LinkManagerSentMarker)
-            assertFalse(marker.marker is LinkManagerReceivedMarker)
+            assertThat(marker.marker).isInstanceOf(TtlExpiredMarker::class.java)
         }
     }
 
@@ -1366,21 +1363,23 @@ class LinkManagerTest {
             pendingSessionMessageQueues
         )
         val expiredTTL = 0L
-        val numberOfMessages = 3
-        val numberOfMarkers = numberOfMessages * 2
 
-        val messages = mutableListOf<EventLogRecord<String, AppMessage>>()
-        for (i in 0 until numberOfMessages) {
-            messages.add(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "$i", "MessageId$i", expiredTTL)), 0, 0))
-        }
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "ID", "MessageId", expiredTTL)), 0, 0)
+        )
 
         val records = processor.onNext(messages)
 
         val markers = records.filter { it.value is AppMessageMarker }
-        assertThat(markers).hasSize(numberOfMarkers)
-        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerSentMarker }).hasSize(numberOfMessages)
-        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker }).hasSize(numberOfMessages)
-        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
-        assertThat(markers.map { it.topic }.distinct()).containsOnly(P2P_OUT_MARKERS)
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("MessageId")
+            }
+            it.assertThat(markers).hasSize(2)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerSentMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(P2P_OUT_MARKERS)
+        }
     }
 }

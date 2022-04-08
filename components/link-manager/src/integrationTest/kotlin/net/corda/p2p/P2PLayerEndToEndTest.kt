@@ -65,7 +65,6 @@ import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.StringWriter
@@ -77,6 +76,7 @@ import java.security.KeyStore
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 class P2PLayerEndToEndTest {
 
@@ -96,55 +96,6 @@ class P2PLayerEndToEndTest {
         }
     }
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
-
-    // TO DO: Put these extension functions into Host.
-    private fun Host.addReadWriter(): Subscription<String, AppMessage> {
-        return this.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
-            bootstrapConfig,
-            null
-        ).also { it.start() }
-    }
-
-    private fun Host.listenForReceivedMessages(
-        receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>
-    ): Subscription<String, AppMessage> {
-        return this.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(receivedMessages),
-            bootstrapConfig,
-            null
-        ).also { it.start() }
-    }
-
-    private fun Host.listenForMarkers(markers: MutableCollection<Record<String, AppMessageMarker>>): Subscription<String, AppMessageMarker> {
-        return this.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(markers),
-            bootstrapConfig,
-            null
-        ).also { it.start() }
-    }
-
-    private fun Host.sendMessages(messagesToSend: Int, peer: Host, ttl: Long? = null) {
-        val hostAApplicationWriter = this.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
-        val initialMessages = (1..messagesToSend).map { index ->
-            val incrementalId = index.toString()
-            val messageHeader = AuthenticatedMessageHeader(
-                HoldingIdentity(peer.x500Name, GROUP_ID),
-                HoldingIdentity(this.x500Name, GROUP_ID),
-                ttl,
-                incrementalId,
-                incrementalId,
-                SUBSYSTEM
-            )
-            val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
-            Record(P2P_OUT_TOPIC, incrementalId, AppMessage(message))
-        }
-        hostAApplicationWriter.use {
-            hostAApplicationWriter.start()
-            val futures = hostAApplicationWriter.publish(initialMessages)
-            futures.forEach { it.get() }
-        }
-    }
 
     @Test
     @Timeout(60)
@@ -176,17 +127,17 @@ class P2PLayerEndToEndTest {
                 val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
                 val hostAApplicationReader = hostA.listenForReceivedMessages(hostAReceivedMessages)
                 val hostBApplicationReaderWriter = hostB.addReadWriter()
-                val hostAMarkers = ConcurrentHashMap.newKeySet<Record<String, AppMessageMarker>>()
+                val hostAMarkers = CopyOnWriteArrayList<Record<String, AppMessageMarker>>()
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, hostB)
 
                 eventually(10.seconds) {
                     (1..numberOfMessages).forEach { messageNo ->
-                        assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                        assertThat(hostAReceivedMessages).contains("pong ($messageNo)")
                     }
                     val markers = hostAMarkers.map { it.value!!.marker }
-                    assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == numberOfMessages)
-                    assertTrue((markers.filterIsInstance<LinkManagerReceivedMarker>()).size == numberOfMessages)
+                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(numberOfMessages)
+                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).hasSize(numberOfMessages)
                 }
                 hostAApplicationReader.stop()
                 hostBApplicationReaderWriter.stop()
@@ -225,17 +176,17 @@ class P2PLayerEndToEndTest {
                 val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
                 val hostAApplicationReader = hostA.listenForReceivedMessages(hostAReceivedMessages)
                 val hostBApplicationReaderWriter = hostB.addReadWriter()
-                val hostAMarkers = ConcurrentHashMap.newKeySet<Record<String, AppMessageMarker>>()
+                val hostAMarkers = CopyOnWriteArrayList<Record<String, AppMessageMarker>>()
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, hostB)
 
                 eventually(10.seconds) {
                     (1..numberOfMessages).forEach { messageNo ->
-                        assertTrue(hostAReceivedMessages.contains("pong ($messageNo)"), "No reply received for message $messageNo")
+                        assertThat(hostAReceivedMessages).contains("pong ($messageNo)")
                     }
                     val markers = hostAMarkers.map { it.value!!.marker }
-                    assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == numberOfMessages)
-                    assertTrue((markers.filterIsInstance<LinkManagerReceivedMarker>()).size == numberOfMessages)
+                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(numberOfMessages)
+                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).hasSize(numberOfMessages)
                 }
                 hostAApplicationReader.stop()
                 hostBApplicationReaderWriter.stop()
@@ -274,7 +225,7 @@ class P2PLayerEndToEndTest {
                 val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
                 val hostAApplicationReader = hostA.listenForReceivedMessages(hostAReceivedMessages)
                 val hostBApplicationReaderWriter = hostB.addReadWriter()
-                val hostAMarkers = ConcurrentHashMap.newKeySet<Record<String, AppMessageMarker>>()
+                val hostAMarkers = CopyOnWriteArrayList<Record<String, AppMessageMarker>>()
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, hostB, EXPIRED_TTL)
 
@@ -284,9 +235,9 @@ class P2PLayerEndToEndTest {
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAMarkers.filter { (it.value as AppMessageMarker).marker is TtlExpiredMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
-                    assertTrue((markers.filterIsInstance<LinkManagerSentMarker>()).size == numberOfMessages)
-                    assertTrue((markers.filterIsInstance<TtlExpiredMarker>()).size == numberOfMessages)
-                    assertTrue((markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty())
+                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(numberOfMessages)
+                    assertThat(markers.filterIsInstance<TtlExpiredMarker>()).hasSize(numberOfMessages)
+                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty()
                 }
                 hostAApplicationReader.stop()
                 hostBApplicationReaderWriter.stop()
@@ -308,7 +259,7 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>) : DurableProcessor<String, AppMessage> {
+    private class InitiatorProcessor(val receivedMessages: MutableCollection<String>) : DurableProcessor<String, AppMessage> {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -371,19 +322,19 @@ class P2PLayerEndToEndTest {
         private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
-        val configPublisher = ConfigPublisherImpl(
+        private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
+        private val configPublisher = ConfigPublisherImpl(
             CONFIG_TOPIC,
             publisherFactory.createPublisher(PublisherConfig("config-writer"))
         )
-        val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
-        val tlsTenantId by lazy {
+        private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
+        private val tlsTenantId by lazy {
             GROUP_ID
         }
-        val sessionKeyTenantId by lazy {
+        private val sessionKeyTenantId by lazy {
             x500Name
         }
-        val linkManagerConfig by lazy {
+        private val linkManagerConfig by lazy {
             ConfigFactory.empty()
                 .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
                 .withValue("$MESSAGE_REPLAY_KEY_PREFIX$BASE_REPLAY_PERIOD_KEY_POSTFIX", ConfigValueFactory.fromAnyRef(2000))
@@ -405,7 +356,7 @@ class P2PLayerEndToEndTest {
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
 
-        val linkManager =
+        private val linkManager =
             LinkManager(
                 subscriptionFactory,
                 publisherFactory,
@@ -415,7 +366,7 @@ class P2PLayerEndToEndTest {
                 1,
             )
 
-        val gateway =
+        private val gateway =
             Gateway(
                 configReadService,
                 subscriptionFactory,
@@ -532,7 +483,7 @@ class P2PLayerEndToEndTest {
             }
         }
 
-        fun publishTlsKeys() {
+        private fun publishTlsKeys() {
             val records = keyStore.aliases().toList().map { alias ->
                 val privateKey = keyStore.getKey(alias, "password".toCharArray()).let {
                     KeyFactory.getInstance(it.algorithm, BouncyCastleProvider()).generatePrivate(
@@ -584,6 +535,54 @@ class P2PLayerEndToEndTest {
         override fun close() {
             linkManager.close()
             gateway.close()
+        }
+
+        fun addReadWriter(): Subscription<String, AppMessage> {
+            return subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
+                bootstrapConfig,
+                null
+            ).also { it.start() }
+        }
+
+        fun listenForReceivedMessages(
+            receivedMessages: MutableCollection<String>
+        ): Subscription<String, AppMessage> {
+            return subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(receivedMessages),
+                bootstrapConfig,
+                null
+            ).also { it.start() }
+        }
+
+        fun listenForMarkers(markers: MutableCollection<Record<String, AppMessageMarker>>): Subscription<String, AppMessageMarker> {
+            return subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(markers),
+                bootstrapConfig,
+                null
+            ).also { it.start() }
+        }
+
+        fun sendMessages(messagesToSend: Int, peer: Host, ttl: Long? = null) {
+            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+            val initialMessages = (1..messagesToSend).map { index ->
+                val incrementalId = index.toString()
+                val messageHeader = AuthenticatedMessageHeader(
+                    HoldingIdentity(peer.x500Name, GROUP_ID),
+                    HoldingIdentity(this.x500Name, GROUP_ID),
+                    ttl,
+                    incrementalId,
+                    incrementalId,
+                    SUBSYSTEM
+                )
+                val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
+                Record(P2P_OUT_TOPIC, incrementalId, AppMessage(message))
+            }
+            hostAApplicationWriter.use {
+                hostAApplicationWriter.start()
+                val futures = hostAApplicationWriter.publish(initialMessages)
+                futures.forEach { it.get() }
+            }
         }
     }
 }
