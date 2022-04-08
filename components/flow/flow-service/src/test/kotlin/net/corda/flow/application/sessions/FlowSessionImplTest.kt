@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -85,6 +86,13 @@ class FlowSessionImplTest {
     }
 
     @Test
+    fun `receiving the wrong object type in sendAndReceive throws an exception`() {
+        whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
+        val session = createSession(FlowSessionImpl.State.INITIATED)
+        assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
+    }
+
+    @Test
     fun `sendAndReceive returns the result of the flow's suspension`() {
         val session = createSession(FlowSessionImpl.State.INITIATED)
         assertEquals(HELLO_THERE, session.sendAndReceive(String::class.java, HI).unwrap { it })
@@ -112,6 +120,13 @@ class FlowSessionImplTest {
         val session = createSession(FlowSessionImpl.State.CLOSED)
         assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
+    }
+
+    @Test
+    fun `receiving the wrong object type in receive throws an exception`() {
+        whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
+        val session = createSession(FlowSessionImpl.State.INITIATED)
+        assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
     }
 
     @Test
