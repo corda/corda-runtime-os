@@ -1,13 +1,13 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
@@ -44,7 +44,7 @@ import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KFunction
 
@@ -77,7 +77,7 @@ class IntegrationCryptoOpsTests {
       """
 
         private const val BOOT_CONFIGURATION = """
-        instance.id=1
+        instanceId=1
     """
     }
 
@@ -127,9 +127,8 @@ class IntegrationCryptoOpsTests {
                     eventTopic = RESPONSE_TOPIC
                 ),
                 processor = this,
-                messagingConfig = SmartConfigFactory.create(
+                nodeConfig = SmartConfigFactory.create(
                     ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
-                    .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
                 ),
                 partitionAssignmentListener = null
             ).also { it.start() }
@@ -177,7 +176,7 @@ class IntegrationCryptoOpsTests {
         ).also { it.startAndWait() }
 
         logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
         with(publisher) {
             publish(
                 listOf(
@@ -220,21 +219,11 @@ class IntegrationCryptoOpsTests {
         val ledgerKeyAlias = UUID.randomUUID().toString()
         val tlsKeyAlias = UUID.randomUUID().toString()
         val ledgerPublicKey = run(ledgerKeyAlias, ::`Should generate new key pair for LEDGER`)
-        run(ledgerKeyAlias to ledgerPublicKey, ::`Should find existing public key by its alias`)
+        run(ledgerKeyAlias to ledgerPublicKey, ::`Should find existing public key by its id`)
         val tlsPublicKey = run(tlsKeyAlias, ::`Should generate new key pair for TLS`)
-        run(ledgerKeyAlias to ledgerPublicKey, ::`Should find existing public key by its alias`)
-        run(tlsKeyAlias to tlsPublicKey, ::`Should find existing public key by its alias`)
-        run(::`Should not find unknown public key by its alias`)
-        run(ledgerKeyAlias to ledgerPublicKey, ::`Should be able to sign by referencing key alias`)
-        run(
-            ledgerKeyAlias to ledgerPublicKey,
-            ::`Should be able to sign using custom signature spec by referencing key alias`
-        )
-        run(tlsKeyAlias to tlsPublicKey, ::`Should be able to sign by referencing key alias`)
-        run(
-            tlsKeyAlias to tlsPublicKey,
-            ::`Should be able to sign using custom signature spec by referencing key alias`
-        )
+        run(ledgerKeyAlias to ledgerPublicKey, ::`Should find existing public key by its id`)
+        run(tlsKeyAlias to tlsPublicKey, ::`Should find existing public key by its id`)
+        run(::`Should not find unknown public key by its id`)
         run(ledgerPublicKey, ::`Should be able to sign by referencing public key`)
         run(tlsPublicKey, ::`Should be able to sign by referencing public key`)
         run(ledgerPublicKey, ::`Should be able to sign using custom signature spec by referencing public key`)
@@ -288,19 +277,19 @@ class IntegrationCryptoOpsTests {
         )
     }
 
-    private fun `Should find existing public key by its alias`(expected: Pair<String, PublicKey>) {
-        val publicKey = opsClient.findPublicKey(
+    private fun `Should find existing public key by its id`(expected: Pair<String, PublicKey>) {
+        val publicKey = opsClient.lookup(
             tenantId = tenantId,
-            alias = expected.first
+            ids = listOf(publicKeyIdOf(expected.second))
         )
         assertNotNull(publicKey)
         assertEquals(expected.second, publicKey)
     }
 
-    private fun `Should not find unknown public key by its alias`() {
-        val publicKey = opsClient.findPublicKey(
+    private fun `Should not find unknown public key by its id`() {
+        val publicKey = opsClient.lookup(
             tenantId = tenantId,
-            alias = UUID.randomUUID().toString()
+            ids = listOf(publicKeyIdOf(UUID.randomUUID().toString().toByteArray()))
         )
         assertNull(publicKey)
     }
@@ -346,54 +335,6 @@ class IntegrationCryptoOpsTests {
         return transformer.transform(response) as PublicKey
     }
 
-    private fun `Should be able to sign by referencing key alias`(params: Pair<String, PublicKey>) {
-        val data = randomDataByteArray()
-        val signature = opsClient.sign(
-            tenantId = tenantId,
-            alias = params.first,
-            data = data
-        )
-        assertTrue(signature.isNotEmpty())
-        verifier.verify(
-            publicKey = params.second,
-            signatureData = signature,
-            clearData = data
-        )
-    }
-
-    private fun `Should be able to sign using custom signature spec by referencing key alias`(
-        params: Pair<String, PublicKey>
-    ) {
-        val data = randomDataByteArray()
-        val signatureSpec = when (params.second.algorithm) {
-            "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> SignatureSpec(
-                "RSASSA-PSS",
-                params = PSSParameterSpec(
-                    "SHA-256",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA256,
-                    32,
-                    1
-                )
-            )
-            else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
-        }
-        val signature = opsClient.sign(
-            tenantId = tenantId,
-            alias = params.first,
-            signatureSpec = signatureSpec,
-            data = data
-        )
-        assertTrue(signature.isNotEmpty())
-        verifier.verify(
-            publicKey = params.second,
-            signatureSpec = signatureSpec,
-            signatureData = signature,
-            clearData = data
-        )
-    }
-
     private fun `Should be able to sign by referencing public key`(publicKey: PublicKey) {
         val data = randomDataByteArray()
         val signature = opsClient.sign(
@@ -414,7 +355,16 @@ class IntegrationCryptoOpsTests {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> SignatureSpec("SHA512withECDSA")
+            "RSA" -> SignatureSpec(
+                "RSASSA-PSS",
+                params = PSSParameterSpec(
+                    "SHA-256",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA256,
+                    32,
+                    1
+                )
+            )
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = opsClient.sign(

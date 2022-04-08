@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.serialization
 
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.InternalCustomSerializer

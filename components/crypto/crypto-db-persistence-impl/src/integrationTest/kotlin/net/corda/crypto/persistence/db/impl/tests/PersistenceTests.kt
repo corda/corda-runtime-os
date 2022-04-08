@@ -1,5 +1,7 @@
-package net.corda.crypto.persistence.db.model.tests
+package net.corda.crypto.persistence.db.impl.tests
 
+import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -13,10 +15,12 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.test.util.LoggingUtils.emphasise
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,15 +34,21 @@ import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class)
-class CryptoEntitiesTest {
+class PersistenceTests {
     companion object {
         private val logger = contextLogger()
 
-        @InjectService
+        //@InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
-        @InjectService
+        //@InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
+
+        //@InjectService(timeout = 5000)
+        lateinit var softCryptoCacheProvider: SoftCryptoKeyCacheProvider
+
+       @InjectService(timeout = 5000)
+       lateinit var cipherSchemeMetadata: CipherSchemeMetadata
 
         lateinit var emf: EntityManagerFactory
 
@@ -88,7 +98,7 @@ class CryptoEntitiesTest {
     }
 
     @Test
-    fun `Should persist and retrieve crypto entities`() {
+    fun `Should persist and retrieve raw crypto entities`() {
         val wrappingKey = WrappingKeyEntity(
             alias = UUID.randomUUID().toString(),
             created = Instant.now(),
@@ -106,10 +116,34 @@ class CryptoEntitiesTest {
             ).singleResult
             assertThat(retrieved).isEqualTo(wrappingKey)
             assertEquals(wrappingKey.alias, retrieved.alias)
-            assertEquals(wrappingKey.created.epochSecond, retrieved.created.epochSecond)
+            assertEquals(
+                wrappingKey.created.epochSecond,
+                retrieved.created.epochSecond
+            )
             assertEquals(wrappingKey.encodingVersion, retrieved.encodingVersion)
             assertEquals(wrappingKey.algorithmName, retrieved.algorithmName)
             assertArrayEquals(wrappingKey.keyMaterial, retrieved.keyMaterial)
+        }
+    }
+
+    //@Test
+    fun `Should be able to cache and then retrieve wrapping keys`() {
+        val cache = softCryptoCacheProvider.getInstance(
+            passphrase = "PASSPHRASE",
+            salt = "SALT"
+        )
+        val newKey = WrappingKey.createWrappingKey(cipherSchemeMetadata)
+        val alias = UUID.randomUUID().toString()
+        cache.act {
+            it.saveWrappingKey(alias, newKey, false)
+            val cached = it.findWrappingKey(alias)
+            assertNotNull(cached)
+            assertEquals(newKey, cached)
+        }
+        cache.act {
+            val cached = it.findWrappingKey(alias)
+            assertNotNull(cached)
+            assertEquals(newKey, cached)
         }
     }
 }

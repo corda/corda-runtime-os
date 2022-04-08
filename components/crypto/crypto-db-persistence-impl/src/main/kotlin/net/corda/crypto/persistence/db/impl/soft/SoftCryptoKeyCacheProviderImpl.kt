@@ -8,7 +8,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.persistence.SoftCryptoKeyCache
 import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
-import net.corda.crypto.persistence.WrappingKey
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.config.softPersistence
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
@@ -17,13 +17,14 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
 @Component(service = [SoftCryptoKeyCacheProvider::class])
-class SoftCryptoKeyCacheProviderImpl(
+class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -88,10 +89,10 @@ class SoftCryptoKeyCacheProviderImpl(
             SoftCryptoKeyCacheImpl(
                 entityManagerFactory = entityManagerFactory,
                 cache = cache,
-                masterKey = WrappingKey.deriveMasterKey(
+                masterKey = WrappingKey.derive(
                     schemeMetadata = schemeMetadata,
-                    originalPassphrase = passphrase,
-                    originalSalt = salt
+                    passphrase = passphrase,
+                    salt = salt
                 )
             )
 

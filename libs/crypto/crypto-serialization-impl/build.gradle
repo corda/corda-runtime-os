@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Common crypto implementation'
+description 'Crypto serialization'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -17,23 +17,10 @@ dependencies {
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:serialization:serialization-internal')
     implementation project(":libs:utilities")
 
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-}
-
-tasks.named('jar', Jar) {
-    bnd """\
-Import-Package:\
-    org.bouncycastle.jcajce.provider.asymmetric,\
-    org.bouncycastle.jcajce.provider.config,\
-    org.bouncycastle.jcajce.provider.digest,\
-    org.bouncycastle.jcajce.provider.keystore,\
-    org.bouncycastle.jcajce.provider.symmetric,\
-    org.bouncycastle.jcajce.provider.util,\
-    *
-"""
 }

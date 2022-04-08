@@ -19,13 +19,14 @@ import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
 
 @Component(service = [HSMRegistration::class])
-class HSMRegistrationImpl(
+class HSMRegistrationImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory
 ) : HSMRegistration {

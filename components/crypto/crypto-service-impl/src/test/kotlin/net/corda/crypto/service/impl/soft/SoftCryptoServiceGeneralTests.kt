@@ -4,7 +4,7 @@ import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.SigningKeyCacheActions
 import net.corda.crypto.persistence.SoftCryptoKeyCache
 import net.corda.crypto.persistence.SoftCryptoKeyCacheActions
-import net.corda.crypto.persistence.WrappingKey
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
