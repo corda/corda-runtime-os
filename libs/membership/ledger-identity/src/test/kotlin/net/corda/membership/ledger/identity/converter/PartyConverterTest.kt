@@ -1,8 +1,8 @@
-package net.corda.membership.application.converter
+package net.corda.membership.ledger.identity.converter
 
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.application.PartyImpl
+import net.corda.membership.ledger.identity.PartyImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension
 import net.corda.v5.base.types.MemberX500Name

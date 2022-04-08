@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership application implementation'
+description 'Ledger identity implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
