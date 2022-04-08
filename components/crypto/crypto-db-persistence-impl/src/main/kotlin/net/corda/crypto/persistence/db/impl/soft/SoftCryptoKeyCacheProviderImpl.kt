@@ -11,6 +11,8 @@ import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.config.softPersistence
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -73,7 +75,10 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     ) : Impl {
         private val config: SmartConfig
 
-        private val entityManagerFactory: EntityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+        private val entityManagerFactory: EntityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
+            CordaDb.Crypto,
+            DbPrivilege.DML
+        )
 
         init {
             config = event.config[ConfigKeys.CRYPTO_CONFIG] ?:

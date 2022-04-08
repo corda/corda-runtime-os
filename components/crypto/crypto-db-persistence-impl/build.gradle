@@ -16,6 +16,7 @@ dependencies {
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
+    implementation 'net.corda:corda-db-schema'
     implementation "net.corda:corda-topic-schema"
 
     implementation project(":components:configuration:configuration-read-service")
@@ -26,6 +27,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
 
+    integrationTestImplementation project(":libs:messaging:messaging")
     integrationTestImplementation 'net.corda:corda-base'
     integrationTestImplementation 'net.corda:corda-db-schema'
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
@@ -35,6 +37,7 @@ dependencies {
     }
 
     integrationTestImplementation project(":libs:configuration:configuration-core")
+    integrationTestImplementation project(":libs:configuration:configuration-datamodel")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-core")
@@ -55,6 +58,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
 }

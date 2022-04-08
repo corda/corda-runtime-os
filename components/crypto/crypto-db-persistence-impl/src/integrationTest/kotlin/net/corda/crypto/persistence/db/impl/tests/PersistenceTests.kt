@@ -1,21 +1,44 @@
 package net.corda.crypto.persistence.db.impl.tests
 
-import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.data.config.Configuration
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.LoggingUtils.emphasise
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -39,33 +62,127 @@ class PersistenceTests {
     companion object {
         private val logger = contextLogger()
 
+        private val CLIENT_ID = "${PersistenceTests::class.java}-integration-test"
+
+        private const val CRYPTO_CONFIGURATION_VALUE: String = "{}"
+
+        private const val MESSAGING_CONFIGURATION_VALUE: String = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+      """
+
+        private const val BOOT_CONFIGURATION_VALUE = """
+        instanceId=1
+    """
+
         @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
 
-        //@InjectService(timeout = 5000)
-        //lateinit var softCryptoCacheProvider: SoftCryptoKeyCacheProvider
-
-       //@InjectService(timeout = 5000)
-       //lateinit var cipherSchemeMetadata: CipherSchemeMetadata
-
         @InjectService(timeout = 5000)
         lateinit var coordinatorFactory: LifecycleCoordinatorFactory
 
-        lateinit var emf: EntityManagerFactory
+        @InjectService(timeout = 5000L)
+        lateinit var publisherFactory: PublisherFactory
 
-        private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("crypto")
+        @InjectService(timeout = 5000)
+        lateinit var cipherSchemeMetadata: CipherSchemeMetadata
+
+        @InjectService(timeout = 5000)
+        lateinit var softCryptoCacheProvider: SoftCryptoKeyCacheProvider
+
+        @InjectService(timeout = 5000)
+        lateinit var configurationReadService: ConfigurationReadService
+
+        @InjectService(timeout = 5000)
+        lateinit var dbConnectionManager: DbConnectionManager
+
+        @InjectService(timeout = 5000)
+        lateinit var entitiesRegistry: JpaEntitiesRegistry
+
+        private lateinit var dependentComponents: DependentComponents
+
+        private lateinit var coordinator: LifecycleCoordinator
+
+        private lateinit var configEmf: EntityManagerFactory
+
+        private lateinit var cryptoEmf: EntityManagerFactory
+
+        private val configFactory = SmartConfigFactory.create(
+            ConfigFactory.parseString(
+                """
+            ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=key
+            ${SmartConfigFactory.SECRET_SALT_KEY}=salt
+        """.trimIndent()
+            )
+        )
+
+        private val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+
+        private val cryptoDbConfig: EntityManagerConfiguration =
+            DbUtils.getEntityManagerConfiguration("crypto")
+
+        private val configDbConfig: EntityManagerConfiguration =
+            DbUtils.getEntityManagerConfiguration("configuration_db")
 
         @JvmStatic
         @BeforeAll
-        fun setupEntities() {
+        fun setup() {
+            setupConfigDb()
+            setupCryptoEntities()
+            setupDependencies()
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun cleanup() {
+            if (this::cryptoEmf.isInitialized) {
+                cryptoEmf.close()
+            }
+            if(this::configEmf.isInitialized) {
+                configEmf.close()
+            }
+        }
+
+        private fun setupConfigDb() {
+            val cl = ClassloaderChangeLog(
+                linkedSetOf(
+                    ClassloaderChangeLog.ChangeLogResourceFiles(
+                        DbSchema::class.java.packageName,
+                        listOf("net/corda/db/schema/config/db.changelog-master.xml"),
+                        DbSchema::class.java.classLoader
+                    )
+                )
+            )
+            configDbConfig.dataSource.connection.use { connection ->
+                LiquibaseSchemaMigratorImpl().updateDb(connection, cl)
+            }
+            configEmf = entityManagerFactoryFactory.create(
+                "DB Admin integration test",
+                ConfigurationEntities.classes.toList(),
+                configDbConfig
+            )
+        }
+
+        private fun setupCryptoEntities() {
             val schemaClass = DbSchema::class.java
             val bundle = FrameworkUtil.getBundle(schemaClass)
             logger.info("Crypto schema bundle $bundle".emphasise())
-
-            logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
+            logger.info("Create Schema for ${cryptoDbConfig.dataSource.connection.metaData.url}".emphasise())
             val fullName = schemaClass.packageName + ".crypto"
             val resourcePrefix = fullName.replace('.', '/')
             val cl = ClassloaderChangeLog(
@@ -78,25 +195,73 @@ class PersistenceTests {
                 )
             )
             StringWriter().use {
-                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
+                lbm.createUpdateSql(cryptoDbConfig.dataSource.connection, cl, it)
                 logger.info("Schema creation SQL: $it")
             }
-            lbm.updateDb(dbConfig.dataSource.connection, cl)
-
+            lbm.updateDb(cryptoDbConfig.dataSource.connection, cl)
             logger.info("Create Entities".emphasise())
-
-            emf = entityManagerFactoryFactory.create(
+            cryptoEmf = entityManagerFactoryFactory.create(
                 CordaDb.Crypto.persistenceUnitName,
                 CryptoEntities.classes.toList(),
-                dbConfig
+                cryptoDbConfig
             )
         }
 
-        @AfterAll
-        @JvmStatic
-        fun done() {
-            if (this::emf.isInitialized) {
-                emf.close()
+        private fun setupDependencies() {
+            with(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))) {
+                start()
+                publish(
+                    listOf(
+                        Record(
+                            Schemas.Config.CONFIG_TOPIC,
+                            ConfigKeys.MESSAGING_CONFIG,
+                            Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
+                        ),
+                        Record(
+                            Schemas.Config.CONFIG_TOPIC,
+                            ConfigKeys.CRYPTO_CONFIG,
+                            Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
+                        )
+                    )
+                )
+            }
+            dependentComponents = DependentComponents.of(
+                ::configurationReadService,
+                ::dbConnectionManager,
+                ::softCryptoCacheProvider
+            )
+            coordinator = coordinatorFactory.createCoordinator<PersistenceTests>(::eventHandler)
+            entitiesRegistry.register(
+                CordaDb.CordaCluster.persistenceUnitName,
+                ConfigurationEntities.classes
+            )
+            entitiesRegistry.register(
+                CordaDb.Crypto.persistenceUnitName,
+                CryptoEntities.classes
+            )
+            dbConnectionManager.initialise(config)
+            coordinator.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, coordinator.status)
+            }
+        }
+
+        private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+            logger.debug { "Test received event $event." }
+            when (event) {
+                is StartEvent -> {
+                    dependentComponents.registerAndStartAll(coordinator)
+                    configurationReadService.bootstrapConfig(
+                        configFactory.create(ConfigFactory.parseString(BOOT_CONFIGURATION_VALUE))
+                    )
+                }
+                is StopEvent -> {
+                    dependentComponents.stopAll()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    logger.info("Test is ${event.status}")
+                    coordinator.updateStatus(event.status)
+                }
             }
         }
     }
@@ -110,10 +275,10 @@ class PersistenceTests {
             algorithmName = "AES",
             keyMaterial = Random(Instant.now().toEpochMilli()).nextBytes(512)
         )
-        emf.transaction { em ->
+        cryptoEmf.transaction { em ->
             em.persist(wrappingKey)
         }
-        emf.use { em ->
+        cryptoEmf.use { em ->
             val retrieved = em.createQuery(
                 "from WrappingKeyEntity where alias = '${wrappingKey.alias}'",
                 wrappingKey.javaClass
@@ -130,7 +295,6 @@ class PersistenceTests {
         }
     }
 
-    /*
     @Test
     fun `Should be able to cache and then retrieve wrapping keys`() {
         val cache = softCryptoCacheProvider.getInstance(
@@ -151,6 +315,4 @@ class PersistenceTests {
             assertEquals(newKey, cached)
         }
     }
-
-     */
 }
