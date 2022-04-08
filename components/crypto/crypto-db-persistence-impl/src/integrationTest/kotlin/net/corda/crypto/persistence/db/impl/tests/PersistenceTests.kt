@@ -9,6 +9,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction
@@ -38,17 +39,20 @@ class PersistenceTests {
     companion object {
         private val logger = contextLogger()
 
-        //@InjectService(timeout = 5000)
+        @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
-        //@InjectService(timeout = 5000)
+        @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
 
         //@InjectService(timeout = 5000)
-        lateinit var softCryptoCacheProvider: SoftCryptoKeyCacheProvider
+        //lateinit var softCryptoCacheProvider: SoftCryptoKeyCacheProvider
 
-       @InjectService(timeout = 5000)
-       lateinit var cipherSchemeMetadata: CipherSchemeMetadata
+       //@InjectService(timeout = 5000)
+       //lateinit var cipherSchemeMetadata: CipherSchemeMetadata
+
+        @InjectService(timeout = 5000)
+        lateinit var coordinatorFactory: LifecycleCoordinatorFactory
 
         lateinit var emf: EntityManagerFactory
 
@@ -126,7 +130,8 @@ class PersistenceTests {
         }
     }
 
-    //@Test
+    /*
+    @Test
     fun `Should be able to cache and then retrieve wrapping keys`() {
         val cache = softCryptoCacheProvider.getInstance(
             passphrase = "PASSPHRASE",
@@ -146,4 +151,6 @@ class PersistenceTests {
             assertEquals(newKey, cached)
         }
     }
+
+     */
 }
