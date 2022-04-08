@@ -1,5 +1,6 @@
 package net.corda.example.vnode
 
+import java.nio.file.Files
 import java.nio.file.Paths
 import net.corda.testing.sandboxes.SandboxSetup
 import org.osgi.framework.BundleContext
@@ -15,7 +16,7 @@ class SandboxBootstrap @Activate constructor(
     bundleContext: BundleContext
 ){
     init {
-        val baseDirectory = Paths.get(System.getProperty("user.dir", ".")).toAbsolutePath()
-        sandboxSetup.configure(bundleContext, baseDirectory)
+        val baseDirectory = Paths.get(System.getProperty("app.name", System.getProperty("user.dir", "."))).toAbsolutePath()
+        sandboxSetup.configure(bundleContext, Files.createDirectories(baseDirectory))
     }
 }

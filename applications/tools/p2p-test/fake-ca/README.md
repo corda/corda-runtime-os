@@ -1,11 +1,17 @@
+# Fake Certificate Authority tool
 A tool that can act as a fake Certificate Authority to create TLS certificates (without revocation)
 
 **⚠ WARNING:** This tool is not safe for production use, and it should only be used for testing purposes.
 
-To build the script, run:
+## Building the tool
+
+To build, run:
 ```bash
-./gradlew :applications:tools:p2p-test:fake-ca:install
+./gradlew :applications:tools:p2p-test:fake-ca:clean :applications:tools:p2p-test:fake-ca:install
 ```
+This will create an executable in `applications/tools/p2p-test/fake-ca/build/install/fake-ca/bin/fake-ca`.
+
+## Running the tool
 
 To create an authority run:
 ```bash
@@ -21,11 +27,3 @@ This will use the saved details from `~/.fake.ca/ca/.ca/` (this can be changed u
 By default, the keys will be generated using the [EC](https://en.wikipedia.org/wiki/Elliptic_curve) algorithm, use the `-a` option to change algorithm.
 
 
-To build a fat jar, run:
-```bash
-./gradlew :applications:tools:p2p-test:fake-ca:appJar
-```
-and then run the application with:
-```bash
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca-5.0.0.0-SNAPSHOT.jar ...
-```

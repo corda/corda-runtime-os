@@ -20,6 +20,9 @@ pipeline {
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
+        BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
+        BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"    
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
@@ -32,7 +35,7 @@ pipeline {
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
-        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE}"
+        GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
     }
 
     options {
