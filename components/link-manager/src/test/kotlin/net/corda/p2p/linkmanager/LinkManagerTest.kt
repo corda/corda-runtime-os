@@ -1356,10 +1356,7 @@ class LinkManagerTest {
     @Test
     fun `OutboundMessageProcessor produces TtlExpiredMarker and LinkManagerSentMarker if TTL expiry is true and replay is false`() {
         val pendingSessionMessageQueues = mock<LinkManager.PendingSessionMessageQueues>()
-        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        Mockito.`when`(mockSessionManager.processOutboundMessage(any()))
-            .thenReturn(SessionManager.SessionState.SessionAlreadyPending)
-
+        val mockSessionManager = mock<SessionManagerImpl>()
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
@@ -1368,7 +1365,6 @@ class LinkManagerTest {
             assignedListener(listOf(1)),
             pendingSessionMessageQueues
         )
-
         val expiredTTL = 0L
         val numberOfMessages = 3
         val numberOfMarkers = numberOfMessages * 2
@@ -1379,13 +1375,6 @@ class LinkManagerTest {
         }
 
         val records = processor.onNext(messages)
-
-        val keys = records.map { it.key }
-        for (i in 0 until numberOfMessages) {
-            assertThat(keys).contains("MessageId$i")
-            verify(pendingSessionMessageQueues)
-                .queueMessage(AuthenticatedMessageAndKey(messages[i].value?.message as AuthenticatedMessage?, messages[i].key))
-        }
 
         val markers = records.filter { it.value is AppMessageMarker }
         assertThat(markers).hasSize(numberOfMarkers)
