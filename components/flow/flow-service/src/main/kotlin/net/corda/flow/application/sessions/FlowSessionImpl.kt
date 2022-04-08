@@ -81,8 +81,7 @@ class FlowSessionImpl(
                     ?.sessionIds
                     ?.toMutableList()
                 sessionIds?.remove(sourceSessionId)
-                flowFiberService.getExecutingFiber().getExecutionContext().flowStackService.peek()?.sessionIds =
-                    sessionIds
+                flowFiberService.getExecutingFiber().getExecutionContext().flowStackService.peek()?.sessionIds = sessionIds
                 state = State.CLOSED
                 log.info("Closed session: $sourceSessionId")
             }
@@ -109,10 +108,7 @@ class FlowSessionImpl(
         return getSerializationService().serialize(payload).bytes
     }
 
-    private fun <R : Any> deserializeReceivedPayload(
-        received: Map<String, ByteArray>,
-        receiveType: Class<R>
-    ): UntrustworthyData<R> {
+    private fun <R : Any> deserializeReceivedPayload(received: Map<String, ByteArray>, receiveType: Class<R>): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
                 UntrustworthyData(deserialize(it, receiveType))
