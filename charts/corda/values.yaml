@@ -80,7 +80,8 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the crypto worker until the debugger is attached
       suspend: false
-    # -- resource limits and requests configuration for the crypto worker containers.
+    # resource limits and requests configuration for the crypto worker containers
+
     resources:
       # -- the CPU/memory resource requests for the crypto worker containers
 
@@ -114,9 +115,11 @@ workers:
     # resource limits and requests configuration for the DB worker containers.
 
     resources:
-      # -- The cpu/memory resource requests for the db worker containers
+      # -- the CPU/memory resource requests for the DB worker containers
+
       requests: {}
-      # -- The cpu/memory resource limits for the db worker containers
+      # -- the CPU/memory resource limits for the DB worker containers
+
       limits: {}
 
   # flow worker configuration
@@ -140,9 +143,11 @@ workers:
     # resource limits and requests configuration for the flow worker containers.
 
     resources:
-      # -- The cpu/memory resource requests for the flow worker containers
+      # -- the CPU/memory resource requests for the flow worker containers
+
       requests: {}
-      # -- The cpu/memory resource limits for the flow worker containers
+      # -- the CPU/memory resource limits for the flow worker containers
+
       limits: {}
 
   # RPC worker configuration
@@ -165,7 +170,9 @@ workers:
       suspend: false
     # -- resource limits and requests configuration for the RPC worker containers.
     resources:
-      # -- The cpu/memory resource requests for the RPC worker containers
+      # -- the CPU/memory resource requests for the RPC worker containers
+
       requests: {}
-      # -- The cpu/memory resource limits for the RPC worker containers
+      # -- the CPU/memory resource limits for the RPC worker containers
+
       limits: {}
