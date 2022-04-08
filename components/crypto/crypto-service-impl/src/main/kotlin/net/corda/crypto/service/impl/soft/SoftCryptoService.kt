@@ -63,12 +63,12 @@ open class SoftCryptoService(
                 } else {
                     logger.info(
                         "Wrapping with alias '$masterKeyAlias' already exists, " +
-                                "continue as normal as failIfExists=$failIfExists"
+                                "continue as normal as failIfExists is false"
                     )
                 }
             } else {
                 val wrappingKey = WrappingKey.createWrappingKey(schemeMetadata)
-                it.saveWrappingKey(masterKeyAlias, wrappingKey)
+                it.saveWrappingKey(masterKeyAlias, wrappingKey, failIfExists)
             }
         }
     } catch (e: CryptoServiceException) {

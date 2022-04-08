@@ -54,7 +54,7 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.createWrappingKey(UUID.randomUUID().toString(), true, emptyMap())
         }
-        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any())
+        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any(), any())
     }
 
     @Test
@@ -71,7 +71,7 @@ class SoftCryptoServiceGeneralTests {
             mock()
         )
         service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
-        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any())
+        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any(), any())
     }
 
     @Test

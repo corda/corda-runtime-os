@@ -46,9 +46,11 @@ class TestSoftCryptoKeyCache : SoftCryptoKeyCache {
 class TestSoftCryptoKeyCacheActions(
     private val keys: MutableMap<String, WrappingKey>
 ) : SoftCryptoKeyCacheActions {
-    override fun saveWrappingKey(alias: String, key: WrappingKey) {
+    override fun saveWrappingKey(alias: String, key: WrappingKey, failIfExists: Boolean) {
         if(keys.putIfAbsent(alias, key) != null) {
-            throw IllegalArgumentException("The key $alias already exists.")
+            if(failIfExists) {
+                throw IllegalArgumentException("The key $alias already exists.")
+            }
         }
     }
     override fun findWrappingKey(alias: String): WrappingKey? = keys[alias]
