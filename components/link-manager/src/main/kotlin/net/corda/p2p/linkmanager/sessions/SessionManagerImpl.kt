@@ -88,6 +88,7 @@ open class SessionManagerImpl(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
+    clock: Clock,
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
@@ -95,8 +96,9 @@ open class SessionManagerImpl(
         configuration,
         groups,
         members,
+        clock,
     ),
-    clock: Clock = Clock.systemUTC(),
+
     executorServiceFactory: () -> ScheduledExecutorService = {Executors.newSingleThreadScheduledExecutor()},
 ) : SessionManager {
 

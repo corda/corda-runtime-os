@@ -31,6 +31,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
@@ -45,6 +46,7 @@ class DeliveryTracker(
     cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
     instanceId: Int,
+    clock: Clock,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
 
@@ -60,6 +62,7 @@ class DeliveryTracker(
         true,
         MESSAGE_REPLAY_KEY_PREFIX,
         appMessageReplayer::replayMessage,
+        clock = clock
     )
 
     private val messageTracker = MessageTracker(replayScheduler)

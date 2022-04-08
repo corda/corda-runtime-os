@@ -66,7 +66,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Clock
-import java.time.Instant
 import java.util.*
 
 @Suppress("LongParameterList")
@@ -95,7 +94,8 @@ class LinkManager(
             configuration,
         ),
     linkManagerCryptoProcessor: CryptoProcessor =
-        StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
+        StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
+    private val clock: Clock = Clock.systemUTC()
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -127,6 +127,7 @@ class LinkManager(
         configuration,
         inboundAssignmentListener,
         linkManagerHostingMap,
+        clock = clock
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
@@ -135,7 +136,8 @@ class LinkManager(
         groups,
         members,
         inboundAssignmentListener,
-        messagesPendingSession
+        messagesPendingSession,
+        clock
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(
@@ -168,7 +170,8 @@ class LinkManager(
         members,
         linkManagerCryptoProcessor,
         sessionManager,
-        instanceId
+        instanceId,
+        clock = clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
@@ -177,7 +180,8 @@ class LinkManager(
             sessionManager,
             groups,
             members,
-            inboundAssignmentListener
+            inboundAssignmentListener,
+            clock
         ),
         configuration,
         partitionAssignmentListener = inboundAssignmentListener
@@ -236,13 +240,13 @@ class LinkManager(
         private val groups: LinkManagerGroupPolicyProvider,
         private val members: LinkManagerMembershipGroupReader,
         private val inboundAssignmentListener: InboundAssignmentListener,
-        private val messagesPendingSession: PendingSessionMessageQueues
+        private val messagesPendingSession: PendingSessionMessageQueues,
+        private val clock: Clock
     ) : EventLogProcessor<String, AppMessage> {
 
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
-        private val clock = Clock.systemUTC()
 
         companion object {
             fun recordsForNewSessions(
@@ -406,17 +410,17 @@ class LinkManager(
             message: AuthenticatedMessageAndKey,
             messageId: String
         ): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(LinkManagerSentMarker(message), Instant.now().toEpochMilli())
+            val marker = AppMessageMarker(LinkManagerSentMarker(message), clock.instant().toEpochMilli())
             return Record(P2P_OUT_MARKERS, messageId, marker)
         }
 
         private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
+            val marker = AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
             return Record(P2P_OUT_MARKERS, messageId, marker)
         }
 
         private fun recordForTTLExpiredMarker(messageId: String): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(TtlExpiredMarker(Component.LINK_MANAGER), Instant.now().toEpochMilli())
+            val marker = AppMessageMarker(TtlExpiredMarker(Component.LINK_MANAGER), clock.instant().toEpochMilli())
             return Record(P2P_OUT_MARKERS, messageId, marker)
         }
 
@@ -429,7 +433,8 @@ class LinkManager(
         private val sessionManager: SessionManager,
         private val groups: LinkManagerGroupPolicyProvider,
         private val members: LinkManagerMembershipGroupReader,
-        private val inboundAssignmentListener: InboundAssignmentListener
+        private val inboundAssignmentListener: InboundAssignmentListener,
+        private val clock: Clock
     ) :
         EventLogProcessor<String, LinkInMessage> {
 
@@ -645,7 +650,7 @@ class LinkManager(
             return Record(
                 P2P_OUT_MARKERS,
                 message.messageId,
-                AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
+                AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
             )
         }
 
