@@ -13,6 +13,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-internal")
+    implementation project(":libs:membership:membership-common")
     implementation project(":libs:virtual-node:virtual-node-info")
 }
