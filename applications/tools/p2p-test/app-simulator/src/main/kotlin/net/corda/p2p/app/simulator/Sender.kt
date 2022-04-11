@@ -17,6 +17,8 @@ import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
@@ -34,6 +36,7 @@ class Sender(private val publisherFactory: PublisherFactory,
              private val kafkaServers: String,
              private val clients: Int,
              private val instanceId: String,
+             private val clock: Clock
              ): Closeable {
 
     companion object {
@@ -48,9 +51,19 @@ class Sender(private val publisherFactory: PublisherFactory,
     @Volatile
     private var stop = false
 
+    private fun calculateTtl(expireAfterTime: Duration?): Long? {
+        return if(expireAfterTime == null) {
+            null
+        } else {
+            expireAfterTime.toMillis() + clock.instant().toEpochMilli()
+        }
+    }
+
     fun start() {
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
+
+        val ttl = calculateTtl(loadGenParams.expireAfterTime)
 
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
@@ -71,7 +84,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                         val messageWithIds = (1..loadGenParams.batchSize).map {
                             "$senderId:$client:${++messagesSent}"
                         }.map {
-                            createMessage(it, senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
+                            createMessage(it, senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes, ttl)
                         }
                         val records = messageWithIds.map { (messageId, message) ->
                             Record(sendTopic, messageId, message)
@@ -143,11 +156,12 @@ class Sender(private val publisherFactory: PublisherFactory,
         destinationIdentity: HoldingIdentity,
         srcIdentity: HoldingIdentity,
         messageSize: Int,
+        ttl: Long? = null
     ): Pair<String, AppMessage> {
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
-            null,
+            ttl,
             messageId,
             messageId,
             "app-simulator"

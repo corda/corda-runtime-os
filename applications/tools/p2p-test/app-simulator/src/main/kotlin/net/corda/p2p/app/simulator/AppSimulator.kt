@@ -187,6 +187,7 @@ class AppSimulator @Activate constructor(
         val batchSize = config.getInt("$LOAD_GEN_PARAMS_PREFIX.batchSize")
         val interBatchDelay = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.interBatchDelay")
         val messageSizeBytes = config.getInt("$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes")
+        val expireAfterTime = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
         return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
             HoldingIdentity(ourX500Name, ourGroupId),
@@ -194,7 +195,8 @@ class AppSimulator @Activate constructor(
             totalNumberOfMessages,
             batchSize,
             interBatchDelay,
-            messageSizeBytes
+            messageSizeBytes,
+            expireAfterTime
         )
     }
 
@@ -272,7 +274,8 @@ data class LoadGenerationParams(
     val totalNumberOfMessages: Int?,
     val batchSize: Int,
     val interBatchDelay: Duration,
-    val messageSizeBytes: Int
+    val messageSizeBytes: Int,
+    val expireAfterTime: Duration?
 ) {
     init {
         when (loadGenerationType) {
