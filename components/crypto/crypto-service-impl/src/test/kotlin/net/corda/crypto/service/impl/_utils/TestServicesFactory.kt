@@ -5,15 +5,8 @@ import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
 import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyCache
-import net.corda.crypto.persistence.SigningKeyCacheProvider
-import net.corda.crypto.persistence.SoftCryptoKeyCache
-import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.SoftCryptoServiceProvider
-import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.soft.SoftCryptoService
@@ -24,11 +17,7 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
 import kotlin.test.assertTrue
 

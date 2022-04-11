@@ -2,17 +2,19 @@ package net.corda.crypto.persistence.db.impl.tests
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
+import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.data.config.Configuration
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
@@ -42,6 +44,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -54,6 +57,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.StringWriter
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -147,9 +151,9 @@ class PersistenceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            setupConfigDb()
+            //setupConfigDb()
             setupCryptoEntities()
-            setupDependencies()
+            //setupDependencies()
         }
 
         @AfterAll
@@ -276,9 +280,17 @@ class PersistenceTests {
         }
     }
 
+    private class MockPublicKey(
+        private val encoded: ByteArray
+    ) : PublicKey {
+        override fun getAlgorithm(): String = "MOCK"
+        override fun getFormat(): String = "MOCK"
+        override fun getEncoded(): ByteArray = encoded
+    }
+
     @Test
-    fun `Should persist and retrieve raw crypto entities`() {
-        val wrappingKey = WrappingKeyEntity(
+    fun `Should persist and retrieve raw WrappingKeyEntity`() {
+        val entity = WrappingKeyEntity(
             alias = UUID.randomUUID().toString(),
             created = Instant.now(),
             encodingVersion = 11,
@@ -286,26 +298,72 @@ class PersistenceTests {
             keyMaterial = Random(Instant.now().toEpochMilli()).nextBytes(512)
         )
         cryptoEmf.transaction { em ->
-            em.persist(wrappingKey)
+            em.persist(entity)
         }
         cryptoEmf.use { em ->
-            val retrieved = em.createQuery(
-                "from WrappingKeyEntity where alias = '${wrappingKey.alias}'",
-                wrappingKey.javaClass
-            ).singleResult
-            assertThat(retrieved).isEqualTo(wrappingKey)
-            assertEquals(wrappingKey.alias, retrieved.alias)
+            val retrieved = em.find(WrappingKeyEntity::class.java, entity.alias)
+            assertNotNull(retrieved)
+            assertThat(retrieved).isEqualTo(entity)
+            assertEquals(entity.alias, retrieved.alias)
             assertEquals(
-                wrappingKey.created.epochSecond,
+                entity.created.epochSecond,
                 retrieved.created.epochSecond
             )
-            assertEquals(wrappingKey.encodingVersion, retrieved.encodingVersion)
-            assertEquals(wrappingKey.algorithmName, retrieved.algorithmName)
-            assertArrayEquals(wrappingKey.keyMaterial, retrieved.keyMaterial)
+            assertEquals(entity.encodingVersion, retrieved.encodingVersion)
+            assertEquals(entity.algorithmName, retrieved.algorithmName)
+            assertArrayEquals(entity.keyMaterial, retrieved.keyMaterial)
         }
     }
 
     @Test
+    fun `Should persist and retrieve raw SigningKeyEntity`() {
+        val random = Random(Instant.now().toEpochMilli())
+        val publicKey = MockPublicKey(random.nextBytes(512))
+        val tenantId = publicKeyIdOf(UUID.randomUUID().toString().toByteArray())
+        val keyId = publicKeyIdOf(publicKey)
+        val entity = SigningKeyEntity(
+            tenantId = tenantId,
+            keyId = keyId,
+            created = Instant.now(),
+            category = CryptoConsts.HsmCategories.LEDGER,
+            schemeCodeName = RSA_CODE_NAME,
+            publicKey = publicKey.encoded,
+            keyMaterial = random.nextBytes(512),
+            encodingVersion = 11,
+            masterKeyAlias = UUID.randomUUID().toString(),
+            alias = UUID.randomUUID().toString(),
+            hsmAlias = UUID.randomUUID().toString(),
+            externalId = UUID.randomUUID().toString(),
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(entity)
+        }
+        cryptoEmf.use { em ->
+            val retrieved = em.find(SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
+                tenantId = tenantId,
+                keyId = keyId
+            ))
+            assertNotNull(retrieved)
+            assertThat(retrieved).isEqualTo(entity)
+            assertEquals(entity.tenantId, retrieved.tenantId)
+            assertEquals(entity.keyId, retrieved.keyId)
+            assertEquals(
+                entity.created.epochSecond,
+                retrieved.created.epochSecond
+            )
+            assertEquals(entity.category, retrieved.category)
+            assertEquals(entity.schemeCodeName, retrieved.schemeCodeName)
+            assertArrayEquals(entity.publicKey, retrieved.publicKey)
+            assertArrayEquals(entity.keyMaterial, retrieved.keyMaterial)
+            assertEquals(entity.encodingVersion, retrieved.encodingVersion)
+            assertEquals(entity.masterKeyAlias, retrieved.masterKeyAlias)
+            assertEquals(entity.alias, retrieved.alias)
+            assertEquals(entity.hsmAlias, retrieved.hsmAlias)
+            assertEquals(entity.externalId, retrieved.externalId)
+        }
+    }
+
+    //@Test
     fun `Should be able to cache and then retrieve wrapping keys`() {
         val cache = softCryptoCacheProvider.getInstance(
             passphrase = "PASSPHRASE",
