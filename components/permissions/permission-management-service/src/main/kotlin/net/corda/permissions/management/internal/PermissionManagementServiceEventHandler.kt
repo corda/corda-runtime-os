@@ -116,7 +116,7 @@ internal class PermissionManagementServiceEventHandler(
                 permissionManagementCacheService.stop()
                 configSubscription?.close()
                 configSubscription = null
-                rpcSender?.stop()
+                rpcSender?.close()
                 rpcSender = null
                 permissionManager?.stop()
                 permissionManager = null
@@ -151,7 +151,7 @@ internal class PermissionManagementServiceEventHandler(
     }
 
     private fun createAndStartRpcSender(kafkaConfig: SmartConfig) {
-        rpcSender?.stop()
+        rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(
             RPCConfig(
                 GROUP_NAME,

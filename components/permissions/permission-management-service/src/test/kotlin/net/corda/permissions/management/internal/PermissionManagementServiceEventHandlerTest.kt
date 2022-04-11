@@ -176,7 +176,7 @@ internal class PermissionManagementServiceEventHandlerTest {
         assertNull(handler.permissionManager)
         assertNull(handler.rpcSender)
 
-        verify(rpcSender).stop()
+        verify(rpcSender).close()
         verify(permissionManager).stop()
         verify(registrationHandle).close()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
