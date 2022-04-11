@@ -17,6 +17,8 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
 
     implementation project(":libs:db:db-orm")
+
+    testImplementation project(":libs:crypto:crypto-core")
 }
 
 // This is required for Hibernate Proxy generation. Without it OSGi will report:
