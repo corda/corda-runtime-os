@@ -120,7 +120,7 @@ class AppSimulator @Activate constructor(
             kafkaServers,
             clients,
             instanceId,
-            clock = clock
+            clock
         )
         sender.start()
         resources.add(sender)
