@@ -10,7 +10,9 @@ import net.corda.data.config.Configuration
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
@@ -110,6 +112,9 @@ class PersistenceTests {
 
         @InjectService(timeout = 5000)
         lateinit var dbConnectionManager: DbConnectionManager
+
+        //@InjectService(timeout = 5000)
+        //lateinit var dbAdmin: DbAdmin
 
         @InjectService(timeout = 5000)
         lateinit var entitiesRegistry: JpaEntitiesRegistry
@@ -231,6 +236,14 @@ class PersistenceTests {
                 ::softCryptoCacheProvider
             )
             coordinator = coordinatorFactory.createCoordinator<PersistenceTests>(::eventHandler)
+            finaliseCryptoDbSetup()
+            coordinator.start()
+            eventually {
+                assertEquals(LifecycleStatus.UP, coordinator.status)
+            }
+        }
+
+        private fun finaliseCryptoDbSetup() {
             entitiesRegistry.register(
                 CordaDb.CordaCluster.persistenceUnitName,
                 ConfigurationEntities.classes
@@ -240,10 +253,7 @@ class PersistenceTests {
                 CryptoEntities.classes
             )
             dbConnectionManager.initialise(config)
-            coordinator.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, coordinator.status)
-            }
+            //dbAdmin.createDbAndUser(DbSchema.CRYPTO, "dml_user", "pwd_123", DbPrivilege.DML)
         }
 
         private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
