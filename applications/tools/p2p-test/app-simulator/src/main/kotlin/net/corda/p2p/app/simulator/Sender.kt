@@ -55,8 +55,6 @@ class Sender(private val publisherFactory: PublisherFactory,
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
 
-        val ttl = calculateTtl(loadGenParams.expireAfterTime)
-
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
                 val dbConnection = if(dbParams != null) {
@@ -76,7 +74,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                         val messageWithIds = (1..loadGenParams.batchSize).map {
                             "$senderId:$client:${++messagesSent}"
                         }.map {
-                            createMessage(it, senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes, ttl)
+                            createMessage(it, senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
                         }
                         val records = messageWithIds.map { (messageId, message) ->
                             Record(sendTopic, messageId, message)
@@ -156,8 +154,8 @@ class Sender(private val publisherFactory: PublisherFactory,
         destinationIdentity: HoldingIdentity,
         srcIdentity: HoldingIdentity,
         messageSize: Int,
-        ttl: Long? = null
     ): Pair<String, AppMessage> {
+        val ttl = calculateTtl(loadGenParams.expireAfterTime)
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
