@@ -51,7 +51,7 @@ interface SigningKeyCacheActions : AutoCloseable {
         masterKeyAlias: String?,
         createdAfter: Instant?,
         createdBefore: Instant?
-    ): List<SigningCachedKey>
+    ): Collection<SigningCachedKey>
 
     /**
      * Returns list of keys for provided key ids.
@@ -60,5 +60,5 @@ interface SigningKeyCacheActions : AutoCloseable {
      */
     fun lookup(
         ids: List<String>
-    ): List<SigningCachedKey>
+    ): Collection<SigningCachedKey>
 }

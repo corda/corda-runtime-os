@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.db.impl.soft
+package net.corda.crypto.persistence.db.impl.signing
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.persistence.db.impl._utils.TestConfigurationReadService
@@ -12,25 +12,24 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.util.UUID
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
-class SoftCryptoKeyCacheProviderTests {
+class SigningKeyCacheProviderTests {
     private lateinit var emptyConfig: SmartConfig
     private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var component: SoftCryptoKeyCacheProviderImpl
+    private lateinit var component: SigningKeyCacheProviderImpl
 
     @BeforeEach
     fun setup() {
@@ -48,102 +47,77 @@ class SoftCryptoKeyCacheProviderTests {
                 assertTrue(it.isRunning)
             }
         }
-        component = SoftCryptoKeyCacheProviderImpl(
+        component = SigningKeyCacheProviderImpl(
             coordinatorFactory,
             configurationReadService,
             mock {
-                 on { getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML) } doReturn mock()
-            },
-            mock()
+                on { getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML) } doReturn mock()
+            }
         )
     }
 
-    private fun act(passphrase: String = "PASSPHRASE", salt: String = "SALT") =
-        component.impl.getInstance(passphrase = passphrase, salt = salt)
+    private fun act() = component.impl.getInstance()
 
     @Test
     fun `Should create subscription only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(act())
     }
 
     @Test
     fun `Should close subscription when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(act())
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
-    }
-
-    @Test
-    fun `Should return same instance for the same password and salt and another for different`() {
-        assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> { act() }
-        component.start()
-        eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
-        val instance11 = act()
-        val instance12 = act()
-        val instance1X = act(salt = UUID.randomUUID().toString())
-        assertNotNull(instance11)
-        assertNotNull(instance1X)
-        assertSame(instance11, instance12)
-        assertNotSame(instance11, instance1X)
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
         val instance11 = act()
         val instance12 = act()
-        val instance1X = act(salt = UUID.randomUUID().toString())
         assertNotNull(instance11)
-        assertNotNull(instance1X)
         assertSame(instance11, instance12)
-        assertNotSame(instance11, instance1X)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(SigningKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
         val instance21 = act()
         val instance22 = act()
         assertNotNull(instance21)

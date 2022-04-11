@@ -1,7 +1,5 @@
 package net.corda.crypto.persistence.db.impl.soft
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -9,8 +7,8 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.persistence.SoftCryptoKeyCache
 import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.persistence.config.softPersistence
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -22,7 +20,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
 
 @Component(service = [SoftCryptoKeyCacheProvider::class])
@@ -70,40 +68,38 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
 
     class ActiveImpl(
         event: ConfigChangedEvent,
-        dbConnectionManager: DbConnectionManager,
+        private val dbConnectionOps: DbConnectionOps,
         private val schemeMetadata: CipherSchemeMetadata
     ) : Impl {
         private val config: SmartConfig
-
-        private val entityManagerFactory: EntityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
-            CordaDb.Crypto,
-            DbPrivilege.DML
-        )
 
         init {
             config = event.config[ConfigKeys.CRYPTO_CONFIG] ?:
                     SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         }
 
-        private val cache: Cache<String, WrappingKey> = Caffeine.newBuilder()
-            .expireAfterAccess(config.softPersistence.expireAfterAccessMins, TimeUnit.MINUTES)
-            .maximumSize(config.softPersistence.maximumSize)
-            .build()
+        private val instances = ConcurrentHashMap<String, SoftCryptoKeyCache>()
 
         override fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache =
-            SoftCryptoKeyCacheImpl(
-                entityManagerFactory = entityManagerFactory,
-                cache = cache,
-                masterKey = WrappingKey.derive(
-                    schemeMetadata = schemeMetadata,
-                    passphrase = passphrase,
-                    salt = salt
+            instances.computeIfAbsent(passphrase + salt) {
+                SoftCryptoKeyCacheImpl(
+                    config = config,
+                    entityManagerFactory = dbConnectionOps.getOrCreateEntityManagerFactory(
+                        CordaDb.Crypto,
+                        DbPrivilege.DML
+                    ),
+                    masterKey = WrappingKey.derive(
+                        schemeMetadata = schemeMetadata,
+                        passphrase = passphrase,
+                        salt = salt
+                    )
                 )
-            )
+            }
 
         override fun close() {
-            cache.invalidateAll()
-            entityManagerFactory.close()
+            val current = instances
+            instances.clear()
+            current.values.forEach { it.close() }
         }
     }
 }
