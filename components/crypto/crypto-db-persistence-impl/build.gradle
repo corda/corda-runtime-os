@@ -27,7 +27,15 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")
 
-    integrationTestImplementation project(":libs:messaging:messaging")
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":testing:test-utilities")
+
     integrationTestImplementation 'net.corda:corda-base'
     integrationTestImplementation 'net.corda:corda-db-schema'
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
@@ -41,9 +49,8 @@ dependencies {
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-core")
-    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestImplementation project(":libs:messaging:messaging")
     integrationTestImplementation project(":testing:db-testkit")
-    integrationTestImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
