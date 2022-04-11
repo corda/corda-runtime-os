@@ -132,12 +132,14 @@ class P2PLayerEndToEndTest {
                 hostA.sendMessages(numberOfMessages, hostB)
 
                 eventually(10.seconds) {
-                    (1..numberOfMessages).forEach { messageNo ->
-                        assertThat(hostAReceivedMessages).contains("pong ($messageNo)")
-                    }
-                    val markers = hostAMarkers.map { it.value!!.marker }
-                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(numberOfMessages)
-                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).hasSize(numberOfMessages)
+                    val messagesWithSentMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                        .map { it.key }.toSet()
+                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                        .map { it.key }.toSet()
+
+                    assertThat(messagesWithSentMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                    assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                    assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
                 hostAApplicationReader.stop()
                 hostBApplicationReaderWriter.stop()
@@ -181,12 +183,14 @@ class P2PLayerEndToEndTest {
                 hostA.sendMessages(numberOfMessages, hostB)
 
                 eventually(10.seconds) {
-                    (1..numberOfMessages).forEach { messageNo ->
-                        assertThat(hostAReceivedMessages).contains("pong ($messageNo)")
-                    }
-                    val markers = hostAMarkers.map { it.value!!.marker }
-                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(numberOfMessages)
-                    assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).hasSize(numberOfMessages)
+                    val messagesWithSentMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                        .map { it.key }.toSet()
+                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }
+                        .map { it.key }.toSet()
+
+                    assertThat(messagesWithSentMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                    assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                    assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
                 hostAApplicationReader.stop()
                 hostBApplicationReaderWriter.stop()
@@ -231,12 +235,10 @@ class P2PLayerEndToEndTest {
 
                 eventually(10.seconds) {
                     val markers = hostAMarkers.filter { it.topic == P2P_OUT_MARKERS }.map { (it.value as AppMessageMarker).marker }
-                    assertThat(hostAMarkers.filter { (it.value as AppMessageMarker).marker is LinkManagerSentMarker }.map { it.key })
+                    assertThat(hostAMarkers.filter { it.value!!.marker is LinkManagerSentMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
-                    assertThat(hostAMarkers.filter { (it.value as AppMessageMarker).marker is TtlExpiredMarker }.map { it.key })
+                    assertThat(hostAMarkers.filter { it.value!!.marker is TtlExpiredMarker }.map { it.key })
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
-                    assertThat(markers.filterIsInstance<LinkManagerSentMarker>()).hasSize(numberOfMessages)
-                    assertThat(markers.filterIsInstance<TtlExpiredMarker>()).hasSize(numberOfMessages)
                     assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty()
                 }
                 hostAApplicationReader.stop()
