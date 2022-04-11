@@ -69,7 +69,7 @@ test {
         remoteExecutionPreferred = true
         waitTimeout = Duration.ofMinutes(2)
         maxLocalExecutors = 1
-        maxRemoteExecutors = 10
+        maxRemoteExecutors = 20
         requirements = ["jdk=11","os=linux"]
     }
 }
