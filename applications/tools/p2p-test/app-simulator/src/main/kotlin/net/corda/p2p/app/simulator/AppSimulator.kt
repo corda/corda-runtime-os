@@ -19,6 +19,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
@@ -30,7 +31,8 @@ class AppSimulator @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    private val clock: Clock = Clock.systemUTC()
 ) : Application {
 
     companion object {
@@ -118,6 +120,7 @@ class AppSimulator @Activate constructor(
             kafkaServers,
             clients,
             instanceId,
+            clock = clock
         )
         sender.start()
         resources.add(sender)

@@ -36,7 +36,7 @@ class Sender(private val publisherFactory: PublisherFactory,
              private val kafkaServers: String,
              private val clients: Int,
              private val instanceId: String,
-             private val clock: Clock
+             private val clock: Clock = Clock.systemUTC()
              ): Closeable {
 
     companion object {
