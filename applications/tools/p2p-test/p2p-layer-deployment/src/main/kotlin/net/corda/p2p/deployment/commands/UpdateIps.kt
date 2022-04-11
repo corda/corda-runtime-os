@@ -67,7 +67,7 @@ class UpdateIps : Runnable {
             "get",
             "namespace",
             "-l",
-            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName},p2p-namespace-type=deployed-layer",
             "-o",
             "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.annotations.host}{\"\\n\"}{end}",
         ).lines()

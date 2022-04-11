@@ -49,7 +49,8 @@ class StartDb : Runnable {
             "metadata" to mapOf(
                 "name" to name,
                 "labels" to mapOf(
-                    "namespace-type" to "p2p-deployment-db",
+                    "namespace-type" to "p2p-deployment",
+                    "p2p-namespace-type" to "db",
                     "creator" to MyUserName.userName,
                 ),
                 "annotations" to mapOf(

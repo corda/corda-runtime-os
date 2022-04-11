@@ -53,6 +53,7 @@ class Namespace(
                     "name" to identifier.namespaceName,
                     "labels" to mapOf(
                         "namespace-type" to "p2p-deployment",
+                        "p2p-namespace-type" to "deployed-layer",
                         "creator" to MyUserName.userName,
                     ),
                     "annotations" to mapOf(
