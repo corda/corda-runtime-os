@@ -18,6 +18,7 @@ dependencies {
     implementation project(':processors:rpc-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
