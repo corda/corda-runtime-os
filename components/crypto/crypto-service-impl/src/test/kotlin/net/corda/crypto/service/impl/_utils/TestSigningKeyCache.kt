@@ -49,6 +49,8 @@ class TestSigningKeyCache : SigningKeyCache {
     private val actions = ConcurrentHashMap<String, SigningKeyCacheActions>()
     override fun act(tenantId: String): SigningKeyCacheActions =
         actions.computeIfAbsent(tenantId) { TestSigningKeyCacheActions(tenantId) }
+
+    override fun close() = Unit
 }
 
 class TestSigningKeyCacheActions(
@@ -106,7 +108,7 @@ class TestSigningKeyCacheActions(
     override fun find(publicKey: PublicKey): SigningCachedKey? =
         keys[publicKeyIdOf(publicKey)]
 
-    override fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
+    override fun filterMyKeys(candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
         return candidateKeys.filter {
             keys.containsKey(publicKeyIdOf(it))
         }
@@ -122,7 +124,7 @@ class TestSigningKeyCacheActions(
         masterKeyAlias: String?,
         createdAfter: Instant?,
         createdBefore: Instant?
-    ): List<SigningCachedKey> {
+    ): Collection<SigningCachedKey> {
         val filtered = keys.values.filter {
             if(category != null && it.category != category) {
                 false
@@ -151,7 +153,7 @@ class TestSigningKeyCacheActions(
         }.drop(skip).take(take)
     }
 
-    override fun lookup(ids: List<String>): List<SigningCachedKey> {
+    override fun lookup(ids: List<String>): Collection<SigningCachedKey> {
         val result = mutableListOf<SigningCachedKey>()
         ids.forEach {
             val found = keys[it]

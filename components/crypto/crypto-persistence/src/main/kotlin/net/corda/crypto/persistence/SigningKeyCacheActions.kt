@@ -25,7 +25,7 @@ interface SigningKeyCacheActions : AutoCloseable {
     /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
      */
-    fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey>
+    fun filterMyKeys(candidateKeys: Collection<PublicKey>): Collection<PublicKey>
 
     /**
      * Returns list of keys satisfying the filter condition. All filter values are combined as AND.

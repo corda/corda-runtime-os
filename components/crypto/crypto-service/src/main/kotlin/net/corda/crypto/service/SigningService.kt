@@ -7,7 +7,6 @@ import net.corda.v5.crypto.DigitalSignature
 import java.security.KeyPair
 import java.security.PublicKey
 import java.time.Instant
-import java.util.UUID
 
 /**
  * The [SigningService] is an abstraction of the lower level key generation and signing.
@@ -56,7 +55,7 @@ interface SigningService {
         masterKeyAlias: String?,
         createdAfter: Instant?,
         createdBefore: Instant?
-    ): List<SigningKeyInfo>
+    ): Collection<SigningKeyInfo>
 
     /**
      * Returns list of keys for provided key ids.
@@ -67,7 +66,7 @@ interface SigningService {
     fun lookup(
         tenantId: String,
         ids: List<String>
-    ): List<SigningKeyInfo>
+    ): Collection<SigningKeyInfo>
 
     /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
@@ -79,8 +78,8 @@ interface SigningService {
      */
     fun filterMyKeys(
         tenantId: String,
-        candidateKeys: Iterable<PublicKey>
-    ): Iterable<PublicKey>
+        candidateKeys: Collection<PublicKey>
+    ): Collection<PublicKey>
 
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.

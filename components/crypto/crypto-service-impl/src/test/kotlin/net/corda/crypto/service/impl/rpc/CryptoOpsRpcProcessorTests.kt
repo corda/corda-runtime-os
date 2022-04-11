@@ -66,7 +66,7 @@ class CryptoOpsRpcProcessorTests {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
         }
 
-        override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> =
+        override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
             if(candidateKeys.any()) {
                 listOf(candidateKeys.first())
             } else {

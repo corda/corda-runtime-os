@@ -69,7 +69,7 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> =
+    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
         impl.ops.filterMyKeys(tenantId, candidateKeys)
 
     override fun generateKeyPair(

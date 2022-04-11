@@ -7,18 +7,19 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions
 import net.corda.crypto.persistence.config.softPersistence
-import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.cipher.suite.KeyEncodingService
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
 class SigningKeyCacheImpl(
     private val config: SmartConfig,
-    private val dbConnectionOps: DbConnectionOps
+    private val dbConnectionOps: DbConnectionOps,
+    private val keyEncodingService: KeyEncodingService
 ) : SigningKeyCache {
     private val cache = ConcurrentHashMap<String, Cache<String, SigningCachedKey>>()
 
@@ -26,7 +27,8 @@ class SigningKeyCacheImpl(
         return SigningKeyCacheActionsImpl(
             tenantId = tenantId,
             entityManager = getEntityManagerFactory(tenantId).createEntityManager(),
-            cache = getCache(tenantId)
+            cache = getCache(tenantId),
+            keyEncodingService = keyEncodingService
         )
     }
 

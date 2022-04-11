@@ -47,7 +47,7 @@ open class SigningServiceImpl(
         masterKeyAlias: String?,
         createdAfter: Instant?,
         createdBefore: Instant?
-    ): List<SigningKeyInfo> {
+    ): Collection<SigningKeyInfo> {
         logger.debug(
             "lookup(skip={}, take={}, orderBy={}, tenantId={}, category={}, schemeCodeName={}" +
                     "alias={}, masterKeyAlias={}, createdAfter={}, createdBefore={}",
@@ -68,14 +68,14 @@ open class SigningServiceImpl(
         }
     }
 
-    override fun lookup(tenantId: String, ids: List<String>): List<SigningKeyInfo> {
+    override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
         logger.debug("lookup(tenantId={}, ids=[{}])", tenantId, ids.joinToString())
         return cache.act(tenantId) {
             it.lookup(ids).map { key -> key.toSigningKeyInfo() }
         }
     }
 
-    override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
+    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
         logger.debug("filterMyKeys(tenantId={}, ids=[{}])", tenantId, candidateKeys.joinToString { publicKeyIdOf(it) })
         require(candidateKeys.count() <= 20) {
             "Number of item must not exceed 20, submitted ${candidateKeys.count()}"

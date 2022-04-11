@@ -62,7 +62,7 @@ class CryptoOpsClientImpl(
         return response!!.codes
     }
 
-    fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
+    fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
             FilterMyKeysRpcQuery::class.java.simpleName,

@@ -682,7 +682,7 @@ class CryptoOperationsTests {
         val info = signingAliasedKeys.getValue(signatureScheme)
         val returned = info.signingService.lookup(tenantId, listOf(publicKeyIdOf(info.publicKey)))
         assertEquals(1, returned.size)
-        verifySigningKeyInfo(info.publicKey, info.alias, signatureScheme, returned[0])
+        verifySigningKeyInfo(info.publicKey, info.alias, signatureScheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, signatureScheme)
     }
 
@@ -694,7 +694,7 @@ class CryptoOperationsTests {
         val info = signingFreshKeys.getValue(signatureScheme)
         val returned = info.signingService.lookup(tenantId, listOf(publicKeyIdOf(info.publicKey)))
         assertEquals(1, returned.size)
-        verifySigningKeyInfo(info.publicKey, null, signatureScheme, returned[0])
+        verifySigningKeyInfo(info.publicKey, null, signatureScheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, null, info.externalId, signatureScheme)
     }
 
@@ -729,7 +729,7 @@ class CryptoOperationsTests {
             createdBefore = null
         )
         assertEquals(1, returned.size)
-        verifySigningKeyInfo(info.publicKey, info.alias, signatureScheme, returned[0])
+        verifySigningKeyInfo(info.publicKey, info.alias, signatureScheme, returned.first())
         verifyCachedKeyRecord(info.publicKey, info.alias, null, signatureScheme)
     }
 

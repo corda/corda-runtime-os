@@ -51,7 +51,7 @@ class CryptoFlowOpsTransformer(
     /**
      * Creates [FilterMyKeysFlowQuery].
      */
-    fun createFilterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): FlowOpsRequest {
+    fun createFilterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): FlowOpsRequest {
         return createRequest(
             tenantId = tenantId,
             request = FilterMyKeysFlowQuery(

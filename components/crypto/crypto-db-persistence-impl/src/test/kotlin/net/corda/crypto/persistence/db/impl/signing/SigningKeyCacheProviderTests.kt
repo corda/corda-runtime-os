@@ -52,7 +52,8 @@ class SigningKeyCacheProviderTests {
             configurationReadService,
             mock {
                 on { getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML) } doReturn mock()
-            }
+            },
+            mock()
         )
     }
 
