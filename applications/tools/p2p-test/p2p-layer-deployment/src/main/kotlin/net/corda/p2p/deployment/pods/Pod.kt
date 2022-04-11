@@ -6,6 +6,7 @@ import net.corda.p2p.deployment.Yaml
 abstract class Pod : Yamlable {
     abstract val app: String
     abstract val image: String
+    open val statefulSetReplicas: Int? = null
     open val ports: Collection<Port> = emptyList()
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
@@ -46,13 +47,13 @@ abstract class Pod : Yamlable {
 
     private fun createPod(namespace: String) = mapOf(
         "apiVersion" to "apps/v1",
-        "kind" to "Deployment",
+        "kind" to if (statefulSetReplicas == null) "Deployment" else "StatefulSet",
         "metadata" to mapOf(
             "name" to app,
             "namespace" to namespace,
         ),
         "spec" to mapOf(
-            "replicas" to 1,
+            "replicas" to (statefulSetReplicas ?: 1),
             "selector" to mapOf("matchLabels" to mapOf("app" to app)),
             "template" to mapOf(
                 "metadata" to mapOf(
@@ -105,7 +106,12 @@ abstract class Pod : Yamlable {
                         rawData.map { it.createVolume(app) },
                 )
             ),
-        )
+        ) +
+            if (statefulSetReplicas == null) {
+                emptyMap()
+            } else {
+                mapOf("serviceName" to app)
+            }
     )
 
     private fun createService(namespace: String) = if (ports.isEmpty()) {
@@ -124,14 +130,15 @@ abstract class Pod : Yamlable {
                     )
                 ),
                 "spec" to mapOf(
-                    "type" to "NodePort",
+                    "type" to if (statefulSetReplicas == null) "NodePort" else "ClusterIP",
                     "ports" to ports.map {
                         mapOf(
                             "port" to it.port,
                             "name" to it.displayName
                         )
                     },
-                    "selector" to mapOf("app" to app)
+                    "selector" to mapOf("app" to app),
+                    "clusterIP" to if (statefulSetReplicas == null) null else "None"
                 )
             )
         )

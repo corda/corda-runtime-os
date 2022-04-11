@@ -1,17 +1,14 @@
 package net.corda.p2p.deployment.pods
 
 class LinkManager(
-    index: Int,
     kafkaServers: String,
     details: P2PDeploymentDetails,
-) : P2pPod(kafkaServers, index, details) {
+) : P2pPod(kafkaServers, details, details.linkManagerCount) {
     companion object {
         fun linkManagers(
             kafkaServers: String,
             details: P2PDeploymentDetails,
-        ) = (1..details.linkManagerCount).map {
-            LinkManager(it, kafkaServers, details)
-        }
+        ) = listOf(LinkManager(kafkaServers, details))
     }
 
     override val imageName = "p2p-link-manager"

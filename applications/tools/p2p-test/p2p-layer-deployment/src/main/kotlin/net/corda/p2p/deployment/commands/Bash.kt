@@ -40,9 +40,21 @@ class Bash : Runnable {
             "-n", namespaceName,
             "-l", "app=$pod",
             "--output", "jsonpath={.items[*].metadata.name}",
-        )
-        if (name.isBlank()) {
-            throw DeploymentException("Could not find $pod")
+        ).let { name ->
+            name.ifBlank {
+                if (ProcessRunner.execute(
+                        "kubectl",
+                        "get",
+                        "pod",
+                        "-n", namespaceName,
+                        pod,
+                    ).isNotBlank()
+                ) {
+                    pod
+                } else {
+                    throw DeploymentException("Could not find $pod")
+                }
+            }
         }
 
         ProcessRunner.follow(
@@ -52,7 +64,7 @@ class Bash : Runnable {
                 "-it",
                 "-n",
                 namespaceName,
-                name,
+                name.split(" ").random(),
                 "--",
             ) +
                 params.ifEmpty {

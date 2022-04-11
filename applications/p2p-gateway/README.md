@@ -49,6 +49,7 @@ You can configure the image using those environment variables:
 * `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
 * `INSTANCE_ID` - The Gateway instance ID (default to random number)
+* `INSTANCE_ID_FROM_HOSTNAME_REGEX` - A regular expression to extract the default instance ID from (for example: `(\d)+`)
 
 ### Example
 1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
