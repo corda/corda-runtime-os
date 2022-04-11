@@ -54,7 +54,7 @@ public class FlowSessionImplJavaTest {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{ 1, 2, 3 });
         when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
-        when(serializationService.deserialize(any(byte[].class), any())).thenReturn("hello there");
+        when(serializationService.deserialize(any(byte[].class), any())).thenReturn(1);
         when(sandboxGroupContext.get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService.class))
             .thenReturn(serializationService);
         when(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext);
