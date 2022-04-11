@@ -51,14 +51,6 @@ class Sender(private val publisherFactory: PublisherFactory,
     @Volatile
     private var stop = false
 
-    private fun calculateTtl(expireAfterTime: Duration?): Long? {
-        return if(expireAfterTime == null) {
-            null
-        } else {
-            expireAfterTime.toMillis() + clock.instant().toEpochMilli()
-        }
-    }
-
     fun start() {
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
@@ -137,6 +129,14 @@ class Sender(private val publisherFactory: PublisherFactory,
     fun stop() {
         stopLock.write {
             stop = true
+        }
+    }
+
+    private fun calculateTtl(expireAfterTime: Duration?): Long? {
+        return if(expireAfterTime == null) {
+            null
+        } else {
+            expireAfterTime.toMillis() + clock.instant().toEpochMilli()
         }
     }
 
