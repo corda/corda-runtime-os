@@ -44,6 +44,7 @@ class CommittedPositionEntry(
     @Column
     val timestamp: Instant = Instant.now(),
 ) {
+    @Suppress("MaxLineLength")
     override fun toString(): String {
         return "CommittedPositionEntry(topic='$topic', consumerGroup='$consumerGroup', partition=$partition, recordPosition=$recordPosition, transactionId=$transactionId, timestamp=$timestamp)"
     }
