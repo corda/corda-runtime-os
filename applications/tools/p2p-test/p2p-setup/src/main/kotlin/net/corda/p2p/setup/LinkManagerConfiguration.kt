@@ -33,7 +33,7 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
 
     @Option(
         names = ["--replayAlgorithm"],
-        description = ["The algorithm used to schedule messages for replay."]
+        description = ["The algorithm used to schedule messages for replay. One of: \${COMPLETION-CANDIDATES}."]
     )
     var replayAlgorithm = ReplayAlgorithm.Constant
 

@@ -2,17 +2,19 @@ package net.corda.p2p.setup
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm.Constant
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
+
 
 class LinkManagerConfigurationTest {
 
@@ -44,15 +46,17 @@ class LinkManagerConfigurationTest {
             sessionsPerPeer = SESSIONS_PER_PEER
         }
         val record = linkManagerConfiguration.call().single()
-        assertThat(record.topic).isEqualTo(TOPIC)
-        val config = ConfigFactory.parseString(record.value!!.value)
-        assertThat(config.getValue(MAX_MESSAGE_SIZE_KEY).unwrapped()).isEqualTo(MAX_MESSAGE_SIZE)
-        assertThat(config.getValue(MAX_REPLAYING_MESSAGES_PER_PEER).unwrapped()).isEqualTo(MAX_REPLAYING_MESSAGES)
-        assertThat(config.getValue(HEARTBEAT_MESSAGE_PERIOD_KEY).unwrapped()).isEqualTo(HEARTBEAT_MESSAGE_REPLAY_PERIOD.toInt())
-        assertThat(config.getValue(SESSION_TIMEOUT_KEY).unwrapped()).isEqualTo(SESSION_TIMEOUT.toInt())
-        assertThat(config.getValue(SESSIONS_PER_PEER_KEY).unwrapped()).isEqualTo(SESSIONS_PER_PEER.toInt())
-        val innerConfig = config.getConfig(Constant.configKeyName())
-        assertThat(innerConfig.getValue(REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD.toInt())
+        SoftAssertions.assertSoftly {
+            it.assertThat(record.topic).isEqualTo(TOPIC)
+            val config = ConfigFactory.parseString(record.value!!.value)
+            it.assertThat(config.getValue(MAX_MESSAGE_SIZE_KEY).unwrapped()).isEqualTo(MAX_MESSAGE_SIZE)
+            it.assertThat(config.getValue(MAX_REPLAYING_MESSAGES_PER_PEER).unwrapped()).isEqualTo(MAX_REPLAYING_MESSAGES)
+            it.assertThat(config.getValue(HEARTBEAT_MESSAGE_PERIOD_KEY).unwrapped()).isEqualTo(HEARTBEAT_MESSAGE_REPLAY_PERIOD.toInt())
+            it.assertThat(config.getValue(SESSION_TIMEOUT_KEY).unwrapped()).isEqualTo(SESSION_TIMEOUT.toInt())
+            it.assertThat(config.getValue(SESSIONS_PER_PEER_KEY).unwrapped()).isEqualTo(SESSIONS_PER_PEER.toInt())
+            val innerConfig = config.getConfig(Constant.configKeyName())
+            it.assertThat(innerConfig.getValue(REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD.toInt())
+        }
     }
 
     @Test
@@ -69,16 +73,18 @@ class LinkManagerConfigurationTest {
             sessionsPerPeer = SESSIONS_PER_PEER
         }
         val record = linkManagerConfiguration.call().single()
-        assertThat(record.topic).isEqualTo(TOPIC)
-        val config = ConfigFactory.parseString(record.value!!.value)
-        assertThat(config.getValue(MAX_MESSAGE_SIZE_KEY).unwrapped()).isEqualTo(MAX_MESSAGE_SIZE)
-        assertThat(config.getValue(MAX_REPLAYING_MESSAGES_PER_PEER).unwrapped()).isEqualTo(MAX_REPLAYING_MESSAGES)
-        assertThat(config.getValue(HEARTBEAT_MESSAGE_PERIOD_KEY).unwrapped()).isEqualTo(HEARTBEAT_MESSAGE_REPLAY_PERIOD.toInt())
-        assertThat(config.getValue(SESSION_TIMEOUT_KEY).unwrapped()).isEqualTo(SESSION_TIMEOUT.toInt())
-        assertThat(config.getValue(SESSIONS_PER_PEER_KEY).unwrapped()).isEqualTo(SESSIONS_PER_PEER.toInt())
-        val innerConfig = config.getConfig(ExponentialBackoff.configKeyName())
-        assertThat(innerConfig.getValue(BASE_REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD_BASE.toInt())
-        assertThat(innerConfig.getValue(REPLAY_PERIOD_CUTOFF_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_CUT_OFF.toInt())
+        SoftAssertions.assertSoftly {
+            it.assertThat(record.topic).isEqualTo(TOPIC)
+            val config = ConfigFactory.parseString(record.value!!.value)
+            it.assertThat(config.getValue(MAX_MESSAGE_SIZE_KEY).unwrapped()).isEqualTo(MAX_MESSAGE_SIZE)
+            it.assertThat(config.getValue(MAX_REPLAYING_MESSAGES_PER_PEER).unwrapped()).isEqualTo(MAX_REPLAYING_MESSAGES)
+            it.assertThat(config.getValue(HEARTBEAT_MESSAGE_PERIOD_KEY).unwrapped()).isEqualTo(HEARTBEAT_MESSAGE_REPLAY_PERIOD.toInt())
+            it.assertThat(config.getValue(SESSION_TIMEOUT_KEY).unwrapped()).isEqualTo(SESSION_TIMEOUT.toInt())
+            it.assertThat(config.getValue(SESSIONS_PER_PEER_KEY).unwrapped()).isEqualTo(SESSIONS_PER_PEER.toInt())
+            val innerConfig = config.getConfig(ExponentialBackoff.configKeyName())
+            it.assertThat(innerConfig.getValue(BASE_REPLAY_PERIOD_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_PERIOD_BASE.toInt())
+            it.assertThat(innerConfig.getValue(REPLAY_PERIOD_CUTOFF_KEY).unwrapped()).isEqualTo(MESSAGE_REPLAY_CUT_OFF.toInt())
+        }
     }
 
 }
