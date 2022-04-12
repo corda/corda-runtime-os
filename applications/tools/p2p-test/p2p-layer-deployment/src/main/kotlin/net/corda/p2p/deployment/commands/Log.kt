@@ -69,7 +69,7 @@ class Log : Runnable {
     }
 
     @Suppress("UNCHECKED_CAST", "ThrowsCount")
-    fun getAllPods(): Map<String, String> {
+    private fun getAllPods(): Map<String, String> {
         val pods = ProcessRunner.execute(
             "kubectl",
             "get",

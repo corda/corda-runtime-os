@@ -47,12 +47,14 @@ abstract class Pod : Yamlable {
 
     private fun createPod(namespace: String) = mapOf(
         "apiVersion" to "apps/v1",
+        // When statefulSetReplicas is defined, we want to have a StatefulSet instead of Deployment
         "kind" to if (statefulSetReplicas == null) "Deployment" else "StatefulSet",
         "metadata" to mapOf(
             "name" to app,
             "namespace" to namespace,
         ),
         "spec" to mapOf(
+            // When statefulSetReplicas is not defined we want a single replica of the pod
             "replicas" to (statefulSetReplicas ?: 1),
             "selector" to mapOf("matchLabels" to mapOf("app" to app)),
             "template" to mapOf(
@@ -110,6 +112,7 @@ abstract class Pod : Yamlable {
             if (statefulSetReplicas == null) {
                 emptyMap()
             } else {
+                // StatefulSet must have serviceName defined.
                 mapOf("serviceName" to app)
             }
     )
@@ -130,7 +133,10 @@ abstract class Pod : Yamlable {
                     )
                 ),
                 "spec" to mapOf(
+                    // For Deployment pod, we use NodePort to expose the port,
+                    // for Stateful Set we use ClusterIP with None (i.e. headless service).
                     "type" to if (statefulSetReplicas == null) "NodePort" else "ClusterIP",
+                    "clusterIP" to if (statefulSetReplicas == null) null else "None",
                     "ports" to ports.map {
                         mapOf(
                             "port" to it.port,
@@ -138,7 +144,6 @@ abstract class Pod : Yamlable {
                         )
                     },
                     "selector" to mapOf("app" to app),
-                    "clusterIP" to if (statefulSetReplicas == null) null else "None"
                 )
             )
         )
