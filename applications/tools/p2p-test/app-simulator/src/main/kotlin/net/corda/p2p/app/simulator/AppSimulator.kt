@@ -283,7 +283,7 @@ data class LoadGenerationParams(
     val batchSize: Int,
     val interBatchDelay: Duration,
     val messageSizeBytes: Int,
-    val expireAfterTime: Duration? = null
+    val expireAfterTime: Duration?
 ) {
     init {
         when (loadGenerationType) {
