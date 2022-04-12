@@ -9,12 +9,13 @@ class TestInitialConfigPlugin {
 
     @Test
     fun testSetupScriptMissingCommand() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
-            ).execute()
+            ).setColorScheme(colorScheme).execute()
         }
         assertThat(outText).startsWith("Missing required subcommand")
     }
