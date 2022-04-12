@@ -50,7 +50,7 @@ class StartDb : Runnable {
                 "name" to name,
                 "labels" to mapOf(
                     "namespace-type" to "p2p-deployment",
-                    "p2p-namespace-type" to "db",
+                    "p2p-namespace-type" to "simulator-db",
                     "creator" to MyUserName.userName,
                 ),
                 "annotations" to mapOf(
