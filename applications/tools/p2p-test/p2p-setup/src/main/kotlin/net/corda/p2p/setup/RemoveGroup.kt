@@ -13,6 +13,7 @@ import java.util.concurrent.Callable
     description = ["Remove a membership group"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class RemoveGroup : Callable<Collection<Record<String, *>>> {
 

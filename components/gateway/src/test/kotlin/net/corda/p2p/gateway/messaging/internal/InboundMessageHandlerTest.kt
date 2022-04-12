@@ -455,7 +455,8 @@ class InboundMessageHandlerTest {
     private fun unauthenticatedP2PMessage(content: String) = UnauthenticatedMessage.newBuilder().apply {
         header = UnauthenticatedMessageHeader(
             HoldingIdentity("A", "B"),
-            HoldingIdentity("C", "D")
+            HoldingIdentity("C", "D"),
+            "subsystem",
         )
         payload = ByteBuffer.wrap(content.toByteArray())
     }.build()

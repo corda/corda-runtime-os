@@ -7,6 +7,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
@@ -55,14 +56,16 @@ class SessionEventHandler @Activate constructor(
         )
 
         // Null is returned if duplicate [SessionInit]s are received
-        when (val sessionInit = sessionManager.getNextReceivedEvent(updatedSessionState)?.payload) {
+        val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
+        when (val sessionInit = nextSessionEvent?.payload) {
             is SessionInit -> {
                 if (context.checkpoint != null) {
                     throw FlowProcessingException(
                         "Flow [${context.checkpoint.flowKey.flowId}] already has a checkpoint while processing session init event"
                     )
                 }
-                val checkpoint = createInitiatedFlowCheckpoint(context, updatedSessionState.sessionId, sessionInit)
+                val checkpoint =
+                    createInitiatedFlowCheckpoint(context, updatedSessionState, sessionInit, nextSessionEvent.initiatingIdentity)
                 checkpoint.sessions.add(updatedSessionState)
                 return context.copy(checkpoint = checkpoint)
             }
@@ -73,8 +76,14 @@ class SessionEventHandler @Activate constructor(
         return context
     }
 
-    private fun createInitiatedFlowCheckpoint(context: FlowEventContext<*>, sessionId: String, sessionInit: SessionInit): Checkpoint {
-        val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(sessionInit.initiatedIdentity.toCorda())
+    private fun createInitiatedFlowCheckpoint(
+        context: FlowEventContext<*>,
+        sessionState: SessionState,
+        sessionInit: SessionInit,
+        initiatingIdentity: net.corda.data.identity.HoldingIdentity
+    ): Checkpoint {
+        val sessionId = sessionState.sessionId
+        val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(initiatingIdentity.toCorda())
         val initiatedFlow = initiatingToInitiatedFlows[sessionInit.cpiId to sessionInit.flowName] ?: throw FlowProcessingException(
             "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
         )
@@ -91,7 +100,7 @@ class SessionEventHandler @Activate constructor(
             .setRequestId(sessionId)
             .setIdentity(context.inputEvent.flowKey.identity)
             .setCpiId(sessionInit.cpiId)
-            .setInitiatedBy(sessionInit.initiatingIdentity)
+            .setInitiatedBy(initiatingIdentity)
             .setFlowClassName(initiatedFlow)
             .setCreatedTimestamp(Instant.now())
             .build()

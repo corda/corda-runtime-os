@@ -18,6 +18,7 @@ import java.util.concurrent.Callable
     description = ["Publish locally hosted identity"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
     companion object {
@@ -36,14 +37,14 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
             } catch (e: Missing) {
                 dataConfig.getStringList("tlsCertificates")
             }
-            val publicKey = try {
-                dataConfig.getString("publicKeyFile").let {
+            val publicSessionKey = try {
+                dataConfig.getString("publicSessionKeyFile").let {
                     File(it).readText()
                 }
             } catch (e: Missing) {
-                dataConfig.getString("publicKey")
+                dataConfig.getString("publicSessionKey")
             }
-            publicKey.verifyPublicKey()
+            publicSessionKey.verifyPublicKey()
 
             return Record(
                 topic, "$x500Name-$groupId",
@@ -52,7 +53,7 @@ class AddIdentity : Callable<Collection<Record<String, HostedIdentityEntry>>> {
                     tlsTenantId,
                     sessionKeyTenantId,
                     tlsCertificates,
-                    publicKey,
+                    publicSessionKey,
                 )
             )
         }

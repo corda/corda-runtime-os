@@ -33,7 +33,7 @@ class SessionErrorProcessorReceive(
             val errorMessage = "Received SessionError on key $key for sessionId which had null state: $sessionId. " +
                     "Error message received was: $exceptionEnvelope"
             logger.error(errorMessage)
-            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionData-NullSessionState", instant)
+            generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
             logger.error(
                 "Session Error received on sessionId $sessionId. " +

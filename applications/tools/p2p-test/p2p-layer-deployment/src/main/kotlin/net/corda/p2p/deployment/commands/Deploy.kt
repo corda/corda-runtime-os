@@ -17,6 +17,7 @@ import picocli.CommandLine.Option
     showDefaultValues = true,
     description = ["Deploy P2P layer cluster for K8S"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Deploy : Runnable {
     @Option(
@@ -96,7 +97,7 @@ class Deploy : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-beta-1647507653066"
+    private var tag = "5.0.0.0-beta-1649145737690"
 
     @Option(
         names = ["-a", "--key-algorithm"],

@@ -27,6 +27,7 @@ import picocli.CommandLine.Option
     showDefaultValues = true,
     showAtFileInUsageHelp = true,
     subcommandsRepeatable = true,
+    usageHelpAutoWidth = true,
 )
 class Command {
     private companion object {

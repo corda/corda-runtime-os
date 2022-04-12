@@ -9,6 +9,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -37,7 +38,6 @@ class AppSimulator @Activate constructor(
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
-        const val DELIVERED_MSG_TOPIC = "app.received_msg"
 
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
@@ -136,7 +136,7 @@ class AppSimulator @Activate constructor(
         clients: Int,
         instanceId: String,
     ) {
-        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaServers, clients, instanceId)
+        val receiver = Receiver(subscriptionFactory, receiveTopic, APP_RECEIVED_MESSAGES_TOPIC, kafkaServers, clients, instanceId)
         receiver.start()
         resources.add(receiver)
     }

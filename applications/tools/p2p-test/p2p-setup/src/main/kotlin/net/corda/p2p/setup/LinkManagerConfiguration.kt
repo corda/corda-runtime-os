@@ -17,6 +17,7 @@ import java.util.concurrent.Callable
     description = ["Configure the P2P Link Manager"],
     showAtFileInUsageHelp = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class LinkManagerConfiguration : Callable<Collection<Record<String, Configuration>>> {
     @Option(

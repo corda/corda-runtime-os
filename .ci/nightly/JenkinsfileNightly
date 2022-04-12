@@ -6,6 +6,9 @@ cordaNightlyPipeline(
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
     publishOSGiImage: true,
-    publishPreTestImage: false
+    publishPreTestImage: true,
+    publishHelmChart: true,
+    e2eTestName: 'corda-runtime-os-e2e-tests',
+    runE2eTests: true
     )
     

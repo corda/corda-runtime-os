@@ -9,6 +9,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.addOrReplaceSession
+import net.corda.flow.pipeline.handlers.getInitiatingAndInitiatedParties
 import net.corda.flow.pipeline.handlers.getSession
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
@@ -34,9 +35,11 @@ class CloseSessionsRequestHandler @Activate constructor(
         val checkpoint = requireCheckpoint(context)
 
         val now = Instant.now()
-
         for (sessionId in request.sessions) {
-
+            val sessionState = checkpoint.getSession(sessionId)
+            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
+                sessionState, checkpoint.flowKey.identity
+            )
             val updatedSessionState = sessionManager.processMessageToSend(
                 key = checkpoint.flowKey.flowId,
                 sessionState = checkpoint.getSession(sessionId),
@@ -44,6 +47,8 @@ class CloseSessionsRequestHandler @Activate constructor(
                     .setSessionId(sessionId)
                     .setMessageDirection(MessageDirection.OUTBOUND)
                     .setTimestamp(now)
+                    .setInitiatingIdentity(initiatingIdentity)
+                    .setInitiatedIdentity(initiatedIdentity)
                     .setSequenceNum(null)
                     .setReceivedSequenceNum(0)
                     .setOutOfOrderSequenceNums(listOf(0))

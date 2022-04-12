@@ -17,8 +17,8 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicReference
 
@@ -32,7 +32,7 @@ internal class ReplayScheduler<M>(
     private val limitTotalReplays: Boolean,
     private val replayMessage: (message: M) -> Unit,
     private val executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
-    private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
+    private val clock: Clock
     ) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
@@ -239,7 +239,7 @@ internal class ReplayScheduler<M>(
 
     private fun scheduleForReplay(originalAttemptTimestamp: Long, messageId: MessageId, message: M) {
         val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
-        val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
+        val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
         val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
         replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
     }

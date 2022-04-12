@@ -18,6 +18,7 @@ import java.util.concurrent.Callable
     description = ["Add a group member"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
     companion object {
@@ -27,16 +28,16 @@ class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
             val dataConfig = this.getConfig("data")
             val address = dataConfig.getString("address")
 
-            val publicKey = try {
-                val publicKeyFile = dataConfig.getString("publicKeyFile")
+            val publicSessionKey = try {
+                val publicKeyFile = dataConfig.getString("publicSessionKeyFile")
                 File(publicKeyFile).readText()
             } catch (e: Missing) {
-                dataConfig.getString("publicKey")
+                dataConfig.getString("publicSessionKey")
             }
-            publicKey.verifyPublicKey()
+            publicSessionKey.verifyPublicKey()
             val networkMapEntry = MemberInfoEntry(
                 HoldingIdentity(x500Name, groupId),
-                publicKey,
+                publicSessionKey,
                 address,
             )
             return Record(topic, "$x500Name-$groupId", networkMapEntry)

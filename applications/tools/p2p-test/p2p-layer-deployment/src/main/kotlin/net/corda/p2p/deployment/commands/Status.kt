@@ -14,6 +14,7 @@ import java.time.Instant
     showDefaultValues = true,
     description = ["print the status of all the known namespaces"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Status : Runnable {
     override fun run() {

@@ -27,4 +27,6 @@ By default, all logging is at info level. The logs are sent to stdout, to suppor
 The default Log4j config is located at `src/main/resources/log4j2.xml`. The
 `-Dlog4j.configurationFile=path/to/file.xml` system property can be used to override this config.
 
+For example `java -Dlog4j.configurationFile=log4j2-console.xml -jar build/bin/corda-kafka-setup-5.0.0.0-SNAPSHOT.jar --help`
+
 The `-Dlog4j.debug` system property can also be used to log debug-level and trace-level messages to the console.

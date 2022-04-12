@@ -14,7 +14,6 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -29,8 +28,8 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.test.flow.util.buildSessionEvent
 import net.corda.session.mapper.service.FlowMapperService
+import net.corda.test.flow.util.buildSessionEvent
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -90,8 +89,7 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                    testId, testId, flowKey, identity,
-                    identity, null
+                    testId, testId, flowKey,null
                 ))
             )
         )
@@ -105,7 +103,7 @@ class FlowMapperServiceIntegrationTest {
             TestP2POutProcessor(testId, p2pLatch, 1), SmartConfigImpl.empty(), null
         )
         p2pOutSub.start()
-        assertTrue(p2pLatch.await(3, TimeUnit.SECONDS))
+        assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
         p2pOutSub.stop()
 
         //send data back

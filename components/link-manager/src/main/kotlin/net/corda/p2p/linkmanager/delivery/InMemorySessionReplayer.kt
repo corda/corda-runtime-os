@@ -19,7 +19,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Instant
+import java.time.Clock
 
 @Suppress("LongParameterList")
 class InMemorySessionReplayer(
@@ -29,6 +29,7 @@ class InMemorySessionReplayer(
     configuration: SmartConfig,
     private val groups: LinkManagerGroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
+    private val clock: Clock
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -44,7 +45,8 @@ class InMemorySessionReplayer(
         configuration
     )
 
-    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService, false, ::replayMessage)
+    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
+        false, ::replayMessage, clock = clock)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -70,7 +72,7 @@ class InMemorySessionReplayer(
             if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
-            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay, counterparties)
+            replayScheduler.addForReplay(clock.instant().toEpochMilli(), uniqueId, messageReplay, counterparties)
         }
     }
 

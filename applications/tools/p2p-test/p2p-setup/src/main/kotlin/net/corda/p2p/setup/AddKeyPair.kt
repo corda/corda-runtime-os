@@ -20,6 +20,7 @@ import java.util.concurrent.Callable
     description = ["Add a key-pair"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddKeyPair : Callable<Collection<Record<String, TenantKeys>>> {
     companion object {

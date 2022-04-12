@@ -38,7 +38,7 @@ class SessionCloseProcessorReceive(
         return if (sessionState == null) {
             val errorMessage = "Received SessionClose on key $key and sessionId $sessionId  with null state"
             logger.error(errorMessage)
-            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionClose-NullSessionState", instant)
+            generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionClose-NullSessionState", instant)
         } else {
             val seqNum = sessionEvent.sequenceNum
             val receivedEventsState = sessionState.receivedEventsState
@@ -100,7 +100,7 @@ class SessionCloseProcessorReceive(
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages =
-                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionState, errorMessage, errorType, instant))
+                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant))
 
         }
     }

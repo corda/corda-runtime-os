@@ -11,12 +11,8 @@ import java.util.concurrent.CountDownLatch
  *
  * The [active] latch is decremented once: the first time the bundle results
  * activated. OSGi framework can notify bundle states more than once.
- *
- * The [shutdown] latch is decremented once if the bundle implements [net.corda.osgi.api.Application]
- * before to call [net.corda.osgi.api.Application.shutdown] to assure it is called once.
  */
 internal data class OSGiBundleDescriptor(
     val bundle: Bundle,
-    val active: CountDownLatch = CountDownLatch(1),
-    val shutdown: CountDownLatch = CountDownLatch(1),
+    val active: CountDownLatch = CountDownLatch(1)
 )

@@ -117,12 +117,12 @@ class FlowRunnerImpl @Activate constructor(
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
 
         val initiatedFlowClassName =
-            getInitiatingToInitiatedFlowsFromSandbox(sessionInit.initiatedIdentity.toCorda())[sessionInit.cpiId to sessionInit.flowName]
+            getInitiatingToInitiatedFlowsFromSandbox(sessionEvent.initiatedIdentity.toCorda())[sessionInit.cpiId to sessionInit.flowName]
                 ?: throw FlowProcessingException("No initiated flow that can be started from ${sessionInit.flowName}")
 
         val flowSession = flowSessionFactory.create(
             sessionEvent.sessionId,
-            MemberX500Name.parse(sessionInit.initiatingIdentity.x500Name),
+            MemberX500Name.parse(sessionEvent.initiatingIdentity.x500Name),
             initiated = true
         )
 

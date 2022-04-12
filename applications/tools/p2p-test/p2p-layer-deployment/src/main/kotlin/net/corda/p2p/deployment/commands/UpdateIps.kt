@@ -10,6 +10,7 @@ import picocli.CommandLine.Command
     showDefaultValues = true,
     description = ["Update all the ips in all the gateways"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class UpdateIps : Runnable {
     private val yaml = ObjectMapper(YAMLFactory())
