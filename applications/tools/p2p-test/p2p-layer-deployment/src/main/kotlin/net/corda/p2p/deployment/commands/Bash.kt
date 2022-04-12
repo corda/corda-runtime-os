@@ -40,7 +40,8 @@ class Bash : Runnable {
             "-n", namespaceName,
             "-l", "app=$pod",
             "--output", "jsonpath={.items[*].metadata.name}",
-        )
+        ).split(" ")
+            .random()
         if (name.isBlank()) {
             throw DeploymentException("Could not find $pod")
         }
