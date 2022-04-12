@@ -1,6 +1,7 @@
 package net.corda.p2p.app.simulator
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -189,7 +190,12 @@ class AppSimulator @Activate constructor(
         val batchSize = config.getInt("$LOAD_GEN_PARAMS_PREFIX.batchSize")
         val interBatchDelay = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.interBatchDelay")
         val messageSizeBytes = config.getInt("$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes")
-        val expireAfterTime = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
+        var expireAfterTime: Duration?
+        try {
+            expireAfterTime = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
+        } catch (e: ConfigException.Missing) {
+            expireAfterTime = null
+        }
         return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
             HoldingIdentity(ourX500Name, ourGroupId),
