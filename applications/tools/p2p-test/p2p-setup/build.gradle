@@ -34,6 +34,8 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle-impl")
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(':libs:lifecycle:registry')
+
+    testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 }
 task appJar(type: Jar) {
     destinationDirectory = file("$buildDir/bin")
