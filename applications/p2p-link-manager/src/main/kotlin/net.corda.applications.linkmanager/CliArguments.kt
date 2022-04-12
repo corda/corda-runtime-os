@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import picocli.CommandLine
 import picocli.CommandLine.Option
-import java.net.InetAddress
 import kotlin.random.Random
 
 internal class CliArguments {
@@ -22,17 +21,6 @@ internal class CliArguments {
             }
 
             return arguments
-        }
-
-        fun readInstanceIdFromHostName(): Int? {
-            return try {
-                System.getenv("INSTANCE_ID_FROM_HOSTNAME_REGEX")?.let {
-                    val result = it.toRegex().find(InetAddress.getLocalHost().hostName)
-                    result?.groups?.get(1)?.value?.toIntOrNull()
-                }
-            } catch (e: Exception) {
-                null
-            }
         }
     }
     @Option(
@@ -58,7 +46,7 @@ internal class CliArguments {
         names = ["-i", "--instance-id"],
         description = ["The unique instance ID (default to random number)"]
     )
-    var instanceId = readInstanceIdFromHostName() ?: System.getenv("INSTANCE_ID")?.toInt() ?: Random.nextInt()
+    var instanceId = System.getenv("INSTANCE_ID")?.toInt() ?: Random.nextInt()
 
     val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
