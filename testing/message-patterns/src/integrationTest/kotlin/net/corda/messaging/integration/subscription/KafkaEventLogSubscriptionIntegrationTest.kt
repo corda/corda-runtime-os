@@ -193,7 +193,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         assertThat(futures.size).isEqualTo(1)
         futures[0].get()
 
-        val latch = CountDownLatch(20)
+        val latch = CountDownLatch(30)
         val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC2-group", TOPIC2, 1),
             TestEventLogProcessor(latch),
@@ -218,6 +218,8 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         eventLogSub1.stop()
         eventLogSub2.stop()
+
+        println("Latch has ${latch.count} remaining")
 
         publisher.publish(getDemoRecords(TOPIC2, 10, 2)).forEach { it.get() }
 

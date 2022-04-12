@@ -4,6 +4,7 @@ import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.test.util.LoggingUtils.emphasise
 import java.util.concurrent.CountDownLatch
 
 class TestEventLogProcessor(
@@ -16,6 +17,7 @@ class TestEventLogProcessor(
 
     override fun onNext(events: List<EventLogRecord<String, DemoRecord>>): List<Record<*, *>> {
         for (event in events) {
+            println("event: $event".emphasise())
             latch.countDown()
         }
 
