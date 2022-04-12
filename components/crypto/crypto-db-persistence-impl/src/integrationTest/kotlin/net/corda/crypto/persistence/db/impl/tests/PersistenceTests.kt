@@ -309,6 +309,39 @@ class PersistenceTests {
     }
 
     @Test
+    fun `Should save same public keys for difefrent tenants and fetch them separately`() {
+        val tenantId1 = randomTenantId()
+        val tenantId2 = randomTenantId()
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val cache = createSigningKeyCacheImpl()
+        cache.act(tenantId1) { it.save(p1) }
+        cache.act(tenantId2) { it.save(p1) }
+        cache.act(tenantId1) { it.save(w1) }
+        cache.act(tenantId2) { it.save(w1) }
+        val keyP11 = cache.act(tenantId1) {
+            it.lookup(listOf(publicKeyIdOf(p1.key.publicKey)))
+        }
+        assertEquals(1, keyP11.size)
+        assertEquals(tenantId1, p1, keyP11.first())
+        val keyP12 = cache.act(tenantId2) {
+            it.lookup(listOf(publicKeyIdOf(p1.key.publicKey)))
+        }
+        assertEquals(1, keyP12.size)
+        assertEquals(tenantId2, p1, keyP12.first())
+        val keyW11 = cache.act(tenantId1) {
+            it.lookup(listOf(publicKeyIdOf(w1.key.publicKey)))
+        }
+        assertEquals(1, keyW11.size)
+        assertEquals(tenantId1, w1, keyW11.first())
+        val keyW12 = cache.act(tenantId2) {
+            it.lookup(listOf(publicKeyIdOf(w1.key.publicKey)))
+        }
+        assertEquals(1, keyW12.size)
+        assertEquals(tenantId2, w1, keyW12.first())
+    }
+
+    @Test
     fun `Should save public keys find by alias`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
