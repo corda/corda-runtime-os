@@ -9,7 +9,6 @@ import net.corda.flow.acceptance.getBasicFlowStartContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.factory.impl.RecordFactoryImpl
-import net.corda.flow.pipeline.factory.impl.SessionEventFactoryImpl
 import net.corda.flow.pipeline.handlers.events.SessionEventHandler
 import net.corda.flow.pipeline.handlers.events.StartFlowEventHandler
 import net.corda.flow.pipeline.handlers.events.WakeupEventHandler
@@ -60,6 +59,7 @@ class FlowEventDSL {
             FlowEventPipelineFactoryImpl(
                 flowRunner,
                 flowGlobalPostProcessor,
+                FlowCheckpointFactoryImpl(),
                 flowEventHandlers,
                 flowWaitingForHandlers,
                 flowRequestHandlers
@@ -182,15 +182,15 @@ private val flowWaitingForHandlers = listOf(
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
-    CloseSessionsRequestHandler(flowSessionManager),
+    CloseSessionsRequestHandler(flowSessionManager, recordFactory),
     FlowFailedRequestHandler(mock(), recordFactory),
     FlowFinishedRequestHandler(mock(), recordFactory),
     ForceCheckpointRequestHandler(recordFactory),
     GetFlowInfoRequestHandler(),
     InitiateFlowRequestHandler(flowSessionManager),
-    ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(flowSessionManager),
-    SendRequestHandler(flowSessionManager),
+    ReceiveRequestHandler(flowSessionManager, recordFactory),
+    SendAndReceiveRequestHandler(flowSessionManager, recordFactory),
+    SendRequestHandler(flowSessionManager, recordFactory),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
     SubFlowFinishedRequestHandler(flowSessionManager, recordFactory),

@@ -3,12 +3,12 @@ package net.corda.flow
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.state.FlowStack
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.RecordFactory
-import net.corda.flow.pipeline.factory.SessionEventFactory
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import org.mockito.kotlin.mock
@@ -18,8 +18,8 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowId = "flow id"
     val flowEvent = FlowEvent()
     val flowMessageFactory = mock<FlowMessageFactory>()
+    val flowSessionManager = mock<FlowSessionManager>()
     val sessionManager = mock<SessionManager>()
-    val sessionEventFactory = mock<SessionEventFactory>()
     val recordFactory = mock<RecordFactory>()
     val recordList = mutableListOf<Record<*, *>>()
     val flowStack = mock<FlowStack>()

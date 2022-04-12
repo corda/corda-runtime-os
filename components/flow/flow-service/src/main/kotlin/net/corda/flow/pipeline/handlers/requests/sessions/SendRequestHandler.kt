@@ -1,19 +1,12 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
 import net.corda.flow.pipeline.factory.RecordFactory
-import net.corda.flow.pipeline.factory.SessionEventFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
-import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

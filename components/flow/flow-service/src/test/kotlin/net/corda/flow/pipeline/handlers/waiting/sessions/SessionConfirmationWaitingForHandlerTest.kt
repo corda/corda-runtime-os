@@ -9,9 +9,9 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.session.manager.SessionManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -35,8 +35,8 @@ class SessionConfirmationWaitingForHandlerTest {
     private val checkpoint = mock<FlowCheckpoint>()
     private val sessionState = SessionState()
     private val anotherSessionState = SessionState()
-    private val sessionManager = mock<SessionManager>()
-    private val sessionConfirmationWaitingForHandler = SessionConfirmationWaitingForHandler(sessionManager)
+    private val flowSessionManager = mock<FlowSessionManager>()
+    private val sessionConfirmationWaitingForHandler = SessionConfirmationWaitingForHandler(flowSessionManager)
 
     @Suppress("Unused")
     @BeforeEach
@@ -111,15 +111,25 @@ class SessionConfirmationWaitingForHandlerTest {
     }
 
     @Test
-    fun `Receiving all required session closes while waiting for a session confirmation (Close) returns a FlowContinuation#Run`() {
+    fun `Returns a FlowContinuation#Run when all sessions are closed while waiting for a session confirmation (Close) returns a FlowContinuation#Run`() {
         val sessions = listOf(SESSION_ID, ANOTHER_SESSION_ID)
         val sessionEvent = SessionEvent().apply {
             payload = SessionClose()
             sequenceNum = 1
         }
 
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(sessionEvent)
+        whenever(flowSessionManager.areAllSessionsInStatuses(eq(checkpoint), eq(sessions), any())).thenReturn(true)
+        whenever(
+            flowSessionManager.getReceivedEvents(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        ).thenReturn(
+            listOf(
+                sessionState to sessionEvent,
+                anotherSessionState to sessionEvent
+            )
+        )
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -135,15 +145,25 @@ class SessionConfirmationWaitingForHandlerTest {
     }
 
     @Test
-    fun `Receiving all required session closes while waiting for a session confirmation (Close) acknowledges the received events`() {
+    fun `Acknowledges the received events when all sessions are closed while waiting for a session confirmation (Close)`() {
         val sessions = listOf(SESSION_ID, ANOTHER_SESSION_ID)
         val sessionEvent = SessionEvent().apply {
             payload = SessionClose()
             sequenceNum = 1
         }
 
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(sessionEvent)
+        val receivedEvents = listOf(
+            sessionState to sessionEvent,
+            anotherSessionState to sessionEvent
+        )
+
+        whenever(flowSessionManager.areAllSessionsInStatuses(eq(checkpoint), eq(sessions), any())).thenReturn(true)
+        whenever(
+            flowSessionManager.getReceivedEvents(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        ).thenReturn(receivedEvents)
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -152,20 +172,31 @@ class SessionConfirmationWaitingForHandlerTest {
 
         sessionConfirmationWaitingForHandler.runOrContinue(inputContext, SessionConfirmation(sessions, SessionConfirmationType.CLOSE))
 
-        verify(sessionManager, times(2)).acknowledgeReceivedEvent(any(), eq(1))
+        verify(flowSessionManager).acknowledgeReceivedEvents(receivedEvents)
     }
 
     @Test
-    fun `Receiving all session events which contains a non-session close event while waiting for a session confirmation (Close) returns a FlowContinuation#Error`() {
+    fun `Returns a FlowContinuation#Error when receiving a non-session close event when all sessions are closed while waiting for a session confirmation (Close)`() {
         val sessions = listOf(SESSION_ID, ANOTHER_SESSION_ID)
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
-            payload = SessionClose()
-            sequenceNum = 1
-        })
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
-            payload = SessionData()
-            sequenceNum = 1
-        })
+
+        whenever(flowSessionManager.areAllSessionsInStatuses(eq(checkpoint), eq(sessions), any())).thenReturn(true)
+        whenever(
+            flowSessionManager.getReceivedEvents(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        ).thenReturn(
+            listOf(
+                sessionState to SessionEvent().apply {
+                    payload = SessionClose()
+                    sequenceNum = 1
+                },
+                anotherSessionState to SessionEvent().apply {
+                    payload = SessionData()
+                    sequenceNum = 1
+                }
+            )
+        )
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -182,13 +213,10 @@ class SessionConfirmationWaitingForHandlerTest {
     }
 
     @Test
-    fun `Requiring more session events to be received while waiting for a session confirmation (Close) returns a FlowContinuation#Continue`() {
+    fun `Returns a FlowContinuation#Continue if any sessions are not closed while waiting for a session confirmation (Close)`() {
         val sessions = listOf(SESSION_ID, ANOTHER_SESSION_ID)
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
-            payload = SessionClose()
-            sequenceNum = 1
-        })
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(null)
+
+        whenever(flowSessionManager.areAllSessionsInStatuses(eq(checkpoint), eq(sessions), any())).thenReturn(false)
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,

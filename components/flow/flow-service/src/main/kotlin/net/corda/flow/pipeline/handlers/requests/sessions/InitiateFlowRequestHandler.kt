@@ -5,9 +5,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

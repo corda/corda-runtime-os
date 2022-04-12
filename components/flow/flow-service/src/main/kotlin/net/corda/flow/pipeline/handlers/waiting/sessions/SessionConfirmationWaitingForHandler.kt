@@ -10,7 +10,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
-import net.corda.flow.pipeline.handlers.waiting.requireCheckpoint
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
