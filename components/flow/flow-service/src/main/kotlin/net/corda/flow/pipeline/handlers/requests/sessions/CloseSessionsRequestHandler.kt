@@ -1,19 +1,19 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.addOrReplaceSession
-import net.corda.flow.pipeline.handlers.getInitiatingAndInitiatedParties
-import net.corda.flow.pipeline.handlers.getSession
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
-import net.corda.session.manager.SessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -21,9 +21,13 @@ import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class CloseSessionsRequestHandler @Activate constructor(
-    @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    @Reference(service = FlowSessionManager::class)
+    private val flowSessionManager: FlowSessionManager
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
+
+    private companion object {
+        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+    }
 
     override val type = FlowIORequest.CloseSessions::class.java
 
@@ -34,32 +38,25 @@ class CloseSessionsRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = requireCheckpoint(context)
 
-        val now = Instant.now()
-        for (sessionId in request.sessions) {
-            val sessionState = checkpoint.getSession(sessionId)
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-                sessionState, checkpoint.flowKey.identity
-            )
-            val updatedSessionState = sessionManager.processMessageToSend(
-                key = checkpoint.flowKey.flowId,
-                sessionState = checkpoint.getSession(sessionId),
-                event = SessionEvent.newBuilder()
-                    .setSessionId(sessionId)
-                    .setMessageDirection(MessageDirection.OUTBOUND)
-                    .setTimestamp(now)
-                    .setInitiatingIdentity(initiatingIdentity)
-                    .setInitiatedIdentity(initiatedIdentity)
-                    .setSequenceNum(null)
-                    .setReceivedSequenceNum(0)
-                    .setOutOfOrderSequenceNums(listOf(0))
-                    .setPayload(SessionClose())
-                    .build(),
-                instant = now
-            )
+        val haveSessionsAlreadyBeenClosed = flowSessionManager.areAllSessionsInStatuses(
+            checkpoint,
+            request.sessions.toList(),
+            CLOSED_STATUSES
+        )
 
+        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->
             checkpoint.addOrReplaceSession(updatedSessionState)
         }
 
-        return context
+        return if (haveSessionsAlreadyBeenClosed) {
+            val record = Record(
+                topic = Schemas.Flow.FLOW_EVENT_TOPIC,
+                key = checkpoint.flowKey,
+                value = FlowEvent(checkpoint.flowKey, Wakeup())
+            )
+            context.copy(outputRecords = context.outputRecords + listOf(record))
+        } else {
+            context
+        }
     }
 }

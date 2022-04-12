@@ -31,7 +31,7 @@ class MemberLookupImplTest {
     @Test
     fun `test lookup by public key`() {
         val key = mock<PublicKey>().apply {
-            whenever(encoded).thenReturn(ByteArray(32){1})
+            whenever(encoded).thenReturn(ByteArray(32) { 1 })
         }
 
         val keyHash = PublicKeyHash.calculate(key)

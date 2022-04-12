@@ -27,11 +27,12 @@ class FlowEngineImplTest {
     @BeforeEach
     fun setup() {
         whenever(subFlow.call()).thenReturn(result)
+        whenever(flowStackService.peek()).thenReturn(flowStackItem)
         whenever(flowStackService.pop()).thenReturn(flowStackItem)
     }
 
     @Test
-    fun `get virtual node name returns holders x500 name`(){
+    fun `get virtual node name returns holders x500 name`() {
         val flowEngine = FlowEngineImpl(flowFiberService)
         val expected = MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
         assertThat(flowEngine.virtualNodeName).isEqualTo(expected)
@@ -57,7 +58,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
 
-                assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
             }
         }
     }
@@ -67,7 +68,7 @@ class FlowEngineImplTest {
         val flowEngine = FlowEngineImpl(flowFiberService)
         val error = Exception()
 
-        whenever(subFlow.call()).doAnswer{ throw error}
+        whenever(subFlow.call()).doAnswer { throw error }
 
         val thrownError = assertThrows<Exception> { flowEngine.subFlow(subFlow) }
 
@@ -88,7 +89,7 @@ class FlowEngineImplTest {
                 verify(flowFiber).suspend(capture())
 
                 assertThat(firstValue.exception).isEqualTo(error)
-                assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
             }
         }
     }

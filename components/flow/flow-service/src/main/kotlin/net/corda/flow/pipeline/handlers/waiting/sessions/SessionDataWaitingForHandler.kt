@@ -8,26 +8,26 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.handlers.waiting.requireCheckpoint
-import net.corda.session.manager.SessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowWaitingForHandler::class])
 class SessionDataWaitingForHandler @Activate constructor(
-    @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    @Reference(service = FlowSessionManager::class)
+    private val flowSessionManager: FlowSessionManager
 ) : FlowWaitingForHandler<SessionData> {
 
     override val type = SessionData::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionData): FlowContinuation {
         val checkpoint = requireCheckpoint(context)
-        val receivedEvents = sessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
+        val receivedEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
         return if (receivedEvents.size != waitingFor.sessionIds.size) {
             FlowContinuation.Continue
         } else {
-            sessionManager.acknowledgeReceivedEvents(receivedEvents)
+            flowSessionManager.acknowledgeReceivedEvents(receivedEvents)
             FlowContinuation.Run(convertToIncomingPayloads(receivedEvents))
         }
     }

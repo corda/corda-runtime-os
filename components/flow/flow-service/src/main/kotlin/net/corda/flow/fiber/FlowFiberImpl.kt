@@ -125,9 +125,17 @@ class FlowFiberImpl<R>(
 
     @Suspendable
     private fun closeSessions() {
+        // We close the sessions here, which delegates to the close session request handler, rather than combining the close logic into the
+        // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
+        // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
         val flowStackItem = getRemainingFlowStackItem()
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.CloseSessions(flowStackItem.sessionIds.toSet()))
+        } else {
+            // If there are no sessions to close, we need to suspend anyway to ensure that any acknowledgements to received closed events
+            // are sent. This is due to the flow finish code removing the flow's checkpoint, which is needed to determine which sessions
+            // need to send acknowledgements.
+            suspend(FlowIORequest.ForceCheckpoint)
         }
     }
 

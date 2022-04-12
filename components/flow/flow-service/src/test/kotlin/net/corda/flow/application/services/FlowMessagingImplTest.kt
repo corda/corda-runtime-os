@@ -34,7 +34,7 @@ class FlowMessagingImplTest {
         flowStackService,
         mock(),
         mock(),
-        HoldingIdentity(ALICE_X500,"group1"),
+        HoldingIdentity(ALICE_X500, "group1"),
         mock()
     )
 
@@ -75,7 +75,6 @@ class FlowMessagingImplTest {
         whenever(flowStackService.peek()).thenReturn(flowStackItem)
         flowMessaging.initiateFlow(ALICE_X500_NAME)
         assertEquals(4, flowStackItem.sessionIds.size)
-
     }
 
     @Test
