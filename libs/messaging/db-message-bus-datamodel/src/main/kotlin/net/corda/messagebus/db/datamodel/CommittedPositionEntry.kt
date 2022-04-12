@@ -43,7 +43,11 @@ class CommittedPositionEntry(
 
     @Column
     val timestamp: Instant = Instant.now(),
-)
+) {
+    override fun toString(): String {
+        return "CommittedPositionEntry(topic='$topic', consumerGroup='$consumerGroup', partition=$partition, recordPosition=$recordPosition, transactionId=$transactionId, timestamp=$timestamp)"
+    }
+}
 
 @Embeddable
 data class CommittedOffsetEntryKey(
