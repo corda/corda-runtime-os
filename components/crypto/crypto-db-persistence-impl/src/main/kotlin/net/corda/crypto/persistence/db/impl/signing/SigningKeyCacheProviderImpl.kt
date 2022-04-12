@@ -12,6 +12,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
@@ -26,6 +27,8 @@ class SigningKeyCacheProviderImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
 ) : AbstractConfigurableComponent<SigningKeyCacheProviderImpl.Impl>(
@@ -34,7 +37,8 @@ class SigningKeyCacheProviderImpl @Activate constructor(
     configurationReadService,
     InactiveImpl(),
     setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
     ),
     setOf(
         ConfigKeys.MESSAGING_CONFIG,
@@ -50,7 +54,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         InactiveImpl()
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, dbConnectionManager, keyEncodingService)
+        ActiveImpl(event, dbConnectionManager, jpaEntitiesRegistry, keyEncodingService)
 
     override fun getInstance(): SigningKeyCache = impl.getInstance()
 
@@ -64,6 +68,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
     class ActiveImpl(
         event: ConfigChangedEvent,
         private val dbConnectionOps: DbConnectionOps,
+        private val jpaEntitiesRegistry: JpaEntitiesRegistry,
         private val keyEncodingService: KeyEncodingService
     ) : Impl {
         private val config: SmartConfig
@@ -77,6 +82,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
             SigningKeyCacheImpl(
                 config = config,
                 dbConnectionOps = dbConnectionOps,
+                jpaEntitiesRegistry = jpaEntitiesRegistry,
                 keyEncodingService = keyEncodingService
             )
         }

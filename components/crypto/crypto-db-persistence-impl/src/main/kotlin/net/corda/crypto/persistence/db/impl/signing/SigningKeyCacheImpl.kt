@@ -11,6 +11,7 @@ import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.v5.cipher.suite.KeyEncodingService
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -19,6 +20,7 @@ import javax.persistence.EntityManagerFactory
 class SigningKeyCacheImpl(
     private val config: SmartConfig,
     private val dbConnectionOps: DbConnectionOps,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val keyEncodingService: KeyEncodingService
 ) : SigningKeyCache {
     private val cache = ConcurrentHashMap<String, Cache<String, SigningCachedKey>>()
@@ -45,7 +47,14 @@ class SigningKeyCacheImpl(
                 CordaDb.Crypto,
                 DbPrivilege.DML
             )
-            else -> throw NotImplementedError()
+            else -> dbConnectionOps.getOrCreateEntityManagerFactory(
+                    "vnode_crypto_$tenantId",
+                    DbPrivilege.DML,
+                    jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
+                        ?: throw java.lang.IllegalStateException(
+                            "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
+                        )
+                )
         }
 
     private fun getCache(tenantId: String): Cache<String, SigningCachedKey> =

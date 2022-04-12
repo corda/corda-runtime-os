@@ -1,9 +1,9 @@
-package net.corda.crypto.persistence.db.impl.signing
+package net.corda.crypto.persistence.db.impl.tests.signing
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.persistence.db.impl._utils.TestConfigurationReadService
-import net.corda.db.core.DbPrivilege
-import net.corda.db.schema.CordaDb
+import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheProviderImpl
+import net.corda.crypto.persistence.db.impl.tests._utils.TestConfigurationReadService
+import net.corda.crypto.persistence.db.impl.tests._utils.TestDbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -28,6 +27,7 @@ import kotlin.test.assertTrue
 class SigningKeyCacheProviderTests {
     private lateinit var emptyConfig: SmartConfig
     private lateinit var configurationReadService: TestConfigurationReadService
+    private lateinit var dbConnectionManager: TestDbConnectionManager
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var component: SigningKeyCacheProviderImpl
 
@@ -47,12 +47,17 @@ class SigningKeyCacheProviderTests {
                 assertTrue(it.isRunning)
             }
         }
+        dbConnectionManager = TestDbConnectionManager(coordinatorFactory).also {
+            it.start()
+            eventually {
+                assertTrue(it.isRunning)
+            }
+        }
         component = SigningKeyCacheProviderImpl(
             coordinatorFactory,
             configurationReadService,
-            mock {
-                on { getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML) } doReturn mock()
-            },
+            dbConnectionManager,
+            mock(),
             mock()
         )
     }

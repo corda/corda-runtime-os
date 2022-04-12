@@ -39,7 +39,8 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     configurationReadService,
     InactiveImpl(),
     setOf(
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
     ),
     setOf(
         ConfigKeys.MESSAGING_CONFIG,

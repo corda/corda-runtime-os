@@ -1,7 +1,9 @@
-package net.corda.crypto.persistence.db.impl.soft
+package net.corda.crypto.persistence.db.impl.tests.soft
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.persistence.db.impl._utils.TestConfigurationReadService
+import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyCacheProviderImpl
+import net.corda.crypto.persistence.db.impl.tests._utils.TestConfigurationReadService
+import net.corda.crypto.persistence.db.impl.tests._utils.TestDbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -29,6 +32,7 @@ import kotlin.test.assertSame
 class SoftCryptoKeyCacheProviderTests {
     private lateinit var emptyConfig: SmartConfig
     private lateinit var configurationReadService: TestConfigurationReadService
+    private lateinit var dbConnectionManager: TestDbConnectionManager
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var component: SoftCryptoKeyCacheProviderImpl
 
@@ -48,12 +52,19 @@ class SoftCryptoKeyCacheProviderTests {
                 assertTrue(it.isRunning)
             }
         }
+        dbConnectionManager = TestDbConnectionManager(coordinatorFactory).also {
+            it.start()
+            eventually {
+                kotlin.test.assertTrue(it.isRunning)
+            }
+        }
+        whenever(dbConnectionManager._mock.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)).doReturn(
+            mock()
+        )
         component = SoftCryptoKeyCacheProviderImpl(
             coordinatorFactory,
             configurationReadService,
-            mock {
-                 on { getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML) } doReturn mock()
-            },
+            dbConnectionManager,
             mock()
         )
     }

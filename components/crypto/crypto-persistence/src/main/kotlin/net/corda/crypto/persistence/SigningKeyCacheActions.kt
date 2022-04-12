@@ -24,6 +24,8 @@ interface SigningKeyCacheActions : AutoCloseable {
 
     /**
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
+     *
+     * @param candidateKeys The list of the keys look up for, the maximum number of items is 20.
      */
     fun filterMyKeys(candidateKeys: Collection<PublicKey>): Collection<PublicKey>
 
