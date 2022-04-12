@@ -6,7 +6,7 @@ import net.corda.p2p.deployment.Yaml
 abstract class Pod : Yamlable {
     abstract val app: String
     abstract val image: String
-    open val statefulSetReplicas: Int? = null
+    open val replicasCount = 1
     open val ports: Collection<Port> = emptyList()
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
@@ -47,15 +47,13 @@ abstract class Pod : Yamlable {
 
     private fun createPod(namespace: String) = mapOf(
         "apiVersion" to "apps/v1",
-        // When statefulSetReplicas is defined, we want to have a StatefulSet instead of Deployment
-        "kind" to if (statefulSetReplicas == null) "Deployment" else "StatefulSet",
+        "kind" to "Deployment",
         "metadata" to mapOf(
             "name" to app,
             "namespace" to namespace,
         ),
         "spec" to mapOf(
-            // When statefulSetReplicas is not defined we want a single replica of the pod
-            "replicas" to (statefulSetReplicas ?: 1),
+            "replicas" to replicasCount,
             "selector" to mapOf("matchLabels" to mapOf("app" to app)),
             "template" to mapOf(
                 "metadata" to mapOf(
@@ -108,13 +106,7 @@ abstract class Pod : Yamlable {
                         rawData.map { it.createVolume(app) },
                 )
             ),
-        ) +
-            if (statefulSetReplicas == null) {
-                emptyMap()
-            } else {
-                // StatefulSet must have serviceName defined.
-                mapOf("serviceName" to app)
-            }
+        )
     )
 
     private fun createService(namespace: String) = if (ports.isEmpty()) {
@@ -133,10 +125,7 @@ abstract class Pod : Yamlable {
                     )
                 ),
                 "spec" to mapOf(
-                    // For Deployment pod, we use NodePort to expose the port,
-                    // for Stateful Set we use ClusterIP with None (i.e. headless service).
-                    "type" to if (statefulSetReplicas == null) "NodePort" else "ClusterIP",
-                    "clusterIP" to if (statefulSetReplicas == null) null else "None",
+                    "type" to "NodePort",
                     "ports" to ports.map {
                         mapOf(
                             "port" to it.port,

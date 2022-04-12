@@ -9,7 +9,7 @@ abstract class P2pPod(
 ) : Pod() {
     open val otherPorts: Collection<Port> = emptyList()
     abstract val imageName: String
-    override val statefulSetReplicas = count
+    override val replicasCount = count
     override val image by lazy {
         "${DockerSecrets.cordaHost}/corda-os-$imageName:${details.tag}"
     }
