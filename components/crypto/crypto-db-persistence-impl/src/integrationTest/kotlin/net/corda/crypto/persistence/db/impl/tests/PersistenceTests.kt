@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheImpl
@@ -41,7 +42,9 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -51,14 +54,12 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.io.StringWriter
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 import javax.sql.DataSource
-import kotlin.random.Random
 
 @ExtendWith(ServiceExtension::class)
 class PersistenceTests {
@@ -156,7 +157,7 @@ class PersistenceTests {
             created = Instant.now(),
             encodingVersion = 11,
             algorithmName = "AES",
-            keyMaterial = Random(Instant.now().toEpochMilli()).nextBytes(512)
+            keyMaterial = generateKeyPair(EDDSA_ED25519_CODE_NAME).public.encoded
         )
         cryptoEmf.transaction { em ->
             em.persist(entity)
@@ -308,6 +309,108 @@ class PersistenceTests {
     }
 
     @Test
+    fun `Should save public keys find by alias`() {
+        val tenantId1 = randomTenantId()
+        val tenantId2 = randomTenantId()
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val cache = createSigningKeyCacheImpl()
+        cache.act(tenantId1) { it.save(p1) }
+        cache.act(tenantId2) { it.save(p12) }
+        cache.act(tenantId1) { it.save(p2) }
+        cache.act(tenantId1) { it.save(p3) }
+        cache.act(tenantId1) { it.save(p4) }
+        val keyNotFoundByAlias = cache.act(tenantId1) {
+            it.find(UUID.randomUUID().toString())
+        }
+        assertNull(keyNotFoundByAlias)
+        val keyByAlias = cache.act(tenantId1) {
+            it.find(p4.alias!!)
+        }
+        assertEquals(tenantId1, p4, keyByAlias)
+    }
+
+    @Test
+    fun `Should save public keys and filter my keys`() {
+        val tenantId1 = randomTenantId()
+        val tenantId2 = randomTenantId()
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
+        val cache = createSigningKeyCacheImpl()
+        cache.act(tenantId1) { it.save(p1) }
+        cache.act(tenantId2) { it.save(p12) }
+        cache.act(tenantId1) { it.save(p2) }
+        cache.act(tenantId1) { it.save(p3) }
+        cache.act(tenantId1) { it.save(p4) }
+        cache.act(tenantId1) { it.save(w1) }
+        cache.act(tenantId2) { it.save(w12) }
+        cache.act(tenantId1) { it.save(w2) }
+        cache.act(tenantId1) { it.save(w3) }
+        val myKeys = cache.act(tenantId1) {
+            it.filterMyKeys(listOf(p1.key.publicKey, p12.key.publicKey, p3.key.publicKey, w2.key.publicKey))
+        }
+        assertEquals(3, myKeys.size)
+        assertTrue(myKeys.contains(p1.key.publicKey))
+        assertTrue(myKeys.contains(p3.key.publicKey))
+        assertTrue(myKeys.contains(w2.key.publicKey))
+    }
+
+    @Test
+    fun `Should save public keys and find by public key multiple times`() {
+        val tenantId1 = randomTenantId()
+        val tenantId2 = randomTenantId()
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
+        val cache = createSigningKeyCacheImpl()
+        cache.act(tenantId1) { it.save(p1) }
+        cache.act(tenantId2) { it.save(p12) }
+        cache.act(tenantId1) { it.save(p2) }
+        cache.act(tenantId1) { it.save(p3) }
+        cache.act(tenantId1) { it.save(p4) }
+        cache.act(tenantId1) { it.save(w1) }
+        cache.act(tenantId2) { it.save(w12) }
+        cache.act(tenantId1) { it.save(w2) }
+        cache.act(tenantId1) { it.save(w3) }
+        val keyNotFound = cache.act(tenantId1) {
+            it.find(generateKeyPair(EDDSA_ED25519_CODE_NAME).public)
+        }
+        assertNull(keyNotFound)
+        val keyByItsOwn1 = cache.act(tenantId1) {
+            it.find(p2.key.publicKey)
+        }
+        assertEquals(tenantId1, p2, keyByItsOwn1)
+        val keyByItsOwn2 = cache.act(tenantId1) {
+            it.find(p2.key.publicKey)
+        }
+        assertEquals(tenantId1, p2, keyByItsOwn2)
+        val keyByItsOwn3 = cache.act(tenantId1) {
+            it.find(w2.key.publicKey)
+        }
+        assertEquals(tenantId1, w2, keyByItsOwn3)
+        val keyByItsOwn4 = cache.act(tenantId1) {
+            it.find(w2.key.publicKey)
+        }
+        assertEquals(tenantId1, w2, keyByItsOwn4)
+    }
+
+    @Test
     fun `Should save public keys and key material and do various lookups for them`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
@@ -330,6 +433,42 @@ class PersistenceTests {
         cache.act(tenantId2) { it.save(w12) }
         cache.act(tenantId1) { it.save(w2) }
         cache.act(tenantId1) { it.save(w3) }
+    }
+
+    private fun assertEquals(tenantId: String, expected: SigningPublicKeySaveContext, actual: SigningCachedKey?) {
+        assertNotNull(actual)
+        assertEquals(publicKeyIdOf(expected.key.publicKey), actual!!.id)
+        assertEquals(tenantId, actual.tenantId)
+        assertEquals(expected.category, actual.category)
+        assertEquals(expected.alias, actual.alias)
+        assertEquals(expected.key.hsmAlias, actual.hsmAlias)
+        assertArrayEquals(expected.key.publicKey.encoded, actual.publicKey)
+        assertNull(actual.keyMaterial)
+        assertEquals(expected.signatureScheme.codeName, actual.schemeCodeName)
+        assertNull(actual.masterKeyAlias)
+        assertNull(actual.externalId)
+        assertNull(actual.encodingVersion)
+        val now = Instant.now()
+        assertTrue(actual.created >= now.minusSeconds(60))
+        assertTrue(actual.created <= now.minusSeconds (-1))
+    }
+
+    private fun assertEquals(tenantId: String, expected: SigningWrappedKeySaveContext, actual: SigningCachedKey?) {
+        assertNotNull(actual)
+        assertEquals(publicKeyIdOf(expected.key.publicKey), actual!!.id)
+        assertEquals(tenantId, actual.tenantId)
+        assertEquals(expected.category, actual.category)
+        assertEquals(expected.alias, actual.alias)
+        assertNull(actual.hsmAlias)
+        assertArrayEquals(expected.key.publicKey.encoded, actual.publicKey)
+        assertArrayEquals(expected.key.keyMaterial, actual.keyMaterial)
+        assertEquals(expected.signatureScheme.codeName, actual.schemeCodeName)
+        assertEquals(expected.masterKeyAlias, actual.masterKeyAlias)
+        assertEquals(expected.externalId, actual.externalId)
+        assertEquals(expected.key.encodingVersion, actual.encodingVersion)
+        val now = Instant.now()
+        assertTrue(actual.created >= now.minusSeconds(60))
+        assertTrue(actual.created <= now.minusSeconds (-1))
     }
 
     private fun createSigningKeyCacheImpl() = SigningKeyCacheImpl(

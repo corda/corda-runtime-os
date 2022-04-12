@@ -1,9 +1,0 @@
-/* Show it's not fixed to the top */
-body {
-    min-height: 75rem;
-  }
-
-.table-condensed {
-  font-size: 16px;
-}
-  

@@ -145,9 +145,8 @@ class SigningKeyCacheActionsImpl(
     }
 
     private fun findByIds(ids: Collection<String>): Collection<SigningKeyEntity> {
-
         return entityManager.createQuery(
-            "from SigningKeySaveContext where tenantId=:tenantId AND keyId IN(:ids)",
+            "from SigningKeyEntity where tenantId=:tenantId AND keyId IN(:ids)",
             SigningKeyEntity::class.java
         ).also {
             it.setParameter("tenantId", tenantId)
@@ -157,7 +156,7 @@ class SigningKeyCacheActionsImpl(
 
     private fun findByAliases(aliases: Collection<String>): Collection<SigningKeyEntity> =
         entityManager.createQuery(
-            "from SigningKeySaveContext where tenantId=:tenantId AND alias IN(:aliases)",
+            "from SigningKeyEntity where tenantId=:tenantId AND alias IN(:aliases)",
             SigningKeyEntity::class.java
         ).also {
             it.setParameter("tenantId", tenantId)
