@@ -190,11 +190,10 @@ class AppSimulator @Activate constructor(
         val batchSize = config.getInt("$LOAD_GEN_PARAMS_PREFIX.batchSize")
         val interBatchDelay = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.interBatchDelay")
         val messageSizeBytes = config.getInt("$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes")
-        var expireAfterTime: Duration?
-        try {
-            expireAfterTime = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
+        val expireAfterTime = try {
+            config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
         } catch (e: ConfigException.Missing) {
-            expireAfterTime = null
+            null
         }
         return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
