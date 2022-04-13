@@ -7,7 +7,6 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -42,14 +41,7 @@ class PermissionStorageWriterService @Activate constructor(
             readerService,
             configurationReadService
         ) { dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.RBAC, DbPrivilege.DML) }
-    ).also {
-        it.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-            )
-        )
-    }
+    )
 
     override val isRunning: Boolean get() = coordinator.isRunning
 

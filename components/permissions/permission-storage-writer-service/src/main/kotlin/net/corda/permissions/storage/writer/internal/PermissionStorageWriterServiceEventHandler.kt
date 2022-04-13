@@ -24,6 +24,9 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.RegistrationHandle
 
 @Suppress("LongParameterList")
 class PermissionStorageWriterServiceEventHandler(
@@ -49,10 +52,21 @@ class PermissionStorageWriterServiceEventHandler(
     @VisibleForTesting
     internal var crsSub: AutoCloseable? = null
 
+    @VisibleForTesting
+    internal var registrationHandle: RegistrationHandle? = null
+
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
                 log.info("Start event received")
+                registrationHandle?.close()
+                registrationHandle = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                    )
+                )
             }
             is RegistrationStatusChangeEvent -> {
                 log.info("Status Change Event received: $event")

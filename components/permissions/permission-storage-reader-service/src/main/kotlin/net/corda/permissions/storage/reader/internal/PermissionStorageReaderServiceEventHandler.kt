@@ -4,6 +4,7 @@ import java.time.Duration
 import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
@@ -79,7 +80,8 @@ class PermissionStorageReaderServiceEventHandler(
             setOf(
                 LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
                 LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
             )
         )
         permissionValidationCacheService.start()

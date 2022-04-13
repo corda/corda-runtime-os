@@ -30,6 +30,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import javax.persistence.EntityManagerFactory
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.messaging.api.subscription.config.RPCConfig
 
 class PermissionStorageWriterServiceEventHandlerTest {
 
@@ -49,11 +56,12 @@ class PermissionStorageWriterServiceEventHandlerTest {
         whenever(permissionStorageReader).thenReturn(mock())
     }
 
+    private val configurationReadService = mock<ConfigurationReadService>()
     private val handler = PermissionStorageWriterServiceEventHandler(
         subscriptionFactory,
         permissionStorageWriterProcessorFactory,
         readerService,
-        mock(),
+        configurationReadService,
         entityManagerFactoryFactory,
     )
 
@@ -76,6 +84,65 @@ class PermissionStorageWriterServiceEventHandlerTest {
         BOOT_CONFIG to config,
         MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty())
     )
+
+    private val registrationHandle = mock<RegistrationHandle>()
+    private val coordinator = mock<LifecycleCoordinator>().apply {
+        whenever(followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>(),
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+            )
+        )).thenReturn(registrationHandle)
+    }
+
+    @Test
+    fun `processing a START event follows and starts dependencies`() {
+        assertNull(handler.registrationHandle)
+
+        handler.processEvent(StartEvent(), coordinator)
+
+        verify(coordinator).followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<PermissionStorageReaderService>(),
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+            )
+        )
+        assertNotNull(handler.registrationHandle)
+    }
+
+    @Test
+    fun `processing an UP event when the service is started registers for config updates`() {
+        assertNull(handler.crsSub)
+
+        whenever(configurationReadService.registerComponentForUpdates(
+            coordinator,
+            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+        )).thenReturn(mock())
+
+        handler.processEvent(StartEvent(), coordinator)
+        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+
+        assertNotNull(handler.crsSub)
+    }
+
+    @Test
+    fun `processing an onConfigurationUpdated event creates and starts subscription`() {
+        whenever(subscriptionFactory.createRPCSubscription(
+            any<RPCConfig<PermissionManagementRequest, PermissionManagementResponse>>(),
+            any(),
+            any())
+        ).thenReturn(subscription)
+
+        handler.processEvent(
+            ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), bootstrapConfig),
+            coordinator
+        )
+
+        verify(subscription).start()
+    }
 
     @Test
     fun `processing a stop event stops the permission storage writer`() {

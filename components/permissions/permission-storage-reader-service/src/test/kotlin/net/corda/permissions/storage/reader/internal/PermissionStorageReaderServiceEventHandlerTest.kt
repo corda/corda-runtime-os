@@ -34,6 +34,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.permissions.management.cache.PermissionManagementCacheService
@@ -68,7 +69,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
             setOf(
                 LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
                 LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
             )
         )).thenReturn(registrationHandle)
     }
