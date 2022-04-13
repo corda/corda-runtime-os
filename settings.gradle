@@ -54,8 +54,16 @@ pluginManagement {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
+        id 'com.gradle.enterprise' version gradleEnterpriseVersion
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin  
         id 'com.r3.internal.gradle.plugins.r3-docker' version internalDockerVersion
+
     }
+}
+
+plugins {
+    id 'com.gradle.common-custom-user-data-gradle-plugin'
+    id 'com.gradle.enterprise'
 }
 
 dependencyResolutionManagement {
@@ -103,3 +111,22 @@ include 'plugins:network'
 include 'plugins:package'
 include 'plugins:plugin1'
 include 'plugins:plugin2'
+
+
+
+gradleEnterprise {
+    server = gradleEnterpriseUrl
+    allowUntrustedServer = false
+    buildScan {
+        def apiKey = settings.ext.find('CORDA_GRADLE_SCAN_KEY') ?: System.getenv('CORDA_GRADLE_SCAN_KEY')
+        if (apiKey?.trim()) {
+            publishAlways()
+            capture {
+                taskInputFiles = true
+            }
+            uploadInBackground = false
+            accessKey = apiKey
+        }
+    }
+}
+
