@@ -179,7 +179,7 @@ class DBAccess(
     fun writeOffsets(offsets: List<CommittedPositionEntry>) {
         executeWithErrorHandling("write offsets") { entityManager ->
             offsets.forEach { offset ->
-                entityManager.persist(offset)
+                entityManager.merge(offset)
             }
         }
     }
