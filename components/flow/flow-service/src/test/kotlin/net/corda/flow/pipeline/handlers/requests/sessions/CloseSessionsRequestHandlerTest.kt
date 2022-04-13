@@ -75,7 +75,7 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
-    fun `Creates Wakeup record and does not send close events or update the checkpoint with session state when all sessions are in closed statuses`() {
+    fun `Creates Wakeup record and does not send close events or update the checkpoint when all sessions are closed`() {
         whenever(
             testContext.flowSessionManager.areAllSessionsInStatuses(
                 testContext.flowCheckpoint,
@@ -86,7 +86,11 @@ class CloseSessionsRequestHandlerTest {
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowSessionManager, never()).sendCloseMessages(
+            eq(testContext.flowCheckpoint),
+            eq(sessions),
+            any()
+        )
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         assertThat(outputContext.outputRecords).containsOnly(record)
