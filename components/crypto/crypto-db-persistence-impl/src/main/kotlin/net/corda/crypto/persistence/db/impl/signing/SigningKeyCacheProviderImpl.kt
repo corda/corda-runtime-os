@@ -8,6 +8,7 @@ import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -29,6 +30,8 @@ class SigningKeyCacheProviderImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
 ) : AbstractConfigurableComponent<SigningKeyCacheProviderImpl.Impl>(
@@ -54,7 +57,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         InactiveImpl()
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, dbConnectionManager, jpaEntitiesRegistry, keyEncodingService)
+        ActiveImpl(event, dbConnectionManager, jpaEntitiesRegistry, layeredPropertyMapFactory, keyEncodingService)
 
     override fun getInstance(): SigningKeyCache = impl.getInstance()
 
@@ -69,6 +72,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         event: ConfigChangedEvent,
         private val dbConnectionOps: DbConnectionOps,
         private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+        private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
         private val keyEncodingService: KeyEncodingService
     ) : Impl {
         private val config: SmartConfig
@@ -83,6 +87,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
                 config = config,
                 dbConnectionOps = dbConnectionOps,
                 jpaEntitiesRegistry = jpaEntitiesRegistry,
+                layeredPropertyMapFactory = layeredPropertyMapFactory,
                 keyEncodingService = keyEncodingService
             )
         }

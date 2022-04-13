@@ -10,6 +10,7 @@ import net.corda.crypto.persistence.config.softPersistence
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -21,6 +22,7 @@ class SigningKeyCacheImpl(
     private val config: SmartConfig,
     private val dbConnectionOps: DbConnectionOps,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val keyEncodingService: KeyEncodingService
 ) : SigningKeyCache {
     private val cache = ConcurrentHashMap<String, Cache<String, SigningCachedKey>>()
@@ -30,6 +32,7 @@ class SigningKeyCacheImpl(
             tenantId = tenantId,
             entityManager = getEntityManagerFactory(tenantId).createEntityManager(),
             cache = getCache(tenantId),
+            layeredPropertyMapFactory = layeredPropertyMapFactory,
             keyEncodingService = keyEncodingService
         )
     }

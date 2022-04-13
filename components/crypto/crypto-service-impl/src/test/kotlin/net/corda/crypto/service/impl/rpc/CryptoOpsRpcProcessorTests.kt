@@ -1,15 +1,14 @@
 package net.corda.crypto.service.impl.rpc
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdOf
-import net.corda.crypto.service.impl._utils.generateKeyPair
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl._utils.TestServicesFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
@@ -25,7 +24,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
-import net.corda.data.crypto.wire.ops.rpc.queries.FilterMyKeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
@@ -66,13 +64,6 @@ class CryptoOpsRpcProcessorTests {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
         }
 
-        override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
-            if(candidateKeys.any()) {
-                listOf(candidateKeys.first())
-            } else {
-                emptyList()
-            }
-
         override fun generateKeyPair(
             tenantId: String,
             category: String,
@@ -83,6 +74,19 @@ class CryptoOpsRpcProcessorTests {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.generateKeyPair(tenantId, category, alias, context)
+        }
+
+        override fun generateKeyPair(
+            tenantId: String,
+            category: String,
+            alias: String,
+            externalId: String,
+            context: Map<String, String>
+        ): PublicKey {
+            if (context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.generateKeyPair(tenantId, category, alias, externalId, context)
         }
 
         override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
@@ -239,12 +243,7 @@ class CryptoOpsRpcProcessorTests {
                     0,
                     10,
                     CryptoKeyOrderBy.NONE,
-                    tenantId,
-                    UUID.randomUUID().toString(),
-                    null,
-                    null,
-                    null,
-                    null
+                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
                 )
             ),
             future
@@ -254,33 +253,6 @@ class CryptoOpsRpcProcessorTests {
         assertNotNull(result.response)
         assertThat(result.response, instanceOf(CryptoSigningKeys::class.java))
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
-    }
-
-    @Test
-    fun `Should filer my keys`() {
-        setup()
-        val context = createRequestContext()
-        val future = CompletableFuture<RpcOpsResponse>()
-        val candidates = listOf<PublicKey>(
-            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
-            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public
-        )
-        processor.onNext(
-            RpcOpsRequest(
-                context,
-                FilterMyKeysRpcQuery(candidates.map {
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it))
-                })
-            ),
-            future
-        )
-        val result = future.get()
-        assertResponseContext(context, result.context)
-        assertNotNull(result.response)
-        assertThat(result.response, instanceOf(CryptoPublicKeys::class.java))
-        val keys = result.response as CryptoPublicKeys
-        assertEquals(1, keys.keys.size)
-        assertEquals(candidates[0], schemeMetadata.decodePublicKey(keys.keys[0].array()))
     }
 
     @Test
@@ -301,6 +273,7 @@ class CryptoOpsRpcProcessorTests {
                 GenerateKeyPairCommand(
                     CryptoConsts.HsmCategories.LEDGER,
                     alias,
+                    null,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -346,12 +319,7 @@ class CryptoOpsRpcProcessorTests {
                     0,
                     20,
                     CryptoKeyOrderBy.NONE,
-                    null,
-                    null,
-                    alias,
-                    null,
-                    null,
-                    null
+                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
                 )
             ),
             future3
@@ -384,6 +352,7 @@ class CryptoOpsRpcProcessorTests {
                 GenerateKeyPairCommand(
                     CryptoConsts.HsmCategories.LEDGER,
                     alias,
+                    null,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -429,12 +398,7 @@ class CryptoOpsRpcProcessorTests {
                     0,
                     20,
                     CryptoKeyOrderBy.NONE,
-                    null,
-                    null,
-                    alias,
-                    null,
-                    null,
-                    null
+                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
                 )
             ),
             future3
@@ -572,6 +536,7 @@ class CryptoOpsRpcProcessorTests {
                 GenerateKeyPairCommand(
                     CryptoConsts.HsmCategories.LEDGER,
                     alias,
+                    null,
                     KeyValuePairList(operationContext)
                 )
             ),

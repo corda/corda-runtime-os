@@ -6,4 +6,5 @@ interface SigningKeySaveContext {
     val alias: String?
     val category: String
     val signatureScheme: SignatureScheme
+    val externalId: String?
 }

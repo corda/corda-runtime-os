@@ -2,9 +2,8 @@ package net.corda.crypto.client
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.lifecycle.Lifecycle
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.v5.crypto.CompositeKey
 import java.nio.ByteBuffer
 import java.security.KeyPair
@@ -23,9 +22,9 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
      * @param tenantId The tenant owning the key.
      * @param candidateKeys The [ByteBuffer]s containing encoded [PublicKey]s to filter.
      *
-     * @return A collection of [CryptoPublicKeys] containing encoded [PublicKey]s that this node owns.
+     * @return A collection of [CryptoSigningKeys] containing encoded [PublicKey]s that this node owns.
      */
-    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoPublicKeys
+    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage.

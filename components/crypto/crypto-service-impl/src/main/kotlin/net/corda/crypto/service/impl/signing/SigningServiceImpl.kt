@@ -19,7 +19,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.security.PublicKey
-import java.time.Instant
 
 @Suppress("TooManyFunctions")
 open class SigningServiceImpl(
@@ -37,53 +36,33 @@ open class SigningServiceImpl(
     }
 
     override fun lookup(
+        tenantId: String,
         skip: Int,
         take: Int,
         orderBy: KeyOrderBy,
-        tenantId: String,
-        category: String?,
-        schemeCodeName: String?,
-        alias: String?,
-        masterKeyAlias: String?,
-        createdAfter: Instant?,
-        createdBefore: Instant?
+        filter: Map<String, String>
     ): Collection<SigningKeyInfo> {
         logger.debug(
-            "lookup(skip={}, take={}, orderBy={}, tenantId={}, category={}, schemeCodeName={}" +
-                    "alias={}, masterKeyAlias={}, createdAfter={}, createdBefore={}",
-            skip, take, orderBy, tenantId, category, schemeCodeName, alias, masterKeyAlias, createdAfter, createdBefore
+            "lookup(tenantId={}, skip={}, take={}, orderBy={}, filter=[{}]",
+            skip, take, orderBy, tenantId, filter.map { it }.joinToString { "${it.key}=${it.value}" }
         )
         return cache.act(tenantId) {
             it.lookup(
                 skip,
                 take,
                 orderBy.toSigningKeyOrderBy(),
-                category,
-                schemeCodeName,
-                alias,
-                masterKeyAlias,
-                createdAfter,
-                createdBefore
+                filter
             ).map { key -> key.toSigningKeyInfo() }
         }
     }
 
     override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
         logger.debug("lookup(tenantId={}, ids=[{}])", tenantId, ids.joinToString())
+        if (ids.size > 20) {
+            throw IllegalArgumentException("The maximum size should not exceed 20 items, received ${ids.size}.")
+        }
         return cache.act(tenantId) {
             it.lookup(ids).map { key -> key.toSigningKeyInfo() }
-        }
-    }
-
-    override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        logger.debug("filterMyKeys(tenantId={}, ids=[{}])", tenantId, candidateKeys.joinToString { publicKeyIdOf(it) })
-        require(candidateKeys.count() <= 20) {
-            "Number of item must not exceed 20, submitted ${candidateKeys.count()}"
-        }
-        return cache.act(tenantId) {
-            it.lookup(candidateKeys.map { key -> publicKeyIdOf(key) }).map { cached ->
-                schemeMetadata.decodePublicKey(cached.publicKey)
-            }
         }
     }
 
@@ -98,6 +77,21 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = null,
+            context = context
+        )
+
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        externalId: String,
+        context: Map<String, String>
+    ): PublicKey =
+        doGenerateKeyPair(
+            tenantId = tenantId,
+            category = category,
+            alias = alias,
+            externalId = externalId,
             context = context
         )
 
@@ -231,6 +225,7 @@ open class SigningServiceImpl(
             publicKey = publicKey,
             schemeCodeName = schemeCodeName,
             masterKeyAlias = masterKeyAlias,
+            externalId = externalId,
             encodingVersion = encodingVersion,
             created = created
         )

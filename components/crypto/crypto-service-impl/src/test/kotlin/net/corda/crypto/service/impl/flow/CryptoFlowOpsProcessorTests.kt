@@ -13,9 +13,10 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
@@ -143,10 +144,34 @@ class CryptoFlowOpsProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedList = it.getArgument<Iterable<ByteBuffer>>(1).toList()
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
@@ -166,14 +191,18 @@ class CryptoFlowOpsProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoPublicKeys>(result)
+        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoSigningKeys>(result)
         assertNotNull(response.keys)
         assertEquals(2, response.keys.size)
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+            }
         )
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+            }
         )
         assertEquals(tenantId, passedTenantId)
         assertEquals(3, passedList.size)
@@ -341,10 +370,34 @@ class CryptoFlowOpsProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedList = it.getArgument<Iterable<ByteBuffer>>(1).toList()
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
@@ -369,14 +422,18 @@ class CryptoFlowOpsProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoPublicKeys>(result)
+        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoSigningKeys>(result)
         assertNotNull(response.keys)
         assertEquals(2, response.keys.size)
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+            }
         )
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+            }
         )
         assertEquals(tenantId, passedTenantId)
         assertEquals(3, passedList.size)
@@ -405,10 +462,34 @@ class CryptoFlowOpsProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedList = it.getArgument<Iterable<ByteBuffer>>(1).toList()
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
@@ -440,14 +521,18 @@ class CryptoFlowOpsProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoPublicKeys>(result)
+        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoSigningKeys>(result)
         assertNotNull(response.keys)
         assertEquals(2, response.keys.size)
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+            }
         )
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+            }
         )
         assertEquals(tenantId, passedTenantId)
         assertEquals(3, passedList.size)
@@ -476,10 +561,34 @@ class CryptoFlowOpsProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedList = it.getArgument<Iterable<ByteBuffer>>(1).toList()
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
@@ -512,14 +621,18 @@ class CryptoFlowOpsProcessorTests {
             )
         }
         assertEquals(recordKey, result.value?.get(0)?.key)
-        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoPublicKeys>(result)
+        val response = assertResponseContext<FilterMyKeysFlowQuery, CryptoSigningKeys>(result)
         assertNotNull(response.keys)
         assertEquals(2, response.keys.size)
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+            }
         )
         assertTrue(
-            response.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+            }
         )
         assertEquals(tenantId, passedTenantId)
         assertEquals(3, passedList.size)
@@ -549,10 +662,34 @@ class CryptoFlowOpsProcessorTests {
         doAnswer {
             passedTenantIds.add(it.getArgument(0))
             passedLists.add(it.getArgument<Iterable<ByteBuffer>>(1).toList())
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
@@ -598,17 +735,21 @@ class CryptoFlowOpsProcessorTests {
             }
         }
         assertInstanceOf(FlowOpsResponse::class.java, result.value[1].value)
-        assertInstanceOf(CryptoPublicKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
+        assertInstanceOf(CryptoSigningKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
         val context1 = (result.value[1].value as FlowOpsResponse).context
-        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoPublicKeys
+        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoSigningKeys
         assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123)
         assertNotNull(response1.keys)
         assertEquals(2, response1.keys.size)
         assertTrue(
-            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response1.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
+            }
         )
         assertTrue(
-            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response1.keys.any {
+                it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+            }
         )
         assertEquals(1, passedTenantIds.size)
         assertEquals(tenantId, passedTenantIds[0])
@@ -649,10 +790,34 @@ class CryptoFlowOpsProcessorTests {
             if(tenantId == failingTenantId) {
                 throw NotImplementedError()
             }
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(myPublicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             )
         }.whenever(cryptoOpsClient).filterMyKeysProxy(any(), any())
@@ -693,17 +858,17 @@ class CryptoFlowOpsProcessorTests {
             }
         }
         assertInstanceOf(FlowOpsResponse::class.java, result.value[1].value)
-        assertInstanceOf(CryptoPublicKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
+        assertInstanceOf(CryptoSigningKeys::class.java, (result.value[1].value as FlowOpsResponse).response)
         val context1 = (result.value[1].value as FlowOpsResponse).context
-        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoPublicKeys
+        val response1 = (result.value[1].value as FlowOpsResponse).response as CryptoSigningKeys
         assertResponseContext<FilterMyKeysFlowQuery>(result, context1, 123, tenantId)
         assertNotNull(response1.keys)
         assertEquals(2, response1.keys.size)
         assertTrue(
-            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
+            response1.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0])) }
         )
         assertTrue(
-            response1.keys.any { it.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
+            response1.keys.any { it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1])) }
         )
         assertEquals(2, passedTenantIds.size)
         assertEquals(failingTenantId, passedTenantIds[0])

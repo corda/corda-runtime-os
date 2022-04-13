@@ -11,6 +11,7 @@ class SigningKeyInfo(
     val publicKey: ByteArray,
     val schemeCodeName: String,
     val masterKeyAlias: String?,
+    val externalId: String?,
     val encodingVersion: Int?,
     val created: Instant
 )

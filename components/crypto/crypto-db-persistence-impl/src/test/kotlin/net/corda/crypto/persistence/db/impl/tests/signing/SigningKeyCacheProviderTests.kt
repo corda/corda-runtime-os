@@ -58,6 +58,7 @@ class SigningKeyCacheProviderTests {
             configurationReadService,
             dbConnectionManager,
             mock(),
+            mock(),
             mock()
         )
     }

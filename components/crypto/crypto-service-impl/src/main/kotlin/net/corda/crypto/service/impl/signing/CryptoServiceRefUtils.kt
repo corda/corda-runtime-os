@@ -48,7 +48,8 @@ fun CryptoServiceRef.toSaveKeyContext(
             key = key,
             alias = alias,
             signatureScheme = signatureScheme,
-            category = category
+            category = category,
+            externalId = externalId,
         )
         is GeneratedWrappedKey -> SigningWrappedKeySaveContext(
             key = key,

@@ -1,6 +1,8 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
@@ -674,6 +676,36 @@ class CryptoOperationsTests {
         validateSignature(info.publicKey, rsaPss, customSignature.bytes, testData)
     }
 
+
+    @Test
+    fun `Filtering correctly our keys`() {
+        val key1 = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val key2 = signingFreshKeys.values.first().publicKey
+        val ourKeys = signingFreshKeys.values.first().signingService.lookup(
+            tenantId,
+            listOf(publicKeyIdOf(key1), publicKeyIdOf(key2))
+        ).toList()
+        assertThat(ourKeys, IsCollectionWithSize.hasSize(1))
+        assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
+    }
+
+    @Test
+    fun `Filter our keys returns empty collection as none of the keys belong to us`() {
+        val key1 = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val key2 = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        val ourKeys = signingFreshKeys.values.first().signingService.lookup(
+            tenantId,
+            listOf(publicKeyIdOf(key1), publicKeyIdOf(key2))
+        ).toList()
+        assertThat(ourKeys, `is`(IsEmptyCollection.empty()))
+    }
+
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     fun `Should lookup by id for aliased key in all supported schemes`(
@@ -717,16 +749,13 @@ class CryptoOperationsTests {
     ) {
         val info = signingAliasedKeys.getValue(signatureScheme)
         val returned = info.signingService.lookup(
+            tenantId = tenantId,
             skip = 0,
             take = 50,
             orderBy = KeyOrderBy.ALIAS,
-            tenantId = tenantId,
-            category = null,
-            alias = info.alias,
-            schemeCodeName = null,
-            masterKeyAlias = null,
-            createdAfter = null,
-            createdBefore = null
+            mapOf(
+                ALIAS_FILTER to info.alias
+            )
         )
         assertEquals(1, returned.size)
         verifySigningKeyInfo(info.publicKey, info.alias, signatureScheme, returned.first())
@@ -740,16 +769,14 @@ class CryptoOperationsTests {
     ) {
         val info = signingAliasedKeys.getValue(signatureScheme)
         val returned = info.signingService.lookup(
+            tenantId = tenantId,
             skip = 0,
             take = 50,
             orderBy = KeyOrderBy.ALIAS,
-            tenantId = tenantId,
-            category = null,
-            alias = info.alias,
-            schemeCodeName = null,
-            masterKeyAlias = UUID.randomUUID().toString(),
-            createdAfter = null,
-            createdBefore = null
+            mapOf(
+                ALIAS_FILTER to info.alias,
+                MASTER_KEY_ALIAS_FILTER to UUID.randomUUID().toString()
+            )
         )
         assertEquals(0, returned.size)
     }
@@ -891,35 +918,6 @@ class CryptoOperationsTests {
         val signature = info.signingService.sign(tenantId, aliceAndBob, testData)
         assertEquals(bobPublicKey, signature.by)
         validateSignature(signature.by, signature.bytes, testData)
-    }
-
-    @Test
-    fun `Filtering correctly our keys`() {
-        val key1 = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-        }
-        val key2 = signingFreshKeys.values.first().publicKey
-        val ourKeys = signingFreshKeys.values.first().signingService.filterMyKeys(
-            tenantId,
-            mutableListOf(key1, key2)
-        ).toList()
-        assertThat(ourKeys, IsCollectionWithSize.hasSize(1))
-        assertThat(ourKeys, hasItem(key2))
-    }
-
-    @Test
-    fun `Filter our keys returns empty collection as none of the keys belong to us`() {
-        val key1 = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-        }
-        val key2 = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-        }
-        val ourKeys = signingFreshKeys.values.first().signingService.filterMyKeys(
-            tenantId,
-            mutableListOf(key1, key2)
-        ).toList()
-        assertThat(ourKeys, `is`(IsEmptyCollection.empty()))
     }
 }
 

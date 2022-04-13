@@ -7,9 +7,10 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
@@ -285,7 +286,7 @@ class CryptoFlowOpsTransformerTests {
 
     @Test
     fun `Should infer filter my keys query from response`() {
-        val response = createResponse(CryptoPublicKeys(), FilterMyKeysFlowQuery::class.java)
+        val response = createResponse(CryptoSigningKeys(), FilterMyKeysFlowQuery::class.java)
         val result = buildTransformer().inferRequestType(response)
         assertEquals(result, FilterMyKeysFlowQuery::class.java)
     }
@@ -369,10 +370,34 @@ class CryptoFlowOpsTransformerTests {
             mockPublicKey()
         )
         val response = createResponse(
-            CryptoPublicKeys(
+            CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             ),
             FilterMyKeysFlowQuery::class.java
@@ -392,10 +417,34 @@ class CryptoFlowOpsTransformerTests {
             mockPublicKey()
         )
         val response = createResponse(
-            response = CryptoPublicKeys(
+            response = CryptoSigningKeys(
                 listOf(
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[0])),
-                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[1]))
+                    CryptoSigningKey(
+                        "id1",
+                        "tenant",
+                        "LEDGER",
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[0])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    ),
+                    CryptoSigningKey(
+                        "id2",
+                        "tenant",
+                        "LEDGER",
+                        "alias2",
+                        "hsmAlias2",
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKeys[1])),
+                        "FAKE",
+                        null,
+                        null,
+                        null,
+                        Instant.now()
+                    )
                 )
             ),
             requestType = FilterMyKeysFlowQuery::class.java,
@@ -442,7 +491,7 @@ class CryptoFlowOpsTransformerTests {
             buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoPublicKeys::class.java.name))
+        assertThat(result.message, containsString(CryptoSigningKeys::class.java.name))
     }
 
     @Test
@@ -576,14 +625,14 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should throw IllegalStateException when transforming unexpected response to sign command`() {
         val response = createResponse(
-            CryptoPublicKeys(),
+            CryptoSigningKeys(),
             SignFlowCommand::class.java
         )
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoPublicKeys::class.java.name))
+        assertThat(result.message, containsString(CryptoSigningKeys::class.java.name))
     }
 
     @Test
@@ -633,13 +682,13 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should throw IllegalStateException when transforming unexpected response to sign command with signature spec`() {
         val response = createResponse(
-            CryptoPublicKeys(),
+            CryptoSigningKeys(),
             SignWithSpecFlowCommand::class.java
         )
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
         assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoPublicKeys::class.java.name))
+        assertThat(result.message, containsString(CryptoSigningKeys::class.java.name))
     }
 }

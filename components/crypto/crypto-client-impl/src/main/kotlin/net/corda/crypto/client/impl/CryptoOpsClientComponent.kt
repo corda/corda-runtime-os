@@ -8,9 +8,9 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -29,7 +29,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.time.Instant
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
@@ -80,10 +79,19 @@ class CryptoOpsClientComponent @Activate constructor(
     ): PublicKey =
         impl.ops.generateKeyPair(tenantId, category, alias, context)
 
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        externalId: String,
+        context: Map<String, String>
+    ): PublicKey =
+        impl.ops.generateKeyPair(tenantId, category, alias, externalId, context)
+
     override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey =
         impl.ops.freshKey(tenantId, context)
 
-    override fun freshKey(tenantId: String, externalId: UUID, context: Map<String, String>): PublicKey =
+    override fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey =
         impl.ops.freshKey(tenantId, externalId, context)
 
     override fun sign(
@@ -104,28 +112,18 @@ class CryptoOpsClientComponent @Activate constructor(
         impl.ops.sign(tenantId, publicKey, signatureSpec, data, context)
 
     override fun lookup(
+        tenantId: String,
         skip: Int,
         take: Int,
         orderBy: CryptoKeyOrderBy,
-        tenantId: String,
-        category: String?,
-        schemeCodeName: String?,
-        alias: String?,
-        masterKeyAlias: String?,
-        createdAfter: Instant?,
-        createdBefore: Instant?
+        filter: Map<String, String>
     ): List<CryptoSigningKey> =
         impl.ops.lookup(
+            tenantId = tenantId,
             skip = skip,
             take = take,
             orderBy = orderBy,
-            tenantId = tenantId,
-            category = category,
-            schemeCodeName = schemeCodeName,
-            alias = alias,
-            masterKeyAlias = masterKeyAlias,
-            createdAfter = createdAfter,
-            createdBefore = createdBefore
+            filter = filter
         )
 
     override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> =
@@ -137,7 +135,7 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun findHSM(tenantId: String, category: String): HSMInfo? =
         impl.ops.findHSM(tenantId, category)
 
-    override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoPublicKeys =
+    override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
     override fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey =

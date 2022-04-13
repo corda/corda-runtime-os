@@ -2,7 +2,6 @@ package net.corda.crypto.persistence
 
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import java.security.PublicKey
-import java.time.Instant
 
 interface SigningKeyCacheActions : AutoCloseable {
     /**
@@ -29,23 +28,20 @@ interface SigningKeyCacheActions : AutoCloseable {
      * @param take the response paging information, number of records to return, the actual number may be less than
      * requested.
      * @param orderBy the order by.
-     * @param category the HSM's category which handles the keys.
-     * @param schemeCodeName the key's signature scheme name.
-     * @param alias the alias which is assigned by the tenant.
-     * @param masterKeyAlias the wrapping key alias.
-     * @param createdAfter specifies inclusive time after which a key was created.
-     * @param createdAfter specifies inclusive time before which a key was created.
+     * @param filter the layered property map of the filter parameters such as
+     * category (the HSM's category which handles the keys),
+     * schemeCodeName (the key's signature scheme name),
+     * alias (the alias which is assigned by the tenant),
+     * masterKeyAlias (the wrapping key alias),
+     * externalId (an id associated with the key),
+     * createdAfter (specifies inclusive time after which a key was created),
+     * createdBefore (specifies inclusive time before which a key was created).
      */
     fun lookup(
         skip: Int,
         take: Int,
         orderBy: SigningKeyOrderBy,
-        category: String?,
-        schemeCodeName: String?,
-        alias: String?,
-        masterKeyAlias: String?,
-        createdAfter: Instant?,
-        createdBefore: Instant?
+        filter: Map<String, String>
     ): Collection<SigningCachedKey>
 
     /**

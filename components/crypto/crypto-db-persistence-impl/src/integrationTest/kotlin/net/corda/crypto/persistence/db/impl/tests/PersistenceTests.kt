@@ -21,6 +21,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.orm.EntityManagerConfiguration
@@ -71,6 +72,9 @@ class PersistenceTests {
 
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
+
+        @InjectService(timeout = 5000)
+        lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
 
         @InjectService(timeout = 5000)
         lateinit var schemeMetadata: CipherSchemeMetadata
@@ -508,7 +512,7 @@ class PersistenceTests {
         assertNull(actual.keyMaterial)
         assertEquals(expected.signatureScheme.codeName, actual.schemeCodeName)
         assertNull(actual.masterKeyAlias)
-        assertNull(actual.externalId)
+        assertEquals(expected.externalId, actual.externalId)
         assertNull(actual.encodingVersion)
         val now = Instant.now()
         assertTrue(actual.created >= now.minusSeconds(60))
@@ -590,6 +594,7 @@ class PersistenceTests {
             override fun register(persistenceUnitName: String, jpeEntities: Set<Class<*>>) =
                 throw NotImplementedError()
         },
+        layeredPropertyMapFactory = layeredPropertyMapFactory,
         keyEncodingService = schemeMetadata
     )
 
@@ -623,7 +628,8 @@ class PersistenceTests {
             ),
             alias = UUID.randomUUID().toString(),
             category = category,
-            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName)
+            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
+            externalId = UUID.randomUUID().toString()
         )
     }
 }

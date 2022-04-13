@@ -1,10 +1,10 @@
 package net.corda.crypto.client.impl
 
+import net.corda.crypto.core.publicKeyIdOf
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -20,7 +20,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
-import net.corda.data.crypto.wire.ops.rpc.queries.FilterMyKeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
@@ -35,7 +34,6 @@ import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.time.Instant
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
@@ -65,36 +63,40 @@ class CryptoOpsClientImpl(
     fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
-            FilterMyKeysRpcQuery::class.java.simpleName,
+            ByIdsRpcQuery::class.java.simpleName,
             tenantId,
             candidateKeys.joinToString { it.toStringShort().take(12) + ".." }
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = FilterMyKeysRpcQuery(
+            request = ByIdsRpcQuery(
                 candidateKeys.map {
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it))
+                    publicKeyIdOf(schemeMetadata.encodeAsByteArray(it))
                 }
             )
         )
-        val response = request.execute(CryptoPublicKeys::class.java)
+        val response = request.execute(CryptoSigningKeys::class.java)
         return response!!.keys.map {
-            schemeMetadata.decodePublicKey(it.array())
+            schemeMetadata.decodePublicKey(it.publicKey.array())
         }
     }
 
-    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoPublicKeys {
+    fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys {
         logger.info(
             "Sending '{}'(tenant={},candidateKeys={})",
-            FilterMyKeysRpcQuery::class.java.simpleName,
+            ByIdsRpcQuery::class.java.simpleName,
             tenantId,
             candidateKeys.joinToString { it.array().sha256Bytes().toBase58().take(12) + ".." }
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = FilterMyKeysRpcQuery(candidateKeys.toList())
+            request = ByIdsRpcQuery(
+                candidateKeys.map {
+                    publicKeyIdOf(it.array())
+                }
+            )
         )
-        return request.execute(CryptoPublicKeys::class.java)!!
+        return request.execute(CryptoSigningKeys::class.java)!!
     }
 
     fun generateKeyPair(
@@ -112,7 +114,29 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateKeyPairCommand(category, alias, context.toWire())
+            request = GenerateKeyPairCommand(category, alias, null, context.toWire())
+        )
+        val response = request.execute(CryptoPublicKey::class.java)
+        return schemeMetadata.decodePublicKey(response!!.key.array())
+    }
+
+    fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        externalId: String,
+        context: Map<String, String>
+    ): PublicKey {
+        logger.info(
+            "Sending '{}'(tenant={},category={},alias={})",
+            GenerateKeyPairCommand::class.java.simpleName,
+            tenantId,
+            category,
+            alias
+        )
+        val request = createRequest(
+            tenantId = tenantId,
+            request = GenerateKeyPairCommand(category, alias, externalId, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
@@ -132,7 +156,7 @@ class CryptoOpsClientImpl(
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKey(tenantId: String, externalId: UUID, context: Map<String, String>): PublicKey {
+    fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -141,7 +165,7 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId.toString(), context.toWire())
+            request = GenerateFreshKeyRpcCommand(externalId, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
@@ -255,30 +279,20 @@ class CryptoOpsClientImpl(
     }
 
     fun lookup(
+        tenantId: String,
         skip: Int,
         take: Int,
         orderBy: CryptoKeyOrderBy,
-        tenantId: String,
-        category: String?,
-        schemeCodeName: String?,
-        alias: String?,
-        masterKeyAlias: String?,
-        createdAfter: Instant?,
-        createdBefore: Instant?
+        filter: Map<String, String>
     ): List<CryptoSigningKey> {
         logger.debug(
-            "Sending '{}'({}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
+            "Sending '{}'({}, {}, {}, {}, [{}])",
             KeysRpcQuery::class.java.simpleName,
+            tenantId,
             skip,
             take,
-            tenantId,
             orderBy,
-            category,
-            schemeCodeName,
-            alias,
-            masterKeyAlias,
-            createdAfter,
-            createdBefore
+            filter.map { it }.joinToString { "${it.key}=${it.value}" }
         )
         val request = createRequest(
             tenantId,
@@ -286,12 +300,7 @@ class CryptoOpsClientImpl(
                 skip,
                 take,
                 CryptoKeyOrderBy.valueOf(orderBy.name),
-                category,
-                schemeCodeName,
-                alias,
-                masterKeyAlias,
-                createdAfter,
-                createdBefore
+                filter.toWire()
             )
         )
         return request.execute(CryptoSigningKeys::class.java)!!.keys

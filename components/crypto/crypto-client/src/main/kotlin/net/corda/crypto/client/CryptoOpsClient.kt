@@ -54,6 +54,26 @@ interface CryptoOpsClient : Lifecycle {
     ): PublicKey
 
     /**
+     * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
+     *
+     * @param tenantId The tenant owning the key.
+     * @param category The key category, such as TLS, LEDGER, etc. Don't use FRESH_KEY category as there is separate API
+     * for the fresh keys which is base around wrapped keys.
+     * @param alias the tenant defined key alias for the key pair to be generated.
+     * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
+     * @param context the optional key/value operation context.
+     *
+     * @return The public part of the pair.
+     */
+    fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        externalId: String,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): PublicKey
+
+    /**
      * Generates a new random [KeyPair] and adds it to the internal key storage.
      *
      * @param tenantId The tenant owning the key.
@@ -68,14 +88,14 @@ interface CryptoOpsClient : Lifecycle {
      * an external id.
      *
      * @param tenantId The tenant owning the key.
-     * @param externalId Some id associated with the key, the service doesn't use any semantic beyond association.
+     * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
      * @param context the optional key/value operation context.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
     fun freshKey(
         tenantId: String,
-        externalId: UUID,
+        externalId: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -112,24 +132,21 @@ interface CryptoOpsClient : Lifecycle {
      * requested.
      * @param orderBy the order by.
      * @param tenantId the tenant's id which the keys belong to.
-     * @param category the HSM's category which handles the keys.
-     * @param schemeCodeName the key's signature scheme name.
-     * @param alias the alias which is assigned by the tenant.
-     * @param masterKeyAlias the wrapping key alias.
-     * @param createdAfter specifies inclusive time after which a key was created.
-     * @param createdAfter specifies inclusive time before which a key was created.
+     * @param filter the layered property map of the filter parameters such as
+     * category (the HSM's category which handles the keys),
+     * schemeCodeName (the key's signature scheme name),
+     * alias (the alias which is assigned by the tenant),
+     * masterKeyAlias (the wrapping key alias),
+     * externalId (an id associated with the key),
+     * createdAfter (specifies inclusive time after which a key was created),
+     * createdBefore (specifies inclusive time before which a key was created).
      */
     fun lookup(
+        tenantId: String,
         skip: Int,
         take: Int,
         orderBy: CryptoKeyOrderBy,
-        tenantId: String,
-        category: String?,
-        schemeCodeName: String?,
-        alias: String?,
-        masterKeyAlias: String?,
-        createdAfter: Instant?,
-        createdBefore: Instant?
+        filter: Map<String, String>
     ): List<CryptoSigningKey>
 
     /**

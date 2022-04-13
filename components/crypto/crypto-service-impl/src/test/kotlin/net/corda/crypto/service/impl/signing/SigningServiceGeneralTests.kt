@@ -1,6 +1,13 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
@@ -44,19 +51,21 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when the filter my keys is passed more than 20 items`() {
+    fun `Should throw IllegalArgumentException when the lookup by ids keys is passed more than 20 items`() {
         val signingService = SigningServiceImpl(
             cache = mock(),
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
         val keys = (0 until 21).map {
-            mock<PublicKey> {
-                on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-            }
+            publicKeyIdOf(
+                mock<PublicKey> {
+                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                }.encoded
+            )
         }
         assertThrows<IllegalArgumentException> {
-            signingService.filterMyKeys(UUID.randomUUID().toString(), keys)
+            signingService.lookup(UUID.randomUUID().toString(), keys)
         }
     }
 
@@ -222,7 +231,7 @@ class SigningServiceGeneralTests {
             id = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.HsmCategories.LEDGER,
-            alias = UUID.randomUUID().toString(),
+            alias = "alias1",
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
@@ -248,7 +257,16 @@ class SigningServiceGeneralTests {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.HsmCategories.LEDGER,
-                alias = UUID.randomUUID().toString(),
+                alias = "alias1",
+                context = emptyMap()
+            )
+        }
+        assertThrows<CryptoServiceBadRequestException> {
+            signingService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.HsmCategories.LEDGER,
+                alias = "alias1",
+                externalId = UUID.randomUUID().toString(),
                 context = emptyMap()
             )
         }
@@ -265,7 +283,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        val thrown = assertThrows<CryptoServiceException> {
+        var thrown = assertThrows<CryptoServiceException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.HsmCategories.LEDGER,
@@ -274,7 +292,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        thrown = assertThrows {
+            signingService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.HsmCategories.LEDGER,
+                alias = UUID.randomUUID().toString(),
+                externalId = UUID.randomUUID().toString(),
+                context = emptyMap()
+            )
+        }
+        assertSame(exception, thrown)
+        Mockito.verify(cache, times(2)).act<SigningKeyCacheActions>(any(), any())
     }
 
     @Test
@@ -288,7 +316,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        val thrown = assertThrows<CryptoServiceException> {
+        var thrown = assertThrows<CryptoServiceException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.HsmCategories.LEDGER,
@@ -297,7 +325,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        thrown = assertThrows {
+            signingService.generateKeyPair(
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.HsmCategories.LEDGER,
+                alias = UUID.randomUUID().toString(),
+                externalId = UUID.randomUUID().toString(),
+                context = emptyMap()
+            )
+        }
+        assertSame(exception, thrown.cause)
+        Mockito.verify(cache, times(2)).act<SigningKeyCacheActions>(any(), any())
     }
 
     @Test
@@ -404,30 +442,28 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
+        val filter = mapOf(
+            CATEGORY_FILTER to category,
+            SCHEME_CODE_NAME_FILTER to schemeCodeName,
+            ALIAS_FILTER to alias,
+            MASTER_KEY_ALIAS_FILTER to masterKeyAlias,
+            CREATED_AFTER_FILTER to createdAfter.toString(),
+            CREATED_BEFORE_FILTER to createdBefore.toString()
+        )
         val result = signingService.lookup(
-                skip,
-                take,
-                orderBy,
-                tenantId,
-                category,
-                schemeCodeName,
-                alias,
-                masterKeyAlias,
-                createdAfter,
-                createdBefore
-            )
+            tenantId,
+            skip,
+            take,
+            orderBy,
+            filter
+        )
         assertNotNull(result)
         assertEquals(0, result.size)
         Mockito.verify(actions, times(1)).lookup(
             skip,
             take,
             SigningKeyOrderBy.ALIAS,
-            category,
-            schemeCodeName,
-            alias,
-            masterKeyAlias,
-            createdAfter,
-            createdBefore
+            filter
         )
     }
 
@@ -447,30 +483,21 @@ class SigningServiceGeneralTests {
                 cryptoServiceFactory = mock(),
                 schemeMetadata = schemeMetadata
             )
+            val filter = emptyMap<String, String>()
             val result = signingService.lookup(
+                tenantId,
                 skip,
                 take,
                 orderBy,
-                tenantId,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
+                filter
             )
             assertNotNull(result)
             assertEquals(0, result.size)
             Mockito.verify(actions, times(1)).lookup(
                 skip,
                 take,
-                SigningKeyOrderBy.valueOf(orderBy.toString()) ,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
+                SigningKeyOrderBy.valueOf(orderBy.toString()),
+                filter
             )
         }
     }
@@ -505,9 +532,17 @@ class SigningServiceGeneralTests {
             },
             schemeMetadata = schemeMetadata
         )
-        val result = signingService.generateKeyPair(
+        var result = signingService.generateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.HsmCategories.LEDGER,
+            alias = expectedAlias
+        )
+        assertSame(generatedKey.publicKey, result)
+        val expectedExternalId = UUID.randomUUID().toString()
+        result = signingService.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.HsmCategories.LEDGER,
+            externalId = expectedExternalId,
             alias = expectedAlias
         )
         assertSame(generatedKey.publicKey, result)
@@ -516,6 +551,17 @@ class SigningServiceGeneralTests {
                 this as SigningPublicKeySaveContext
                 key == generatedKey &&
                         alias == expectedAlias &&
+                        externalId == null &&
+                        signatureScheme == ref.signatureScheme &&
+                        category == ref.category
+            }
+        )
+        Mockito.verify(actions, times(1)).save(
+            argThat {
+                this as SigningPublicKeySaveContext
+                key == generatedKey &&
+                        alias == expectedAlias &&
+                        externalId == expectedExternalId &&
                         signatureScheme == ref.signatureScheme &&
                         category == ref.category
             }

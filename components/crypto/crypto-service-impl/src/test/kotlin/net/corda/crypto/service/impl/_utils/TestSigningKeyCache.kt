@@ -5,10 +5,19 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions
 import net.corda.crypto.persistence.SigningKeyCacheProvider
+import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeySaveContext
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.alias
+import net.corda.crypto.persistence.category
+import net.corda.crypto.persistence.createdAfter
+import net.corda.crypto.persistence.createdBefore
+import net.corda.crypto.persistence.masterKeyAlias
+import net.corda.crypto.persistence.schemeCodeName
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
+import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -112,25 +121,21 @@ class TestSigningKeyCacheActions(
         skip: Int,
         take: Int,
         orderBy: SigningKeyOrderBy,
-        category: String?,
-        schemeCodeName: String?,
-        alias: String?,
-        masterKeyAlias: String?,
-        createdAfter: Instant?,
-        createdBefore: Instant?
+        filter: Map<String, String>
     ): Collection<SigningCachedKey> {
+        val map = SigningKeyFilterMapImpl(LayeredPropertyMapImpl(filter, PropertyConverter(emptyMap())))
         val filtered = keys.values.filter {
-            if(category != null && it.category != category) {
+            if(map.category != null && it.category != map.category) {
                 false
-            } else if(schemeCodeName != null && it.schemeCodeName != schemeCodeName) {
+            } else if(map.schemeCodeName != null && it.schemeCodeName != map.schemeCodeName) {
                 false
-            } else if(alias != null && it.alias != alias) {
+            } else if(map.alias != null && it.alias != map.alias) {
                 false
-            } else if(masterKeyAlias != null && it.masterKeyAlias != masterKeyAlias) {
+            } else if(map.masterKeyAlias != null && it.masterKeyAlias != map.masterKeyAlias) {
                 false
-            } else if(createdAfter != null && it.created < createdAfter) {
+            } else if(map.createdAfter != null && it.created < map.createdAfter) {
                 false
-            } else !(createdBefore != null && it.created > createdBefore)
+            } else !(map.createdBefore != null && it.created > map.createdBefore)
         }
         return when(orderBy) {
             SigningKeyOrderBy.CREATED -> filtered.sortedBy { it.created }
@@ -144,6 +149,8 @@ class TestSigningKeyCacheActions(
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> filtered.sortedByDescending { it.masterKeyAlias }
             SigningKeyOrderBy.NONE -> filtered
+            SigningKeyOrderBy.EXTERNAL_ID -> filtered.sortedBy { it.externalId }
+            SigningKeyOrderBy.EXTERNAL_ID_DESC -> filtered.sortedByDescending { it.externalId }
         }.drop(skip).take(take)
     }
 

@@ -7,7 +7,6 @@ import net.corda.crypto.service.impl.WireProcessor
 import net.corda.crypto.service.impl.toMap
 import net.corda.crypto.service.impl.toSignatureSpec
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureSchemes
@@ -21,7 +20,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.queries.FilterMyKeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -42,7 +40,6 @@ class CryptoOpsRpcProcessor(
             GenerateKeyPairCommand::class.java to GenerateKeyPairCommandHandler::class.java,
             SignWithSpecRpcCommand::class.java to SignWithSpecRpcCommandHandler::class.java,
             ByIdsRpcQuery::class.java to ByIdsRpcQueryHandler::class.java,
-            FilterMyKeysRpcQuery::class.java to FilterMyKeysRpcQueryHandler::class.java,
             KeysRpcQuery::class.java to KeysRpcQueryHandler::class.java,
             SupportedSchemesRpcQuery::class.java to SupportedSchemesRpcQueryHandler::class.java,
             SignRpcCommand::class.java to SignRpcCommandHandler::class.java,
@@ -90,22 +87,6 @@ class CryptoOpsRpcProcessor(
         }
     }
 
-    private class FilterMyKeysRpcQueryHandler(
-        private val signingService: SigningService
-    ) : Handler<FilterMyKeysRpcQuery> {
-        override fun handle(context: CryptoRequestContext, request: FilterMyKeysRpcQuery): Any {
-            val candidates = request.keys.map {
-                signingService.schemeMetadata.decodePublicKey(it.array())
-            }
-            val found = signingService.filterMyKeys(context.tenantId, candidates)
-            return CryptoPublicKeys(
-                found.map {
-                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(it))
-                }
-            )
-        }
-    }
-
     private class ByIdsRpcQueryHandler(
         private val signingService: SigningService
     ) : Handler<ByIdsRpcQuery> {
@@ -123,6 +104,7 @@ class CryptoOpsRpcProcessor(
                         it.schemeCodeName,
                         it.masterKeyAlias,
                         it.encodingVersion,
+                        it.externalId,
                         it.created
                     )
                 }
@@ -135,16 +117,11 @@ class CryptoOpsRpcProcessor(
     ) : Handler<KeysRpcQuery> {
         override fun handle(context: CryptoRequestContext, request: KeysRpcQuery): Any {
             val found = signingService.lookup(
+                tenantId = context.tenantId,
                 skip = request.skip,
                 take = request.take,
                 orderBy = KeyOrderBy.valueOf(request.orderBy.name),
-                tenantId = context.tenantId,
-                category = request.category,
-                schemeCodeName = request.schemeCodeName,
-                alias = request.alias,
-                masterKeyAlias = request.masterKeyAlias,
-                createdAfter = request.createdAfter,
-                createdBefore = request.createdBefore
+                filter = request.filter.items.toMap()
             )
             return CryptoSigningKeys(
                 found.map {
@@ -158,6 +135,7 @@ class CryptoOpsRpcProcessor(
                         it.schemeCodeName,
                         it.masterKeyAlias,
                         it.encodingVersion,
+                        it.externalId,
                         it.created
                     )
                 }
@@ -169,12 +147,22 @@ class CryptoOpsRpcProcessor(
         private val signingService: SigningService
     ) : Handler<GenerateKeyPairCommand> {
         override fun handle(context: CryptoRequestContext, request: GenerateKeyPairCommand): Any {
-            val publicKey = signingService.generateKeyPair(
-                tenantId = context.tenantId,
-                category = request.category,
-                alias = request.alias,
-                context = request.context.items.toMap()
-            )
+            val publicKey = if (request.externalId.isNullOrBlank()) {
+                signingService.generateKeyPair(
+                    tenantId = context.tenantId,
+                    category = request.category,
+                    alias = request.alias,
+                    context = request.context.items.toMap()
+                )
+            } else {
+                signingService.generateKeyPair(
+                    tenantId = context.tenantId,
+                    category = request.category,
+                    alias = request.alias,
+                    externalId = request.externalId,
+                    context = request.context.items.toMap()
+                )
+            }
             return CryptoPublicKey(ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(publicKey)))
         }
     }
