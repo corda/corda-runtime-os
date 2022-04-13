@@ -5,6 +5,7 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class URLPathParameterNotDeclaredValidatorTest {
@@ -17,13 +18,13 @@ class URLPathParameterNotDeclaredValidatorTest {
 
             @HttpRpcGET(path = "abc/{foo}/def")
             fun test(@HttpRpcPathParameter(name = "foo") foo2: String) {
-                foo2.toLowerCase()
+                foo2.lowercase()
             }
         }
 
         val result = URLPathParameterNotDeclaredValidator(TestInterface::class.java).validate()
 
-        assert(result.errors.isEmpty())
+        assertTrue(result.errors.isEmpty())
     }
 
     @Test
@@ -35,13 +36,13 @@ class URLPathParameterNotDeclaredValidatorTest {
 
             @HttpRpcGET(path = "abc/{foo2}/def")
             fun test(@HttpRpcPathParameter foo2: String) {
-                foo2.toLowerCase()
+                foo2.lowercase()
             }
         }
 
         val result = URLPathParameterNotDeclaredValidator(TestInterface::class.java).validate()
 
-        assert(result.errors.isEmpty())
+        assertTrue(result.errors.isEmpty())
     }
 
     @Test
@@ -53,7 +54,7 @@ class URLPathParameterNotDeclaredValidatorTest {
 
             @HttpRpcGET(path = "abc/{param}/def")
             fun test(@HttpRpcPathParameter foo2: String) {
-                foo2.toLowerCase()
+                foo2.lowercase()
             }
         }
 
@@ -88,12 +89,12 @@ class URLPathParameterNotDeclaredValidatorTest {
 
             @HttpRpcGET(path = "abc/{FOO2}/def")
             fun test(@HttpRpcPathParameter foo2: String) {
-                foo2.toLowerCase()
+                foo2.lowercase()
             }
         }
 
         val result = URLPathParameterNotDeclaredValidator(TestInterface::class.java).validate()
 
-        assert(result.errors.isEmpty())
+        assertTrue(result.errors.isEmpty())
     }
 }

@@ -8,15 +8,18 @@ import io.swagger.v3.oas.models.Paths
 import io.swagger.v3.oas.models.media.Content
 import io.swagger.v3.oas.models.media.MediaType
 import io.swagger.v3.oas.models.media.Schema
-import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.tags.Tag
 import java.io.InputStream
+import java.util.Collections.singletonList
+import java.util.Locale
+import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
+import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.DefaultSchemaModelProvider
@@ -32,8 +35,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.trace
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
-import java.util.Collections.singletonList
-import net.corda.httprpc.HttpFileUpload
 
 private val log =
     LoggerFactory.getLogger("net.corda.httprpc.server.impl.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
@@ -84,7 +85,7 @@ internal fun EndpointParameter.toOpenApiParameter(schemaModelProvider: SchemaMod
                     SchemaModelToOpenApiSchemaConverter.convert(schemaModelProvider.toSchemaModel(this)
                 )
             )
-            .`in`(type.name.toLowerCase())
+            .`in`(type.name.lowercase())
             .also { log.trace { "Map EndpointParameter: \"$this\" to OpenApi Parameter: $it completed." } }
     } catch (e: Exception) {
         "Error when mapping EndpointParameter: \"$this\" to OpenApi Parameter.".let {
@@ -130,7 +131,7 @@ private fun List<EndpointParameter>.toMediaType(
     return if (this.isMultipartFileUpload()) {
         MediaType().schema(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
-                .type(DataType.OBJECT.toString().toLowerCase())
+                .type(DataType.OBJECT.toString().lowercase())
         )
     } else if (isSingleRef || multiParams) {
         MediaType().schema(
@@ -141,7 +142,7 @@ private fun List<EndpointParameter>.toMediaType(
     } else {
         MediaType().schema(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
-                .type(DataType.OBJECT.toString().toLowerCase())
+                .type(DataType.OBJECT.toString().lowercase())
         )
     }
 }
@@ -184,9 +185,17 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
 }
 
 @VisibleForTesting
-fun String.toValidMethodName() = toLowerCase().replace(Regex("\\W"), "_")
+fun String.toValidMethodName() = lowercase().replace(Regex("\\W"), "_")
 
-private fun String.toValidSchemaName() = capitalize().replace(Regex("\\W"), "")
+private fun String.toValidSchemaName(): String {
+    return replaceFirstChar { ch ->
+        if (ch.isLowerCase()) {
+            ch.titlecase(Locale.getDefault())
+        } else {
+            ch.toString()
+        }
+    }.replace("\\W".toRegex(), "")
+}
 
 @Suppress("TooGenericExceptionThrown")
 private fun ApiResponse.withResponseBodyFrom(

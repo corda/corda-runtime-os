@@ -64,6 +64,7 @@ sealed class KotlinClassImpl<T : Any> constructor(
     override val isInner: Boolean get() = klazz.isInner
     override val isOpen: Boolean get() = klazz.isOpen
     override val isSealed: Boolean get() = klazz.isSealed
+    override val isValue: Boolean get() = klazz.isValue
 
     override fun isInstance(value: Any?): Boolean = klazz.isInstance(value)
 

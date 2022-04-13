@@ -165,7 +165,7 @@ class ResourceToOpenApiSpecMapperTest {
             }
 
 
-            assert(components.schemas.containsKey("PingPongData"))
+            assertTrue(components.schemas.containsKey("PingPongData"))
 
             assertEquals(
                 "#/components/schemas/PingRequest",

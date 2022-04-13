@@ -44,7 +44,7 @@ class LiquibaseSchemaMigratorImplTest {
                 while (rs.next()) {
                     val fullTableName = "${rs.getString("TABLE_SCHEM")}.${rs.getString("TABLE_NAME")}"
                     println("TABLE $fullTableName exists")
-                    tables.add(fullTableName.toLowerCase())
+                    tables.add(fullTableName.lowercase())
                 }
             }
         }
@@ -69,7 +69,7 @@ class LiquibaseSchemaMigratorImplTest {
         // Create first script
         println("SQL Script:")
         println(sql1)
-        assertThat(sql1.toLowerCase())
+        assertThat(sql1.lowercase())
             .contains("create table public.test_table")
             .contains("create table public.another_table")
             .contains("create table public.generic_table")
@@ -94,7 +94,7 @@ class LiquibaseSchemaMigratorImplTest {
         val sql2 = writer2.toString()
         println("Second SQL Script:")
         println(sql2)
-        assertThat(sql2.toLowerCase())
+        assertThat(sql2.lowercase())
             .contains("create schema if not exists another_schema;")
             .contains("create table another_schema.test_table_in_other_schema")
             .doesNotContain("create table public.databasechangelog")

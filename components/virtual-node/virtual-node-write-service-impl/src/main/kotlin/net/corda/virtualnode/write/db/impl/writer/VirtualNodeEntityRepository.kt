@@ -21,7 +21,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
                         "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum",
                 CpiMetadataEntity::class.java)
-                .setParameter("cpiFileChecksum", "%${cpiFileChecksum.toUpperCase()}%")
+                .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
                 .resultList
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null

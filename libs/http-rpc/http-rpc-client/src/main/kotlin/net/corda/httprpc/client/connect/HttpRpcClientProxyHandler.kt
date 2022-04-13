@@ -86,7 +86,7 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
                 "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
             )
 
-        val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath).toLowerCase()
+        val rawPath = joinResourceAndEndpointPaths(resourcePath, method.endpointPath).lowercase()
 
         if (method.returnsDurableCursorBuilder()) {
             return HttpRpcFiniteDurableCursorClientBuilderImpl(
