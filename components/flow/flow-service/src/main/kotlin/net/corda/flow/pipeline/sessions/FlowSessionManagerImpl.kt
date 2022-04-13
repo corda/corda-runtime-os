@@ -44,7 +44,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(instant)
             .setSequenceNum(null)
-            .setInitiatingIdentity(checkpoint.flowStartContext.identity)
+            .setInitiatingIdentity(checkpoint.flowKey.identity)
             // TODO Need member lookup service to get the holding identity of the peer
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), "flow-worker-dev"))
             .setReceivedSequenceNum(0)
@@ -99,7 +99,7 @@ class FlowSessionManagerImpl @Activate constructor(
             val sessionState = checkpoint.getSessionState(sessionId)
                 ?: throw FlowProcessingException("No existing session when trying to send close message")
             val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-                sessionState, checkpoint.flowStartContext.identity
+                sessionState, checkpoint.flowKey.identity
             )
             sessionManager.processMessageToSend(
                 key = checkpoint.flowId,
@@ -125,8 +125,7 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionIds: List<String>
     ): List<Pair<SessionState, SessionEvent>> {
         return sessionIds.mapNotNull { sessionId ->
-            val sessionState =
-                checkpoint.getSessionState(sessionId) ?: throw FlowProcessingException("Session doesn't exist")
+            val sessionState = checkpoint.getSessionState(sessionId) ?: throw FlowProcessingException("Session doesn't exist")
             sessionManager.getNextReceivedEvent(sessionState)?.let { sessionState to it }
         }
     }

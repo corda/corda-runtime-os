@@ -42,14 +42,13 @@ class CloseSessionsRequestHandler @Activate constructor(
             CLOSED_STATUSES
         )
 
-        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->
-            checkpoint.putSessionState(updatedSessionState)
-        }
-
         return if (haveSessionsAlreadyBeenClosed) {
             val record = recordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {
+            flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->
+                checkpoint.putSessionState(updatedSessionState)
+            }
             context
         }
     }

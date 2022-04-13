@@ -22,6 +22,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -78,6 +79,14 @@ class FlowSessionManagerImplTest {
 
     private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
 
+    @BeforeEach
+    fun setup() {
+        whenever(checkpoint.flowId).thenReturn(FLOW_ID)
+        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(sessionState)
+        whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(anotherSessionState)
+    }
+
     @Test
     fun `sendInitMessage creates a SessionInit message and processes it`() {
         whenever(sessionManager.processMessageToSend(any(), eq(null), any(), any())).then {
@@ -93,8 +102,6 @@ class FlowSessionManagerImplTest {
             FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
                 .setSessionIds(emptyList()).build()
         )
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(emptyList())
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply {
             cpiId = CPI_ID
         })
@@ -126,7 +133,6 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `sendDataMessages creates SessionData messages and processes them`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
 
         whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
@@ -184,20 +190,14 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `sendDataMessages does nothing when there are no sessions passed in`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
         val instant = Instant.now()
-
         flowSessionManager.sendDataMessages(checkpoint, emptyMap(), instant)
-
         verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
     }
 
     @Test
     fun `sendDataMessages throws an error when the checkpoint does not contain a passed in session`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState))
+        whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
 
         val instant = Instant.now()
 
@@ -211,10 +211,7 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `sendCloseMessages creates SesisonClose messages and processes them`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
+    fun `sendCloseMessages creates SessionClose messages and processes them`() {
         whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
@@ -267,20 +264,14 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `sendCloseMessages does nothing when there are no sessions passed in`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
         val instant = Instant.now()
-
         flowSessionManager.sendCloseMessages(checkpoint, emptyList(), instant)
-
         verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
     }
 
     @Test
     fun `sendCloseMessages throws an error when the checkpoint does not contain a passed in session`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState))
+        whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
 
         val instant = Instant.now()
 
@@ -299,8 +290,6 @@ class FlowSessionManagerImplTest {
         val anotherSessionEvent =
             buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = null, payload = Unit)
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(anotherSessionEvent)
 
@@ -313,8 +302,6 @@ class FlowSessionManagerImplTest {
     fun `getReceivedEvents does not return state event pairs when there is no next event`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, SESSION_ID, sequenceNum = null, payload = Unit)
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(null)
 
@@ -325,7 +312,6 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `getReceivedEvents does nothing when no sessions are passed in`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
 
         val receivedEvents = flowSessionManager.getReceivedEvents(checkpoint, emptyList())
@@ -338,22 +324,11 @@ class FlowSessionManagerImplTest {
     fun `getReceivedEvents throws an error when the checkpoint does not contain a passed in session`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, SESSION_ID, sequenceNum = null, payload = Unit)
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState))
+        whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
 
         assertThrows<FlowProcessingException> {
             flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
-        }
-    }
-
-    @Test
-    fun `getReceivedEvents throws an error if there is more than one session in the checkpoint with the same session id`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
-        assertThrows<FlowProcessingException> {
-            flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID))
         }
     }
 
@@ -384,7 +359,6 @@ class FlowSessionManagerImplTest {
         val anotherSessionEvent =
             buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = null, payload = Unit)
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(anotherSessionEvent)
@@ -396,7 +370,6 @@ class FlowSessionManagerImplTest {
     fun `hasReceivedEvents returns false if any event for the passed in sessions has not been received`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, SESSION_ID, sequenceNum = null, payload = Unit)
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
         whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(null)
@@ -414,9 +387,6 @@ class FlowSessionManagerImplTest {
         sessionState.status = SessionStateType.CLOSED
         anotherSessionState.status = SessionStateType.CONFIRMED
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
         assertTrue(
             flowSessionManager.areAllSessionsInStatuses(
                 checkpoint,
@@ -431,9 +401,6 @@ class FlowSessionManagerImplTest {
         sessionState.status = SessionStateType.CLOSED
         anotherSessionState.status = SessionStateType.CREATED
 
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
         assertFalse(
             flowSessionManager.areAllSessionsInStatuses(
                 checkpoint,
@@ -444,12 +411,9 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `areAllSessionsInStatuses returns false if no sessions are not contained in the passed in statuses`() {
+    fun `areAllSessionsInStatuses returns false if no sessions are contained in the passed in statuses`() {
         sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
         anotherSessionState.status = SessionStateType.CREATED
-
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
 
         assertFalse(
             flowSessionManager.areAllSessionsInStatuses(
@@ -462,8 +426,7 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `areAllSessionsInStatuses returns true if there are no sessions in the checkpoint`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(emptyList())
+        whenever(checkpoint.getSessionState(any())).thenReturn(null)
 
         assertTrue(
             flowSessionManager.areAllSessionsInStatuses(
@@ -476,11 +439,8 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `areAllSessionsInStatuses returns true if there are no sessions passed in`() {
-        sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
-        anotherSessionState.status = SessionStateType.CREATED
-
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
+        sessionState.status = SessionStateType.CLOSED
+        anotherSessionState.status = SessionStateType.CONFIRMED
 
         assertTrue(
             flowSessionManager.areAllSessionsInStatuses(
@@ -493,9 +453,6 @@ class FlowSessionManagerImplTest {
 
     @Test
     fun `areAllSessionsInStatuses returns false if there are no statuses passed in`() {
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
-
         assertFalse(
             flowSessionManager.areAllSessionsInStatuses(
                 checkpoint,
