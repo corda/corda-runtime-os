@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -79,7 +78,7 @@ class SessionInitExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                FlowMapperEvent(sessionEvent)
+                generateAppMessage(sessionEvent, sessionEventSerializer)
             )
         }
     }

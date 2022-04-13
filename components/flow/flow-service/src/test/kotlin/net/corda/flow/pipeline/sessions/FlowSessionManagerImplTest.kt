@@ -89,7 +89,10 @@ class FlowSessionManagerImplTest {
             }
         }
 
-        whenever(flowStack.peek()).thenReturn( FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true).setSessionIds(emptyList()).build())
+        whenever(flowStack.peek()).thenReturn(
+            FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
+                .setSessionIds(emptyList()).build()
+        )
         whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(emptyList())
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply {
@@ -293,7 +296,8 @@ class FlowSessionManagerImplTest {
     @Test
     fun `getReceivedEvents returns events for the passed in sessions`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, SESSION_ID, sequenceNum = null, payload = Unit)
-        val anotherSessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = null, payload = Unit)
+        val anotherSessionEvent =
+            buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = null, payload = Unit)
 
         whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
@@ -356,8 +360,14 @@ class FlowSessionManagerImplTest {
     @Test
     fun `acknowledgeReceivedEvents acknowledges the passed in events`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, SESSION_ID, sequenceNum = 1, payload = Unit)
-        val anotherSessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = 2, payload = Unit)
-        flowSessionManager.acknowledgeReceivedEvents(listOf(sessionState to sessionEvent, anotherSessionState to anotherSessionEvent))
+        val anotherSessionEvent =
+            buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = 2, payload = Unit)
+        flowSessionManager.acknowledgeReceivedEvents(
+            listOf(
+                sessionState to sessionEvent,
+                anotherSessionState to anotherSessionEvent
+            )
+        )
         verify(sessionManager).acknowledgeReceivedEvent(sessionState, 1)
         verify(sessionManager).acknowledgeReceivedEvent(anotherSessionState, 2)
     }
@@ -371,7 +381,8 @@ class FlowSessionManagerImplTest {
     @Test
     fun `hasReceivedEvents returns true if an event for every passed in session has been received`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, SESSION_ID, sequenceNum = null, payload = Unit)
-        val anotherSessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = null, payload = Unit)
+        val anotherSessionEvent =
+            buildSessionEvent(MessageDirection.OUTBOUND, ANOTHER_SESSION_ID, sequenceNum = null, payload = Unit)
 
         whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))

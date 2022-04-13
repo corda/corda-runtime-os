@@ -25,7 +25,12 @@ class FlowSessionManagerImpl @Activate constructor(
     private val sessionManager: SessionManager
 ) : FlowSessionManager {
 
-    override fun sendInitMessage(checkpoint: FlowCheckpoint, sessionId: String, x500Name: MemberX500Name, instant: Instant): SessionState {
+    override fun sendInitMessage(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        x500Name: MemberX500Name,
+        instant: Instant
+    ): SessionState {
         val payload = SessionInit.newBuilder()
             // TODO Throw an error if a non initiating flow is trying to create this session (shouldn't really get here for real, but for
             //  this class, it's not valid)
@@ -55,7 +60,11 @@ class FlowSessionManagerImpl @Activate constructor(
         )
     }
 
-    override fun sendDataMessages(checkpoint: FlowCheckpoint, sessionToPayload: Map<String, ByteArray>, instant: Instant): List<SessionState> {
+    override fun sendDataMessages(
+        checkpoint: FlowCheckpoint,
+        sessionToPayload: Map<String, ByteArray>,
+        instant: Instant
+    ): List<SessionState> {
         return sessionToPayload.map { (sessionId, payload) ->
             val sessionState = checkpoint.getSessionState(sessionId)
                 ?: throw FlowProcessingException("No existing session when trying to send data message")
@@ -81,7 +90,11 @@ class FlowSessionManagerImpl @Activate constructor(
         }
     }
 
-    override fun sendCloseMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, instant: Instant): List<SessionState> {
+    override fun sendCloseMessages(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        instant: Instant
+    ): List<SessionState> {
         return sessionIds.map { sessionId ->
             val sessionState = checkpoint.getSessionState(sessionId)
                 ?: throw FlowProcessingException("No existing session when trying to send close message")
@@ -107,9 +120,13 @@ class FlowSessionManagerImpl @Activate constructor(
         }
     }
 
-    override fun getReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): List<Pair<SessionState, SessionEvent>> {
+    override fun getReceivedEvents(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<Pair<SessionState, SessionEvent>> {
         return sessionIds.mapNotNull { sessionId ->
-            val sessionState = checkpoint.getSessionState(sessionId) ?: throw FlowProcessingException("Session doesn't exist")
+            val sessionState =
+                checkpoint.getSessionState(sessionId) ?: throw FlowProcessingException("Session doesn't exist")
             sessionManager.getNextReceivedEvent(sessionState)?.let { sessionState to it }
         }
     }
@@ -124,7 +141,11 @@ class FlowSessionManagerImpl @Activate constructor(
         return getReceivedEvents(checkpoint, sessionIds).size == sessionIds.size
     }
 
-    override fun areAllSessionsInStatuses(checkpoint: FlowCheckpoint, sessionIds: List<String>, statuses: List<SessionStateType>): Boolean {
+    override fun areAllSessionsInStatuses(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        statuses: List<SessionStateType>
+    ): Boolean {
         return sessionIds
             .mapNotNull { sessionId -> checkpoint.getSessionState(sessionId) }
             .map { sessionState -> sessionState.status }

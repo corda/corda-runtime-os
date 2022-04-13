@@ -1,14 +1,12 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
@@ -27,9 +25,9 @@ class SessionInitExecutorTest {
     fun `Outbound session init creates new state and forwards to P2P`() {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
-        val holdingIdentity = HoldingIdentity()
+
         val flowId = "id1"
-        val sessionInit = SessionInit("", "", flowId, holdingIdentity, holdingIdentity, null)
+        val sessionInit = SessionInit("", "", flowId, null)
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
         val result = SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer).execute()
         val state = result.flowMapperState
@@ -52,7 +50,7 @@ class SessionInitExecutorTest {
     fun `Inbound session init creates new state and forwards to flow event`() {
         val sessionInit = SessionInit("", "", null, null)
         val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, sessionInit)
-        val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null).execute()
+        val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null, sessionEventSerializer).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents

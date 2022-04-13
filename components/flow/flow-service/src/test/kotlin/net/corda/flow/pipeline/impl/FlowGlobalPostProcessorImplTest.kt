@@ -4,14 +4,12 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.session.SessionState
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.factory.RecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
-import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -47,7 +45,14 @@ class FlowGlobalPostProcessorImplTest {
     fun setup() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1))
         whenever(checkpoint.flowKey).thenReturn(FlowKey("flow id", ALICE_X500_HOLDING_IDENTITY))
-        whenever(sessionManager.getMessagesToSend(eq(sessionState1), any(), eq(testContext.config), eq(ALICE_X500_HOLDING_IDENTITY)))
+        whenever(
+            sessionManager.getMessagesToSend(
+                eq(sessionState1),
+                any(),
+                eq(testContext.config),
+                eq(ALICE_X500_HOLDING_IDENTITY)
+            )
+        )
             .thenReturn(sessionState1 to listOf(sessionEvent1, sessionEvent2))
 
         whenever(recordFactory.createFlowMapperSessionEventRecord(sessionEvent1)).thenReturn(record1)
