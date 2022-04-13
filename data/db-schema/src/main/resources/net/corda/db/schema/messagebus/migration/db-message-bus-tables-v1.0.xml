@@ -28,7 +28,7 @@
         <createTable tableName="topic_consumer_offset">
             <column name="topic" type="VARCHAR(255)"/>
             <column name="consumer_group" type="VARCHAR(255)"/>
-            <column name="partition" type="VARCHAR(255)"/>
+            <column name="partition" type="INT"/>
             <column name="record_offset" type="BIGINT"/>
             <column name="timestamp" type="TIMESTAMP"/>
             <column name="transaction_id" type="VARCHAR(255)"/>
