@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.ReplayAlgorithm
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import picocli.CommandLine.Command
@@ -32,14 +33,26 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
     var maxMessageSize = 1_000_000
 
     @Option(
+        names = ["--replayAlgorithm"],
+        description = ["The algorithm used to schedule messages for replay. One of: \${COMPLETION-CANDIDATES}."]
+    )
+    var replayAlgorithm = ReplayAlgorithm.Constant
+
+    @Option(
+        names = ["--messageReplayPeriodMilliSecs"],
+        description = ["The message replay period in milliseconds. Only used with Constant replayAlgorithm."]
+    )
+    var messageReplayPeriodMilliSecs = 2_000L
+
+    @Option(
         names = ["--messageReplayPeriodBaseMilliSecs"],
-        description = ["message replay period base in milliseconds"]
+        description = ["The message replay period base in milliseconds. Only used with ExponentialBackoff replayAlgorithm."]
     )
     var messageReplayPeriodBaseMilliSecs = 2_000L
 
     @Option(
         names = ["--messageReplayPeriodCutOffMilliSecs"],
-        description = ["message replay period cut off in milliseconds"]
+        description = ["The message replay period cut off in milliseconds. Only used with ExponentialBackoff replayAlgorithm."]
     )
     var messageReplayPeriodCutoffMilliSecs = 10_000L
 
@@ -68,21 +81,13 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
     var sessionsPerPeer = 4L
 
     override fun call(): Collection<Record<String, Configuration>> {
-        val configuration = ConfigFactory.empty()
+        val baseConfiguration = ConfigFactory.empty()
             .withValue(
                 LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY,
                 ConfigValueFactory.fromAnyRef(maxMessageSize)
             )
             .withValue(
-                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY_POSTFIX,
-                ConfigValueFactory.fromAnyRef(messageReplayPeriodBaseMilliSecs)
-            )
-            .withValue(
-                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.CUTOFF_REPLAY_KEY_POSTFIX,
-                ConfigValueFactory.fromAnyRef(messageReplayPeriodCutoffMilliSecs)
-            )
-            .withValue(
-                LinkManagerConfiguration.MESSAGE_REPLAY_KEY_PREFIX + LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX,
+                LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER,
                 ConfigValueFactory.fromAnyRef(maxReplayingMessages)
             )
             .withValue(
@@ -97,6 +102,25 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
                 LinkManagerConfiguration.SESSIONS_PER_PEER_KEY,
                 ConfigValueFactory.fromAnyRef(sessionsPerPeer)
             )
+
+        val replayAlgorithmInnerConfig = when (replayAlgorithm) {
+            ReplayAlgorithm.Constant -> {
+                ConfigFactory.empty().withValue(
+                    LinkManagerConfiguration.REPLAY_PERIOD_KEY,
+                    ConfigValueFactory.fromAnyRef(messageReplayPeriodMilliSecs)
+                )
+            }
+            ReplayAlgorithm.ExponentialBackoff -> {
+                ConfigFactory.empty().withValue(
+                    LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY,
+                    ConfigValueFactory.fromAnyRef(messageReplayPeriodBaseMilliSecs)
+                ).withValue(
+                    LinkManagerConfiguration.REPLAY_PERIOD_CUTOFF_KEY,
+                    ConfigValueFactory.fromAnyRef(messageReplayPeriodCutoffMilliSecs)
+                )
+            }
+        }
+        val configuration = baseConfiguration.withValue(replayAlgorithm.configKeyName(), replayAlgorithmInnerConfig.root())
 
         return listOf(
             configuration.toConfigurationRecord(

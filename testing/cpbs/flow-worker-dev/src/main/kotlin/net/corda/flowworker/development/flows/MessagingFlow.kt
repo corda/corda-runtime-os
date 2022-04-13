@@ -42,15 +42,15 @@ class MessagingFlow(private val jsonArg: String) : Flow<String> {
             )
         )
 
-        log.info("initiated session")
-
         val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
 
         log.info("Received data from initiated flow 1: $received")
 
-        val received2 = session.sendAndReceive<MyClass>(MyClass("Serialize me please 2", 1)).unwrap { it }
+        flowEngine.subFlow(InlineSubFlow(session))
 
-        log.info("Received data from initiated flow 2: $received2")
+        flowEngine.subFlow(InitiatingSubFlow())
+
+        log.info("Finished initiating subflow")
 
         val received3 = session.receive<MyClass>().unwrap { it }
 
@@ -61,15 +61,9 @@ class MessagingFlow(private val jsonArg: String) : Flow<String> {
         log.info("Closed session")
         log.info("Hello world completed.")
 
-        return "finished"
+        return "finished top level flow"
     }
 }
-
-@CordaSerializable
-data class MyClass(
-    val string: String,
-    val int: Int
-)
 
 @InitiatedBy(MessagingFlow::class)
 class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
@@ -99,10 +93,91 @@ class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
 
         session.send(received.copy(string = "this is a new object 3", int = 2))
 
+        log.info("Closing session")
+
         session.close()
 
         log.info("Closed session")
 
-        return "finished"
+        return "finished top level initiated flow"
     }
 }
+
+class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    @CordaInject
+    lateinit var flowMessaging: FlowMessaging
+
+    @Suspendable
+    override fun call() {
+        log.info("Inline subFlow is starting...")
+        val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
+
+        log.info("Received data from initiated flow 2 (inlined subFlow): $received")
+    }
+}
+
+@InitiatingFlow
+class InitiatingSubFlow : Flow<Unit> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    @CordaInject
+    lateinit var flowMessaging: FlowMessaging
+
+    @Suspendable
+    override fun call() {
+        log.info("Initiating subFlow is starting...")
+        val session = flowMessaging.initiateFlow(
+            MemberX500Name(
+                commonName = "Alice",
+                organisation = "Alice Corp",
+                locality = "LDN",
+                country = "GB"
+            )
+        )
+
+        val received = session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
+
+        log.info("Received data from initiated subFlow: $received")
+    }
+}
+
+@InitiatedBy(InitiatingSubFlow::class)
+class InitiatingSubFlowInitiatedFlow(private val session: FlowSession) : Flow<String> {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
+    @CordaInject
+    private lateinit var flowEngine: FlowEngine
+
+    @Suspendable
+    override fun call(): String {
+        log.info("I have been called [${flowEngine.flowId}]")
+
+        val received = session.receive<MyClass>().unwrap { it }
+
+        log.info("Received data from peer: $received")
+
+        session.send(received.copy(string = "this is a new object", int = 2))
+
+        // should explode when we implement more close logic
+//        session.receive<MyClass>().unwrap { it }
+
+        return "finished initiated subflow flow"
+    }
+}
+
+@CordaSerializable
+data class MyClass(
+    val string: String,
+    val int: Int
+)

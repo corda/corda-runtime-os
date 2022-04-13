@@ -34,6 +34,7 @@ import net.corda.flow.pipeline.handlers.waiting.sessions.SessionInitWaitingForHa
 import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.pipeline.sessions.FlowSessionManagerImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -149,6 +150,8 @@ class FlowEventDSL {
 
 private val sessionManager = SessionManagerImpl()
 
+private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
+
 private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager)
 
 private val sandboxGroupContext = mock<SandboxGroupContext>()
@@ -167,25 +170,25 @@ private val flowEventHandlers = listOf(
 private val flowWaitingForHandlers = listOf(
     StartFlowWaitingForHandler(),
     WakeupWaitingForHandler(),
-    SessionConfirmationWaitingForHandler(sessionManager),
-    SessionDataWaitingForHandler(sessionManager),
+    SessionConfirmationWaitingForHandler(flowSessionManager),
+    SessionDataWaitingForHandler(flowSessionManager),
     SessionInitWaitingForHandler(sessionManager)
 )
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
-    CloseSessionsRequestHandler(sessionManager),
+    CloseSessionsRequestHandler(flowSessionManager),
     FlowFailedRequestHandler(mock()),
     FlowFinishedRequestHandler(mock()),
     ForceCheckpointRequestHandler(),
     GetFlowInfoRequestHandler(),
-    InitiateFlowRequestHandler(sessionManager),
-    ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(sessionManager),
-    SendRequestHandler(sessionManager),
+    InitiateFlowRequestHandler(flowSessionManager),
+    ReceiveRequestHandler(flowSessionManager),
+    SendAndReceiveRequestHandler(flowSessionManager),
+    SendRequestHandler(flowSessionManager),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
-    SubFlowFinishedRequestHandler(),
+    SubFlowFinishedRequestHandler(flowSessionManager),
     WaitForSessionConfirmationsRequestHandler()
 )
 

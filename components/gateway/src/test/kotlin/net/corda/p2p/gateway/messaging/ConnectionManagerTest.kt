@@ -49,7 +49,7 @@ class ConnectionManagerTest {
     }
 
     @Test
-    fun `second acquire with the same URL return the same client`() {
+    fun `second acquire with the same URL will not return the same client`() {
         val client1 = connectionManager
             .acquire(
                 DestinationInfo(
@@ -64,6 +64,34 @@ class ConnectionManagerTest {
                 DestinationInfo(
                     URI("http://www.r3.com:3000"),
                     "2",
+                    null,
+                    trustStore
+                )
+            )
+
+        assertThat(client1).isNotSameAs(client2)
+        assertThat(mockedClient.constructed()).hasSize(2)
+        mockedClient.constructed().forEach {
+            verify(it, times(1)).start()
+        }
+    }
+
+    @Test
+    fun `second acquire with the same Destination info will return the same client`() {
+        val client1 = connectionManager
+            .acquire(
+                DestinationInfo(
+                    URI("http://www.r3.com:3000"),
+                    "1",
+                    null,
+                    trustStore
+                )
+            )
+        val client2 = connectionManager
+            .acquire(
+                DestinationInfo(
+                    URI("http://www.r3.com:3000"),
+                    "1",
                     null,
                     trustStore
                 )

@@ -53,10 +53,14 @@ class SandboxDependencyInjectorImplTest {
     @Test
     fun `an exception is thrown if the same interface is implemented by more than once service`() {
         Assertions.assertThatIllegalArgumentException()
-            .isThrownBy { SandboxDependencyInjectorImpl(mapOf(
-                s2 to serviceTypes2,
-                DuplicateService2Impl() to serviceTypes2
-            )) {} }
+            .isThrownBy {
+                SandboxDependencyInjectorImpl(
+                    mapOf(
+                        s2 to serviceTypes2,
+                        DuplicateService2Impl() to serviceTypes2
+                    )
+                ) {}
+            }
             .withMessage(
                 "An implementation of type '${Service2::class.qualifiedName}' has been already been " +
                         "registered by '${Service2Impl::class.qualifiedName}' it can't be registered again " +

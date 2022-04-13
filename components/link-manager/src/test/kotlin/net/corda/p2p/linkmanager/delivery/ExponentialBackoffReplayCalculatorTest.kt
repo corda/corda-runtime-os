@@ -7,7 +7,7 @@ import java.time.Duration
 class ExponentialBackoffReplayCalculatorTest {
 
     companion object {
-        private val CONFIG = ReplayScheduler.ReplaySchedulerConfig(
+        private val CONFIG = ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
             Duration.ofSeconds(1),
             Duration.ofSeconds(7),
             100

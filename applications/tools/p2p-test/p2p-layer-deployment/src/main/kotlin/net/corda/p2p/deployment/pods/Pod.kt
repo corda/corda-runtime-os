@@ -6,6 +6,7 @@ import net.corda.p2p.deployment.Yaml
 abstract class Pod : Yamlable {
     abstract val app: String
     abstract val image: String
+    open val replicasCount = 1
     open val ports: Collection<Port> = emptyList()
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
@@ -52,7 +53,7 @@ abstract class Pod : Yamlable {
             "namespace" to namespace,
         ),
         "spec" to mapOf(
-            "replicas" to 1,
+            "replicas" to replicasCount,
             "selector" to mapOf("matchLabels" to mapOf("app" to app)),
             "template" to mapOf(
                 "metadata" to mapOf(
@@ -131,7 +132,7 @@ abstract class Pod : Yamlable {
                             "name" to it.displayName
                         )
                     },
-                    "selector" to mapOf("app" to app)
+                    "selector" to mapOf("app" to app),
                 )
             )
         )

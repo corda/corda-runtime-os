@@ -8,12 +8,13 @@ import picocli.CommandLine
 class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationMissingOptions() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
-            ).execute("create-db-config")
+            ).setColorScheme(colorScheme).execute("create-db-config")
         }
         assertThat(outText).startsWith(
             "Missing required options: '--name=<connectionName>'," +
@@ -24,12 +25,13 @@ class TestInitialConfigPluginDb {
 
     @Test
     fun testDbConfigCreation() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
-            ).execute(
+            ).setColorScheme(colorScheme).execute(
                 "create-db-config",
                 "-n", "connection name",
                 "-j", "jdbd:postgres://testurl",

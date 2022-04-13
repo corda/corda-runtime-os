@@ -12,7 +12,6 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -29,8 +28,8 @@ class ForceCheckpointRequestHandlerTest {
             flowKey = this@ForceCheckpointRequestHandlerTest.flowKey
         }
         val inputContext = buildFlowEventContext<Any>(checkpoint, "doesn't matter")
-        val waitingFor = handler.getUpdatedWaitingFor(inputContext, FlowIORequest.ForceCheckpoint)
-        assertTrue(waitingFor.value is net.corda.data.flow.state.waiting.Wakeup)
+        val result = handler.getUpdatedWaitingFor(inputContext, FlowIORequest.ForceCheckpoint)
+        assertEquals(net.corda.data.flow.state.waiting.Wakeup(), result.value)
     }
 
     @Test

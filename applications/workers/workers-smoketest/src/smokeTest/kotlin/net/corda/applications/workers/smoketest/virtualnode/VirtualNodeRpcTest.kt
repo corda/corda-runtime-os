@@ -46,7 +46,7 @@ class VirtualNodeRpcTest {
 
         // BUG:  https://r3-cev.atlassian.net/browse/CORE-3966 and https://r3-cev.atlassian.net/browse/CORE-3968
         // Max wait duration CPI to arrive for flow - arbitrarily picked.
-        private val FLOW_WAIT_DURATION = Duration.ofSeconds(30)
+        private val FLOW_WAIT_DURATION = Duration.ofSeconds(60)
     }
 
     private val clusterUri = URI(System.getProperty("rpcHost"))

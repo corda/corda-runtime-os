@@ -56,7 +56,6 @@ class KafkaBroker(
     )
 
     override val environmentVariables = mapOf(
-        "KAFKA_BROKER_ID" to index.toString(),
         "KAFKA_CLUSTER_ID" to clusterName,
         "ALLOW_PLAINTEXT_LISTENER" to "yes",
         "KAFKA_ZOOKEEPER_CONNECT" to zookeeperConnectString,

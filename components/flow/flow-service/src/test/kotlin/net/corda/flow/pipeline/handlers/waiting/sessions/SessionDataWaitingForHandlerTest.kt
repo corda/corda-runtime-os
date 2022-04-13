@@ -9,15 +9,12 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.session.manager.SessionManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -34,9 +31,9 @@ class SessionDataWaitingForHandlerTest {
         val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
     }
 
-    private val sessionManager = mock<SessionManager>()
+    private val flowSessionManager = mock<FlowSessionManager>()
 
-    private val sessionDataWaitingForHandler = SessionDataWaitingForHandler(sessionManager)
+    private val sessionDataWaitingForHandler = SessionDataWaitingForHandler(flowSessionManager)
 
     @Test
     fun `Receiving all required session data events returns a FlowContinuation#Run`() {
@@ -46,17 +43,25 @@ class SessionDataWaitingForHandlerTest {
         val anotherSessionState = SessionState().apply {
             sessionId = ANOTHER_SESSION_ID
         }
+        val checkpoint = Checkpoint().apply {
+            flowKey = FLOW_KEY
+            sessions = listOf(sessionState, anotherSessionState)
+        }
 
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
-            sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA))
-            sequenceNum = 1
-        })
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
-            sessionId = ANOTHER_SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(MORE_DATA))
-            sequenceNum = 1
-        })
+        whenever(flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID)))
+            .thenReturn(
+                listOf(
+                    sessionState to SessionEvent().apply {
+                        sessionId = SESSION_ID
+                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        sequenceNum = 1
+                    },
+                    anotherSessionState to SessionEvent().apply {
+                        sessionId = ANOTHER_SESSION_ID
+                        payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                        sequenceNum = 1
+                    }
+                ))
 
         val inputContext = buildFlowEventContext(
             checkpoint = Checkpoint().apply {
@@ -82,32 +87,33 @@ class SessionDataWaitingForHandlerTest {
         val anotherSessionState = SessionState().apply {
             sessionId = ANOTHER_SESSION_ID
         }
-
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
-            sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA))
-            sequenceNum = 1
-        })
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
-            sessionId = ANOTHER_SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(MORE_DATA))
-            sequenceNum = 1
-        })
-
-        val inputContext = buildFlowEventContext(
-            checkpoint = Checkpoint().apply {
-                flowKey = FLOW_KEY
-                sessions = listOf(sessionState, anotherSessionState)
+        val checkpoint = Checkpoint().apply {
+            flowKey = FLOW_KEY
+            sessions = listOf(sessionState, anotherSessionState)
+        }
+        val receivedEvents = listOf(
+            sessionState to SessionEvent().apply {
+                sessionId = SESSION_ID
+                payload = SessionData(ByteBuffer.wrap(DATA))
+                sequenceNum = 1
             },
-            inputEventPayload = Unit
+            anotherSessionState to SessionEvent().apply {
+                sessionId = ANOTHER_SESSION_ID
+                payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                sequenceNum = 1
+            }
         )
+
+        whenever(flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))).thenReturn(receivedEvents)
+
+        val inputContext = buildFlowEventContext(checkpoint, inputEventPayload = Unit)
 
         sessionDataWaitingForHandler.runOrContinue(
             inputContext,
             net.corda.data.flow.state.waiting.SessionData(listOf(SESSION_ID, ANOTHER_SESSION_ID))
         )
 
-        verify(sessionManager, times(2)).acknowledgeReceivedEvent(any(), eq(1))
+        verify(flowSessionManager).acknowledgeReceivedEvents(receivedEvents)
     }
 
     @Test
@@ -119,19 +125,22 @@ class SessionDataWaitingForHandlerTest {
             sessionId = ANOTHER_SESSION_ID
         }
 
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
-            sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA))
-            sequenceNum = 1
-        })
+        val checkpoint = Checkpoint().apply {
+            flowKey = FLOW_KEY
+            sessions = listOf(sessionState, anotherSessionState)
+        }
 
-        val inputContext = buildFlowEventContext(
-            checkpoint = Checkpoint().apply {
-                flowKey = FLOW_KEY
-                sessions = listOf(sessionState, anotherSessionState)
-            },
-            inputEventPayload = Unit
-        )
+        whenever(flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID)))
+            .thenReturn(
+                listOf(
+                    sessionState to SessionEvent().apply {
+                        sessionId = SESSION_ID
+                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        sequenceNum = 1
+                    }
+                ))
+
+        val inputContext = buildFlowEventContext(checkpoint, inputEventPayload = Unit)
 
         val continuation = sessionDataWaitingForHandler.runOrContinue(
             inputContext,
@@ -149,25 +158,27 @@ class SessionDataWaitingForHandlerTest {
         val anotherSessionState = SessionState().apply {
             sessionId = ANOTHER_SESSION_ID
         }
+        val checkpoint = Checkpoint().apply {
+            flowKey = FLOW_KEY
+            sessions = listOf(sessionState, anotherSessionState)
+        }
 
-        whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(SessionEvent().apply {
-            sessionId = SESSION_ID
-            payload = SessionData(ByteBuffer.wrap(DATA))
-            sequenceNum = 1
-        })
-        whenever(sessionManager.getNextReceivedEvent(anotherSessionState)).thenReturn(SessionEvent().apply {
-            sessionId = ANOTHER_SESSION_ID
-            payload = SessionClose()
-            sequenceNum = 1
-        })
+        whenever(flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID)))
+            .thenReturn(
+                listOf(
+                    sessionState to SessionEvent().apply {
+                        sessionId = SESSION_ID
+                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        sequenceNum = 1
+                    },
+                    anotherSessionState to SessionEvent().apply {
+                        sessionId = ANOTHER_SESSION_ID
+                        payload = SessionClose()
+                        sequenceNum = 1
+                    }
+                ))
 
-        val inputContext = buildFlowEventContext(
-            checkpoint = Checkpoint().apply {
-                flowKey = FLOW_KEY
-                sessions = listOf(sessionState, anotherSessionState)
-            },
-            inputEventPayload = Unit
-        )
+        val inputContext = buildFlowEventContext(checkpoint, inputEventPayload = Unit)
 
         assertThrows<FlowProcessingException> {
             sessionDataWaitingForHandler.runOrContinue(
