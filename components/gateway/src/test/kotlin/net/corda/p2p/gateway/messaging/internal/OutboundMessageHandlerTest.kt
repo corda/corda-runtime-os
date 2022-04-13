@@ -14,6 +14,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkOutHeader
@@ -144,16 +145,11 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        val events = handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-                EventLogRecord("", "", null, 2, 2L)
-            )
-        )
+        handler.onNext(Record("", "", message))
+        handler.onNext(Record("", "", null))
 
         assertThat(sentMessages).hasSize(1)
         assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
-        assertThat(events).isEmpty()
     }
 
     @Test
@@ -176,12 +172,7 @@ class OutboundMessageHandlerTest {
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
         assertThrows<IllegalStateException> {
-            handler.onNext(
-                listOf(
-                    EventLogRecord("", "", message, 1, 1L),
-                    EventLogRecord("", "", null, 2, 2L)
-                )
-            )
+            handler.onNext(Record("", "", message))
         }
     }
 
@@ -207,11 +198,7 @@ class OutboundMessageHandlerTest {
         val destinationInfo = argumentCaptor<DestinationInfo>()
         whenever(connectionManager.constructed().first().acquire(destinationInfo.capture())).doReturn(client)
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-            )
-        )
+        handler.onNext(Record("", "", message))
 
         assertThat(destinationInfo.firstValue)
             .isEqualTo(
@@ -246,11 +233,7 @@ class OutboundMessageHandlerTest {
         val destinationInfo = argumentCaptor<DestinationInfo>()
         whenever(connectionManager.constructed().first().acquire(destinationInfo.capture())).doReturn(client)
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-            )
-        )
+        handler.onNext(Record("", "", message))
 
         assertThat(destinationInfo.firstValue)
             .isEqualTo(
@@ -283,11 +266,7 @@ class OutboundMessageHandlerTest {
             payload,
         )
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-            )
-        )
+        handler.onNext(Record("", "", message))
 
         verify(connectionManager.constructed().first(), never()).acquire(any())
     }
@@ -313,11 +292,7 @@ class OutboundMessageHandlerTest {
             payload,
         )
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-            )
-        )
+        handler.onNext(Record("", "", message))
 
         verify(trustStores.constructed().first()).getTrustStore(GROUP_ID)
     }
@@ -349,12 +324,8 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-                EventLogRecord("", "", null, 2, 2L)
-            )
-        )
+        handler.onNext(Record("", "", message))
+        handler.onNext(Record("", "", null))
 
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
@@ -392,12 +363,8 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-                EventLogRecord("", "", null, 2, 2L)
-            )
-        )
+        handler.onNext(Record("", "", message))
+        handler.onNext(Record("", "", null))
 
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
@@ -438,12 +405,8 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-                EventLogRecord("", "", null, 2, 2L)
-            )
-        )
+        handler.onNext(Record("", "", message))
+        handler.onNext(Record("", "", null))
 
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
@@ -485,12 +448,8 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-                EventLogRecord("", "", null, 2, 2L)
-            )
-        )
+        handler.onNext(Record("", "", message))
+        handler.onNext(Record("", "", null))
 
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(1)
