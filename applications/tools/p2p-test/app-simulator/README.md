@@ -58,7 +58,7 @@ In the sender mode, the configuration file should have the following form:
         batchSize: 10,
         interBatchDelay: 0ms,
         messageSizeBytes: 10000,
-        expireAfterTime: 10
+        expireAfterTime: 10s
     }
 }
 ```
