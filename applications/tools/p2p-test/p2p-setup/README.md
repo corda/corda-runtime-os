@@ -1,80 +1,49 @@
 # P2P Setup tool
-This is a tool that can be used to setup a P2P deployment. 
+This is a tool that can be used perform the following setup steps in a P2P deployment:
+* add cryptographic keys to the cluster.
+* add or remove a locally hosted identity in the cluster. 
+* create or delete a membership group.
+* add or remove a member from a group.
+* publish configuration for p2p components (e.g. link manager and gateway).
 
 ## Building the tool
-To build run:
+
+To build the JAR artefact, run:
 ```
 ./gradlew applications:tools:p2p-test:p2p-setup:clean applications:tools:p2p-test:p2p-setup:appJar
 ```
-This will create an executable jar in `applications/tools/p2p-test/p2p-setup/build/bin/`.
+This will create an executable JAR in `applications/tools/p2p-test/p2p-setup/build/bin/`.
 
 ## Running the tool
 
-### Creating a membership group
-To create a membership group:
-1. Make sure you have a valid PEM file containing the TLS trust roots of the group.
-2. Prepare a configuration file with the group data. For example:
+### Adding cryptographic keys.
+The following instructions can be used to add to the cluster the cryptographic keys for TLS and session initiation.
+First:
+1. Make sure you have the private key file (in PEM format).
+2. Prepare a configuration file with the identity data. For example:
 ```json
 {
-  "groupId": "group-1",
-  "data": {
-    "networkType": "CORDA_5",
-    "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
-    "trustRootCertificates":["-----BEGIN CERTIFICATE-----\nMIIDrjCCAhagAwIBAgIBAj...4w==\n-----END CERTIFICATE-----\n"]
-  }
+  "keys": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsqXqc40Lq...+4zJ2Erl\n-----END RSA PRIVATE KEY-----\n",
+  "tenantId": "tenant-alice-1",
+  "publishAlias": "alice-identity-key"
 }
 ```
-Where:
-* `networkType` is either `CORDA_5`, `CORDA_4`.
-* `protocolModes` are either: `AUTHENTICATED_ENCRYPTION` or `AUTHENTICATION_ONLY`.
-* `trustRootCertificates` is the content of the root certificates (in PEM format).
-* Instead, one can use `trustRootCertificatesFiles` with the paths to the trust store certificate in PEM format.
+where:
+* `publish_alias` is a unique name to publish the keys under. If omitted, a random UUID will be used.
+* `keys` is the content of the private key in PEM format (use either this or `keysFile`).
+* `keysFile` can be an alternative to `keys` with the path to a file containing the private key in PEM format.
+* `tenantId` A non-unique ID for the tenant
 
-5. Run the command:
+Then, in order to publish the key pair, run:
 ```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
-  add-group <path_to_member_json_file>
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  add-key-pair <path_to_keys_json_file>
 ```
 
-### Publishing a group member
-To publish a group member:
-1. Make sure you have a valid PEM file containing the public key of the member.
-2. Prepare a configuration file with the member data. For example:
-```json
-{
-  "x500name": "O=Alice, L=London, C=GB",
-  "groupId": "group-1",
-  "data": {
-       "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
-       "address": "http://alice.com:8080"
-  }
-}
-```
-Where:
-* `publicSessionKey` is the session public key in PEM format
-* `address` is the HTTP address of the member (In the format: `http://<host>:<port>/`)
-* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with path to the session public key in PEM format.
-
-5. Run the command:
-```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
-  add-member <path_to_member_json_file>
-```
-
-To create the public key from the private key use:
-```bash
-openssl ec -in private.ec.key -pubout -out public.ec.pem
-```
-or
-```bash
-openssl rsa -in private.rsa.key -pubout > public.rsa.pem
-```
-
-
-### Publishing an entry for a locally hosted identity
-To publish an entry for a locally hosted identity:
+### Adding a locally hosted identity
+The following instructions can be used to add a new locally hosted identity to a cluster.
+First:
 1. Make sure you have a valid PEM file containing the TLS certificate chain.
 2. Prepare a configuration file with the identity data. For example:
 ```json
@@ -89,81 +58,130 @@ To publish an entry for a locally hosted identity:
   }
 }
 ```
-* The `tlsTenantId` is the tenant ID under which the TLS key is stored.
-* The `tlsCertificates` should contain the content of the certificates (in PEM format).
-* The `tlsCertificatesFiles` can be used as an alternative to `tlsCertificates` with a path to a valid certificate file (in PEM format).
-* The `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
-* `publicSessionKey` is the session public key in PEM format
-* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with path to the session public key in PEM format.
+where:
+* `tlsTenantId` is the tenant ID under which the TLS key is stored.
+* `tlsCertificates` should contain the content of the certificates in PEM format (use either this or `tlsCertificatesFiles`).
+* `tlsCertificatesFiles` can be used as an alternative to `tlsCertificates` with a path to a valid certificate file in PEM format.
+* `sessionKeyTenantId` is the tenant ID under which the session initiation key is stored.
+* `publicSessionKey` is the session initiation public key in PEM format (use either that or `publicSessionKeyFile`).
+* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with the path to a file containing the session initiation public key in PEM format.
 
-4. Run the command:
+Then, in order to add the new locally hosted identity, run:
 ```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
   add-identity <path_to_identity_json_file>
 ```
 
-### Add cryptographic keys.
-This command can be used to add to the cluster the cryptographic keys for TLS and session initiation.
-To publish key-pair:
-1. Make sure you have the private key file (in PEM format).
-2. Prepare a configuration file with the identity data. For example:
+### Removing a locally hosted identity
+
+To remove a locally hosted identity run the command:
+```bash
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  remove-identity -g "group-1" -x "O=Alice, L=London, C=GB"
+```
+
+### Creating a membership group
+The following instructions can be used to create a membership group.
+First:
+1. Make sure you have a valid PEM file containing the TLS trust roots of the group.
+2. Prepare a configuration file with the group data. For example:
 ```json
 {
-  "keys": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsqXqc40Lq...+4zJ2Erl\n-----END RSA PRIVATE KEY-----\n",
-  "tenantId": "tenant-alice-1",
-  "publishAlias": "alice-identity-key"
+  "groupId": "group-1",
+  "data": {
+    "networkType": "CORDA_5",
+    "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
+    "trustRootCertificates":["-----BEGIN CERTIFICATE-----\nMIIDrjCCAhagAwIBAgIBAj...4w==\n-----END CERTIFICATE-----\n"]
+  }
 }
 ```
-Where:
-* `publish_alias` is a unique name to publish the keys under. If omitted, a random UUID will be used.
-* `keys` is the content of the private key in PEM format (use either that or `keysFile`).
-* `keysFile` is the path to the file with the keys in PEM format.
-* `tenantId` A non-unique ID for the tenant
+where:
+* `networkType` is either `CORDA_5`, `CORDA_4`.
+* `protocolModes` are either: `AUTHENTICATED_ENCRYPTION` or `AUTHENTICATION_ONLY`.
+* `trustRootCertificates` is the content of the root certificates in PEM format (use either this or `trustRootCertificatesFiles`).
+* `trustRootCertificatesFiles` can be an alternative to `trustRootCertificates` with the path to a file containing the trust store certificate in PEM format.
 
-5. Run the command:
+Then, in order to create the group, run:
 ```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
-  add-key-pair <path_to_keys_json_file>
-```
-### Publish Gateway configuration.
-Run the command:
-```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
-  config-gateway --port=<gateway-port>
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  add-group <path_to_member_json_file>
 ```
 
-Use `config-gateway --help` to view other configuration option.
-
-### Publish Link manager configuration.
-Run the command:
+### Removing membership group
+To remove a membership group run the command:
 ```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  remove-group "group-1"
+```
+
+### Adding a group member
+The following instructions can be used to add a new group member.
+First:
+1. Make sure you have a valid PEM file containing the public key of the member.
+2. Prepare a configuration file with the member data. For example:
+```json
+{
+  "x500name": "O=Alice, L=London, C=GB",
+  "groupId": "group-1",
+  "data": {
+       "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
+       "address": "http://alice.com:8085"
+  }
+}
+```
+where:
+* `address` is the HTTP address of the member (in the format: `http://<host>:<port>`)
+* `publicSessionKey` is the session initiation public key in PEM format (use either this or `publicSessionKeyFile`)
+* `publicSessionKeyFile` can be an alternative to `publicSessionKey` with the path to a file containing the session initiation public key in PEM format.
+
+Then, in order to add the member, run:
+```bash
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  add-member <path_to_member_json_file>
+```
+
+Note: to create the public key from the private key, you can use one of the following commands (depending on the key algorithm):
+```bash
+openssl ec -in private.ec.key -pubout -out public.ec.pem
+openssl rsa -in private.rsa.key -pubout > public.rsa.pem
+```
+
+### Removing a group member
+To remove a membership group run the command:
+```bash
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  remove-member -g "group-1" -x "O=Alice, L=London, C=GB"
+```
+
+### Publishing configuration for the p2p Gateway.
+To publish configuration for the p2p gateway, run:
+```bash
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  config-gateway --port=8085
+```
+
+Use the command line parameter `--help` to view other configuration options.
+
+### Publishing configuration for the Link Manager.
+To publish configuration for the Link Manager, run:
+```bash
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
   config-link-manager --maxReplayingMessages=200
 ```
 
-Use `config-link-manager --help` to view other configuration option.
+Use the command line parameter `--help` to view other configuration option.
 
-### Removing membership group
-To remove a created membership group run the command:
-```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
-  remove-group <group-id>
-```
-
-### Removing a locally hosted identity
-To remove a locally hosted identity run the command:
-```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k <kafka-host:kafka-port> \
-  remove-identity -g <group-id> -x <x500-name>
-```
 
 ### Kafka servers environment variable
+The Kafka connections details can also be provided via the environment variable `KAFKA_SERVERS`, instead of the command line parameter `-k`.
 If the `-k <kafka-servers>` command line argument is missing the environment variable `KAFKA_SERVERS` will be used by default.
 
 ### Populating a custom topic
@@ -173,8 +191,8 @@ Each sub command has a `--topic` option to overwrite the default topic where dat
 ### Running multiple sub commands
 One can add multiple sub commands in one run, for example:
 ```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k localhost:9092 \
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
   add-group ~/Desktop/group1.json \
   add-member ~/Desktop/alice.json \
   add-member ~/Desktop/bob.json \
@@ -186,9 +204,9 @@ java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.
   config-link-manager
 ```
 
-### Apply from a file
+### Applying from a file
 One can also save all the setup in a single JSON file, and apply it in one command.
-The file should look like:
+The file should look like the following:
 ```json
 {
   "linkManagerConfig": {
@@ -279,7 +297,7 @@ If an entry is missing from the file the command will be ignored. The structure 
 
 To run the command use:
 ```bash
-java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup-5.0.0.0-SNAPSHOT.jar \
-  -k localhost:9092 \
-  apply ~/Desktop/setup.json \
+java -jar applications/tools/p2p-test/p2p-setup/build/bin/corda-p2p-setup*.jar \
+  -k broker1:9093 \
+  apply setup.json \
 ```
