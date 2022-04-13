@@ -1,0 +1,12 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <include file="migration/cats-migration-v1.0.xml"/>
+    <!--
+        example of including the package name in the path
+        This must match the name passed into the 'ChangeLogResourceFiles' objects when setting up LiquibaseSchemaMigrator
+        This is to allow overlapping resource names in different bundles.
+    -->
+    <include file="classloader://net.corda.testing.bundles.cats/migration/owner-migration-v1.0.xml"/>
+</databaseChangeLog>

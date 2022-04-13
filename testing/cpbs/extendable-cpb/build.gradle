@@ -1,0 +1,35 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Animal CPB'
+group 'net.corda.testing.animals'
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Animals"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    api "javax.persistence:javax.persistence-api"
+
+    // javax entities defined in cpks that *will* get picked up by the scanner
+    // and written to (cordapp) manifests
+    cordapp project(':testing:cpbs:extendable-cpb:testing-cats-cpk')
+    cordapp project(':testing:cpbs:extendable-cpb:testing-dogs-cpk')
+
+    // javax entities defined in cpks that will NOT get picked up by the scanner
+    // and NOT written to the (cordapp) manifests
+    implementation project(':testing:bundles:testing-cats')
+    implementation project(':testing:bundles:testing-dogs')
+
+
+}

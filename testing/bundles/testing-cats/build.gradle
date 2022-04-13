@@ -5,6 +5,9 @@ plugins {
 
 description 'Cats test bundle'
 
+// so that we can build this into CPBs without the corda gradle plugin complaining
+group 'com.r3.testing'
+
 dependencies {
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
