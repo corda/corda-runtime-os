@@ -16,7 +16,7 @@ class FlowFinishedRequestHandlerTest {
     private val flowResult = "ok"
     private val ioRequest = FlowIORequest.FlowFinished(flowResult)
     private val flowStatus = FlowStatus()
-    private val handler = FlowFinishedRequestHandler(testContext.flowMessageFactory,testContext.recordFactory)
+    private val handler = FlowFinishedRequestHandler(testContext.flowMessageFactory,testContext.flowRecordFactory)
 
     @Test
     fun `Updates the waiting for to nothing`() {
@@ -39,7 +39,7 @@ class FlowFinishedRequestHandlerTest {
             flowResult
         )).thenReturn(flowStatus)
 
-        whenever(testContext.recordFactory.createFlowStatusRecord(flowStatus)).thenReturn(record)
+        whenever(testContext.flowRecordFactory.createFlowStatusRecord(flowStatus)).thenReturn(record)
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
         assertThat(outputContext.outputRecords).containsOnly(record)

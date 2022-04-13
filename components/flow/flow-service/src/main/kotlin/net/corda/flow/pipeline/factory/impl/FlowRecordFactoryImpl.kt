@@ -5,15 +5,15 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [RecordFactory::class])
-class RecordFactoryImpl : RecordFactory {
+@Component(service = [FlowRecordFactory::class])
+class FlowRecordFactoryImpl : FlowRecordFactory {
 
     override fun  createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent> {
         return Record(

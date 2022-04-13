@@ -5,7 +5,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
@@ -20,7 +20,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowMessageFactory = mock<FlowMessageFactory>()
     val flowSessionManager = mock<FlowSessionManager>()
     val sessionManager = mock<SessionManager>()
-    val recordFactory = mock<RecordFactory>()
+    val flowRecordFactory = mock<FlowRecordFactory>()
     val recordList = mutableListOf<Record<*, *>>()
     val flowStack = mock<FlowStack>()
     val holdingIdentity = BOB_X500_HOLDING_IDENTITY

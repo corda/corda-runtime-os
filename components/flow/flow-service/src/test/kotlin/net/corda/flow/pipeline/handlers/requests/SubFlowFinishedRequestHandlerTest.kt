@@ -36,7 +36,7 @@ class SubFlowFinishedRequestHandlerTest {
     private val record = Record("","", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
-    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.recordFactory)
+    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
     
     @BeforeEach
     fun setup() {
@@ -48,7 +48,7 @@ class SubFlowFinishedRequestHandlerTest {
         val eventRecord = Record("","", FlowEvent())
 
         whenever(testContext
-            .recordFactory
+            .flowRecordFactory
             .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
         ).thenReturn(eventRecord)
 
@@ -141,14 +141,14 @@ class SubFlowFinishedRequestHandlerTest {
         verify(testContext.flowCheckpoint).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint).putSessionState(sessionState2)
         verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
-        verify(testContext.recordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).hasSize(0)
     }
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is not an initiating flow`() {
         whenever(testContext
-            .recordFactory
+            .flowRecordFactory
             .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         ).thenReturn(record)
 
@@ -166,14 +166,14 @@ class SubFlowFinishedRequestHandlerTest {
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
-        verify(testContext.recordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is an initiating flow and has no sessions to close`() {
         whenever(testContext
-            .recordFactory
+            .flowRecordFactory
             .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
         ).thenReturn(record)
 
@@ -191,7 +191,7 @@ class SubFlowFinishedRequestHandlerTest {
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
-        verify(testContext.recordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 
@@ -200,7 +200,7 @@ class SubFlowFinishedRequestHandlerTest {
         whenever(flowSessionManager.areAllSessionsInStatuses(eq(testContext.flowCheckpoint), eq(sessions), any())).thenReturn(true)
 
         whenever(testContext
-            .recordFactory
+            .flowRecordFactory
             .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
         ).thenReturn(record)
 
@@ -218,7 +218,7 @@ class SubFlowFinishedRequestHandlerTest {
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
-        verify(testContext.recordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 }

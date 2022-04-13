@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -13,8 +13,8 @@ import java.time.Instant
 class FlowGlobalPostProcessorImpl @Activate constructor(
     @Reference(service = SessionManager::class)
     private val sessionManager: SessionManager,
-    @Reference(service = RecordFactory::class)
-    private val recordFactory: RecordFactory
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowGlobalPostProcessor {
 
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
@@ -27,7 +27,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, context.config, checkpoint.flowKey.identity) }
                 .onEach { (updatedSessionState, _) -> checkpoint.putSessionState(updatedSessionState) }
                 .flatMap { (_, events) -> events }
-                .map { event -> recordFactory.createFlowMapperSessionEventRecord(event) }
+                .map { event -> flowRecordFactory.createFlowMapperSessionEventRecord(event) }
 
             context.copy(outputRecords = context.outputRecords + records)
         } else {

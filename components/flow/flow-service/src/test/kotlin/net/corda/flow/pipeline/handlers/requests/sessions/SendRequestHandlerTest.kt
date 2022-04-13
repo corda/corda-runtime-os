@@ -24,7 +24,7 @@ class SendRequestHandlerTest {
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.Send(mapOf(sessionId1 to payload1, sessionId2 to payload2))
-    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.recordFactory)
+    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
 
 
     @Suppress("Unused")
@@ -41,7 +41,7 @@ class SendRequestHandlerTest {
                 sessionState2
             )
         )
-        whenever(testContext.recordFactory.createFlowEventRecord(eq(testContext.flowId), any())).thenReturn(record)
+        whenever(testContext.flowRecordFactory.createFlowEventRecord(eq(testContext.flowId), any())).thenReturn(record)
     }
 
     @Test
@@ -60,7 +60,7 @@ class SendRequestHandlerTest {
             eq(ioRequest.sessionToPayload),
             any()
         )
-        verify(testContext.recordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 }

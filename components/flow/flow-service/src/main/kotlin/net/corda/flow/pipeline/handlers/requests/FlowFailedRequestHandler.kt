@@ -5,7 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -16,8 +16,8 @@ import org.osgi.service.component.annotations.Reference
 class FlowFailedRequestHandler @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
-    @Reference(service = RecordFactory::class)
-    private val recordFactory: RecordFactory
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.FlowFailed> {
 
     private companion object {
@@ -40,7 +40,7 @@ class FlowFailedRequestHandler @Activate constructor(
             request.exception.message ?: request.exception.javaClass.name
         )
 
-        val record = recordFactory.createFlowStatusRecord(status)
+        val record = flowRecordFactory.createFlowStatusRecord(status)
 
         context.checkpoint.markDeleted()
         return context.copy(outputRecords = context.outputRecords + record)

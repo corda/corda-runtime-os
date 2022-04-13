@@ -24,7 +24,7 @@ class ReceiveRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
     private val flowEventContext = testContext.flowEventContext
     private val flowSessionManager = testContext.flowSessionManager
-    private val receiveRequestHandler = ReceiveRequestHandler(testContext.flowSessionManager, testContext.recordFactory)
+    private val receiveRequestHandler = ReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
 
     @Test
     fun `Returns an updated WaitingFor of SessionData`() {
@@ -38,7 +38,7 @@ class ReceiveRequestHandlerTest {
     @Test
     fun `Creates a Wakeup record if all the sessions have already received events`() {
         whenever(flowSessionManager.hasReceivedEvents(flowEventContext.checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))).thenReturn(true)
-        whenever(testContext.recordFactory.createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())).thenReturn(record)
+        whenever(testContext.flowRecordFactory.createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())).thenReturn(record)
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
             FlowIORequest.Receive(setOf(SESSION_ID, ANOTHER_SESSION_ID))
