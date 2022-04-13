@@ -144,6 +144,7 @@ class CordaTransactionalDBProducerImpl(
                 transaction
             )
         }
+        println("Writing offsets: \n${offsets.joinToString("\n")}")
         dbAccess.writeOffsets(offsets)
     }
 
