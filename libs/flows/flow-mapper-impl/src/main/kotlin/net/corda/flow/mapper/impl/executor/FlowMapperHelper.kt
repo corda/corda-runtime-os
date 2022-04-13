@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.identity.HoldingIdentity
@@ -15,19 +14,10 @@ import java.nio.ByteBuffer
 import java.util.*
 
 /**
- * Generate and returns a new [FlowKey] based on the [identity] of the party.
- * FlowKey.flowId will be a random UUID.
- * @return a flow key
- */
-fun generateFlowKey(identity: HoldingIdentity): FlowKey {
-    return FlowKey(generateFlowId(), identity)
-}
-
-/**
  * Generate and return random ID for flowId
  * @return a new flow id
  */
-private fun generateFlowId(): String {
+fun generateFlowId(): String {
     return UUID.randomUUID().toString()
 }
 

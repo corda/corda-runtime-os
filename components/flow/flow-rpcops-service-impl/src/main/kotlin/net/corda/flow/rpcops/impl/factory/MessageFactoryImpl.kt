@@ -2,7 +2,7 @@ package net.corda.flow.rpcops.impl.factory
 
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStates
@@ -25,7 +25,7 @@ class MessageFactoryImpl : MessageFactory {
         flowStartArgs: String
     ): FlowMapperEvent {
         val context = FlowStartContext(
-            FlowStatusKey(clientRequestId, virtualNode.holdingIdentity),
+            FlowKey(clientRequestId, virtualNode.holdingIdentity),
             FlowInitiatorType.RPC,
             clientRequestId,
             virtualNode.holdingIdentity,
@@ -62,7 +62,7 @@ class MessageFactoryImpl : MessageFactory {
     ): FlowStatus {
         val now = Instant.now()
         return FlowStatus().apply {
-            this.key = FlowStatusKey(clientRequestId, virtualNode.holdingIdentity)
+            this.key = FlowKey(clientRequestId, virtualNode.holdingIdentity)
             this.initiatorType = FlowInitiatorType.RPC
             this.flowClassName = flowClassName
             this.flowStatus = FlowStates.START_REQUESTED

@@ -1,20 +1,26 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.flow.pipeline.factory.RecordFactory
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowRequestHandler::class])
-class ForceCheckpointRequestHandler : FlowRequestHandler<FlowIORequest.ForceCheckpoint> {
+class ForceCheckpointRequestHandler @Activate constructor(
+    @Reference(service = RecordFactory::class)
+    private val recordFactory: RecordFactory
+) : FlowRequestHandler<FlowIORequest.ForceCheckpoint> {
 
     override val type = FlowIORequest.ForceCheckpoint::class.java
 
-    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.ForceCheckpoint): WaitingFor {
+    override fun getUpdatedWaitingFor(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.ForceCheckpoint
+    ): WaitingFor {
         return WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
     }
 
@@ -22,12 +28,7 @@ class ForceCheckpointRequestHandler : FlowRequestHandler<FlowIORequest.ForceChec
         context: FlowEventContext<Any>,
         request: FlowIORequest.ForceCheckpoint
     ): FlowEventContext<Any> {
-        val checkpoint = requireCheckpoint(context)
-        val record = Record(
-            topic = FLOW_EVENT_TOPIC,
-            key = checkpoint.flowKey,
-            value = FlowEvent(checkpoint.flowKey, Wakeup())
-        )
+        val record = recordFactory.createFlowEventRecord(context.checkpoint.flowId, Wakeup())
         return context.copy(outputRecords = context.outputRecords + record)
     }
 }
