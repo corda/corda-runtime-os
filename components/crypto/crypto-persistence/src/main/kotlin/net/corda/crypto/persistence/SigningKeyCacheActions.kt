@@ -23,13 +23,6 @@ interface SigningKeyCacheActions : AutoCloseable {
     fun find(publicKey: PublicKey): SigningCachedKey?
 
     /**
-     * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
-     *
-     * @param candidateKeys The list of the keys look up for, the maximum number of items is 20.
-     */
-    fun filterMyKeys(candidateKeys: Collection<PublicKey>): Collection<PublicKey>
-
-    /**
      * Returns list of keys satisfying the filter condition. All filter values are combined as AND.
      *
      * @param skip the response paging information, number of records to skip.

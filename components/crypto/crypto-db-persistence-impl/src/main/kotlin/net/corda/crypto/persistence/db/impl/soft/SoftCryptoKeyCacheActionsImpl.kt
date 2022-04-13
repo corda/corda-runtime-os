@@ -6,6 +6,7 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import java.time.Instant
 import javax.persistence.EntityManager
+import javax.persistence.PersistenceException
 
 class SoftCryptoKeyCacheActionsImpl(
     private val entityManager: EntityManager,
@@ -28,9 +29,12 @@ class SoftCryptoKeyCacheActionsImpl(
             }
             entityManager.persist(entity)
             trx.commit()
-        } catch (e: Throwable) {
+        } catch (e: PersistenceException) {
             trx.rollback()
             throw e
+        } catch (e: Throwable) {
+            trx.rollback()
+            throw PersistenceException("Failed to save", e)
         }
     }
 

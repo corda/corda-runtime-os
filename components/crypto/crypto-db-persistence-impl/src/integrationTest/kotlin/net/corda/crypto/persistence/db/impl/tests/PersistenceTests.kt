@@ -200,10 +200,12 @@ class PersistenceTests {
             em.persist(entity)
         }
         cryptoEmf.use { em ->
-            val retrieved = em.find(SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
-                tenantId = tenantId,
-                keyId = keyId
-            ))
+            val retrieved = em.find(
+                SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
+                    tenantId = tenantId,
+                    keyId = keyId
+                )
+            )
             assertNotNull(retrieved)
             assertThat(retrieved).isEqualTo(entity)
             assertEquals(entity.tenantId, retrieved.tenantId)
@@ -309,6 +311,26 @@ class PersistenceTests {
     }
 
     @Test
+    fun `Should fail saving same public key`() {
+        val tenantId1 = randomTenantId()
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val cache = createSigningKeyCacheImpl()
+        cache.act(tenantId1) { it.save(p1) }
+        assertThrows(PersistenceException::class.java) {
+            cache.act(tenantId1) {
+                it.save(p1)
+            }
+        }
+        cache.act(tenantId1) { it.save(w1) }
+        assertThrows(PersistenceException::class.java) {
+            cache.act(tenantId1) {
+                it.save(w1)
+            }
+        }
+    }
+
+    @Test
     fun `Should save same public keys for difefrent tenants and fetch them separately`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
@@ -367,7 +389,7 @@ class PersistenceTests {
     }
 
     @Test
-    fun `Should save public keys and filter my keys`() {
+    fun `Should save public keys and lookup keys by id`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
@@ -389,13 +411,20 @@ class PersistenceTests {
         cache.act(tenantId2) { it.save(w12) }
         cache.act(tenantId1) { it.save(w2) }
         cache.act(tenantId1) { it.save(w3) }
-        val myKeys = cache.act(tenantId1) {
-            it.filterMyKeys(listOf(p1.key.publicKey, p12.key.publicKey, p3.key.publicKey, w2.key.publicKey))
+        val keys = cache.act(tenantId1) {
+            it.lookup(
+                listOf(
+                    publicKeyIdOf(p1.key.publicKey),
+                    publicKeyIdOf(p12.key.publicKey),
+                    publicKeyIdOf(p3.key.publicKey),
+                    publicKeyIdOf(w2.key.publicKey)
+                )
+            )
         }
-        assertEquals(3, myKeys.size)
-        assertTrue(myKeys.contains(p1.key.publicKey))
-        assertTrue(myKeys.contains(p3.key.publicKey))
-        assertTrue(myKeys.contains(w2.key.publicKey))
+        assertEquals(3, keys.size)
+        assertEquals(tenantId1, p1, keys.firstOrNull { it.id == publicKeyIdOf(p1.key.publicKey) })
+        assertEquals(tenantId1, p3, keys.firstOrNull { it.id == publicKeyIdOf(p3.key.publicKey) })
+        assertEquals(tenantId1, w2, keys.firstOrNull { it.id == publicKeyIdOf(w2.key.publicKey) })
     }
 
     @Test
@@ -483,7 +512,7 @@ class PersistenceTests {
         assertNull(actual.encodingVersion)
         val now = Instant.now()
         assertTrue(actual.created >= now.minusSeconds(60))
-        assertTrue(actual.created <= now.minusSeconds (-1))
+        assertTrue(actual.created <= now.minusSeconds(-1))
     }
 
     private fun assertEquals(tenantId: String, expected: SigningWrappedKeySaveContext, actual: SigningCachedKey?) {
@@ -501,7 +530,7 @@ class PersistenceTests {
         assertEquals(expected.key.encodingVersion, actual.encodingVersion)
         val now = Instant.now()
         assertTrue(actual.created >= now.minusSeconds(60))
-        assertTrue(actual.created <= now.minusSeconds (-1))
+        assertTrue(actual.created <= now.minusSeconds(-1))
     }
 
     private fun createSigningKeyCacheImpl() = SigningKeyCacheImpl(

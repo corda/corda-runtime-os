@@ -81,7 +81,9 @@ open class SigningServiceImpl(
             "Number of item must not exceed 20, submitted ${candidateKeys.count()}"
         }
         return cache.act(tenantId) {
-            it.filterMyKeys(candidateKeys)
+            it.lookup(candidateKeys.map { key -> publicKeyIdOf(key) }).map { cached ->
+                schemeMetadata.decodePublicKey(cached.publicKey)
+            }
         }
     }
 

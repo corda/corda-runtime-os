@@ -72,7 +72,7 @@ interface SigningService {
      * Filters the input [PublicKey]s down to a collection of keys that this tenant owns (has private keys for).
      *
      * @param tenantId the tenant's id which the keys belong to.
-     * @param candidateKeys The [PublicKey]s to filter.
+     * @param candidateKeys The [PublicKey]s to filter, the maximum number of items is 20.
      *
      * @return A collection of [PublicKey]s that this node owns.
      */

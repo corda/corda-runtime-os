@@ -14,12 +14,17 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import java.security.PublicKey
 import java.time.Instant
 import javax.persistence.EntityManager
+import javax.persistence.PersistenceException
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
 import kotlin.reflect.KProperty
 
 /**
  * Implementation deliberately caches only keys which are requested by 'find](publicKey: PublicKey' function.
+ *
+ * As not all databases support unique constrains which ignore null indexed values the implementation relies on
+ * that the generation of the keys suing aliases is quite rare occasion and that the existence check is done
+ * upstream by the higher services.
  */
 class SigningKeyCacheActionsImpl(
     private val tenantId: String,
@@ -70,9 +75,12 @@ class SigningKeyCacheActionsImpl(
         try {
             entityManager.persist(entity)
             trx.commit()
-        } catch (e: Throwable) {
+        } catch (e: PersistenceException) {
             trx.rollback()
             throw e
+        } catch (e: Throwable) {
+            trx.rollback()
+            throw PersistenceException("Failed to save", e)
         }
     }
 
@@ -94,11 +102,6 @@ class SigningKeyCacheActionsImpl(
                     keyId = it
                 )
             )?.toSigningCachedKey()
-        }
-
-    override fun filterMyKeys(candidateKeys: Collection<PublicKey>): Collection<PublicKey> =
-        lookup(candidateKeys.map { publicKeyIdOf(it) }).map {
-            keyEncodingService.decodePublicKey(it.publicKey)
         }
 
     override fun lookup(

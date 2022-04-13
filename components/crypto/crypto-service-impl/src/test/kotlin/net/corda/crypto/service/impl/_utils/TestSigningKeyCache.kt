@@ -108,12 +108,6 @@ class TestSigningKeyCacheActions(
     override fun find(publicKey: PublicKey): SigningCachedKey? =
         keys[publicKeyIdOf(publicKey)]
 
-    override fun filterMyKeys(candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        return candidateKeys.filter {
-            keys.containsKey(publicKeyIdOf(it))
-        }
-    }
-
     override fun lookup(
         skip: Int,
         take: Int,
