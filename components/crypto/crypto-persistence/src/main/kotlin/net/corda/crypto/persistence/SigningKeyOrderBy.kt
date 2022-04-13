@@ -2,12 +2,14 @@ package net.corda.crypto.persistence
 
 enum class SigningKeyOrderBy {
     NONE,
+    ID,
     CREATED,
     CATEGORY,
     SCHEME_CODE_NAME,
     ALIAS,
     MASTER_KEY_ALIAS,
     EXTERNAL_ID,
+    ID_DESC,
     CREATED_DESC,
     CATEGORY_DESC,
     SCHEME_CODE_NAME_DESC,

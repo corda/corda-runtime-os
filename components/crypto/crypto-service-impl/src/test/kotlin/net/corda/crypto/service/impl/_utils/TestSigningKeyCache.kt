@@ -138,19 +138,21 @@ class TestSigningKeyCacheActions(
             } else !(map.createdBefore != null && it.created > map.createdBefore)
         }
         return when(orderBy) {
+            SigningKeyOrderBy.NONE -> filtered
+            SigningKeyOrderBy.ID -> filtered.sortedBy { it.id }
             SigningKeyOrderBy.CREATED -> filtered.sortedBy { it.created }
             SigningKeyOrderBy.CATEGORY -> filtered.sortedBy { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME -> filtered.sortedBy { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS -> filtered.sortedBy { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS -> filtered.sortedBy { it.masterKeyAlias }
+            SigningKeyOrderBy.EXTERNAL_ID -> filtered.sortedBy { it.externalId }
             SigningKeyOrderBy.CREATED_DESC -> filtered.sortedByDescending { it.created }
             SigningKeyOrderBy.CATEGORY_DESC -> filtered.sortedByDescending { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> filtered.sortedByDescending { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> filtered.sortedByDescending { it.masterKeyAlias }
-            SigningKeyOrderBy.NONE -> filtered
-            SigningKeyOrderBy.EXTERNAL_ID -> filtered.sortedBy { it.externalId }
             SigningKeyOrderBy.EXTERNAL_ID_DESC -> filtered.sortedByDescending { it.externalId }
+            SigningKeyOrderBy.ID_DESC -> filtered.sortedByDescending { it.id }
         }.drop(skip).take(take)
     }
 

@@ -9,8 +9,6 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.PublicKey
-import java.time.Instant
-import java.util.UUID
 
 /**
  * The crypto operations client to generate fresh keys, sign, find or filter public keys, some HSM related queries.

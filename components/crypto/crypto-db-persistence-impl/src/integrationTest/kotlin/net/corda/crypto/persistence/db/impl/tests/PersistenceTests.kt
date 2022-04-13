@@ -2,9 +2,12 @@ package net.corda.crypto.persistence.db.impl.tests
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheImpl
@@ -499,6 +502,118 @@ class PersistenceTests {
         cache.act(tenantId2) { it.save(w12) }
         cache.act(tenantId1) { it.save(w2) }
         cache.act(tenantId1) { it.save(w3) }
+        val result1 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 10,
+                SigningKeyOrderBy.ALIAS,
+                mapOf(
+                    CATEGORY_FILTER to CryptoConsts.HsmCategories.LEDGER
+                )
+            )
+        }
+        assertEquals(2, result1.size)
+        listOf(p1, p4).sortedBy { it.alias }.forEachIndexed { i, o ->
+            assertEquals(tenantId1, o, result1.elementAt(i))
+        }
+        val result2 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 10,
+                SigningKeyOrderBy.ALIAS_DESC,
+                mapOf(
+                    CATEGORY_FILTER to CryptoConsts.HsmCategories.LEDGER
+                )
+            )
+        }
+        assertEquals(2, result2.size)
+        listOf(p1, p4).sortedByDescending { it.alias }.forEachIndexed { i, o ->
+            assertEquals(tenantId1, o, result2.elementAt(i))
+        }
+    }
+
+    @Test
+    fun `Should save public keys and key material and do paged lookups for them`() {
+        val tenantId1 = randomTenantId()
+        val tenantId2 = randomTenantId()
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
+        val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
+        val w3 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
+        val cache = createSigningKeyCacheImpl()
+        cache.act(tenantId1) { it.save(p1) }
+        cache.act(tenantId2) { it.save(p12) }
+        cache.act(tenantId1) { it.save(p2) }
+        cache.act(tenantId1) { it.save(p3) }
+        cache.act(tenantId1) { it.save(p4) }
+        cache.act(tenantId1) { it.save(w1) }
+        cache.act(tenantId2) { it.save(w12) }
+        cache.act(tenantId1) { it.save(w2) }
+        cache.act(tenantId1) { it.save(w3) }
+        val page1 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 2,
+                SigningKeyOrderBy.ID,
+                mapOf(
+                    SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
+                )
+            )
+        }
+        assertEquals(2, page1.size)
+        listOf(p1, p3, p4, w1).sortedBy {
+            when(it) {
+                is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                else -> throw IllegalArgumentException()
+            }
+        }.drop(0).take(2).forEachIndexed { i, o ->
+            when(o) {
+                is SigningPublicKeySaveContext -> assertEquals(tenantId1, o, page1.elementAt(i))
+                is SigningWrappedKeySaveContext -> assertEquals(tenantId1, o, page1.elementAt(i))
+                else -> throw IllegalArgumentException()
+            }
+        }
+        val page2 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 2,
+                take = 2,
+                SigningKeyOrderBy.ID,
+                mapOf(
+                    SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
+                )
+            )
+        }
+        assertEquals(2, page2.size)
+        listOf(p1, p3, p4, w1).sortedBy {
+            when(it) {
+                is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                else -> throw IllegalArgumentException()
+            }
+        }.drop(2).take(2).forEachIndexed { i, o ->
+            when(o) {
+                is SigningPublicKeySaveContext -> assertEquals(tenantId1, o, page2.elementAt(i))
+                is SigningWrappedKeySaveContext -> assertEquals(tenantId1, o, page2.elementAt(i))
+                else -> throw IllegalArgumentException()
+            }
+        }
+        val page3 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 4,
+                take = 2,
+                SigningKeyOrderBy.ID,
+                mapOf(
+                    SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
+                )
+            )
+        }
+        assertEquals(0, page3.size)
     }
 
     private fun assertEquals(tenantId: String, expected: SigningPublicKeySaveContext, actual: SigningCachedKey?) {

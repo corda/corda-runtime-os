@@ -123,6 +123,7 @@ class SigningKeyCacheActionsImpl(
     ): Collection<SigningCachedKey> {
         val map = layeredPropertyMapFactory.create<SigningKeyFilterMapImpl>(filter)
         val builder = LookupBuilder(entityManager)
+        builder.equal(SigningKeyEntity::tenantId, tenantId)
         builder.equal(SigningKeyEntity::category, map.category)
         builder.equal(SigningKeyEntity::schemeCodeName, map.schemeCodeName)
         builder.equal(SigningKeyEntity::alias, map.alias)
@@ -224,6 +225,7 @@ class SigningKeyCacheActionsImpl(
             cr.where(cb.and(*predicates.toTypedArray()))
             when (orderBy) {
                 SigningKeyOrderBy.NONE -> Unit
+                SigningKeyOrderBy.ID -> ascOrderBy(SigningKeyEntity::keyId)
                 SigningKeyOrderBy.CREATED -> ascOrderBy(SigningKeyEntity::created)
                 SigningKeyOrderBy.CATEGORY -> ascOrderBy(SigningKeyEntity::category)
                 SigningKeyOrderBy.SCHEME_CODE_NAME -> ascOrderBy(SigningKeyEntity::schemeCodeName)
@@ -236,6 +238,7 @@ class SigningKeyCacheActionsImpl(
                 SigningKeyOrderBy.ALIAS_DESC -> descOrderBy(SigningKeyEntity::alias)
                 SigningKeyOrderBy.MASTER_KEY_ALIAS_DESC -> descOrderBy(SigningKeyEntity::masterKeyAlias)
                 SigningKeyOrderBy.EXTERNAL_ID_DESC -> descOrderBy(SigningKeyEntity::externalId)
+                SigningKeyOrderBy.ID_DESC -> descOrderBy(SigningKeyEntity::keyId)
             }
             return entityManager.createQuery(cr)
                 .setFirstResult(skip)
