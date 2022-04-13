@@ -60,7 +60,6 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key::class.java).isEqualTo(FlowKey::class.java)
         assertThat(state?.flowId).isEqualTo(outputEvent.key)
         assertThat(outputEvent.value).isNotNull
         assertThat(outputEvent.value!!::class.java).isEqualTo(FlowEvent::class.java)
@@ -115,7 +114,6 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key).isEqualTo(inputKey)
         assertThat(state?.flowId).isNotNull
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
@@ -128,7 +126,7 @@ class FlowMapperIntegrationTest {
         val sessionInit = SessionInit(
             "flowName",
             "cpiId",
-            null,
+            "flow id",
             null
         )
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit)
@@ -138,7 +136,6 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key::class.java).isEqualTo(FlowKey::class.java)
         assertThat(state?.flowId).isNotNull
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
