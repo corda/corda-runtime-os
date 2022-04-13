@@ -133,13 +133,12 @@ class CordaTransactionalDBProducerImpl(
 
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
         verifyInTransaction()
-        val topicPartitions = consumer.assignment()
-        val offsets = topicPartitions.map { (topic, partition) ->
-            val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(topic, partition))
+        val offsetsPerPartition = consumer.endOffsets(consumer.assignment())
+        val offsets = offsetsPerPartition.map { (topicPartition, offset) ->
             CommittedPositionEntry(
-                topic,
+                topicPartition.topic,
                 (consumer as DBCordaConsumerImpl).getConsumerGroup(),
-                partition,
+                topicPartition.partition,
                 offset,
                 transaction
             )
