@@ -71,12 +71,6 @@ plugins {
     id 'com.gradle.enterprise'
 }
 
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-    }
-}
-
 rootProject.name = 'corda-runtime-os'
 include 'applications:examples:sandbox-app'
 include 'applications:examples:sandbox-app:example-cpi'
@@ -328,7 +322,6 @@ include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
-include 'tools:cli'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:secret-config'
