@@ -2,7 +2,12 @@ package net.corda.crypto.persistence.db.impl.tests
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdOf
@@ -529,6 +534,73 @@ class PersistenceTests {
         assertEquals(2, result2.size)
         listOf(p1, p4).sortedByDescending { it.alias }.forEachIndexed { i, o ->
             assertEquals(tenantId1, o, result2.elementAt(i))
+        }
+        val result3 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 10,
+                SigningKeyOrderBy.ALIAS_DESC,
+                mapOf(
+                    CATEGORY_FILTER to CryptoConsts.HsmCategories.FRESH_KEYS,
+                    SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
+                )
+            )
+        }
+        assertEquals(1, result3.size)
+        assertEquals(tenantId1, w1, result3.first())
+        val result4 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 10,
+                SigningKeyOrderBy.NONE,
+                mapOf(
+                    ALIAS_FILTER to p2.alias!!,
+                    SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
+                    CATEGORY_FILTER to CryptoConsts.HsmCategories.TLS
+                )
+            )
+        }
+        assertEquals(1, result4.size)
+        assertEquals(tenantId1, p2, result4.first())
+        val result5 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 10,
+                SigningKeyOrderBy.CATEGORY_DESC,
+                mapOf(
+                    MASTER_KEY_ALIAS_FILTER to w3.masterKeyAlias!!,
+                    SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
+                    CATEGORY_FILTER to CryptoConsts.HsmCategories.FRESH_KEYS,
+                    EXTERNAL_ID_FILTER to w3.externalId!!
+                )
+            )
+        }
+        assertEquals(1, result5.size)
+        assertEquals(tenantId1, w3, result5.first())
+        val result6 = cache.act(tenantId1) {
+            it.lookup(
+                skip = 0,
+                take = 20,
+                SigningKeyOrderBy.ID,
+                mapOf(
+                    CREATED_AFTER_FILTER to Instant.now().minusSeconds(300).toString(),
+                    CREATED_BEFORE_FILTER to Instant.now().minusSeconds(-1).toString()
+                )
+            )
+        }
+        assertEquals(7, result6.size)
+        listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
+            when(it) {
+                is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                else -> throw IllegalArgumentException()
+            }
+        }.forEachIndexed { i, o ->
+            when(o) {
+                is SigningPublicKeySaveContext -> assertEquals(tenantId1, o, result6.elementAt(i))
+                is SigningWrappedKeySaveContext -> assertEquals(tenantId1, o, result6.elementAt(i))
+                else -> throw IllegalArgumentException()
+            }
         }
     }
 
