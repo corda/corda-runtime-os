@@ -80,12 +80,12 @@ class SendAndReceiveRequestHandlerTest {
             )
         ).thenReturn(false)
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext).flowSessionManager.sendDataMessages(
+        verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
             eq(ioRequest.sessionToPayload),
             any()
         )
-        verify(testContext.recordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+
         assertThat(outputContext.outputRecords).hasSize(0)
     }
 }

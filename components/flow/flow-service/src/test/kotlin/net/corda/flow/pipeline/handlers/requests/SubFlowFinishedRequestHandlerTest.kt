@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -50,7 +49,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         whenever(testContext
             .recordFactory
-            .createFlowEventRecord(eq(testContext.flowId), argThat<Wakeup> { true } )
+            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
         ).thenReturn(eventRecord)
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
@@ -148,6 +147,11 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is not an initiating flow`() {
+        whenever(testContext
+            .recordFactory
+            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        ).thenReturn(record)
+
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(
@@ -168,6 +172,11 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is an initiating flow and has no sessions to close`() {
+        whenever(testContext
+            .recordFactory
+            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
+        ).thenReturn(record)
+
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(
@@ -189,6 +198,11 @@ class SubFlowFinishedRequestHandlerTest {
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is an initiating flow and has already closed sessions`() {
         whenever(flowSessionManager.areAllSessionsInStatuses(eq(testContext.flowCheckpoint), eq(sessions), any())).thenReturn(true)
+
+        whenever(testContext
+            .recordFactory
+            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
+        ).thenReturn(record)
 
         val outputContext = handler.postProcess(
             testContext.flowEventContext,

@@ -84,13 +84,10 @@ class FlowMapperServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
         //send 2 session init, 1 is duplicate
-        val identity = HoldingIdentity(testId, testId)
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                    testId, testId, "flowKey", identity,
-                    identity, null
-                    testId, testId, flowKey,null
+                    testId, testId, testId,null
                 ))
             )
         )

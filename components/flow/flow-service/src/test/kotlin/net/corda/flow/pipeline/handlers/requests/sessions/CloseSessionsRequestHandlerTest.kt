@@ -13,10 +13,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
 
 class CloseSessionsRequestHandlerTest {
-    private val nowUtc = Instant.ofEpochMilli(1)
     private val sessionId1 = "s1"
     private val sessionId2 = "s2"
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
@@ -43,7 +41,7 @@ class CloseSessionsRequestHandlerTest {
 
         whenever(
             testContext.flowSessionManager.sendCloseMessages(
-                testContext.flowCheckpoint,
+                eq(testContext.flowCheckpoint),
                 eq(ioRequest.sessions.toList()),
                 any()
             )

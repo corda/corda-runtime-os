@@ -45,6 +45,7 @@ class FlowGlobalPostProcessorImplTest {
     fun setup() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1))
         whenever(checkpoint.flowKey).thenReturn(FlowKey("flow id", ALICE_X500_HOLDING_IDENTITY))
+        whenever(checkpoint.doesExist).thenReturn(true)
         whenever(
             sessionManager.getMessagesToSend(
                 eq(sessionState1),
