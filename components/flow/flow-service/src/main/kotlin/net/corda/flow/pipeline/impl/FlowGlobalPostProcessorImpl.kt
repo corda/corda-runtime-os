@@ -22,12 +22,16 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val now = Instant.now()
 
         val checkpoint = context.checkpoint
-        val records = checkpoint.sessions
+        return if (checkpoint.doesExist) {
+            val records = checkpoint.sessions
                 .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, context.config, checkpoint.flowKey.identity) }
                 .onEach { (updatedSessionState, _) -> checkpoint.putSessionState(updatedSessionState) }
                 .flatMap { (_, events) -> events }
                 .map { event -> recordFactory.createFlowMapperSessionEventRecord(event) }
 
-        return context.copy(outputRecords = context.outputRecords + records)
+            context.copy(outputRecords = context.outputRecords + records)
+        } else {
+            context
+        }
     }
 }

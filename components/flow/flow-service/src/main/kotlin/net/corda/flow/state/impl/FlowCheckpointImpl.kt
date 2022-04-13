@@ -79,6 +79,9 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
     override val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
+    override val doesExist: Boolean
+        get() = nullableCheckpoint != null
+
     override fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor) {
         if (nullableCheckpoint != null) {
             val key = flowStartContext.statusKey
@@ -126,7 +129,7 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
         }
 
         checkpoint.sessions = sessionMap.values.toList()
-        checkpoint.flowStackItems = nullableFlowStack?.flowStackItems?.toList() ?: emptyList()
+        checkpoint.flowStackItems = nullableFlowStack?.flowStackItems ?: emptyList()
         return checkpoint
     }
 
@@ -148,7 +151,7 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
             it.sessionIds = it.sessionIds ?: mutableListOf()
         }
 
-        nullableFlowStack = FlowStackImpl(checkpoint.flowStackItems)
+        nullableFlowStack = FlowStackImpl(checkpoint.flowStackItems.toMutableList())
     }
 
     private class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack {

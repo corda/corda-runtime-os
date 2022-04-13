@@ -36,6 +36,7 @@ class SessionEventHandler @Activate constructor(
     override val type = SessionEvent::class.java
 
     override fun preProcess(context: FlowEventContext<SessionEvent>): FlowEventContext<SessionEvent> {
+        val checkpoint = context.checkpoint
         val sessionEvent = context.inputEventPayload
 
         log.info("Session event in handler: ${sessionEvent.payload}")
@@ -44,7 +45,7 @@ class SessionEventHandler @Activate constructor(
 
         val updatedSessionState = sessionManager.processMessageReceived(
             sessionEvent.sessionId,
-            context.checkpoint.getSessionState(sessionEvent.sessionId),
+            if (checkpoint.doesExist) checkpoint.getSessionState(sessionEvent.sessionId) else null,
             sessionEvent,
             now
         )
@@ -57,7 +58,7 @@ class SessionEventHandler @Activate constructor(
             }
         }
 
-        context.checkpoint.putSessionState(updatedSessionState)
+        checkpoint.putSessionState(updatedSessionState)
 
         return context
     }

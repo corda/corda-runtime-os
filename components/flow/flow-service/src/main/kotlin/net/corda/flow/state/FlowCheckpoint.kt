@@ -32,6 +32,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val sessions: List<SessionState>
 
+    val doesExist: Boolean
+
     fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor)
 
     fun getSessionState(sessionId: String): SessionState?
