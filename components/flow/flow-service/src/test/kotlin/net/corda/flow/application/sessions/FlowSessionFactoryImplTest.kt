@@ -1,17 +1,14 @@
 package net.corda.flow.application.sessions
 
-import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_NAME
+import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -30,23 +27,18 @@ class FlowSessionFactoryImplTest {
         whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
     }
 
-    private val sandboxGroupContext = mock<SandboxGroupContext>().apply {
-        whenever(get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
+    private val mockFlowFiberService = MockFlowFiberService()
+    private val sandboxGroupContext = mockFlowFiberService.sandboxGroupContext
+
+    private val flowFiber = mockFlowFiberService.flowFiber
+    private val flowSessionFactory = FlowSessionFactoryImpl(mockFlowFiberService)
+
+    @Suppress("Unused")
+    @BeforeEach
+    fun setup(){
+        whenever(sandboxGroupContext.get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
             .thenReturn(serializationService)
     }
-
-    private val flowFiberExecutionContext =
-        FlowFiberExecutionContext(mock(), mock(), mock(), sandboxGroupContext, BOB_X500_HOLDING_IDENTITY, mock())
-
-    private val flowFiber = mock<FlowFiber<*>>().apply {
-        whenever(getExecutionContext()).thenReturn(flowFiberExecutionContext)
-    }
-
-    private val flowFiberService = mock<FlowFiberService>().apply {
-        whenever(getExecutingFiber()).thenReturn(flowFiber)
-    }
-
-    private val flowSessionFactory = FlowSessionFactoryImpl(flowFiberService)
 
     @Test
     fun `Passing in initiated = true creates an initiated flow session`() {

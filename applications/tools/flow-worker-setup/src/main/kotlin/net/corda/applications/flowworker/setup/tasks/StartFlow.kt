@@ -3,8 +3,8 @@ package net.corda.applications.flowworker.setup.tasks
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.identity.HoldingIdentity
@@ -38,7 +38,7 @@ class StartFlow(private val context: TaskContext) : Task {
         val identity = HoldingIdentity(x500Name, groupId)
 
         val context = FlowStartContext(
-            FlowStatusKey(clientId, identity),
+            FlowKey(clientId, identity),
             FlowInitiatorType.RPC,
             clientId,
             identity,

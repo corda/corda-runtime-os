@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -48,12 +47,11 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event executor test inbound data message and non null state`() {
-        val flowKey = FlowKey()
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData())
 
         val result = SessionEventExecutor(
             sessionId, payload, FlowMapperState(
-                flowKey, null, FlowMapperStateType.OPEN
+                "flowId1", null, FlowMapperStateType.OPEN
             ),
             Instant.now(),
             sessionEventSerializer
@@ -65,7 +63,7 @@ class SessionEventExecutorTest {
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
         assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
-        assertThat(outboundEvent.key).isEqualTo(flowKey)
+        assertThat(outboundEvent.key).isEqualTo("flowId1")
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
         assertThat(payload.sessionId).isEqualTo(sessionId)
     }

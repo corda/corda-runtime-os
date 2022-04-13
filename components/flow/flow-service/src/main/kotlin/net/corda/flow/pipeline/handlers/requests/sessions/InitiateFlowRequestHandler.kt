@@ -5,9 +5,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,11 +25,11 @@ class InitiateFlowRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.InitiateFlow): FlowEventContext<Any> {
-        val checkpoint = requireCheckpoint(context)
+        val checkpoint = context.checkpoint
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
 
-        checkpoint.addOrReplaceSession(
+        checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(
                 checkpoint,
                 request.sessionId,

@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -66,14 +65,14 @@ class SessionInitExecutor(
         sessionInit: SessionInit,
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
-            val flowKey = generateFlowKey(sessionEvent.initiatedIdentity)
-            sessionInit.flowKey = flowKey
-            SessionInitOutputs(flowKey, flowKey, FlowEvent(flowKey, sessionEvent))
+            val flowId = generateFlowId()
+            sessionInit.flowId = flowId
+            SessionInitOutputs(flowId, flowId, FlowEvent(flowId, sessionEvent))
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
-            val tmpFLowEventKey = sessionInit.flowKey
-            sessionInit.flowKey = null
+            val tmpFLowEventKey = sessionInit.flowId
+            sessionInit.flowId = null
             sessionEvent.payload = sessionInit
 
             SessionInitOutputs(
@@ -85,7 +84,7 @@ class SessionInitExecutor(
     }
 
     data class SessionInitOutputs(
-        val flowKey: FlowKey,
+        val flowId: String,
         val outputRecordKey: Any,
         val outputRecordValue: Any
     )
