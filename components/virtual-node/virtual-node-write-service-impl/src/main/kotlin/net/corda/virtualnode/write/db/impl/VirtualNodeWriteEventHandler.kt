@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -30,17 +31,20 @@ internal class VirtualNodeWriteEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             // TODO - Monitor the status of the `DbConnectionManager` and respond accordingly.
-            is StartEvent -> followConfigReadServiceStatus(coordinator)
+            is StartEvent -> followDependenciesForStatusUpdates(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
             is StopEvent -> stop()
         }
     }
 
-    /** Starts tracking the status of the [ConfigurationReadService]. */
-    private fun followConfigReadServiceStatus(coordinator: LifecycleCoordinator) {
+    /** Starts tracking the status of the [ConfigurationReadService] and [DbConnectionManager]. */
+    private fun followDependenciesForStatusUpdates(coordinator: LifecycleCoordinator) {
         configReadServiceRegistrationHandle?.close()
         configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
-            setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+            setOf(
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+            )
         )
     }
 
