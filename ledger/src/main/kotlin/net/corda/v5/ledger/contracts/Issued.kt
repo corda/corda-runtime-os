@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.contracts
 
-import net.corda.v5.application.identity.PartyAndReference
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.identity.PartyAndReference
 
 /**
  * The [Issued] data class holds the details of an on ledger digital asset.

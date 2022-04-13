@@ -1,11 +1,11 @@
 package net.corda.v5.ledger.services
 
-import net.corda.v5.application.identity.Party
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.NotaryInfo
+import net.corda.v5.ledger.identity.Party
 import java.security.PublicKey
 
 /**

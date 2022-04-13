@@ -1,7 +1,5 @@
 package net.corda.v5.ledger.services;
 
-import net.corda.v5.application.identity.AbstractParty;
-import net.corda.v5.application.identity.Party;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.UniqueIdentifier;
 import net.corda.v5.ledger.contracts.BelongsToContract;
@@ -13,6 +11,8 @@ import net.corda.v5.ledger.contracts.StateAndRef;
 import net.corda.v5.ledger.contracts.StateRef;
 import net.corda.v5.ledger.contracts.StaticPointer;
 import net.corda.v5.ledger.contracts.TransactionState;
+import net.corda.v5.ledger.identity.AbstractParty;
+import net.corda.v5.ledger.identity.Party;
 import net.corda.v5.ledger.transactions.LedgerTransaction;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;

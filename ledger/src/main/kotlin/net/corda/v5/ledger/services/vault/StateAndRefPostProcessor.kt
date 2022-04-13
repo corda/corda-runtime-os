@@ -1,6 +1,6 @@
 package net.corda.v5.ledger.services.vault
 
-import net.corda.v5.application.services.persistence.GenericQueryPostProcessor
+import net.corda.v5.application.persistence.query.GenericQueryPostProcessor
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.StateAndRef
 import java.util.stream.Stream

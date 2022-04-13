@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.contracts
 
-import net.corda.v5.application.crypto.NamedByHash
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.crypto.SecureHash
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
@@ -31,7 +31,7 @@ import java.util.jar.JarInputStream
  */
 @CordaSerializable
 @DoNotImplement
-interface Attachment : NamedByHash {
+interface Attachment {
     fun open(): InputStream
 
     @JvmDefault
@@ -61,4 +61,6 @@ interface Attachment : NamedByHash {
      * Attachment size in bytes.
      */
     val size: Int
+
+    val id: SecureHash
 }

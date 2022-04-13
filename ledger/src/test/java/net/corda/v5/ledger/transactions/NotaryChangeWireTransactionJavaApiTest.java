@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.transactions;
 
-import net.corda.v5.application.identity.Party;
 import net.corda.v5.base.types.OpaqueBytes;
 import net.corda.v5.ledger.crypto.TransactionDigestAlgorithmNames;
+import net.corda.v5.ledger.identity.Party;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

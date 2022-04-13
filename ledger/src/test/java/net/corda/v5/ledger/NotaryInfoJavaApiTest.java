@@ -1,6 +1,6 @@
 package net.corda.v5.ledger;
 
-import net.corda.v5.application.identity.Party;
+import net.corda.v5.ledger.identity.Party;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

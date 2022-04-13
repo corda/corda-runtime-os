@@ -1,10 +1,10 @@
 package net.corda.v5.ledger.contracts
 
-import net.corda.v5.application.flows.FlowException
-import net.corda.v5.application.identity.Party
+import net.corda.v5.application.flows.exceptions.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.identity.Party
 import net.corda.v5.ledger.services.AttachmentId
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.GroupParameters.Companion.epoch

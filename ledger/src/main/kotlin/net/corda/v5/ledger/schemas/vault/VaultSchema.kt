@@ -1,13 +1,13 @@
 package net.corda.v5.ledger.schemas.vault
 
-import net.corda.v5.application.identity.AbstractParty
-import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.toStringShort
 import net.corda.v5.ledger.UniqueIdentifier
 import net.corda.v5.ledger.contracts.CPKConstraint
 import net.corda.v5.ledger.contracts.SignatureCPKConstraint
+import net.corda.v5.ledger.identity.AbstractParty
+import net.corda.v5.ledger.identity.Party
 import net.corda.v5.ledger.schemas.DirectStatePersistable
 import net.corda.v5.ledger.schemas.IndirectStatePersistable
 import net.corda.v5.ledger.schemas.PersistentState

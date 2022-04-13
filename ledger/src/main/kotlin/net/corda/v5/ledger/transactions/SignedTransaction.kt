@@ -1,9 +1,9 @@
 package net.corda.v5.ledger.transactions
 
-import net.corda.v5.application.identity.Party
-import net.corda.v5.application.crypto.DigitalSignatureAndMeta
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.StateRef
+import net.corda.v5.ledger.identity.Party
 import net.corda.v5.serialization.SerializedBytes
 import java.util.function.Predicate
 
@@ -43,14 +43,14 @@ interface SignedTransaction : TransactionWithSignatures {
     val groupParametersHash: SecureHash?
 
     /** Returns the same transaction but with an additional (unchecked) signature. */
-    fun withAdditionalSignature(sig: DigitalSignatureAndMeta): SignedTransaction
+    fun withAdditionalSignature(sig: DigitalSignatureAndMetadata): SignedTransaction
 
     /** Returns the same transaction but with an additional (unchecked) signatures. */
-    fun withAdditionalSignatures(sigList: Iterable<DigitalSignatureAndMeta>): SignedTransaction
+    fun withAdditionalSignatures(sigList: Iterable<DigitalSignatureAndMetadata>): SignedTransaction
 
     /** Alias for [withAdditionalSignature] to let you use Kotlin operator overloading. */
-    operator fun plus(sig: DigitalSignatureAndMeta) = withAdditionalSignature(sig)
+    operator fun plus(sig: DigitalSignatureAndMetadata) = withAdditionalSignature(sig)
 
     /** Alias for [withAdditionalSignatures] to let you use Kotlin operator overloading. */
-    operator fun plus(sigList: Collection<DigitalSignatureAndMeta>) = withAdditionalSignatures(sigList)
+    operator fun plus(sigList: Collection<DigitalSignatureAndMetadata>) = withAdditionalSignatures(sigList)
 }

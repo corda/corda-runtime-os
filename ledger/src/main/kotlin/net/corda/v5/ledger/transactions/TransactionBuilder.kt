@@ -1,6 +1,5 @@
 package net.corda.v5.ledger.transactions
 
-import net.corda.v5.application.identity.Party
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.AutomaticPlaceholderCPKConstraint
@@ -15,6 +14,7 @@ import net.corda.v5.ledger.contracts.StateRef
 import net.corda.v5.ledger.contracts.TimeWindow
 import net.corda.v5.ledger.contracts.TransactionState
 import net.corda.v5.ledger.contracts.TransactionVerificationException
+import net.corda.v5.ledger.identity.Party
 import net.corda.v5.ledger.services.TransactionService
 import java.security.PrivateKey
 import java.security.PublicKey

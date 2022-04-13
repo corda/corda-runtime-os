@@ -118,6 +118,7 @@ include 'packaging:test:contract-cpk'
 include 'packaging:test:workflow-cpk'
 include 'persistence'
 include 'serialization'
+include 'services'
 
 
 gradleEnterprise {

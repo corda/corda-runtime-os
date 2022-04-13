@@ -1,10 +1,9 @@
 package net.corda.v5.ledger.transactions
 
-import net.corda.v5.application.crypto.NamedByHash
-import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.ClassInfo
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.ContractStateData
@@ -13,13 +12,14 @@ import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.contracts.StateInfo
 import net.corda.v5.ledger.contracts.StateRef
 import net.corda.v5.ledger.contracts.TransactionState
+import net.corda.v5.ledger.identity.Party
 import java.util.function.Predicate
 
 /**
  * An abstract class defining fields shared by all transaction types in the system.
  */
 @DoNotImplement
-interface BaseTransaction : NamedByHash {
+interface BaseTransaction {
     /** A list of reusable reference data states which can be referred to by other contracts in this transaction. */
     val references: List<*>
     /** The inputs of this transaction. Note that in BaseTransaction subclasses the type of this list may change! */
@@ -44,6 +44,8 @@ interface BaseTransaction : NamedByHash {
     val commandsMetaData: List<ClassInfo>
 
     val referencesMetaData: List<ClassInfo>
+
+    val id: SecureHash
 
     /**
      * Check invariant properties of the class.

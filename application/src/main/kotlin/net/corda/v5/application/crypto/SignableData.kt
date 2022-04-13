@@ -10,7 +10,7 @@ import net.corda.v5.crypto.SecureHash
  * (having transaction IDs as leaves) is actually signed and thus [hash] refers to this root and not a specific transaction.
  *
  * @param hash transaction's id or root of multi-transaction Merkle tree in case of multi-transaction signing.
- * @param signatureMetadata meta data required.
+ * @param digitalSignatureMetadata meta data required.
  */
 @CordaSerializable
-data class SignableData(val hash: SecureHash, val signatureMetadata: SignatureMetadata)
+data class SignableData(val hash: SecureHash, val digitalSignatureMetadata: DigitalSignatureMetadata)

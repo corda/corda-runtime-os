@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.transactions
 
-import net.corda.v5.application.crypto.DigitalSignatureAndMeta
-import net.corda.v5.application.services.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.OpaqueBytes
@@ -100,7 +100,7 @@ interface WireTransaction : TraversableTransaction {
      * @throws [SignatureException] if the signature didn't match the transaction contents.
      * @throws IllegalArgumentException if the signature key doesn't appear in any command.
      */
-    fun checkSignature(signatureVerifier: DigitalSignatureVerificationService, sig: DigitalSignatureAndMeta)
+    fun checkSignature(signatureVerifier: DigitalSignatureVerificationService, sig: DigitalSignatureAndMetadata)
 }
 
 /**

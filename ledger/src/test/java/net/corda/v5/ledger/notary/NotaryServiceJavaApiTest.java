@@ -2,7 +2,7 @@ package net.corda.v5.ledger.notary;
 
 
 import net.corda.v5.application.flows.Flow;
-import net.corda.v5.application.flows.FlowSession;
+import net.corda.v5.application.messaging.FlowSession;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

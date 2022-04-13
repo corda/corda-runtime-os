@@ -1,9 +1,9 @@
 package net.corda.v5.ledger.contracts;
 
-import net.corda.v5.application.identity.AbstractParty;
-import net.corda.v5.application.identity.Party;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.UniqueIdentifier;
+import net.corda.v5.ledger.identity.AbstractParty;
+import net.corda.v5.ledger.identity.Party;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;

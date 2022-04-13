@@ -1,24 +1,26 @@
 package net.corda.v5.ledger.transactions
 
-import net.corda.v5.application.crypto.NamedByHash
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.application.crypto.DigitalSignatureAndMeta
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.services.TransactionService
 import java.security.PublicKey
 
 /** An interface for transactions containing signatures, with logic for signature verification. */
 @DoNotImplement
-interface TransactionWithSignatures : NamedByHash {
+interface TransactionWithSignatures {
     /**
      * List of signatures on this transaction.
      *
      * @see TransactionService.verifyRequiredSignatures
      */
-    val sigs: List<DigitalSignatureAndMeta>
+    val sigs: List<DigitalSignatureAndMetadata>
 
     /** Specifies all the public keys that require signatures for the transaction to be valid. */
     val requiredSigningKeys: Set<PublicKey>
+
+    val id: SecureHash
 
     /**
      * Return the [PublicKey]s for which we still need signatures.

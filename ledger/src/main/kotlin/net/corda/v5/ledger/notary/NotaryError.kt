@@ -1,6 +1,6 @@
 package net.corda.v5.ledger.notary
 
-import net.corda.v5.application.flows.FlowException
+import net.corda.v5.application.flows.exceptions.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.StateRef

@@ -1,6 +1,5 @@
 package net.corda.v5.ledger.contracts;
 
-import net.corda.v5.application.identity.Party;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.contracts.TransactionResolutionException.UnknownParametersException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.ContractRejection;
@@ -26,6 +25,7 @@ import net.corda.v5.ledger.contracts.TransactionVerificationException.InvalidAtt
 import net.corda.v5.ledger.contracts.TransactionVerificationException.UnsupportedClassVersionError;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.UntrustedAttachmentsException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.UnsupportedHashTypeException;
+import net.corda.v5.ledger.identity.Party;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

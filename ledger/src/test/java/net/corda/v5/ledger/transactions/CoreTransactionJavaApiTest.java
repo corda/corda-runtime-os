@@ -1,12 +1,12 @@
 package net.corda.v5.ledger.transactions;
 
-import net.corda.v5.application.identity.AbstractParty;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.contracts.BelongsToContract;
 import net.corda.v5.ledger.contracts.Contract;
 import net.corda.v5.ledger.contracts.ContractState;
 import net.corda.v5.ledger.contracts.ContractStateData;
 import net.corda.v5.ledger.contracts.StateRef;
+import net.corda.v5.ledger.identity.AbstractParty;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;

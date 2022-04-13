@@ -1,11 +1,11 @@
 package net.corda.v5.ledger.contracts
 
-import net.corda.v5.application.identity.AbstractParty
-import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.UniqueIdentifier
+import net.corda.v5.ledger.identity.AbstractParty
+import net.corda.v5.ledger.identity.Party
 import net.corda.v5.ledger.transactions.requireNotNullContractClassName
 import net.corda.v5.ledger.transactions.requiredContractClassName
 

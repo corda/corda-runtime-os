@@ -1,0 +1,23 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Corda Services API'
+
+dependencies {
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    api platform(project(':corda-api'))
+    api project(":application")
+    api project(":base")
+    api project(":membership")
+    api project(":serialization")
+    api project(":crypto")
+
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:osgi.annotation'
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+}

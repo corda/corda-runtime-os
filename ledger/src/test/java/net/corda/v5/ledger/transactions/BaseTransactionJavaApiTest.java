@@ -1,8 +1,6 @@
 package net.corda.v5.ledger.transactions;
 
 import kotlin.Pair;
-import net.corda.v5.application.identity.AbstractParty;
-import net.corda.v5.application.identity.Party;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.contracts.BelongsToContract;
 import net.corda.v5.ledger.contracts.ClassInfo;
@@ -13,6 +11,8 @@ import net.corda.v5.ledger.contracts.StateAndRef;
 import net.corda.v5.ledger.contracts.StateInfo;
 import net.corda.v5.ledger.contracts.StateRef;
 import net.corda.v5.ledger.contracts.TransactionState;
+import net.corda.v5.ledger.identity.AbstractParty;
+import net.corda.v5.ledger.identity.Party;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;

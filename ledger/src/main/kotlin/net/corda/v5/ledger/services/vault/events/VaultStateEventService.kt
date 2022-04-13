@@ -1,7 +1,6 @@
 package net.corda.v5.ledger.services.vault.events
 
 import net.corda.v5.application.injection.CordaServiceInjectable
-import net.corda.v5.application.services.CordaService
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.stream.DurableCursor

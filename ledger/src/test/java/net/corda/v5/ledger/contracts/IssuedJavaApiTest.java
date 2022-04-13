@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.contracts;
 
-import net.corda.v5.application.identity.AbstractParty;
-import net.corda.v5.application.identity.PartyAndReference;
 import net.corda.v5.base.types.OpaqueBytes;
+import net.corda.v5.ledger.identity.AbstractParty;
+import net.corda.v5.ledger.identity.PartyAndReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

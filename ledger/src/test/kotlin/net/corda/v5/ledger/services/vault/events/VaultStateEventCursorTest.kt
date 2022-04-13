@@ -1,8 +1,5 @@
 package net.corda.v5.ledger.services.vault.events
 
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
-import net.corda.v5.application.identity.AbstractParty
 import net.corda.v5.base.stream.Cursor.PollResult
 import net.corda.v5.base.stream.Cursor.PollResult.PositionedValue
 import net.corda.v5.base.stream.DurableCursor
@@ -14,8 +11,11 @@ import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.contracts.StateRef
 import net.corda.v5.ledger.contracts.TransactionState
+import net.corda.v5.ledger.identity.AbstractParty
 import net.corda.v5.ledger.services.vault.VaultEventType
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.concurrent.CountDownLatch

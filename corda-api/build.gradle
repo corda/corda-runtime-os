@@ -22,6 +22,7 @@ dependencies {
         api project(':packaging:packaging-avro-converters')
         api project(':persistence')
         api project(':serialization')
+        api project(':services')
 
         api "javax.persistence:javax.persistence-api:$javaxPersistenceApiVersion"
         api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"

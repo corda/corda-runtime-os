@@ -1,6 +1,6 @@
 package net.corda.v5.ledger;
 
-import net.corda.v5.application.identity.Party;
+import net.corda.v5.ledger.identity.Party;
 import net.corda.v5.membership.MemberContext;
 import net.corda.v5.membership.MemberInfo;
 import org.assertj.core.api.Assertions;
