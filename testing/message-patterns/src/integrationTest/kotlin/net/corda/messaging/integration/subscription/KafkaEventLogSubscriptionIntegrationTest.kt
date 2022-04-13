@@ -214,6 +214,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
+            assertThat(latch.count).isEqualTo(20)
         }
 
         eventLogSub1.stop()
