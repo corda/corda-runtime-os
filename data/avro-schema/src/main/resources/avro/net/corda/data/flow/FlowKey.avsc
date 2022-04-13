@@ -4,15 +4,15 @@
   "namespace": "net.corda.data.flow",
   "doc": "Represents of a unique key for a flow instance.",
   "fields": [
-    {
-      "name": "flowId",
-      "type": "string",
-      "doc": "Unique id for a flow instance, string representation of a UUID"
-    },
-    {
-      "name": "identity",
-      "type": "net.corda.data.identity.HoldingIdentity",
-      "doc": "Identity of the party executing the flow."
-    }
-  ]
+      {
+        "name": "id",
+        "type": "string",
+        "doc": "Unique flow id for the given Holding Identity"
+      },
+      {
+        "name": "identity",
+        "type": "net.corda.data.identity.HoldingIdentity",
+        "doc": "Identity of the party executing the flow."
+      }
+    ]
 }

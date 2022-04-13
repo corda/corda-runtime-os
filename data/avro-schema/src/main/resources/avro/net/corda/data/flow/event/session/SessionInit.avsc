@@ -13,9 +13,9 @@
       "type": "string"
     },
     {
-      "name": "flowKey",
-      "type": ["null","net.corda.data.flow.FlowKey"],
-      "doc": "FlowKey of the flow initiating the session. This is only required to inform the Flow Mapper. It should be null when sent to counterparties."
+      "name": "flowId",
+      "type": ["null","string"],
+      "doc": "Flow ID of the flow initiating the session. This is only required to inform the Flow Mapper. It should be null when sent to counterparties."
     },
     {
       "name": "payload",

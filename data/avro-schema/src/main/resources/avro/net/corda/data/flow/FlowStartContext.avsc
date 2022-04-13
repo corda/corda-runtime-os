@@ -6,7 +6,7 @@
   "fields": [
     {
       "name": "statusKey",
-      "type": "net.corda.data.flow.FlowStatusKey",
+      "type": "net.corda.data.flow.FlowKey",
       "doc": "The unique ID for tracking the flow status"
     },
     {

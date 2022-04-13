@@ -5,9 +5,9 @@
   "doc": "Represents the current state of a flow when suspended.",
   "fields": [
     {
-      "name": "flowKey",
-      "type": "net.corda.data.flow.FlowKey",
-      "doc": "Unique key for a flow instance."
+      "name": "flowId",
+      "type": "string",
+      "doc": "Internal, globally unique key for a flow instance."
     },
     {
       "name": "fiber",

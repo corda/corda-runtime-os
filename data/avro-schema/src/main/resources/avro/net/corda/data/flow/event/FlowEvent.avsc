@@ -4,8 +4,8 @@
   "namespace": "net.corda.data.flow.event",
   "fields": [
     {
-      "name": "flowKey",
-      "type": "net.corda.data.flow.FlowKey"
+      "name": "flowId",
+      "type": "string"
     },
     {
       "name": "payload",
