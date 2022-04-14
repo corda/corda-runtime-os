@@ -16,7 +16,6 @@ import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.httprpc.tools.HttpVerb.PUT
-import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
@@ -24,7 +23,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.nio.file.Path
 import java.time.Instant
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
@@ -371,12 +369,6 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         assertEquals(HttpStatus.SC_OK, timeCallResponse.responseStatus)
         assertEquals("{\"data\":\"custom text\"}", timeCallResponse.body)
-    }
-
-    @Test
-    fun `BadRequestException should be converted to BadRequestResponse`() {
-        val throwExceptionResponse = client.call(GET, WebRequest<Any>("health/throwexception?exception=${BadRpcStartFlowRequestException::class.java.name}"), userName, password)
-        assertEquals(HttpStatus.SC_BAD_REQUEST, throwExceptionResponse.responseStatus)
     }
 
     @Test

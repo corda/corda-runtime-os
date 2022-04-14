@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.factory
 import net.corda.data.flow.event.StartFlow
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowSession
+import net.corda.v5.application.messaging.FlowSession
 
 /**
  * [FlowFactory] creates [Flow]s.

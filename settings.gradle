@@ -71,12 +71,6 @@ plugins {
     id 'com.gradle.enterprise'
 }
 
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-    }
-}
-
 rootProject.name = 'corda-runtime-os'
 include 'applications:examples:sandbox-app'
 include 'applications:examples:sandbox-app:example-cpi'
@@ -222,8 +216,8 @@ include 'libs:ledger:notary'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:registry'
-include 'libs:membership:membership-application'
-include 'libs:membership:membership-internal'
+include 'libs:membership:ledger-identity'
+include 'libs:membership:membership-common'
 include 'libs:membership:membership-impl'
 include 'libs:messaging:db-message-bus-datamodel'
 include 'libs:messaging:db-message-bus-impl'
@@ -328,7 +322,6 @@ include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
-include 'tools:cli'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:secret-config'
@@ -355,6 +348,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:corda-services') using project(':services')
         }
     }
 }

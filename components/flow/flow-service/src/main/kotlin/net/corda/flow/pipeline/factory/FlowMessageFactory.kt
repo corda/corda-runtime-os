@@ -1,13 +1,38 @@
 package net.corda.flow.pipeline.factory
 
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.Checkpoint
+import net.corda.flow.state.FlowCheckpoint
 
+/**
+ * The [FlowMessageFactory] is responsible for creating instances messages used by the flow engine.
+ */
 interface FlowMessageFactory {
 
-    fun createFlowCompleteStatusMessage(checkpoint: Checkpoint, flowResult: String?): FlowStatus
+    /**
+     * Creates [FlowStatus] message with a [FlowStates.COMPLETED] status
+     *
+     * @param checkpoint of the flow being completed.
+     * @param flowResult optional flow result string.
+     * @return a new instance of a [FlowStatus] record.
+     */
+    fun createFlowCompleteStatusMessage(checkpoint: FlowCheckpoint, flowResult: String?): FlowStatus
 
-    fun createFlowStartedStatusMessage(checkpoint: Checkpoint): FlowStatus
+    /**
+     * Creates [FlowStatus] message with a [FlowStates.RUNNING] status
+     *
+     * @param checkpoint of the flow being started.
+     * @return a new instance of a [FlowStatus] record.
+     */
+    fun createFlowStartedStatusMessage(checkpoint: FlowCheckpoint): FlowStatus
 
-    fun createFlowFailedStatusMessage(checkpoint: Checkpoint, errorType: String, message: String): FlowStatus
+    /**
+     * Creates [FlowStatus] message with a [FlowStates.FAILED] status
+     *
+     * @param checkpoint of the flow that failed.
+     * @param errorType description of the type/category of error.
+     * @param message detailed description of the error and its cause.
+     * @return a new instance of a [FlowStatus] record.
+     */
+    fun createFlowFailedStatusMessage(checkpoint: FlowCheckpoint, errorType: String, message: String): FlowStatus
 }

@@ -40,7 +40,7 @@ class SessionStateClosedTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
     }
 
     @Test

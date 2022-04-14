@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.sandbox
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaInject
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test

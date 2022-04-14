@@ -2,14 +2,12 @@ package net.corda.common.json.serialization
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.common.identity.MemberX500NameDeserializer
-import net.corda.v5.application.utilities.JsonRepresentable
 import net.corda.v5.base.annotations.CordaInternal
 import net.corda.v5.base.types.MemberX500Name
 import java.util.TimeZone
@@ -33,10 +31,3 @@ fun jacksonObjectMapper(): JsonMapper = jsonMapper.apply {
     })
 }
 
-fun Any.formatAsJson(mapper: ObjectMapper = jacksonObjectMapper()): String {
-    return if (this is JsonRepresentable) {
-        this.toJsonString()
-    } else {
-        mapper.writeValueAsString(this)
-    }
-}

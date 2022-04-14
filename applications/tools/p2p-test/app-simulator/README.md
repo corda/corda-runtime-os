@@ -39,7 +39,8 @@ In the sender mode, the configuration file should have the following form:
         // totalNumberOfMessages: 1000 - only required when loadGenerationType = ONE_OFF
         batchSize: 10,
         interBatchDelay: 0ms,
-        messageSizeBytes: 10000
+        messageSizeBytes: 10000,
+        expireAfterTime: 10s
     }
 }
 ```
@@ -54,6 +55,7 @@ The following configuration options are optional:
 * `parallelClients`: this is the number of parallel clients/threads used to send messages. Default: 1. Note: each client will send `totalNumberOfMessages` individually.
 * `interBatchDelay`: the delay introduced between each batch of messages. Default: no delay.
 * `batchSize`: the number of messages sent in parallel on every batch. Default: 50.
+* `expireAfterTime`: the time after which the message will expire. This is used to calculate the TTL of the generated messages, which corresponds to the current time plus the duration specified by `expireAfterTime`. If not specified, no TTL is added to the message. Default: not specified.
 
 ### Receiver Mode
 

@@ -1,10 +1,6 @@
 package net.corda.testing.sandboxes.impl
 
 import net.corda.cpk.read.CpkReadService
-import java.nio.file.Path
-import java.util.Hashtable
-import java.util.Collections.unmodifiableSet
-import java.util.concurrent.TimeoutException
 import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.impl.CpkReadServiceImpl.Companion.BASE_DIRECTORY_KEY
@@ -20,6 +16,10 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
+import java.nio.file.Path
+import java.util.Collections.unmodifiableSet
+import java.util.Hashtable
+import java.util.concurrent.TimeoutException
 
 @Suppress("unused")
 @Component(
@@ -53,6 +53,7 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
             "net.corda.persistence",
             "net.corda.serialization",
+            "net.corda.services",
             "org.apache.aries.spifly.dynamic.bundle",
             "org.apache.felix.framework",
             "org.apache.felix.scr",

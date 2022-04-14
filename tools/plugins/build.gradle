@@ -1,10 +1,10 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3-docker'
 }
-version rootProject.version
+
 group 'net.corda.cli.deployment'
 
-tasks.named('publishOSGiImage').configure{
+tasks.named('publishOSGiImage') {
     def sourceTasks = subprojects.collect{ it.tasks.named("plugin").get()}
     dependsOn(sourceTasks)
     it.sourceTasks = sourceTasks
@@ -41,5 +41,3 @@ tasks.named('publishOSGiImage').configure{
         it.baseImageTag = "unstable"
     }
 }
-
-

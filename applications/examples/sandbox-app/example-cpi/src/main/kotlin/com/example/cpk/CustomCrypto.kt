@@ -1,10 +1,10 @@
 package com.example.cpk
 
 import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.services.CordaService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.services.CordaService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

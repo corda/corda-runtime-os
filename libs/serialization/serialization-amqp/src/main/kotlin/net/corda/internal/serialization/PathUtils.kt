@@ -1,7 +1,7 @@
 package net.corda.internal.serialization
 
 import net.corda.utilities.readAll
-import net.corda.v5.application.services.serialization.deserialize
+import net.corda.v5.application.serialization.deserialize
 import java.nio.file.Path
 
 /**
