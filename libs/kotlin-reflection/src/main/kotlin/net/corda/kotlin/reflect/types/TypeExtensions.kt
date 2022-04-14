@@ -19,16 +19,16 @@ import kotlinx.metadata.KmType
 import kotlinx.metadata.KmValueParameter
 import kotlinx.metadata.jvm.JvmFieldSignature
 import kotlinx.metadata.jvm.JvmMethodSignature
-import org.objectweb.asm.Opcodes.ACC_ABSTRACT
-import org.objectweb.asm.Opcodes.ACC_FINAL
-import org.objectweb.asm.Opcodes.ACC_PRIVATE
-import org.objectweb.asm.Opcodes.ACC_STATIC
 import org.objectweb.asm.Opcodes.ACC_SYNTHETIC
 import org.objectweb.asm.Type
 import java.lang.reflect.Field
 import java.lang.reflect.Member
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import java.lang.reflect.Modifier.ABSTRACT
+import java.lang.reflect.Modifier.FINAL
+import java.lang.reflect.Modifier.PRIVATE
+import java.lang.reflect.Modifier.STATIC
 import java.util.Collections.singletonList
 import java.util.LinkedList
 import java.util.function.Predicate
@@ -88,7 +88,7 @@ val Member?.isForInterface: Boolean
     }
 
 fun isAbstract(member: Member): Boolean {
-    return (member.modifiers and ACC_ABSTRACT) != 0
+    return (member.modifiers and ABSTRACT) != 0
 }
 
 fun isAbstract(member: Member?, flags: Flags): Boolean {
@@ -108,7 +108,7 @@ fun isAbstract(member1: Member?, member2: Member?, flags: Flags): Boolean {
 }
 
 fun isFinal(member: Member): Boolean {
-    return (member.modifiers and ACC_FINAL) != 0
+    return (member.modifiers and FINAL) != 0
 }
 
 fun isFinal(member: Member?, flags: Flags): Boolean {
@@ -128,20 +128,8 @@ fun isFinal(member1: Member?, member2: Member?, flags: Flags): Boolean {
 }
 
 fun isConst(field: Field): Boolean {
-    return (field.modifiers and (ACC_STATIC or ACC_FINAL)) == (ACC_STATIC or ACC_FINAL)
+    return (field.modifiers and (STATIC or FINAL)) == (STATIC or FINAL)
             && (field.type.isPrimitive || field.type === String::class.java)
-}
-
-fun isOpen(member: Member): Boolean {
-    return (member.modifiers and (ACC_ABSTRACT or ACC_FINAL)) == 0
-}
-
-fun isOpen(member: Member?, flags: Flags): Boolean {
-    return if (member != null) {
-        isOpen(member)
-    } else {
-        IS_OPEN(flags)
-    }
 }
 
 fun isConst(field: Field?, flags: Flags): Boolean {
@@ -152,18 +140,30 @@ fun isConst(field: Field?, flags: Flags): Boolean {
     }
 }
 
+fun isOpen(member: Member): Boolean {
+    return (member.modifiers and (ABSTRACT or FINAL)) == 0
+}
+
+fun isOpen(member: Member?, flags: Flags): Boolean {
+    return if (member != null) {
+        isOpen(member)
+    } else {
+        IS_OPEN(flags)
+    }
+}
+
 fun isInheritable(callable: KCallable<*>): Boolean
         = callable.visibility != null && callable.visibility != KVisibility.PRIVATE
 fun isInheritable(member: Member): Boolean
-        = (member.modifiers and (ACC_PRIVATE or ACC_SYNTHETIC)) == 0
+        = (member.modifiers and (PRIVATE or ACC_SYNTHETIC)) == 0
 
 fun isInheritableMember(member: Member) : Boolean
-        = (member.modifiers and (ACC_STATIC or ACC_PRIVATE or ACC_SYNTHETIC)) == 0
+        = (member.modifiers and (STATIC or PRIVATE or ACC_SYNTHETIC)) == 0
 
 fun isStatic(member: Member): Boolean
-        = (member.modifiers and (ACC_STATIC or ACC_SYNTHETIC)) == ACC_STATIC
+        = (member.modifiers and (STATIC or ACC_SYNTHETIC)) == STATIC
 fun isMember(member: Member): Boolean
-        = (member.modifiers and (ACC_STATIC or ACC_SYNTHETIC)) == 0
+        = (member.modifiers and (STATIC or ACC_SYNTHETIC)) == 0
 
 fun isExtension(property: KmProperty): Boolean = property.receiverParameterType != null
 fun isExtension(function: KmFunction): Boolean = function.receiverParameterType != null

@@ -3,38 +3,34 @@ package net.corda.flow.acceptance
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.StateMachineState
-import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.acceptance.dsl.MockFlowFiber
 import net.corda.flow.acceptance.dsl.MockFlowRunner
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 
 class MockFlowRunnerTest {
 
-    private companion object {
-        const val FLOW_ID = "flow id"
-        val emptyBytes: ByteBuffer = ByteBuffer.wrap(byteArrayOf(0))
-    }
-
     private val runner = MockFlowRunner()
-    private val fiber = MockFlowFiber(FLOW_ID)
-
-    private val flowKey = FlowKey(FLOW_ID, HoldingIdentity("x500 name", "group id"))
-
-    private val holdingIdentity = HoldingIdentity("x500 name", "group id")
+    private val flowId = "id1"
+    private val fiber = MockFlowFiber(flowId)
+    private val emptyBytes = ByteBuffer.wrap(byteArrayOf(0))
+    private val holdingIdentity = BOB_X500_HOLDING_IDENTITY
     private val startContext = FlowStartContext.newBuilder()
-        .setStatusKey(FlowStatusKey("request id", holdingIdentity))
+        .setStatusKey(FlowKey("request id", holdingIdentity))
         .setInitiatorType(FlowInitiatorType.RPC)
         .setRequestId("request id")
         .setIdentity(holdingIdentity)
@@ -49,14 +45,14 @@ class MockFlowRunnerTest {
         .setFlowStartArgs(" { \"json\": \"args\" }")
         .build()
 
-    private val checkpoint = Checkpoint.newBuilder()
-        .setFlowKey(flowKey)
-        .setFiber(ByteBuffer.wrap(byteArrayOf()))
-        .setFlowStartContext(startContext)
-        .setFlowState(StateMachineState())
-        .setSessions(mutableListOf())
-        .setFlowStackItems(mutableListOf())
-        .build()
+    private val checkpoint = mock<FlowCheckpoint>()
+
+    @Suppress("Unused")
+    @BeforeEach
+    fun setup() {
+        whenever(checkpoint.flowId).thenReturn(flowId)
+        whenever(checkpoint.flowStartContext).thenReturn(startContext)
+    }
 
     @Test
     fun `runFlow finds a fiber and returns a completed future containing the fibers specified suspension`() {
@@ -71,43 +67,23 @@ class MockFlowRunnerTest {
     }
 
     @Test
-    fun `runFlow throws if the input context does not have a flow key`() {
-        runner.addFlowFiber(fiber)
-        assertThatThrownBy {
-            runner.runFlow(
-                context = buildFlowEventContext(
-                    checkpoint.apply { flowKey = null },
-                    inputEventPayload = startRPCFlowPayload
-                ),
-                flowContinuation = FlowContinuation.Run(Unit)
-            )
-        }.isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("No flow id is set")
-    }
-
-    @Test
     fun `runFlow throws if the input context does not have a flow id`() {
         runner.addFlowFiber(fiber)
-        assertThatThrownBy {
+        whenever(checkpoint.flowKey).thenReturn(null)
+
+        assertThrows<IllegalStateException>{
             runner.runFlow(
-                context = buildFlowEventContext(
-                    checkpoint.also { flowKey.flowId = null },
-                    inputEventPayload = startRPCFlowPayload
-                ),
+                context = buildFlowEventContext(checkpoint, startRPCFlowPayload),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
-        }.isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("No flow id is set")
+        }
     }
 
     @Test
     fun `runFlow throws if there are no registered fibers`() {
         assertThatThrownBy {
             runner.runFlow(
-                context = buildFlowEventContext(
-                    checkpoint,
-                    inputEventPayload = startRPCFlowPayload
-                ),
+                context = buildFlowEventContext(checkpoint, startRPCFlowPayload),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
         }.isInstanceOf(IllegalStateException::class.java)
@@ -119,10 +95,7 @@ class MockFlowRunnerTest {
         runner.addFlowFiber(MockFlowFiber("another id").apply { queueSuspension(FlowIORequest.ForceCheckpoint) })
         assertThatThrownBy {
             runner.runFlow(
-                context = buildFlowEventContext(
-                    checkpoint,
-                    inputEventPayload = startRPCFlowPayload
-                ),
+                context = buildFlowEventContext(checkpoint, startRPCFlowPayload),
                 flowContinuation = FlowContinuation.Run(Unit)
             )
         }.isInstanceOf(IllegalStateException::class.java)
@@ -138,19 +111,15 @@ class MockFlowRunnerTest {
         runner.addFlowFiber(fiber2)
 
         val future1 = runner.runFlow(
-            context = buildFlowEventContext(
-                checkpoint,
-                inputEventPayload = startRPCFlowPayload
-            ),
+            context = buildFlowEventContext(checkpoint, startRPCFlowPayload),
             flowContinuation = FlowContinuation.Run(Unit)
         )
         assertEquals(future1.get(), FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.ForceCheckpoint))
 
+        whenever(checkpoint.flowId).thenReturn("another id")
+
         val future2 = runner.runFlow(
-            context = buildFlowEventContext(
-                checkpoint.also { flowKey.flowId = "another id" },
-                inputEventPayload = startRPCFlowPayload
-            ),
+            context = buildFlowEventContext(checkpoint,startRPCFlowPayload),
             flowContinuation = FlowContinuation.Run(Unit)
         )
         assertEquals(future2.get(), FlowIORequest.FlowSuspended(emptyBytes, FlowIORequest.WaitForSessionConfirmations))

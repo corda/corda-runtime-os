@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -79,30 +78,44 @@ class FlowFilterServiceIntegrationTest {
     @Test
     fun `verify events are forwarded to the correct topic`() {
         flowSessionFilterService.start()
-        
+
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
-        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> {  }
-        val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> {  }
+        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+        val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
         val identity = HoldingIdentity(testId, testId)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
         val sessionEvent = SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(),
-                SessionInit(
-                    testId, testId, null,  ByteBuffer.wrap("".toByteArray())
-                )
+            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(),
+            SessionInit(
+                testId, testId, null, ByteBuffer.wrap("".toByteArray())
             )
+        )
 
         val sessionRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+            P2P_IN_TOPIC,
+            testId,
+            AppMessage(
+                AuthenticatedMessage(
+                    flowHeader,
+                    ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
+                )
+            )
         )
 
         val invalidHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "other")
-        val invalidEvent = FlowEvent(FlowKey("", HoldingIdentity("", "")), sessionEvent)
+        val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(invalidHeader, ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))))
+            P2P_IN_TOPIC,
+            testId,
+            AppMessage(
+                AuthenticatedMessage(
+                    invalidHeader,
+                    ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))
+                )
+            )
         )
 
         publisher.publish(listOf(sessionRecord, sessionRecord, invalidRecord))
@@ -116,7 +129,7 @@ class FlowFilterServiceIntegrationTest {
         p2pOutSub.start()
         assertTrue(mapperLatch.await(30, TimeUnit.SECONDS))
         p2pOutSub.stop()
-        
+
         flowSessionFilterService.stop()
     }
 

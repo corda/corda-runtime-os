@@ -1,8 +1,8 @@
 @file:Suppress("unused")
 package com.example.service
 
-import net.corda.v5.application.services.CordaService
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import net.corda.v5.services.CordaService
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.BUNDLE
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE

@@ -3,9 +3,7 @@ package net.corda.flow.pipeline.handlers.waiting.sessions
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.handlers.getSession
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
-import net.corda.flow.pipeline.handlers.waiting.requireCheckpoint
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,8 +20,8 @@ class SessionInitWaitingForHandler @Activate constructor(
     override val type = WaitingForSessionInit::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: WaitingForSessionInit): FlowContinuation {
-        val checkpoint = requireCheckpoint(context)
-        val sessionState = checkpoint.getSession(waitingFor.sessionId) ?: throw FlowProcessingException("Session doesn't exist")
+        val checkpoint = context.checkpoint
+        val sessionState = checkpoint.getSessionState(waitingFor.sessionId) ?: throw FlowProcessingException("Session doesn't exist")
         val eventToAcknowledgeProcessingOf = sessionManager.getNextReceivedEvent(sessionState)
             ?: throw FlowProcessingException("No event to acknowledge")
         sessionManager.acknowledgeReceivedEvent(sessionState, eventToAcknowledgeProcessingOf.sequenceNum)

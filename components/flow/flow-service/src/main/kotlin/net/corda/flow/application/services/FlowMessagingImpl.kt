@@ -3,10 +3,10 @@ package net.corda.flow.application.services
 import net.corda.data.flow.FlowStackItem
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.application.flows.UntrustworthyData
-import net.corda.v5.application.flows.flowservices.FlowMessaging
 import net.corda.v5.application.injection.CordaFlowInjectable
+import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
-import java.util.*
+import java.util.UUID
 
 
 @Component(service = [FlowMessaging::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
@@ -77,6 +77,7 @@ class FlowMessagingImpl @Activate constructor(
             .getExecutingFiber()
             .getExecutionContext()
             .flowStackService
-            .peek() ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            .peek()
+            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
     }
 }

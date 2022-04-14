@@ -22,12 +22,12 @@ class StartFlowExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            val flowKey = generateFlowKey(startRPCFlow.startContext.identity)
-            val newState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
-            val flowEvent = FlowEvent(flowKey, startRPCFlow)
+            val flowId = generateFlowId()
+            val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN)
+            val flowEvent = FlowEvent(flowId, startRPCFlow)
             FlowMapperResult(
                 newState,
-                mutableListOf(Record(outputTopic, flowKey, flowEvent))
+                mutableListOf(Record(outputTopic, flowId, flowEvent))
             )
         } else {
             //duplicate

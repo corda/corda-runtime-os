@@ -15,7 +15,7 @@ import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.serialization.EncodingWhitelist
 import net.corda.serialization.SerializationContext
-import net.corda.v5.application.flows.FlowException
+import net.corda.v5.application.flows.exceptions.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes

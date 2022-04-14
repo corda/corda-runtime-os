@@ -9,7 +9,6 @@ import kong.unirest.Unirest
 import kong.unirest.UnirestException
 import kong.unirest.apache.ApacheClient
 import kong.unirest.jackson.JacksonObjectMapper
-import net.corda.common.json.serialization.formatAsJson
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
@@ -102,7 +101,8 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         try {
             val response = request.remoteCallFn()
             if (!response.isSuccess || response.parsingError.isPresent) {
-                val errorResponseJson = response.mapError(String::class.java).formatAsJson()
+                val mapper = Unirest.config().objectMapper
+                val errorResponseJson = mapper.writeValue(response.mapError(String::class.java))
                 when (response.status) {
                     HttpStatus.BAD_REQUEST -> throw RequestErrorException(errorResponseJson)
                     HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED, HttpStatus.METHOD_NOT_ALLOWED, HttpStatus.PROXY_AUTHENTICATION_REQUIRED

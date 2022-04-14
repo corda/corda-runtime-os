@@ -1,113 +1,66 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.session.SessionStateType
-import net.corda.data.flow.state.waiting.Wakeup
-import net.corda.data.identity.HoldingIdentity
+import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.session.SessionState
+import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.test.flow.util.buildSessionState
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
+import net.corda.messaging.api.records.Record
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class SendRequestHandlerTest {
+    private val sessionId1 = "s1"
+    private val sessionId2 = "s2"
+    private val payload1 = byteArrayOf(1)
+    private val payload2 = byteArrayOf(2)
+    val record = Record("", "", FlowEvent())
+    private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
+    private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
+    private val testContext = RequestHandlerTestContext(Any())
+    private val ioRequest = FlowIORequest.Send(mapOf(sessionId1 to payload1, sessionId2 to payload2))
+    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
 
-    private companion object {
-        const val FLOW_ID = "flow id"
-        const val SESSION_ID = "session id"
-        const val ANOTHER_SESSION_ID = "another session id"
-        val PAYLOAD = byteArrayOf(1, 1, 1, 1)
 
-        val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
-        val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
+    @Suppress("Unused")
+    @BeforeEach
+    fun setup() {
+        val flowCheckpoint = testContext.flowCheckpoint
 
-        val sessionToPayload = mapOf(SESSION_ID to PAYLOAD, ANOTHER_SESSION_ID to PAYLOAD)
-    }
+        whenever(flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
+        whenever(flowCheckpoint.getSessionState(sessionId2)).thenReturn(sessionState2)
 
-    private val sessionState = buildSessionState(
-        SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf(), sessionId = SESSION_ID
-    )
-
-    private val anotherSessionState = buildSessionState(
-        SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf(), sessionId = ANOTHER_SESSION_ID
-    )
-
-    private val updatedSessionState = buildSessionState(
-        SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf(), sessionId = SESSION_ID
-    )
-
-    private val anotherUpdatedSessionState = buildSessionState(
-        SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf(), sessionId = ANOTHER_SESSION_ID
-    )
-
-    private val flowSessionManager = mock<FlowSessionManager>().apply {
-        whenever(sendDataMessages(any(), eq(sessionToPayload), any())).thenReturn(listOf(updatedSessionState, anotherUpdatedSessionState))
-    }
-
-    private val sendRequestHandler = SendRequestHandler(flowSessionManager)
-
-    @Test
-    fun `Returns an updated WaitingFor of SessionData`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
-        val result = sendRequestHandler.getUpdatedWaitingFor(inputContext, FlowIORequest.Send(sessionToPayload))
-        assertEquals(Wakeup(), result.value)
+        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any())).thenReturn(
+            listOf(
+                sessionState1,
+                sessionState2
+            )
+        )
+        whenever(testContext.flowRecordFactory.createFlowEventRecord(eq(testContext.flowId), any())).thenReturn(record)
     }
 
     @Test
-    fun `Replaces updated sessions`() {
-
-        val checkpoint = Checkpoint().apply {
-            flowKey = FLOW_KEY
-            sessions = listOf(sessionState, anotherSessionState)
-        }
-
-        val checkpointCopy = Checkpoint().apply {
-            flowKey = checkpoint.flowKey
-            sessions = checkpoint.sessions
-        }
-
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpointCopy, inputEventPayload = Unit)
-
-        val outputContext = sendRequestHandler.postProcess(inputContext, FlowIORequest.Send(sessionToPayload))
-
-        val sessionOutput1 = outputContext.checkpoint?.sessions?.get(0)
-        val sessionOutput2 = outputContext.checkpoint?.sessions?.get(1)
-        assertNotEquals(checkpoint, outputContext.checkpoint)
-        assertNotEquals(sessionState, sessionOutput1)
-        assertNotEquals(anotherSessionState, sessionOutput2)
+    fun `Waiting for Wakeup event`() {
+        val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
+        assertThat(waitingFor.value).isInstanceOf(net.corda.data.flow.state.waiting.Wakeup()::class.java)
     }
 
     @Test
-    fun `Adds a wakeup event to the output records`() {
-        val checkpoint = Checkpoint().apply {
-            flowKey = FLOW_KEY
-            sessions = listOf(sessionState, anotherSessionState)
-        }
-
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = Unit)
-
-        val outputContext = sendRequestHandler.postProcess(inputContext, FlowIORequest.Send(sessionToPayload))
-
-        assertEquals(1, outputContext.outputRecords.size)
-        assertEquals(net.corda.data.flow.event.Wakeup(), (outputContext.outputRecords.single().value as FlowEvent).payload)
-    }
-
-    @Test
-    fun `Throws an exception if there is no checkpoint`() {
-        val inputContext = buildFlowEventContext<Any>(checkpoint = null, inputEventPayload = Unit)
-        assertThrows<FlowProcessingException> {
-            sendRequestHandler.postProcess(inputContext, FlowIORequest.Send(sessionToPayload))
-        }
+    fun `Sends session data messages and creates a Wakeup record if all the sessions have already received events`() {
+        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
+        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
+        verify(testContext.flowSessionManager).sendDataMessages(
+            eq(testContext.flowCheckpoint),
+            eq(ioRequest.sessionToPayload),
+            any()
+        )
+        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        assertThat(outputContext.outputRecords).containsOnly(record)
     }
 }

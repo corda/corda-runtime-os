@@ -5,13 +5,12 @@ import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import io.javalin.http.HttpResponseException
 import io.javalin.http.InternalServerErrorResponse
 import io.javalin.http.UnauthorizedResponse
-import java.util.concurrent.TimeoutException
-import javax.security.auth.login.FailedLoginException
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.server.impl.exception.MissingParameterException
-import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import java.util.concurrent.TimeoutException
+import javax.security.auth.login.FailedLoginException
 
 internal object HttpExceptionMapper {
 
@@ -20,7 +19,7 @@ internal object HttpExceptionMapper {
             // the code has already thrown the appropriate Javalin response exception.
             is HttpResponseException -> e
 
-            is BadRpcStartFlowRequestException -> buildBadRequestResponse("Operation failed due to bad RPC StartFlow request.", e)
+//            is BadRpcStartFlowRequestException -> buildBadRequestResponse("Operation failed due to bad RPC StartFlow request.", e)
             is MissingKotlinParameterException -> buildBadRequestResponse("Missing or invalid field in JSON request body.", e)
             is JsonProcessingException -> buildBadRequestResponse("Error during processing of request JSON.", e)
             is MissingParameterException -> buildBadRequestResponse("Missing parameter in request.", e)

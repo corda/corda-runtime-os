@@ -5,7 +5,6 @@ import com.github.benmanes.caffeine.cache.RemovalListener
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import java.net.URI
 import java.util.concurrent.TimeUnit
 
 /**
@@ -30,9 +29,9 @@ class ConnectionManager(
 
     private val clientPool = Caffeine.newBuilder()
         .maximumSize(connectionConfiguration.maxClientConnections)
-        .removalListener(RemovalListener<URI, HttpClient> { _, value, _ -> value?.stop() })
+        .removalListener(RemovalListener<DestinationInfo, HttpClient> { _, value, _ -> value?.stop() })
         .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
-        .build<URI, HttpClient>()
+        .build<DestinationInfo, HttpClient>()
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 
@@ -41,7 +40,7 @@ class ConnectionManager(
      * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
-        return clientPool.get(destinationInfo.uri) {
+        return clientPool.get(destinationInfo) {
             val client = HttpClient(
                 destinationInfo,
                 sslConfiguration,
