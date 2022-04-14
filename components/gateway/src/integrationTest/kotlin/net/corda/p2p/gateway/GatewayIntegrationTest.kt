@@ -63,6 +63,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -386,6 +387,7 @@ class GatewayIntegrationTest : TestBase() {
     @Nested
     inner class GatewayToMultipleServersTest {
         @Test
+        @Disabled
         @Timeout(60)
         fun `gateway to multiple servers`() {
             val messageCount = 100
