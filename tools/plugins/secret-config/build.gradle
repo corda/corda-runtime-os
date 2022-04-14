@@ -13,7 +13,7 @@ dependencies {
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     kapt "org.pf4j:pf4j:$pf4jVersion"
-    kapt "info.picocli:picocli-codegen:$picoCliVersion"
+    kapt "info.picocli:picocli-codegen:$picocliVersion"
 
     implementation project(":libs:configuration:configuration-core")
 
