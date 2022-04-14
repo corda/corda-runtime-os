@@ -38,7 +38,7 @@ class Command {
 
     @Option(
         names = ["-k", "--kafka-servers"],
-        description = ["The kafka servers"]
+        description = ["A comma-separated list of addresses of Kafka brokers"]
     )
     private var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 

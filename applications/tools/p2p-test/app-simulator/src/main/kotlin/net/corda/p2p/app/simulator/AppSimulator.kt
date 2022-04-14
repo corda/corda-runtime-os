@@ -220,7 +220,7 @@ class AppSimulator @Activate constructor(
 class CliParameters {
     @CommandLine.Option(
         names = ["-k", "--kafka-servers"],
-        description = ["The kafka servers. Default to \${DEFAULT-VALUE}"]
+        description = ["A comma-separated list of addresses of Kafka brokers. Default to \${DEFAULT-VALUE}"]
     )
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 

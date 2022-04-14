@@ -4,32 +4,22 @@ The purpose of this tool is to help set up kafka topics required for configurati
 configuration objects onto the newly created topic.
 
 ## Building the tool
-To build run:
+
+To build the JAR artefact, run:
 ```
 ./gradlew :applications:tools:kafka-setup:clean :applications:tools:kafka-setup:appJar
 ```
-This will create an executable jar in `applications/tools/kafka-setup/build/bin`.
+This will create an executable JAR in `applications/tools/kafka-setup/build/bin`.
 
 ## Running the tool
-To run the tool use:
-```
-java -jar corda-kafka-setup-5.0.0.jar --kafka kafkaPropertiesFile --topic topicTemplateFile --config typesafeConfigurationFile
-```
 
-Alternatively, command line args can be used instead of the `kafkaPropertiesFile`:
+### Creating topics
+To run the tool to create Kafka topics, use:
 ```
-java -jar  -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo build/bin/corda-kafka-setup-5.0.0.0-SNAPSHOT.jar --topic topics.conf --config config.conf
+java -jar applications/tools/kafka-setup/build/bin/corda-kafka-setup*.jar -Dbootstrap.servers=broker1:9093 --topic topics.conf
 ```
 
-The `kafkaPropertiesFile` will contain the properties kafka needs to connect to the broker, like
-
-```properties 
-bootstrap.servers=localhost:9092
-messaging.topic.prefix=demo
-```
-
-The `topicTemplateFile` contains the typesafe definition for the topic you wish to create. For example
-
+The `topics.conf` file must contain the definition for the topics you wish to create in the following form (in [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) format):
 ```text
 topics = [
     {
@@ -42,11 +32,15 @@ topics = [
     }
 ]
 ```
-note: the prefix is not applied to the topic names defined in the topics file. 
+The `config` section can contain any configuration for topics in the notation specified by [Kafka](https://kafka.apache.org/documentation/#topicconfigs).
 
-The `typesafeConfigurationFile` should contain a JSON/HOCON representation of the configuration you want to save on the
-topic that was created from the `topicTemplateFile`
+### Publishing configuration
+To run the tool to publish configuration (in the topic `config.topic`), use:
+```bash
+java -jar applications/tools/kafka-setup/build/bin/corda-kafka-setup*.jar -Dbootstrap.servers=broker1:9093 -config config.conf
+```
 
+The `config.conf` file must contain the definition for the configuration in the following form:
 ```text
 corda {
     messaging {
@@ -71,9 +65,9 @@ corda {
 ```
 
 In this particular example, `messaging` is the package name and `subscription` is the component name. These will be merged
-together to form the key for the kafka record `messaging.subscription` that has these contents
+together to form the key for the kafka record `messaging.subscription` that has these contents:
 
-```properties
+```
 consumer {
     close.timeout = 6000
     poll.timeout = 500
@@ -88,19 +82,10 @@ producer {
 }
 ```
 
-How to run locally
+### Specifying Kafka connection details via a file
 
-- run zookeeper, run kafka server
-- `gradlew appJar`
-
-for ease of passing in the files run the command from the resource folder
-
-
-To run topic creator:
-- `java -jar corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topics.conf`
-
-To send config to config topic:
-- `java -jar corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --config config.conf`
-
-To do both in one run
-- `java -jar corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topics.conf --config config.conf`
+Instead of specifying the Kafka connection details via the `-Dbootstrap.servers` property, you can specify a file via the command line parameter `--kafka`.
+This file must contain the connection details for Kafka as a comma-separated list of addresses of the Kafka brokers in the following form:
+```properties 
+bootstrap.servers=broker1:9093
+```
