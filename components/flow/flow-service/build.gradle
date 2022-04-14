@@ -17,6 +17,7 @@ configurations {
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:configuration:configuration-read-service")
