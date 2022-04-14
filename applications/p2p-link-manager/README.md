@@ -33,7 +33,7 @@ Below is a list of command line arguments you can use:
   -i, --instance-id=<instanceId>
                The unique instance ID (default to random number)
   -k, --kafka-servers=<kafkaServers>
-               The kafka servers (default: localhost:9092)
+               A comma-separated list of addresses of Kafka brokers (default: localhost:9092)
       --topic-prefix=<topicPrefix>
                The topic prefix (default: )
 ```

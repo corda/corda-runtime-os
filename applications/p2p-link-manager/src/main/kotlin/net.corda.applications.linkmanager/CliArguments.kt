@@ -32,7 +32,7 @@ internal class CliArguments {
 
     @Option(
         names = ["-k", "--kafka-servers"],
-        description = ["The kafka servers (default: \${DEFAULT-VALUE})"]
+        description = ["A comma-separated list of addresses of Kafka brokers (default: \${DEFAULT-VALUE})"]
     )
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 

@@ -127,7 +127,7 @@ Below is a list of command line arguments you can use:
   -i, --instance-id=<instanceId>
                The instance ID. Defaults to the value of the env. variable INSTANCE_ID or a random number, if that hasn't been set.
   -k, --kafka-servers=<kafkaServers>
-               The kafka servers. Default to localhost:9092
+               A comma-separated list of addresses of Kafka brokers. Default to localhost:9092
       --receive-topic=<receiveTopic>
                Topic to receive messages from. Defaults to p2p.in, if not specified.
       --send-topic=<sendTopic>
@@ -175,7 +175,7 @@ For convenience, this project contains a Docker compose file that can be used to
 
 In order to deploy this locally, you can use the following command:
 ```
-docker-compose -f src/test/resources/postgres-docker/postgres-db.yml up -d
+docker-compose -f applications/tools/p2p-test/app-simulator/src/test/resources/postgres-docker/postgres-db.yml up -d
 ```
 
 ### Metadata analysis

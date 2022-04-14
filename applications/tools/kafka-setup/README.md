@@ -85,7 +85,7 @@ producer {
 ### Specifying Kafka connection details via a file
 
 Instead of specifying the Kafka connection details via the `-Dbootstrap.servers` property, you can specify a file via the command line parameter `--kafka`.
-This file must contain the connection details for Kafka in the following form:
+This file must contain the connection details for Kafka as a comma-separated list of addresses of the Kafka brokers in the following form:
 ```properties 
 bootstrap.servers=broker1:9093
 ```
