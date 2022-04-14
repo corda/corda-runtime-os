@@ -9,7 +9,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -33,7 +32,6 @@ import java.nio.file.Path
  */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-@Disabled
 class CordaServicesTest {
     companion object {
         private const val SERVICE_FILTER = "(&$CORDA_SANDBOX_FILTER(service.scope=singleton))"
