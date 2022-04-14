@@ -1,5 +1,4 @@
 @file:JvmName("FlowSandboxServiceUtils")
-
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -8,6 +7,7 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIAL
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -34,60 +34,56 @@ import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
-import org.osgi.service.component.annotations.ReferencePolicy
+import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
+import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
+import org.osgi.service.component.ComponentContext
 import java.lang.reflect.Modifier
 
-@Suppress("CanBePrimaryConstructorProperty", "LongParameterList")
-@Component(service = [FlowSandboxService::class])
-class FlowSandboxServiceImpl(
+@Suppress("LongParameterList")
+@Component(
+    service = [FlowSandboxService::class],
+    reference = [
+        Reference(
+            name = INTERNAL_CUSTOM_SERIALIZERS,
+            service = InternalCustomSerializer::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        )
+    ]
+)
+class FlowSandboxServiceImpl @Activate constructor(
+    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    @Reference(service = SandboxDependencyInjectorFactory::class)
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
+    @Reference(service = CheckpointSerializerBuilderFactory::class)
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
-    private val bundleContext: BundleContext,
-    internalCustomSerializers: List<InternalCustomSerializer<out Any>>
+    private val componentContext: ComponentContext
 ) : FlowSandboxService {
 
-    private companion object {
+    companion object {
+        const val INTERNAL_CUSTOM_SERIALIZERS = "internalCustomSerializers"
         private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+
+        private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
+            @Suppress("unchecked_cast")
+            return (locateServices(refName) as? Array<T>)?.toList() ?: emptyList()
+        }
     }
 
     private val log = loggerFor<FlowSandboxServiceImpl>()
 
-    @Reference(service = InternalCustomSerializer::class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
-    private val internalCustomSerializers: List<InternalCustomSerializer<out Any>> = internalCustomSerializers
-
-    @Suppress("LongParameterList")
-    @Activate
-    constructor(
-        @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = CpiInfoReadService::class)
-        cpiInfoReadService: CpiInfoReadService,
-        @Reference(service = SandboxGroupContextComponent::class)
-        sandboxGroupContextComponent: SandboxGroupContextComponent,
-        @Reference(service = SandboxDependencyInjectorFactory::class)
-        dependencyInjectionFactory: SandboxDependencyInjectorFactory,
-        @Reference(service = CheckpointSerializerBuilderFactory::class)
-        checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
-        bundleContext: BundleContext
-    ) : this(
-        virtualNodeInfoReadService,
-        cpiInfoReadService,
-        sandboxGroupContextComponent,
-        dependencyInjectionFactory,
-        checkpointSerializerBuilderFactory,
-        bundleContext,
-        mutableListOf()
-    )
+    private val internalCustomSerializers
+        get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
     override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
 
@@ -161,6 +157,7 @@ class FlowSandboxServiceImpl(
     }
 
     private fun getNonInjectableSingletons(cleanups: MutableList<AutoCloseable>): Set<SingletonSerializeAsToken> {
+        val bundleContext = componentContext.bundleContext
         // An OSGi singleton component can still register bundle-scoped services, so
         // select the non-prototype ones here. They should all be internal to Corda.
         return bundleContext.getServiceReferences(SingletonSerializeAsToken::class.java, NON_PROTOTYPE_SERVICES)
