@@ -11,7 +11,7 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.MDC
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -129,11 +129,6 @@ class FlowFiberImpl<R>(
         val flowStackItem = getRemainingFlowStackItem()
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.CloseSessions(flowStackItem.sessionIds.toSet()))
-        } else {
-            // If there are no sessions to close, we need to suspend anyway to ensure that any acknowledgements to received closed events
-            // are sent. This is due to the flow finish code removing the flow's checkpoint, which is needed to determine which sessions
-            // need to send acknowledgements.
-            suspend(FlowIORequest.ForceCheckpoint)
         }
     }
 
