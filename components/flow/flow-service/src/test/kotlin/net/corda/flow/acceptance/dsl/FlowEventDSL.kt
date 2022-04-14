@@ -8,7 +8,7 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.acceptance.getBasicFlowStartContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
-import net.corda.flow.pipeline.factory.impl.RecordFactoryImpl
+import net.corda.flow.pipeline.factory.impl.FlowRecordFactoryImpl
 import net.corda.flow.pipeline.handlers.events.SessionEventHandler
 import net.corda.flow.pipeline.handlers.events.StartFlowEventHandler
 import net.corda.flow.pipeline.handlers.events.WakeupEventHandler
@@ -153,7 +153,7 @@ class FlowEventDSL {
 }
 
 private val sessionManager = SessionManagerImpl()
-private val recordFactory = RecordFactoryImpl()
+private val recordFactory = FlowRecordFactoryImpl()
 
 private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
 

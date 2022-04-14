@@ -5,7 +5,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.records.Record
@@ -35,10 +35,10 @@ class FlowGlobalPostProcessorImplTest {
     private val record1 = Record("t", "1", FlowMapperEvent(Any()))
     private val record2 = Record("t", "2", FlowMapperEvent(Any()))
     private val sessionManager = mock<SessionManager>()
-    private val recordFactory = mock<RecordFactory>()
+    private val flowRecordFactory = mock<FlowRecordFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
-    private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager, recordFactory)
+    private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager, flowRecordFactory)
 
     @Suppress("Unused")
     @BeforeEach
@@ -56,8 +56,8 @@ class FlowGlobalPostProcessorImplTest {
         )
             .thenReturn(sessionState1 to listOf(sessionEvent1, sessionEvent2))
 
-        whenever(recordFactory.createFlowMapperSessionEventRecord(sessionEvent1)).thenReturn(record1)
-        whenever(recordFactory.createFlowMapperSessionEventRecord(sessionEvent2)).thenReturn(record2)
+        whenever(flowRecordFactory.createFlowMapperSessionEventRecord(sessionEvent1)).thenReturn(record1)
+        whenever(flowRecordFactory.createFlowMapperSessionEventRecord(sessionEvent2)).thenReturn(record2)
     }
 
     @Test

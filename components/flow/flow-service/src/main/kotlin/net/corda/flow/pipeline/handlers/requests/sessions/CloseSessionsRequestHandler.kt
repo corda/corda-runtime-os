@@ -7,7 +7,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import org.osgi.service.component.annotations.Activate
@@ -19,8 +19,8 @@ import java.time.Instant
 class CloseSessionsRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
-    @Reference(service = RecordFactory::class)
-    private val recordFactory: RecordFactory
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
 
     private companion object {
@@ -43,7 +43,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         )
 
         return if (haveSessionsAlreadyBeenClosed) {
-            val record = recordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {
             flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->

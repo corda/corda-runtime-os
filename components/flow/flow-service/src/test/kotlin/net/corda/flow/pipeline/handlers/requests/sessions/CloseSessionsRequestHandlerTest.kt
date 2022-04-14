@@ -26,7 +26,7 @@ class CloseSessionsRequestHandlerTest {
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.CloseSessions(sessions.toSet())
-    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager, testContext.recordFactory)
+    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
 
     @Suppress("Unused")
     @BeforeEach
@@ -44,7 +44,7 @@ class CloseSessionsRequestHandlerTest {
             )
         ).thenReturn(listOf(sessionState1, sessionState2))
 
-        whenever(testContext.recordFactory.createFlowEventRecord(any(), any())).thenReturn(record)
+        whenever(testContext.flowRecordFactory.createFlowEventRecord(any(), any())).thenReturn(record)
     }
 
     @Test

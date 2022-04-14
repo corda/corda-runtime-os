@@ -18,7 +18,7 @@ class InitialCheckpointRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.InitialCheckpoint
     private val flowStatus = FlowStatus()
-    private val handler = InitialCheckpointRequestHandler(testContext.flowMessageFactory, testContext.recordFactory)
+    private val handler = InitialCheckpointRequestHandler(testContext.flowMessageFactory, testContext.flowRecordFactory)
 
     @Test
     fun `Updates the waiting for to nothing`() {
@@ -35,9 +35,9 @@ class InitialCheckpointRequestHandlerTest {
             testContext.flowMessageFactory.createFlowStartedStatusMessage(testContext.flowCheckpoint)
         ).thenReturn(flowStatus)
 
-        whenever(testContext.recordFactory.createFlowStatusRecord(flowStatus)).thenReturn(statusRecord)
+        whenever(testContext.flowRecordFactory.createFlowStatusRecord(flowStatus)).thenReturn(statusRecord)
         whenever(testContext
-            .recordFactory
+            .flowRecordFactory
             .createFlowEventRecord(eq(testContext.flowId), argThat<net.corda.data.flow.event.Wakeup> { true } )
         ).thenReturn(eventRecord)
 

@@ -4,7 +4,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.factory.RecordFactory
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import org.osgi.service.component.annotations.Activate
@@ -16,8 +16,8 @@ import java.time.Instant
 class SendRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
-    @Reference(service = RecordFactory::class)
-    private val recordFactory: RecordFactory
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.Send> {
 
     override val type = FlowIORequest.Send::class.java
@@ -33,7 +33,7 @@ class SendRequestHandler @Activate constructor(
             checkpoint.putSessionState(updatedSessionState)
         }
 
-        val wakeup =  recordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+        val wakeup =  flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
         return context.copy(outputRecords = context.outputRecords + wakeup)
     }
 }
