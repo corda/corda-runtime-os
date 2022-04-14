@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership application implementation'
+description 'Ledger identity implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -12,7 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-ledger"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
 

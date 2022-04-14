@@ -216,7 +216,7 @@ include 'libs:ledger:notary'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:registry'
-include 'libs:membership:membership-application'
+include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-internal'
 include 'libs:membership:membership-impl'
 include 'libs:messaging:db-message-bus-datamodel'
@@ -348,6 +348,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:corda-services') using project(':services')
         }
     }
 }

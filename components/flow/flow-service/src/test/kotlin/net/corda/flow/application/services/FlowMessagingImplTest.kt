@@ -3,7 +3,7 @@ package net.corda.flow.application.services
 import net.corda.data.flow.FlowStackItem
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
-import net.corda.v5.application.flows.FlowSession
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
