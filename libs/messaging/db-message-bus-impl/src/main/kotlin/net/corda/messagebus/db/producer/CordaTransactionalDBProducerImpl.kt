@@ -17,7 +17,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
@@ -126,7 +126,6 @@ class CordaTransactionalDBProducerImpl(
                         )
                     }
 
-                println("Writing offsets: \n${offsets.joinToString("\n")}")
                 dbAccess.writeOffsets(offsets)
             }
     }

@@ -220,8 +220,6 @@ class KafkaEventLogSubscriptionIntegrationTest {
         eventLogSub1.stop()
         eventLogSub2.stop()
 
-        println("Latch has ${latch.count} remaining")
-
         publisher.publish(getDemoRecords(TOPIC2, 10, 2)).forEach { it.get() }
 
         eventLogSub1.start()

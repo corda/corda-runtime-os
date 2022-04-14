@@ -44,9 +44,13 @@ class CommittedPositionEntry(
     @Column
     val timestamp: Instant = Instant.now(),
 ) {
-    @Suppress("MaxLineLength")
     override fun toString(): String {
-        return "CommittedPositionEntry(topic='$topic', consumerGroup='$consumerGroup', partition=$partition, recordPosition=$recordPosition, transactionId=$transactionId, timestamp=$timestamp)"
+        return "CommittedPositionEntry(" +
+                "topic='$topic', " +
+                "consumerGroup='$consumerGroup', " +
+                "partition=$partition, recordPosition=$recordPosition, " +
+                "transactionId=$transactionId, " +
+                "timestamp=$timestamp)"
     }
 }
 
@@ -58,4 +62,4 @@ data class CommittedOffsetEntryKey(
     val partition: Int,
     @Column(name = "record_offset")
     val recordPosition: Long
-): Serializable
+) : Serializable
