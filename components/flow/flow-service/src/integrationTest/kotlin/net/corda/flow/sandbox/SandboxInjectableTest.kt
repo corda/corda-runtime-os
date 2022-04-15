@@ -71,13 +71,15 @@ class SandboxInjectableTest {
                 val flowClass = sandbox.loadClassFromMainBundles(FLOW_CLASS_NAME)
                 val flowBundle = FrameworkUtil.getBundle(flowClass)
                 val flowContext = flowBundle.bundleContext
+                val serviceOneClass = flowBundle.loadClass(SERVICE_ONE_CLASS_NAME)
+                val serviceTwoClass = flowBundle.loadClass(SERVICE_TWO_CLASS_NAME)
 
                 @Suppress("unchecked_cast")
                 val references = flowContext.getServiceReferences(
                     SingletonSerializeAsToken::class.java.name, CORDA_SANDBOX_FILTER
                 ) as? Array<ServiceReference<out SingletonSerializeAsToken>>
                     ?: fail("No sandbox services found")
-                assertThat(references).hasSize(2)
+                assertThat(references).hasSize(4)
 
                 assertAllCordaSingletons(references)
 
@@ -86,6 +88,11 @@ class SandboxInjectableTest {
                         flowContext.ungetService(ref)
                     }
                 }.map(Any::javaClass)
+                assertThat(serviceClasses)
+                    .contains(serviceOneClass, serviceTwoClass)
+                    .allSatisfy { serviceClass ->
+                        assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
+                    }
 
                 // Given the proposed changes to Corda services, this test should no longer be checking if services are
                 // loaded correctly - it's likely this API will significantly change. Proof that custom digest services
