@@ -36,11 +36,15 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":components:crypto:crypto-db-persistence-impl")
     runtimeOnly project(':components:crypto:crypto-service-impl')
+    runtimeOnly project(":components:db:db-connection-manager-impl")
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
+    runtimeOnly project(":libs:db:db-orm-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
