@@ -5,7 +5,10 @@ import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.osgi.framework.Bundle
@@ -37,11 +40,11 @@ class ConfigTests {
             KEY_TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
-            "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"
+            "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE",
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -51,6 +54,40 @@ class ConfigTests {
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_ONE"))
         assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
         assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
+
+        assertEquals(ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS,
+            config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
+        assertEquals(ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS,
+            config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
+    }
+
+    @Test
+    fun `reconciliation params are passed through to the processor`() {
+        val processor = DummyProcessor()
+        val dbWorker = DBWorker(processor, DummyShutdown(), DummyHealthMonitor())
+        val args = arrayOf(
+            FLAG_RECONCILIATION_TASKS_PARAM,
+            "$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS=1234",
+            FLAG_RECONCILIATION_TASKS_PARAM,
+            "$RECONCILIATION_CPK_WRITE_INTERVAL_MS=5678"
+        )
+        dbWorker.startup(args)
+        val config = processor.config!!
+
+        val expectedKeys = setOf(
+            KEY_INSTANCE_ID,
+            KEY_TOPIC_PREFIX,
+            WORKSPACE_DIR,
+            TEMP_DIR,
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+        )
+
+        val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
+        assertEquals(expectedKeys, actualKeys)
+
+        assertEquals(1234L, config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
+        assertEquals(5678L, config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
     }
 
     @Test
