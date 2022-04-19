@@ -63,7 +63,6 @@ import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -387,7 +386,6 @@ class GatewayIntegrationTest : TestBase() {
     @Nested
     inner class GatewayToMultipleServersTest {
         @Test
-        @Disabled
         @Timeout(60)
         fun `gateway to multiple servers`() {
             val messageCount = 100
@@ -396,23 +394,12 @@ class GatewayIntegrationTest : TestBase() {
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
-            val servers = (1..serversCount).map {
+            val serverUrls = (1..serversCount).map {
                 getOpenPort()
             }.map {
                 "http://www.chip.net:$it"
-            }.onEach { serverUrl ->
-                repeat(messageCount) {
-                    val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader(
-                            HoldingIdentity("", GROUP_ID),
-                            NetworkType.CORDA_5,
-                            serverUrl,
-                        )
-                        payload = authenticatedP2PMessage("Target-$serverUrl")
-                    }.build()
-                    alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
-                }
-            }.map { serverUrl ->
+            }
+            val servers = serverUrls.map { serverUrl ->
                 URI.create(serverUrl)
             }.map { serverUri ->
                 val serverListener = object : ListenerWithServer() {
@@ -430,7 +417,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig),
+                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig, ConnectionConfiguration().copy(retryDelay = Duration.ofSeconds(10))),
                     chipKeyStore,
                 ).also {
                     serverListener.server = it
@@ -458,6 +445,20 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
+                serverUrls.forEach { url ->
+                    repeat(messageCount) {
+                        val msg = LinkOutMessage.newBuilder().apply {
+                            header = LinkOutHeader(
+                                HoldingIdentity("", GROUP_ID),
+                                NetworkType.CORDA_5,
+                                url,
+                            )
+                            payload = authenticatedP2PMessage("Target-$url")
+                        }.build()
+                        alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
+                    }
+                }
+
                 // Wait until all messages have been delivered
                 deliveryLatch.await(1, TimeUnit.MINUTES)
                 endTime = Instant.now().toEpochMilli()
