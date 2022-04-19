@@ -42,6 +42,12 @@ class Command {
     )
     private var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
+    @Option(
+        names = ["--stacktrace"],
+        description = ["Print out the stacktrace for all exceptions"]
+    )
+    private var _stackTrace: Boolean = false
+
     internal fun nodeConfiguration(): SmartConfig {
         val secretsConfig = ConfigFactory.empty()
         return SmartConfigFactory.create(secretsConfig).create(

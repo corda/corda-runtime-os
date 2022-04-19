@@ -43,6 +43,7 @@ class Setup(
         val command = Command()
         val commandLine = CommandLine(command)
             .setCaseInsensitiveEnumValuesAllowed(true)
+            .setExecutionExceptionHandler(ExceptionHandler())
         @Suppress("SpreadOperator")
         val exitCode = commandLine.execute(*args)
         if (exitCode != 0) {

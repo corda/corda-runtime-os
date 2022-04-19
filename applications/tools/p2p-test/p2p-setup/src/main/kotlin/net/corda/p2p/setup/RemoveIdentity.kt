@@ -28,7 +28,8 @@ class RemoveIdentity : Callable<Collection<Record<String, *>>> {
         names = ["-x", "--x500", "--x500-name"],
         description = [
             "The x500 name"
-        ]
+        ],
+        required = true,
     )
     private lateinit var x500Name: String
 
@@ -36,7 +37,8 @@ class RemoveIdentity : Callable<Collection<Record<String, *>>> {
         names = ["-g", "--group", "--group-id"],
         description = [
             "The group ID"
-        ]
+        ],
+        required = true,
     )
     private lateinit var groupId: String
 
