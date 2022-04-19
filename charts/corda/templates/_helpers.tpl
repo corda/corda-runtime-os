@@ -163,13 +163,6 @@ Cluster DB type
 {{- end -}}
 
 {{/*
-Cluster DB host
-*/}}
-{{- define "corda.clusterDbHost" -}}
-{{- .Values.db.cluster.host | default "prereqs-postgresql" }}
-{{- end -}}
-
-{{/*
 Cluster DB port
 */}}
 {{- define "corda.clusterDbPort" -}}
@@ -189,6 +182,7 @@ Cluster DB name
 {{- define "corda.clusterDbName" -}}
 {{- .Values.db.cluster.database | default "cordacluster" }}
 {{- end -}}
+
 {{/*
 Cluster DB secret name
 */}}

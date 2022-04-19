@@ -11,8 +11,6 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.dbFallbackConfig
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
@@ -35,7 +33,6 @@ import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -43,7 +40,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
-import java.util.UUID
 import javax.sql.DataSource
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 
