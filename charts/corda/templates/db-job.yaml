@@ -1,5 +1,7 @@
 apiVersion: batch/v1
 kind: Job
+{{- $runBootstrap := and (not (eq (toString .Values.bootstrap.auto) `"false"`)) .Values.bootstrap.auto }}
+{{- if or (eq (toString $runBootstrap) `<nil>`) $runBootstrap }}
 metadata:
   name: corda-setup-db
   annotations:
@@ -116,3 +118,4 @@ spec:
           emptyDir: {}
 
       restartPolicy: Never
+{{- end }}

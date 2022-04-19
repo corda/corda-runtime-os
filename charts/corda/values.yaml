@@ -60,6 +60,7 @@ kafka:
 
 # Configuration for the bootstrapper
 bootstrap:
+  auto: true
   image:
     # -- cli image registry
     registry: "corda-os-docker.software.r3.com"
