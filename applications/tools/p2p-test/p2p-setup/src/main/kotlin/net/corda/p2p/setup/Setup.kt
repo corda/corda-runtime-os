@@ -2,13 +2,12 @@ package net.corda.p2p.setup
 
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.messagebus.kafka.consumer.builder.MessageBusConsumerBuilderImpl
+import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
 import net.corda.messagebus.kafka.producer.builder.KafkaCordaProducerBuilderImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilderImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.v5.base.util.contextLogger
 import picocli.CommandLine
@@ -24,9 +23,8 @@ class Setup(
     private val publisherFactory by lazy {
         val registry = AvroSchemaRegistryImpl()
         val serializationFactory = CordaAvroSerializationFactoryImpl(registry)
-        val messageBusConsumerBuilder = MessageBusConsumerBuilderImpl(registry)
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl(registry)
         val producerBuilder = KafkaCordaProducerBuilderImpl(registry)
-        val consumerBuilder = CordaConsumerBuilderImpl(messageBusConsumerBuilder)
         val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         CordaPublisherFactory(
             serializationFactory,
