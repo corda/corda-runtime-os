@@ -55,7 +55,6 @@ import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -308,7 +307,7 @@ class P2PLayerEndToEndTest {
         val x500Name: String,
         private val keyStoreFileName: String,
         trustStoreFileName: String,
-        private val bootConfig: SmartConfig,
+        private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
         signatureTemplate: SignatureSchemeTemplate,
     ) : AutoCloseable {
@@ -330,7 +329,7 @@ class P2PLayerEndToEndTest {
         private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
         private val configPublisher = ConfigPublisherImpl(
             CONFIG_TOPIC,
-            publisherFactory.createPublisher(PublisherConfig("config-writer"), bootConfig)
+            publisherFactory.createPublisher(PublisherConfig("config-writer"), bootstrapConfig)
         )
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val tlsTenantId by lazy {
@@ -370,7 +369,7 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
-                bootConfig,
+                bootstrapConfig,
             )
 
         private val gateway =
@@ -379,7 +378,7 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                bootConfig,
+                bootstrapConfig,
             )
 
         private fun publishGatewayConfig() {
@@ -446,7 +445,7 @@ class P2PLayerEndToEndTest {
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
-            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher"), bootConfig)
+            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher"), bootstrapConfig)
             val networkMapEntries = mapOf(
                 "$x500Name-$GROUP_ID" to memberInfoEntry,
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.memberInfoEntry,
@@ -511,7 +510,7 @@ class P2PLayerEndToEndTest {
             }
             publisherFactory.createPublisher(
                 PublisherConfig("test-runner-publisher"),
-                bootConfig
+                bootstrapConfig
             ).use { publisher ->
                 publisher.start()
                 publisher.publish(records).forEach { it.get() }
@@ -520,7 +519,7 @@ class P2PLayerEndToEndTest {
 
         fun startWith(otherHost: Host) {
             configReadService.start()
-            configReadService.bootstrapConfig(bootConfig)
+            configReadService.bootstrapConfig(bootstrapConfig)
             publishTlsKeys()
 
             linkManager.start()
@@ -542,7 +541,7 @@ class P2PLayerEndToEndTest {
 
         fun addReadWriter(): Subscription<String, AppMessage> {
             return subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC), ResponderProcessor(),
                 bootstrapConfig,
                 null
             ).also { it.start() }
@@ -552,7 +551,7 @@ class P2PLayerEndToEndTest {
             receivedMessages: MutableCollection<String>
         ): Subscription<String, AppMessage> {
             return subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(receivedMessages),
+                SubscriptionConfig("app-layer", P2P_IN_TOPIC), InitiatorProcessor(receivedMessages),
                 bootstrapConfig,
                 null
             ).also { it.start() }
@@ -560,14 +559,14 @@ class P2PLayerEndToEndTest {
 
         fun listenForMarkers(markers: MutableCollection<Record<String, AppMessageMarker>>): Subscription<String, AppMessageMarker> {
             return subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig("app-layer", P2P_OUT_MARKERS, 1), MarkerStorageProcessor(markers),
+                SubscriptionConfig("app-layer", P2P_OUT_MARKERS), MarkerStorageProcessor(markers),
                 bootstrapConfig,
                 null
             ).also { it.start() }
         }
 
         fun sendMessages(messagesToSend: Int, peer: Host, ttl: Long? = null) {
-            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", true), bootstrapConfig)
             val initialMessages = (1..messagesToSend).map { index ->
                 val incrementalId = index.toString()
                 val messageHeader = AuthenticatedMessageHeader(
