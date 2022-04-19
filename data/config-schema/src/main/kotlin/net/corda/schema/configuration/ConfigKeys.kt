@@ -45,4 +45,8 @@ object ConfigKeys {
 
     const val WORKSPACE_DIR = "dir.workspace"
     const val TEMP_DIR = "dir.tmp"
+
+    // Scheduled reconciliation tasks
+    const val RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS = "reconciliation.permissionSummary.intervalMs"
+    const val RECONCILIATION_CPK_WRITE_INTERVAL_MS = "reconciliation.cpkWrite.intervalMs"
 }
