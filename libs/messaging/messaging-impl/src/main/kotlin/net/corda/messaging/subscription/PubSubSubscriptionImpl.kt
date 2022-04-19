@@ -182,7 +182,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             try {
                 val consumerRecords = consumer.poll(config.pollTimeout)
-                processPubSubRecords(consumerRecords, consumer)
+                processPubSubRecords(consumerRecords)
                 attempts = 0
             } catch (ex: Exception) {
                 attempts++
@@ -205,20 +205,14 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
 
     /**
      * Process [cordaConsumerRecords]. Process them using an [executor] if it not null or on the same
-     * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
-     * If a record fails to deserialize skip this record and log the error.
+     * thread otherwise. If a record fails to deserialize skip this record and log the error.
      */
-    private fun processPubSubRecords(
-        cordaConsumerRecords: List<CordaConsumerRecord<K, V>>,
-        consumer: CordaConsumer<K, V>
-    ) {
-        cordaConsumerRecords.forEach {
-            if (executor != null) {
-                executor.submit { processor.onNext(it.toRecord()) }.get()
-            } else {
-                processor.onNext(it.toRecord())
-            }
-            consumer.commitSyncOffsets(it)
+    private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>) {
+        if (executor != null) {
+            val futures = cordaConsumerRecords.map{ executor.submit { processor.onNext(it.toRecord()) } }
+            futures.forEach { it.get() }
+        } else {
+            cordaConsumerRecords.forEach { processor.onNext(it.toRecord()) }
         }
     }
 
