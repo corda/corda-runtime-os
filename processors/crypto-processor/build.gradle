@@ -1,7 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
+    //id 'corda.osgi-test-conventions'
 }
 
 description 'Crypto Processor'
