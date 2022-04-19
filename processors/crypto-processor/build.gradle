@@ -1,7 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
-    //id 'corda.osgi-test-conventions'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Crypto Processor'
@@ -50,6 +50,16 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestImplementation project(":libs:configuration:configuration-datamodel")
+    integrationTestImplementation project(":libs:db:db-admin")
+    integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:db:db-core")
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestImplementation project(":testing:db-testkit")
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
