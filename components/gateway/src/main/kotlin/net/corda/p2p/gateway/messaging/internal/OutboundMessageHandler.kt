@@ -120,7 +120,7 @@ internal class OutboundMessageHandler(
         }
     }
 
-    private fun scheduleHandleResponse(pendingRequest: PendingRequest) {
+    private fun scheduleHandleResponse(pendingRequest: PendingRequest, remainingAttempts: Int = MAX_RETRIES) {
         threadPool.schedule({
             val (response, error) = try {
                 val response = pendingRequest.future.get(0, TimeUnit.MILLISECONDS)
@@ -131,17 +131,14 @@ internal class OutboundMessageHandler(
                     else -> null to error
                 }
             }
-            handleResponse(pendingRequest, response, error, MAX_RETRIES)
+            handleResponse(pendingRequest, response, error, remainingAttempts)
         }, connectionConfig().retryDelay.toMillis(), TimeUnit.MILLISECONDS)
     }
 
     private fun replayMessage(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {
         val future = sendMessage(destinationInfo, gatewayMessage)
         val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
-        future.orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
-            .whenCompleteAsync { response, error ->
-                handleResponse(pendingRequest, response, error, remainingAttempts - 1)
-            }
+        scheduleHandleResponse(pendingRequest, remainingAttempts - 1)
     }
 
     private fun handleResponse(pendingRequest: PendingRequest, response: HttpResponse?, error: Throwable?, remainingAttempts: Int) {

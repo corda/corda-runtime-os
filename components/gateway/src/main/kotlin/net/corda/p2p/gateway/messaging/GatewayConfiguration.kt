@@ -37,11 +37,6 @@ data class ConnectionConfiguration(
     val connectionIdleTimeout: Duration = Duration.ofMinutes(1),
 
     /**
-     * Time after which a message delivery is considered failed
-     */
-    val responseTimeout: Duration = Duration.ofSeconds(1),
-
-    /**
      * Time after which a message is retried, when previously failed.
      */
     val retryDelay: Duration = Duration.ofSeconds(1),
@@ -75,7 +70,6 @@ private fun Config.toConnectionConfig(): ConnectionConfiguration {
         maxClientConnections = this.getLong("maxClientConnections"),
         acquireTimeout = this.getDuration("acquireTimeout"),
         connectionIdleTimeout = this.getDuration("connectionIdleTimeout"),
-        responseTimeout = this.getDuration("responseTimeout"),
         retryDelay = this.getDuration("retryDelay"),
         initialReconnectionDelay = this.getDuration("initialReconnectionDelay"),
         maximalReconnectionDelay = this.getDuration("maximalReconnectionDelay"),
