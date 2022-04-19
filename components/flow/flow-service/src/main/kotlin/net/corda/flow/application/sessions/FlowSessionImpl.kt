@@ -20,15 +20,11 @@ class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
-    private var state: State
+    private var initiated: Boolean
 ) : FlowSession {
 
     private companion object {
         val log = contextLogger()
-    }
-
-    enum class State {
-        UNINITIATED, INITIATED, CLOSED
     }
 
     private val fiber: FlowFiber<*> get() = flowFiberService.getExecutingFiber()
@@ -63,37 +59,22 @@ class FlowSessionImpl(
         return fiber.suspend(request)
     }
 
-    // marking closed here does not prevent a session closed at the end of a subflow, from being returned to the parent flow and then
-    // executed upon. `closed` will still be false and it will go into the handlers and break further down, that is probably fine if we
-    // convey a good error message back to the flow later on.
     @Suspendable
     override fun close() {
-        when (state) {
-            State.UNINITIATED -> log.info("Ignoring close on uninitiated session: $sourceSessionId")
-            State.INITIATED -> {
-                fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-                val sessionIds = flowFiberService
-                    .getExecutingFiber()
-                    .getExecutionContext()
-                    .flowStackService
-                    .peek()
-                    ?.sessionIds
-                    ?.toMutableList()
-                sessionIds?.remove(sourceSessionId)
-                flowFiberService.getExecutingFiber().getExecutionContext().flowStackService.peek()?.sessionIds = sessionIds
-                state = State.CLOSED
-                log.info("Closed session: $sourceSessionId")
-            }
-            State.CLOSED -> log.info("Ignoring duplicate close on session: $sourceSessionId")
+        if (initiated) {
+            fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
+            log.info("Closed session: $sourceSessionId")
+        } else {
+            log.info("Ignoring close on uninitiated session: $sourceSessionId")
         }
     }
 
     @Suspendable
     private fun ensureSessionIsOpen() {
-        if (state == State.UNINITIATED) {
+        if (!initiated) {
             flowFiberService.getExecutingFiber().suspend(FlowIORequest.InitiateFlow(counterparty, sourceSessionId))
-            state = State.INITIATED
-        } else if (state == State.CLOSED) throw CordaRuntimeException("Session: $sourceSessionId is closed")
+            initiated = true
+        }
     }
 
     /**
@@ -144,6 +125,5 @@ class FlowSessionImpl(
 
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
-    override fun toString(): String =
-        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, state=$state)"
+    override fun toString(): String = "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$initiated)"
 }

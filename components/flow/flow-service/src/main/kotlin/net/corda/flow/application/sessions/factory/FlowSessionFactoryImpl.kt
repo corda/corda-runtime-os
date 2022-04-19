@@ -15,11 +15,6 @@ class FlowSessionFactoryImpl @Activate constructor(
 ) : FlowSessionFactory {
 
     override fun create(sessionId: String, x500Name: MemberX500Name, initiated: Boolean): FlowSession {
-        return FlowSessionImpl(
-            counterparty = x500Name,
-            sourceSessionId = sessionId,
-            flowFiberService = flowFiberService,
-            state = if (initiated) FlowSessionImpl.State.INITIATED else FlowSessionImpl.State.UNINITIATED
-        )
+        return FlowSessionImpl(counterparty = x500Name, sessionId, flowFiberService, initiated)
     }
 }

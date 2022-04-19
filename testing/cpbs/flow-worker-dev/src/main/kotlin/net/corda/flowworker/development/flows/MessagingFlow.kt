@@ -96,8 +96,17 @@ class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
         log.info("Closing session")
 
         session.close()
-
-        log.info("Closed session")
+        log.info("Closed session 1")
+        session.close()
+        log.info("Closed session 2")
+        session.close()
+        log.info("Closed session 3")
+        session.close()
+        log.info("Closed session 4")
+        session.close()
+        log.info("Closed session 4")
+        session.close()
+        log.info("Closed session 5")
 
         return "finished top level initiated flow"
     }
