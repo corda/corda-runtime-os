@@ -13,6 +13,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.sql.Timestamp
@@ -33,7 +34,8 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
 
     fun start() {
         (1..clients).forEach { client ->
-            val subscriptionConfig = SubscriptionConfig("app-simulator-sink", AppSimulator.DELIVERED_MSG_TOPIC)
+            val subscriptionConfig = SubscriptionConfig("app-simulator-sink",
+                APP_RECEIVED_MESSAGES_TOPIC, "$instanceId-$client".hashCode())
             val kafkaConfig = SmartConfigImpl.empty()
                 .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))

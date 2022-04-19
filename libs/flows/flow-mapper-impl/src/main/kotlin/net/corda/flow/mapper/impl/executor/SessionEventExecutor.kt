@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
@@ -19,6 +20,7 @@ class SessionEventExecutor(
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
     private val instant: Instant,
+    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -41,7 +43,8 @@ class SessionEventExecutor(
         val sessionId = sessionEvent.sessionId
         val record = Record(
             Schemas.P2P.P2P_OUT_TOPIC, sessionId, FlowMapperEvent(
-                SessionEvent(MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, 0, emptyList(),
+                SessionEvent(MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
+                    sessionEvent.initiatedIdentity, 0, emptyList(),
                     SessionError(ExceptionEnvelope(
                             "FlowMapper-SessionExpired",
                             "Tried to process session event for expired session with sessionId $sessionId"
@@ -58,9 +61,9 @@ class SessionEventExecutor(
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-            Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+            Record(outputTopic, sessionEvent.sessionId, generateAppMessage(sessionEvent, sessionEventSerializer))
         } else {
-            Record(outputTopic, flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))
+            Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
 
         return FlowMapperResult(flowMapperState, listOf(outputRecord))

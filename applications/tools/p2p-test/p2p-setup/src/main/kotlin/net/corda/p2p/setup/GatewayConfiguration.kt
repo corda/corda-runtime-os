@@ -17,6 +17,7 @@ import java.util.concurrent.Callable
     description = ["Configure the P2P gateway"],
     showAtFileInUsageHelp = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class GatewayConfiguration : Callable<Collection<Record<String, Configuration>>> {
     @Option(

@@ -26,12 +26,10 @@ class SessionAckProcessorReceive(
     }
 
     override fun execute(): SessionState {
-        val sessionId = sessionEvent.sessionId
-
         return if (sessionState == null) {
-            val errorMessage = "Received SessionAck on key $key for sessionId $sessionId which had null state"
+            val errorMessage = "Received SessionAck on key $key for sessionId ${sessionEvent.sessionId} which had null state"
             logger.error(errorMessage)
-            generateErrorSessionStateFromSessionEvent(sessionId, errorMessage, "SessionAck-NullState", instant)
+            generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionAck-NullState", instant)
         } else {
             logger.debug {
                 "Received SessionAck on key $key with receivedSequenceNum ${sessionEvent.receivedSequenceNum} and outOfOrderSequenceNums " +

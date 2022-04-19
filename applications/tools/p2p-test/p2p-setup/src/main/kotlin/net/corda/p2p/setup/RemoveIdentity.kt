@@ -12,6 +12,7 @@ import java.util.concurrent.Callable
     description = ["Remove locally hosted identity"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class RemoveIdentity : Callable<Collection<Record<String, *>>> {
 

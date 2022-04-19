@@ -1,6 +1,9 @@
 package net.corda.p2p.linkmanager.delivery
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -29,7 +32,6 @@ import java.util.concurrent.*
 class ReplaySchedulerTest {
 
     companion object {
-        private const val REPLAY_PERIOD_KEY = "REPLAY PERIOD"
         private const val MAX_REPLAYING_MESSAGES = 100
         private val replayPeriod = Duration.ofMillis(2)
         private val sessionCounterparties = SessionManager.SessionCounterparties(
@@ -61,6 +63,7 @@ class ReplaySchedulerTest {
     }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
 
+
     @AfterEach
     fun cleanUp() {
         loggingInterceptor.reset()
@@ -71,17 +74,66 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler will not replay before start`() {
-        val replayManager = ReplayScheduler(coordinatorFactory, service, false, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, false,
+            { _: Any -> }, clock = mockTimeFacilitiesProvider.mockClock)
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionCounterparties::class.java))
         }
     }
 
     @Test
+    fun `fromConfig correctly passes constant config`() {
+        val replayScheduler = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            false,
+            { _: Any -> },
+            clock = mockTimeFacilitiesProvider.mockClock
+        )
+        val inner = ConfigFactory.empty()
+            .withValue(LinkManagerConfiguration.REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
+        val config = ConfigFactory.empty()
+            .withValue(LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), inner.root())
+            .withValue(LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(MAX_REPLAYING_MESSAGES)
+        )
+        val replaySchedulerConfig = replayScheduler.fromConfig(config)
+            as ReplayScheduler.ReplaySchedulerConfig.ConstantReplaySchedulerConfig
+        assertThat(replaySchedulerConfig.replayPeriod).isEqualTo(replayPeriod)
+        assertThat(replaySchedulerConfig.maxReplayingMessages).isEqualTo(MAX_REPLAYING_MESSAGES)
+    }
+
+    @Test
+    fun `fromConfig correctly passes exponential backoff config`() {
+        val cutOff = Duration.ofDays(6)
+        val replayScheduler = ReplayScheduler(
+            coordinatorFactory,
+            service,
+            false,
+            { _: Any -> },
+            clock = mockTimeFacilitiesProvider.mockClock
+        )
+        val inner = ConfigFactory.empty()
+            .withValue(LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
+            .withValue(LinkManagerConfiguration.REPLAY_PERIOD_CUTOFF_KEY, ConfigValueFactory.fromAnyRef(cutOff))
+        val config = ConfigFactory.empty()
+            .withValue(LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff.configKeyName(), inner.root())
+            .withValue(LinkManagerConfiguration.MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(MAX_REPLAYING_MESSAGES))
+        val replaySchedulerConfig = replayScheduler.fromConfig(config)
+                as ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig
+        assertThat(replaySchedulerConfig.baseReplayPeriod).isEqualTo(replayPeriod)
+        assertThat(replaySchedulerConfig.cutOff).isEqualTo(cutOff)
+        assertThat(replaySchedulerConfig.maxReplayingMessages).isEqualTo(MAX_REPLAYING_MESSAGES)
+    }
+
+    @Test
     fun `on applyNewConfiguration completes the future exceptionally if config is invalid`() {
-        ReplayScheduler(coordinatorFactory, service, false, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.mockClock)
         val future = configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(Duration.ofMillis(-10), Duration.ofMillis(-10), MAX_REPLAYING_MESSAGES),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                Duration.ofMillis(-10),
+                Duration.ofMillis(-10),
+                MAX_REPLAYING_MESSAGES
+            ),
             null,
             configResourcesHolder
         )
@@ -92,9 +144,13 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future if config is valid`() {
-        ReplayScheduler(coordinatorFactory, service, false, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
+        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.mockClock)
         val future = configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),
             null,
             configResourcesHolder
         )
@@ -109,10 +165,9 @@ class ReplaySchedulerTest {
             coordinatorFactory,
             service,
             false,
-            REPLAY_PERIOD_KEY,
             { _: Any -> },
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
         val future = createResources(resourcesHolder)
         verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
         assertThat(future.isDone).isTrue
@@ -124,18 +179,21 @@ class ReplaySchedulerTest {
         val messages = 9
 
         val tracker = TrackReplayedMessages()
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             false,
-            REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),
             null,
             configResourcesHolder
         )
@@ -143,7 +201,7 @@ class ReplaySchedulerTest {
         val messageIds =  mutableListOf<String>()
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
-            replayManager.addForReplay(
+            replayScheduler.addForReplay(
                 0,
                 messageId,
                 messageId,
@@ -159,7 +217,7 @@ class ReplaySchedulerTest {
             tracker.messages.clear()
         }
 
-        replayManager.stop()
+        replayScheduler.stop()
     }
 
     @Test
@@ -167,28 +225,31 @@ class ReplaySchedulerTest {
         val messages = 9
 
         val tracker = TrackReplayedMessages()
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             false,
-            REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),
             null,
             configResourcesHolder
         )
 
         val messageIds = (1..messages).map { UUID.randomUUID().toString() }
-        messageIds.forEach { replayManager.addForReplay(0, it, it, sessionCounterparties) }
+        messageIds.forEach { replayScheduler.addForReplay(0, it, it, sessionCounterparties) }
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).containsExactlyInAnyOrderElementsOf(messageIds)
         tracker.messages.clear()
-        replayManager.removeAllMessagesFromReplay()
+        replayScheduler.removeAllMessagesFromReplay()
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         assertThat(tracker.messages).isEmpty()
     }
@@ -198,30 +259,33 @@ class ReplaySchedulerTest {
         val messages = 8
 
         val tracker = TrackReplayedMessages()
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             false,
-            REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),
             null,
             configResourcesHolder
         )
 
         val messageIdsToRemove = (1..messages).map { UUID.randomUUID().toString() }
         val messageIdsToNotRemove = (1..messages).map { UUID.randomUUID().toString() }
-        messageIdsToRemove.forEach { replayManager.addForReplay(0, it, it, sessionCounterparties) }
-        messageIdsToNotRemove.forEach { replayManager.addForReplay(0, it, it, sessionCounterparties) }
+        messageIdsToRemove.forEach { replayScheduler.addForReplay(0, it, it, sessionCounterparties) }
+        messageIdsToNotRemove.forEach { replayScheduler.addForReplay(0, it, it, sessionCounterparties) }
 
         //Acknowledge all even messages
         messageIdsToRemove.forEach {
-            replayManager.removeFromReplay(it, sessionCounterparties)
+            replayScheduler.removeFromReplay(it, sessionCounterparties)
         }
 
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
@@ -242,24 +306,27 @@ class ReplaySchedulerTest {
             }
         }
 
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             false,
-            REPLAY_PERIOD_KEY,
             ::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
-        replayManager.start()
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
+        replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, MAX_REPLAYING_MESSAGES),
-             null,
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),
+            null,
             configResourcesHolder
         )
 
-        replayManager.addForReplay(0, "", message, sessionCounterparties)
+        replayScheduler.addForReplay(0, "", message, sessionCounterparties)
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         loggingInterceptor.assertErrorContains(
             "An exception was thrown when replaying a message. The task will be retried again in ${replayPeriod.toMillis()} ms.")
@@ -272,27 +339,44 @@ class ReplaySchedulerTest {
     @Test
     fun `The ReplayScheduler replays added messages after config update`() {
         val tracker = TrackReplayedMessages()
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             false,
-            REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
-        replayManager.start()
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
+        replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
-        configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+            replayPeriod,
+            replayPeriod,
+            MAX_REPLAYING_MESSAGES
+        ),
+        null,
+        configResourcesHolder)
 
         val messageId = UUID.randomUUID().toString()
-        replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
+        replayScheduler.addForReplay(0, messageId, messageId, sessionCounterparties)
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         tracker.messages.clear()
-        configHandler.applyNewConfiguration(mock(), null, configResourcesHolder)
+        configHandler.applyNewConfiguration(
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                2 * MAX_REPLAYING_MESSAGES
+            ),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),
+        configResourcesHolder)
 
         val messageIdAfterUpdate = UUID.randomUUID().toString()
-        replayManager.addForReplay(
+        replayScheduler.addForReplay(
             0,
             messageIdAfterUpdate,
             messageIdAfterUpdate,
@@ -307,35 +391,38 @@ class ReplaySchedulerTest {
     fun `queued messages which are removed are not replayed`() {
         val messageCap = 1
         val tracker = TrackReplayedMessages()
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             true,
-            REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
-        replayManager.start()
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
+        replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                messageCap
+            ),
             null,
             configResourcesHolder
         )
 
         val messageId = UUID.randomUUID().toString()
-        replayManager.addForReplay(0, messageId, messageId, sessionCounterparties)
+        replayScheduler.addForReplay(0, messageId, messageId, sessionCounterparties)
 
         val queuedMessageId = UUID.randomUUID().toString()
-        replayManager.addForReplay(0, queuedMessageId, queuedMessageId, sessionCounterparties)
-        replayManager.removeFromReplay(queuedMessageId, sessionCounterparties)
+        replayScheduler.addForReplay(0, queuedMessageId, queuedMessageId, sessionCounterparties)
+        replayScheduler.removeFromReplay(queuedMessageId, sessionCounterparties)
 
         val anotherQueuedMessageId = UUID.randomUUID().toString()
-        replayManager.addForReplay(0, anotherQueuedMessageId, anotherQueuedMessageId, sessionCounterparties)
+        replayScheduler.addForReplay(0, anotherQueuedMessageId, anotherQueuedMessageId, sessionCounterparties)
 
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
-        replayManager.removeFromReplay(messageId, sessionCounterparties)
+        replayScheduler.removeFromReplay(messageId, sessionCounterparties)
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
 
         assertThat(tracker.messages).containsOnly(messageId, anotherQueuedMessageId)
@@ -345,32 +432,42 @@ class ReplaySchedulerTest {
     fun `If the ReplayScheduler cap increases queued messages are replayed`() {
         val messageCap = 3
         val tracker = TrackReplayedMessages()
-        val replayManager = ReplayScheduler(
+        val replayScheduler = ReplayScheduler(
             coordinatorFactory,
             service,
             true,
-            REPLAY_PERIOD_KEY,
             tracker::replayMessage,
-            {mockTimeFacilitiesProvider.mockScheduledExecutor}
-        ) { 0 }
-        replayManager.start()
+            {mockTimeFacilitiesProvider.mockScheduledExecutor},
+            clock = mockTimeFacilitiesProvider.mockClock)
+        replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
-            null,
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                MAX_REPLAYING_MESSAGES
+            ),            null,
             configResourcesHolder
         )
 
         val messageIds = (1..2 * messageCap).map { UUID.randomUUID().toString() }
-        messageIds.forEach { replayManager.addForReplay(0, it, it, sessionCounterparties) }
+        messageIds.forEach { replayScheduler.addForReplay(0, it, it, sessionCounterparties) }
 
         mockTimeFacilitiesProvider.advanceTime(replayPeriod)
         tracker.messages.clear()
 
         configHandler.applyNewConfiguration(
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, 2 * messageCap),
-            ReplayScheduler.ReplaySchedulerConfig(replayPeriod, replayPeriod, messageCap),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                2 * messageCap
+            ),
+            ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
+                replayPeriod,
+                replayPeriod,
+                messageCap
+            ),
             configResourcesHolder
         )
 

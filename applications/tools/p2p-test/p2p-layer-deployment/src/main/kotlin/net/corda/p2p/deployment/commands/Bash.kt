@@ -10,6 +10,7 @@ import picocli.CommandLine.Parameters
     description = ["Bash into one of the pods"],
     showDefaultValues = true,
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Bash : Runnable {
     @Option(
@@ -39,7 +40,8 @@ class Bash : Runnable {
             "-n", namespaceName,
             "-l", "app=$pod",
             "--output", "jsonpath={.items[*].metadata.name}",
-        )
+        ).split(" ")
+            .random()
         if (name.isBlank()) {
             throw DeploymentException("Could not find $pod")
         }

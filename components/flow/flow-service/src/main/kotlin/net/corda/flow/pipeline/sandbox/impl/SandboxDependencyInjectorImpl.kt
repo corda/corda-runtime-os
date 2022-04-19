@@ -3,9 +3,9 @@ package net.corda.flow.pipeline.sandbox.impl
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaInject
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.injection.CordaServiceInjectable
-import net.corda.v5.application.services.CordaService
+import net.corda.v5.services.CordaService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field

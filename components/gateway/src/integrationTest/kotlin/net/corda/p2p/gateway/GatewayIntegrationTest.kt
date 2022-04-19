@@ -6,6 +6,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toKeystore
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
@@ -745,7 +746,8 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
-                val firstCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(RSA_SHA256_TEMPLATE)
+                val firstCertificatesAuthority = CertificateAuthorityFactory
+                    .createMemoryAuthority(RSA_SHA256_TEMPLATE.toFactoryDefinitions())
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
@@ -766,7 +768,9 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
-                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // Delete the first pair
                 server.publish(
@@ -788,7 +792,9 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
-                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // Delete the certificates
                 val subject = PrincipalUtil.getSubjectX509Principal(
@@ -809,7 +815,9 @@ class GatewayIntegrationTest : TestBase() {
 
                 // publish it again
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
-                testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // Change the host
                 configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
@@ -817,10 +825,13 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
 
                 // Client should pass with new host
-                testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // new trust store...
-                val secondCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
+                val secondCertificatesAuthority = CertificateAuthorityFactory
+                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -828,7 +839,9 @@ class GatewayIntegrationTest : TestBase() {
                 // replace the first pair
                 val newKeyStore = secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
-                testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
+                }
 
                 // verify that the old trust store will fail
                 eventually {
@@ -838,7 +851,8 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // new trust store and pair...
-                val thirdCertificatesAuthority = CertificateAuthorityFactory.createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE)
+                val thirdCertificatesAuthority = CertificateAuthorityFactory
+                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -846,7 +860,9 @@ class GatewayIntegrationTest : TestBase() {
                 // publish new pair with new alias
                 val newerKeyStore = thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore)
-                testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
+                eventually {
+                    testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
+                }
             }
         }
     }

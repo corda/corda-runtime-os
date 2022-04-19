@@ -17,15 +17,15 @@ fun buildSessionState(
     eventsToSend: List<SessionEvent>,
     sessionStartTime: Instant = Instant.now(),
     sendAck: Boolean = false,
-    sessionId: String = "sessionId"
+    sessionId: String = "sessionId",
+    counterpartyIdentity: HoldingIdentity = HoldingIdentity("Alice", "group1")
 ): SessionState {
     return SessionState.newBuilder()
         .setSessionId(sessionId)
         .setSessionStartTime(sessionStartTime)
         .setLastReceivedMessageTime(sessionStartTime)
         .setLastSentMessageTime(sessionStartTime)
-        .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
-        .setIsInitiator(true)
+        .setCounterpartyIdentity(counterpartyIdentity)
         .setSendAck(sendAck)
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
@@ -40,13 +40,17 @@ fun buildSessionEvent(
     sequenceNum: Int?,
     payload: Any? = null,
     receivedSequenceNum: Int = 0,
-    outOfOrderSeqNums: List<Int> = emptyList(),
+    outOfOrderSeqNums: List<Int> = listOf(0),
     timestamp: Instant = Instant.now(),
+    initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
+    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
         .setMessageDirection(messageDirection)
         .setSequenceNum(sequenceNum)
+        .setInitiatingIdentity(initiatingIdentity)
+        .setInitiatedIdentity(initiatedIdentity)
         .setPayload(payload)
         .setTimestamp(timestamp)
         .setReceivedSequenceNum(receivedSequenceNum)

@@ -1,11 +1,9 @@
 package net.corda.session.manager.impl.processor
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.data.identity.HoldingIdentity
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
@@ -16,11 +14,12 @@ class SessionInitProcessorReceiveTest {
 
     @Test
     fun `Receive duplicate init when state is not null`() {
-        val initiatingIdentity = HoldingIdentity("ALice", "group1")
-        val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
-        ))
+        val sessionInitEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionInit("flow", "cpiId", "flowId1", null)
+        )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
             "key", buildSessionState(
@@ -40,11 +39,12 @@ class SessionInitProcessorReceiveTest {
 
     @Test
     fun `Receive init in reply to an init`() {
-        val initiatingIdentity = HoldingIdentity("ALice", "group1")
-        val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
-        ))
+        val sessionInitEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionInit("flow", "cpiId", "flowId1", null)
+        )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
             "key", buildSessionState(
@@ -67,11 +67,12 @@ class SessionInitProcessorReceiveTest {
 
     @Test
     fun `Receive init when state is null`() {
-        val initiatingIdentity = HoldingIdentity("ALice", "group1")
-        val initiatedIdentity = HoldingIdentity("Bob", "group1")
-        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(), initiatedIdentity, initiatingIdentity, null
-        ))
+        val sessionInitEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionInit("flow", "cpiId", "flowId1", null)
+        )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())
 
@@ -79,7 +80,6 @@ class SessionInitProcessorReceiveTest {
 
         assertThat(sessionState).isNotNull
         assertThat(sessionState.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(sessionState.isInitiator).isEqualTo(false)
         val receivedEvents = sessionState.receivedEventsState
         assertThat(receivedEvents.lastProcessedSequenceNum).isEqualTo(1)
         assertThat(receivedEvents.undeliveredMessages.size).isEqualTo(1)

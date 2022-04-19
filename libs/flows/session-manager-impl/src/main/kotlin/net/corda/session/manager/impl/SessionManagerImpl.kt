@@ -7,9 +7,11 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
+import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
@@ -65,12 +67,17 @@ class SessionManagerImpl : SessionManager {
         }
     }
 
-    override fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig): Pair<SessionState,
+    override fun getMessagesToSend(
+        sessionState: SessionState,
+        instant: Instant,
+        config: SmartConfig,
+        identity: HoldingIdentity
+    ): Pair<SessionState,
             List<SessionEvent>> {
         var messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant, config)
 
         //add heartbeat if no messages sent recently, add ack if needs to be sent, error session if no heartbeat received within timeout
-        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn)
+        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn, identity)
 
         if (messagesToReturn.isNotEmpty()) {
             sessionState.sendAck = false
@@ -89,6 +96,7 @@ class SessionManagerImpl : SessionManager {
      * @param config contains message resend window and heartbeat timeout values
      * @param instant for timestamps of new messages
      * @param messagesToReturn add any new messages to send to this list
+     * @param identity identity of the party sending messages
      * @return Messages to send to the counterparty
      */
     private fun handleHeartbeatAndAcknowledgements(
@@ -96,6 +104,7 @@ class SessionManagerImpl : SessionManager {
         config: SmartConfig,
         instant: Instant,
         messagesToReturn: List<SessionEvent>,
+        identity: HoldingIdentity,
     ): List<SessionEvent> {
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
@@ -106,15 +115,23 @@ class SessionManagerImpl : SessionManager {
         return if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out
             sessionState.status = SessionStateType.ERROR
-            listOf(generateErrorEvent(
-                sessionState,
-                "Session has timed out. No messages received since $lastReceivedMessageTime",
-                "SessionTimeout-Heartbeat",
-                instant
-            ))
+            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
+            listOf(
+                generateErrorEvent(
+                    sessionState,
+                    initiatingIdentity,
+                    initiatedIdentity,
+                    "Session has timed out. No messages received since $lastReceivedMessageTime",
+                    "SessionTimeout-Heartbeat",
+                    instant
+                ).apply {
+                    this.initiatedIdentity = initiatedIdentity
+                    this.initiatingIdentity = initiatingIdentity
+                }
+            )
 
         } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
-            listOf(generateAck(sessionState, instant))
+            listOf(generateAck(sessionState, instant, identity))
         } else {
             messagesToReturn
         }
@@ -128,6 +145,7 @@ class SessionManagerImpl : SessionManager {
      * Update sendEvents state to remove acks/errors and increase timestamps of messages to send.
      * @param sessionState to examine sendEventsState.undeliveredMessages
      * @param instant to compare against messages to avoid resending messages in quick succession
+     * @param config config to get resend values from
      * @return Messages to send
      */
     private fun getMessagesToSendAndUpdateSendState(
@@ -159,6 +177,7 @@ class SessionManagerImpl : SessionManager {
      * by the configurable value of the [messageResendWindow]. This will avoid message resends in quick succession.
      * @param sessionState to update the sendEventsState.undeliveredMessages
      * @param instant to update the sendEventsState.undeliveredMessages
+     * @param messageResendWindow time to wait between resending messages
      */
     private fun updateSessionStateSendEvents(
         sessionState: SessionState,
@@ -213,19 +232,38 @@ class SessionManagerImpl : SessionManager {
      * Generate an SessionAck containing the latest info regarding messages received.
      * @param sessionState to examine which messages have been received
      * @param instant to set timestamp on SessionAck
+     * @param identity Identity of the party calling this method
      * @return A SessionAck SessionEvent with ack fields set on the SessionEvent based on messages received from a counterparty
      */
-    private fun generateAck(sessionState: SessionState, instant: Instant): SessionEvent {
+    private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
         val receivedEventsState = sessionState.receivedEventsState
         val outOfOrderSeqNums = receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+        val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
         return SessionEvent.newBuilder()
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(instant)
             .setSequenceNum(null)
+            .setInitiatingIdentity(initiatingIdentity)
+            .setInitiatedIdentity(initiatedIdentity)
             .setSessionId(sessionState.sessionId)
             .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
             .setOutOfOrderSequenceNums(outOfOrderSeqNums)
             .setPayload(SessionAck())
             .build()
+    }
+
+    /**
+     * Get the initiating and initiated identities.
+     * @param sessionState Session state
+     * @param identity The identity of the party to send messages from
+     * @return Pair with initiating party as the first identity, initiated party as the second identity
+     */
+    private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
+            Pair<HoldingIdentity, HoldingIdentity> {
+        return if (sessionState.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
+            Pair(sessionState.counterpartyIdentity, identity)
+        } else {
+            Pair(identity, sessionState.counterpartyIdentity)
+        }
     }
 }

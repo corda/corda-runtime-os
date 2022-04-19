@@ -102,7 +102,7 @@ class StubCryptoProcessor(
             oldValue?.let { oldTenantKeys ->
                 val tenantKeyMap = tenantIdToKeys[oldTenantKeys.tenantId]
                 if (tenantKeyMap != null) {
-                    val publicKey = keyDeserialiser.toPublicKey(oldTenantKeys.keys.publicKey.array(), oldTenantKeys.keys.keyAlgo)
+                    val publicKey = keyDeserialiser.toKeyPair(oldTenantKeys.keys.keyPair).public
                     tenantKeyMap.publicKeyToPrivateKey.remove(publicKey)
                 }
             }
@@ -112,18 +112,11 @@ class StubCryptoProcessor(
         }
 
         private fun addItem(tenantKeys: TenantKeys) {
-            val privateKey = keyDeserialiser.toPrivateKey(
-                tenantKeys.keys.privateKey.array(),
-                tenantKeys.keys.keyAlgo
-            )
-            val publicKey = keyDeserialiser.toPublicKey(
-                tenantKeys.keys.publicKey.array(),
-                tenantKeys.keys.keyAlgo
-            )
+            val pair = keyDeserialiser.toKeyPair(tenantKeys.keys.keyPair)
             val tenantKeyMap = tenantIdToKeys.computeIfAbsent(tenantKeys.tenantId) {
                 TenantKeyMap()
             }
-            tenantKeyMap.publicKeyToPrivateKey[publicKey] = privateKey
+            tenantKeyMap.publicKeyToPrivateKey[pair.public] = pair.private
         }
     }
 }

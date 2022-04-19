@@ -1,8 +1,8 @@
 package net.corda.flow.fiber
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.v5.application.flows.FlowInfo
-import net.corda.v5.application.flows.FlowSession
+import net.corda.v5.application.messaging.FlowInfo
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -81,9 +81,9 @@ interface FlowIORequest<out R> {
 
     data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
-    data class SubFlowFinished(val result: FlowStackItem?) : FlowIORequest<FlowStackItem?>
+    data class SubFlowFinished(val flowStackItem: FlowStackItem) : FlowIORequest<FlowStackItem?>
 
-    data class SubFlowFailed(val exception: Throwable, val result: FlowStackItem?) : FlowIORequest<Unit>
+    data class SubFlowFailed(val exception: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
 
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 

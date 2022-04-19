@@ -3,3 +3,22 @@ global:
   imagePullSecrets:
     - docker-registry-cred
   storageClass: corda-sc
+
+kafka:
+  resources:
+    requests:
+      memory: 390Mi
+      cpu: 1000m
+    limits:
+      memory: 800Mi
+      cpu: 1000m
+
+postgresql:
+  primary:
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 300m
+      limits:  
+        memory: 512Mi
+        cpu: 600m

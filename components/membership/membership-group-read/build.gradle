@@ -6,13 +6,12 @@ plugins {
 description 'Membership data read service'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly 'org.osgi:osgi.annotation'
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api 'net.corda:corda-membership'
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    implementation project(":libs:membership:membership-internal")
+    api project(":libs:membership:membership-common")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:virtual-node:virtual-node-info")
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-membership"
 }

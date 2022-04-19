@@ -9,7 +9,6 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
@@ -27,10 +26,9 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
+import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -52,10 +50,11 @@ class StubCryptoProcessorTest {
     private val ecPublicKey = mock<PublicKey> {
         on { algorithm } doReturn "EC"
     }
+    private val ecPairPem = "EC"
+    private val rsaPairPem = "RSA"
     private val keyDeserialiser = mockConstruction(KeyDeserialiser::class.java) { mock, _ ->
-        whenever(mock.toPrivateKey(any(), any())).doReturn(privateKey)
-        whenever(mock.toPublicKey(any(), eq(KeyAlgorithm.RSA))).doReturn(rsaPublicKey)
-        whenever(mock.toPublicKey(any(), eq(KeyAlgorithm.ECDSA))).doReturn(ecPublicKey)
+        whenever(mock.toKeyPair(ecPairPem)).doReturn(KeyPair(ecPublicKey, privateKey))
+        whenever(mock.toKeyPair(rsaPairPem)).doReturn(KeyPair(rsaPublicKey, privateKey))
     }
     private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
@@ -102,8 +101,7 @@ class StubCryptoProcessorTest {
                     TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.RSA,
-                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                            rsaPairPem
                         )
                     )
                 ),
@@ -116,8 +114,7 @@ class StubCryptoProcessorTest {
                     TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.ECDSA,
-                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                            ecPairPem
                         )
                     )
                 ),
@@ -137,7 +134,7 @@ class StubCryptoProcessorTest {
             val key = mock<PublicKey> {
                 on { algorithm } doReturn "NOP"
             }
-            whenever(keyDeserialiser.constructed().first().toPublicKey(any(), any())).doReturn(key)
+            whenever(keyDeserialiser.constructed().first().toKeyPair("pem")).doReturn(KeyPair(key, privateKey))
             processor.firstValue.onNext(
                 Record(
                     CRYPTO_KEYS_TOPIC,
@@ -145,8 +142,7 @@ class StubCryptoProcessorTest {
                     TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.ECDSA,
-                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                            "pem"
                         ),
                     ),
                 ),
@@ -211,8 +207,7 @@ class StubCryptoProcessorTest {
                     "RSA" to TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.RSA,
-                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                            rsaPairPem
                         )
                     )
                 )
@@ -224,24 +219,19 @@ class StubCryptoProcessorTest {
 
         @Test
         fun `onSnapshot deserialize the keys`() {
-            val privateData = "one".toByteArray()
-            val publicData = "two".toByteArray()
             processor.firstValue.onSnapshot(
                 mapOf(
                     "EC" to
                         TenantKeys(
                             tenantId,
                             KeyPairEntry(
-                                KeyAlgorithm.ECDSA,
-                                ByteBuffer.wrap(publicData),
-                                ByteBuffer.wrap(privateData),
+                                ecPairPem
                             ),
                         ),
                 )
             )
 
-            verify(keyDeserialiser.constructed().first()).toPrivateKey(privateData, KeyAlgorithm.ECDSA)
-            verify(keyDeserialiser.constructed().first()).toPublicKey(publicData, KeyAlgorithm.ECDSA)
+            verify(keyDeserialiser.constructed().first()).toKeyPair(ecPairPem)
         }
 
         @Test
@@ -249,8 +239,7 @@ class StubCryptoProcessorTest {
             val oldPair = TenantKeys(
                 tenantId,
                 KeyPairEntry(
-                    KeyAlgorithm.RSA,
-                    ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                    rsaPairPem
                 )
             )
             processor.firstValue.onSnapshot(
@@ -275,18 +264,14 @@ class StubCryptoProcessorTest {
         }
 
         @Test
-        fun `onNext with null values deserialize the public key (and only the public key)`() {
-            val privateData = "one".toByteArray()
-            val publicData = "two".toByteArray()
+        fun `onNext with null values deserialize the public key`() {
             processor.firstValue.onSnapshot(
                 mapOf(
                     "RSA" to
                         TenantKeys(
                             tenantId,
                             KeyPairEntry(
-                                KeyAlgorithm.RSA,
-                                ByteBuffer.wrap(publicData),
-                                ByteBuffer.wrap(privateData),
+                                rsaPairPem
                             ),
                         ),
                 )
@@ -301,16 +286,13 @@ class StubCryptoProcessorTest {
                 TenantKeys(
                     tenantId,
                     KeyPairEntry(
-                        KeyAlgorithm.ECDSA,
-                        ByteBuffer.wrap(publicData),
-                        ByteBuffer.wrap(privateData),
+                        ecPairPem
                     ),
                 ),
                 emptyMap(),
             )
 
-            verify(keyDeserialiser.constructed().first(), never()).toPrivateKey(privateData, KeyAlgorithm.ECDSA)
-            verify(keyDeserialiser.constructed().first()).toPublicKey(publicData, KeyAlgorithm.ECDSA)
+            verify(keyDeserialiser.constructed().first()).toKeyPair(ecPairPem)
         }
 
         @Test
@@ -320,15 +302,14 @@ class StubCryptoProcessorTest {
                     "RSA" to TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.RSA,
-                            ByteBuffer.wrap(data), ByteBuffer.wrap(data)
+                            rsaPairPem
                         ),
                     )
                 )
             )
-            val newPrivateKeyData = "three".toByteArray()
             val newPrivateKey = mock<PrivateKey>()
-            whenever(keyDeserialiser.constructed().first().toPrivateKey(newPrivateKeyData, KeyAlgorithm.RSA)).doReturn(newPrivateKey)
+            whenever(keyDeserialiser.constructed().first().toKeyPair(rsaPairPem))
+                .doReturn(KeyPair(rsaPublicKey, newPrivateKey))
 
             processor.firstValue.onNext(
                 Record(
@@ -337,9 +318,7 @@ class StubCryptoProcessorTest {
                     TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.RSA,
-                            ByteBuffer.wrap(data),
-                            ByteBuffer.wrap(newPrivateKeyData),
+                            rsaPairPem
                         ),
                     )
                 ),
@@ -353,9 +332,6 @@ class StubCryptoProcessorTest {
 
         @Test
         fun `onNext with new values deserialize the keys`() {
-            val privateData = "one".toByteArray()
-            val publicData = "two".toByteArray()
-
             processor.firstValue.onNext(
                 Record(
                     CRYPTO_KEYS_TOPIC,
@@ -363,9 +339,7 @@ class StubCryptoProcessorTest {
                     TenantKeys(
                         tenantId,
                         KeyPairEntry(
-                            KeyAlgorithm.ECDSA,
-                            ByteBuffer.wrap(publicData),
-                            ByteBuffer.wrap(privateData),
+                            ecPairPem
                         ),
                     )
                 ),
@@ -373,8 +347,7 @@ class StubCryptoProcessorTest {
                 emptyMap(),
             )
 
-            verify(keyDeserialiser.constructed().first()).toPrivateKey(privateData, KeyAlgorithm.ECDSA)
-            verify(keyDeserialiser.constructed().first()).toPublicKey(publicData, KeyAlgorithm.ECDSA)
+            verify(keyDeserialiser.constructed().first()).toKeyPair(ecPairPem)
         }
     }
 }

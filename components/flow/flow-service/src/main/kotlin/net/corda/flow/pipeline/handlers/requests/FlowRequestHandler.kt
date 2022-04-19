@@ -5,7 +5,6 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
-import net.corda.flow.pipeline.FlowProcessingException
 
 /**
  * The [FlowRequestHandler] interface is implemented by services that process [FlowIORequest]s output by [FlowFiber]s when they suspend.
@@ -41,17 +40,4 @@ interface FlowRequestHandler<T : FlowIORequest<*>> {
      * @return The modified [FlowEventContext].
      */
     fun postProcess(context: FlowEventContext<Any>, request: T): FlowEventContext<Any>
-}
-
-/**
- * Throws a [FlowProcessingException] if the passed in [context]'s checkpoint is null.
- *
- * @param context The [FlowEventContext] with a possibly null [Checkpoint].
- *
- * @return A non-null [Checkpoint].
- *
- * @throws FlowProcessingException if the passed in [FlowEventContext.checkpoint] is null.
- */
-fun FlowRequestHandler<*>.requireCheckpoint(context: FlowEventContext<*>): Checkpoint {
-    return context.checkpoint ?: throw FlowProcessingException("${this::class.java.name} requires a non-null checkpoint as input")
 }

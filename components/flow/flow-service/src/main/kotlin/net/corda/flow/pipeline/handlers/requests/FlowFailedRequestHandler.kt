@@ -5,8 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -16,7 +15,9 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [FlowRequestHandler::class])
 class FlowFailedRequestHandler @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
-    private val flowMessageFactory: FlowMessageFactory
+    private val flowMessageFactory: FlowMessageFactory,
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.FlowFailed> {
 
     private companion object {
@@ -30,17 +31,18 @@ class FlowFailedRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
-        val checkpoint = requireCheckpoint(context)
 
-        log.info("Flow [${checkpoint.flowKey.flowId}] failed", request.exception)
+        log.info("Flow [${context.checkpoint.flowId}] failed", request.exception)
 
         val status = flowMessageFactory.createFlowFailedStatusMessage(
-            checkpoint,
+            context.checkpoint,
             FLOW_FAILED,
             request.exception.message ?: request.exception.javaClass.name
         )
-        val record = Record(Schemas.Flow.FLOW_STATUS_TOPIC, status.key, status)
 
-        return context.copy(checkpoint = null, outputRecords = context.outputRecords + record)
+        val record = flowRecordFactory.createFlowStatusRecord(status)
+
+        context.checkpoint.markDeleted()
+        return context.copy(outputRecords = context.outputRecords + record)
     }
 }

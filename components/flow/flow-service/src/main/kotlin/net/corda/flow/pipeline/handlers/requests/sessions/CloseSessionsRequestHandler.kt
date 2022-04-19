@@ -1,18 +1,15 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
-import net.corda.flow.pipeline.handlers.getSession
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.requireCheckpoint
-import net.corda.session.manager.SessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -20,9 +17,15 @@ import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class CloseSessionsRequestHandler @Activate constructor(
-    @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    @Reference(service = FlowSessionManager::class)
+    private val flowSessionManager: FlowSessionManager,
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
+
+    private companion object {
+        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+    }
 
     override val type = FlowIORequest.CloseSessions::class.java
 
@@ -31,30 +34,22 @@ class CloseSessionsRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
-        val checkpoint = requireCheckpoint(context)
+        val checkpoint = context.checkpoint
 
-        val now = Instant.now()
+        val haveSessionsAlreadyBeenClosed = flowSessionManager.areAllSessionsInStatuses(
+            checkpoint,
+            request.sessions.toList(),
+            CLOSED_STATUSES
+        )
 
-        for (sessionId in request.sessions) {
-
-            val updatedSessionState = sessionManager.processMessageToSend(
-                key = checkpoint.flowKey.flowId,
-                sessionState = checkpoint.getSession(sessionId),
-                event = SessionEvent.newBuilder()
-                    .setSessionId(sessionId)
-                    .setMessageDirection(MessageDirection.OUTBOUND)
-                    .setTimestamp(now)
-                    .setSequenceNum(null)
-                    .setReceivedSequenceNum(0)
-                    .setOutOfOrderSequenceNums(listOf(0))
-                    .setPayload(SessionClose())
-                    .build(),
-                instant = now
-            )
-
-            checkpoint.addOrReplaceSession(updatedSessionState)
+        return if (haveSessionsAlreadyBeenClosed) {
+            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+            context.copy(outputRecords = context.outputRecords + listOf(record))
+        } else {
+            flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->
+                checkpoint.putSessionState(updatedSessionState)
+            }
+            context
         }
-
-        return context
     }
 }

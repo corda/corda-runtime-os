@@ -8,13 +8,10 @@ description "Packaging Interfaces and Data Classes"
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
+    api platform("net.corda:corda-api:$cordaApiVersion")
     api "net.corda:corda-avro-schema"
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-packaging"
-    implementation "net.corda:corda-packaging"
-
-    implementation "net.corda:corda-packaging-avro-converters"
+    api "net.corda:corda-packaging"
+    api "net.corda:corda-packaging-avro-converters"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

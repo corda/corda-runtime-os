@@ -131,6 +131,7 @@ class DeliveryTrackerTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             ::processAuthenticatedMessage
         )
 

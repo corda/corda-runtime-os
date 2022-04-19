@@ -1,66 +1,58 @@
-# P2p Gateway Application
-A standalone Gateway application
+# P2P Gateway worker
+The p2p gateway worker.
 
-## Building
-To build run:
-`./gradlew :applications:p2p-gateway:clean :applications:p2p-gateway:appJar`
-This will create an executable jar in `applications/p2p-gateway/build/bin/` 
+## Building the worker
 
-## Running
-To run the application use:
-`java -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar`
+### Building the JAR
 
-### Command arguments:
-```
-  -h, --help   Display help and exit
-  -i, --instance-id=<instanceId>
-               The unique instance ID (default to random number)
-  -k, --kafka-servers=<kafkaServers>
-               The kafka servers (default: localhost:9092)
-      --topic-prefix=<topicPrefix>
-               The topic prefix (default: )
-```
-
-## Example
-1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
-2. Start the app:
+To build the JAR artefact, run:
 ```bash
-java \
-  -Djdk.net.hosts.file=./components/gateway/src/integration-test/resources/hosts \
-  -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar
+./gradlew :applications:p2p-gateway:clean :applications:p2p-gateway:appJar
 ```
+This will create an executable JAR in `applications/p2p-gateway/build/bin/`.
 
-The `-Djdk.net.hosts.file` will overwrite the hosts file, allow the JVM to open localhost as if it was `www.alice.net`
+### Building the Docker image
 
-See [here](../tools/p2p-test/p2p-configuration-publisher/README.md) on how to publish the gateway configuration
-
-
-## Docker image
-### Building the docker image
-To build a docker image, run:
+To build the Docker image, run:
 ```bash
 ./gradlew :applications:p2p-gateway:publishOSGiImage
 ```
 
-### Running a container
-You can configure the image using those environment variables:
+## Running the worker
+
+### Running the JAR
+
+To run the JAR, use:
+```bash
+java -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway*.jar
+```
+
+Below is a list of command line arguments you can use:
+```bash
+  -h, --help   Display help and exit
+  -i, --instance-id=<instanceId>
+               The unique instance ID (default to random number)
+  -k, --kafka-servers=<kafkaServers>
+               A comma-separated list of addresses of Kafka brokers (default: localhost:9092)
+      --topic-prefix=<topicPrefix>
+               The topic prefix (default: )
+```
+
+### Running the Docker image
+
+To run the Docker image, run:
+```bash
+docker run \
+-e KAFKA_SERVERS="broker1:9093" \
+-p 8085:8085 \
+--hostname www.alice.net \
+corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway:<version>
+```
+Note that:
+* you might need to expose the port the gateway is configured to listen to for connections.
+* you might need to have the container host name match the DNS name the gateway's TLS certificate is bound to.
+
+Below is a list of environment variables you can use:
 * `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
 * `INSTANCE_ID` - The Gateway instance ID (default to random number)
-
-### Example
-1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
-2. Build the docker image (see above)
-3. Run the docker image:
-```bash
-docker run \
---rm \
---network kafka-docker_default \
--e KAFKA_SERVERS="broker1:9093" \
--p 3123:5603 \
---hostname www.alice.net \
-corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway:5.0.0.0-SNAPSHOT
-```
-Please note:
-* The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
-* The configuration host name must be the same as the docker host name.

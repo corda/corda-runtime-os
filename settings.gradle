@@ -62,18 +62,13 @@ pluginManagement {
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
+        id "com.r3.internal.gradle.plugins.r3-docker" version internalDockerVersion
     }
 }
 
 plugins {
     id 'com.gradle.common-custom-user-data-gradle-plugin'
     id 'com.gradle.enterprise'
-}
-
-dependencyResolutionManagement {
-    repositories {
-        mavenCentral()
-    }
 }
 
 rootProject.name = 'corda-runtime-os'
@@ -93,6 +88,7 @@ include 'applications:tools:mgm-test:memberlist-viewer'
 include 'applications:tools:p2p-test:app-simulator'
 include 'applications:tools:p2p-test:p2p-setup'
 include 'applications:tools:p2p-test:p2p-layer-deployment'
+include 'applications:tools:p2p-test:fake-ca'
 include 'applications:workers:release:combined-worker'
 include 'applications:workers:release:crypto-worker'
 include 'applications:workers:release:db-worker'
@@ -219,8 +215,8 @@ include 'libs:ledger:notary'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:registry'
-include 'libs:membership:membership-application'
-include 'libs:membership:membership-internal'
+include 'libs:membership:ledger-identity'
+include 'libs:membership:membership-common'
 include 'libs:membership:membership-impl'
 include 'libs:messaging:db-message-bus-datamodel'
 include 'libs:messaging:db-message-bus-impl'
@@ -325,6 +321,9 @@ include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
+include 'tools:plugins:db-config'
+include 'tools:plugins:initial-config'
+include 'tools:plugins:secret-config'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
@@ -348,6 +347,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:corda-services') using project(':services')
         }
     }
 }
@@ -364,6 +364,26 @@ gradleEnterprise {
             }
             uploadInBackground = false
             accessKey = apiKey
+        }
+    }
+    buildCache {
+        local {
+            enabled = false
+        }
+        remote(HttpBuildCache) {
+            url = "${gradleEnterpriseUrl}/cache/"
+            credentials {
+                username = settings.ext.find('BUILD_CACHE_CREDENTIALS_USR') ?: System.getenv('BUILD_CACHE_CREDENTIALS_USR')
+                password = settings.ext.find('BUILD_CACHE_CREDENTIALS_PSW') ?: System.getenv('BUILD_CACHE_CREDENTIALS_PSW')
+            }
+            // For the remote build cache we will populate cache only from Jenkins, all machines can pull from cache however.
+            if (System.getenv().containsKey("JENKINS_URL")) {
+                push = true
+                enabled = true
+            } else {
+                push = false
+                enabled = true
+            }
         }
     }
 }

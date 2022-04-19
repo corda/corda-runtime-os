@@ -131,7 +131,8 @@ class OutboundMessageHandlerTest {
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -161,7 +162,8 @@ class OutboundMessageHandlerTest {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -188,7 +190,8 @@ class OutboundMessageHandlerTest {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -226,7 +229,8 @@ class OutboundMessageHandlerTest {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -264,7 +268,8 @@ class OutboundMessageHandlerTest {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -292,7 +297,8 @@ class OutboundMessageHandlerTest {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -330,7 +336,8 @@ class OutboundMessageHandlerTest {
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -372,7 +379,8 @@ class OutboundMessageHandlerTest {
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -417,7 +425,8 @@ class OutboundMessageHandlerTest {
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
@@ -463,7 +472,8 @@ class OutboundMessageHandlerTest {
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
+                HoldingIdentity("C", "D"),
+                "subsystem",
             )
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()

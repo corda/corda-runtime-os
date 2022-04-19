@@ -25,7 +25,9 @@ quasar {
             'org.hamcrest**',
             'org.mockito**',
             'org.opentest4j**',
-            'org.eclipse**'
+            'org.eclipse**',
+            'net.corda.sandboxhooks.**',
+            'net.corda.osgi.**'
     ]
 }
 

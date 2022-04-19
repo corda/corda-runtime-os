@@ -7,10 +7,10 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import java.util.concurrent.CountDownLatch
 
-class StateAndEventSubscriptionStub(private val startLatch: CountDownLatch,private val stopLatch: CountDownLatch) :
+class StateAndEventSubscriptionStub(private val startLatch: CountDownLatch, private val stopLatch: CountDownLatch) :
     StateAndEventSubscription<FlowKey,
-        Checkpoint,
-        FlowEvent> {
+            Checkpoint,
+            FlowEvent> {
     override val isRunning: Boolean
         get() = true
 

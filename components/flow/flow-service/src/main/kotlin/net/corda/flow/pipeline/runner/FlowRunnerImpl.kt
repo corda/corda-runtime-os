@@ -5,21 +5,19 @@ import co.paralleluniverse.fibers.FiberExecutorScheduler
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.factory.FlowFiberFactory
-import net.corda.flow.fiber.factory.FlowStackServiceFactory
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.flow.utils.getHoldingIdentity
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -42,8 +40,6 @@ class FlowRunnerImpl @Activate constructor(
     private val flowFiberFactory: FlowFiberFactory,
     @Reference(service = FlowSandboxService::class)
     private val flowSandboxService: FlowSandboxService,
-    @Reference(service = FlowStackServiceFactory::class)
-    private val flowStackServiceFactory: FlowStackServiceFactory,
     @Reference(service = FlowFactory::class)
     private val flowFactory: FlowFactory,
     // Don't think the flow session factory should live here, try refactor out later
@@ -86,17 +82,17 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         startFlowEvent: StartFlow
     ): Future<FlowIORequest<*>> {
-        val checkpoint = context.checkpoint!!
+        val checkpoint = context.checkpoint
 
         log.info(
-            "start new flow clientId: ${checkpoint.flowStartContext.requestId} " +
+            "start new flow Request ID: ${checkpoint.flowKey.id} " +
                     "flowClassName: ${startFlowEvent.startContext.flowClassName} args ${startFlowEvent.flowStartArgs}"
         )
 
         val sandbox = getSandbox(checkpoint)
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
         val flow = flowFactory.createFlow(startFlowEvent, sandbox)
-        val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowKey, flow, scheduler)
+        val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow, scheduler)
 
         fiberContext.flowStackService.push(flowFiber.flowLogic)
         fiberContext.sandboxDependencyInjector.injectServices(flow)
@@ -109,7 +105,7 @@ class FlowRunnerImpl @Activate constructor(
         sessionInit: SessionInit,
         sessionEvent: SessionEvent
     ): Future<FlowIORequest<*>> {
-        val checkpoint = context.checkpoint!!
+        val checkpoint = context.checkpoint
 
         log.info("start new initiated flow flowClassName: ${sessionInit.flowName}")
 
@@ -117,18 +113,18 @@ class FlowRunnerImpl @Activate constructor(
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
 
         val initiatedFlowClassName =
-            getInitiatingToInitiatedFlowsFromSandbox(sessionInit.initiatedIdentity.toCorda())[sessionInit.cpiId to sessionInit.flowName]
+            getInitiatingToInitiatedFlowsFromSandbox(sessionEvent.initiatedIdentity.toCorda())[sessionInit.cpiId to sessionInit.flowName]
                 ?: throw FlowProcessingException("No initiated flow that can be started from ${sessionInit.flowName}")
 
         val flowSession = flowSessionFactory.create(
             sessionEvent.sessionId,
-            MemberX500Name.parse(sessionInit.initiatingIdentity.x500Name),
+            MemberX500Name.parse(sessionEvent.initiatingIdentity.x500Name),
             initiated = true
         )
 
         val flow = flowFactory.createInitiatedFlow(initiatedFlowClassName, flowSession, sandbox)
 
-        val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowKey, flow, scheduler)
+        val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow, scheduler)
 
         val stackItem = fiberContext.flowStackService.push(flowFiber.flowLogic)
         stackItem.sessionIds.add(sessionEvent.sessionId)
@@ -140,15 +136,15 @@ class FlowRunnerImpl @Activate constructor(
 
     private fun createFiberExecutionContext(
         sandboxGroupContext: SandboxGroupContext,
-        checkpoint: Checkpoint
+        checkpoint: FlowCheckpoint
     ): FlowFiberExecutionContext {
         return FlowFiberExecutionContext(
             sandboxGroupContext.getDependencyInjector(),
-            flowStackServiceFactory.create(checkpoint),
+            checkpoint,
             sandboxGroupContext.getCheckpointSerializer(),
             sandboxGroupContext,
-            checkpoint.getHoldingIdentity(),
-            membershipGroupReaderProvider.getGroupReader(checkpoint.getHoldingIdentity().toCorda())
+            checkpoint.holdingIdentity,
+            membershipGroupReaderProvider.getGroupReader( checkpoint.holdingIdentity.toCorda())
         )
     }
 
@@ -156,20 +152,20 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
-        val checkpoint = context.checkpoint!!
+        val checkpoint = context.checkpoint
         val sandbox = getSandbox(checkpoint)
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
 
         val flowFiber = fiberContext.checkpointSerializer.deserialize(
-            checkpoint.fiber.array(),
+            checkpoint.serializedFiber.array(),
             FlowFiberImpl::class.java
         )
 
         return flowFiber.resume(fiberContext, flowContinuation, scheduler)
     }
 
-    private fun getSandbox(checkpoint: Checkpoint): SandboxGroupContext {
-        return flowSandboxService.get(checkpoint.getHoldingIdentity().toCorda())
+    private fun getSandbox(checkpoint: FlowCheckpoint): SandboxGroupContext {
+        return flowSandboxService.get(HoldingIdentity(checkpoint.holdingIdentity.x500Name, checkpoint.holdingIdentity.groupId))
     }
 
     private fun SandboxGroupContext.getCheckpointSerializer(): CheckpointSerializer {

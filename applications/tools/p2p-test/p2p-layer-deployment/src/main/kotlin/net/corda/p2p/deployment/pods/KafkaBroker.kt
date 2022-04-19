@@ -56,12 +56,12 @@ class KafkaBroker(
     )
 
     override val environmentVariables = mapOf(
-        "KAFKA_BROKER_ID" to index.toString(),
         "KAFKA_CLUSTER_ID" to clusterName,
         "ALLOW_PLAINTEXT_LISTENER" to "yes",
         "KAFKA_ZOOKEEPER_CONNECT" to zookeeperConnectString,
         "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP" to "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT",
         "KAFKA_INTER_BROKER_LISTENER_NAME" to "INTERNAL",
+        "KAFKA_AUTO_CREATE_TOPICS_ENABLE" to "false",
         "KAFKA_LISTENERS" to
             "INTERNAL://:${Port.KafkaInternalBroker.port}," +
             "CLIENT://:${Port.KafkaClientBroker.port}," +

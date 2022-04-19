@@ -7,11 +7,11 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -33,7 +33,16 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     }
 
     private interface InnerMemberLookupRpcOps {
-        fun lookup(holdingIdentityId: String): RpcMemberInfoList
+        @Suppress("LongParameterList")
+        fun lookup(
+            holdingIdentityId: String,
+            commonName: String?,
+            organisation: String?,
+            organisationUnit: String?,
+            locality: String?,
+            state: String?,
+            country: String?
+        ): RpcMemberInfoList
     }
 
     override val protocolVersion = 1
@@ -72,7 +81,15 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun lookup(holdingIdentityId: String) = impl.lookup(holdingIdentityId)
+    override fun lookup(
+        holdingIdentityId: String,
+        commonName: String?,
+        organisation: String?,
+        organisationUnit: String?,
+        locality: String?,
+        state: String?,
+        country: String?
+    ) = impl.lookup(holdingIdentityId, commonName, organisation, organisationUnit, locality, state, country)
 
     fun activate(reason: String) {
         impl = ActiveImpl(virtualNodeInfoReadService, membershipGroupReaderProvider)
@@ -85,7 +102,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     }
 
     private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if(coordinator.status != status) {
+        if (coordinator.status != status) {
             coordinator.updateStatus(status, reason)
         }
     }
@@ -93,25 +110,50 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     private class InactiveImpl(
         val className: String
     ) : InnerMemberLookupRpcOps {
-        override fun lookup(holdingIdentityId: String) =
-            throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+        override fun lookup(
+            holdingIdentityId: String,
+            commonName: String?,
+            organisation: String?,
+            organisationUnit: String?,
+            locality: String?,
+            state: String?,
+            country: String?
+        ) = throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
     }
 
     private class ActiveImpl(
         val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         val membershipGroupReaderProvider: MembershipGroupReaderProvider
     ) : InnerMemberLookupRpcOps {
-        override fun lookup(holdingIdentityId: String): RpcMemberInfoList {
+        @Suppress("ComplexMethod")
+        override fun lookup(
+            holdingIdentityId: String,
+            commonName: String?,
+            organisation: String?,
+            organisationUnit: String?,
+            locality: String?,
+            state: String?,
+            country: String?
+        ): RpcMemberInfoList {
             val holdingIdentity = virtualNodeInfoReadService.getById(holdingIdentityId)?.holdingIdentity
                 ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+            val filteredMembers = reader.lookup().filter { member ->
+                val memberName = member.name
+                commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
+                organisation?.let { memberName.organisation.equals(it, true) } ?: true &&
+                organisationUnit?.let { memberName.organisationUnit.equals(it, true) } ?: true &&
+                locality?.let { memberName.locality.equals(it, true) } ?: true &&
+                state?.let { memberName.state.equals(it, true) } ?: true &&
+                country?.let { memberName.country.equals(it, true) } ?: true
+            }
 
             return RpcMemberInfoList(
-                reader.lookup().map {
+                filteredMembers.map {
                     RpcMemberInfo(
                         it.memberProvidedContext.entries.associate { it.key to it.value },
-                        it.mgmProvidedContext.entries.associate { it.key to it.value },
+                        it.mgmProvidedContext.entries.associate { it.key to it.value }
                     )
                 }
             )

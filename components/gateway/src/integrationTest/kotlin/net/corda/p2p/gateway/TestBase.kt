@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.publish.CordaConfigurationKey
@@ -29,7 +30,6 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
-import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas
@@ -218,18 +218,14 @@ open class TestBase {
                 name,
                 GatewayTlsCertificates(tenantId, pems)
             )
-            val privateKey = keyStoreWithPassword.keyStore.getKey(alias, keyStoreWithPassword.password.toCharArray())
-            val publicKey = keyStoreWithPassword.keyStore.getCertificate(alias).publicKey
-            val keyAlgorithm: KeyAlgorithm = when (publicKey.algorithm) {
-                "RSA" -> KeyAlgorithm.RSA
-                "EC" -> KeyAlgorithm.ECDSA
-                else -> throw RuntimeException("Unsupported algorithm: ${publicKey.algorithm}")
-            }
+            val privateKey = keyStoreWithPassword
+                .keyStore
+                .getKey(alias,
+                    keyStoreWithPassword.password.toCharArray())
+                .toPem()
 
             val keyPair = KeyPairEntry(
-                keyAlgorithm,
-                ByteBuffer.wrap(publicKey.encoded),
-                ByteBuffer.wrap(privateKey.encoded)
+                privateKey,
             )
             val keysRecord = Record(
                 TestSchema.CRYPTO_KEYS_TOPIC,

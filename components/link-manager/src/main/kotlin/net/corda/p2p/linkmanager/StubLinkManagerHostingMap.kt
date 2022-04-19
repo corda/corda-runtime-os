@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
+import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -24,7 +25,12 @@ class StubLinkManagerHostingMap(
         private const val GROUP_NAME = "linkmanager_stub_hosting_map"
     }
 
-    private val locallyHostedIdentityToTenantId = ConcurrentHashMap<LinkManagerInternalTypes.HoldingIdentity, String>()
+    private val locallyHostedIdentityToIdentityInfo =
+        ConcurrentHashMap<LinkManagerInternalTypes.HoldingIdentity, HostingMapListener.IdentityInfo>()
+    private val publicHashToIdentityInfo =
+        ConcurrentHashMap<GroupIdWithPublicKeyHash, HostingMapListener.IdentityInfo>()
+    private val publicKeyReader = PublicKeyReader()
+    private val keyHasher = KeyHasher()
     private val listeners = ConcurrentHashMap.newKeySet<HostingMapListener>()
     private val ready = CompletableFuture<Unit>()
     private val subscription = subscriptionFactory.createCompactedSubscription(
@@ -59,10 +65,17 @@ class StubLinkManagerHostingMap(
     }
 
     override fun isHostedLocally(identity: LinkManagerInternalTypes.HoldingIdentity) =
-        locallyHostedIdentityToTenantId.containsKey(identity)
+        locallyHostedIdentityToIdentityInfo.containsKey(identity)
 
-    override fun getTenantId(identity: LinkManagerInternalTypes.HoldingIdentity) =
-        locallyHostedIdentityToTenantId[identity]
+    override fun getInfo(identity: LinkManagerInternalTypes.HoldingIdentity) =
+        locallyHostedIdentityToIdentityInfo[identity]
+
+    override fun getInfo(hash: ByteArray, groupId: String) = publicHashToIdentityInfo[
+        GroupIdWithPublicKeyHash(
+            groupId,
+            ByteBuffer.wrap(hash)
+        )
+    ]
 
     override fun registerListener(listener: HostingMapListener) {
         listeners.add(listener)
@@ -72,7 +85,8 @@ class StubLinkManagerHostingMap(
         override val keyClass = String::class.java
         override val valueClass = HostedIdentityEntry::class.java
         override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
-            locallyHostedIdentityToTenantId.clear()
+            locallyHostedIdentityToIdentityInfo.clear()
+            publicHashToIdentityInfo.clear()
             currentData.values.forEach {
                 addEntry(it)
             }
@@ -85,7 +99,8 @@ class StubLinkManagerHostingMap(
             currentData: Map<String, HostedIdentityEntry>,
         ) {
             if (oldValue != null) {
-                locallyHostedIdentityToTenantId.remove(oldValue.holdingIdentity.toHoldingIdentity())
+                publicHashToIdentityInfo.remove(oldValue.toGroupIdWithPublicKeyHash())
+                locallyHostedIdentityToIdentityInfo.remove(oldValue.holdingIdentity.toHoldingIdentity())
             }
             val newIdentity = newRecord.value
             if (newIdentity != null) {
@@ -94,14 +109,24 @@ class StubLinkManagerHostingMap(
         }
     }
 
+    private fun HostedIdentityEntry.toGroupIdWithPublicKeyHash(): GroupIdWithPublicKeyHash {
+        val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
+        return GroupIdWithPublicKeyHash(
+            this.holdingIdentity.groupId,
+            ByteBuffer.wrap(keyHasher.hash(publicKey)),
+        )
+    }
+
     private fun addEntry(entry: HostedIdentityEntry) {
-        locallyHostedIdentityToTenantId[entry.holdingIdentity.toHoldingIdentity()] = entry.sessionKeyTenantId
         val info = HostingMapListener.IdentityInfo(
             holdingIdentity = entry.holdingIdentity,
             tlsCertificates = entry.tlsCertificates,
             tlsTenantId = entry.tlsTenantId,
-            sessionKeyTenantId = entry.sessionKeyTenantId
+            sessionKeyTenantId = entry.sessionKeyTenantId,
+            sessionPublicKey = publicKeyReader.loadPublicKey(entry.sessionPublicKey)
         )
+        locallyHostedIdentityToIdentityInfo[entry.holdingIdentity.toHoldingIdentity()] = info
+        publicHashToIdentityInfo[entry.toGroupIdWithPublicKeyHash()] = info
         listeners.forEach {
             it.identityAdded(info)
         }

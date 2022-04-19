@@ -9,13 +9,13 @@ import org.junit.jupiter.api.assertThrows
 class CheckpointTest {
 
     @Test
-    fun `getMemberX500Name returns x500name parsed from holding identity`(){
-        val holdingIdentity = HoldingIdentity(BOB_X500_NAME.toString(),"group1")
+    fun `getMemberX500Name returns x500name parsed from holding identity`() {
+        val holdingIdentity = HoldingIdentity(BOB_X500_NAME.toString(), "group1")
         assertThat(holdingIdentity.getMemberX500Name()).isEqualTo(BOB_X500_NAME)
     }
 
     @Test
-    fun `getMemberX500Name throws when the x500 name is invalid`(){
+    fun `getMemberX500Name throws when the x500 name is invalid`() {
         val holdingIdentity = HoldingIdentity("x500", "group1")
         val exception = assertThrows<IllegalStateException> {
             holdingIdentity.getMemberX500Name()
