@@ -86,9 +86,8 @@ class SessionCloseProcessorSendTest {
         assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
 
-
     @Test
-    fun `Send close when status is CLOSED`() {
+    fun `Send close when status is CLOSED does not modify session state`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
 
         val inputState = buildSessionState(
@@ -96,10 +95,19 @@ class SessionCloseProcessorSendTest {
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
-        assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result).isEqualTo(inputState)
+    }
+
+    @Test
+    fun `Send close when status is WAIT_FOR_FINAL_ACK does not modify session state`() {
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
+
+        val inputState = buildSessionState(
+            SessionStateType.WAIT_FOR_FINAL_ACK, 0, mutableListOf(), 0, mutableListOf()
+        )
+
+        val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
+        assertThat(result).isEqualTo(inputState)
     }
 
     @Test
@@ -121,7 +129,7 @@ class SessionCloseProcessorSendTest {
 
 
     @Test
-    fun `Send close when status is already CLOSING due to close sent`() {
+    fun `Send close when status is already CLOSING due to close sent does not modify session state`() {
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose())
 
         val inputState = buildSessionState(
@@ -129,10 +137,6 @@ class SessionCloseProcessorSendTest {
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
-        assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        val sessionEventOutput = result.sendEventsState.undeliveredMessages.last()
-        assertThat(sessionEventOutput.payload::class.java).isEqualTo(SessionError::class.java)
+        assertThat(result).isEqualTo(inputState)
     }
 }

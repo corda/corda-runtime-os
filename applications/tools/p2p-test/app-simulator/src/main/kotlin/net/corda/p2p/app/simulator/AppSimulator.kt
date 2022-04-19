@@ -1,6 +1,7 @@
 package net.corda.p2p.app.simulator
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -19,6 +20,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
@@ -35,10 +37,10 @@ class AppSimulator @Activate constructor(
 
     companion object {
         private val logger: Logger = contextLogger()
+        private val clock: Clock = Clock.systemUTC()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
-
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
         const val PARALLEL_CLIENTS_KEY = "parallelClients"
@@ -118,6 +120,7 @@ class AppSimulator @Activate constructor(
             kafkaServers,
             clients,
             instanceId,
+            clock
         )
         sender.start()
         resources.add(sender)
@@ -187,6 +190,11 @@ class AppSimulator @Activate constructor(
         val batchSize = config.getInt("$LOAD_GEN_PARAMS_PREFIX.batchSize")
         val interBatchDelay = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.interBatchDelay")
         val messageSizeBytes = config.getInt("$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes")
+        val expireAfterTime = try {
+            config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
+        } catch (e: ConfigException.Missing) {
+            null
+        }
         return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
             HoldingIdentity(ourX500Name, ourGroupId),
@@ -194,7 +202,8 @@ class AppSimulator @Activate constructor(
             totalNumberOfMessages,
             batchSize,
             interBatchDelay,
-            messageSizeBytes
+            messageSizeBytes,
+            expireAfterTime
         )
     }
 
@@ -211,7 +220,7 @@ class AppSimulator @Activate constructor(
 class CliParameters {
     @CommandLine.Option(
         names = ["-k", "--kafka-servers"],
-        description = ["The kafka servers. Default to \${DEFAULT-VALUE}"]
+        description = ["A comma-separated list of addresses of Kafka brokers. Default to \${DEFAULT-VALUE}"]
     )
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
@@ -272,7 +281,8 @@ data class LoadGenerationParams(
     val totalNumberOfMessages: Int?,
     val batchSize: Int,
     val interBatchDelay: Duration,
-    val messageSizeBytes: Int
+    val messageSizeBytes: Int,
+    val expireAfterTime: Duration?
 ) {
     init {
         when (loadGenerationType) {

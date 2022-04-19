@@ -1,7 +1,6 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
-    id 'application'
 }
 
 description "P2P Testing tools - Fake CA"
@@ -15,16 +14,27 @@ dependencies {
     implementation 'net.corda:corda-crypto'
     implementation 'net.corda:corda-cipher-suite'
 }
-application {
-    mainClass = 'net.corda.p2p.fake.ca.CaMainKt'
+
+task appJar(type: Jar) {
+    destinationDirectory = file("$buildDir/bin")
+    archiveBaseName = "corda-${project.name}"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+    manifest {
+        attributes 'Main-Class': "net.corda.p2p.fake.ca.CaMainKt"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
 }
 
 publishing {
     publications {
         maven(MavenPublication) {
             groupId project.group
-            artifact distZip
-            artifact distTar
+            artifact appJar
         }
     }
 }

@@ -8,7 +8,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.virtualnode.VirtualNodeInfo
@@ -138,7 +137,7 @@ class CordaVNode @Activate constructor(
     private fun createRPCStartFlow(clientId: String, virtualNodeInfo: VirtualNodeInfo): StartFlow {
         return StartFlow(
             FlowStartContext(
-                FlowStatusKey(clientId, virtualNodeInfo.holdingIdentity),
+                FlowKey(clientId, virtualNodeInfo.holdingIdentity),
                 FlowInitiatorType.RPC,
                 clientId,
                 virtualNodeInfo.holdingIdentity,
@@ -166,15 +165,15 @@ class CordaVNode @Activate constructor(
                 dumpHeap("created")
 
                 val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
-                val flowKey = FlowKey(generateRandomId(), holdingIdentity.toAvro())
-                val record = Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, rpcStartFlow))
+                val flowId = generateRandomId()
+                val record = Record(FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, rpcStartFlow))
                 flowEventProcessorFactory.create(smartConfig).apply {
                     val result = onNext(null, record)
                     result.responseEvents.singleOrNull { evt ->
                         evt.topic == FLOW_EVENT_TOPIC
                     }?.also { evt ->
                         @Suppress("unchecked_cast")
-                        onNext(result.updatedState, evt as Record<FlowKey, FlowEvent>)
+                        onNext(result.updatedState, evt as Record<String, FlowEvent>)
                     }
                 }
             } finally {

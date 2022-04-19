@@ -80,10 +80,12 @@ class PermissionUserManagerImplTest {
     private val manager =
         PermissionUserManagerImpl(config, rpcSender, permissionManagementCache, permissionValidationCache, passwordService)
 
+    private val defaultTimeout = Duration.ofSeconds(30)
+
     @Test
     fun `create a user sends rpc request and converts result`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponse)
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
@@ -122,7 +124,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `create a user sends rpc request and converts result correctly when no password is provided`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponseWithoutPassword)
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponseWithoutPassword)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
@@ -161,7 +163,7 @@ class PermissionUserManagerImplTest {
     fun `create a user throws exception if result is not an avro User`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         val incorrectResponse = PermissionManagementResponse(true)
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(incorrectResponse)
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(incorrectResponse)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
@@ -221,7 +223,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `add role to user sends rpc request and converts result to response dto`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponse)
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
 
         val capture = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
@@ -244,7 +246,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `add role to user throws if exception is returned`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenThrow(IllegalArgumentException("Invalid user."))
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(IllegalArgumentException("Invalid user."))
 
         val capture = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
@@ -266,7 +268,7 @@ class PermissionUserManagerImplTest {
         val permissionManagementResponse = PermissionManagementResponse(avroUser)
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponse)
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
 
         val capture = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
@@ -288,7 +290,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `remove role from user throws if exception is returned`() {
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
-        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenThrow(IllegalArgumentException("Invalid user."))
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(IllegalArgumentException("Invalid user."))
 
         val capture = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)

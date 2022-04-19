@@ -1,15 +1,11 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'corda.common-app'
+    id 'corda.common-library'
 }
 
 description "P2P Testing tools - P2P Setup tool"
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:osgi.core"
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
@@ -28,12 +24,30 @@ dependencies {
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "com.lmax:disruptor:$disruptorVersion"
+    runtimeOnly "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
 
-    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
-    runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    implementation project(":libs:messaging:kafka-message-bus-impl")
+    implementation project(":libs:messaging:messaging-impl")
+    implementation project(":libs:messaging:message-bus")
+    implementation project(":libs:schema-registry:schema-registry-impl")
+    implementation project(":libs:lifecycle:lifecycle-impl")
+    implementation project(':libs:schema-registry:schema-registry')
+    implementation project(':libs:lifecycle:registry')
+
+    testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
+}
+task appJar(type: Jar) {
+    destinationDirectory = file("$buildDir/bin")
+    archiveBaseName = "corda-${project.name}"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+    manifest {
+        attributes 'Main-Class': "net.corda.p2p.setup.SetupKt"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
 }

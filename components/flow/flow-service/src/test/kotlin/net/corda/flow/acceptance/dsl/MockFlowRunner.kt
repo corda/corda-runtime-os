@@ -15,7 +15,7 @@ class MockFlowRunner : FlowRunner {
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
-        val flowId = checkNotNull(context.checkpoint?.flowKey?.flowId) { "No flow id is set, context: $context" }
+        val flowId = checkNotNull(context.checkpoint.flowId) { "No flow id is set, context: $context" }
         val fiber = checkNotNull(fibers[flowId]) { "No flow with flow id: $flowId has been set up within the mocking framework" }
         return CompletableFuture.completedFuture(fiber.dequeueSuspension())
     }

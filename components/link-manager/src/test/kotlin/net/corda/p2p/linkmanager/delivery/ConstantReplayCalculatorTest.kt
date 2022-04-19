@@ -7,9 +7,8 @@ import java.time.Duration
 class ConstantReplayCalculatorTest {
 
     companion object {
-        private val CONFIG = ReplayScheduler.ReplaySchedulerConfig(
+        private val CONFIG = ReplayScheduler.ReplaySchedulerConfig.ConstantReplaySchedulerConfig(
             Duration.ofSeconds(1),
-            Duration.ofSeconds(7),
             100
         )
     }
@@ -18,10 +17,10 @@ class ConstantReplayCalculatorTest {
     fun `ReplayCalculator calculates intervals correctly`() {
         val calculator = ConstantReplayCalculator(false, CONFIG)
         val firstInterval = calculator.calculateReplayInterval()
-        assertEquals(CONFIG.baseReplayPeriod, firstInterval)
+        assertEquals(CONFIG.replayPeriod, firstInterval)
         val secondInterval = calculator.calculateReplayInterval(firstInterval)
-        assertEquals(CONFIG.baseReplayPeriod, secondInterval)
+        assertEquals(CONFIG.replayPeriod, secondInterval)
         val thirdInterval = calculator.calculateReplayInterval(secondInterval)
-        assertEquals(CONFIG.baseReplayPeriod, thirdInterval)
+        assertEquals(CONFIG.replayPeriod, thirdInterval)
     }
 }

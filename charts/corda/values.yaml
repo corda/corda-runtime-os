@@ -21,6 +21,15 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
+# resource limits and requests configuration for the Corda worker containers
+resources:
+  # -- the CPU/memory resource limits for the Corda worker containers
+
+  limits: {}
+  # -- the CPU/memory resource request for the Corda worker containers
+
+  requests: {}
+
 # Database configuration
 db:
   # Cluster database configuration
@@ -49,7 +58,6 @@ kafka:
 
 # worker configuration
 workers:
-
   # crypto worker configuration
   crypto:
     # crypto worker image configuration
@@ -68,6 +76,15 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the crypto worker until the debugger is attached
       suspend: false
+    # resource limits and requests configuration for the crypto worker containers
+
+    resources:
+      # -- the CPU/memory resource requests for the crypto worker containers
+
+      requests: {}
+      # -- the CPU/memory resource limits for the crypto worker containers
+
+      limits: {}
 
   # DB worker configuration
   db:
@@ -88,11 +105,18 @@ workers:
       # -- if debug is enabled, suspend the DB worker until the debugger is attached
       suspend: false
     # -- DB worker salt, defaults to a value randomly-generated on install
-
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
+    passphrase: ""    
+    # resource limits and requests configuration for the DB worker containers.
 
-    passphrase: ""
+    resources:
+      # -- the CPU/memory resource requests for the DB worker containers
+
+      requests: {}
+      # -- the CPU/memory resource limits for the DB worker containers
+
+      limits: {}
 
   # flow worker configuration
   flow:
@@ -112,6 +136,15 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the flow worker until the debugger is attached
       suspend: false
+    # resource limits and requests configuration for the flow worker containers.
+
+    resources:
+      # -- the CPU/memory resource requests for the flow worker containers
+
+      requests: {}
+      # -- the CPU/memory resource limits for the flow worker containers
+
+      limits: {}
 
   # RPC worker configuration
   rpc:
@@ -131,3 +164,11 @@ workers:
       enabled: false
       # -- if debug is enabled, suspend the RPC worker until the debugger is attached
       suspend: false
+    # -- resource limits and requests configuration for the RPC worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the RPC worker containers
+
+      requests: {}
+      # -- the CPU/memory resource limits for the RPC worker containers
+
+      limits: {}

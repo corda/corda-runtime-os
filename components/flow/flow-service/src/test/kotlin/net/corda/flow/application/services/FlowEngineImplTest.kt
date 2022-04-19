@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 
 class FlowEngineImplTest {
     private val flowFiberService = MockFlowFiberService()
-    private val flowStackService = flowFiberService.flowFiberExecutionContext.flowStackService
+    private val flowStack = flowFiberService.flowStack
     private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxDependencyInjector
     private val flowFiber = flowFiberService.flowFiber
     private val flowStackItem = FlowStackItem()
@@ -27,11 +27,12 @@ class FlowEngineImplTest {
     @BeforeEach
     fun setup() {
         whenever(subFlow.call()).thenReturn(result)
-        whenever(flowStackService.pop()).thenReturn(flowStackItem)
+        whenever(flowStack.peek()).thenReturn(flowStackItem)
+        whenever(flowStack.pop()).thenReturn(flowStackItem)
     }
 
     @Test
-    fun `get virtual node name returns holders x500 name`(){
+    fun `get virtual node name returns holders x500 name`() {
         val flowEngine = FlowEngineImpl(flowFiberService)
         val expected = MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB")
         assertThat(flowEngine.virtualNodeName).isEqualTo(expected)
@@ -45,10 +46,10 @@ class FlowEngineImplTest {
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStackService).push(subFlow)
+        verify(flowStack).push(subFlow)
 
         // verify ordered calls
-        inOrder(sandboxDependencyInjector, flowFiber, flowStackService, subFlow) {
+        inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
             verify(sandboxDependencyInjector).injectServices(subFlow)
             verify(subFlow).call()
 
@@ -57,7 +58,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
 
-                assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
             }
         }
     }
@@ -67,7 +68,7 @@ class FlowEngineImplTest {
         val flowEngine = FlowEngineImpl(flowFiberService)
         val error = Exception()
 
-        whenever(subFlow.call()).doAnswer{ throw error}
+        whenever(subFlow.call()).doAnswer { throw error }
 
         val thrownError = assertThrows<Exception> { flowEngine.subFlow(subFlow) }
 
@@ -75,10 +76,10 @@ class FlowEngineImplTest {
 
         // verify unordered calls
         verify(sandboxDependencyInjector).injectServices(subFlow)
-        verify(flowStackService).push(subFlow)
+        verify(flowStack).push(subFlow)
 
         // verify ordered calls
-        inOrder(sandboxDependencyInjector, flowFiber, flowStackService, subFlow) {
+        inOrder(sandboxDependencyInjector, flowFiber, flowStack, subFlow) {
             verify(sandboxDependencyInjector).injectServices(subFlow)
             verify(subFlow).call()
 
@@ -88,7 +89,7 @@ class FlowEngineImplTest {
                 verify(flowFiber).suspend(capture())
 
                 assertThat(firstValue.exception).isEqualTo(error)
-                assertThat(firstValue.result).isEqualTo(flowStackItem)
+                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
             }
         }
     }

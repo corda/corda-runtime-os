@@ -27,7 +27,7 @@ fun generateMessage(messageType: SessionMessageType, instant: Instant, messageDi
 fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND): SessionEvent {
     val sessionInit = SessionInit.newBuilder()
         .setCpiId("cpiId")
-        .setFlowKey(null)
+        .setFlowId(null)
         .setFlowName("someflow")
         .setPayload(ByteBuffer.wrap("some bytes".toByteArray()))
         .build()

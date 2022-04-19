@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.sandbox
 
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.injection.CordaInject
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**

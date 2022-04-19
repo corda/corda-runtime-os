@@ -6,8 +6,8 @@ import net.corda.data.config.Configuration
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -28,8 +28,8 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.session.mapper.service.FlowMapperService
 import net.corda.test.flow.util.buildSessionEvent
+import net.corda.session.mapper.service.FlowMapperService
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -84,12 +84,10 @@ class FlowMapperServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
         //send 2 session init, 1 is duplicate
-        val identity = HoldingIdentity(testId, testId)
-        val flowKey = FlowKey(testId, HoldingIdentity(testId, testId))
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                    testId, testId, flowKey,null
+                    testId, testId, testId,null
                 ))
             )
         )
@@ -116,10 +114,14 @@ class FlowMapperServiceIntegrationTest {
 
         //validate flow event topic
         val flowEventLatch = CountDownLatch(1)
+        val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
-            TestFlowMessageProcessor(flowEventLatch, identity, 1), SmartConfigImpl.empty(), null
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC, ),
+            testProcessor,
+            SmartConfigImpl.empty(),
+            null
         )
+
         flowEventSub.start()
         assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
         flowEventSub.stop()
@@ -133,7 +135,7 @@ class FlowMapperServiceIntegrationTest {
         //2 startRPCRecord, 1 duplicate
         val identity = HoldingIdentity(testId, testId)
         val context = FlowStartContext(
-            FlowStatusKey("clientId", identity),
+            FlowKey("clientId", identity),
             FlowInitiatorType.RPC,
             "clientId",
             identity,
@@ -154,10 +156,14 @@ class FlowMapperServiceIntegrationTest {
 
         //flow event subscription to validate outputs
         val flowEventLatch = CountDownLatch(2)
+        val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 2, StartFlow::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
-            TestFlowMessageProcessor(flowEventLatch, identity, 2), SmartConfigImpl.empty(), null
+            testProcessor,
+            SmartConfigImpl.empty(),
+            null
         )
+
         flowEventSub.start()
 
         //cleanup

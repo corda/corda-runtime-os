@@ -1,7 +1,5 @@
 package net.corda.flow.sandbox
 
-import java.nio.file.Path
-import java.util.UUID
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.testing.sandboxes.SandboxSetup
@@ -28,6 +26,8 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
+import java.util.UUID
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -94,7 +94,9 @@ class SandboxInjectableTest {
                         assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
                     }
 
-
+                // Given the proposed changes to Corda services, this test should no longer be checking if services are
+                // loaded correctly - it's likely this API will significantly change. Proof that custom digest services
+                // still function is however valid.
                 assertThat(serviceClasses.any{ DigestService::class.java.isAssignableFrom(it)}).isTrue
             }
         } finally {

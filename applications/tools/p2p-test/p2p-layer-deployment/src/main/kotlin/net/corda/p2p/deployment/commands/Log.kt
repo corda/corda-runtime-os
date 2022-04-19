@@ -83,8 +83,16 @@ class Log : Runnable {
             .filter { it.contains(',') }
             .map {
                 it.split(",")
-            }.associate {
-                it[1] to it[0]
-            }
+            }.groupBy {
+                it[1]
+            }.flatMap { entry ->
+                if (entry.value.size == 1) {
+                    listOf(entry.key to entry.value.first().first())
+                } else {
+                    entry.value.map {
+                        it.first() to it.first()
+                    }
+                }
+            }.toMap()
     }
 }

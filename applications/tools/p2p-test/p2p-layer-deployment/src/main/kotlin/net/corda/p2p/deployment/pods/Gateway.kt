@@ -1,18 +1,17 @@
 package net.corda.p2p.deployment.pods
 
 class Gateway(
-    index: Int,
     kafkaServers: String,
     details: P2PDeploymentDetails,
-) : P2pPod(kafkaServers, index, details) {
+) : P2pPod(kafkaServers, details, details.gatewayCount) {
     companion object {
         fun gateways(
             kafkaServers: String,
             details: P2PDeploymentDetails,
         ): Collection<Yamlable> {
-            val gateways = (1..details.gatewayCount).map {
-                Gateway(it, kafkaServers, details)
-            }
+            val gateways = listOf(
+                Gateway(kafkaServers, details)
+            )
             val balancer = when (details.lbType) {
                 LbType.K8S -> K8sLoadBalancer(
                     "p2p-gateway",

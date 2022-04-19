@@ -2,14 +2,13 @@ package net.corda.flow.acceptance.dsl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.Checkpoint
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.acceptance.getBasicFlowStartContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
+import net.corda.flow.pipeline.factory.impl.FlowRecordFactoryImpl
 import net.corda.flow.pipeline.handlers.events.SessionEventHandler
 import net.corda.flow.pipeline.handlers.events.StartFlowEventHandler
 import net.corda.flow.pipeline.handlers.events.WakeupEventHandler
@@ -34,6 +33,8 @@ import net.corda.flow.pipeline.handlers.waiting.sessions.SessionInitWaitingForHa
 import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.pipeline.sessions.FlowSessionManagerImpl
+import net.corda.flow.state.impl.FlowCheckpointFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -58,6 +59,7 @@ class FlowEventDSL {
             FlowEventPipelineFactoryImpl(
                 flowRunner,
                 flowGlobalPostProcessor,
+                FlowCheckpointFactoryImpl(),
                 flowEventHandlers,
                 flowWaitingForHandlers,
                 flowRequestHandlers
@@ -90,7 +92,10 @@ class FlowEventDSL {
         }
     }
 
-    fun startedFlowFiber(flowId: String = UUID.randomUUID().toString(), fiber: MockFlowFiber.() -> Unit): MockFlowFiber {
+    fun startedFlowFiber(
+        flowId: String = UUID.randomUUID().toString(),
+        fiber: MockFlowFiber.() -> Unit
+    ): MockFlowFiber {
         val (mockFlowFiber, response) = startFlow(flowId)
         updateDSLStateWithEventResponse(flowId, response)
         fiber(mockFlowFiber)
@@ -110,10 +115,10 @@ class FlowEventDSL {
                 throw IllegalStateException("Must be a ${FlowEvent::class.simpleName} or ${ProcessLastOutputFlowEvent::class.simpleName}")
             }
         }
-        val flowId = event.flowKey.flowId
+        val flowId = event.flowId
         return processor.onNext(
             state = checkpoints[flowId],
-            event = Record(Schemas.Flow.FLOW_EVENT_TOPIC, event.flowKey, event)
+            event = Record(Schemas.Flow.FLOW_EVENT_TOPIC, event.flowId, event)
         ).also { updateDSLStateWithEventResponse(flowId, it) }
     }
 
@@ -128,7 +133,7 @@ class FlowEventDSL {
             .setFlowStartArgs(" { \"json\": \"args\" }")
             .build()
 
-        val key = FlowKey(flowId, HoldingIdentity("x500 name", "group id"))
+        val key = flowId
 
         val event = FlowEvent(key, startRPCFlowPayload)
 
@@ -148,8 +153,11 @@ class FlowEventDSL {
 }
 
 private val sessionManager = SessionManagerImpl()
+private val recordFactory = FlowRecordFactoryImpl()
 
-private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager)
+private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
+
+private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager, recordFactory)
 
 private val sandboxGroupContext = mock<SandboxGroupContext>()
 
@@ -167,25 +175,25 @@ private val flowEventHandlers = listOf(
 private val flowWaitingForHandlers = listOf(
     StartFlowWaitingForHandler(),
     WakeupWaitingForHandler(),
-    SessionConfirmationWaitingForHandler(sessionManager),
-    SessionDataWaitingForHandler(sessionManager),
+    SessionConfirmationWaitingForHandler(flowSessionManager),
+    SessionDataWaitingForHandler(flowSessionManager),
     SessionInitWaitingForHandler(sessionManager)
 )
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
-    CloseSessionsRequestHandler(sessionManager),
-    FlowFailedRequestHandler(mock()),
-    FlowFinishedRequestHandler(mock()),
-    ForceCheckpointRequestHandler(),
+    CloseSessionsRequestHandler(flowSessionManager, recordFactory),
+    FlowFailedRequestHandler(mock(), recordFactory),
+    FlowFinishedRequestHandler(mock(), recordFactory),
+    ForceCheckpointRequestHandler(recordFactory),
     GetFlowInfoRequestHandler(),
-    InitiateFlowRequestHandler(sessionManager),
-    ReceiveRequestHandler(),
-    SendAndReceiveRequestHandler(sessionManager),
-    SendRequestHandler(sessionManager),
+    InitiateFlowRequestHandler(flowSessionManager),
+    ReceiveRequestHandler(flowSessionManager, recordFactory),
+    SendAndReceiveRequestHandler(flowSessionManager, recordFactory),
+    SendRequestHandler(flowSessionManager, recordFactory),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
-    SubFlowFinishedRequestHandler(),
+    SubFlowFinishedRequestHandler(flowSessionManager, recordFactory),
     WaitForSessionConfirmationsRequestHandler()
 )
 

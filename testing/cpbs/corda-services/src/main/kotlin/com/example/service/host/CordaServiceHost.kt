@@ -3,7 +3,7 @@ package com.example.service.host
 import com.example.service.ComponentOneCordaService
 import com.example.service.ComponentTwoCordaService
 import com.example.service.PojoCordaService
-import net.corda.v5.application.services.CordaService
+import net.corda.v5.services.CordaService
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate

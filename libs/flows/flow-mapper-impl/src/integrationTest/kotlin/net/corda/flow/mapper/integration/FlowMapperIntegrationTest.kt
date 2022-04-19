@@ -3,7 +3,6 @@ package net.corda.flow.mapper.integration
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -38,7 +37,7 @@ class FlowMapperIntegrationTest {
     private val identity = HoldingIdentity("x500", "grp1")
     private val startRPCFlow = StartFlow(
         FlowStartContext(
-            FlowStatusKey("a", identity),
+            FlowKey("a", identity),
             FlowInitiatorType.RPC,
             "clientId",
             identity,
@@ -61,8 +60,7 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key::class.java).isEqualTo(FlowKey::class.java)
-        assertThat(state?.flowKey).isEqualTo(outputEvent.key)
+        assertThat(state?.flowId).isEqualTo(outputEvent.key)
         assertThat(outputEvent.value).isNotNull
         assertThat(outputEvent.value!!::class.java).isEqualTo(FlowEvent::class.java)
     }
@@ -73,7 +71,10 @@ class FlowMapperIntegrationTest {
         val flowMapperEvent = FlowMapperEvent(scheduleCleanup)
         val inputKey = "sessionId"
         val result =
-            onNext(FlowMapperState(FlowKey(), null, FlowMapperStateType.OPEN), Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+            onNext(
+                FlowMapperState("FlowKey", null, FlowMapperStateType.OPEN),
+                Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent)
+            )
 
         val state = result.updatedState
         val outputEvent = result.responseEvents
@@ -89,7 +90,10 @@ class FlowMapperIntegrationTest {
         val flowMapperEvent = FlowMapperEvent(executeCleanup)
         val inputKey = "sessionId"
         val result =
-            onNext(FlowMapperState(FlowKey(), null, FlowMapperStateType.OPEN), Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
+            onNext(
+                FlowMapperState("FlowKey", null, FlowMapperStateType.OPEN),
+                Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent)
+            )
 
         val state = result.updatedState
         val outputEvent = result.responseEvents
@@ -100,11 +104,8 @@ class FlowMapperIntegrationTest {
 
     @Test
     fun `Send SessionInit`() {
-        val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId"
-        val sessionInit = SessionInit(
-            "flowName", "cpiId", flowKey, null
-        )
+        val sessionInit = SessionInit("flowName", "cpiId", "flowId", null)
 
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit)
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
@@ -113,8 +114,7 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key).isEqualTo(inputKey)
-        assertThat(state?.flowKey).isNotNull
+        assertThat(state?.flowId).isNotNull
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         assertThat(outputEventPayload::class.java).isEqualTo(AppMessage::class.java)
@@ -126,7 +126,7 @@ class FlowMapperIntegrationTest {
         val sessionInit = SessionInit(
             "flowName",
             "cpiId",
-            null,
+            "flow id",
             null
         )
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit)
@@ -136,8 +136,7 @@ class FlowMapperIntegrationTest {
         val state = result.updatedState
         val outputEvent = result.responseEvents.first()
 
-        assertThat(outputEvent.key::class.java).isEqualTo(FlowKey::class.java)
-        assertThat(state?.flowKey).isNotNull
+        assertThat(state?.flowId).isNotNull
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputFlowEvent: FlowEvent = uncheckedCast(outputEventPayload)
@@ -147,11 +146,11 @@ class FlowMapperIntegrationTest {
 
     @Test
     fun `Send SessionData as initiator`() {
-        val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId"
-        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
@@ -163,15 +162,15 @@ class FlowMapperIntegrationTest {
 
     @Test
     fun `Receive SessionData as initiator`() {
-        val flowKey = FlowKey("flowId", HoldingIdentity("x500-2", "group"))
         val inputKey = "sessionId"
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
-        assertThat(outputEvent.key).isEqualTo(flowKey)
+        assertThat(outputEvent.key).isEqualTo("flowKey")
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputFlowEvent: FlowEvent = uncheckedCast(outputEventPayload)
@@ -180,11 +179,11 @@ class FlowMapperIntegrationTest {
 
     @Test
     fun `Send SessionData as initiated`() {
-        val flowKey = FlowKey("flowId", HoldingIdentity("x500-1", "group"))
         val inputKey = "sessionId-INITIATED"
-        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
@@ -196,15 +195,15 @@ class FlowMapperIntegrationTest {
 
     @Test
     fun `Receive SessionData as initiated`() {
-        val flowKey = FlowKey("flowId", HoldingIdentity("x500-2", "group"))
         val inputKey = "sessionId-INITIATED"
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
+        val sessionEvent =
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray())))
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
-        val flowMapperState = FlowMapperState(flowKey, null, FlowMapperStateType.OPEN)
+        val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
         val outputEvent = result.responseEvents.first()
-        assertThat(outputEvent.key).isEqualTo(flowKey)
+        assertThat(outputEvent.key).isEqualTo("flowKey")
 
         val outputEventPayload = outputEvent.value ?: fail("Payload was null")
         val outputFlowEvent: FlowEvent = uncheckedCast(outputEventPayload)

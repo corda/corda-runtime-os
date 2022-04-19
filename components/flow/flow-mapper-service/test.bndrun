@@ -4,6 +4,9 @@
 -runtrace: true
 #-runjdb: 5005
 
+# Enable debugging.
+# -runjdb: 1044
+
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\
