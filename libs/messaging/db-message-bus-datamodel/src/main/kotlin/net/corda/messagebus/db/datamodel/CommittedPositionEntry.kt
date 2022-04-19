@@ -57,9 +57,7 @@ class CommittedPositionEntry(
 @Embeddable
 data class CommittedOffsetEntryKey(
     val topic: String,
-    @Column(name = "consumer_group")
     val consumerGroup: String,
     val partition: Int,
-    @Column(name = "record_offset")
     val recordPosition: Long
 ) : Serializable

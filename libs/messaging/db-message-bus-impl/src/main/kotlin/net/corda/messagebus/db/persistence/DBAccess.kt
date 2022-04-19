@@ -1,6 +1,7 @@
 package net.corda.messagebus.db.persistence
 
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.db.datamodel.CommittedOffsetEntryKey
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -178,8 +179,11 @@ class DBAccess(
 
     fun writeOffsets(offsets: List<CommittedPositionEntry>) {
         executeWithErrorHandling("write offsets") { entityManager ->
-            offsets.forEach { offset ->
-                entityManager.merge(offset)
+            offsets.forEach {
+                val key = CommittedOffsetEntryKey(it.topic, it.consumerGroup, it.partition, it.recordPosition)
+                if (entityManager.find(CommittedPositionEntry::class.java, key) == null) {
+                    entityManager.persist(it)
+                }
             }
         }
     }
