@@ -1,4 +1,4 @@
-package net.corda.crypto.client.impl._utils
+package net.corda.crypto.client.impl.infra
 
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender

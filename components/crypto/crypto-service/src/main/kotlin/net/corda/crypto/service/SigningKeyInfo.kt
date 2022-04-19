@@ -2,6 +2,7 @@ package net.corda.crypto.service
 
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class SigningKeyInfo(
     val id: String,
     val tenantId: String,

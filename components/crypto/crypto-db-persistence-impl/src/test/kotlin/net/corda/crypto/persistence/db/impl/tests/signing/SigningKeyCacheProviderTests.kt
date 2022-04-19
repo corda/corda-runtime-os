@@ -2,8 +2,8 @@ package net.corda.crypto.persistence.db.impl.tests.signing
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheProviderImpl
-import net.corda.crypto.persistence.db.impl.tests._utils.TestConfigurationReadService
-import net.corda.crypto.persistence.db.impl.tests._utils.TestDbConnectionManager
+import net.corda.crypto.persistence.db.impl.tests.infra.TestConfigurationReadService
+import net.corda.crypto.persistence.db.impl.tests.infra.TestDbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory

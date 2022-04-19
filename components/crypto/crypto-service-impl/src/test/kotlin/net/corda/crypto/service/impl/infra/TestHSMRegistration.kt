@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl._utils
+package net.corda.crypto.service.impl.infra
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.core.CryptoConsts

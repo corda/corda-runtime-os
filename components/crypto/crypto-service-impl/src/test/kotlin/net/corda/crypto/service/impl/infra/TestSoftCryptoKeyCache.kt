@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl._utils
+package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.persistence.SoftCryptoKeyCache
 import net.corda.crypto.persistence.SoftCryptoKeyCacheActions

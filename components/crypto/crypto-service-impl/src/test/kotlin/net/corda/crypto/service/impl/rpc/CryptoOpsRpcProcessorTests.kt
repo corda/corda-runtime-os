@@ -5,7 +5,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.service.impl._utils.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey

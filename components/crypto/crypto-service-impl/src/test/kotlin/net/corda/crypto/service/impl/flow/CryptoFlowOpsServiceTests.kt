@@ -3,7 +3,7 @@ package net.corda.crypto.service.impl.flow
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
-import net.corda.crypto.service.impl._utils.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName

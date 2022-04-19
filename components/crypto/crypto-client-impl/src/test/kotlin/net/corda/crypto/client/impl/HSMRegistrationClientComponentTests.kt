@@ -2,9 +2,9 @@ package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoPublishResult
-import net.corda.crypto.client.impl._utils.PublishActResult
-import net.corda.crypto.client.impl._utils.TestConfigurationReadService
-import net.corda.crypto.client.impl._utils.act
+import net.corda.crypto.client.impl.infra.PublishActResult
+import net.corda.crypto.client.impl.infra.TestConfigurationReadService
+import net.corda.crypto.client.impl.infra.act
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand

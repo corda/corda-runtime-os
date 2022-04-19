@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl._utils
+package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl

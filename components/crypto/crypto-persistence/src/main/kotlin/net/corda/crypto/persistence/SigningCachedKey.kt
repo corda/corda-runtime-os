@@ -2,6 +2,7 @@ package net.corda.crypto.persistence
 
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class SigningCachedKey(
     val id: String,
     val tenantId: String,

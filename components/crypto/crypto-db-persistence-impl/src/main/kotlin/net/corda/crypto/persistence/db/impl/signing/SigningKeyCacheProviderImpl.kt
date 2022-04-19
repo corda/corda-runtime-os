@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("LongParameterList")
 @Component(service = [SigningKeyCacheProvider::class])
 class SigningKeyCacheProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)

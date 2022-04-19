@@ -16,6 +16,7 @@ import net.corda.schema.configuration.ConfigKeys
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     myName: LifecycleCoordinatorName,

@@ -1,10 +1,10 @@
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.client.impl._utils.SendActResult
-import net.corda.crypto.client.impl._utils.TestConfigurationReadService
-import net.corda.crypto.client.impl._utils.act
-import net.corda.crypto.client.impl._utils.generateKeyPair
-import net.corda.crypto.client.impl._utils.signData
+import net.corda.crypto.client.impl.infra.SendActResult
+import net.corda.crypto.client.impl.infra.TestConfigurationReadService
+import net.corda.crypto.client.impl.infra.act
+import net.corda.crypto.client.impl.infra.generateKeyPair
+import net.corda.crypto.client.impl.infra.signData
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER

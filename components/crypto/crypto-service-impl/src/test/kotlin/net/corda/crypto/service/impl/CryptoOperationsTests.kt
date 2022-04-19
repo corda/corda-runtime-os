@@ -7,8 +7,8 @@ import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.impl._utils.TestServicesFactory
-import net.corda.crypto.service.impl._utils.generateKeyPair
+import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.infra.generateKeyPair
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -36,7 +36,6 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
 import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.CoreMatchers.hasItem
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.collection.IsCollectionWithSize
 import org.hamcrest.collection.IsEmptyCollection

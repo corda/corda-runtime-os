@@ -2,7 +2,6 @@ package net.corda.crypto.service.impl
 
 import net.corda.data.KeyValuePair
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 

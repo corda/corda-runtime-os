@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence.db.impl.tests._utils
+package net.corda.crypto.persistence.db.impl.tests.infra
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory

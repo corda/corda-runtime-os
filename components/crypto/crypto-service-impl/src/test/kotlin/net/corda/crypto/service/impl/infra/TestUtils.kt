@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl._utils
+package net.corda.crypto.service.impl.infra
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.hamcrest.MatcherAssert

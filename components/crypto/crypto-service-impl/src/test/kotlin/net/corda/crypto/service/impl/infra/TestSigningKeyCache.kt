@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl._utils
+package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.persistence.SigningCachedKey
@@ -117,6 +117,7 @@ class TestSigningKeyCacheActions(
     override fun find(publicKey: PublicKey): SigningCachedKey? =
         keys[publicKeyIdOf(publicKey)]
 
+    @Suppress("ComplexMethod")
     override fun lookup(
         skip: Int,
         take: Int,

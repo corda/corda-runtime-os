@@ -221,6 +221,7 @@ class SigningKeyCacheActionsImpl(
             }
         }
 
+        @Suppress("SpreadOperator", "ComplexMethod")
         fun build(skip: Int, take: Int, orderBy: SigningKeyOrderBy): TypedQuery<SigningKeyEntity> {
             cr.where(cb.and(*predicates.toTypedArray()))
             when (orderBy) {

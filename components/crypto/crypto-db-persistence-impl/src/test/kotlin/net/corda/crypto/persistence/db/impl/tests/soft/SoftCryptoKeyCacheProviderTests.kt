@@ -2,8 +2,8 @@ package net.corda.crypto.persistence.db.impl.tests.soft
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyCacheProviderImpl
-import net.corda.crypto.persistence.db.impl.tests._utils.TestConfigurationReadService
-import net.corda.crypto.persistence.db.impl.tests._utils.TestDbConnectionManager
+import net.corda.crypto.persistence.db.impl.tests.infra.TestConfigurationReadService
+import net.corda.crypto.persistence.db.impl.tests.infra.TestDbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig

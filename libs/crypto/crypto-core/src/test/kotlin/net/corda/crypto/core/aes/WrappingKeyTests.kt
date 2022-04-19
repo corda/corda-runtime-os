@@ -42,6 +42,7 @@ class WrappingKeyTests {
                     if(ECDSA_SECP256R1_SHA256_TEMPLATE.algorithmOIDs.contains(id)) {
                         ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC")
                     } else {
+                        @Suppress("TooGenericExceptionThrown")
                         throw Exception()
                     }
                 }

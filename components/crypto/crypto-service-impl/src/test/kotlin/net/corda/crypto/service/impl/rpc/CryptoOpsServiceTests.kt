@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.rpc
 
-import net.corda.crypto.service.impl._utils.TestConfigurationReadService
-import net.corda.crypto.service.impl._utils.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestConfigurationReadService
+import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.signing.SigningServiceFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
