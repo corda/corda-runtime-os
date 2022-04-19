@@ -128,14 +128,11 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         val processor = CryptoFlowOpsProcessor(
             cryptoOpsClient = cryptoOpsClient
         )
-        val bootConfig = event.config[ConfigKeys.BOOT_CONFIG]
-        val instanceId = if (bootConfig?.hasPath("instanceId") == true) bootConfig.getInt("instanceId") else 1
         subscription?.close()
         subscription = subscriptionFactory.createDurableSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = GROUP_NAME,
                 eventTopic = FLOW_OPS_MESSAGE_TOPIC,
-                instanceId = instanceId
             ),
             processor = processor,
             messagingConfig = messagingConfig,
