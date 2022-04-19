@@ -1,7 +1,5 @@
 package net.corda.sandboxgroupcontext.test
 
-import net.corda.cpk.read.CpkReadService
-import java.nio.file.Path
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
@@ -25,7 +23,13 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
 
+/**
+ * The Corda service API is scheduled for large scale changes, and as a result these tests are no longer necessarily
+ * valid. The current API prevents these from passing, but as this may be removed entirely these tests may also be
+ * scheduled for deletion.
+ */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class CordaServicesTest {

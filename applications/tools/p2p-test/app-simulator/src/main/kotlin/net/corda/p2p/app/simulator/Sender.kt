@@ -17,6 +17,8 @@ import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
@@ -34,6 +36,7 @@ class Sender(private val publisherFactory: PublisherFactory,
              private val kafkaServers: String,
              private val clients: Int,
              private val instanceId: String,
+             private val clock: Clock
              ): Closeable {
 
     companion object {
@@ -127,6 +130,14 @@ class Sender(private val publisherFactory: PublisherFactory,
         }
     }
 
+    private fun calculateTtl(expireAfterTime: Duration?): Long? {
+        return if(expireAfterTime == null) {
+            null
+        } else {
+            expireAfterTime.toMillis() + clock.instant().toEpochMilli()
+        }
+    }
+
     private fun moreMessagesToSend(messagesSent: Int, loadGenerationParams: LoadGenerationParams): Boolean {
         if(stop) {
             return false
@@ -144,10 +155,11 @@ class Sender(private val publisherFactory: PublisherFactory,
         srcIdentity: HoldingIdentity,
         messageSize: Int,
     ): Pair<String, AppMessage> {
+        val ttl = calculateTtl(loadGenParams.expireAfterTime)
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
-            null,
+            ttl,
             messageId,
             messageId,
             "app-simulator"

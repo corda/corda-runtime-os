@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.fiber.FlowContinuation
@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -34,12 +35,12 @@ import java.util.stream.Stream
 
 class FlowEventPipelineImplTest {
 
-    private val flowState = StateMachineState().apply {
-        waitingFor = WaitingFor(Wakeup())
-    }
-    private val checkpoint = Checkpoint().apply {
-        flowState = this@FlowEventPipelineImplTest.flowState
-        fiber = ByteBuffer.wrap(byteArrayOf(0, 0, 0, 0))
+    private val waitingForWakeup = WaitingFor(Wakeup())
+    private val avroCheckpoint  = Checkpoint()
+
+    private val checkpoint = mock<FlowCheckpoint>().apply {
+        whenever(waitingFor).thenReturn(waitingForWakeup)
+        whenever(toAvro()).thenReturn(avroCheckpoint)
     }
 
     private val inputContext = buildFlowEventContext<Any>(checkpoint, "Original")
@@ -96,7 +97,7 @@ class FlowEventPipelineImplTest {
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
-        val flowResult = FlowIORequest.SubFlowFinished(null)
+        val flowResult = FlowIORequest.SubFlowFinished(FlowStackItem())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
         val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
 
@@ -107,7 +108,7 @@ class FlowEventPipelineImplTest {
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
         verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
-        assertThat(state.context.checkpoint!!.fiber).isEqualByComparingTo(expectedFiber)
+        verify(checkpoint).serializedFiber = expectedFiber
         assertThat(state.output).isSameAs(flowResult)
     }
 
@@ -123,8 +124,8 @@ class FlowEventPipelineImplTest {
         val state = pipeline.runOrContinue()
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
-        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
-        assertThat(state.context.checkpoint!!.fiber).isEqualByComparingTo(expectedFiber)
+        verify(flowWaitingForHandler).runOrContinue(inputContext, waitingForWakeup.value)
+        verify(checkpoint).serializedFiber = expectedFiber
         assertThat(state.output).isSameAs(flowResult)
     }
 
@@ -149,28 +150,15 @@ class FlowEventPipelineImplTest {
     @Test
     fun `setCheckpointSuspendedOn sets the checkpoint's suspendedOn property when output is set`() {
         val pipeline = this.pipeline.copy(output = FlowIORequest.ForceCheckpoint)
-        val output = inputContext.copy(Checkpoint().apply {
-            fiber = ByteBuffer.wrap(byteArrayOf(0, 0, 0, 0))
-            flowState = StateMachineState().apply {
-                suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
-                waitingFor = WaitingFor(Wakeup())
-            }
-        })
-        assertEquals(output, pipeline.setCheckpointSuspendedOn().context)
+        pipeline.setCheckpointSuspendedOn()
+        verify(checkpoint).suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
     }
 
     @Test
     fun `setCheckpointSuspendedOn does not set the checkpoint's suspendedOn property when output is not set`() {
-        val pipeline = this.pipeline.copy(
-            context = inputContext.copy(
-                checkpoint = Checkpoint().apply {
-                    flowState = StateMachineState().apply {
-                        suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
-                    }
-                }),
-            output = null
-        )
-        assertEquals(pipeline, pipeline.setCheckpointSuspendedOn())
+        val pipeline = this.pipeline.copy(output = null)
+        pipeline.setCheckpointSuspendedOn()
+        verify(checkpoint, never()).suspendedOn
     }
 
     @Test
@@ -209,6 +197,8 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `toStateAndEventResponse converts the context values into a response`() {
+        val avroCheckpoint  = Checkpoint()
+
         val records = listOf(
             Record("topic", "key 1", "value 1"),
             Record("topic", "key 2", "value 2")
@@ -218,8 +208,10 @@ class FlowEventPipelineImplTest {
                 outputRecords = records
             )
         )
+        whenever(checkpoint.toAvro()).thenReturn(avroCheckpoint)
+
         assertEquals(
-            StateAndEventProcessor.Response(pipeline.context.checkpoint, records),
+            StateAndEventProcessor.Response(avroCheckpoint, records),
             pipeline.toStateAndEventResponse()
         )
     }
@@ -232,7 +224,7 @@ class FlowEventPipelineImplTest {
             )
         )
         assertEquals(
-            StateAndEventProcessor.Response(pipeline.context.checkpoint, emptyList()),
+            StateAndEventProcessor.Response(avroCheckpoint, emptyList()),
             pipeline.toStateAndEventResponse()
         )
     }
@@ -241,9 +233,12 @@ class FlowEventPipelineImplTest {
     fun `toStateAndEventResponse returns a null checkpoint if the context's checkpoint was null`() {
         val pipeline = this.pipeline.copy(
             context = inputContext.copy(
-                checkpoint = null
+                outputRecords = emptyList()
             )
         )
+
+        whenever(checkpoint.toAvro()).thenReturn(null)
+
         assertEquals(StateAndEventProcessor.Response(null, emptyList()), pipeline.toStateAndEventResponse())
     }
 }

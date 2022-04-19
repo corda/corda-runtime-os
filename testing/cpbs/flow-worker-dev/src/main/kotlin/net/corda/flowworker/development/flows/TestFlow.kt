@@ -5,11 +5,11 @@ import net.corda.flowworker.development.messages.TestFlowOutput
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.flows.flowservices.FlowEngine
-import net.corda.v5.application.injection.CordaInject
-import net.corda.v5.application.services.MemberLookupService
-import net.corda.v5.application.services.json.JsonMarshallingService
-import net.corda.v5.application.services.json.parseJson
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -31,7 +31,7 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
     lateinit var flowEngine: FlowEngine
 
     @CordaInject
-    lateinit var memberLookupService: MemberLookupService
+    lateinit var memberLookupService: MemberLookup
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService

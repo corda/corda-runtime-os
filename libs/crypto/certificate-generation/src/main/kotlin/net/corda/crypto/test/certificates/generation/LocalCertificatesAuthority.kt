@@ -3,7 +3,6 @@ package net.corda.crypto.test.certificates.generation
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
 import org.bouncycastle.asn1.x509.Extension
@@ -29,7 +28,7 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 
 internal open class LocalCertificatesAuthority(
-    private val signatureSchemeTemplate: SignatureSchemeTemplate,
+    private val keysFactoryDefinitions: KeysFactoryDefinitions,
     private val validDuration: Duration,
     private val defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
     firstSerialNumber: Long = 1,
@@ -39,11 +38,11 @@ internal open class LocalCertificatesAuthority(
     private val now = System.currentTimeMillis()
 
     private fun generateKeyPair(): KeyPair {
-        val keysFactory = KeyPairGenerator.getInstance(signatureSchemeTemplate.algorithmName, BouncyCastleProvider())
-        signatureSchemeTemplate.algSpec?.also { spec ->
+        val keysFactory = KeyPairGenerator.getInstance(keysFactoryDefinitions.algorithm.name, BouncyCastleProvider())
+        keysFactoryDefinitions.spec?.also { spec ->
             keysFactory.initialize(spec)
         }
-        signatureSchemeTemplate.keySize?.also {
+        keysFactoryDefinitions.keySize?.also {
             keysFactory.initialize(it)
         }
 
@@ -64,7 +63,10 @@ internal open class LocalCertificatesAuthority(
             true,
             basicConstraints
         )
-        val signatureAlgorithm = signatureSchemeTemplate.signatureSpec.signatureName
+        val signatureAlgorithm = when (keysFactoryDefinitions.algorithm) {
+            Algorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
+            Algorithm.EC -> ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
+        }.signatureName
         val signer = JcaContentSignerBuilder(signatureAlgorithm).build(caKeyPair.private)
 
         val certificate = JcaX509CertificateConverter().getCertificate(

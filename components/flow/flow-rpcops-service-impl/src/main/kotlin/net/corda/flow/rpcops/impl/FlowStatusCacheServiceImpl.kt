@@ -1,7 +1,7 @@
 package net.corda.flow.rpcops.impl
 
 import net.corda.data.flow.FlowInitiatorType
-import net.corda.data.flow.FlowStatusKey
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
@@ -32,14 +32,14 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory
-) : FlowStatusCacheService, CompactedProcessor<FlowStatusKey, FlowStatus> {
+) : FlowStatusCacheService, CompactedProcessor<FlowKey, FlowStatus> {
 
-    private var flowStatusSubscription: CompactedSubscription<FlowStatusKey, FlowStatus>? = null
-    private val cache = Collections.synchronizedMap(mutableMapOf<FlowStatusKey, FlowStatus>())
+    private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
+    private val cache = Collections.synchronizedMap(mutableMapOf<FlowKey, FlowStatus>())
     private var subReg: RegistrationHandle? = null
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowStatusCacheService>(::eventHandler)
 
-    override val keyClass: Class<FlowStatusKey> get() = FlowStatusKey::class.java
+    override val keyClass: Class<FlowKey> get() = FlowKey::class.java
 
     override val valueClass: Class<FlowStatus> get() = FlowStatus::class.java
 
@@ -67,23 +67,23 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
-        return cache[FlowStatusKey(clientRequestId, holdingIdentity)]
+        return cache[FlowKey(clientRequestId, holdingIdentity)]
     }
 
-    override fun onSnapshot(currentData: Map<FlowStatusKey, FlowStatus>) {
+    override fun onSnapshot(currentData: Map<FlowKey, FlowStatus>) {
         cache.clear()
 
         currentData
             .filter { it.value.initiatorType == FlowInitiatorType.RPC }
             .forEach { cache[it.key] = it.value }
 
-        lifecycleCoordinator.postEvent(CacheLoadCompleteEvent())
+        lifecycleCoordinator.postCustomEventToFollowers(CacheLoadCompleteEvent())
     }
 
     override fun onNext(
-        newRecord: Record<FlowStatusKey, FlowStatus>,
+        newRecord: Record<FlowKey, FlowStatus>,
         oldValue: FlowStatus?,
-        currentData: Map<FlowStatusKey, FlowStatus>
+        currentData: Map<FlowKey, FlowStatus>
     ) {
         if (newRecord.value == null) {
             cache.remove(newRecord.key)

@@ -1,9 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
 typealias PemCertificates = String
@@ -23,18 +20,10 @@ object LinkManagerInternalTypes {
 
     data class MemberInfo(
         val holdingIdentity: HoldingIdentity,
-        val publicKey: PublicKey,
+        val sessionPublicKey: PublicKey,
         val publicKeyAlgorithm: KeyAlgorithm,
         val endPoint: EndPoint,
-    ) {
-
-        fun getSignatureSpec(): SignatureSpec {
-            return when (publicKeyAlgorithm) {
-                KeyAlgorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
-                KeyAlgorithm.ECDSA -> ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
-            }
-        }
-    }
+    )
 
     data class EndPoint(val address: String)
 

@@ -7,47 +7,54 @@ import net.corda.db.testkit.DbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class ChunkEntityTest {
+    val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val entityManagerFactory: EntityManagerFactory
+
     companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
-        private lateinit var entityManagerFactory: EntityManagerFactory
+    }
 
-        /**
-         * Creates an in-memory database, applies the relevant migration scripts, and initialises
-         * [entityManagerFactory].
-         */
-        @Suppress("Unused")
-        @BeforeAll
-        @JvmStatic
-        private fun prepareDatabase() {
-            val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
-
-            val dbChange = ClassloaderChangeLog(
-                linkedSetOf(
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        DbSchema::class.java.packageName,
-                        listOf(MIGRATION_FILE_LOCATION),
-                        DbSchema::class.java.classLoader
-                    )
+    /**
+     * Creates an in-memory database, applies the relevant migration scripts, and initialises
+     * [entityManagerFactory].
+     */
+    init {
+        val dbChange = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf(MIGRATION_FILE_LOCATION),
+                    DbSchema::class.java.classLoader
                 )
             )
-            emConfig.dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-            }
-            entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-                "test_unit",
-                ChunkingEntities.classes.toList(),
-                emConfig
-            )
+        )
+        emConfig.dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
-
-        fun randomString() = UUID.randomUUID().toString()
+        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            ChunkingEntities.classes.toList(),
+            emConfig
+        )
     }
+
+    @Suppress("Unused")
+    @AfterAll
+    private fun cleanup() {
+        emConfig.close()
+        entityManagerFactory.close()
+    }
+
+    fun randomString() = UUID.randomUUID().toString()
+
 
     @Test
     fun `can write an entity`() {

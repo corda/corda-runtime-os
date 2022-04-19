@@ -2,6 +2,7 @@ package net.corda.session.manager
 
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import java.time.Instant
 
@@ -76,7 +77,9 @@ interface SessionManager {
      * @param sessionState The session state.
      * @param instant The time to check session events against when determining which messages need to be sent
      * @param config The config containing the flow session config values such as the resend time window
+     * @param identity Identity of the calling party who owns the session state
      * @return The updated [SessionState] with SessionAcks removed as well as any messages to send to the counterparty.
      */
-    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig) : Pair<SessionState, List<SessionEvent>>
+    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<SessionState,
+            List<SessionEvent>>
 }

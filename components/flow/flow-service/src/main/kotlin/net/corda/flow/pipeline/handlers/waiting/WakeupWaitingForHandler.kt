@@ -16,7 +16,7 @@ class WakeupWaitingForHandler : FlowWaitingForHandler<Wakeup> {
     override val type = Wakeup::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: Wakeup): FlowContinuation {
-        log.info("Waking up [${context.checkpoint!!.flowKey.flowId}]")
+        log.info("Waking up [${context.checkpoint.flowId}]")
         return FlowContinuation.Run(Unit)
     }
 }

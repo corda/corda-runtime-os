@@ -11,7 +11,6 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
-import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.Callable
 
@@ -21,6 +20,7 @@ import java.util.concurrent.Callable
     description = ["Add a key-pair"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddKeyPair : Callable<Collection<Record<String, TenantKeys>>> {
     companion object {
@@ -33,16 +33,11 @@ class AddKeyPair : Callable<Collection<Record<String, TenantKeys>>> {
 
             val keys = try {
                 val keysFile = this.getString("keysFile")
-                File(keysFile).readKeyPair()
-                    ?: throw SetupException("Can not read key pair from $keysFile")
+                File(keysFile).readText()
             } catch (e: Missing) {
-                this.getString("keys").reader().readKeyPair()
-                    ?: throw SetupException("Can not read key pair")
+                this.getString("keys")
             }
-            val privateKey = keys.private
-            val publicKey = keys.public
-
-            val keyAlgorithm = publicKey.toAlgorithm()
+            keys.verifyKeyPair()
 
             val tenantId = this.getString("tenantId")
 
@@ -51,9 +46,7 @@ class AddKeyPair : Callable<Collection<Record<String, TenantKeys>>> {
                 TenantKeys(
                     tenantId,
                     KeyPairEntry(
-                        keyAlgorithm,
-                        ByteBuffer.wrap(publicKey.encoded),
-                        ByteBuffer.wrap(privateKey.encoded)
+                        keys
                     ),
                 )
             )

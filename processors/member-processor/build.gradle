@@ -16,7 +16,6 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:membership:membership-internal")
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(":components:membership:group-policy")
@@ -38,7 +37,6 @@ dependencies {
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
-    runtimeOnly project(":libs:membership:membership-application")
     runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
@@ -52,7 +50,7 @@ dependencies {
     testImplementation "net.corda:corda-packaging-avro-converters"
     testImplementation "net.corda:corda-membership"
 
-    integrationTestCompile project(":components:membership:membership-group-read")
+    integrationTestImplementation project(":components:membership:membership-group-read")
     integrationTestImplementation project(":processors:crypto-processor")
 
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")

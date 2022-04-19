@@ -139,11 +139,6 @@ tasks.named('integrationTest') {
     enabled = false
 }
 
-tasks.named('check') {
-    // We'll need to figure out how to check kafka when we know a broker is available
-    dependsOn dbIntegrationTest
-}
-
 artifacts {
     archives testingBundle
 }

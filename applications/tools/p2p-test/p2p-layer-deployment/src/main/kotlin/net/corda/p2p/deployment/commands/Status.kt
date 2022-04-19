@@ -14,13 +14,14 @@ import java.time.Instant
     showDefaultValues = true,
     description = ["print the status of all the known namespaces"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class Status : Runnable {
     override fun run() {
         val now = Instant.now()
         val nameSpaces = ProcessRunner.execute(
             "kubectl", "get", "ns",
-            "-l", "namespace-type=p2p-deployment",
+            "-l", "namespace-type=p2p-deployment,p2p-namespace-type=p2p-cluster",
             "-o",
             "jsonpath={range .items[*]}" +
                 "{.metadata.name}{\"\\t\"}" +
@@ -53,7 +54,7 @@ class Status : Runnable {
 
         val dbs = ProcessRunner.execute(
             "kubectl", "get", "ns",
-            "-l", "namespace-type=p2p-deployment-db",
+            "-l", "namespace-type=p2p-deployment,p2p-namespace-type=simulator-db",
             "-o",
             "jsonpath={range .items[*]}" +
                 "{.metadata.name}{\"\\t\"}" +

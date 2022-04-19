@@ -23,47 +23,53 @@ import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManagerFactory
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VirtualNodeEntityRepositoryTest {
+    private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val entityManagerFactory: EntityManagerFactory
+    private val repository: VirtualNodeEntityRepository
+
     companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
-        private lateinit var entityManagerFactory: EntityManagerFactory
-        private lateinit var repository: VirtualNodeEntityRepository
+    }
 
-        /**
-         * Creates an in-memory database, applies the relevant migration scripts, and initialises
-         * [entityManagerFactory].
-         */
-        @Suppress("Unused")
-        @BeforeAll
-        @JvmStatic
-        private fun prepareDatabase() {
-            val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
-
-            val dbChange = ClassloaderChangeLog(
-                linkedSetOf(
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        DbSchema::class.java.packageName,
-                        listOf(MIGRATION_FILE_LOCATION),
-                        DbSchema::class.java.classLoader
-                    )
+    /**
+     * Creates an in-memory database, applies the relevant migration scripts, and initialises
+     * [entityManagerFactory].
+     */
+    init {
+        val dbChange = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf(MIGRATION_FILE_LOCATION),
+                    DbSchema::class.java.classLoader
                 )
             )
-            emConfig.dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
-            }
-            entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-                "test_unit",
-                VirtualNodeEntities.classes.toList() + ConfigurationEntities.classes.toList() + CpiEntities.classes.toList(),
-                emConfig
-            )
-            repository = VirtualNodeEntityRepository(entityManagerFactory)
+        )
+        emConfig.dataSource.connection.use { connection ->
+            LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
+        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            VirtualNodeEntities.classes.toList() + ConfigurationEntities.classes.toList() + CpiEntities.classes.toList(),
+            emConfig
+        )
+        repository = VirtualNodeEntityRepository(entityManagerFactory)
+    }
+
+    @Suppress("Unused")
+    @AfterAll
+    fun cleanup() {
+        emConfig.close()
+        entityManagerFactory.close()
     }
 
     @Test
@@ -74,10 +80,11 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiId = CPI.Identifier.newInstance("Test CPI", "1.0", SecureHash.create(signerSummaryHash))
         val expectedCpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID")
 
-        val cpiMetadataEntity = with (expectedCpiMetadata) {
+        val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
                 id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID")
+                "Test Group Policy", "Test Group ID", "Request ID"
+            )
         }
 
         entityManagerFactory.transaction {
@@ -112,7 +119,8 @@ internal class VirtualNodeEntityRepositoryTest {
         val holdingIdentityEntity = with(expectedHoldingIdentity) {
             HoldingIdentityEntity(
                 id, hash, x500Name, groupId, null, null,
-                null, null, null)
+                null, null, null
+            )
         }
 
         entityManagerFactory.transaction {
@@ -140,15 +148,20 @@ internal class VirtualNodeEntityRepositoryTest {
         val description = "description"
         val config = "config"
         val vaultDdlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Vault DDL 1", DDL, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Vault DDL 1", DDL, Instant.now(), updateActor, description, config
+        )
         val vaultDmlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Vault DML 1", DML, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Vault DML 1", DML, Instant.now(), updateActor, description, config
+        )
         val cryptoDdlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Crypto DDL 1", DDL, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Crypto DDL 1", DDL, Instant.now(), updateActor, description, config
+        )
         val cryptoDmlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Crypto DML 1", DML, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Crypto DML 1", DML, Instant.now(), updateActor, description, config
+        )
         val expectedConnections = VirtualNodeDbConnections(
-            vaultDdlConnection.id, vaultDmlConnection.id, cryptoDdlConnection.id, cryptoDmlConnection.id)
+            vaultDdlConnection.id, vaultDmlConnection.id, cryptoDdlConnection.id, cryptoDmlConnection.id
+        )
 
         entityManager.transaction {
             it.persist(vaultDdlConnection)
@@ -163,7 +176,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         Assertions.assertThat(holdingIdentityEntity).isNotNull
-        with (holdingIdentityEntity) {
+        with(holdingIdentityEntity) {
             Assertions.assertThat(holdingIdentityId).isEqualTo(expectedHoldingIdentity.id)
             Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.hash)
             Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name)
@@ -185,15 +198,20 @@ internal class VirtualNodeEntityRepositoryTest {
         val description = "description"
         val config = "config"
         val vaultDdlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Vault DDL 2", DDL, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Vault DDL 2", DDL, Instant.now(), updateActor, description, config
+        )
         val vaultDmlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Vault DML 2", DML, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Vault DML 2", DML, Instant.now(), updateActor, description, config
+        )
         val cryptoDdlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Crypto DDL 2", DDL, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Crypto DDL 2", DDL, Instant.now(), updateActor, description, config
+        )
         val cryptoDmlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Crypto DML 2", DML, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Crypto DML 2", DML, Instant.now(), updateActor, description, config
+        )
         val dbConnections = VirtualNodeDbConnections(
-            vaultDdlConnection.id, vaultDmlConnection.id, cryptoDdlConnection.id, cryptoDmlConnection.id)
+            vaultDdlConnection.id, vaultDmlConnection.id, cryptoDdlConnection.id, cryptoDmlConnection.id
+        )
 
         entityManagerFactory.transaction {
             it.persist(vaultDdlConnection)
@@ -206,16 +224,21 @@ internal class VirtualNodeEntityRepositoryTest {
         // Update holding identity's DB connections
 
         val newVaultDdlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Vault DDL 3", DDL, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Vault DDL 3", DDL, Instant.now(), updateActor, description, config
+        )
         val newVaultDmlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Vault DML 3", DML, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Vault DML 3", DML, Instant.now(), updateActor, description, config
+        )
         val newCryptoDdlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Crypto DDL 3", DDL, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Crypto DDL 3", DDL, Instant.now(), updateActor, description, config
+        )
         val newCryptoDmlConnection = DbConnectionConfig(
-            UUID.randomUUID(), "Crypto DML 3", DML, Instant.now(), updateActor, description, config)
+            UUID.randomUUID(), "Crypto DML 3", DML, Instant.now(), updateActor, description, config
+        )
 
         val expectedConnections = VirtualNodeDbConnections(
-            newVaultDdlConnection.id, newVaultDmlConnection.id, newCryptoDdlConnection.id, newCryptoDmlConnection.id)
+            newVaultDdlConnection.id, newVaultDmlConnection.id, newCryptoDdlConnection.id, newCryptoDmlConnection.id
+        )
 
         entityManagerFactory.transaction {
             it.persist(newVaultDdlConnection)
@@ -230,7 +253,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         Assertions.assertThat(holdingIdentityEntity).isNotNull
-        with (holdingIdentityEntity) {
+        with(holdingIdentityEntity) {
             Assertions.assertThat(holdingIdentityId).isEqualTo(expectedHoldingIdentity.id)
             Assertions.assertThat(holdingIdentityFullHash).isEqualTo(expectedHoldingIdentity.hash)
             Assertions.assertThat(x500Name).isEqualTo(expectedHoldingIdentity.x500Name)
@@ -251,17 +274,20 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID")
         val holdingIdentity = HoldingIdentity("X500 Name 4", "Group ID")
 
-        val cpiMetadataEntity = with (cpiMetadata) {
+        val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
                 id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID")
+                "Test Group Policy", "Test Group ID", "Request ID"
+            )
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
                 id, hash, x500Name, groupId, null, null,
-                null, null, null)
+                null, null, null
+            )
         }
-        val virtualNodeEntity = VirtualNodeEntity(holdingIdentity.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+        val virtualNodeEntity =
+            VirtualNodeEntity(holdingIdentity.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
 
         entityManagerFactory.transaction {
             it.persist(cpiMetadataEntity)
@@ -271,7 +297,8 @@ internal class VirtualNodeEntityRepositoryTest {
 
         Assertions.assertThat(repository.virtualNodeExists(holdingIdentity, cpiId)).isTrue
 
-        val nonExistingCpiId = CPI.Identifier.newInstance("Non existing CPI", "1.0", SecureHash.create(signerSummaryHash))
+        val nonExistingCpiId =
+            CPI.Identifier.newInstance("Non existing CPI", "1.0", SecureHash.create(signerSummaryHash))
         Assertions.assertThat(repository.virtualNodeExists(holdingIdentity, nonExistingCpiId)).isFalse
     }
 
@@ -284,15 +311,17 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID")
         val holdingIdentity = HoldingIdentity("X500 Name 5", "Group ID")
 
-        val cpiMetadataEntity = with (cpiMetadata) {
+        val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
                 id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID")
+                "Test Group Policy", "Test Group ID", "Request ID"
+            )
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
                 id, hash, x500Name, groupId, null, null,
-                null, null, null)
+                null, null, null
+            )
         }
 
         entityManagerFactory.transaction {
@@ -310,7 +339,7 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         Assertions.assertThat(virtualNodeEntity).isNotNull
-        with (virtualNodeEntity) {
+        with(virtualNodeEntity) {
             Assertions.assertThat(holdingIdentityId).isEqualTo(holdingIdentity.id)
             Assertions.assertThat(cpiName).isEqualTo(cpiId.name)
             Assertions.assertThat(cpiVersion).isEqualTo(cpiId.version)

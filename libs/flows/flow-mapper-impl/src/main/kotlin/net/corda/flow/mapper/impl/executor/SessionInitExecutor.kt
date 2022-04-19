@@ -1,10 +1,9 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.data.flow.FlowKey
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -18,6 +17,7 @@ class SessionInitExecutor(
     private val sessionEvent: SessionEvent,
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
+    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -65,26 +65,26 @@ class SessionInitExecutor(
         sessionInit: SessionInit,
     ): SessionInitOutputs {
         return if (messageDirection == MessageDirection.INBOUND) {
-            val flowKey = generateFlowKey(sessionInit.initiatedIdentity)
-            sessionInit.flowKey = flowKey
-            SessionInitOutputs(flowKey, flowKey, FlowEvent(flowKey, sessionEvent))
+            val flowId = generateFlowId()
+            sessionInit.flowId = flowId
+            SessionInitOutputs(flowId, flowId, FlowEvent(flowId, sessionEvent))
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
-            val tmpFLowEventKey = sessionInit.flowKey
-            sessionInit.flowKey = null
+            val tmpFLowEventKey = sessionInit.flowId
+            sessionInit.flowId = null
             sessionEvent.payload = sessionInit
 
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                FlowMapperEvent(sessionEvent)
+                generateAppMessage(sessionEvent, sessionEventSerializer)
             )
         }
     }
 
     data class SessionInitOutputs(
-        val flowKey: FlowKey,
+        val flowId: String,
         val outputRecordKey: Any,
         val outputRecordValue: Any
     )

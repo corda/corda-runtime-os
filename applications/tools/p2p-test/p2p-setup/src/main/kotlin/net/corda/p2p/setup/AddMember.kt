@@ -11,7 +11,6 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
-import java.nio.ByteBuffer
 import java.util.concurrent.Callable
 
 @Command(
@@ -19,6 +18,7 @@ import java.util.concurrent.Callable
     description = ["Add a group member"],
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
+    usageHelpAutoWidth = true,
 )
 class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
     companion object {
@@ -28,16 +28,16 @@ class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
             val dataConfig = this.getConfig("data")
             val address = dataConfig.getString("address")
 
-            val publicKey = try {
-                val publicKeyFile = dataConfig.getString("publicKeyFile")
-                File(publicKeyFile).readPublicKey() ?: throw SetupException("Could not read public key from $publicKeyFile")
+            val publicSessionKey = try {
+                val publicKeyFile = dataConfig.getString("publicSessionKeyFile")
+                File(publicKeyFile).readText()
             } catch (e: Missing) {
-                dataConfig.getString("publicKey").reader().readPublicKey() ?: throw SetupException("Could not read public key")
+                dataConfig.getString("publicSessionKey")
             }
+            publicSessionKey.verifyPublicKey()
             val networkMapEntry = MemberInfoEntry(
                 HoldingIdentity(x500Name, groupId),
-                ByteBuffer.wrap(publicKey.encoded),
-                publicKey.toAlgorithm(),
+                publicSessionKey,
                 address,
             )
             return Record(topic, "$x500Name-$groupId", networkMapEntry)

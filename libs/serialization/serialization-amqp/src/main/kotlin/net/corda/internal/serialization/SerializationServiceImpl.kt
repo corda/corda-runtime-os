@@ -3,8 +3,7 @@ package net.corda.internal.serialization
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.serialization.SerializationContext
-import net.corda.serialization.serialize
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.sequence
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken

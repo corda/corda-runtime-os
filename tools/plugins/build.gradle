@@ -1,0 +1,43 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3-docker'
+}
+
+group 'net.corda.cli.deployment'
+
+tasks.named('publishOSGiImage') {
+    def sourceTasks = subprojects.collect{ it.tasks.named("plugin").get()}
+    dependsOn(sourceTasks)
+    it.sourceTasks = sourceTasks
+    it.subDir = "plugins/"
+    it.setEntry = false
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+
+    if (project.hasProperty('isReleaseCandidate')) {
+        releaseCandidate = isReleaseCandidate.toBoolean()
+    }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
+
+    // Has to be different as jenkins will always try use zulu
+    if (project.hasProperty('cliBaseImage')) {
+        baseImageName = baseImage
+    } else {
+        // Will be corda-os-docker for build
+        baseImageName = "corda-os-docker.software.r3.com/corda-os-cli"
+    }
+
+    if (project.hasProperty('baseTag')) {
+        baseImageTag = baseTag
+    } else {
+        // Will be latest/version for build
+        it.baseImageTag = "unstable"
+    }
+}

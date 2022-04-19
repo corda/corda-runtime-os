@@ -1,20 +1,19 @@
 package net.corda.flow.application.sessions
 
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.unwrap
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.v5.application.messaging.unwrap
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -37,28 +36,20 @@ class FlowSessionImplTest {
         whenever(deserialize(HI.toByteArray(), String::class.java)).thenReturn(HI)
     }
 
-    private val sandboxGroupContext = mock<SandboxGroupContext>().apply {
-        whenever(get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
-            .thenReturn(serializationService)
-    }
 
-    private val flowFiberExecutionContext = FlowFiberExecutionContext(
-        mock(),
-        mock(),
-        mock(),
-        sandboxGroupContext,
-        net.corda.flow.BOB_X500_HOLDING_IDENTITY,
-        mock()
-    )
 
-    private val flowFiber = mock<FlowFiber<*>>().apply {
+    private val mockFlowFiberService = MockFlowFiberService()
+    private val flowFiber = mockFlowFiberService.flowFiber.apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
         whenever(suspend(any<FlowIORequest.Receive>())).thenReturn(received)
-        whenever(getExecutionContext()).thenReturn(flowFiberExecutionContext)
     }
 
-    private val flowFiberService = mock<FlowFiberService>().apply {
-        whenever(getExecutingFiber()).thenReturn(flowFiber)
+    @BeforeEach
+    fun setup() {
+        mockFlowFiberService.sandboxGroupContext.apply {
+            whenever(get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
+                .thenReturn(serializationService)
+        }
     }
 
     @Test
@@ -82,6 +73,13 @@ class FlowSessionImplTest {
         val session = createSession(FlowSessionImpl.State.CLOSED)
         assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
+    }
+
+    @Test
+    fun `receiving the wrong object type in sendAndReceive throws an exception`() {
+        whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
+        val session = createSession(FlowSessionImpl.State.INITIATED)
+        assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
     }
 
     @Test
@@ -112,6 +110,13 @@ class FlowSessionImplTest {
         val session = createSession(FlowSessionImpl.State.CLOSED)
         assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
+    }
+
+    @Test
+    fun `receiving the wrong object type in receive throws an exception`() {
+        whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
+        val session = createSession(FlowSessionImpl.State.INITIATED)
+        assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
     }
 
     @Test
@@ -160,7 +165,7 @@ class FlowSessionImplTest {
                 country = "GB"
             ),
             sourceSessionId = SESSION_ID,
-            flowFiberService,
+            mockFlowFiberService,
             state
         )
     }

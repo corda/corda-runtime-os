@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.state.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -21,11 +22,12 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 
-@Suppress("CanBePrimaryConstructorProperty")
+@Suppress("CanBePrimaryConstructorProperty", "LongParameterList")
 @Component(service = [FlowEventPipelineFactory::class])
 class FlowEventPipelineFactoryImpl(
     private val flowRunner: FlowRunner,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
+    private val flowCheckpointFactory: FlowCheckpointFactory,
     flowEventHandlers: List<FlowEventHandler<out Any>>,
     flowWaitingForHandlers: List<FlowWaitingForHandler<out Any>>,
     flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
@@ -60,12 +62,14 @@ class FlowEventPipelineFactoryImpl(
         @Reference(service = FlowRunner::class)
         flowRunner: FlowRunner,
         @Reference(service = FlowGlobalPostProcessor::class)
-        flowGlobalPostProcessor: FlowGlobalPostProcessor
-    ) : this(flowRunner, flowGlobalPostProcessor, mutableListOf(), mutableListOf(), mutableListOf())
+        flowGlobalPostProcessor: FlowGlobalPostProcessor,
+        @Reference(service = FlowCheckpointFactory::class)
+        flowCheckpointFactory: FlowCheckpointFactory,
+        ) : this(flowRunner, flowGlobalPostProcessor,flowCheckpointFactory, mutableListOf(), mutableListOf(), mutableListOf())
 
     override fun create(checkpoint: Checkpoint?, event: FlowEvent, config: SmartConfig): FlowEventPipeline {
         val context = FlowEventContext<Any>(
-            checkpoint = checkpoint,
+            checkpoint = flowCheckpointFactory.create(checkpoint),
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,

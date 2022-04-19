@@ -16,6 +16,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.test.util.MockTimeFacilitiesProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -71,14 +72,17 @@ class InMemorySessionReplayerTest {
     private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        replayCallback = context.arguments()[4] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     }
 
     private val groupsAndMembers = mockMembersAndGroups(US, COUNTER_PARTY)
 
+    private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
+
     @Test
     fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+            mockTimeFacilitiesProvider.mockClock)
 
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
@@ -99,7 +103,8 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeMessageFromReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+            mockTimeFacilitiesProvider.mockClock)
 
         val id = UUID.randomUUID().toString()
         setRunning()
@@ -111,7 +116,8 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeAllMessageFromReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+            mockTimeFacilitiesProvider.mockClock)
 
         setRunning()
         replayer.removeAllMessagesFromReplay()
@@ -122,7 +128,8 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The replaySchedular callback publishes the session message`() {
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+            mockTimeFacilitiesProvider.mockClock)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -160,7 +167,7 @@ class InMemorySessionReplayerTest {
             on { getGroupInfo(any()) } doReturnConsecutively listOf(null, groupInfo)
         }
 
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.mockClock)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -184,7 +191,7 @@ class InMemorySessionReplayerTest {
         val members = mock<LinkManagerMembershipGroupReader> {
             on { getMemberInfo(COUNTER_PARTY) } doReturnConsecutively listOf(null, groupsAndMembers.first.getMemberInfo(COUNTER_PARTY))
         }
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, members)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, members, mockTimeFacilitiesProvider.mockClock)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -212,7 +219,7 @@ class InMemorySessionReplayerTest {
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), mock())
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), mock(), mockTimeFacilitiesProvider.mockClock)
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(
                 "",

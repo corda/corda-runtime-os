@@ -5,13 +5,14 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.v5.application.flows.FlowInfo
-import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.application.flows.UntrustworthyData
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.v5.application.messaging.FlowInfo
+import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.UntrustworthyData
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
 import java.io.NotSerializableException
 
@@ -43,7 +44,6 @@ class FlowSessionImpl(
         ensureSessionIsOpen()
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
-        // TODO CORE-4156 Re-add `checkPayloadIs` code in `FlowSessionImpl`
         return deserializeReceivedPayload(received, receiveType)
     }
 
@@ -53,7 +53,6 @@ class FlowSessionImpl(
         ensureSessionIsOpen()
         val request = FlowIORequest.Receive(setOf(sourceSessionId))
         val received = fiber.suspend(request)
-        // TODO CORE-4156 Re-add `checkPayloadIs` code in `FlowSessionImpl`
         return deserializeReceivedPayload(received, receiveType)
     }
 
@@ -111,16 +110,26 @@ class FlowSessionImpl(
     private fun <R : Any> deserializeReceivedPayload(received: Map<String, ByteArray>, receiveType: Class<R>): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
-                UntrustworthyData(deserialize(it, receiveType))
+                val payload = getSerializationService().deserialize(it, receiveType)
+                checkPayloadIs(payload, receiveType)
+                UntrustworthyData(payload)
             } catch (e: NotSerializableException) {
                 log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
                 throw e
             }
-        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+        }
+            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
-    private fun <R : Any> deserialize(payload: ByteArray, receiveType: Class<R>): R {
-        return getSerializationService().deserialize(payload, receiveType)
+    /**
+     * AMQP deserialization outputs an object whose type is solely based on the serialized content, therefore although the generic type is
+     * specified, it can still be the wrong type. We check this type here, so that we can throw an accurate error instead of failing later
+     * on when the object is used.
+     */
+    private fun <R : Any> checkPayloadIs(payload: Any, receiveType: Class<R>) {
+        receiveType.castIfPossible(payload) ?: throw CordaRuntimeException(
+            "Expecting to receive a ${receiveType.name} but received a ${payload.javaClass.name} instead, payload: ($payload)"
+        )
     }
 
     private fun getSerializationService(): SerializationService {
@@ -130,9 +139,11 @@ class FlowSessionImpl(
         }
     }
 
-    override fun equals(other: Any?): Boolean = other === this || other is FlowSessionImpl && other.sourceSessionId == sourceSessionId
+    override fun equals(other: Any?): Boolean =
+        other === this || other is FlowSessionImpl && other.sourceSessionId == sourceSessionId
 
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
-    override fun toString(): String = "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, state=$state)"
+    override fun toString(): String =
+        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, state=$state)"
 }

@@ -4,11 +4,11 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowHospitalException
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -24,11 +24,12 @@ import org.mockito.kotlin.whenever
 class FlowEventProcessorImplTest {
 
     private val wakeupPayload = Wakeup()
-    private val flowKey = FlowKey("flow id", HoldingIdentity("x500 name", "group id"))
+    private val flowKey = "flow id"
+    private val inputCheckpoint = mock<FlowCheckpoint>()
     private val updatedCheckpoint = Checkpoint()
     private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
     private val updatedContext = buildFlowEventContext<Any>(
-        updatedCheckpoint,
+        inputCheckpoint,
         wakeupPayload,
         outputRecords = outputRecords
     )
@@ -57,16 +58,6 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Returns a checkpoint and events to send`() {
-        whenever(flowEventPipeline.globalPostProcessing()).thenReturn(
-            FlowEventPipelineImpl(
-                mock(),
-                mock(),
-                mock(),
-                mock(),
-                mock(),
-                updatedContext
-            )
-        )
         val response = processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
         assertEquals(updatedCheckpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)

@@ -10,6 +10,7 @@ import picocli.CommandLine.Command
     showDefaultValues = true,
     description = ["Update all the ips in all the gateways"],
     mixinStandardHelpOptions = true,
+    usageHelpAutoWidth = true,
 )
 class UpdateIps : Runnable {
     private val yaml = ObjectMapper(YAMLFactory())
@@ -66,7 +67,7 @@ class UpdateIps : Runnable {
             "get",
             "namespace",
             "-l",
-            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName},p2p-namespace-type=p2p-cluster",
             "-o",
             "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.annotations.host}{\"\\n\"}{end}",
         ).lines()

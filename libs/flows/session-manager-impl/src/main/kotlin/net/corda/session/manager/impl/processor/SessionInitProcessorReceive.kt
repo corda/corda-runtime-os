@@ -1,7 +1,6 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -9,7 +8,6 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
 import java.time.Instant
 import java.util.*
 
@@ -38,6 +36,7 @@ class SessionInitProcessorReceive(
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
                             generateErrorEvent(sessionState,
+                                sessionEvent,
                                 "Received SessionInit with seqNum $seqNum when session state which was not null: $sessionState",
                                 "SessionInit-SessionMismatch",
                                 instant
@@ -51,7 +50,6 @@ class SessionInitProcessorReceive(
                 }
             }
         } else {
-            val sessionInit: SessionInit = uncheckedCast(sessionEvent.payload)
             val sessionId = sessionEvent.sessionId
             val seqNum = sessionEvent.sequenceNum
             val newSessionState = SessionState.newBuilder()
@@ -59,9 +57,8 @@ class SessionInitProcessorReceive(
                 .setSessionStartTime(instant)
                 .setLastReceivedMessageTime(instant)
                 .setLastSentMessageTime(instant)
-                .setIsInitiator(false)
                 .setSendAck(true)
-                .setCounterpartyIdentity(sessionInit.initiatingIdentity)
+                .setCounterpartyIdentity(sessionEvent.initiatingIdentity)
                 .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
                 .setSendEventsState(SessionProcessState(0, mutableListOf()))
                 .setStatus(SessionStateType.CONFIRMED)

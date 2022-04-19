@@ -277,7 +277,7 @@ class SessionCloseIntegrationTest {
         bob.processNextReceivedMessage(sendMessages = true)
         alice.processNextReceivedMessage()
 
-        alice.assertStatus(SessionStateType.ERROR)
-        bob.assertStatus(SessionStateType.ERROR)
+        alice.assertStatus(SessionStateType.CLOSED)
+        bob.assertStatus(SessionStateType.CLOSED)
     }
 }

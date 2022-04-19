@@ -9,6 +9,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -22,6 +23,7 @@ class SessionManagerImplTest {
     private val sessionManager = SessionManagerImpl()
     private val testResendWindow = 5000L
     private val testHeartbeatTimeout = 30000L
+    private val testIdentity = HoldingIdentity()
     private val testConfig = ConfigFactory.empty()
         .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
         .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testHeartbeatTimeout))
@@ -95,7 +97,7 @@ class SessionManagerImplTest {
             ),
         )
         //validate only messages with a timestamp in the past are returned.
-        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(2)
         //validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
@@ -104,7 +106,8 @@ class SessionManagerImplTest {
         //Validate all acks removed and normal session events are resent
         val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testResendWindow + 100),
-            testSmartConfig
+            testSmartConfig,
+            testIdentity
         )
         assertThat(secondMessagesToSend.size).isEqualTo(3)
         assertThat(secondOutputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
@@ -126,13 +129,14 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(0)
 
         //Validate heartbeat
         val (_, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testResendWindow  + 1),
-            testSmartConfig
+            testSmartConfig,
+            testIdentity
         )
 
         assertThat(secondMessagesToSend.size).isEqualTo(1)
@@ -155,7 +159,7 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(1)
         val messageToSend = messagesToSend.first()
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionAck::class.java)
@@ -176,7 +180,7 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend).isEmpty()
     }
 
@@ -193,20 +197,20 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig)
+        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(0)
         assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
 
         //Validate heartbeat
         val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testHeartbeatTimeout  + 1),
-            testSmartConfig
+            testSmartConfig,
+            testIdentity
         )
 
         assertThat(secondMessagesToSend.size).isEqualTo(1)
         assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
         val messageToSend = secondMessagesToSend.first()
-        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
     }
 

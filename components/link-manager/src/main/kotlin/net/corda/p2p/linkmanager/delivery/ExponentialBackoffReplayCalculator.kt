@@ -4,7 +4,7 @@ import java.time.Duration
 
 internal class ExponentialBackoffReplayCalculator(
     limitTotalReplays: Boolean,
-    private val config: ReplayScheduler.ReplaySchedulerConfig
+    private val config: ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig
 ) : ReplayCalculator(limitTotalReplays, config) {
 
     override fun calculateReplayInterval(lastDelay: Duration): Duration {

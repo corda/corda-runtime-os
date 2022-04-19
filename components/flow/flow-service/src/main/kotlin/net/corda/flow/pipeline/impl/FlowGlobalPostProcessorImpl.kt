@@ -1,12 +1,8 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -16,30 +12,26 @@ import java.time.Instant
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
     @Reference(service = SessionManager::class)
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowGlobalPostProcessor {
 
     override fun postProcess(context: FlowEventContext<Any>): FlowEventContext<Any> {
 
         val now = Instant.now()
 
-        context.checkpoint?.let { checkpoint ->
-
+        val checkpoint = context.checkpoint
+        return if (checkpoint.doesExist) {
             val records = checkpoint.sessions
-                .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, context.config) }
-                .onEach { (updatedSessionState, _) -> checkpoint.addOrReplaceSession(updatedSessionState) }
-                .flatMap { (_, messages) -> messages }
-                .map { message -> message.toRecord() }
+                .map { sessionState -> sessionManager.getMessagesToSend(sessionState, now, context.config, checkpoint.flowKey.identity) }
+                .onEach { (updatedSessionState, _) -> checkpoint.putSessionState(updatedSessionState) }
+                .flatMap { (_, events) -> events }
+                .map { event -> flowRecordFactory.createFlowMapperSessionEventRecord(event) }
 
-            return context.copy(outputRecords = context.outputRecords + records)
+            context.copy(outputRecords = context.outputRecords + records)
+        } else {
+            context
         }
-
-        return context
     }
-
-    private fun SessionEvent.toRecord() = Record(
-        topic = Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-        key = sessionId,
-        value = FlowMapperEvent(this)
-    )
 }
