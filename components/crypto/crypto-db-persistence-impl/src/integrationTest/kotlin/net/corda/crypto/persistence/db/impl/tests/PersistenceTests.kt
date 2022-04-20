@@ -22,12 +22,11 @@ import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
+import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
@@ -38,8 +37,6 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.test.util.LoggingUtils.emphasise
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -57,10 +54,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.io.StringWriter
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
@@ -72,14 +67,15 @@ import javax.sql.DataSource
 
 @ExtendWith(ServiceExtension::class)
 class PersistenceTests {
-    companion object {
-        private val logger = contextLogger()
-
+    companion object : DatabaseInstaller() {
         @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
+
+        @InjectService(timeout = 5000)
+        lateinit var entitiesRegistry: JpaEntitiesRegistry
 
         @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
@@ -104,45 +100,19 @@ class PersistenceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            setupCryptoEntities()
+            cryptoEmf = cryptoDbConfig.setupDatabase(
+                "crypto",
+                CordaDb.Crypto.persistenceUnitName,
+                CryptoEntities.classes
+            )
         }
 
         @AfterAll
         @JvmStatic
         fun cleanup() {
-            if (this::cryptoEmf.isInitialized) {
+            if (::cryptoEmf.isInitialized) {
                 cryptoEmf.close()
             }
-
-        }
-
-        private fun setupCryptoEntities() {
-            val schemaClass = DbSchema::class.java
-            val bundle = FrameworkUtil.getBundle(schemaClass)
-            logger.info("Crypto schema bundle $bundle".emphasise())
-            logger.info("Create Schema for ${cryptoDbConfig.dataSource.connection.metaData.url}".emphasise())
-            val fullName = schemaClass.packageName + ".crypto"
-            val resourcePrefix = fullName.replace('.', '/')
-            val cl = ClassloaderChangeLog(
-                linkedSetOf(
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        fullName,
-                        listOf("$resourcePrefix/db.changelog-master.xml"),
-                        classLoader = schemaClass.classLoader
-                    )
-                )
-            )
-            StringWriter().use {
-                lbm.createUpdateSql(cryptoDbConfig.dataSource.connection, cl, it)
-                logger.info("Schema creation SQL: $it")
-            }
-            lbm.updateDb(cryptoDbConfig.dataSource.connection, cl)
-            logger.info("Create Entities".emphasise())
-            cryptoEmf = entityManagerFactoryFactory.create(
-                CordaDb.Crypto.persistenceUnitName,
-                CryptoEntities.classes.toList(),
-                cryptoDbConfig
-            )
         }
 
         private fun randomTenantId() = publicKeyIdOf(UUID.randomUUID().toString().toByteArray())
@@ -590,13 +560,13 @@ class PersistenceTests {
         }
         assertEquals(7, result6.size)
         listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
-            when(it) {
+            when (it) {
                 is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
                 is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
                 else -> throw IllegalArgumentException()
             }
         }.forEachIndexed { i, o ->
-            when(o) {
+            when (o) {
                 is SigningPublicKeySaveContext -> assertEquals(tenantId1, o, result6.elementAt(i))
                 is SigningWrappedKeySaveContext -> assertEquals(tenantId1, o, result6.elementAt(i))
                 else -> throw IllegalArgumentException()
@@ -639,13 +609,13 @@ class PersistenceTests {
         }
         assertEquals(2, page1.size)
         listOf(p1, p3, p4, w1).sortedBy {
-            when(it) {
+            when (it) {
                 is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
                 is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
                 else -> throw IllegalArgumentException()
             }
         }.drop(0).take(2).forEachIndexed { i, o ->
-            when(o) {
+            when (o) {
                 is SigningPublicKeySaveContext -> assertEquals(tenantId1, o, page1.elementAt(i))
                 is SigningWrappedKeySaveContext -> assertEquals(tenantId1, o, page1.elementAt(i))
                 else -> throw IllegalArgumentException()
@@ -663,13 +633,13 @@ class PersistenceTests {
         }
         assertEquals(2, page2.size)
         listOf(p1, p3, p4, w1).sortedBy {
-            when(it) {
+            when (it) {
                 is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
                 is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
                 else -> throw IllegalArgumentException()
             }
         }.drop(2).take(2).forEachIndexed { i, o ->
-            when(o) {
+            when (o) {
                 is SigningPublicKeySaveContext -> assertEquals(tenantId1, o, page2.elementAt(i))
                 is SigningWrappedKeySaveContext -> assertEquals(tenantId1, o, page2.elementAt(i))
                 else -> throw IllegalArgumentException()

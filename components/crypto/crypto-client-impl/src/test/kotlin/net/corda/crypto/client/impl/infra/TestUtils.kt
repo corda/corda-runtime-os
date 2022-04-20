@@ -4,10 +4,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.allOf
-import org.hamcrest.Matchers.greaterThanOrEqualTo
-import org.hamcrest.Matchers.lessThanOrEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import java.security.KeyPair
@@ -51,13 +48,9 @@ inline fun <reified R> actWithTimer(block: () -> R): Triple<Instant, Instant, R>
 }
 
 fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
-    assertThat(
-        actual.toEpochMilli(),
-        allOf(
-            greaterThanOrEqualTo(before.toEpochMilli()),
-            lessThanOrEqualTo(after.toEpochMilli())
-        )
-    )
+    assertThat(actual.toEpochMilli())
+        .isGreaterThanOrEqualTo(before.toEpochMilli())
+        .isLessThanOrEqualTo(after.toEpochMilli())
 }
 
 data class PublishActResult<R>(

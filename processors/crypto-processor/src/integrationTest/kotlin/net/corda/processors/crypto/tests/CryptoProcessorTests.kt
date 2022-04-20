@@ -5,38 +5,56 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.config.Configuration
-import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.connection.manager.DbAdmin
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
+import net.corda.db.schema.DbSchema
+import net.corda.db.testkit.DatabaseInstaller
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.EntityManagerConfiguration
+import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.processors.crypto.tests.infra.BOOT_CONFIGURATION
+import net.corda.processors.crypto.tests.infra.CRYPTO_CONFIGURATION_VALUE
+import net.corda.processors.crypto.tests.infra.FlowOpsResponses
+import net.corda.processors.crypto.tests.infra.MESSAGING_CONFIGURATION_VALUE
+import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
+import net.corda.processors.crypto.tests.infra.TestLifecycleDependenciesTrackingCoordinator
+import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
+import net.corda.processors.crypto.tests.infra.makeClientId
+import net.corda.processors.crypto.tests.infra.randomDataByteArray
+import net.corda.processors.crypto.tests.infra.runTestCase
+import net.corda.processors.crypto.tests.infra.startAndWait
+import net.corda.processors.crypto.tests.infra.stopAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
-import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -45,175 +63,177 @@ import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
+import javax.persistence.EntityManagerFactory
 import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
-class IntegrationCryptoOpsTests {
-    companion object {
-        private val logger = contextLogger()
+class CryptoProcessorTests {
+    companion object : DatabaseInstaller() {
+        private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
 
-        private val CLIENT_ID = makeClientId<IntegrationCryptoOpsTests>()
+        @InjectService(timeout = 5000L)
+        lateinit var coordinatorFactory: LifecycleCoordinatorFactory
 
-        private const val RESPONSE_TOPIC = "test.response"
+        @InjectService(timeout = 5000L)
+        lateinit var publisherFactory: PublisherFactory
 
-        private const val CRYPTO_CONFIGURATION_VALUE: String = "{}"
+        @InjectService(timeout = 5000L)
+        lateinit var subscriptionFactory: SubscriptionFactory
 
-        private const val MESSAGING_CONFIGURATION_VALUE: String = """
-            componentVersion="5.1"
-            subscription {
-                consumer {
-                    close.timeout = 6000
-                    poll.timeout = 6000
-                    thread.stop.timeout = 6000
-                    processor.retries = 3
-                    subscribe.retries = 3
-                    commit.retries = 3
-                }
-                producer {
-                    close.timeout = 6000
-                }
-            }
-      """
+        @InjectService(timeout = 5000L)
+        lateinit var processor: CryptoProcessor
 
-        private const val BOOT_CONFIGURATION = """
-        instanceId=1
-    """
-    }
+        @InjectService(timeout = 5000L)
+        lateinit var opsClient: CryptoOpsClient
 
-    @InjectService(timeout = 5000L)
-    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+        @InjectService(timeout = 5000L)
+        lateinit var verifier: SignatureVerificationService
 
-    @InjectService(timeout = 5000L)
-    lateinit var publisherFactory: PublisherFactory
+        @InjectService(timeout = 5000L)
+        lateinit var keyEncodingService: KeyEncodingService
 
-    @InjectService(timeout = 5000L)
-    lateinit var subscriptionFactory: SubscriptionFactory
+        @InjectService(timeout = 5000)
+        lateinit var dbConnectionManager: DbConnectionManager
 
-    @InjectService(timeout = 5000L)
-    lateinit var processor: CryptoProcessor
+        @InjectService(timeout = 5000)
+        lateinit var dbAdmin: DbAdmin
 
-    @InjectService(timeout = 5000L)
-    lateinit var opsClient: CryptoOpsClient
+        @InjectService(timeout = 5000)
+        lateinit var entitiesRegistry: JpaEntitiesRegistry
 
-    @InjectService(timeout = 5000L)
-    lateinit var verifier: SignatureVerificationService
+        @InjectService(timeout = 5000)
+        lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
-    @InjectService(timeout = 5000L)
-    lateinit var keyEncodingService: KeyEncodingService
+        @InjectService(timeout = 5000)
+        lateinit var lbm: LiquibaseSchemaMigrator
 
-    private lateinit var publisher: Publisher
+        private lateinit var configEmf: EntityManagerFactory
 
-    private lateinit var flowOpsResponses: FlowOpsResponses
+        private lateinit var cryptoEmf: EntityManagerFactory
 
-    private lateinit var transformer: CryptoFlowOpsTransformer
+        private lateinit var publisher: Publisher
 
-    private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
+        private lateinit var flowOpsResponses: FlowOpsResponses
 
-    private lateinit var tenantId: String
+        private lateinit var transformer: CryptoFlowOpsTransformer
 
-    private fun <R> run(testCase: KFunction<R>): R = runTestCase(logger, testCase)
+        private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
 
-    private fun <R> run(testCaseArg: Any, testCase: KFunction<R>): R = runTestCase(logger, testCaseArg, testCase)
+        private lateinit var tenantId: String
 
-    class FlowOpsResponses(
-        subscriptionFactory: SubscriptionFactory
-    ) : DurableProcessor<String, FlowOpsResponse>, AutoCloseable {
-
-        private val subscription: Subscription<String, FlowOpsResponse> =
-            subscriptionFactory.createDurableSubscription(
-                subscriptionConfig = SubscriptionConfig(
-                    groupName = "TEST",
-                    eventTopic = RESPONSE_TOPIC
-                ),
-                processor = this,
-                nodeConfig = SmartConfigFactory.create(
-                    ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
-                ),
-                partitionAssignmentListener = null
-            ).also { it.start() }
-
-        private val receivedEvents = ConcurrentHashMap<String, FlowOpsResponse?>()
-
-        override val keyClass: Class<String> = String::class.java
-
-        override val valueClass: Class<FlowOpsResponse> = FlowOpsResponse::class.java
-
-        override fun onNext(events: List<Record<String, FlowOpsResponse>>): List<Record<*, *>> {
-            events.forEach {
-                receivedEvents[it.key] = it.value
-            }
-            return emptyList()
-        }
-
-        fun waitForResponse(key: String): FlowOpsResponse =
-            eventually {
-                val event = receivedEvents[key]
-                assertNotNull(event)
-                event!!
-            }
-
-        override fun close() {
-            subscription.close()
-        }
-    }
-
-    @BeforeEach
-    fun setup() {
-        tenantId = UUID.randomUUID().toString()
-
-        logger.info("Starting ${opsClient::class.java.simpleName}")
-        opsClient.startAndWait()
-
-        logger.info("Starting ${processor::class.java.simpleName}")
-        processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
-
-        testDependencies = TestLifecycleDependenciesTrackingCoordinator(
-            LifecycleCoordinatorName.forComponent<IntegrationCryptoOpsTests>(),
-            coordinatorFactory,
-            CryptoOpsClient::class.java,
-            CryptoProcessor::class.java
-        ).also { it.startAndWait() }
-
-        logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
-        with(publisher) {
-            publish(
-                listOf(
-                    Record(
-                        CONFIG_TOPIC,
-                        MESSAGING_CONFIG,
-                        Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
-                    ),
-                    Record(
-                        CONFIG_TOPIC,
-                        CRYPTO_CONFIG,
-                        Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
-                    )
-                )
+        private val configFactory = SmartConfigFactory.create(
+            ConfigFactory.parseString(
+                """
+            ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=key
+            ${SmartConfigFactory.SECRET_SALT_KEY}=salt
+        """.trimIndent()
             )
-        }
-
-        flowOpsResponses = FlowOpsResponses(subscriptionFactory)
-
-        transformer = CryptoFlowOpsTransformer(
-            requestingComponent = "test",
-            responseTopic = RESPONSE_TOPIC,
-            keyEncodingService = keyEncodingService
         )
 
-        testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
-    }
+        private val config = configFactory.create(DbUtils.createConfig("configuration_db"))
 
-    @AfterEach
-    fun cleanup() {
-        flowOpsResponses.close()
-        opsClient.stopAndWait()
-        testDependencies.stopAndWait()
+        private val cryptoDbConfig: EntityManagerConfiguration =
+            DbUtils.getEntityManagerConfiguration("crypto")
+
+        private val configDbConfig: EntityManagerConfiguration =
+            DbUtils.getEntityManagerConfiguration("configuration_db")
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            tenantId = UUID.randomUUID().toString()
+            flowOpsResponses = FlowOpsResponses(subscriptionFactory)
+            transformer = CryptoFlowOpsTransformer(
+                requestingComponent = "test",
+                responseTopic = RESPONSE_TOPIC,
+                keyEncodingService = keyEncodingService
+            )
+            logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+            setupMessagingAndCryptoConfigs()
+            setupDatabases()
+            setupTestDependencies()
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun cleanup() {
+            if (::cryptoEmf.isInitialized) {
+                cryptoEmf.close()
+            }
+            if (::configEmf.isInitialized) {
+                configEmf.close()
+            }
+            if(::testDependencies.isInitialized) {
+                testDependencies.stopAndWait()
+            }
+            if(::flowOpsResponses.isInitialized) {
+                flowOpsResponses.close()
+            }
+            if(::opsClient.isInitialized) {
+                opsClient.stopAndWait()
+            }
+        }
+
+        private fun setupTestDependencies() {
+            logger.info("Starting ${opsClient::class.java.simpleName}")
+            opsClient.startAndWait()
+
+            logger.info("Starting ${processor::class.java.simpleName}")
+            processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
+
+            testDependencies = TestLifecycleDependenciesTrackingCoordinator(
+                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
+                coordinatorFactory,
+                setOf(
+                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                    LifecycleCoordinatorName.forComponent<CryptoProcessor>()
+                )
+            ).also { it.startAndWait() }
+
+            testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
+        }
+
+        private fun setupMessagingAndCryptoConfigs() {
+            with(publisher) {
+                publish(
+                    listOf(
+                        Record(
+                            CONFIG_TOPIC,
+                            MESSAGING_CONFIG,
+                            Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
+                        ),
+                        Record(
+                            CONFIG_TOPIC,
+                            CRYPTO_CONFIG,
+                            Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
+                        )
+                    )
+                )
+            }
+        }
+
+        private fun setupDatabases() {
+            configEmf = configDbConfig.setupDatabase(
+                "config",
+                CordaDb.CordaCluster.persistenceUnitName,
+                ConfigurationEntities.classes
+            )
+            cryptoEmf = cryptoDbConfig.setupDatabase(
+                "crypto",
+                CordaDb.Crypto.persistenceUnitName,
+                CryptoEntities.classes
+            )
+            dbConnectionManager.initialise(config)
+            dbAdmin.createDbAndUser(DbSchema.CRYPTO, "dml_user", "pwd_123", DbPrivilege.DML)
+        }
+
+        private fun <R> run(testCase: KFunction<R>): R = runTestCase(logger, testCase)
+
+        private fun <R> run(testCaseArg: Any, testCase: KFunction<R>): R = runTestCase(logger, testCaseArg, testCase)
     }
 
     @Test
-    @Timeout(200)
     fun `Should be able to use crypto operations`() {
         run(::`Should be able to get supported schemes for all categories`)
         val ledgerKeyAlias = UUID.randomUUID().toString()
@@ -294,26 +314,33 @@ class IntegrationCryptoOpsTests {
         assertNull(publicKey)
     }
 
-    private fun `Should generate new fresh key pair without external id`(): PublicKey {
-        return opsClient.freshKey(tenantId = tenantId)
-    }
+    private fun `Should generate new fresh key pair without external id`(): PublicKey =
+        opsClient.freshKey(
+            tenantId = tenantId,
+            context = CryptoOpsClient.EMPTY_CONTEXT
+        )
 
-    private fun `Should generate new fresh key pair with external id`(externalId: UUID): PublicKey {
-        return opsClient.freshKey(tenantId = tenantId, externalId = externalId)
-    }
+    private fun `Should generate new fresh key pair with external id`(externalId: String): PublicKey =
+        opsClient.freshKey(
+            tenantId = tenantId,
+            externalId = externalId,
+            context = CryptoOpsClient.EMPTY_CONTEXT
+        )
 
     private fun `Should be able to generate fresh key without external id by flow ops`(): PublicKey {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId
         )
-        publisher.publish(listOf(
-            Record(
-                topic = FLOW_OPS_MESSAGE_TOPIC,
-                key = key,
-                value = event
+        publisher.publish(
+            listOf(
+                Record(
+                    topic = FLOW_OPS_MESSAGE_TOPIC,
+                    key = key,
+                    value = event
+                )
             )
-        )).forEach { it.get() }
+        ).forEach { it.get() }
         val response = flowOpsResponses.waitForResponse(key)
         return transformer.transform(response) as PublicKey
     }
@@ -324,13 +351,15 @@ class IntegrationCryptoOpsTests {
             tenantId = tenantId,
             externalId = externalId
         )
-        publisher.publish(listOf(
-            Record(
-                topic = FLOW_OPS_MESSAGE_TOPIC,
-                key = key,
-                value = event
+        publisher.publish(
+            listOf(
+                Record(
+                    topic = FLOW_OPS_MESSAGE_TOPIC,
+                    key = key,
+                    value = event
+                )
             )
-        )).forEach { it.get() }
+        ).forEach { it.get() }
         val response = flowOpsResponses.waitForResponse(key)
         return transformer.transform(response) as PublicKey
     }
@@ -391,13 +420,15 @@ class IntegrationCryptoOpsTests {
             publicKey = publicKey,
             data = data
         )
-        publisher.publish(listOf(
-            Record(
-                topic = FLOW_OPS_MESSAGE_TOPIC,
-                key = key,
-                value = event
+        publisher.publish(
+            listOf(
+                Record(
+                    topic = FLOW_OPS_MESSAGE_TOPIC,
+                    key = key,
+                    value = event
+                )
             )
-        )).forEach { it.get() }
+        ).forEach { it.get() }
         val response = flowOpsResponses.waitForResponse(key)
         val signature = transformer.transform(response) as DigitalSignature.WithKey
         assertEquals(publicKey, signature.by)

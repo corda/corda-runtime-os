@@ -50,24 +50,24 @@ abstract class AbstractComponent<IMPL: AutoCloseable>(
             is StopEvent -> {
                 registrationHandle?.close()
                 registrationHandle = null
-                deactivate("Stopping component.")
+                deactivateImpl("Stopping component.")
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
-                    LifecycleStatus.UP -> activate()
-                    else -> deactivate("At least one dependency is DOWN.")
+                    LifecycleStatus.UP -> activateImpl()
+                    else -> deactivateImpl("At least one dependency is DOWN.")
                 }
             }
         }
     }
 
-    private fun activate() {
+    private fun activateImpl() {
         logger.info("Activating")
         swapImpl(createActiveImpl())
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun deactivate(reason: String) {
+    private fun deactivateImpl(reason: String) {
         logger.info("Deactivating due {}", reason)
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN, reason)
         swapImpl(createInactiveImpl())

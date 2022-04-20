@@ -36,11 +36,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import org.hamcrest.CoreMatchers.instanceOf
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.allOf
-import org.hamcrest.Matchers.greaterThanOrEqualTo
-import org.hamcrest.Matchers.lessThanOrEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
@@ -199,10 +195,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        assertThat(
-            actual.responseTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
-        )
+        assertThat(actual.responseTimestamp.epochSecond)
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
+            .isLessThanOrEqualTo(now.epochSecond)
         assertTrue(
             actual.other.items.size == expected.other.items.size &&
                     actual.other.items.containsAll(expected.other.items) &&
@@ -227,7 +222,7 @@ class CryptoOpsRpcProcessorTests {
         val result = future.get()
         assertResponseContext(context, result.context)
         assertNotNull(result.response)
-        assertThat(result.response, instanceOf(CryptoSigningKeys::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
     }
 
@@ -251,7 +246,7 @@ class CryptoOpsRpcProcessorTests {
         val result = future.get()
         assertResponseContext(context, result.context)
         assertNotNull(result.response)
-        assertThat(result.response, instanceOf(CryptoSigningKeys::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
         assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
     }
 
@@ -286,7 +281,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
@@ -305,7 +300,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result2 = future2.get()
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoSigningKeys::class.java))
+        assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key = result2.response as CryptoSigningKeys
         assertEquals(1, key.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
@@ -326,7 +321,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result3 = future3.get()
         assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(CryptoSigningKeys::class.java))
+        assertThat(result3.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key3 = result3.response as CryptoSigningKeys
         assertEquals(1, key3.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
@@ -365,7 +360,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
@@ -384,7 +379,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result2 = future2.get()
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoSigningKeys::class.java))
+        assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key = result2.response as CryptoSigningKeys
         assertEquals(1, key.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
@@ -405,7 +400,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result3 = future3.get()
         assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(CryptoSigningKeys::class.java))
+        assertThat(result3.response).isInstanceOf(CryptoSigningKeys::class.java)
         val key3 = result3.response as CryptoSigningKeys
         assertEquals(1, key3.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
@@ -435,7 +430,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result4 = future4.get()
         assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result4.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature4.publicKey.array()))
         verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
@@ -469,7 +464,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
@@ -508,7 +503,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
@@ -549,7 +544,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
         val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
@@ -577,7 +572,7 @@ class CryptoOpsRpcProcessorTests {
             future3.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
+        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
     }
 
     @Test
@@ -600,9 +595,8 @@ class CryptoOpsRpcProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
-        assertThat(exception.cause?.cause, instanceOf(CryptoServiceBadRequestException::class.java))
+        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(exception.cause?.cause).isInstanceOf(CryptoServiceBadRequestException::class.java)
     }
 
     @Test
@@ -621,7 +615,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSignatureSchemes::class.java)
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
             tenantId,
@@ -649,7 +643,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSignatureSchemes::class.java)
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
             tenantId,
@@ -687,7 +681,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result2.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature2 = result2.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
         verifier.verify(publicKey, signature2.bytes.array(), data)
@@ -713,7 +707,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result3 = future3.get()
         assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result3.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature3 = result3.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
@@ -739,7 +733,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result4 = future4.get()
         assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result4.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)

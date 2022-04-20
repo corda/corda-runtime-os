@@ -19,10 +19,7 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignWithSpecFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.containsString
-import org.hamcrest.Matchers.empty
-import org.hamcrest.Matchers.instanceOf
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -190,7 +187,7 @@ class CryptoFlowOpsTransformerTests {
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(FilterMyKeysFlowQuery::class.java, result.value.request)
         val query = result.value.request as FilterMyKeysFlowQuery
-        assertThat(query.keys, empty())
+        assertThat(query.keys).isEmpty()
         assertRequestContext<FilterMyKeysFlowQuery>(result)
     }
 
@@ -403,7 +400,7 @@ class CryptoFlowOpsTransformerTests {
             FilterMyKeysFlowQuery::class.java
         )
         val result = buildTransformer().transform(response)
-        assertThat(result, instanceOf(List::class.java))
+        assertThat(result).isInstanceOf(List::class.java)
         val resultKeys = result as List<PublicKey>
         assertEquals(2, resultKeys.size)
         assertTrue(resultKeys.any { it.encoded.contentEquals(publicKeys[0].encoded) })
@@ -466,7 +463,7 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString("--failed--"))
+        assertThat(result.message).containsSequence("--failed--")
     }
 
     @Test
@@ -490,8 +487,8 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoSigningKeys::class.java.name))
+        assertThat(result.message).containsSequence(CryptoSignatureWithKey::class.java.name)
+        assertThat(result.message).containsSequence(CryptoSigningKeys::class.java.name)
     }
 
     @Test
@@ -503,7 +500,7 @@ class CryptoFlowOpsTransformerTests {
             GenerateFreshKeyFlowCommand::class.java
         )
         val result = buildTransformer().transform(response)
-        assertThat(result, instanceOf(PublicKey::class.java))
+        assertThat(result).isInstanceOf(PublicKey::class.java)
         val resultKey = result as PublicKey
         assertArrayEquals(publicKey.encoded, resultKey.encoded)
     }
@@ -532,7 +529,7 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString("--failed--"))
+        assertThat(result.message).containsSequence("--failed--")
     }
 
     @Test
@@ -556,8 +553,8 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoPublicKey::class.java.name))
+        assertThat(result.message).containsSequence(CryptoSignatureWithKey::class.java.name)
+        assertThat(result.message).containsSequence(CryptoPublicKey::class.java.name)
     }
 
     @Test
@@ -573,7 +570,7 @@ class CryptoFlowOpsTransformerTests {
             SignFlowCommand::class.java
         )
         val result = buildTransformer().transform(response)
-        assertThat(result, instanceOf(DigitalSignature.WithKey::class.java))
+        assertThat(result).isInstanceOf(DigitalSignature.WithKey::class.java)
         val resultSignature = result as DigitalSignature.WithKey
         assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
         assertArrayEquals(signature, resultSignature.bytes)
@@ -607,7 +604,7 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString("--failed--"))
+        assertThat(result.message).containsSequence("--failed--")
     }
 
     @Test
@@ -631,8 +628,8 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoSigningKeys::class.java.name))
+        assertThat(result.message).containsSequence(CryptoSignatureWithKey::class.java.name)
+        assertThat(result.message).containsSequence(CryptoSigningKeys::class.java.name)
     }
 
     @Test
@@ -648,7 +645,7 @@ class CryptoFlowOpsTransformerTests {
             SignWithSpecFlowCommand::class.java
         )
         val result = buildTransformer().transform(response)
-        assertThat(result, instanceOf(DigitalSignature.WithKey::class.java))
+        assertThat(result).isInstanceOf(DigitalSignature.WithKey::class.java)
         val resultSignature = result as DigitalSignature.WithKey
         assertArrayEquals(publicKey.encoded, resultSignature.by.encoded)
         assertArrayEquals(signature, resultSignature.bytes)
@@ -664,7 +661,7 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString("--failed--"))
+        assertThat(result.message).containsSequence("--failed--")
     }
 
     @Test
@@ -688,7 +685,7 @@ class CryptoFlowOpsTransformerTests {
         val result = assertThrows<IllegalStateException> {
             buildTransformer().transform(response)
         }
-        assertThat(result.message, containsString(CryptoSignatureWithKey::class.java.name))
-        assertThat(result.message, containsString(CryptoSigningKeys::class.java.name))
+        assertThat(result.message).containsSequence(CryptoSignatureWithKey::class.java.name)
+        assertThat(result.message).containsSequence(CryptoSigningKeys::class.java.name)
     }
 }

@@ -15,8 +15,7 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.contains
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -51,7 +50,7 @@ class CryptoServiceRefUtilsTests {
         )
         val result = ref.getSupportedSchemes()
         assertEquals(2, result.size)
-        assertThat(result, contains(ECDSA_SECP256R1_CODE_NAME, RSA_CODE_NAME))
+        assertThat(result).containsAll(listOf(ECDSA_SECP256R1_CODE_NAME, RSA_CODE_NAME))
         Mockito.verify(ref.instance, times(1)).supportedSchemes()
     }
 

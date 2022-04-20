@@ -22,11 +22,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.empty
-import org.hamcrest.Matchers.emptyOrNullString
-import org.hamcrest.Matchers.not
-import org.hamcrest.core.IsInstanceOf
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -89,14 +85,14 @@ class HSMRegistrationClientComponentTests {
         assertEquals(result.value.requestId, context.requestId)
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(HSMRegistrationClientImpl::class.simpleName, context.requestingComponent)
-        assertThat(context.other.items, empty())
+        assertThat(context.other.items).isEmpty()
         return req
     }
 
     private inline fun <reified OP> assertOperationType(result: PublishActResult<CryptoPublishResult>): OP {
         val req = result.firstRecord.value as HSMRegistrationRequest
         Assertions.assertNotNull(req.request)
-        assertThat(req.request, IsInstanceOf(OP::class.java))
+        assertThat(req.request).isInstanceOf(OP::class.java)
         return req.request as OP
     }
 
@@ -125,18 +121,18 @@ class HSMRegistrationClientComponentTests {
         val result = publisher.act {
             component.putHSM(config)
         }
-        assertThat(result.value.requestId, not(emptyOrNullString()))
+        assertThat(result.value.requestId).isNotNull.isNotEmpty
         assertEquals(1, result.messages.size)
         assertEquals(1, result.messages.first().size)
         assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
         assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
-        assertThat(result.firstRecord.value, IsInstanceOf(HSMRegistrationRequest::class.java))
+        assertThat(result.firstRecord.value).isInstanceOf(HSMRegistrationRequest::class.java)
         assertRequestContext(result, CryptoConsts.CLUSTER_TENANT_ID)
         val command = assertOperationType<AddHSMCommand>(result)
         assertSame(config, command.config)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
-        assertThat(command.context.items, empty())
+        assertThat(command.context.items).isEmpty()
     }
 
     @Test
@@ -152,12 +148,12 @@ class HSMRegistrationClientComponentTests {
                 defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
             )
         }
-        assertThat(result.value.requestId, not(emptyOrNullString()))
+        assertThat(result.value.requestId).isNotNull.isNotEmpty
         assertEquals(1, result.messages.size)
         assertEquals(1, result.messages.first().size)
         assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
         assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
-        assertThat(result.firstRecord.value, IsInstanceOf(HSMRegistrationRequest::class.java))
+        assertThat(result.firstRecord.value).isInstanceOf(HSMRegistrationRequest::class.java)
         val req = assertRequestContext(result, "some-tenant")
         assertEquals("some-tenant", req.context.tenantId)
         val command = assertOperationType<AssignHSMCommand>(result)
@@ -165,7 +161,7 @@ class HSMRegistrationClientComponentTests {
         assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
-        assertThat(command.context.items, empty())
+        assertThat(command.context.items).isEmpty()
     }
 
     @Test
@@ -182,12 +178,12 @@ class HSMRegistrationClientComponentTests {
                 defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
             )
         }
-        assertThat(result.value.requestId, not(emptyOrNullString()))
+        assertThat(result.value.requestId).isNotNull.isNotEmpty
         assertEquals(1, result.messages.size)
         assertEquals(1, result.messages.first().size)
         assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
         assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
-        assertThat(result.firstRecord.value, IsInstanceOf(HSMRegistrationRequest::class.java))
+        assertThat(result.firstRecord.value).isInstanceOf(HSMRegistrationRequest::class.java)
         val req = assertRequestContext(result, "some-tenant")
         assertEquals("some-tenant", req.context.tenantId)
         val command = assertOperationType<AssignSoftHSMCommand>(result)
@@ -196,7 +192,7 @@ class HSMRegistrationClientComponentTests {
         assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
-        assertThat(command.context.items, empty())
+        assertThat(command.context.items).isEmpty()
     }
 
     @Test

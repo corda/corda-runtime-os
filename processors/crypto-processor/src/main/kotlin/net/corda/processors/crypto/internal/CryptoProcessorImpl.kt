@@ -10,6 +10,7 @@ import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -40,6 +41,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
     @Reference(service = SoftCryptoKeyCacheProvider::class)
     private val softCryptoKeyCacheProvider: SoftCryptoKeyCacheProvider,
     @Reference(service = SigningKeyCacheProvider::class)
@@ -67,6 +70,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
+        ::dbConnectionManager,
         ::softCryptoKeyCacheProvider,
         ::signingKeyCacheProvider,
         ::signingServiceFactory,

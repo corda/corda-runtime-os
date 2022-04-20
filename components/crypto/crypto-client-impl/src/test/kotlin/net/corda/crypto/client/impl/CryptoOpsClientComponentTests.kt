@@ -47,10 +47,7 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.empty
-import org.hamcrest.Matchers.instanceOf
-import org.hamcrest.core.IsInstanceOf
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -149,7 +146,7 @@ class CryptoOpsClientComponentTests {
         kotlin.test.assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         kotlin.test.assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
-        assertThat(context.other.items, empty())
+        assertThat(context.other.items).isEmpty()
     }
 
     private fun assertOperationContext(context: KeyValuePairList) {
@@ -162,7 +159,7 @@ class CryptoOpsClientComponentTests {
 
     private inline fun <reified OP> assertOperationType(result: SendActResult<RpcOpsRequest, *>): OP {
         assertNotNull(result.firstRequest.request)
-        assertThat(result.firstRequest.request, IsInstanceOf(OP::class.java))
+        assertThat(result.firstRequest.request).isInstanceOf(OP::class.java)
         return result.firstRequest.request as OP
     }
 
@@ -909,7 +906,7 @@ class CryptoOpsClientComponentTests {
             component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -941,7 +938,7 @@ class CryptoOpsClientComponentTests {
             component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -973,7 +970,7 @@ class CryptoOpsClientComponentTests {
             component.lookup(knownTenantId, emptyList())
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

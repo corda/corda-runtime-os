@@ -1,8 +1,7 @@
 package net.corda.crypto.service.impl.infra
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
+import org.assertj.core.api.Assertions.assertThat
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
@@ -22,13 +21,9 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: S
 }
 
 fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
-    MatcherAssert.assertThat(
-        actual.toEpochMilli(),
-        Matchers.allOf(
-            Matchers.greaterThanOrEqualTo(before.toEpochMilli()),
-            Matchers.lessThanOrEqualTo(after.toEpochMilli())
-        )
-    )
+    assertThat(actual.toEpochMilli())
+        .isGreaterThanOrEqualTo(before.toEpochMilli())
+        .isLessThanOrEqualTo(after.toEpochMilli())
 }
 
 inline fun <reified RESULT: Any> act(block: () -> RESULT?): ActResult<RESULT> {

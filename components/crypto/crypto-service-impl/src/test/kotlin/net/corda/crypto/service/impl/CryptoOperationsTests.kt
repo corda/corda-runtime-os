@@ -32,13 +32,10 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.interfaces.ECKey
-import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.collection.IsCollectionWithSize
-import org.hamcrest.collection.IsEmptyCollection
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeAll
@@ -686,7 +683,7 @@ class CryptoOperationsTests {
             tenantId,
             listOf(publicKeyIdOf(key1), publicKeyIdOf(key2))
         ).toList()
-        assertThat(ourKeys, IsCollectionWithSize.hasSize(1))
+        assertThat(ourKeys).hasSize(1)
         assertTrue(ourKeys.any { it.publicKey.contentEquals(key2.encoded) })
     }
 
@@ -702,7 +699,7 @@ class CryptoOperationsTests {
             tenantId,
             listOf(publicKeyIdOf(key1), publicKeyIdOf(key2))
         ).toList()
-        assertThat(ourKeys, `is`(IsEmptyCollection.empty()))
+        assertThat(ourKeys).isEmpty()
     }
 
     @ParameterizedTest
