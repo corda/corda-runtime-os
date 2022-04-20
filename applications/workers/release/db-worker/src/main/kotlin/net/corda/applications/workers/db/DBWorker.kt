@@ -14,6 +14,7 @@ import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -61,7 +62,7 @@ class DBWorker @Activate constructor(
                     ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS.toString()
         )
         fallback.putAll(reconciliationTaskParams)
-        return PathAndConfig(DB_CONFIG, fallback)
+        return PathAndConfig(RECONCILIATION_CONFIG, fallback)
     }
 
     override fun shutdown() {

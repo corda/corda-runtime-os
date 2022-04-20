@@ -23,8 +23,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
@@ -111,7 +111,7 @@ class PermissionStorageReaderServiceEventHandler(
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         log.info("Configuration change event received for keys ${event.config.keys.joinToString()}")
-        onConfigurationUpdated(event.config.toMessagingConfig())
+        onConfigurationUpdated(event.config)
         scheduleNextReconciliationTask(coordinator)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
@@ -141,10 +141,12 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     @VisibleForTesting
-    internal fun onConfigurationUpdated(messagingConfig: SmartConfig) {
+    internal fun onConfigurationUpdated(config: Map<String, SmartConfig>) {
+        val messagingConfig = config.toMessagingConfig()
+        val reconciliationConfig = config[RECONCILIATION_CONFIG]?.withFallback(messagingConfig) ?: messagingConfig
 
-        reconciliationTaskIntervalMs = messagingConfig
-            .getConfig(DB_CONFIG)
+        reconciliationTaskIntervalMs = reconciliationConfig
+            .getConfig(RECONCILIATION_CONFIG)
             .getLong(RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS)
 
         log.info("Permission summary reconciliation interval set to $reconciliationTaskIntervalMs ms.")

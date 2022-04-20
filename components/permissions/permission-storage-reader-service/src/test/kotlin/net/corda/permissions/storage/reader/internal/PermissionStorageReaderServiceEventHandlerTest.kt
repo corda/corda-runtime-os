@@ -13,7 +13,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
@@ -36,6 +35,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.permissions.management.cache.PermissionManagementCacheService
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.kotlin.eq
@@ -84,7 +84,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
     )
 
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
-    private val reconciliationConfigMap = mapOf("$DB_CONFIG.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS" to 12345L)
+
+    private val reconciliationConfigMap = mapOf("$RECONCILIATION_CONFIG.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS" to 12345L)
 
     private val config = configFactory.create(
         ConfigFactory.empty()
@@ -125,7 +126,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         assertNull(handler.permissionStorageReader)
 
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+        handler.onConfigurationUpdated(bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
         assertEquals(12345L, handler.reconciliationTaskIntervalMs)
@@ -144,7 +145,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a DOWN event when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+        handler.onConfigurationUpdated(bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
 
@@ -165,7 +166,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event stops the service's dependencies`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+        handler.onConfigurationUpdated(bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
         assertNotNull(handler.publisher)

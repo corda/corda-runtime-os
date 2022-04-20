@@ -33,7 +33,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.security.MessageDigest
-import net.corda.messaging.api.config.toMessagingConfig
 
 class CpkWriteServiceImplTest {
     private lateinit var cpkWriteServiceImpl: CpkWriteServiceImpl
@@ -100,20 +99,19 @@ class CpkWriteServiceImplTest {
         val keys = mock<Set<String>>()
         val config = mock<Map<String, SmartConfig>>()
         val messagingSmartConfigMock = mock<SmartConfig>()
-        val mockConfig = mock<SmartConfig>()
-        val dbConfig = mock<SmartConfig>()
+        val mockReconciliationConfig = mock<SmartConfig>()
+
+        whenever(config[ConfigKeys.RECONCILIATION_CONFIG]).thenReturn(mockReconciliationConfig)
+        whenever(mockReconciliationConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
         whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
-        whenever(messagingSmartConfigMock.withFallback(any())).thenReturn(mock())
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(messagingSmartConfigMock)
-        whenever(config.toMessagingConfig()).thenReturn(mockConfig)
-        whenever(mockConfig.getConfig(ConfigKeys.DB_CONFIG)).thenReturn(dbConfig)
-        whenever(dbConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
+        whenever(messagingSmartConfigMock.withFallback(any())).thenReturn(mock())
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 
         assertNotNull(cpkWriteServiceImpl.timeout)
-        assertNotNull(cpkWriteServiceImpl.timerEventInterval)
+        assertNotNull(cpkWriteServiceImpl.timerEventIntervalMs)
         assertNotNull(cpkWriteServiceImpl.cpkChecksumsCache)
         assertNotNull(cpkWriteServiceImpl.cpkChunksPublisher)
         assertNotNull(cpkWriteServiceImpl.cpkStorage)
@@ -148,14 +146,13 @@ class CpkWriteServiceImplTest {
 
         val keys = mock<Set<String>>()
         val config = mock<Map<String, SmartConfig>>()
-        val mockConfig = mock<SmartConfig>()
-        val dbConfig = mock<SmartConfig>()
+        val mockReconciliationConfig = mock<SmartConfig>()
+        whenever(config[ConfigKeys.RECONCILIATION_CONFIG]).thenReturn(mockReconciliationConfig)
+        whenever(mockReconciliationConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
         whenever(keys.contains(ConfigKeys.BOOT_CONFIG)).thenReturn(true)
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
-        whenever(config.toMessagingConfig()).thenReturn(mockConfig)
-        whenever(mockConfig.getConfig(ConfigKeys.DB_CONFIG)).thenReturn(dbConfig)
-        whenever(dbConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
+
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 
         assertNull(cpkWriteServiceImpl.configReadServiceRegistration)

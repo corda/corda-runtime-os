@@ -48,6 +48,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.io.ByteArrayInputStream
 import java.time.Duration
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 
 // TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")
@@ -81,7 +82,7 @@ class CpkWriteServiceImpl @Activate constructor(
     @VisibleForTesting
     internal var timeout: Duration? = null
     @VisibleForTesting
-    internal var timerEventInterval: Long? = null
+    internal var timerEventIntervalMs: Long? = null
     @VisibleForTesting
     internal var cpkChecksumsCache: CpkChecksumsCache? = null
     @VisibleForTesting
@@ -147,12 +148,14 @@ class CpkWriteServiceImpl @Activate constructor(
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config.toMessagingConfig()
+        val reconciliationConfig = event.config[RECONCILIATION_CONFIG]?.withFallback(config) ?: config
         // TODO fill the following with configuration once we know where they lie?
         timeout = 20.seconds
-        timerEventInterval = config
-            .getConfig(ConfigKeys.DB_CONFIG)
+
+        timerEventIntervalMs = reconciliationConfig
+            .getConfig(RECONCILIATION_CONFIG)
             .getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)
-        logger.info("CPK write reconciliation interval set to $timerEventInterval ms.")
+        logger.info("CPK write reconciliation interval set to $timerEventIntervalMs ms.")
 
         try {
             createCpkChunksPublisher(config)
@@ -181,7 +184,7 @@ class CpkWriteServiceImpl @Activate constructor(
         logger.trace { "Registering new ${ReconcileCpkEvent::class.simpleName}" }
         coordinator.setTimer(
             "${CpkWriteServiceImpl::class.simpleName}",
-            timerEventInterval!!
+            timerEventIntervalMs!!
         ) { ReconcileCpkEvent(it) }
     }
 
