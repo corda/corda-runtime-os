@@ -11,8 +11,8 @@ class ConfigEncryptor {
      */
     @Test
     fun createConfigSection() {
-        val salt = "not so random"
-        val passphrase = "bad passphrase"
+        val salt = "not_so_random"
+        val passphrase = "bad_passphrase"
         val passwordToEncrypt = "pass"
 
         val encryptionService = EncryptionSecretsServiceImpl(passphrase, salt)
