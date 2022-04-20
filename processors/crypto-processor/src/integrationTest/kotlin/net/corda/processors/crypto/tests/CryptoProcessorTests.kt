@@ -1,6 +1,7 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.publicKeyIdOf
@@ -12,11 +13,12 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -65,6 +67,7 @@ import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.reflect.KFunction
@@ -140,7 +143,7 @@ class CryptoProcessorTests {
             )
         )
 
-        private val config = configFactory.create(DbUtils.createConfig("configuration_db"))
+        private val config: SmartConfig = configFactory.create(DbUtils.createConfig("configuration_db"))
 
         private val cryptoDbConfig: EntityManagerConfiguration =
             DbUtils.getEntityManagerConfiguration("crypto")
@@ -167,14 +170,25 @@ class CryptoProcessorTests {
             dbConnectionManager.bootstrap(config)
             testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
             //dbAdmin.createDbAndUser(DbSchema.CRYPTO, "dml_user", "pwd_123", DbPrivilege.DML)
-            // temporary hack as the `createDbAndUser` doesn't support HSQL
-                val sql = """
-                        CREATE SCHEMA IF NOT EXISTS CRYPTO;
-                        CREATE USER dml_user PASSWORD 'pwd_123' ADMIN;
-                        """.trimIndent()
-            dbConnectionManager.getClusterDataSource().connection.use {
-                it.createStatement().execute(sql)
-                it.commit()
+            // temporary hack as the dbAdmin doesn't support HSQL
+            val record = DbConnectionConfig(
+                id = UUID.randomUUID(),
+                name = CordaDb.Crypto.persistenceUnitName,
+                privilege = DbPrivilege.DML,
+                updateTimestamp = Instant.now(),
+                updateActor = "sa",
+                config = config.root().render(ConfigRenderOptions.defaults()
+                    .setComments(false)
+                    .setFormatted(false)
+                    .setJson(true)
+                    .setOriginComments(false)
+                ),
+                description = "Crypto database connection"
+            )
+            configEmf.use {
+                it.transaction.begin()
+                it.persist(record)
+                it.transaction.commit()
             }
         }
 
