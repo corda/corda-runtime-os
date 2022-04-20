@@ -193,7 +193,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         assertThat(futures.size).isEqualTo(1)
         futures[0].get()
 
-        val latch = CountDownLatch(20)
+        val latch = CountDownLatch(30)
         val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC2-group", TOPIC2, 1),
             TestEventLogProcessor(latch),
@@ -214,6 +214,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
+            assertThat(latch.count).isEqualTo(20)
         }
 
         eventLogSub1.stop()
