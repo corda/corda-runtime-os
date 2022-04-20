@@ -147,10 +147,10 @@ services:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
     command:
       - -mkafka.common.bootstrap.servers=kafka:9092
-      - -spassphrase=bad passphrase
-      - -ssalt=not so random
+      - -spassphrase=bad_passphrase
+      - -ssalt=not_so_random
       - -ddatabase.user=user
-      - -ddatabase.pass.configSecret.encryptedSecret=4LNuCvt+NhGIBwL7gRRhvAZh3k6JRN9NHv0aG3pi1xM=
+      - -ddatabase.pass.configSecret.encryptedSecret=5oDOdkf5E6aH+ZtnIa1tZ12oSFeUaUDijeHPWTy+8Us=
       - -ddatabase.jdbc.url=jdbc:postgresql://corda-cluster-db:5432/cordacluster
     healthcheck:
       test: [ "CMD-SHELL", "curl --fail http://localhost:7000/isHealthy || exit 1" ]
