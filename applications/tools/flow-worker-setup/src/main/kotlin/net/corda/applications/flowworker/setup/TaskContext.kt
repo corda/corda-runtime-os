@@ -32,7 +32,7 @@ class TaskContext(
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(startArgs.topicPrefix))
             .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(startArgs.bootstrapServer))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
-        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup"), bootConfig)
+        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup", false), bootConfig)
     }
 
     fun createTopics(topics: List<NewTopic>) {
