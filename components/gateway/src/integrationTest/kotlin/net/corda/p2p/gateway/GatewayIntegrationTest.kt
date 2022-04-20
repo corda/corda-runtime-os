@@ -388,8 +388,8 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to multiple servers`() {
-            val messageCount = 100
-            val serversCount = 4
+            val messageCount = 20
+            val serversCount = 3
             alice.publishTrustStore()
 
             // We first produce some messages which will be consumed by the Gateway.
@@ -417,7 +417,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig, ConnectionConfiguration().copy(retryDelay = Duration.ofSeconds(10))),
+                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig),
                     chipKeyStore,
                 ).also {
                     serverListener.server = it
@@ -434,7 +434,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         gatewayAddress.first,
                         gatewayAddress.second,
-                        aliceSslConfig
+                        aliceSslConfig,
                     )
                 ),
                 alice.subscriptionFactory,
