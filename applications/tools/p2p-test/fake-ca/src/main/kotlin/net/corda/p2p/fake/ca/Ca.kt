@@ -69,7 +69,8 @@ class Ca {
 
     @Option(
         names = ["--stacktrace"],
-        description = ["Print out the stacktrace for all exceptions"]
+        description = ["Print out the stacktrace for all exceptions"],
+        hidden = true,
     )
     private var _stackTrace: Boolean = false
 
