@@ -33,7 +33,6 @@ class Setup(
             coordinatorFactory
         )
     }
-
     private companion object {
         private val logger = contextLogger()
     }
