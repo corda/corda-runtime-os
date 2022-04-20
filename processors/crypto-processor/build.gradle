@@ -31,6 +31,8 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')
+    implementation project(":libs:db:db-core")
+    implementation project(":libs:db:db-orm")
     implementation project(":libs:layered-property-map")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
@@ -40,8 +42,6 @@ dependencies {
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
-    integrationTestImplementation project(":libs:db:db-core")
-    ////integrationTestImplementation project(":libs:db:db-orm")
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation project(":testing:test-utilities")
 
@@ -57,12 +57,10 @@ dependencies {
     runtimeOnly project(':components:crypto:crypto-service-impl')
     runtimeOnly project(":components:db:db-connection-manager-impl")
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
-    runtimeOnly project(":libs:db:db-core")
-    ////runtimeOnly project(":libs:db:db-orm")
     runtimeOnly project(":libs:db:db-orm-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    //runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 
