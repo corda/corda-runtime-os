@@ -60,7 +60,7 @@ dependencies {
     runtimeOnly project(":libs:db:db-orm-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
-    //runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
 
