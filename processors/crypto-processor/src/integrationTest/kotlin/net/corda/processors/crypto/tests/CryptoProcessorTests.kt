@@ -124,6 +124,8 @@ class CryptoProcessorTests {
 
         private lateinit var cryptoEmf: EntityManagerFactory
 
+        private lateinit var tenantEmf: EntityManagerFactory
+
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
@@ -132,7 +134,7 @@ class CryptoProcessorTests {
 
         private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
 
-        private lateinit var tenantId: String
+        private val tenantId: String = UUID.randomUUID().toString()
 
         private val configFactory = SmartConfigFactory.create(
             ConfigFactory.parseString(
@@ -146,7 +148,10 @@ class CryptoProcessorTests {
         private val config: SmartConfig = configFactory.create(DbUtils.createConfig("configuration_db"))
 
         private val cryptoDbConfig: EntityManagerConfiguration =
-            DbUtils.getEntityManagerConfiguration("crypto")
+            DbUtils.getEntityManagerConfiguration(CordaDb.Crypto.persistenceUnitName)
+
+        private val tenantDbConfig: EntityManagerConfiguration =
+            DbUtils.getEntityManagerConfiguration("vnode_crypto_$tenantId")
 
         private val configDbConfig: EntityManagerConfiguration =
             DbUtils.getEntityManagerConfiguration("configuration_db")
@@ -155,7 +160,6 @@ class CryptoProcessorTests {
         @BeforeAll
         fun setup() {
             databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            tenantId = UUID.randomUUID().toString()
             flowOpsResponses = FlowOpsResponses(subscriptionFactory)
             transformer = CryptoFlowOpsTransformer(
                 requestingComponent = "test",
@@ -171,24 +175,32 @@ class CryptoProcessorTests {
             testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
             //dbAdmin.createDbAndUser(DbSchema.CRYPTO, "dml_user", "pwd_123", DbPrivilege.DML)
             // temporary hack as the dbAdmin doesn't support HSQL
-            val record = DbConnectionConfig(
-                id = UUID.randomUUID(),
-                name = CordaDb.Crypto.persistenceUnitName,
-                privilege = DbPrivilege.DML,
-                updateTimestamp = Instant.now(),
-                updateActor = "sa",
-                config = config.root().render(ConfigRenderOptions.defaults()
-                    .setComments(false)
-                    .setFormatted(false)
-                    .setJson(true)
-                    .setOriginComments(false)
-                ),
-                description = "Crypto database connection"
-            )
-            configEmf.use {
-                it.transaction.begin()
-                it.persist(record)
-                it.transaction.commit()
+            addDbConnectionConfigs(CordaDb.Crypto.persistenceUnitName, "vnode_crypto_$tenantId")
+        }
+
+        private fun addDbConnectionConfigs(vararg names: String) {
+            configEmf.use { em ->
+                em.transaction.begin()
+                names.forEach { name ->
+                    val record = DbConnectionConfig(
+                        id = UUID.randomUUID(),
+                        name = name,
+                        privilege = DbPrivilege.DML,
+                        updateTimestamp = Instant.now(),
+                        updateActor = "sa",
+                        config = configFactory.create(DbUtils.createConfig(name)).root().render(
+                            ConfigRenderOptions.defaults()
+                                .setComments(false)
+                                .setFormatted(false)
+                                .setJson(true)
+                                .setOriginComments(false)
+                        ),
+                        description = null
+                    )
+                    em.persist(record)
+                    logger.info("persisting config record: ${record.config}")
+                }
+                em.transaction.commit()
             }
         }
 
@@ -198,16 +210,19 @@ class CryptoProcessorTests {
             if (::cryptoEmf.isInitialized) {
                 cryptoEmf.close()
             }
+            if(::tenantEmf.isInitialized) {
+                tenantDbConfig.close()
+            }
             if (::configEmf.isInitialized) {
                 configEmf.close()
             }
-            if(::testDependencies.isInitialized) {
+            if (::testDependencies.isInitialized) {
                 testDependencies.stopAndWait()
             }
-            if(::flowOpsResponses.isInitialized) {
+            if (::flowOpsResponses.isInitialized) {
                 flowOpsResponses.close()
             }
-            if(::opsClient.isInitialized) {
+            if (::opsClient.isInitialized) {
                 opsClient.stopAndWait()
             }
         }
@@ -256,6 +271,12 @@ class CryptoProcessorTests {
                 cryptoDbConfig,
                 "crypto",
                 CordaDb.Crypto.persistenceUnitName,
+                CryptoEntities.classes
+            )
+            tenantEmf = databaseInstaller.setupDatabase(
+                tenantDbConfig,
+                "crypto",
+                "vnode_crypto_$tenantId",
                 CryptoEntities.classes
             )
         }
