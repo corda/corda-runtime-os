@@ -67,7 +67,7 @@ import javax.sql.DataSource
 
 @ExtendWith(ServiceExtension::class)
 class PersistenceTests {
-    companion object : DatabaseInstaller() {
+    companion object {
         @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
@@ -82,6 +82,8 @@ class PersistenceTests {
 
         @InjectService(timeout = 5000)
         lateinit var schemeMetadata: CipherSchemeMetadata
+
+        private lateinit var databaseInstaller: DatabaseInstaller
 
         private val configFactory = SmartConfigFactory.create(
             ConfigFactory.parseString(
@@ -100,7 +102,13 @@ class PersistenceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            cryptoEmf = cryptoDbConfig.setupDatabase(
+            databaseInstaller = DatabaseInstaller(
+                entityManagerFactoryFactory,
+                lbm,
+                entitiesRegistry
+            )
+            cryptoEmf = databaseInstaller.setupDatabase(
+                cryptoDbConfig,
                 "crypto",
                 CordaDb.Crypto.persistenceUnitName,
                 CryptoEntities.classes

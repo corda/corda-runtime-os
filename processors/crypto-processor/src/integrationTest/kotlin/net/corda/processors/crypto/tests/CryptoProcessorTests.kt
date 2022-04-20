@@ -19,6 +19,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -27,6 +28,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.use
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.crypto.tests.infra.BOOT_CONFIGURATION
 import net.corda.processors.crypto.tests.infra.CRYPTO_CONFIGURATION_VALUE
@@ -44,6 +46,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -68,8 +71,13 @@ import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class)
 class CryptoProcessorTests {
-    companion object : DatabaseInstaller() {
+    companion object {
+        private val logger = contextLogger()
+
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
+
+        @InjectService(timeout = 5000L)
+        lateinit var lifecycleRegistry: LifecycleRegistry
 
         @InjectService(timeout = 5000L)
         lateinit var coordinatorFactory: LifecycleCoordinatorFactory
@@ -107,6 +115,8 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
 
+        private lateinit var databaseInstaller: DatabaseInstaller
+
         private lateinit var configEmf: EntityManagerFactory
 
         private lateinit var cryptoEmf: EntityManagerFactory
@@ -141,6 +151,7 @@ class CryptoProcessorTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
+            databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
             tenantId = UUID.randomUUID().toString()
             flowOpsResponses = FlowOpsResponses(subscriptionFactory)
             transformer = CryptoFlowOpsTransformer(
@@ -152,7 +163,19 @@ class CryptoProcessorTests {
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
             setupMessagingAndCryptoConfigs()
             setupDatabases()
-            setupTestDependencies()
+            startDependencies()
+            dbConnectionManager.bootstrap(config)
+            testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
+            //dbAdmin.createDbAndUser(DbSchema.CRYPTO, "dml_user", "pwd_123", DbPrivilege.DML)
+            // temporary hack as the `createDbAndUser` doesn't support HSQL
+                val sql = """
+                        CREATE SCHEMA IF NOT EXISTS CRYPTO;
+                        CREATE USER dml_user PASSWORD 'pwd_123' ADMIN;
+                        """.trimIndent()
+            dbConnectionManager.getClusterDataSource().connection.use {
+                it.createStatement().execute(sql)
+                it.commit()
+            }
         }
 
         @JvmStatic
@@ -175,23 +198,18 @@ class CryptoProcessorTests {
             }
         }
 
-        private fun setupTestDependencies() {
-            logger.info("Starting ${opsClient::class.java.simpleName}")
+        private fun startDependencies() {
             opsClient.startAndWait()
-
-            logger.info("Starting ${processor::class.java.simpleName}")
             processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
-
             testDependencies = TestLifecycleDependenciesTrackingCoordinator(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
+                lifecycleRegistry,
                 setOf(
                     LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                     LifecycleCoordinatorName.forComponent<CryptoProcessor>()
                 )
             ).also { it.startAndWait() }
-
-            testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
         }
 
         private fun setupMessagingAndCryptoConfigs() {
@@ -214,18 +232,18 @@ class CryptoProcessorTests {
         }
 
         private fun setupDatabases() {
-            configEmf = configDbConfig.setupDatabase(
+            configEmf = databaseInstaller.setupDatabase(
+                configDbConfig,
                 "config",
                 CordaDb.CordaCluster.persistenceUnitName,
                 ConfigurationEntities.classes
             )
-            cryptoEmf = cryptoDbConfig.setupDatabase(
+            cryptoEmf = databaseInstaller.setupDatabase(
+                cryptoDbConfig,
                 "crypto",
                 CordaDb.Crypto.persistenceUnitName,
                 CryptoEntities.classes
             )
-            dbConnectionManager.initialise(config)
-            dbAdmin.createDbAndUser(DbSchema.CRYPTO, "dml_user", "pwd_123", DbPrivilege.DML)
         }
 
         private fun <R> run(testCase: KFunction<R>): R = runTestCase(logger, testCase)

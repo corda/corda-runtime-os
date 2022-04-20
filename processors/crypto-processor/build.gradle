@@ -42,6 +42,7 @@ dependencies {
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation project(":testing:test-utilities")
 

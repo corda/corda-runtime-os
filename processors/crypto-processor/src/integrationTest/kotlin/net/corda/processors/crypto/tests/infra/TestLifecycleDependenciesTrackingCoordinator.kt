@@ -10,6 +10,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions
@@ -18,6 +19,7 @@ import java.time.Duration
 class TestLifecycleDependenciesTrackingCoordinator(
     coordinatorName: LifecycleCoordinatorName,
     coordinatorFactory: LifecycleCoordinatorFactory,
+    private val lifecycleRegistry: LifecycleRegistry,
     private val dependencies: Set<LifecycleCoordinatorName>
 ) : Lifecycle, AutoCloseable {
     companion object {
@@ -48,9 +50,24 @@ class TestLifecycleDependenciesTrackingCoordinator(
     }
 
     fun waitUntilAllUp(duration: Duration) {
-        eventually(duration = duration) {
-            Assertions.assertTrue(coordinator.status == LifecycleStatus.UP)
+        try {
+            eventually(duration = duration) {
+                Assertions.assertTrue(coordinator.status == LifecycleStatus.UP)
+            }
+        } catch (e: Throwable) {
+            val downReport = lifecycleRegistry.componentStatus().values.filter {
+                it.status == LifecycleStatus.DOWN
+            }.sortedBy {
+                it.name.componentName
+            }.joinToString(",${System.lineSeparator()}") {
+                "${it.name.componentName}=${it.status}"
+            }
+            logger.warn(
+                "LIFECYCLE COMPONENTS STILL DOWN: [${System.lineSeparator()}$downReport${System.lineSeparator()}]"
+            )
+            throw e
         }
+        logger.info("ALL DEPENDENCIES ARE UP!!!")
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

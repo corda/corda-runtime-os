@@ -11,13 +11,9 @@ import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import javax.persistence.EntityManagerFactory
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.memberProperties
 
 /**
  * Contains helper functions to create the database using [LiquibaseSchemaMigrator].
- * It has to be subclassed and the subclass must provide two properties (with any name) with the types of
- * [EntityManagerFactoryFactory], [JpaEntitiesRegistry], and [LiquibaseSchemaMigrator].
  *
  *  @ExtendWith(ServiceExtension::class)
  *  class PersistenceTests {
@@ -27,10 +23,13 @@ import kotlin.reflect.full.memberProperties
  *          @InjectService(timeout = 5000)
  *          lateinit var lbm: LiquibaseSchemaMigrator
  *          private lateinit var cryptoEmf: EntityManagerFactory
+ *          private lateinit var databaseInstaller: DatabaseInstaller
  *          @JvmStatic
  *          @BeforeAll
  *          fun setup() {
- *              cryptoEmf = cryptoDbConfig.setupDatabase(
+ *              databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
+ *              cryptoEmf = databaseInstaller.setupDatabase(
+ *                  cryptoDbConfig,
  *                  "crypto",
  *                  CordaDb.Crypto.persistenceUnitName,
  *                  CryptoEntities.classes.toList()
@@ -42,43 +41,13 @@ import kotlin.reflect.full.memberProperties
  *      }
  *  }
  */
-abstract class DatabaseInstaller {
-    protected val logger by lazy(LazyThreadSafetyMode.PUBLICATION) {
+class DatabaseInstaller(
+    private val factory: EntityManagerFactoryFactory,
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val entitiesRegistry: JpaEntitiesRegistry
+) {
+    private val logger by lazy(LazyThreadSafetyMode.PUBLICATION) {
         LoggerFactory.getLogger(this::class.java)
-    }
-
-    /**
-     * Using reflection due that the InjectService annotation doesn't discover the properties defined on
-     * a super class (at least for the companion)
-     */
-    private val _emff: EntityManagerFactoryFactory by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val type = EntityManagerFactoryFactory::class.createType()
-        this::class.memberProperties.firstOrNull {
-            it.returnType == type && it != ::_emff
-        }?.getter?.call(this) as? EntityManagerFactoryFactory
-            ?: throw java.lang.IllegalStateException(
-                "The child class doesn't have ${EntityManagerFactoryFactory::class.java.name} property"
-            )
-    }
-
-    private val _lbm: LiquibaseSchemaMigrator by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val type = LiquibaseSchemaMigrator::class.createType()
-        this::class.memberProperties.firstOrNull {
-            it.returnType == type && it != ::_lbm
-        }?.getter?.call(this) as? LiquibaseSchemaMigrator
-            ?: throw java.lang.IllegalStateException(
-                "The child class doesn't have ${LiquibaseSchemaMigrator::class.java.name} property"
-            )
-    }
-
-    private val _er: JpaEntitiesRegistry by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val type = JpaEntitiesRegistry::class.createType()
-        this::class.memberProperties.firstOrNull {
-            it.returnType == type && it != ::_lbm
-        }?.getter?.call(this) as? JpaEntitiesRegistry
-            ?: throw java.lang.IllegalStateException(
-                "The child class doesn't have ${JpaEntitiesRegistry::class.java.name} property"
-            )
     }
 
     /**
@@ -89,14 +58,16 @@ abstract class DatabaseInstaller {
      * @param persistenceUnitName the persistence unit name as defined in [CordaDb] enum, for the config database
      * you can use CordaDb.CordaCluster.persistenceUnitName.
      * @param entities list of entitles which tables should be created.
+     * @return [EntityManagerFactory] that can be used to access the database.
      */
-    fun EntityManagerConfiguration.setupDatabase(
+    fun setupDatabase(
+        cfg: EntityManagerConfiguration,
         resourceSubPath: String,
         persistenceUnitName: String,
         entities: Set<Class<*>>
     ): EntityManagerFactory {
         val schemaClass = DbSchema::class.java
-        logger.info("Creating schemas for ${this.dataSource.connection.metaData.url}".emphasise())
+        logger.info("Creating schemas for ${cfg.dataSource.connection.metaData.url}".emphasise())
         val fullName = "${schemaClass.packageName}.$resourceSubPath"
         val resourcePrefix = fullName.replace('.', '/')
         val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(
@@ -106,17 +77,17 @@ abstract class DatabaseInstaller {
         )
         val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
         StringWriter().use { writer ->
-            _lbm.createUpdateSql(this.dataSource.connection, changeLog, writer)
+            schemaMigrator.createUpdateSql(cfg.dataSource.connection, changeLog, writer)
             logger.info("Schema creation SQL: $writer")
         }
-        _lbm.updateDb(this.dataSource.connection, changeLog)
+        schemaMigrator.updateDb(cfg.dataSource.connection, changeLog)
         logger.info("Create Entities".emphasise())
-        val emf = _emff.create(
+        val emf = factory.create(
             persistenceUnitName,
             entities.toList(),
-            this
+            cfg
         )
-        _er.register(persistenceUnitName, entities)
+        entitiesRegistry.register(persistenceUnitName, entities)
         return emf
     }
 }
