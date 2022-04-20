@@ -7,7 +7,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import kotlin.random.Random
@@ -50,7 +49,8 @@ class Command {
                     BOOTSTRAP_SERVER,
                     ConfigValueFactory.fromAnyRef(kafkaServers)
                 )
-                .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("p2p-setup"))
+                //TODO - understand how the messaging defaults are added to jar
+                //.withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("p2p-setup"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(Random.nextInt()))
         )
