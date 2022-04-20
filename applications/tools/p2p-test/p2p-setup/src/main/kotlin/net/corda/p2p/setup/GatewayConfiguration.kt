@@ -16,6 +16,7 @@ import java.util.concurrent.Callable
     aliases = ["config-gw"],
     description = ["Configure the P2P gateway"],
     showAtFileInUsageHelp = true,
+    mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,
 )

@@ -16,6 +16,7 @@ import java.util.concurrent.Callable
 @Command(
     name = "add-identity",
     description = ["Publish locally hosted identity"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,

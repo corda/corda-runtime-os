@@ -10,6 +10,7 @@ import java.util.concurrent.Callable
     name = "remove-identity",
     aliases = ["rm-identity"],
     description = ["Remove locally hosted identity"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,

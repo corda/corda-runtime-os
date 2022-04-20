@@ -10,6 +10,7 @@ import java.util.concurrent.Callable
     name = "remove-member",
     aliases = ["rm-member"],
     description = ["Remove a member from a group"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,

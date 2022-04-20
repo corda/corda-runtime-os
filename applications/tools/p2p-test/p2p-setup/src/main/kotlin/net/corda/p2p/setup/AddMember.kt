@@ -16,6 +16,7 @@ import java.util.concurrent.Callable
 @Command(
     name = "add-member",
     description = ["Add a group member"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,
