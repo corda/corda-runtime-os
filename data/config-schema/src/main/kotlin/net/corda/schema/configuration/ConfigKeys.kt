@@ -17,6 +17,7 @@ object ConfigKeys {
     const val RPC_CONFIG = "corda.rpc"
     const val SECRETS_CONFIG = "corda.secrets"
     const val SANDBOX_CONFIG = "corda.sandbox"
+    const val RECONCILIATION_CONFIG = "corda.reconciliation"
 
     // Lower level config elements
     //  Messaging
@@ -47,6 +48,6 @@ object ConfigKeys {
     const val TEMP_DIR = "dir.tmp"
 
     // Scheduled reconciliation tasks
-    const val RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS = "reconciliation.permissionSummary.intervalMs"
-    const val RECONCILIATION_CPK_WRITE_INTERVAL_MS = "reconciliation.cpkWrite.intervalMs"
+    const val RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS = "permissionSummary.intervalMs"
+    const val RECONCILIATION_CPK_WRITE_INTERVAL_MS = "cpkWrite.intervalMs"
 }
