@@ -209,7 +209,6 @@ class SandboxGroupContextServiceImplTest {
         service.getOrCreate(ctx1) { _, mc ->
             mc.putUniqueObject(dog1)
             AutoCloseable {
-                println("Closing")
                 isClosed = true
             }
         }

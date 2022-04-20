@@ -1,32 +1,33 @@
 package net.corda.sandboxgroupcontext.service.impl
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.util.loggerFor
-import java.util.concurrent.ConcurrentHashMap
 
-class SandboxGroupContextCache {
+class SandboxGroupContextCache(private val cacheSize: Long = 25) {
     private companion object {
         private val logger = loggerFor<SandboxGroupContextCache>()
     }
-    private val contexts = ConcurrentHashMap<VirtualNodeContext, CloseableSandboxGroupContext>()
+    private val contexts = Caffeine.newBuilder()
+        .maximumSize(cacheSize)
+        .build<VirtualNodeContext, CloseableSandboxGroupContext>()
 
     fun remove(virtualNodeContext: VirtualNodeContext) {
-        contexts.remove(virtualNodeContext)?.close()
+        contexts.asMap().remove(virtualNodeContext)?.close()
     }
 
     fun get(
         virtualNodeContext: VirtualNodeContext,
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext {
-        return contexts[virtualNodeContext] ?: run {
-            val context = createFunction(virtualNodeContext)
-            contexts.putIfAbsent(virtualNodeContext, context)?: context
+        return contexts.get(virtualNodeContext) {
+            createFunction(virtualNodeContext)
         }
     }
 
     fun close() {
-        contexts.forEach { (k, closeable) ->
+        contexts.asMap().forEach { (k, closeable) ->
             try {
                 closeable.close()
             } catch(e: Exception) {

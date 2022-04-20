@@ -43,6 +43,8 @@ dependencies {
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:configuration:configuration-read-service")
 
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+
     runtimeOnly project(':libs:sandbox-hooks')
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
