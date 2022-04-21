@@ -13,8 +13,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -30,6 +32,7 @@ import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
+import kotlin.random.Random
 
 @Suppress("UNUSED")
 @Component(immediate = true)
@@ -136,8 +139,16 @@ class GroupPolicyUploader @Activate constructor(
                 ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER_CONFIG].toString())
             )
             .withValue(
-                MessagingConfig.Bus.BUS_TYPE,
+                BUS_TYPE,
                 ConfigValueFactory.fromAnyRef("KAFKA")
+            )
+            .withValue(
+                TOPIC_PREFIX,
+                ConfigValueFactory.fromAnyRef("")
+            )
+            .withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(Random.nextInt())
             )
             .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(CLIENT_ID))
         return SmartConfigFactory.create(bootConf).create(bootConf)
