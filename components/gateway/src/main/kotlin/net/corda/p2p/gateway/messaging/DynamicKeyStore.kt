@@ -29,7 +29,6 @@ internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    instanceId: Int,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
     companion object {
@@ -44,7 +43,7 @@ internal class DynamicKeyStore(
     }
 
     private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES, instanceId),
+        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES),
         Processor(),
         nodeConfiguration
     )
@@ -59,7 +58,6 @@ internal class DynamicKeyStore(
     private val signer = StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        instanceId,
         nodeConfiguration,
     )
 

@@ -135,14 +135,14 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 1),
+            SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1),
             TestStateEventProcessor(stateAndEventLatch, false),
             TEST_CONFIG
         )
 
         val secondWorkerConfig = TEST_CONFIG.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(2))
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 2),
+            SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1),
             TestStateEventProcessor(stateAndEventLatch, true),
             secondWorkerConfig
         )
@@ -209,7 +209,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val onNextLatch1 = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC2-group", EVENT_TOPIC2, 1),
+            SubscriptionConfig("$EVENT_TOPIC2-group", EVENT_TOPIC2),
             TestStateEventProcessor(onNextLatch1, true, false, EVENTSTATE_OUTPUT2),
             TEST_CONFIG
         )
@@ -225,7 +225,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val durableLatch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT2-group",  EVENTSTATE_OUTPUT2, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT2-group",  EVENTSTATE_OUTPUT2),
             TestDurableProcessor(durableLatch),
             TEST_CONFIG,
             null
@@ -240,13 +240,13 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC3_TEMPLATE))
 
-        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC3, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC3)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
 
         val onNextLatch1 = CountDownLatch(3)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC3-group", EVENT_TOPIC3, 1),
+            SubscriptionConfig("$EVENT_TOPIC3-group", EVENT_TOPIC3),
             TestStateEventProcessorStrings(onNextLatch1, true, true, EVENTSTATE_OUTPUT3),
             TEST_CONFIG,
             TestStateAndEventListenerStrings()
@@ -259,7 +259,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val durableLatch = CountDownLatch(2)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT3-group",  EVENTSTATE_OUTPUT3, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT3-group",  EVENTSTATE_OUTPUT3),
             TestDurableProcessorStrings(durableLatch),
             TEST_CONFIG,
             null
@@ -275,7 +275,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val commitStatesLatch = CountDownLatch(2)
         val onNextLatch2 = CountDownLatch(2)
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3, 1),
+            SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3),
             TestStateEventProcessorStrings(onNextLatch2, true, false, EVENTSTATE_OUTPUT3),
             TEST_CONFIG,
             TestStateAndEventListenerStrings(expectedCommitStates, commitStatesLatch, null,
@@ -298,7 +298,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val onNextLatch1 = CountDownLatch(30)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 1),
+            SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4),
             TestStateEventProcessor(onNextLatch1, true, false, EVENTSTATE_OUTPUT4),
             TEST_CONFIG
         )
@@ -310,7 +310,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 2),
+            SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4),
             TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, TWENTY_FIVE_SECONDS),
             longWaitProcessorConfig
         )
@@ -339,7 +339,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val durableLatch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT4-group",  EVENTSTATE_OUTPUT4, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT4-group",  EVENTSTATE_OUTPUT4),
             TestDurableProcessor(durableLatch),
             TEST_CONFIG,
             null
@@ -359,7 +359,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC5-group", EVENT_TOPIC5, 1),
+            SubscriptionConfig("$EVENT_TOPIC5-group", EVENT_TOPIC5),
             TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 20000),
             shortIntervalTimeoutConfig,
             TestStateAndEventListenerStrings()
@@ -369,7 +369,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //verify output records from state and event
         val durableLatch = CountDownLatch(9)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group",  EVENTSTATE_OUTPUT5, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group",  EVENTSTATE_OUTPUT5),
             TestDurableProcessorStrings(durableLatch),
             TEST_CONFIG,
             null
@@ -379,7 +379,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //verify dead letter populated
         val deadLetterLatch = CountDownLatch(1)
         val deadLetterSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group-DLQ",  EVENT_TOPIC5_DLQ, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group-DLQ",  EVENT_TOPIC5_DLQ),
             TestDurableProcessorStrings(deadLetterLatch),
             TEST_CONFIG,
             null
@@ -416,7 +416,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val expectedCommitStates = listOf(mapOf("key1" to "1"), mapOf("key2" to "2"), mapOf("key3" to "3"))
 
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6, 1),
+            SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6),
             TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 5000),
             shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5000)
         )
@@ -425,7 +425,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //verify output records from state and event
         val durableLatch = CountDownLatch(3)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT6-group",  EVENTSTATE_OUTPUT6, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT6-group",  EVENTSTATE_OUTPUT6),
             TestDurableProcessorStrings(durableLatch),
             TEST_CONFIG,
             null
@@ -446,7 +446,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val onNextLatch1 = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$EVENT_TOPIC7-group", EVENT_TOPIC7, 1),
+            SubscriptionConfig("$EVENT_TOPIC7-group", EVENT_TOPIC7),
             TestStateEventProcessor(onNextLatch1, true, false, EVENTSTATE_OUTPUT7),
             TEST_CONFIG
         )
@@ -464,13 +464,13 @@ class StateAndEventSubscriptionIntegrationTest {
         val durableLatch = CountDownLatch(10)
         val dlqLatch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT7-group",  EVENTSTATE_OUTPUT7, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT7-group",  EVENTSTATE_OUTPUT7),
             TestDurableProcessor(durableLatch),
             TEST_CONFIG,
             null
         )
         val dlqSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENT_TOPIC7-group",  EVENT_TOPIC7_DLQ, 1),
+            SubscriptionConfig("$EVENT_TOPIC7-group",  EVENT_TOPIC7_DLQ),
             TestDurableStringProcessor(dlqLatch),
             TEST_CONFIG,
             null

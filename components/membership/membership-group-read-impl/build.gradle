@@ -11,7 +11,6 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    implementation project(":libs:configuration:configuration-schema:messaging-configuration")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")

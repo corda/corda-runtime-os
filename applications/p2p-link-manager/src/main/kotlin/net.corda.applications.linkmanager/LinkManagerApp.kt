@@ -58,7 +58,6 @@ class LinkManagerApp @Activate constructor(
                 lifecycleCoordinatorFactory,
                 configurationReadService,
                 bootConfig,
-                arguments.instanceId
             ).also { linkmanager ->
                 linkmanager.start()
 

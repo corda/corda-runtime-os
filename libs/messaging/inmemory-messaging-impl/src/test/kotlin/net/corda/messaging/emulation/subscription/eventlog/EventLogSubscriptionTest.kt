@@ -29,7 +29,8 @@ class EventLogSubscriptionTest {
         processor = mock(),
         partitionAssignmentListener = null,
         topicService = topic,
-        lifecycleCoordinatorFactory
+        lifecycleCoordinatorFactory,
+        1
     )
 
     @Test

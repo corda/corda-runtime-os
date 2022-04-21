@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -59,20 +58,9 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
          * Start the member list subscription.
          */
         private fun startMemberListSubscription(config: SmartConfig) {
-            val instanceId = when {
-                config.hasPathOrNull(INSTANCE_ID) -> {
-                    when {
-                        config.getIsNull(INSTANCE_ID) -> null
-                        else -> config.getInt(INSTANCE_ID)
-                    }
-                }
-                else -> null
-            }
-
             val subscriptionConfig = SubscriptionConfig(
                 CONSUMER_GROUP,
-                MEMBER_LIST_TOPIC,
-                instanceId
+                MEMBER_LIST_TOPIC
             )
 
             val processor = MemberListProcessor(groupReadCache, layeredPropertyMapFactory)

@@ -130,7 +130,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                val producerConfig = ProducerConfig(config.clientId, null, ProducerRoles.RPC_SENDER)
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId,false, ProducerRoles.RPC_SENDER)
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
                 cordaConsumerBuilder.createConsumer(
@@ -222,8 +222,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
-                    "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                    "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
             }
         }

@@ -24,12 +24,14 @@ import kotlin.concurrent.withLock
  * @property topicService - A topic service to supply events records.
  * @property lifecycleCoordinatorFactory used to create the lifecycleCoordinator object that external users can follow for updates
  */
+@Suppress("LongParameterList")
 class EventLogSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     internal val processor: EventLogProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val instanceId: Int
 ) : Subscription<K, V> {
 
     companion object {
@@ -41,7 +43,7 @@ class EventLogSubscription<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-EventLogSubscription-${subscriptionConfig.eventTopic}",
-            subscriptionConfig.instanceId.toString()
+            instanceId.toString()
         )
     ) { _, _ -> }
 

@@ -15,12 +15,14 @@ import net.corda.v5.base.util.debug
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+@Suppress("LongParameterList")
 internal class DurableSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     private val processor: DurableProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     private val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val instanceId: Int
 ) : Subscription<K, V> {
     companion object {
         private val log = contextLogger()
@@ -29,7 +31,7 @@ internal class DurableSubscription<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-DurableSubscription-${subscriptionConfig.eventTopic}",
-            subscriptionConfig.instanceId.toString()
+            instanceId.toString()
         )
     ) { _, _ -> }
     private val lock = ReentrantLock()

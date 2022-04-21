@@ -57,7 +57,6 @@ class GatewayApp @Activate constructor(
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 bootConfig,
-                arguments.instanceId,
             ).also { gateway ->
                 gateway.start()
 

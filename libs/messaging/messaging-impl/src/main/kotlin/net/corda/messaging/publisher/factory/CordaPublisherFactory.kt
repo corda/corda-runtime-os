@@ -42,27 +42,27 @@ class CordaPublisherFactory @Activate constructor(
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
-        kafkaConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): Publisher {
-        val configBuilder = MessagingConfigResolver(kafkaConfig.factory)
-        val config = configBuilder.buildPublisherConfig(publisherConfig, kafkaConfig)
+        val configBuilder = MessagingConfigResolver(messagingConfig.factory)
+        val config = configBuilder.buildPublisherConfig(publisherConfig, messagingConfig)
         // TODO 3781 - topic prefix
-        val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.PUBLISHER)
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, config.transactional, ProducerRoles.PUBLISHER)
         val producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
         return CordaPublisherImpl(config, producer)
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        kafkaConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
 
-        val configResolver = MessagingConfigResolver(kafkaConfig.factory)
+        val configResolver = MessagingConfigResolver(messagingConfig.factory)
         val subscriptionConfig = SubscriptionConfig(rpcConfig.groupName, rpcConfig.requestTopic)
         val config = configResolver.buildSubscriptionConfig(
             SubscriptionType.RPC_SENDER,
             subscriptionConfig,
-            kafkaConfig,
+            messagingConfig,
             clientIdCounter.getAndIncrement()
         )
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> { }

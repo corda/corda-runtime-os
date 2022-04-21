@@ -22,7 +22,6 @@ internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    instanceId: Int,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) :
     LifecycleWithDominoTile {
@@ -32,7 +31,7 @@ internal class TrustStoresMap(
     }
     private val ready = CompletableFuture<Unit>()
     private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, instanceId),
+        SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES),
         Processor(),
         nodeConfiguration
     )

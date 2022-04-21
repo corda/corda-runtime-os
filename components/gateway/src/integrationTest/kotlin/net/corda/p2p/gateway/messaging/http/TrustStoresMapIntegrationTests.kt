@@ -20,7 +20,6 @@ import java.io.StringWriter
 class TrustStoresMapIntegrationTests : TestBase() {
     companion object {
         private const val GROUP_ID = "Group-A"
-        private const val instanceId = 32
     }
     private val topicService = TopicServiceImpl()
     private val rpcTopicService = RPCTopicServiceImpl()
@@ -34,10 +33,9 @@ class TrustStoresMapIntegrationTests : TestBase() {
         val map = TrustStoresMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
-            messagingConfig,
-            instanceId,
+            messagingConfig
         )
-        publisherFactory.createPublisher(PublisherConfig("client.ID")).use {
+        publisherFactory.createPublisher(PublisherConfig("client.ID"), messagingConfig).use {
             it.publish(
                 listOf(
                     Record(

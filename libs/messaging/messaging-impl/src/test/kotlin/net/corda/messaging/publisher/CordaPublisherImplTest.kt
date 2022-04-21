@@ -52,6 +52,7 @@ class CordaPublisherImplTest {
         publisherConfig = ResolvedPublisherConfig(
             "clientId1",
             1,
+            true,
             Duration.ofMillis(100L),
             SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         )
@@ -232,7 +233,8 @@ class CordaPublisherImplTest {
     private fun createPublisher(transactional: Boolean): CordaPublisherImpl {
         val publisherConfig = ResolvedPublisherConfig(
             "clientId1",
-            if (transactional) 1 else null,
+            1,
+            transactional,
             Duration.ofMillis(100L),
             SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         )

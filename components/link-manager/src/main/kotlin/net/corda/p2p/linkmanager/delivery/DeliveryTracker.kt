@@ -44,7 +44,6 @@ class DeliveryTracker(
     members: LinkManagerMembershipGroupReader,
     cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
-    instanceId: Int,
     clock: Clock,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
@@ -65,7 +64,7 @@ class DeliveryTracker(
 
     private val messageTracker = MessageTracker(replayScheduler)
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS, instanceId),
+        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
         messageTracker.processor,
         configuration,
         messageTracker.listener

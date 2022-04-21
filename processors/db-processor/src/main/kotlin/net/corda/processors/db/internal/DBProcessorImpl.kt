@@ -36,6 +36,8 @@ import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -43,9 +45,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
-import java.util.UUID
+import java.util.*
 import javax.sql.DataSource
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
@@ -143,7 +144,6 @@ class DBProcessorImpl @Activate constructor(
                     log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
                     configWriteService.startProcessing(
                         bootstrapConfig!!,
-                        bootstrapConfig!!.getInt(CONFIG_INSTANCE_ID),
                         dbConnectionManager.getClusterEntityManagerFactory())
 
                     configurationReadService.bootstrapConfig(bootstrapConfig!!)
@@ -154,7 +154,7 @@ class DBProcessorImpl @Activate constructor(
             }
             is BootConfigEvent -> {
                 bootstrapConfig = event.config
-                instanceId = event.config.getInt(CONFIG_INSTANCE_ID)
+                instanceId = event.config.getInt(INSTANCE_ID)
 
                 log.info("Bootstrapping DB connection Manager")
                 dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))

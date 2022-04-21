@@ -99,7 +99,7 @@ class CryptoProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
-                val publisherConfig = PublisherConfig(CLIENT_ID, 1)
+                val publisherConfig = PublisherConfig(CLIENT_ID)
                 val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
                 publisher.use {
                     it.start()

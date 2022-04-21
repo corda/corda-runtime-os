@@ -22,14 +22,13 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     private companion object {
         private val logger = contextLogger()
 
-        private const val ENFORCED_CONFIG_FILE = "messaging-enforced.conf"
-        private const val DEFAULT_CONFIG_FILE = "messaging-defaults.conf"
+        private const val ENFORCED_CONFIG_FILE = "kafka-messaging-enforced.conf"
+        private const val DEFAULT_CONFIG_FILE = "kafka-messaging-defaults.conf"
 
         private const val EXPECTED_BUS_TYPE = "KAFKA"
 
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
-        private const val INSTANCE_ID_PATH = "instanceId"
         private const val TRANSACTIONAL_ID_PATH = "transactionalId"
     }
 
@@ -103,7 +102,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val kafkaProperties = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
         val resolvedConfig = ResolvedProducerConfig(
             producerConfig.clientId,
-            producerConfig.instanceId,
+            producerConfig.transactional,
             messageBusConfig.getString(MessagingConfig.Boot.TOPIC_PREFIX)
         )
         return Pair(resolvedConfig, kafkaProperties)
@@ -141,7 +140,6 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
                 mapOf(
                     GROUP_PATH to group,
                     CLIENT_ID_PATH to clientId,
-                    INSTANCE_ID_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to "<undefined>"
                 )
             )
@@ -149,7 +147,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     }
 
     private fun ProducerConfig.toSmartConfig(): SmartConfig {
-        val transactionalId = if (instanceId != null) {
+        val transactionalId = if (transactional) {
             "$clientId-$instanceId"
         } else {
             null
@@ -158,7 +156,6 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             ConfigFactory.parseMap(
                 mapOf(
                     CLIENT_ID_PATH to clientId,
-                    INSTANCE_ID_PATH to instanceId,
                     GROUP_PATH to "<undefined>",
                     TRANSACTIONAL_ID_PATH to transactionalId
                 )

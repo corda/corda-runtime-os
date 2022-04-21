@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
@@ -41,7 +42,7 @@ internal class ConfigRPCOpsConfigHandler(
      *  [configRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
-        val config = configSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
+        val config = configSnapshot[RPC_CONFIG]?.withFallback(configSnapshot[BOOT_CONFIG]) ?: throw ConfigRPCOpsServiceException(
             "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
         )
 
@@ -50,15 +51,14 @@ internal class ConfigRPCOpsConfigHandler(
             configRPCOps.setTimeout(timeoutMillis)
         }
 
-        if (config.hasPath(BOOTSTRAP_SERVER)) {
-            try {
-                configRPCOps.createAndStartRPCSender(config)
-            } catch (e: Exception) {
-                coordinator.updateStatus(ERROR)
-                throw ConfigRPCOpsServiceException(
-                    "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
-                )
-            }
+        try {
+            configRPCOps.createAndStartRPCSender(config)
+        } catch (e: Exception) {
+            coordinator.updateStatus(ERROR)
+            throw ConfigRPCOpsServiceException(
+                "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
+            )
         }
+
     }
 }

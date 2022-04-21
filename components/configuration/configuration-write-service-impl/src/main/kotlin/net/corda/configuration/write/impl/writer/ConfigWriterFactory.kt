@@ -21,26 +21,22 @@ internal class ConfigWriterFactory(
      * Creates a [ConfigWriter].
      *
      * @param config Config to be used by the subscription.
-     * @param instanceId The instance ID to use for subscribing to Kafka.
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    internal fun create(
-        config: SmartConfig,
-        instanceId: Int
-    ): ConfigWriter {
-        val publisher = createPublisher(config, instanceId)
+    internal fun create(config: SmartConfig): ConfigWriter {
+        val publisher = createPublisher(config)
         val subscription = createRPCSubscription(config, publisher)
         return ConfigWriter(subscription, publisher)
     }
 
     /**
-     * Creates a [Publisher] using the provided [config] and [instanceId].
+     * Creates a [Publisher] using the provided [config].
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    private fun createPublisher(config: SmartConfig, instanceId: Int): Publisher {
-        val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
+    private fun createPublisher(config: SmartConfig): Publisher {
+        val publisherConfig = PublisherConfig(CLIENT_NAME_DB)
         return publisherFactory.createPublisher(publisherConfig, config)
     }
 

@@ -1,7 +1,6 @@
 package net.corda.messaging.api.subscription.factory
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -48,7 +47,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        messagingConfig: SmartConfig = SmartConfigImpl.empty()
+        messagingConfig: SmartConfig
     ): Subscription<K, V>
 
     /**
@@ -70,7 +69,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -89,7 +88,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig,
     ): CompactedSubscription<K, V>
 
     /**
@@ -115,7 +114,7 @@ interface SubscriptionFactory {
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 
@@ -129,7 +128,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -152,7 +151,7 @@ interface SubscriptionFactory {
      */
     fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        messagingConfig: SmartConfig = SmartConfigImpl.empty(),
+        messagingConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

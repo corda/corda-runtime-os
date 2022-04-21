@@ -24,6 +24,7 @@ import net.corda.messaging.integration.isDBBundle
 import net.corda.messaging.integration.processors.TestEventLogProcessor
 import net.corda.messaging.integration.util.DBSetup
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
@@ -107,7 +108,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
     fun `asynch publish records and then start durable subscription`() {
         topicUtils.createTopics(getTopicConfig(TopicTemplates.EVENT_LOG_TOPIC1_TEMPLATE))
 
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
         assertThat(futures.size).isEqualTo(10)
@@ -131,7 +132,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(10)
         val eventLogSub = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC1-group", TOPIC1, 1),
+            SubscriptionConfig("$TOPIC1-group", TOPIC1),
             TestEventLogProcessor(latch),
             TEST_CONFIG,
             null
@@ -173,7 +174,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
             }
         coordinator.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
         assertThat(futures.size).isEqualTo(1)
@@ -181,18 +182,18 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         val latch = CountDownLatch(20)
         val eventLogSub1 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2, 1),
+            SubscriptionConfig("$TOPIC2-group", TOPIC2),
             TestEventLogProcessor(latch),
             TEST_CONFIG,
             null
         )
 
         val secondSubConfig = TEST_CONFIG.withValue(
-            MessagingConfig.Boot.INSTANCE_ID,
+            INSTANCE_ID,
             ConfigValueFactory.fromAnyRef(2)
         )
         val eventLogSub2 = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig("$TOPIC2-group", TOPIC2, 2),
+            SubscriptionConfig("$TOPIC2-group", TOPIC2),
             TestEventLogProcessor(latch),
             secondSubConfig,
             null

@@ -11,6 +11,5 @@ import net.corda.lifecycle.LifecycleEvent
  * @param instanceId The instance ID to use for subscribing to Kafka.
  */
 internal class StartProcessingEvent(
-    val config: SmartConfig,
-    val instanceId: Int
+    val config: SmartConfig
 ) : LifecycleEvent

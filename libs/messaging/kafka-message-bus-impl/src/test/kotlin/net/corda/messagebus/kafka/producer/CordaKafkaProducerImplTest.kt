@@ -29,7 +29,7 @@ import org.mockito.kotlin.whenever
 
 class CordaKafkaProducerImplTest {
 
-    private val config = ResolvedProducerConfig("clientId", 1, "prefix")
+    private val config = ResolvedProducerConfig("clientId", true, "prefix")
     private val consumerConfig = ResolvedConsumerConfig("group", "clientId", "prefix")
     private val producer: Producer<Any, Any> = mock()
     private val consumer: Consumer<Any, Any> = mock()

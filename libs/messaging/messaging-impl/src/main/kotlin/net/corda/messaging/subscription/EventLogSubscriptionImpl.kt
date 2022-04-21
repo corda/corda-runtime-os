@@ -156,7 +156,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     },
                     rebalanceListener
                 )
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, ProducerRoles.EVENT_LOG)
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG)
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)

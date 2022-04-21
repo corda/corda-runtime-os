@@ -32,6 +32,7 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 class DBEventLogSubscription<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
+    private val instanceId: Int?,
     private val eventLogProcessor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
     private val avroSchemaRegistry: AvroSchemaRegistry,
@@ -54,7 +55,7 @@ class DBEventLogSubscription<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-DurableSubscription-${subscriptionConfig.eventTopic}",
-            subscriptionConfig.instanceId.toString()
+            instanceId.toString()
         )
     ) { _, _ -> }
 
@@ -216,7 +217,7 @@ class DBEventLogSubscription<K : Any, V : Any>(
 
     private fun publishNewRecordsAndCommitOffset(records: List<Record<*, *>>, offsetsPerPartition: Map<Int, Long>) {
         val newDbRecords = records.map { toDbRecord(it) }
-        if (subscriptionConfig.instanceId == null) {
+        if (instanceId == null) {
             dbAccessProvider.writeRecords(newDbRecords) { writtenRecords, _ ->
                 writtenRecords.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
             }

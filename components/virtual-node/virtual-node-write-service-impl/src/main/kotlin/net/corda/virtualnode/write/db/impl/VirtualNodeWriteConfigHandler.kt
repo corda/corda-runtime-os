@@ -5,6 +5,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -27,7 +28,7 @@ internal class VirtualNodeWriteConfigHandler(
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         // TODO
         // val msgConfig = config[MESSAGING_CONFIG] ?: return
-        val msgConfig = config[RPC_CONFIG] ?: return
+        val msgConfig = config[RPC_CONFIG]?.withFallback(config[BOOT_CONFIG]) ?: return
 
         if (msgConfig.hasPath(BOOTSTRAP_SERVER)) {
             if (eventHandler.virtualNodeWriter != null) throw VirtualNodeWriteServiceException(
@@ -36,8 +37,7 @@ internal class VirtualNodeWriteConfigHandler(
 
             try {
                 eventHandler.virtualNodeWriter = virtualNodeWriterFactory
-                    // TODO - Set instance ID correctly.
-                    .create(msgConfig, 0)
+                    .create(msgConfig)
                     .apply { start() }
                 coordinator.updateStatus(UP)
             } catch (e: Exception) {

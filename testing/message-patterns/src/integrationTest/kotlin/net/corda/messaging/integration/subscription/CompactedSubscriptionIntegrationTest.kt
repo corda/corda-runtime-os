@@ -102,8 +102,8 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
         topicUtils.createTopics(compactedTopic1Config)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, IntegrationTestProperties.TEST_CONFIG)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 
         val coordinator =
@@ -124,7 +124,7 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
             TEST_CONFIG
         )
@@ -153,7 +153,7 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish wrong records, start compacted sub`() {
         topicUtils.createTopics(compactedTopic2Config)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getStringRecords(COMPACTED_TOPIC2, 1, 5)).forEach { it.get() }
 
@@ -175,7 +175,7 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
             TEST_CONFIG
         )

@@ -39,8 +39,6 @@ class AppSimulator @Activate constructor(
         private val logger: Logger = contextLogger()
         private val clock: Clock = Clock.systemUTC()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
-        const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
         const val PARALLEL_CLIENTS_KEY = "parallelClients"

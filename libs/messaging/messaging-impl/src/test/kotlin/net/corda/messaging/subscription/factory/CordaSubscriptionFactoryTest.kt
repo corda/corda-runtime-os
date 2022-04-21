@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription.factory
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.libs.configuration.SmartConfig
@@ -9,6 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -25,7 +27,7 @@ class CordaSubscriptionFactoryTest {
     private lateinit var factory: CordaSubscriptionFactory
     private lateinit var config: SmartConfig
     private lateinit var smartConfigFactory: SmartConfigFactory
-    private val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
+    private val subscriptionConfig = SubscriptionConfig("group1", "event")
 
     @BeforeEach
     fun setup() {
@@ -62,14 +64,14 @@ class CordaSubscriptionFactoryTest {
         assertThrows<CordaMessageAPIFatalException> {
             factory.createDurableSubscription<Any, Any>(
                 SubscriptionConfig("group1", "event"),
-                mock(), config, null
+                mock(), config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(null)), null
             )
         }
     }
 
     @Test
     fun createStateAndEventSub() {
-        val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
+        val subscriptionConfig = SubscriptionConfig("group1", "event")
         factory.createStateAndEventSubscription<Any, Any, Any>(subscriptionConfig, mock(), config)
     }
 }

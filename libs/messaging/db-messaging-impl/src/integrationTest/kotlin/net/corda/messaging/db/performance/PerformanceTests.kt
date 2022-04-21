@@ -121,7 +121,8 @@ class PerformanceTests {
         val batchSize = 1
         val publisherThreadPoolSize = 10
 
-        val publisher = DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, publisherThreadPoolSize)
+        val publisher = DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, 1,
+            publisherThreadPoolSize)
         publisher.start()
 
         val latch = CountDownLatch(numberOfWriters)
@@ -160,13 +161,15 @@ class PerformanceTests {
         val subscriptionPollTimeout = 1.seconds
         val totalRecords = (numberOfWriters * numberOfRecordsPerWriter)
 
-        val publisher = DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, publisherThreadPoolSize)
+        val publisher = DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor,
+            1, publisherThreadPoolSize)
         val processedRecordKeys = ConcurrentHashMap.newKeySet<String>()
         val processor = CopyingProcessor(processedRecordKeys, String::class.java, String::class.java, topic2)
         val subscriptions = (1..numberOfSubscriptions).map {
-            val subscriptionConfigTopic = SubscriptionConfig("group-1", topic1, it)
+            val subscriptionConfigTopic = SubscriptionConfig("group-1", topic1)
             DBDurableSubscription(
                 subscriptionConfigTopic,
+                it,
                 processor,
                 null,
                 avroSchemaRegistry,

@@ -13,6 +13,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-crypto"
     api project(":libs:messaging:messaging")

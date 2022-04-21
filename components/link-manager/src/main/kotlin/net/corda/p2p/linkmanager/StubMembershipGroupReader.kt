@@ -20,11 +20,10 @@ import java.util.concurrent.ConcurrentHashMap
 internal class StubMembershipGroupReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    instanceId: Int,
     configuration: SmartConfig,
 ) : LinkManagerMembershipGroupReader {
 
-    private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC, instanceId)
+    private val subscriptionConfig = SubscriptionConfig("member-info-reader", MEMBER_INFO_TOPIC)
 
     private val publicKeyReader = PublicKeyReader()
     private val keyHasher = KeyHasher()

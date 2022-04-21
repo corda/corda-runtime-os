@@ -45,9 +45,6 @@ class CpiInfoWriterComponentImpl @Activate constructor(
         internal const val CLIENT_ID = "CPI_INFO_WRITER"
     }
 
-    // This eventually needs to be passed in to here from the parent `main`
-    private val instanceId: Int? = null
-
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
@@ -101,7 +98,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private fun onConfig(coordinator: LifecycleCoordinator, config: SmartConfig) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 }

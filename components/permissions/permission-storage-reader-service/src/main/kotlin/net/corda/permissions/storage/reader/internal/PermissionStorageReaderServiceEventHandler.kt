@@ -149,7 +149,7 @@ class PermissionStorageReaderServiceEventHandler(
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
-            kafkaConfig = messagingConfig
+            messagingConfig = messagingConfig
         ).also {
             it.start()
         }

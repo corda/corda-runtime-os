@@ -3,7 +3,6 @@ package net.corda.flow.p2p.filter
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -95,7 +94,7 @@ class FlowP2PFilterService @Activate constructor(
         durableSub?.close()
 
         durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC, messagingConfig.getInt(INSTANCE_ID)),
+            SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
             FlowP2PFilterProcessor(cordaAvroSerializationFactory),
             messagingConfig,
             null

@@ -18,7 +18,7 @@ import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull

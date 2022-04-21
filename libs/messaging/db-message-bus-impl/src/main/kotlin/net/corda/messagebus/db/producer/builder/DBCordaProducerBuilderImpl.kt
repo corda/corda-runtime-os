@@ -31,10 +31,10 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
     override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
-        val isTransactional = producerConfig.instanceId != null
-
+        val isTransactional = producerConfig.transactional
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)
         val resolvedConfig = resolver.resolve(messageBusConfig, producerConfig)
+
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
                 resolvedConfig,

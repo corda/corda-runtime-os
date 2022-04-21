@@ -10,7 +10,6 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
-    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"

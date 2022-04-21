@@ -1,9 +1,15 @@
 package net.corda.applications.flowworker.setup
 
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.concurrent.getOrThrow
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.AdminClient
@@ -21,7 +27,12 @@ class TaskContext(
 
     init {
         kafkaAdminClient = AdminClient.create(getKafkaProperties())
-        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup"))
+        val bootConfig = SmartConfigImpl.empty()
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(startArgs.instanceId))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(startArgs.topicPrefix))
+            .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(startArgs.bootstrapServer))
+            .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
+        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup", false), bootConfig)
     }
 
     fun createTopics(topics: List<NewTopic>) {
@@ -68,7 +79,7 @@ class TaskContext(
     private fun getKafkaProperties(): Properties {
         val kafkaProperties = Properties()
         // Hacked for now, need to improve
-        kafkaProperties[BOOTSTRAP_SERVERS_CONFIG] = "localhost:9092"
+        kafkaProperties[BOOTSTRAP_SERVERS_CONFIG] = startArgs.bootstrapServer
         return kafkaProperties
     }
 }

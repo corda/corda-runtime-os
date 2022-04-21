@@ -16,10 +16,11 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -38,7 +39,7 @@ import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {
-        val bootConf = with(ConfigFactory.parseString("instanceId=1")) {
+        val bootConf = with(ConfigFactory.parseString("$INSTANCE_ID=1")) {
             SmartConfigFactory.create(this).create(this)
         }
 
