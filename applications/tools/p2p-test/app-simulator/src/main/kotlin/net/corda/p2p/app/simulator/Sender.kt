@@ -73,7 +73,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                     .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                     .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                     .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
-                val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
+                val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), kafkaConfig)
                 publisher.use {
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
                         val messageWithIds = (1..loadGenParams.batchSize).map {
