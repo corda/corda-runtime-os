@@ -9,6 +9,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.v5.base.util.contextLogger
@@ -85,6 +86,10 @@ class KafkaConfigUploader @Activate constructor(
             .withValue(
                 BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
+            )
+            .withValue(
+                MessagingConfig.Bus.BUS_TYPE,
+                ConfigValueFactory.fromAnyRef("KAFKA")
             )
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
         return SmartConfigFactory.create(allConfig).create(allConfig)

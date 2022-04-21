@@ -12,6 +12,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -88,6 +89,10 @@ class MemberViewer @Activate constructor(
                 .withValue(
                     BOOTSTRAP_SERVER,
                     ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString())
+                )
+                .withValue(
+                    MessagingConfig.Bus.BUS_TYPE,
+                    ConfigValueFactory.fromAnyRef("KAFKA")
                 )
             val smartConfig = SmartConfigFactory.create(secretsConfig).create(bootConfig)
 

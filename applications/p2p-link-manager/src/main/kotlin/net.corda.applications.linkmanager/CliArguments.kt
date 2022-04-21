@@ -3,6 +3,7 @@ package net.corda.applications.linkmanager
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
@@ -60,6 +61,9 @@ internal class CliArguments {
             ).withValue(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(topicPrefix)
+            ).withValue(
+                MessagingConfig.Bus.BUS_TYPE,
+                ConfigValueFactory.fromAnyRef("KAFKA")
             ).withValue(
                 // The default value of poll timeout is quite high (6 seconds), so setting it to something lower.
                 // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
