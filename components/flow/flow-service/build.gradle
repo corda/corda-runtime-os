@@ -46,7 +46,6 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-topic-schema"
-    implementation "net.corda:corda-services"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 

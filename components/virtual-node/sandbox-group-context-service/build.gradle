@@ -58,7 +58,6 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    integrationTestImplementation 'net.corda:corda-services'
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')

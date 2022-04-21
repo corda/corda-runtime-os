@@ -1,11 +1,10 @@
 package com.example.sandbox.cpk.inject
 
 import com.example.sandbox.cpk.inject.impl.ExampleServiceTwo
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.services.CordaService
+import net.corda.v5.application.injection.CordaFlowInjectable
 
-class ExampleServiceOne : CordaService, CordaFlowInjectable {
+class ExampleServiceOne : CordaFlowInjectable {
     @CordaInject
     private lateinit var service: ExampleServiceTwo
 

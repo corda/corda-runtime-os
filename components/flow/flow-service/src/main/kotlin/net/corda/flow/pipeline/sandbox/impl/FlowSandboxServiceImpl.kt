@@ -26,9 +26,6 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
-import net.corda.v5.services.CordaService
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -36,12 +33,12 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
 import org.osgi.framework.Constants.SERVICE_SCOPE
+import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
-import org.osgi.service.component.ComponentContext
 import java.lang.reflect.Modifier
 
 @Suppress("LongParameterList")
@@ -122,8 +119,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         // Declare services implemented within this sandbox group for CordaInject support.
         val sandboxServices = sandboxGroupContextComponent.registerMetadataServices(
             sandboxGroupContext,
-            serviceNames = { metadata -> metadata.cordappManifest.services },
-            isMetadataService = Class<*>::isInjectableCordaService
+            serviceNames = { metadata -> metadata.cordappManifest.services }
         )
 
         val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
@@ -231,13 +227,3 @@ class FlowSandboxServiceImpl @Activate constructor(
 }
 
 private const val PUBLIC_ABSTRACT = Modifier.PUBLIC or Modifier.ABSTRACT
-private val Class<*>.isInjectableCordaService: Boolean
-    get() {
-        // This class should:
-        // - implement CordaService
-        // - implement either CordaFlowInjectable or CordaServiceInjectable
-        // - be both public and non-abstract.
-        return CordaService::class.java.isAssignableFrom(this)
-                && (CordaFlowInjectable::class.java.isAssignableFrom(this) || CordaServiceInjectable::class.java.isAssignableFrom(this))
-                && (modifiers and PUBLIC_ABSTRACT == Modifier.PUBLIC)
-    }

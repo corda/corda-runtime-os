@@ -4,7 +4,6 @@ import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.services.CordaService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -13,7 +12,7 @@ import org.osgi.service.component.annotations.Reference
 class CustomCrypto @Activate constructor(
     @Reference
     private val digestService: DigestService
-) : CordaService, CordaFlowInjectable {
+) : CordaFlowInjectable {
     fun hashOf(bytes: ByteArray): SecureHash {
         return digestService.hash(bytes, DigestAlgorithmName("SHA-256-TRIPLE"))
     }
