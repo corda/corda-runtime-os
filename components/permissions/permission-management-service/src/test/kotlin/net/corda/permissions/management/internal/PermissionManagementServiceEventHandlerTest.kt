@@ -127,7 +127,7 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        verify(permissionManager).stop()
+        verify(permissionManager).close()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
@@ -150,7 +150,7 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        verify(permissionManager).stop()
+        verify(permissionManager).close()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
 
         assertNull(handler.permissionManager)
@@ -177,7 +177,7 @@ internal class PermissionManagementServiceEventHandlerTest {
         assertNull(handler.rpcSender)
 
         verify(rpcSender).close()
-        verify(permissionManager).stop()
+        verify(permissionManager).close()
         verify(registrationHandle).close()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }

@@ -89,9 +89,9 @@ internal class PermissionManagementServiceEventHandler(
                         permissionValidator = permissionValidationService.permissionValidator
                     }
                     LifecycleStatus.DOWN -> {
-                        permissionManager?.stop()
+                        permissionManager?.close()
                         permissionManager = null
-                        basicAuthenticationService?.stop()
+                        basicAuthenticationService?.close()
                         basicAuthenticationService = null
                         permissionValidator = null
                         coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -118,7 +118,7 @@ internal class PermissionManagementServiceEventHandler(
                 configSubscription = null
                 rpcSender?.close()
                 rpcSender = null
-                permissionManager?.stop()
+                permissionManager?.close()
                 permissionManager = null
                 registrationHandle?.close()
                 registrationHandle = null
@@ -138,13 +138,13 @@ internal class PermissionManagementServiceEventHandler(
             "Configuration received for permission manager but permission validation cache was null."
         }
 
-        permissionManager?.stop()
+        permissionManager?.close()
         log.info("Creating and starting permission manager.")
         permissionManager =
             permissionManagerFactory.createPermissionManager(config, rpcSender!!, permissionManagementCache, permissionValidationCache)
                 .also { it.start() }
 
-        basicAuthenticationService?.stop()
+        basicAuthenticationService?.close()
         log.info("Creating and starting basic authentication service using permission system.")
         basicAuthenticationService = permissionManagerFactory.createBasicAuthenticationService(permissionManagementCache)
             .also { it.start() }
