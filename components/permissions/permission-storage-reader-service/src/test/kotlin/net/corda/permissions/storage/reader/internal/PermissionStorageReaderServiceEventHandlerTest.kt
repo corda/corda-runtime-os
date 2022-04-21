@@ -152,7 +152,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
         assertNull(handler.permissionStorageReader)
-        verify(permissionStorageReader).stop()
+        verify(permissionStorageReader).close()
     }
 
     @Test
@@ -179,7 +179,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
         verify(permissionManagementCacheService).stop()
         verify(permissionValidationCacheService).stop()
         verify(registrationHandle).close()
-        verify(permissionStorageReader).stop()
+        verify(permissionStorageReader).close()
         verify(publisher).close()
     }
 

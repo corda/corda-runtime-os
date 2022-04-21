@@ -96,7 +96,7 @@ class PermissionStorageReaderServiceEventHandler(
                 )
             }
             LifecycleStatus.DOWN -> {
-                permissionStorageReader?.stop()
+                permissionStorageReader?.close()
                 permissionStorageReader = null
                 crsSub?.close()
                 crsSub = null
@@ -133,7 +133,7 @@ class PermissionStorageReaderServiceEventHandler(
         permissionManagementCacheService.stop()
         publisher?.close()
         publisher = null
-        permissionStorageReader?.stop()
+        permissionStorageReader?.close()
         permissionStorageReader = null
         registrationHandle?.close()
         registrationHandle = null
@@ -159,7 +159,7 @@ class PermissionStorageReaderServiceEventHandler(
             it.start()
         }
 
-        permissionStorageReader?.stop()
+        permissionStorageReader?.close()
         permissionStorageReader = permissionStorageReaderFactory.create(
             checkNotNull(permissionValidationCacheService.permissionValidationCache) {
                 "The ${PermissionValidationCacheService::class.java} should be up and ready to provide the cache"
