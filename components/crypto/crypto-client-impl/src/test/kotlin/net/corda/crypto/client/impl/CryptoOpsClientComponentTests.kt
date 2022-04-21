@@ -673,7 +673,7 @@ class CryptoOpsClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val externalId = UUID.randomUUID()
+        val externalId = UUID.randomUUID().toString()
         val publicKey = ByteBuffer.wrap(
             schemeMetadata.encodeAsByteArray(generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public)
         )

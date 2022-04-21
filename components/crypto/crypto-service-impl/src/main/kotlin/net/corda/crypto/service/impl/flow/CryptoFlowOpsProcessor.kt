@@ -17,7 +17,6 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
-import java.util.UUID
 
 class CryptoFlowOpsProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient
@@ -159,7 +158,7 @@ class CryptoFlowOpsProcessor(
             } else {
                 client.freshKeyProxy(
                     tenantId = context.tenantId,
-                    externalId = UUID.fromString(request.externalId),
+                    externalId = request.externalId,
                     context = request.context
                 )
             }

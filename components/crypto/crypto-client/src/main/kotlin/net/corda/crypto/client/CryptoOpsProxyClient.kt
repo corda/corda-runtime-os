@@ -8,7 +8,6 @@ import net.corda.v5.crypto.CompositeKey
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.PublicKey
-import java.util.UUID
 
 /**
  * Additional operations to [CryptoOpsClient] when you have raw data - like ByteBuffer instead of PublicKey.
@@ -48,7 +47,7 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
      */
     fun freshKeyProxy(
         tenantId: String,
-        externalId: UUID,
+        externalId: String,
         context: KeyValuePairList
     ): CryptoPublicKey
 

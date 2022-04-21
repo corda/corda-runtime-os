@@ -260,7 +260,7 @@ class CryptoFlowOpsProcessorTests {
     fun `Should process generate new fresh key command with external id`() {
         val publicKey = mockPublicKey()
         var passedTenantId = UUID.randomUUID().toString()
-        var passedExternalId = UUID.randomUUID()
+        var passedExternalId = ""
         var passedContext = KeyValuePairList()
         doAnswer {
             passedTenantId = it.getArgument(0)
