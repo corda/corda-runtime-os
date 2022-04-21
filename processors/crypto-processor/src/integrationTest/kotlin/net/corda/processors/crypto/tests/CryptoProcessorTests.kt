@@ -275,7 +275,7 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testCategories")
-    fun `Should generate a new key pair using alias find it and use it for signing`(category: String) {
+    fun `Should generate a new key pair using alias then find it and use for signing`(category: String) {
         val alias = UUID.randomUUID().toString()
 
         val original = opsClient.generateKeyPair(
@@ -284,21 +284,119 @@ class CryptoProcessorTests {
             alias = alias
         )
 
-        `Should find existing public key by its id`(alias, original, category)
+        `Should find existing public key by its id`(alias, original, category, null)
 
         `Should find existing public key by its alias`(alias, original, category)
 
-        `Should be able to sign by referencing public key`(original)
+        `Should be able to sign`(original)
 
-        `Should be able to sign using custom signature spec by referencing public key`(original)
+        `Should be able to sign using custom signature spec`(original)
+
+        `Should be able to sign by flow ops`(original)
+    }
+
+    @Test
+    fun `Should generate a new fresh key pair with external id then find it and use for signing`() {
+        val externalId = UUID.randomUUID().toString()
+
+        val original = opsClient.freshKey(
+            tenantId = tenantId,
+            externalId = externalId,
+            context = CryptoOpsClient.EMPTY_CONTEXT
+        )
+
+        `Should find existing public key by its id`(
+            null,
+            original,
+            CryptoConsts.HsmCategories.FRESH_KEYS,
+            externalId
+        )
+
+        `Should be able to sign`(original)
+
+        `Should be able to sign using custom signature spec`(original)
+
+        `Should be able to sign by flow ops`(original)
+    }
+
+    @Test
+    fun `Should generate a new fresh key pair without external id then find it and use for signing`() {
+        val original = opsClient.freshKey(
+            tenantId = tenantId,
+            context = CryptoOpsClient.EMPTY_CONTEXT
+        )
+
+        `Should find existing public key by its id`(
+            null,
+            original,
+            CryptoConsts.HsmCategories.FRESH_KEYS,
+            null
+        )
+
+        `Should be able to sign`(original)
+
+        `Should be able to sign using custom signature spec`(original)
+
+        `Should be able to sign by flow ops`(original)
+    }
+
+    @Test
+    fun `Should generate fresh key pair without external id by flow ops then find it and use for signing`() {
+        val key = UUID.randomUUID().toString()
+        val event = transformer.createFreshKey(
+            tenantId = tenantId
+        )
+        publisher.publish(
+            listOf(
+                Record(
+                    topic = FLOW_OPS_MESSAGE_TOPIC,
+                    key = key,
+                    value = event
+                )
+            )
+        ).forEach { it.get() }
+        val response = flowOpsResponses.waitForResponse(key)
+        val original = transformer.transform(response) as PublicKey
+
+        `Should be able to sign`(original)
+
+        `Should be able to sign using custom signature spec`(original)
+
+        `Should be able to sign by flow ops`(original)
+    }
+
+    @Test
+    fun `Should generate fresh key pair with external id by flow ops then find it and use for signing`() {
+        val externalId = UUID.randomUUID().toString()
+        val key = UUID.randomUUID().toString()
+        val event = transformer.createFreshKey(
+            tenantId = tenantId,
+            externalId = externalId
+        )
+        publisher.publish(
+            listOf(
+                Record(
+                    topic = FLOW_OPS_MESSAGE_TOPIC,
+                    key = key,
+                    value = event
+                )
+            )
+        ).forEach { it.get() }
+        val response = flowOpsResponses.waitForResponse(key)
+        val original = transformer.transform(response) as PublicKey
+
+        `Should be able to sign`(original)
+
+        `Should be able to sign using custom signature spec`(original)
 
         `Should be able to sign by flow ops`(original)
     }
 
     private fun `Should find existing public key by its id`(
-        alias: String,
+        alias: String?,
         publicKey: PublicKey,
-        category: String
+        category: String,
+        externalId: String?
     ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
@@ -307,12 +405,20 @@ class CryptoProcessorTests {
         assertEquals(1, found.size)
         assertEquals(publicKeyIdOf(publicKey), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
-        assertEquals(alias, found[0].alias)
+        if(alias.isNullOrBlank()) {
+            assertNull(found[0].alias)
+        } else {
+            assertEquals(alias, found[0].alias)
+        }
         assertEquals(category, found[0].category)
         assertTrue(publicKey.encoded.contentEquals(found[0].publicKey.array()))
         assertNotNull(found[0].schemeCodeName)
         assertNotNull(found[0].masterKeyAlias)
-        assertNull(found[0].externalId)
+        if(externalId.isNullOrBlank()) {
+            assertNull(found[0].externalId)
+        } else {
+            assertEquals(externalId, found[0].externalId)
+        }
         assertNull(found[0].hsmAlias)
     }
 
@@ -342,7 +448,7 @@ class CryptoProcessorTests {
         assertNull(found[0].hsmAlias)
     }
 
-    private fun `Should be able to sign by referencing public key`(publicKey: PublicKey) {
+    private fun `Should be able to sign`(publicKey: PublicKey) {
         val data = randomDataByteArray()
         val signature = opsClient.sign(
             tenantId = tenantId,
@@ -358,7 +464,7 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign using custom signature spec by referencing public key`(publicKey: PublicKey) {
+    private fun `Should be able to sign using custom signature spec`(publicKey: PublicKey) {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
@@ -416,58 +522,5 @@ class CryptoProcessorTests {
             signatureData = signature.bytes,
             clearData = data
         )
-    }
-
-    // add back when the HSM registration is done, due that the wrapping key is created at the point
-    // when the HSM is allocated to a tenant
-
-    private fun `Should generate new fresh key pair without external id`(): PublicKey =
-        opsClient.freshKey(
-            tenantId = tenantId,
-            context = CryptoOpsClient.EMPTY_CONTEXT
-        )
-
-    private fun `Should generate new fresh key pair with external id`(externalId: String): PublicKey =
-        opsClient.freshKey(
-            tenantId = tenantId,
-            externalId = externalId,
-            context = CryptoOpsClient.EMPTY_CONTEXT
-        )
-
-    private fun `Should be able to generate fresh key without external id by flow ops`(): PublicKey {
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createFreshKey(
-            tenantId = tenantId
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
-            )
-        ).forEach { it.get() }
-        val response = flowOpsResponses.waitForResponse(key)
-        return transformer.transform(response) as PublicKey
-    }
-
-    private fun `Should be able to generate fresh key with external id by flow ops`(externalId: UUID): PublicKey {
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createFreshKey(
-            tenantId = tenantId,
-            externalId = externalId
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
-            )
-        ).forEach { it.get() }
-        val response = flowOpsResponses.waitForResponse(key)
-        return transformer.transform(response) as PublicKey
     }
 }

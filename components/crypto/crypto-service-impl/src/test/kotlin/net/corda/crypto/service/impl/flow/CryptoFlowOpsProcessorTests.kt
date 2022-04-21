@@ -270,7 +270,7 @@ class CryptoFlowOpsProcessorTests {
         }.whenever(cryptoOpsClient).freshKeyProxy(any(), any(), any())
         val recordKey = UUID.randomUUID().toString()
         val operationContext = mapOf("key1" to "value1")
-        val externalId = UUID.randomUUID()
+        val externalId = UUID.randomUUID().toString()
         val transformer = buildTransformer()
         val result = act {
             processor.onNext(

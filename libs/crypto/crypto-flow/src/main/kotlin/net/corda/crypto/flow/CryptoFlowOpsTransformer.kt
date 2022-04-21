@@ -80,12 +80,12 @@ class CryptoFlowOpsTransformer(
      */
     fun createFreshKey(
         tenantId: String,
-        externalId: UUID,
+        externalId: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
-            GenerateFreshKeyFlowCommand(externalId.toString(), context.toWire())
+            GenerateFreshKeyFlowCommand(externalId, context.toWire())
         )
     }
 

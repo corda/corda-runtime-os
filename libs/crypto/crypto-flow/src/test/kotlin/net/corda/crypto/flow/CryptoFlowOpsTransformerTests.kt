@@ -45,7 +45,7 @@ class CryptoFlowOpsTransformerTests {
     private lateinit var knownTenantId: String
     private lateinit var knownAlias: String
     private lateinit var knownOperationContext: Map<String, String>
-    private lateinit var knownExternalId: UUID
+    private lateinit var knownExternalId: String
     private lateinit var keyEncodingService: KeyEncodingService
 
     private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformer =
@@ -65,7 +65,7 @@ class CryptoFlowOpsTransformerTests {
         knownOperationContext = mapOf(
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
         )
-        knownExternalId = UUID.randomUUID()
+        knownExternalId = UUID.randomUUID().toString()
         keyEncodingService = mock {
             on { encodeAsByteArray(any()) } doAnswer {
                 (it.getArgument(0) as PublicKey).encoded
