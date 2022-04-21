@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import picocli.CommandLine
 import picocli.CommandLine.Option
 import kotlin.random.Random
@@ -56,6 +57,10 @@ internal class CliArguments {
             .withValue(
                 BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(kafkaServers)
+            )
+            .withValue(
+                BUS_TYPE,
+                ConfigValueFactory.fromAnyRef("KAFKA")
             )
             .withValue(
                 TOPIC_PREFIX,
