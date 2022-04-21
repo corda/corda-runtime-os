@@ -43,6 +43,7 @@ def jar = tasks.named('jar', Jar) {
         bnd """\
 Bundle-Name: Corda Kotlin Reflection
 Bundle-SymbolicName: \${project.group}.kotlin-reflection
+Sealed: true
 -includeresource: @kotlinx-metadata-jvm-${kotlinMetadataVersion}.jar
 -conditionalpackage: org.objectweb.asm
 """
@@ -56,6 +57,7 @@ def testingBundle = tasks.register('testingBundle', Bundle) {
     bundle {
         bnd '''\
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+Sealed: true
 '''
     }
 }
