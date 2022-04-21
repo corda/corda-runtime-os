@@ -22,8 +22,8 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     private companion object {
         private val logger = contextLogger()
 
-        private const val ENFORCED_CONFIG_FILE = "messaging-enforced.conf"
-        private const val DEFAULT_CONFIG_FILE = "messaging-defaults.conf"
+        private const val ENFORCED_CONFIG_FILE = "kafka-messaging-enforced.conf"
+        private const val DEFAULT_CONFIG_FILE = "kafka-messaging-defaults.conf"
 
         private const val EXPECTED_BUS_TYPE = "KAFKA"
 
