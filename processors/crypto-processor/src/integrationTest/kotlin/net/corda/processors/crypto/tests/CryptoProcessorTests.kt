@@ -5,6 +5,8 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.crypto.service.SoftCryptoServiceConfig
+import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -103,6 +105,9 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
 
+        @InjectService(timeout = 5000)
+        lateinit var softCryptoServiceProvider: SoftCryptoServiceProvider
+
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
@@ -130,6 +135,13 @@ class CryptoProcessorTests {
             testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
             // temporary hack as the DbAdmin doesn't support HSQL
             addDbConnectionConfigs(cryptoDb, tenantDb)
+            // temporary hack to create wrapping key
+            softCryptoServiceProvider.getInstance(
+                SoftCryptoServiceConfig(
+                    passphrase = "PASSPHRASE",
+                    salt = "SALT"
+                )
+            ).createWrappingKey("wrapping-key", false, emptyMap())
         }
 
         @JvmStatic
@@ -240,11 +252,11 @@ class CryptoProcessorTests {
 
     @Test
     fun `Should not find unknown public key by its id`() {
-        val publicKey = opsClient.lookup(
+        val found = opsClient.lookup(
             tenantId = tenantId,
             ids = listOf(publicKeyIdOf(UUID.randomUUID().toString().toByteArray()))
         )
-        assertNull(publicKey)
+        assertEquals(0, found.size)
     }
 
     @Test
@@ -272,7 +284,7 @@ class CryptoProcessorTests {
             alias = alias
         )
 
-        `Should find existing public key by its id`(original)
+        `Should find existing public key by its id`(alias, original, category)
 
         `Should find existing public key by its alias`(alias, original, category)
 
@@ -283,13 +295,25 @@ class CryptoProcessorTests {
         `Should be able to sign by flow ops`(original)
     }
 
-    private fun `Should find existing public key by its id`(publicKey: PublicKey) {
+    private fun `Should find existing public key by its id`(
+        alias: String,
+        publicKey: PublicKey,
+        category: String
+    ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
             ids = listOf(publicKeyIdOf(publicKey))
         )
-        assertNotNull(found)
-        assertEquals(publicKey, found)
+        assertEquals(1, found.size)
+        assertEquals(publicKeyIdOf(publicKey), found[0].id)
+        assertEquals(tenantId, found[0].tenantId)
+        assertEquals(alias, found[0].alias)
+        assertEquals(category, found[0].category)
+        assertTrue(publicKey.encoded.contentEquals(found[0].publicKey.array()))
+        assertNotNull(found[0].schemeCodeName)
+        assertNotNull(found[0].masterKeyAlias)
+        assertNull(found[0].externalId)
+        assertNull(found[0].hsmAlias)
     }
 
     private fun `Should find existing public key by its alias`(
