@@ -8,12 +8,8 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.slf4j.Logger
 import java.time.Instant
 import kotlin.random.Random
-import kotlin.reflect.KFunction
-import kotlin.reflect.jvm.isAccessible
-
 
 const val RESPONSE_TOPIC = "test.response"
 
@@ -79,15 +75,4 @@ fun randomDataByteArray(): ByteArray {
     return random.nextBytes(random.nextInt(157, 311))
 }
 
-fun <R> runTestCase(logger: Logger, testCase: KFunction<R>): R {
-    logger.info("TEST CASE: ${testCase.name}")
-    testCase.isAccessible = true
-    return testCase.call()
-}
-
-fun <R> runTestCase(logger: Logger, testCaseArg: Any, testCase: KFunction<R>): R {
-    logger.info("TEST CASE: ${testCase.name}")
-    testCase.isAccessible = true
-    return testCase.call(testCaseArg)
-}
 

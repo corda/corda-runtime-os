@@ -56,7 +56,7 @@ class DatabaseInstaller(
      * @param resourceSubPath the path segment in the 'net.corda:corda-db-schema' resources following
      * 'net.corda.db.schema', like 'crypto', 'config', etc.
      * @param persistenceUnitName the persistence unit name as defined in [CordaDb] enum, for the config database
-     * you can use CordaDb.CordaCluster.persistenceUnitName.
+     * use CordaDb.CordaCluster.persistenceUnitName.
      * @param entities list of entitles which tables should be created.
      * @return [EntityManagerFactory] that can be used to access the database.
      */
