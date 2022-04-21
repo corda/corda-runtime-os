@@ -105,14 +105,14 @@ class PubSubSubscription<K : Any, V : Any>(
      * [processor] executed using the [executor] if it is not null.
      */
     internal fun processRecords(records: Collection<RecordMetadata>) {
-        records.mapNotNull {
+        val castRecords = records.mapNotNull {
             it.castToType(processor.keyClass, processor.valueClass)
-        }.onEach { record ->
-            if (executor != null) {
-                executor.submit { processor.onNext(uncheckedCast(record)) }.get()
-            } else {
-                processor.onNext(uncheckedCast(record))
-            }
+        }
+        if (executor != null) {
+            val futures = castRecords.map{ executor.submit { processor.onNext(uncheckedCast(it)) } }
+            futures.forEach { it.get() }
+        } else {
+            castRecords.forEach { processor.onNext(uncheckedCast(it)) }
         }
     }
 
