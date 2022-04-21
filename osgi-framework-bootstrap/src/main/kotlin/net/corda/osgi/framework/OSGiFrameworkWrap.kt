@@ -523,6 +523,14 @@ class OSGiFrameworkWrap(
         }
         val frameworkContext = framework.bundleContext
         val applicationServiceReference = frameworkContext.getServiceReference(Application::class.java)
+
+        //  Log only any errors that occur in the OSGi framework, such trying to instantiate missing implementations.
+        frameworkContext.addFrameworkListener {
+            if (it.type and FrameworkEvent.ERROR != 0) {
+                logger.error(it.throwable.localizedMessage, it.throwable.cause)
+            }
+        }
+
         if (applicationServiceReference != null) {
             val application = frameworkContext.getService(applicationServiceReference)
             if (application != null) {
