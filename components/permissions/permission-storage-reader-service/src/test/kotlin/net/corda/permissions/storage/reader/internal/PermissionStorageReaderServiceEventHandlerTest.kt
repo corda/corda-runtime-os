@@ -2,7 +2,6 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
@@ -14,7 +13,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
@@ -37,6 +35,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.permissions.management.cache.PermissionManagementCacheService
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.kotlin.eq
 
 class PermissionStorageReaderServiceEventHandlerTest {
@@ -83,13 +84,16 @@ class PermissionStorageReaderServiceEventHandlerTest {
     )
 
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+
+    private val reconciliationConfigMap = mapOf("$RECONCILIATION_CONFIG.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS" to 12345L)
+
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
                 DB_CONFIG,
                 ConfigValueFactory.fromMap(mapOf(JDBC_URL to "dbUrl", DB_USER to "dbUser", DB_PASS to "dbPass"))
             )
-    )
+    ).withFallback(ConfigFactory.parseMap(reconciliationConfigMap))
 
     private val bootstrapConfig =
         mapOf(BOOT_CONFIG to config, MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
@@ -106,13 +110,26 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
     @Test
     fun `processing an UP event when the service is started starts the storage reader`() {
-        assertNull(handler.permissionStorageReader)
+        assertNull(handler.crsSub)
 
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+
+        verify(permissionValidationCacheService).start()
+        verify(permissionManagementCacheService).start()
+    }
+
+    @Test
+    fun `processing config change event starts the storage reader`() {
+        handler.processEvent(StartEvent(), coordinator)
+        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+
+        assertNull(handler.permissionStorageReader)
+
+        handler.onConfigurationUpdated(bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
+        assertEquals(12345L, handler.reconciliationTaskIntervalMs)
         verify(permissionStorageReader).start()
     }
 
@@ -128,7 +145,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a DOWN event when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+        handler.onConfigurationUpdated(bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
 
@@ -149,7 +166,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event stops the service's dependencies`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+        handler.onConfigurationUpdated(bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
         assertNotNull(handler.publisher)
@@ -185,18 +202,18 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         verify(publisher).start()
         verify(permissionStorageReader).start()
-        assertNotNull(handler.reconciliationTaskInterval)
+        assertNotNull(handler.reconciliationTaskIntervalMs)
     }
 
     @Test
     fun `processing a ReconcilePermissionSummaryEvent executes reconciliation task and schedules next run`() {
-        handler.reconciliationTaskInterval = Duration.ofSeconds(20)
+        handler.reconciliationTaskIntervalMs = 11111L
         handler.permissionStorageReader = permissionStorageReader
 
         handler.processEvent(ReconcilePermissionSummaryEvent("PermissionStorageReaderServiceEventHandler"), coordinator)
 
         verify(permissionStorageReader).reconcilePermissionSummaries()
-        verify(coordinator).setTimer(eq("PermissionStorageReaderServiceEventHandler"), eq(20000L), any())
+        verify(coordinator).setTimer(eq("PermissionStorageReaderServiceEventHandler"), eq(11111L), any())
     }
 
 }
