@@ -63,9 +63,9 @@ bootstrap:
   auto: true
   image:
     # -- cli image registry
-    registry: image.registry
+    registry: ""
     # -- cli image repository
-    repository: ""
+    repository: "corda-os-plugins"
     # -- cli default tag
     tag: ""
 
