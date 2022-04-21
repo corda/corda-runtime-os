@@ -38,7 +38,7 @@ class FlowEventProcessorImpl(
                 .toStateAndEventResponse()
         } catch (e: FlowProcessingException) {
             log.error("Error processing flow event $event", e)
-            StateAndEventProcessor.Response(state, emptyList())
+             StateAndEventProcessor.Response(state, emptyList())
         }
     }
 }

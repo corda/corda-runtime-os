@@ -9,3 +9,4 @@ val BOB_X500_NAME = MemberX500Name.parse(BOB_X500)
 val ALICE_X500_NAME = MemberX500Name.parse(ALICE_X500)
 val BOB_X500_HOLDING_IDENTITY = HoldingIdentity(BOB_X500, "group1")
 val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity(ALICE_X500, "group1")
+
