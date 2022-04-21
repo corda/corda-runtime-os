@@ -37,17 +37,7 @@ class CordaServicesTest {
         private const val SERVICE_FILTER = "(&$CORDA_SANDBOX_FILTER(service.scope=singleton))"
         private const val SERVICES_CPB = "META-INF/corda-services.cpb"
 
-        private const val COMPONENT1_SERVICE_CLASS_NAME = "com.example.service.ComponentOneCordaService"
-        private const val COMPONENT2_SERVICE_CLASS_NAME = "com.example.service.ComponentTwoCordaService"
-        private const val POJO_SERVICE_CLASS_NAME = "com.example.service.PojoCordaService"
-        private const val POJO_WITH_ARGS_SERVICE_CLASS_NAME = "com.example.service.PojoWithArgsCordaService"
         private const val SINGLETON_POJO_SERVICE_CLASS_NAME = "com.example.service.SingletonPojoService"
-
-        private const val DISABLED_COMPONENT_CLASS_NAME = "com.example.service.DisabledComponentCordaService"
-        private const val MISCONFIGURED_COMPONENT_CLASS_NAME = "com.example.service.MisconfiguredComponentCordaService"
-        private const val BUNDLE_COMPONENT_CLASS_NAME = "com.example.service.BundleComponentCordaService"
-        private const val PROTOTYPE_COMPONENT_CLASS_NAME = "com.example.service.PrototypeComponentCordaService"
-        private const val SINGLETON_COMPONENT_CLASS_NAME = "com.example.service.SingletonComponentService"
 
         private const val HOST_CLASS_NAME = "com.example.service.host.CordaServiceHost"
     }
@@ -78,40 +68,7 @@ class CordaServicesTest {
     }
 
     @Test
-    fun testCordaServicePojoIsRegistered() {
-        assertAllMainBundlesSeeService(POJO_SERVICE_CLASS_NAME)
-    }
-
-    @Test
-    fun testCordaServiceComponentsAreRegistered() {
-        assertAllMainBundlesSeeService(COMPONENT1_SERVICE_CLASS_NAME)
-        assertAllMainBundlesSeeService(COMPONENT2_SERVICE_CLASS_NAME)
-    }
-
-    @Test
-    fun testDisabledServiceIsNotRegistered() {
-        assertNoMainBundlesSeeService(DISABLED_COMPONENT_CLASS_NAME)
-    }
-
-    @Test
-    fun testServiceWithoutOwnClassNotRegistered() {
-        assertNoMainBundlesSeeService(MISCONFIGURED_COMPONENT_CLASS_NAME)
-    }
-
-    @Test
-    fun testNonSingletonScopesNotRegistered() {
-        assertNoMainBundlesSeeService(BUNDLE_COMPONENT_CLASS_NAME)
-        assertNoMainBundlesSeeService(PROTOTYPE_COMPONENT_CLASS_NAME)
-    }
-
-    @Test
-    fun testPojoWithNonDefaultConstructorNotRegistered() {
-        assertNoMainBundlesSeeService(POJO_WITH_ARGS_SERVICE_CLASS_NAME)
-    }
-
-    @Test
     fun testServiceWithOnlySingletonSerializeAsTokenIsNotEnough() {
-        assertNoMainBundlesSeeService(SINGLETON_COMPONENT_CLASS_NAME)
         assertNoMainBundlesSeeService(SINGLETON_POJO_SERVICE_CLASS_NAME)
     }
 
@@ -126,20 +83,6 @@ class CordaServicesTest {
         assertNotNull(
             sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(serviceClassName),
             "Service $serviceClassName not found in main bundles."
-        )
-    }
-
-    private fun assertAllMainBundlesSeeService(serviceClassName: String) {
-        assertServiceClassExists(serviceClassName)
-        assertAll(cpkBundleContexts.map { bundleContext -> {
-            assertHasService(bundleContext, serviceClassName)
-        } })
-    }
-
-    private fun assertHasService(bundleContext: BundleContext, serviceClassName: String) {
-        assertNotNull(
-            bundleContext.getServiceReferences(serviceClassName, SERVICE_FILTER),
-            "Bundle ${bundleContext.bundle.symbolicName} does not have service $serviceClassName"
         )
     }
 

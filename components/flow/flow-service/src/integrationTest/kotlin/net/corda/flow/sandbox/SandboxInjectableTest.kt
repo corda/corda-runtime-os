@@ -35,8 +35,6 @@ class SandboxInjectableTest {
     companion object {
         private const val CPB_INJECT = "sandbox-cpk-inject-package.cpb"
         private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
-        private const val SERVICE_ONE_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleServiceOne"
-        private const val SERVICE_TWO_CLASS_NAME = "com.example.sandbox.cpk.inject.impl.ExampleServiceTwo"
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
         private val holdingIdentity = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
@@ -71,15 +69,13 @@ class SandboxInjectableTest {
                 val flowClass = sandbox.loadClassFromMainBundles(FLOW_CLASS_NAME)
                 val flowBundle = FrameworkUtil.getBundle(flowClass)
                 val flowContext = flowBundle.bundleContext
-                val serviceOneClass = flowBundle.loadClass(SERVICE_ONE_CLASS_NAME)
-                val serviceTwoClass = flowBundle.loadClass(SERVICE_TWO_CLASS_NAME)
 
                 @Suppress("unchecked_cast")
                 val references = flowContext.getServiceReferences(
                     SingletonSerializeAsToken::class.java.name, CORDA_SANDBOX_FILTER
                 ) as? Array<ServiceReference<out SingletonSerializeAsToken>>
                     ?: fail("No sandbox services found")
-                assertThat(references).hasSize(4)
+                assertThat(references).hasSize(2)
 
                 assertAllCordaSingletons(references)
 
@@ -89,7 +85,6 @@ class SandboxInjectableTest {
                     }
                 }.map(Any::javaClass)
                 assertThat(serviceClasses)
-                    .contains(serviceOneClass, serviceTwoClass)
                     .allSatisfy { serviceClass ->
                         assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
                     }

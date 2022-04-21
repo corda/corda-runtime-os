@@ -59,6 +59,7 @@ dependencies {
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation 'net.corda:corda-application'
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
