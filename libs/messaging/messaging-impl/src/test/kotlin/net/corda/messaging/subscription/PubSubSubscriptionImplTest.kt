@@ -24,8 +24,6 @@ import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class PubSubSubscriptionImplTest {
@@ -42,7 +40,6 @@ class PubSubSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
 
-    private var executorService: ExecutorService? = null
     private var pollInvocationCount: Int = 0
     private var builderInvocationCount: Int = 0
     private lateinit var kafkaPubSubSubscription: PubSubSubscriptionImpl<String, ByteBuffer>
@@ -86,43 +83,12 @@ class PubSubSubscriptionImplTest {
                 config,
                 cordaConsumerBuilder,
                 processor,
-                executorService,
                 lifecycleCoordinatorFactory
             )
         kafkaPubSubSubscription.start()
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        kafkaPubSubSubscription.stop()
-        assertThat(latch.count).isEqualTo(0)
-        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            anyOrNull()
-        )
-    }
-
-    /**
-     * Test processor is executed when the executor is used.
-     */
-    @Test
-    fun testPubSubConsumerWithExecutor() {
-        executorService = Executors.newFixedThreadPool(1)
-        kafkaPubSubSubscription =
-            PubSubSubscriptionImpl(
-                config,
-                cordaConsumerBuilder,
-                processor,
-                executorService,
-                lifecycleCoordinatorFactory
-            )
-
-        kafkaPubSubSubscription.start()
-
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
@@ -159,7 +125,6 @@ class PubSubSubscriptionImplTest {
                 config,
                 cordaConsumerBuilder,
                 processor,
-                executorService,
                 lifecycleCoordinatorFactory
             )
 
@@ -200,7 +165,6 @@ class PubSubSubscriptionImplTest {
                 config,
                 cordaConsumerBuilder,
                 processor,
-                executorService,
                 lifecycleCoordinatorFactory
             )
 
@@ -243,7 +207,7 @@ class PubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = PubSubSubscriptionImpl(
             config, cordaConsumerBuilder,
-            processor, executorService, lifecycleCoordinatorFactory
+            processor, lifecycleCoordinatorFactory
         )
 
         kafkaPubSubSubscription.start()
@@ -273,7 +237,7 @@ class PubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = PubSubSubscriptionImpl(
             config, cordaConsumerBuilder,
-            processor, executorService, lifecycleCoordinatorFactory
+            processor, lifecycleCoordinatorFactory
         )
 
         kafkaPubSubSubscription.start()

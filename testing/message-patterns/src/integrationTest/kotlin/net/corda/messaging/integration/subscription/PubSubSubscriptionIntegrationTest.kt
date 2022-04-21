@@ -93,7 +93,6 @@ class PubSubSubscriptionIntegrationTest {
         val pubsubSub = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("pubSub1", PUBSUB_TOPIC1),
             TestPubsubProcessor(latch),
-            null,
             TEST_CONFIG
         )
         coordinator.followStatusChangesByName(setOf(pubsubSub.subscriptionName))

@@ -8,14 +8,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -38,27 +37,21 @@ class PubSubSubscriptionIntegrationTest {
 
     private val waitForProcessed = AtomicReference<CountDownLatch>(null)
 
-    private val executor = Executors.newFixedThreadPool(3) {
-        Thread(it).also {
-            it.isDaemon = true
-        }
-    }
-
     private val subscription by lazy {
         val config = SubscriptionConfig(groupName = group, eventTopic = topic)
         val processor = object : PubSubProcessor<String, Event> {
 
             override val keyClass = String::class.java
             override val valueClass = Event::class.java
-            override fun onNext(event: Record<String, Event>) {
+            override fun onNext(event: Record<String, Event>): CompletableFuture<Unit> {
                 processed.add(event)
                 waitForProcessed.get().countDown()
+                return CompletableFuture.completedFuture(Unit)
             }
         }
         subscriptionFactory.createPubSubSubscription(
             subscriptionConfig = config,
             processor = processor,
-            executor = executor,
             messagingConfig = SmartConfigImpl.empty()
         )
     }
@@ -68,11 +61,6 @@ class PubSubSubscriptionIntegrationTest {
         publisherFactory.createPublisher(publisherConfig, SmartConfigImpl.empty()).use {
             it.publish(records.toList())
         }
-    }
-
-    @AfterEach
-    fun cleanup() {
-        executor.shutdown()
     }
 
     @Test

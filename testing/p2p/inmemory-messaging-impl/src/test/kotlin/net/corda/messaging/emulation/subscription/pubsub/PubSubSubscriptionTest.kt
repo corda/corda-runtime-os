@@ -11,15 +11,11 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 
 class PubSubSubscriptionTest {
     private val config = SubscriptionConfig("group", "topic")
@@ -27,7 +23,6 @@ class PubSubSubscriptionTest {
         on { keyClass } doReturn String::class.java
         on { valueClass } doReturn Number::class.java
     }
-    private val executor = mock<ExecutorService>()
     private val consumeLifeCycle = mock<Consumption>()
     private val topicService = mock<TopicService> {
         on { createConsumption(any()) } doReturn consumeLifeCycle
@@ -38,7 +33,7 @@ class PubSubSubscriptionTest {
     }
 
     private val pubSubSubscription =
-        PubSubSubscription(config, processor, executor, topicService, lifecycleCoordinatorFactory, "0")
+        PubSubSubscription(config, processor, topicService, lifecycleCoordinatorFactory, "0")
 
     @Test
     fun `isRunning return false if was not started`() {
@@ -93,30 +88,30 @@ class PubSubSubscriptionTest {
         verify(consumeLifeCycle, times(1)).stop()
     }
 
-    @Test
-    fun `processRecords submit to executor`() {
-        val future = mock<Future<Any>>()
-        val captor = argumentCaptor<Runnable>()
-        doReturn(future).whenever(executor).submit(captor.capture())
-        val record = Record<String, Number>("topic", "key6", 4)
-        val records = listOf(
-            RecordMetadata(
-                offset = 1,
-                partition = 1,
-                record = record
-            )
-        )
-
-        pubSubSubscription.processRecords(records)
-        verify(processor, never()).onNext(any())
-
-        captor.firstValue.run()
-        verify(processor).onNext(record)
-    }
+//    @Test
+//    fun `processRecords submit to executor`() {
+//        val future = mock<Future<Any>>()
+//        val captor = argumentCaptor<Runnable>()
+//        doReturn(future).whenever(executor).submit(captor.capture())
+//        val record = Record<String, Number>("topic", "key6", 4)
+//        val records = listOf(
+//            RecordMetadata(
+//                offset = 1,
+//                partition = 1,
+//                record = record
+//            )
+//        )
+//
+//        pubSubSubscription.processRecords(records)
+//        verify(processor, never()).onNext(any())
+//
+//        captor.firstValue.run()
+//        verify(processor).onNext(record)
+//    }
 
     @Test
     fun `processRecords send to processor in no executor`() {
-        val subscription = PubSubSubscription(config, processor, null, topicService, lifecycleCoordinatorFactory, "0")
+        val subscription = PubSubSubscription(config, processor, topicService, lifecycleCoordinatorFactory, "0")
         val record = Record<String, Number>("topic", "key6", 3)
         val records = listOf(
             RecordMetadata(
@@ -133,7 +128,7 @@ class PubSubSubscriptionTest {
 
     @Test
     fun `processRecords ignore invalid keys and values`() {
-        val subscription = PubSubSubscription(config, processor, null, topicService, lifecycleCoordinatorFactory, "0")
+        val subscription = PubSubSubscription(config, processor, topicService, lifecycleCoordinatorFactory, "0")
         val record1 = Record("topic", "key6", "3")
         val record2 = Record<Int, Number>("topic", 4, 4)
         val record3 = Record<String, Number>("topic", "key6", null)

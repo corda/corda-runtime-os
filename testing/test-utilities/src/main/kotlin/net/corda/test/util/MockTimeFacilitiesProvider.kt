@@ -51,6 +51,9 @@ class MockTimeFacilitiesProvider(initialTime: Instant = Instant.ofEpochSecond(0)
 
             createFuture(timeAndTask)
         }
+        `when`(it.execute(any())).thenAnswer { invocation ->
+            (invocation.arguments[0] as Runnable).run()
+        }
     }
 
     /**

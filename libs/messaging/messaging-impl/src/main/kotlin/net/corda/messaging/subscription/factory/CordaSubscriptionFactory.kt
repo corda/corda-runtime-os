@@ -36,7 +36,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -64,7 +63,6 @@ internal class CordaSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
-        executor: ExecutorService?,
         messagingConfig: SmartConfig
     ): Subscription<K, V> {
         val config = getConfig(SubscriptionType.PUB_SUB, subscriptionConfig, messagingConfig)
@@ -72,7 +70,6 @@ internal class CordaSubscriptionFactory @Activate constructor(
             config,
             cordaConsumerBuilder,
             processor,
-            executor,
             lifecycleCoordinatorFactory
         )
     }

@@ -26,7 +26,6 @@ class InMemSubscriptionFactoryTest {
                 subscriptionConfig,
                 mock<PubSubProcessor<String, Long>>(),
                 mock(),
-                mock()
             )
         ).isInstanceOf(PubSubSubscription::class.java)
     }

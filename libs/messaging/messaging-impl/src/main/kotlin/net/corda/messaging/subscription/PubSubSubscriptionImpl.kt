@@ -19,7 +19,7 @@ import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -41,7 +41,6 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val processor: PubSubProcessor<K, V>,
-    private val executor: ExecutorService?,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
@@ -114,7 +113,6 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        executor?.shutdown()
         thread?.join(config.threadStopTimeout.toMillis())
     }
 
@@ -204,15 +202,12 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Process [cordaConsumerRecords]. Process them using an [executor] if it not null or on the same
-     * thread otherwise. If a record fails to deserialize skip this record and log the error.
+     * Process [cordaConsumerRecords]. If a record fails to deserialize skip this record and log the error.
      */
     private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>) {
-        if (executor != null) {
-            val futures = cordaConsumerRecords.map{ executor.submit { processor.onNext(it.toRecord()) } }
-            futures.forEach { it.get() }
-        } else {
-            cordaConsumerRecords.forEach { processor.onNext(it.toRecord()) }
+        val futures = cordaConsumerRecords.map { processor.onNext(it.toRecord()) }
+        futures.forEach   {
+            try { it.get() } catch (_: ExecutionException) { }
         }
     }
 

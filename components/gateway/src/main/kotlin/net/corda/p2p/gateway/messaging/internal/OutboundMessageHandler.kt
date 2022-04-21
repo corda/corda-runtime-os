@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory
 import java.net.URI
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -43,13 +41,12 @@ internal class OutboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     private val retryThreadPool: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
-    subscriptionThreadPool: ExecutorService = Executors.newFixedThreadPool(NUM_THREADS)
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
-        const val MAX_RETRIES = 1
-        const val NUM_THREADS = 10
+        private const val MAX_RETRIES = 1
+        private const val NUM_THREADS = 10
     }
 
     private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
@@ -68,7 +65,6 @@ internal class OutboundMessageHandler(
     private val outboundSubscription = subscriptionFactory.createPubSubSubscription(
         SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC),
         this,
-        subscriptionThreadPool,
         nodeConfiguration,
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
@@ -85,13 +81,13 @@ internal class OutboundMessageHandler(
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile)
     )
 
-    override fun onNext(event: Record<String, LinkOutMessage>) {
-        dominoTile.withLifecycleLock {
+    override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }
 
-            event.value?.let { peerMessage ->
+            return@withLifecycleLock event.value?.let { peerMessage ->
                 try {
                     val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
 
@@ -114,26 +110,15 @@ internal class OutboundMessageHandler(
                         trustStore,
                     )
                     val responseFuture = sendMessage(destinationInfo, gatewayMessage)
-                    val request = PendingRequest(gatewayMessage, destinationInfo, responseFuture)
-                    val (response, error) = waitForResponseOrError(request)
-                    handleResponse(request, response, error, MAX_RETRIES)
+                        .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                    responseFuture.whenCompleteAsync({ response, error ->
+                        handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
+                    }, retryThreadPool).thenApply { }
                 } catch (e: IllegalArgumentException) {
                     logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
-                    null
+                    CompletableFuture.completedFuture(Unit)
                 }
-            }
-        }
-    }
-
-    private fun waitForResponseOrError(pendingRequest: PendingRequest): Pair<HttpResponse?, Throwable?> {
-        return try {
-            val response = pendingRequest.future.get(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
-            response to null
-        } catch (error: Exception) {
-            when {
-                error is ExecutionException && error.cause != null -> null to error.cause
-                else -> null to error
-            }
+            } ?: CompletableFuture.completedFuture(Unit)
         }
     }
 
