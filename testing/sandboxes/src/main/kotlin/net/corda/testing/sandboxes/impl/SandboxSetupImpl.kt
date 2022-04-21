@@ -53,7 +53,6 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
             "net.corda.persistence",
             "net.corda.serialization",
-            "net.corda.services",
             "org.apache.aries.spifly.dynamic.bundle",
             "org.apache.felix.framework",
             "org.apache.felix.scr",

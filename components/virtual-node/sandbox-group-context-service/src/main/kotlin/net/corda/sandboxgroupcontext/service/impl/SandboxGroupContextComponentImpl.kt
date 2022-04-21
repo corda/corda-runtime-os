@@ -63,7 +63,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
-                "net.corda.services",
                 "org.apache.aries.spifly.dynamic.bundle",
                 "org.apache.felix.framework",
                 "org.apache.felix.scr",

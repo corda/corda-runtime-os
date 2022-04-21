@@ -88,10 +88,7 @@ class SandboxInjectableTest {
                     .allSatisfy { serviceClass ->
                         assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
                     }
-
-                // Given the proposed changes to Corda services, this test should no longer be checking if services are
-                // loaded correctly - it's likely this API will significantly change. Proof that custom digest services
-                // still function is however valid.
+                
                 assertThat(serviceClasses.any{ DigestService::class.java.isAssignableFrom(it)}).isTrue
             }
         } finally {
