@@ -67,7 +67,7 @@ class DatabaseInstaller(
         entities: Set<Class<*>>
     ): EntityManagerFactory {
         val schemaClass = DbSchema::class.java
-        logger.info("Creating schemas for ${cfg.dataSource.connection.metaData.url}".emphasise())
+        logger.info("Creating schemas for ${cfg.dataSource.connection.metaData.url} ($persistenceUnitName)".emphasise())
         val fullName = "${schemaClass.packageName}.$resourceSubPath"
         val resourcePrefix = fullName.replace('.', '/')
         val changeLogFiles = ClassloaderChangeLog.ChangeLogResourceFiles(

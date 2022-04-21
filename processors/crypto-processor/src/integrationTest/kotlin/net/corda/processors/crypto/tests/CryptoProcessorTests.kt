@@ -42,6 +42,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -67,6 +68,8 @@ import java.util.UUID
 @ExtendWith(ServiceExtension::class)
 class CryptoProcessorTests {
     companion object {
+        private val logger = contextLogger()
+
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
 
         @InjectService(timeout = 5000L)
@@ -215,18 +218,27 @@ class CryptoProcessorTests {
 
         private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
+            logger.info(
+                "CREATING DATABASE FOR: ${clusterDb.name}(${clusterDb.emConfig.dataSource.connection.metaData.url})"
+            )
             databaseInstaller.setupDatabase(
                 clusterDb.emConfig,
                 "config",
                 clusterDb.name,
                 ConfigurationEntities.classes
             ).close()
+            logger.info(
+                "CREATING DATABASE FOR: ${cryptoDb.name}(${cryptoDb.emConfig.dataSource.connection.metaData.url})"
+            )
             databaseInstaller.setupDatabase(
                 cryptoDb.emConfig,
                 "crypto",
                 cryptoDb.name,
                 CryptoEntities.classes
             ).close()
+            logger.info(
+                "CREATING DATABASE FOR: ${tenantDb.name}(${tenantDb.emConfig.dataSource.connection.metaData.url})"
+            )
             databaseInstaller.setupDatabase(
                 tenantDb.emConfig,
                 "crypto",
