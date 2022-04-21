@@ -16,7 +16,8 @@ import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.time.Duration
+import java.util.UUID
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
@@ -131,12 +132,12 @@ class CordaTransactionalDBProducerImpl(
     override fun sendAllOffsetsToTransaction(consumer: CordaConsumer<*, *>) {
         verifyInTransaction()
         val topicPartitions = consumer.assignment()
-        val offsets = topicPartitions.map { (topic, partition) ->
-            val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(topic, partition))
+        val offsetsPerPartition = topicPartitions.associateWith { consumer.position(it) }
+        val offsets = offsetsPerPartition.map { (topicPartition, offset) ->
             CommittedPositionEntry(
-                topic,
+                topicPartition.topic,
                 (consumer as DBCordaConsumerImpl).getConsumerGroup(),
-                partition,
+                topicPartition.partition,
                 offset,
                 transaction
             )

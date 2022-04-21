@@ -1,12 +1,12 @@
 package net.corda.flow.application.sessions
 
+import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -54,7 +54,7 @@ class FlowSessionImplTest {
 
     @Test
     fun `calling sendAndReceive with an uninitiated session will cause the flow to suspend to initiate the session`() {
-        val session = createSession(FlowSessionImpl.State.UNINITIATED)
+        val session = createSession(initiated = false)
         session.sendAndReceive(String::class.java, HI)
         verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
@@ -62,36 +62,29 @@ class FlowSessionImplTest {
 
     @Test
     fun `calling sendAndReceive with an initiated session will not cause the flow to suspend to initiate the session`() {
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         session.sendAndReceive(String::class.java, HI)
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
     }
 
     @Test
-    fun `calling sendAndReceive with a closed session will throw an exception`() {
-        val session = createSession(FlowSessionImpl.State.CLOSED)
-        assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
-    }
-
-    @Test
     fun `receiving the wrong object type in sendAndReceive throws an exception`() {
         whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
     }
 
     @Test
     fun `sendAndReceive returns the result of the flow's suspension`() {
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         assertEquals(HELLO_THERE, session.sendAndReceive(String::class.java, HI).unwrap { it })
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
     }
 
     @Test
     fun `calling receive with an uninitiated session will cause the flow to suspend to initiate the session`() {
-        val session = createSession(FlowSessionImpl.State.UNINITIATED)
+        val session = createSession(initiated = false)
         session.receive(String::class.java)
         verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
@@ -99,36 +92,29 @@ class FlowSessionImplTest {
 
     @Test
     fun `calling receive with an initiated session will not cause the flow to suspend to initiate the session`() {
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         session.receive(String::class.java)
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
     @Test
-    fun `calling receive with a closed session will throw an exception`() {
-        val session = createSession(FlowSessionImpl.State.CLOSED)
-        assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
-    }
-
-    @Test
     fun `receiving the wrong object type in receive throws an exception`() {
         whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
     }
 
     @Test
     fun `receive returns the result of the flow's suspension`() {
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         assertEquals(HELLO_THERE, session.receive(String::class.java).unwrap { it })
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
     @Test
     fun `calling send with an uninitiated session will cause the flow to suspend to initiate the session`() {
-        val session = createSession(FlowSessionImpl.State.UNINITIATED)
+        val session = createSession(initiated = false)
         session.send(HI)
         verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
@@ -136,37 +122,25 @@ class FlowSessionImplTest {
 
     @Test
     fun `calling send with an initiated session will not cause the flow to suspend to initiate the session`() {
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         session.send(HI)
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
-    }
-
-    @Test
-    fun `calling send with a closed session will throw an exception`() {
-        val session = createSession(FlowSessionImpl.State.CLOSED)
-        assertThrows<CordaRuntimeException> { session.send(HI) }
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
     }
 
     @Test
     fun `send suspends the fiber to send a message`() {
-        val session = createSession(FlowSessionImpl.State.INITIATED)
+        val session = createSession(initiated = true)
         session.send(HI)
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
-    private fun createSession(state: FlowSessionImpl.State): FlowSessionImpl {
+    private fun createSession(initiated: Boolean): FlowSessionImpl {
         return FlowSessionImpl(
-            counterparty = MemberX500Name(
-                commonName = "Alice",
-                organisation = "Alice Corp",
-                locality = "LDN",
-                country = "GB"
-            ),
+            counterparty = ALICE_X500_NAME,
             sourceSessionId = SESSION_ID,
             mockFlowFiberService,
-            state
+            initiated
         )
     }
 }

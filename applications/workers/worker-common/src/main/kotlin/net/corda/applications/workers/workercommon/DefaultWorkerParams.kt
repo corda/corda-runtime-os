@@ -42,7 +42,7 @@ class DefaultWorkerParams {
     @Option(names = ["-s", "--secretsParams"], description = ["Secrets parameters for the worker."])
     var secretsParams = emptyMap<String, String>()
 
-    @Option(names = ["--workspace-dir"], description = ["Corda worspace directory."])
+    @Option(names = ["--workspace-dir"], description = ["Corda workspace directory."])
     var workspaceDir = ConfigDefaults.WORKSPACE_DIR
 
     @Option(names = ["--temp-dir"], description = ["Corda temp directory."])

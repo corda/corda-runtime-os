@@ -11,10 +11,8 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.orm.utils.transaction
 import net.corda.test.util.LoggingUtils.emphasise
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.from
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -36,7 +34,6 @@ class DBAccessIntegrationTest {
         private val dbConfig = getEntityManagerConfiguration("test")
         lateinit var emf: EntityManagerFactory
 
-        private const val topic = "topic1"
         private val key = "key".toByteArray()
         private val value = "value".toByteArray()
         private const val consumerGroup = "group1"
@@ -76,12 +73,6 @@ class DBAccessIntegrationTest {
                 ),
                 dbConfig,
             )
-
-            val topicEntry = TopicEntry(topic, 4)
-
-            emf.transaction { em ->
-                em.persist(topicEntry)
-            }
         }
 
         @Suppress("unused")
@@ -225,7 +216,7 @@ class DBAccessIntegrationTest {
         dbAccess.writeOffsets(offsets)
 
         val results =
-            query(CommittedPositionEntry::class.java, "from topic_consumer_offset order by partition, record_offset")
+            query(CommittedPositionEntry::class.java, "from topic_consumer_offset where topic='$topic' order by partition, record_offset")
         assertThat(results).size().isEqualTo(offsets.size)
         results.forEachIndexed { index, topicRecordEntry ->
             assertThat(topicRecordEntry).isEqualToComparingFieldByField(offsets[index])
@@ -243,8 +234,6 @@ class DBAccessIntegrationTest {
         assertThat(result.numPartitions).isEqualTo(10)
 
         val topics = dbAccess.getTopicPartitionMap()
-        assertThat(topics.size).isEqualTo(2)
-        assertThat(topics[topic]!!).isEqualTo(4)
         assertThat(topics[newTopic]!!).isEqualTo(10)
     }
 
@@ -290,7 +279,10 @@ class DBAccessIntegrationTest {
             CordaTopicPartition(topic2, 4) to 2L,
         )
 
-        assertThat(dbAccess).returns(expectedResult, from(DBAccess::getMaxOffsetsPerTopicPartition))
+        // Filter out any results from other tests
+        val results = dbAccess.getMaxOffsetsPerTopicPartition().filter { it.key.topic in setOf(topic, topic2) }
+
+        assertThat(results).isEqualTo(expectedResult)
     }
 
     @Test
@@ -380,7 +372,10 @@ class DBAccessIntegrationTest {
 
     @Test
     fun `DBAccess returns the correct set of topic partitions`() {
+        val topic = randomId()
         val dbAccess = DBAccess(emf)
+
+        dbAccess.createTopic(topic, 4)
 
         val expectedResult = setOf(
             CordaTopicPartition(topic, 0),
