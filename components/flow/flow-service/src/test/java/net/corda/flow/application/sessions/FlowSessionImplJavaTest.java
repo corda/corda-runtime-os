@@ -1,7 +1,6 @@
 package net.corda.flow.application.sessions;
 
 import net.corda.data.identity.HoldingIdentity;
-import net.corda.flow.application.sessions.FlowSessionImpl.State;
 import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
 import net.corda.flow.fiber.FlowFiberService;
@@ -46,7 +45,7 @@ public class FlowSessionImplJavaTest {
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
             flowFiberService,
-            State.INITIATED
+            true
     );
 
     @BeforeEach
