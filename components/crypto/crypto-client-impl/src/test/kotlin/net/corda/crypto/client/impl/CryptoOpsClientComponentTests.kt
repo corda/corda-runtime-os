@@ -687,7 +687,7 @@ class CryptoOpsClientComponentTests {
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
-        assertEquals(externalId, UUID.fromString(command.externalId))
+        assertEquals(externalId, command.externalId)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }

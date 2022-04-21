@@ -29,7 +29,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.UUID
 
 @Suppress("TooManyFunctions")
 @Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
@@ -141,7 +140,7 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey =
         impl.ops.freshKeyProxy(tenantId, context)
 
-    override fun freshKeyProxy(tenantId: String, externalId: UUID, context: KeyValuePairList): CryptoPublicKey =
+    override fun freshKeyProxy(tenantId: String, externalId: String, context: KeyValuePairList): CryptoPublicKey =
         impl.ops.freshKeyProxy(tenantId, externalId, context)
 
     override fun signProxy(

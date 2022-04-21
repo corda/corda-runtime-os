@@ -34,7 +34,6 @@ import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -184,7 +183,7 @@ class CryptoOpsClientImpl(
         return request.execute(CryptoPublicKey::class.java)!!
     }
 
-    fun freshKeyProxy(tenantId: String, externalId: UUID, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(tenantId: String, externalId: String, context: KeyValuePairList): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -193,7 +192,7 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId.toString(), context)
+            request = GenerateFreshKeyRpcCommand(externalId, context)
         )
         return request.execute(CryptoPublicKey::class.java)!!
     }

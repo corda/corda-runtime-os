@@ -228,7 +228,7 @@ class CryptoFlowOpsTransformerTests {
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
         val command = result.value.request as GenerateFreshKeyFlowCommand
-        assertEquals(knownExternalId, UUID.fromString(command.externalId))
+        assertEquals(knownExternalId, command.externalId)
         assertRequestContext<GenerateFreshKeyFlowCommand>(result)
         assertOperationContext(knownOperationContext, command.context)
     }
@@ -242,7 +242,7 @@ class CryptoFlowOpsTransformerTests {
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
         val command = result.value.request as GenerateFreshKeyFlowCommand
-        assertEquals(knownExternalId, UUID.fromString(command.externalId))
+        assertEquals(knownExternalId, command.externalId)
         assertRequestContext<GenerateFreshKeyFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
     }
