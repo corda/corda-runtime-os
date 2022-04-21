@@ -159,6 +159,34 @@ workers:
 
       limits: {}
 
+  # membership worker configuration
+  membership:
+    # membership worker image configuration
+    image:
+      # -- membership worker image registry, defaults to image.registry
+      registry: ""
+      # -- membership worker image repository
+      repository: "corda-os-member-worker"
+      # -- membership worker image tag, defaults to image.tag
+      tag: ""
+    # -- membership worker replica count
+    replicaCount: 1
+    # membership worker debug configuration
+    debug:
+      # -- run membership worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the membership worker until the debugger is attached
+      suspend: false
+    # resource limits and requests configuration for the membership worker containers
+
+    resources:
+      # -- the CPU/memory resource requests for the membership worker containers
+
+      requests: {}
+      # -- the CPU/memory resource limits for the membership worker containers
+
+      limits: {}
+
   # RPC worker configuration
   rpc:
     # RPC worker image configuration
