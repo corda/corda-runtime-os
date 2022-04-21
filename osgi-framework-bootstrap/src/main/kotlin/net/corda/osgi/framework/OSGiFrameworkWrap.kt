@@ -536,8 +536,11 @@ class OSGiFrameworkWrap(
             if (application != null) {
                 application.startup(args)
             } else {
-                logger.error("Your Application could not be instantiated - check your constructor @Reference parameters\n" +
-                        "Remove all parameters and add them back one at a time to locate the problem.")
+                logger.error("Your Application could not be instantiated:\n" +
+                        "* Check your constructor @Reference parameters\n" +
+                        "  Remove all parameters and add them back one at a time to locate the problem.\n" +
+                        "* Split packages are NOT allowed in OSGi:\n" +
+                        "  check that your interface (bundle) and impl (bundle) are in different packages")
             }
         } else {
             throw ClassNotFoundException(
