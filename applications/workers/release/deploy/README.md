@@ -54,7 +54,25 @@ Once the plant is started it should be possible to run E2E tests like so:
 
 For more information on E2E tests, please see [here](../rpc-worker/src/e2eTest/README.md). 
 
-### View Kafka topics content
+### View Kafka content (KafkaSnoop)
+
+View Kafka topics and messages using KafkaSnoop on http://localhost:9001/ (Opens swagger page)
+
+To see all topics: `http://localhost:9001/api/topics`
+
+To see all (deserialised) messages: `http://localhost:9001/api/topics/<topic-name>`
+, e.g. `http://localhost:9001/api/topics/config.topic`
+
+Or use the Web Socket client: `http://localhost:9001/ws/topics/<topic-name>`
+, e.g. `http://localhost:9001/api/ws/topics/config.topic`
+Tip: use a web browser extension such as Web Socket Weasel for Firefox.
+
+To see all Avro Schemas: `http://localhost:9001/api/schemas`
+
+To see an individual schema: `http://localhost:9001/api/schemas/<name>`, 
+e.g.: `http://localhost:9001/api/schemas/net.corda.data.config.Configuration`
+
+### View Kafka topics content (kafdrop)
 
 Kafka topics are created automatically by Docker Compose.
 

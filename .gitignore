@@ -116,6 +116,8 @@ kafka-docker/data/
 applications/flow-worker/extracted/
 p2p-deployment/
 
+/applications/workers/release/deploy/schemas/*
+
 # Ignore Visual studio directory
 bin/
 
