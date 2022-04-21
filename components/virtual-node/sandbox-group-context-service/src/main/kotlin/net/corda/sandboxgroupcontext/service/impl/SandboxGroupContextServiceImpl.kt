@@ -44,8 +44,8 @@ class SandboxGroupContextServiceImpl(
     private val cpkReadService: CpkReadService,
     private val serviceComponentRuntime: ServiceComponentRuntime,
     private val bundleContext: BundleContext,
-    private val cache: SandboxGroupContextCache = SandboxGroupContextCache()
-) : SandboxGroupContextService, AutoCloseable {
+    var cache: SandboxGroupContextCache
+) : SandboxGroupContextService {
     private companion object {
         private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER))"
 

@@ -3,10 +3,13 @@ package net.corda.sandboxgroupcontext.impl
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.packaging.CPK
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putUniqueObject
+import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCache
+import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
@@ -16,8 +19,25 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.runtime.ServiceComponentRuntime
+
+class StubSandboxGroupContextCache: SandboxGroupContextCache {
+    override val cacheSize: Long
+        get() = 0
+
+    override fun remove(virtualNodeContext: VirtualNodeContext) {
+    }
+
+    override fun get(
+        virtualNodeContext: VirtualNodeContext,
+        createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
+    ): SandboxGroupContext  = createFunction(virtualNodeContext)
+
+    override fun close() {
+    }
+}
 
 class SandboxGroupContextServiceImplTest {
 
@@ -28,6 +48,7 @@ class SandboxGroupContextServiceImplTest {
     private val scr = mock<ServiceComponentRuntime>()
     private val bundleContext = mock<BundleContext>()
     private val cpks = setOf(Helpers.mockTrivialCpk(mainBundle, "example", "1.0.0"))
+    private val cache = StubSandboxGroupContextCache()
 
     private lateinit var virtualNodeContext: VirtualNodeContext
 
@@ -65,7 +86,8 @@ class SandboxGroupContextServiceImplTest {
             Helpers.mockSandboxCreationService(listOf(cpks)),
             cpkServiceImpl,
             scr,
-            bundleContext
+            bundleContext,
+            cache
         )
         virtualNodeContext = createVirtualNodeContextForFlow(
             holdingIdentity, cpks.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
@@ -107,14 +129,13 @@ class SandboxGroupContextServiceImplTest {
         assertThat(virtualNodeContext).isEqualTo(ctx.virtualNodeContext)
         assertThat(initializerCalled).isTrue
 
-        val actualCtx = service.getOrCreate(virtualNodeContext) { _, _ -> AutoCloseable { } }
-        val actualDog = actualCtx.getUniqueObject<Dog>()
+        val actualDog = ctx.getUniqueObject<Dog>()
 
         assertThat(actualDog!!).isEqualTo(dog)
         assertThat(actualDog.noise).isEqualTo(dog.noise)
         assertThat(actualDog.noise).isEqualTo(dog.noise)
 
-        assertThat(actualCtx.virtualNodeContext.holdingIdentity).isEqualTo(holdingIdentity)
+        assertThat(ctx.virtualNodeContext.holdingIdentity).isEqualTo(holdingIdentity)
         assertThat(actualHoldingIdentity).isEqualTo(holdingIdentity)
     }
 
@@ -145,29 +166,28 @@ class SandboxGroupContextServiceImplTest {
 
         val cpkService = CpkReadServiceFake(cpks1 + cpks2 + cpks3)
 
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, cache)
 
         val dog1 = Dog("Rover", "Woof!")
         val dog2 = Dog("Rover", "Bark!")
         val dog3 = Dog("Rover", "Howl!")
 
-        service.getOrCreate(ctx1) { _, mc ->
+        val sandboxGroupContext1 = service.getOrCreate(ctx1) { _, mc ->
             mc.putUniqueObject(dog1)
             AutoCloseable { }
         }
 
-        service.getOrCreate(ctx2) { _, mc ->
+        val sandboxGroupContext2 = service.getOrCreate(ctx2) { _, mc ->
             mc.putUniqueObject(dog2)
             AutoCloseable { }
         }
 
-        service.getOrCreate(ctx3) { _, mc ->
+        val sandboxGroupContext3 = service.getOrCreate(ctx3) { _, mc ->
             mc.putUniqueObject(dog3)
             AutoCloseable { }
         }
 
         // Can get correct 'unique' object from context 1
-        val sandboxGroupContext1 = service.getOrCreate(ctx1) { _, _ -> AutoCloseable { } }
         assertThat(sandboxGroupContext1.virtualNodeContext.holdingIdentity).isEqualTo(holdingIdentity1)
         val actualDog1 = sandboxGroupContext1.getUniqueObject<Dog>()
         assertThat(actualDog1!!).isEqualTo(dog1)
@@ -175,7 +195,6 @@ class SandboxGroupContextServiceImplTest {
         assertThat(actualDog1.noise).isNotEqualTo(dog2.noise)
 
         // Can get correct 'unique' object from context 2
-        val sandboxGroupContext2 = service.getOrCreate(ctx2) { _, _ -> AutoCloseable { } }
         assertThat(sandboxGroupContext2.virtualNodeContext.holdingIdentity).isEqualTo(holdingIdentity2)
         val actualDog2 = sandboxGroupContext2.getUniqueObject<Dog>()
         assertThat(actualDog2!!).isEqualTo(dog2)
@@ -183,7 +202,6 @@ class SandboxGroupContextServiceImplTest {
         assertThat(actualDog2.noise).isNotEqualTo(dog1.noise)
 
         // Can get correct 'unique' object from context 3
-        val sandboxGroupContext3 = service.getOrCreate(ctx3) { _, _ -> AutoCloseable { } }
         assertThat(sandboxGroupContext3.virtualNodeContext.holdingIdentity).isEqualTo(holdingIdentity3)
         val actualDog3 = sandboxGroupContext3.getUniqueObject<Dog>()
         assertThat(actualDog3!!).isEqualTo(dog3)
@@ -192,7 +210,7 @@ class SandboxGroupContextServiceImplTest {
     }
 
     @Test
-    fun `closeables work as expected`() {
+    fun `remove removes from cache`() {
         val holdingIdentity1 = HoldingIdentity("OU=1", "bar")
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
         val ctx1 = createVirtualNodeContextForFlow(
@@ -201,20 +219,12 @@ class SandboxGroupContextServiceImplTest {
         )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
-        val dog1 = Dog("Rover", "Woof!")
-
-        var isClosed = false
-
-        service.getOrCreate(ctx1) { _, mc ->
-            mc.putUniqueObject(dog1)
-            AutoCloseable {
-                isClosed = true
-            }
-        }
+        val mockCache = mock<SandboxGroupContextCache>()
+        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, mockCache)
 
         service.remove(ctx1)
-        assertThat(isClosed).isTrue
+
+        verify(mockCache).remove(ctx1)
     }
 
     @Test
@@ -229,7 +239,7 @@ class SandboxGroupContextServiceImplTest {
         val service = existingCpks.let {
             val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(it))
             val cpkService = CpkReadServiceFake(it)
-            SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext)
+            SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, cache)
         }
 
         val existingCpkIds = existingCpks.map {

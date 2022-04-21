@@ -4,6 +4,8 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.util.loggerFor
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * [MutableSandboxGroupContext] / [SandboxGroupContext] wrapped so that we set [close] now that the user has
@@ -21,6 +23,9 @@ internal class CloseableSandboxGroupContextImpl(
         private val logger = loggerFor<CloseableSandboxGroupContext>()
     }
 
+    private val lock = ReentrantLock()
+    private var isClosed = false
+
     override fun <T : Any> put(key: String, value: T) =
         sandboxGroupContext.put(key, value)
 
@@ -33,10 +38,18 @@ internal class CloseableSandboxGroupContextImpl(
     override fun <T : Any> get(key: String, valueType: Class<out T>): T? = sandboxGroupContext.get(key, valueType)
 
     override fun close() {
-        try {
-            closeable.close()
-        } catch(e: Exception) {
-            logger.warn("Failed to close SandboxGroupContext", e)
+        if (isClosed)
+            return
+
+        lock.withLock {
+            if (!isClosed) {
+                try {
+                    closeable.close()
+                    isClosed = true
+                } catch (e: Exception) {
+                    logger.warn("Failed to close SandboxGroupContext", e)
+                }
+            }
         }
     }
 }
