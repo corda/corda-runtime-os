@@ -43,8 +43,8 @@ class ConfigTests {
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
             "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE",
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -56,9 +56,9 @@ class ConfigTests {
         assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
 
         assertEquals(ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS,
-            config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
+            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
         assertEquals(ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS,
-            config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
+            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
     }
 
     @Test
@@ -79,15 +79,17 @@ class ConfigTests {
             KEY_TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
         )
 
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 
-        assertEquals(1234L, config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
-        assertEquals(5678L, config.getLong("${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
+        assertEquals(1234L,
+            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
+        assertEquals(5678L,
+            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
     }
 
     @Test
@@ -107,8 +109,8 @@ class ConfigTests {
             KEY_TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -127,8 +129,8 @@ class ConfigTests {
             KEY_TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.DB_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
+            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
