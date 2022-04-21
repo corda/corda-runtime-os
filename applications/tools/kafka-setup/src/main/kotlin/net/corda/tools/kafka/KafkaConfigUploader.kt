@@ -10,6 +10,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.v5.base.util.contextLogger
@@ -23,6 +24,7 @@ import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
+import kotlin.random.Random
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -90,6 +92,10 @@ class KafkaConfigUploader @Activate constructor(
             .withValue(
                 MessagingConfig.Bus.BUS_TYPE,
                 ConfigValueFactory.fromAnyRef("KAFKA")
+            )
+            .withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(Random.nextInt())
             )
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
         return SmartConfigFactory.create(allConfig).create(allConfig)
