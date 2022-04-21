@@ -16,6 +16,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.time.Duration
@@ -42,6 +43,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, )
             val kafkaConfig = SmartConfigImpl.empty()
                 .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaServers))
+                .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
                 InboundMessageProcessor(metadataTopic), kafkaConfig, null)
