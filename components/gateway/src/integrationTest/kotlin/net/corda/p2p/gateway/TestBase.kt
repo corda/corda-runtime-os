@@ -150,6 +150,7 @@ open class TestBase {
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
+                .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
                 .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
                 .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))

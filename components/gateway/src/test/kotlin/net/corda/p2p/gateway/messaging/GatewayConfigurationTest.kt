@@ -72,6 +72,7 @@ class GatewayConfigurationTest {
                     maxClientConnections = 100,
                     acquireTimeout = 5.minutes,
                     connectionIdleTimeout = 10.hours,
+                    responseTimeout = 20.seconds,
                     retryDelay = 21.minutes,
                     initialReconnectionDelay = 11.millis,
                     maximalReconnectionDelay = 15.minutes,

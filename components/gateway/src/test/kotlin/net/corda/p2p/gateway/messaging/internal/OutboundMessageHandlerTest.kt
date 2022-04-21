@@ -298,7 +298,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when message times out, it is retried once`() {
-        connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
@@ -338,7 +338,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when message fails, it is retried once`() {
-        connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
@@ -420,7 +420,7 @@ class OutboundMessageHandlerTest {
     @Test
     fun `when 4xx error code is received, it is not retried`() {
         val retryDelay = 10.millis
-        connectionConfig = ConnectionConfiguration().copy(retryDelay = retryDelay)
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = retryDelay)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))

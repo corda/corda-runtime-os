@@ -388,8 +388,8 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(60)
         fun `gateway to multiple servers`() {
-            val messageCount = 20
-            val serversCount = 3
+            val messageCount = 100
+            val serversCount = 4
             alice.publishTrustStore()
 
             // We first produce some messages which will be consumed by the Gateway.
