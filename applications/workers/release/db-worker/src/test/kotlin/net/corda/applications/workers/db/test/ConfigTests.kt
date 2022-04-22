@@ -77,8 +77,8 @@ class ConfigTests {
         val config = processor.config!!
 
         val expectedKeys = setOf(
-            KEY_INSTANCE_ID,
-            KEY_TOPIC_PREFIX,
+            NSTANCE_ID,
+            TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
             "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
