@@ -11,7 +11,7 @@ import javax.persistence.IdClass
 import javax.persistence.Table
 
 @Entity
-@Table(name = DbSchema.CRYPTO_SIGNING_KEY_TABLE, schema = DbSchema.CRYPTO)
+@Table(name = DbSchema.CRYPTO_SIGNING_KEY_TABLE)
 @IdClass(SigningKeyEntityPrimaryKey::class)
 @Suppress("LongParameterList")
 class SigningKeyEntity(

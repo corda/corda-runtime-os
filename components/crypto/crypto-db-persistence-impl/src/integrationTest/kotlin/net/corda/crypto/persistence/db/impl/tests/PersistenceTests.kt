@@ -26,6 +26,7 @@ import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -37,6 +38,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -96,8 +98,10 @@ class PersistenceTests {
 
         private lateinit var cryptoEmf: EntityManagerFactory
 
-        private val cryptoDbConfig: EntityManagerConfiguration =
-            DbUtils.getEntityManagerConfiguration("crypto")
+        private val cryptoDbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
+            inMemoryDbName = "crypto",
+            schemaName = DbSchema.CRYPTO
+        )
 
         @JvmStatic
         @BeforeAll
@@ -111,7 +115,8 @@ class PersistenceTests {
                 cryptoDbConfig,
                 "crypto",
                 CordaDb.Crypto.persistenceUnitName,
-                CryptoEntities.classes
+                CryptoEntities.classes,
+                DbSchema.CRYPTO
             )
         }
 

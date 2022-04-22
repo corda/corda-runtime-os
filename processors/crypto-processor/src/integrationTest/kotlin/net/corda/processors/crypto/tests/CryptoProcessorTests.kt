@@ -13,6 +13,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -55,9 +56,9 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -66,6 +67,7 @@ import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
 import java.util.UUID
+import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class)
 class CryptoProcessorTests {
@@ -121,13 +123,22 @@ class CryptoProcessorTests {
 
         private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
 
-        private val tenantId: String = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
+        private val vnodeId: String = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
 
-        private val clusterDb = TestDbInfo(CordaDb.CordaCluster.persistenceUnitName)
+        private val clusterDb = TestDbInfo(
+            name = CordaDb.CordaCluster.persistenceUnitName,
+            schemaName = DbSchema.CONFIG
+        )
 
-        private val cryptoDb = TestDbInfo(CordaDb.Crypto.persistenceUnitName)
+        private val cryptoDb = TestDbInfo(
+            name = CordaDb.Crypto.persistenceUnitName,
+            schemaName = DbSchema.CRYPTO
+        )
 
-        private val tenantDb = TestDbInfo("vnode_crypto_$tenantId")
+        private val tenantDb = TestDbInfo(
+            name = "vnode_crypto_$vnodeId",
+            schemaName = "vnode_crypto"
+        )
 
         @JvmStatic
         @BeforeAll
@@ -227,7 +238,8 @@ class CryptoProcessorTests {
                 clusterDb.emConfig,
                 "config",
                 clusterDb.name,
-                ConfigurationEntities.classes
+                ConfigurationEntities.classes,
+                DbSchema.CONFIG
             ).close()
             logger.info(
                 "CREATING DATABASE FOR: ${cryptoDb.name}(${cryptoDb.emConfig.dataSource.connection.metaData.url})"
@@ -236,36 +248,53 @@ class CryptoProcessorTests {
                 cryptoDb.emConfig,
                 "crypto",
                 cryptoDb.name,
-                CryptoEntities.classes
+                CryptoEntities.classes,
+                DbSchema.CRYPTO
             ).close()
             logger.info(
                 "CREATING DATABASE FOR: ${tenantDb.name}(${tenantDb.emConfig.dataSource.connection.metaData.url})"
             )
             databaseInstaller.setupDatabase(
                 tenantDb.emConfig,
-                "crypto",
+                "vnode-crypto",
                 tenantDb.name,
-                CryptoEntities.classes
+                CryptoEntities.classes,
+                "vnode_crypto"
             ).close()
         }
 
         @JvmStatic
-        fun testCategories(): Array<String> = arrayOf(
-            CryptoConsts.HsmCategories.LEDGER,
-            CryptoConsts.HsmCategories.TLS,
-            CryptoConsts.HsmCategories.SESSION
+        fun testCategories(): Stream<Arguments> = Stream.of(
+            Arguments.of(CryptoConsts.HsmCategories.LEDGER, vnodeId),
+            Arguments.of(CryptoConsts.HsmCategories.TLS, vnodeId),
+            Arguments.of(CryptoConsts.HsmCategories.SESSION, vnodeId),
+            Arguments.of(CryptoConsts.HsmCategories.LEDGER, CryptoConsts.CLUSTER_TENANT_ID),
+            Arguments.of(CryptoConsts.HsmCategories.TLS, CryptoConsts.CLUSTER_TENANT_ID),
+            Arguments.of(CryptoConsts.HsmCategories.SESSION, CryptoConsts.CLUSTER_TENANT_ID)
+        )
+
+        @JvmStatic
+        fun testTenants(): Stream<Arguments> = Stream.of(
+            Arguments.of(vnodeId),
+            Arguments.of(CryptoConsts.CLUSTER_TENANT_ID),
         )
     }
 
     @ParameterizedTest
     @MethodSource("testCategories")
-    fun `Should be able to get supported schemes`(category: String) {
+    fun `Should be able to get supported schemes`(
+        category: String,
+        tenantId: String
+    ) {
         val supportedSchemes = opsClient.getSupportedSchemes(tenantId, category)
         assertTrue(supportedSchemes.isNotEmpty())
     }
 
-    @Test
-    fun `Should not find unknown public key by its id`() {
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should not find unknown public key by its id`(
+        tenantId: String
+    ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
             ids = listOf(publicKeyIdOf(UUID.randomUUID().toString().toByteArray()))
@@ -273,8 +302,11 @@ class CryptoProcessorTests {
         assertEquals(0, found.size)
     }
 
-    @Test
-    fun `Should return empty collection when lookp filter does not match`() {
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should return empty collection when lookp filter does not match`(
+        tenantId: String
+    ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
             skip = 0,
@@ -289,7 +321,10 @@ class CryptoProcessorTests {
 
     @ParameterizedTest
     @MethodSource("testCategories")
-    fun `Should generate a new key pair using alias then find it and use for signing`(category: String) {
+    fun `Should generate a new key pair using alias then find it and use for signing`(
+        category: String,
+        tenantId: String
+    ) {
         val alias = UUID.randomUUID().toString()
 
         val original = opsClient.generateKeyPair(
@@ -298,19 +333,22 @@ class CryptoProcessorTests {
             alias = alias
         )
 
-        `Should find existing public key by its id`(alias, original, category, null)
+        `Should find existing public key by its id`(tenantId, alias, original, category, null)
 
-        `Should find existing public key by its alias`(alias, original, category)
+        `Should find existing public key by its alias`(tenantId, alias, original, category)
 
-        `Should be able to sign`(original)
+        `Should be able to sign`(tenantId, original)
 
-        `Should be able to sign using custom signature spec`(original)
+        `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(original)
+        `Should be able to sign by flow ops`(tenantId, original)
     }
 
-    @Test
-    fun `Should generate a new fresh key pair with external id then find it and use for signing`() {
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should generate a new fresh key pair with external id then find it and use for signing`(
+        tenantId: String
+    ) {
         val externalId = UUID.randomUUID().toString()
 
         val original = opsClient.freshKey(
@@ -320,42 +358,50 @@ class CryptoProcessorTests {
         )
 
         `Should find existing public key by its id`(
+            tenantId,
             null,
             original,
             CryptoConsts.HsmCategories.FRESH_KEYS,
             externalId
         )
 
-        `Should be able to sign`(original)
+        `Should be able to sign`(tenantId, original)
 
-        `Should be able to sign using custom signature spec`(original)
+        `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(original)
+        `Should be able to sign by flow ops`(tenantId, original)
     }
 
-    @Test
-    fun `Should generate a new fresh key pair without external id then find it and use for signing`() {
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should generate a new fresh key pair without external id then find it and use for signing`(
+        tenantId: String
+    ) {
         val original = opsClient.freshKey(
             tenantId = tenantId,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
         `Should find existing public key by its id`(
+            tenantId,
             null,
             original,
             CryptoConsts.HsmCategories.FRESH_KEYS,
             null
         )
 
-        `Should be able to sign`(original)
+        `Should be able to sign`(tenantId, original)
 
-        `Should be able to sign using custom signature spec`(original)
+        `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(original)
+        `Should be able to sign by flow ops`(tenantId, original)
     }
 
-    @Test
-    fun `Should generate fresh key pair without external id by flow ops then find it and use for signing`() {
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should generate fresh key pair without external id by flow ops then find it and use for signing`(
+        tenantId: String
+    ) {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId
@@ -372,15 +418,18 @@ class CryptoProcessorTests {
         val response = flowOpsResponses.waitForResponse(key)
         val original = transformer.transform(response) as PublicKey
 
-        `Should be able to sign`(original)
+        `Should be able to sign`(tenantId, original)
 
-        `Should be able to sign using custom signature spec`(original)
+        `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(original)
+        `Should be able to sign by flow ops`(tenantId, original)
     }
 
-    @Test
-    fun `Should generate fresh key pair with external id by flow ops then find it and use for signing`() {
+    @ParameterizedTest
+    @MethodSource("testTenants")
+    fun `Should generate fresh key pair with external id by flow ops then find it and use for signing`(
+        tenantId: String
+    ) {
         val externalId = UUID.randomUUID().toString()
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
@@ -399,14 +448,15 @@ class CryptoProcessorTests {
         val response = flowOpsResponses.waitForResponse(key)
         val original = transformer.transform(response) as PublicKey
 
-        `Should be able to sign`(original)
+        `Should be able to sign`(tenantId, original)
 
-        `Should be able to sign using custom signature spec`(original)
+        `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(original)
+        `Should be able to sign by flow ops`(tenantId, original)
     }
 
     private fun `Should find existing public key by its id`(
+        tenantId: String,
         alias: String?,
         publicKey: PublicKey,
         category: String,
@@ -437,6 +487,7 @@ class CryptoProcessorTests {
     }
 
     private fun `Should find existing public key by its alias`(
+        tenantId: String,
         alias: String,
         publicKey: PublicKey,
         category: String
@@ -462,7 +513,10 @@ class CryptoProcessorTests {
         assertNull(found[0].hsmAlias)
     }
 
-    private fun `Should be able to sign`(publicKey: PublicKey) {
+    private fun `Should be able to sign`(
+        tenantId: String,
+        publicKey: PublicKey
+    ) {
         val data = randomDataByteArray()
         val signature = opsClient.sign(
             tenantId = tenantId,
@@ -478,7 +532,10 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign using custom signature spec`(publicKey: PublicKey) {
+    private fun `Should be able to sign using custom signature spec`(
+        tenantId: String,
+        publicKey: PublicKey
+    ) {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
@@ -510,7 +567,10 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign by flow ops`(publicKey: PublicKey) {
+    private fun `Should be able to sign by flow ops`(
+        tenantId: String,
+        publicKey: PublicKey
+    ) {
         val data = randomDataByteArray()
         val key = UUID.randomUUID().toString()
         val event = transformer.createSign(

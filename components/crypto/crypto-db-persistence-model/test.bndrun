@@ -27,4 +27,9 @@
     postgresPort=${project.postgresPort},\
     postgresDb=${project.postgresDb},\
     postgresUser=${project.postgresUser},\
-    postgresPassword=${project.postgresPassword}
+    postgresPassword=${project.postgresPassword},\
+    org.slf4j.simpleLogger.defaultLogLevel=info,\
+    org.slf4j.simpleLogger.showShortLogName=true,\
+    org.slf4j.simpleLogger.showThreadName=false,\
+    org.slf4j.simpleLogger.showDateTime=true,\
+    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'

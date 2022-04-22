@@ -64,7 +64,8 @@ class DatabaseInstaller(
         cfg: EntityManagerConfiguration,
         resourceSubPath: String,
         persistenceUnitName: String,
-        entities: Set<Class<*>>
+        entities: Set<Class<*>>,
+        schemaName: String? = null
     ): EntityManagerFactory {
         val schemaClass = DbSchema::class.java
         logger.info("Creating schemas for ${cfg.dataSource.connection.metaData.url} ($persistenceUnitName)".emphasise())
@@ -76,11 +77,23 @@ class DatabaseInstaller(
             classLoader = schemaClass.classLoader
         )
         val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
-        StringWriter().use { writer ->
-            schemaMigrator.createUpdateSql(cfg.dataSource.connection, changeLog, writer)
-            logger.info("Schema creation SQL: $writer")
+        if(schemaName.isNullOrBlank()) {
+            StringWriter().use { writer ->
+                schemaMigrator.createUpdateSql(cfg.dataSource.connection, changeLog, writer)
+                logger.info("Schema creation SQL: $writer")
+            }
+            schemaMigrator.updateDb(cfg.dataSource.connection, changeLog)
+        } else {
+            cfg.dataSource.connection.use {
+                it.createStatement().execute("CREATE SCHEMA IF NOT EXISTS $schemaName")
+                it.commit()
+            }
+            StringWriter().use { writer ->
+                schemaMigrator.createUpdateSql(cfg.dataSource.connection, changeLog, schemaName, writer)
+                logger.info("Schema creation SQL: $writer")
+            }
+            schemaMigrator.updateDb(cfg.dataSource.connection, changeLog, schemaName)
         }
-        schemaMigrator.updateDb(cfg.dataSource.connection, changeLog)
         logger.info("Create Entities".emphasise())
         val emf = factory.create(
             persistenceUnitName,

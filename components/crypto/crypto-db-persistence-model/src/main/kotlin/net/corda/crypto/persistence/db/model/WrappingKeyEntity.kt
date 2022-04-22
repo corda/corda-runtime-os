@@ -8,7 +8,7 @@ import javax.persistence.Id
 import javax.persistence.Table
 
 @Entity
-@Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE, schema = DbSchema.CRYPTO)
+@Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
 class WrappingKeyEntity(
     @Id
     @Column(name = "alias", nullable = false, updatable = false)

@@ -5,7 +5,8 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfigFactory
 
 class TestDbInfo(
-    val name: String
+    val name: String,
+    schemaName: String? = null
 ) {
     companion object {
         private val configFactory = SmartConfigFactory.create(
@@ -18,7 +19,15 @@ class TestDbInfo(
         )
     }
 
-    val config = configFactory.create(DbUtils.createConfig(name))
+    val config = configFactory.create(
+        DbUtils.createConfig(
+            inMemoryDbName = name,
+            schemaName = schemaName
+        )
+    )
 
-    val emConfig = DbUtils.getEntityManagerConfiguration(name)
+    val emConfig = DbUtils.getEntityManagerConfiguration(
+        inMemoryDbName = name,
+        schemaName = schemaName
+    )
 }
