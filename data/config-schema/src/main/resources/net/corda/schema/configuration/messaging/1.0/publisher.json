@@ -10,6 +10,11 @@
       "type": "integer",
       "minimum": 100,
       "default": 600
+    },
+    "transactional": {
+      "description": "True if the publisher should send records as part of transactions. False to send records asynchronously.",
+      "type": "boolean",
+      "default": true
     }
   },
   "additionalProperties": false

@@ -19,10 +19,6 @@ object ConfigKeys {
     const val SANDBOX_CONFIG = "corda.sandbox"
     const val RECONCILIATION_CONFIG = "corda.reconciliation"
 
-    // Lower level config elements
-    //  Messaging
-    const val BOOTSTRAP_SERVERS = "messaging.kafka.common.bootstrap.servers"
-
     //  RPC
     const val RPC_ADDRESS = "address"
     const val RPC_CONTEXT_DESCRIPTION = "context.description"

@@ -5,12 +5,6 @@
   "description": "Configuration settings for all subscriptions to the message bus.",
   "type": "object",
   "properties": {
-    "close.timeout": {
-      "description": "Time in ms to wait when closing underlying bus objects for this subscription.",
-      "type": "integer",
-      "minimum": 100,
-      "default": 400
-    },
     "poll.timeout": {
       "description": "Time in ms to wait for a response from the bus when calling poll.",
       "type": "integer",
