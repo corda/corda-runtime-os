@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -57,13 +58,14 @@ class PubSubSubscriptionIntegrationTest {
         subscriptionFactory.createPubSubSubscription(
             subscriptionConfig = config,
             processor = processor,
-            executor = executor
+            executor = executor,
+            messagingConfig = SmartConfigImpl.empty()
         )
     }
 
     private fun publish(vararg records: Record<Any, Any>) {
         val publisherConfig = PublisherConfig(clientId)
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, SmartConfigImpl.empty()).use {
             it.publish(records.toList())
         }
     }

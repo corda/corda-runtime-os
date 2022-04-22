@@ -1,35 +1,32 @@
 package net.corda.messaging.subscription.consumer.listener
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.factory.MapFactory
+import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
-class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
-    private val config: StateAndEventConfig,
+internal class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
+    private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, Pair<Long, S>>,
-    private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
-    private val partitionState: StateAndEventPartitionState<K, S>,
+    stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
+    partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
 ) : CordaConsumerRebalanceListener {
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val eventTopic = config.eventTopic
-    private val stateTopic = config.stateTopic
-
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
 
-    private val eventConsumer: CordaConsumer<K, E> = stateAndEventConsumer.eventConsumer
-    private val stateConsumer: CordaConsumer<K, S> = stateAndEventConsumer.stateConsumer
+    private val eventConsumer = stateAndEventConsumer.eventConsumer
+    private val stateConsumer = stateAndEventConsumer.stateConsumer
 
     /**
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
@@ -47,7 +44,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         partitionsToSync.putAll(syncablePartitions)
-        eventConsumer.pause(syncablePartitions.map { CordaTopicPartition(eventTopic, it.first) })
+        eventConsumer.pause(syncablePartitions.map { CordaTopicPartition(config.topic, it.first) })
 
         statePartitions.forEach {
             currentStates.computeIfAbsent(it.partition) {
@@ -97,6 +94,8 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 
-    private fun CordaTopicPartition.toStateTopic() = CordaTopicPartition(stateTopic, partition)
+    private fun CordaTopicPartition.toStateTopic() =
+        CordaTopicPartition(getStateAndEventStateTopic(config.topic), partition)
+
     private fun Collection<CordaTopicPartition>.toStateTopics(): List<CordaTopicPartition> = map { it.toStateTopic() }
 }

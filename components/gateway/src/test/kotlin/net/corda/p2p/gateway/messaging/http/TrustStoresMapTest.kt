@@ -66,7 +66,6 @@ class TrustStoresMapTest {
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
-        12,
         certificateFactory
     )
 

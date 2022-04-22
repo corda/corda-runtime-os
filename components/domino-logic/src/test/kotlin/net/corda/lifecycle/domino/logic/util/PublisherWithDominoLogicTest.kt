@@ -30,13 +30,13 @@ class PublisherWithDominoLogicTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val nodeConfig = mock<SmartConfig>()
+    private val messagingConfig = mock<SmartConfig>()
     private val publisher = mock<Publisher>()
     private val factory = mock<PublisherFactory> {
-        on { createPublisher(any(), eq(nodeConfig)) } doReturn publisher
+        on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
     }
 
-    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig("", 1), nodeConfig)
+    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig(""), messagingConfig)
 
     @Test
     fun `createResources will start the publisher`() {

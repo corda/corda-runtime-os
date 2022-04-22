@@ -1,12 +1,13 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
@@ -43,7 +44,7 @@ import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KFunction
 
@@ -76,7 +77,7 @@ class IntegrationCryptoOpsTests {
       """
 
         private const val BOOT_CONFIGURATION = """
-        instanceId=1
+        instance.id=1
     """
     }
 
@@ -126,8 +127,9 @@ class IntegrationCryptoOpsTests {
                     eventTopic = RESPONSE_TOPIC
                 ),
                 processor = this,
-                nodeConfig = SmartConfigFactory.create(
+                messagingConfig = SmartConfigFactory.create(
                     ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
+                    .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
                 ),
                 partitionAssignmentListener = null
             ).also { it.start() }
@@ -175,7 +177,7 @@ class IntegrationCryptoOpsTests {
         ).also { it.startAndWait() }
 
         logger.info("Publishing configs for $CRYPTO_CONFIG and $MESSAGING_CONFIG")
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
         with(publisher) {
             publish(
                 listOf(

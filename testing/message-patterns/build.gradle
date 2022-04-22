@@ -35,6 +35,7 @@ dependencies {
     integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     integrationTestImplementation "net.corda:corda-avro-schema"
     integrationTestImplementation "net.corda:corda-base"
+    integrationTestImplementation 'net.corda:corda-config-schema'
     integrationTestImplementation 'net.corda:corda-topic-schema'
 
     integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -42,6 +43,7 @@ dependencies {
     integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "javax.persistence:javax.persistence-api"
+    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     integrationTestImplementation project(":components:kafka-topic-admin")
     integrationTestImplementation 'net.corda:corda-db-schema'

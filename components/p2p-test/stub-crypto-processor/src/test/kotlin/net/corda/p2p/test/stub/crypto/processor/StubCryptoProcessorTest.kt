@@ -81,7 +81,7 @@ class StubCryptoProcessorTest {
     private val mockSubscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val tenantId = "tenantId"
 
-    private val testObject = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, 100, configuration)
+    private val testObject = StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration)
 
     @AfterEach
     fun cleanUp() {

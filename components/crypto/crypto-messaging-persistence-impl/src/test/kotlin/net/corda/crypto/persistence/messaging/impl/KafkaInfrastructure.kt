@@ -60,7 +60,7 @@ class KafkaInfrastructure {
         }
     }
 
-    private val emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+    val emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
     private val topicService: TopicService = TopicServiceImpl()
     private val rpcTopicService: RPCTopicService = RPCTopicServiceImpl()
     private var coordinator: LifecycleCoordinator? = null
@@ -172,7 +172,7 @@ class KafkaInfrastructure {
                     stop.countDown()
                 }
             },
-            nodeConfig = SmartConfigImpl.empty()
+            messagingConfig = SmartConfigImpl.empty()
         ).use {
             it.start()
             stop.await(2, TimeUnit.SECONDS)
@@ -187,7 +187,7 @@ class KafkaInfrastructure {
         key: String,
         record: Any
     ) {
-        val pub = publisherFactory.createPublisher(PublisherConfig(clientId))
+        val pub = publisherFactory.createPublisher(PublisherConfig(clientId), emptyConfig)
         pub.publish(
             listOf(Record(topic, key, record))
         )[0].get()

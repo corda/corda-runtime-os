@@ -1,23 +1,21 @@
 package net.corda.messaging.publisher
 
-import com.typesafe.config.Config
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_CONSUMER
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -27,11 +25,10 @@ import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.properties.ConfigProperties.Companion.RESPONSE_TOPIC
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.utils.FutureTracker
-import net.corda.messaging.utils.render
+import net.corda.schema.Schemas.Companion.getRPCResponseTopic
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
@@ -44,13 +41,13 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
-    private val config: Config,
+internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
+    private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
@@ -69,30 +66,21 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name
 
-    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val groupName = config.getString(CONSUMER_GROUP_ID)
-    private val topic = config.getString(TOPIC_NAME)
-    private val responseTopic = config.getString(RESPONSE_TOPIC)
     private val futureTracker = FutureTracker<RESPONSE>()
     private var producer: CordaProducer? = null
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "$groupName-RPCSender-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(INSTANCE_ID)
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
+
     private val partitionListener = RPCConsumerRebalanceListener(
-        responseTopic,
+        getRPCResponseTopic(config.topic),
         "RPC Response listener",
         futureTracker,
         lifecycleCoordinator
     )
 
-    private val errorMsg = "Failed to read records from group $groupName, topic $topic"
+    private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n$config" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -101,7 +89,7 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "rpc response subscription thread $groupName-$topic",
+                    name = "rpc response subscription thread ${config.group}-${config.topic}",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -133,7 +121,7 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
+        thread?.join(config.threadStopTimeout.toMillis())
     }
 
     private fun runConsumeLoop() {
@@ -142,14 +130,17 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                producer = cordaProducerBuilder.createProducer(config.getConfig(ConfigProperties.CORDA_PRODUCER))
-                cordaConsumerBuilder.createRPCConsumer(
-                    config.getConfig(CORDA_CONSUMER),
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId,false, ProducerRoles.RPC_SENDER)
+                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
+                cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
+                    config.messageBusConfig,
                     String::class.java,
                     RPCResponse::class.java
                 ).use {
                     it.subscribe(
-                        listOf(responseTopic),
+                        listOf(getRPCResponseTopic(config.topic)),
                         partitionListener
                     )
                     pollAndProcessRecords(it)
@@ -173,7 +164,7 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCResponse>) {
         while (!stopped) {
-            val consumerRecords = consumer.poll()
+            val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processRecords(consumerRecords)
             } catch (ex: Exception) {
@@ -184,7 +175,8 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $topic, group $groupName.", ex
+                            "Failed to process records from topic ${getRPCResponseTopic(config.topic)}, group ${config.group}.",
+                            ex
                         )
                     }
                 }
@@ -198,8 +190,7 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val correlationKey = it.key
             val partition = it.partition
             val future = futureTracker.getFuture(correlationKey, partition)
-            val rpcResponse = it.value ?:
-                throw CordaMessageAPIFatalException("Is this bad here?")
+            val rpcResponse = it.value ?: throw CordaMessageAPIFatalException("Is this bad here?")
 
             val responseStatus = rpcResponse.responseStatus
                 ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
@@ -231,8 +222,8 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
-                    "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                    "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
             }
         }
@@ -249,13 +240,13 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             future.completeExceptionally(
                 CordaRPCAPISenderException(
                     "Serializing your request resulted in an exception. " +
-                    "Verify that the fields of the request are populated correctly", ex
+                            "Verify that the fields of the request are populated correctly", ex
                 )
             )
             log.error(
                 "Serializing your request resulted in an exception. " +
-                "Verify that the fields of the request are populated correctly. " +
-                "Request was: $req", ex
+                        "Verify that the fields of the request are populated correctly. " +
+                        "Request was: $req", ex
             )
         }
 
@@ -267,12 +258,12 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val request = RPCRequest(
                 correlationId,
                 Instant.now(),
-                responseTopic,
+                getRPCResponseTopic(config.topic),
                 partition,
                 ByteBuffer.wrap(reqBytes)
             )
 
-            val record = CordaProducerRecord(topic, correlationId, request)
+            val record = CordaProducerRecord(config.topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
                 producer?.sendRecords(listOf(record))

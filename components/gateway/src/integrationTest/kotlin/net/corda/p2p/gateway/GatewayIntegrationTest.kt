@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway
 
+import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
@@ -52,6 +53,7 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.TestSchema
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
@@ -94,7 +96,7 @@ class GatewayIntegrationTest : TestBase() {
     private val sessionId = "session-1"
     private val instanceId = AtomicInteger(0)
 
-    private val nodeConfig = SmartConfigImpl.empty()
+    private val messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.getAndIncrement()))
 
     private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -102,7 +104,7 @@ class GatewayIntegrationTest : TestBase() {
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"))
+        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"), messagingConfig)
 
         fun stop() {
             publisher.close()
@@ -136,7 +138,7 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = SmartConfigImpl.empty(),
+                messagingConfig = messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 partitionAssignmentListener = null
             ).use {
                 it.start()
@@ -176,8 +178,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
@@ -269,8 +270,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    nodeConfig,
-                    instanceId.incrementAndGet(),
+                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 ).use { gateway ->
                     gateway.start()
 
@@ -345,8 +345,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
@@ -451,8 +450,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
@@ -500,7 +498,7 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = SmartConfigImpl.empty(),
+                messagingConfig = messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 partitionAssignmentListener = null
             )
             bobSubscription.start()
@@ -519,7 +517,7 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = SmartConfigImpl.empty(),
+                messagingConfig = messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 partitionAssignmentListener = null
             )
             aliceSubscription.start()
@@ -539,8 +537,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    nodeConfig,
-                    instanceId.incrementAndGet(),
+                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 ),
                 Gateway(
                     createConfigurationServiceFor(
@@ -554,8 +551,7 @@ class GatewayIntegrationTest : TestBase() {
                     bob.subscriptionFactory,
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
-                    nodeConfig,
-                    instanceId.incrementAndGet(),
+                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 )
             ).onEach {
                 it.startAndWaitForStarted()
@@ -620,8 +616,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
@@ -748,8 +743,7 @@ class GatewayIntegrationTest : TestBase() {
                 server.subscriptionFactory,
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
@@ -883,8 +877,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             )
 
             assertDoesNotThrow {

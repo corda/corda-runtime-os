@@ -12,6 +12,10 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.EndpointInfo
@@ -28,6 +32,7 @@ import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
+import kotlin.random.Random
 
 @Component(immediate = true)
 @Suppress("LongParameterList")
@@ -41,7 +46,6 @@ class MemberViewer @Activate constructor(
     private companion object {
         private val logger: Logger = contextLogger()
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     @Suppress("SpreadOperator")
@@ -86,8 +90,20 @@ class MemberViewer @Activate constructor(
             val secretsConfig = ConfigFactory.empty()
             val bootConfig = ConfigFactory.empty()
                 .withValue(
-                    KAFKA_COMMON_BOOTSTRAP_SERVER,
+                    BOOTSTRAP_SERVER,
                     ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString())
+                )
+                .withValue(
+                    BUS_TYPE,
+                    ConfigValueFactory.fromAnyRef("KAFKA")
+                )
+                .withValue(
+                    TOPIC_PREFIX,
+                    ConfigValueFactory.fromAnyRef("")
+                )
+                .withValue(
+                    INSTANCE_ID,
+                    ConfigValueFactory.fromAnyRef(Random.nextInt())
                 )
             val smartConfig = SmartConfigFactory.create(secretsConfig).create(bootConfig)
 

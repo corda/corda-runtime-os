@@ -39,18 +39,18 @@ class ConfigWriterFactoryTests {
     @Test
     fun `factory does not start the config writer`() {
         val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), getPublisherFactory(), mock())
-        val configWriter = configWriterFactory.create(mock(), 0)
+        val configWriter = configWriterFactory.create(mock())
         assertFalse(configWriter.isRunning)
     }
 
     @Test
     fun `factory creates a publisher with the correct configuration`() {
-        val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB, 777)
+        val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB)
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val publisherFactory = getPublisherFactory()
         val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), publisherFactory, mock())
-        configWriterFactory.create(expectedConfig, expectedPublisherConfig.instanceId!!)
+        configWriterFactory.create(expectedConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
     }
@@ -68,7 +68,7 @@ class ConfigWriterFactoryTests {
 
         val subscriptionFactory = getSubscriptionFactory()
         val configWriterFactory = ConfigWriterFactory(subscriptionFactory, getPublisherFactory(), mock())
-        configWriterFactory.create(expectedConfig, 777)
+        configWriterFactory.create(expectedConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
     }

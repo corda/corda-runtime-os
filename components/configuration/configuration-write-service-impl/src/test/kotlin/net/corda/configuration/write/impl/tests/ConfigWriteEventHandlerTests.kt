@@ -25,20 +25,20 @@ class ConfigWriteEventHandlerTests {
     private fun getConfigWriterAndFactory(): Pair<ConfigWriter, ConfigWriterFactory> {
         val configWriter = mock<ConfigWriter>()
         return configWriter to mock<ConfigWriterFactory>().apply {
-            whenever(create(any(), any())).thenReturn(configWriter)
+            whenever(create(any())).thenReturn(configWriter)
         }
     }
 
     @Test
     fun `StartProcessing event throws and sets coordinator status to error if config writer cannot be created`() {
         val erroringConfigWriterFactory = mock<ConfigWriterFactory>().apply {
-            whenever(create(any(), any())).thenThrow(ConfigWriteServiceException(""))
+            whenever(create(any())).thenThrow(ConfigWriteServiceException(""))
         }
         val eventHandler = ConfigWriteEventHandler(erroringConfigWriterFactory)
         val coordinator = mock<LifecycleCoordinator>()
 
         val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), 0), coordinator)
+            eventHandler.processEvent(StartProcessingEvent(mock()), coordinator)
         }
         assertEquals("Could not subscribe to config management requests.", e.message)
         verify(coordinator).updateStatus(eq(ERROR), any())
@@ -50,13 +50,13 @@ class ConfigWriteEventHandlerTests {
             whenever(start()).thenThrow(ConfigWriteServiceException(""))
         }
         val configWriterFactory = mock<ConfigWriterFactory>().apply {
-            whenever(create(any(), any())).thenReturn(erroringConfigWriter)
+            whenever(create(any())).thenReturn(erroringConfigWriter)
         }
         val eventHandler = ConfigWriteEventHandler(configWriterFactory)
         val coordinator = mock<LifecycleCoordinator>()
 
         val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), 0), coordinator)
+            eventHandler.processEvent(StartProcessingEvent(mock()), coordinator)
         }
         assertEquals("Could not subscribe to config management requests.", e.message)
         verify(coordinator).updateStatus(eq(ERROR), any())
@@ -66,7 +66,7 @@ class ConfigWriteEventHandlerTests {
     fun `StartProcessing event sets coordinator status to up`() {
         val eventHandler = ConfigWriteEventHandler(getConfigWriterAndFactory().second)
         val coordinator = mock<LifecycleCoordinator>()
-        eventHandler.processEvent(StartProcessingEvent(mock(), 0), coordinator)
+        eventHandler.processEvent(StartProcessingEvent(mock()), coordinator)
 
         verify(coordinator).updateStatus(eq(UP), any())
     }
@@ -75,7 +75,7 @@ class ConfigWriteEventHandlerTests {
     fun `StartProcessing event starts config writer`() {
         val (configWriter, configWriterFactory) = getConfigWriterAndFactory()
         val eventHandler = ConfigWriteEventHandler(configWriterFactory)
-        eventHandler.processEvent(StartProcessingEvent(mock(), 0), mock())
+        eventHandler.processEvent(StartProcessingEvent(mock()), mock())
 
         verify(configWriter).start()
     }
@@ -83,10 +83,10 @@ class ConfigWriteEventHandlerTests {
     @Test
     fun `throws if StartProcessing event received twice`() {
         val eventHandler = ConfigWriteEventHandler(getConfigWriterAndFactory().second)
-        eventHandler.processEvent(StartProcessingEvent(mock(), 0), mock())
+        eventHandler.processEvent(StartProcessingEvent(mock()), mock())
 
         val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), 0), mock())
+            eventHandler.processEvent(StartProcessingEvent(mock()), mock())
         }
         assertEquals("An attempt was made to start processing twice.", e.message)
     }
@@ -104,7 +104,7 @@ class ConfigWriteEventHandlerTests {
     fun `Stop event stops config writer`() {
         val (configWriter, configWriterFactory) = getConfigWriterAndFactory()
         val eventHandler = ConfigWriteEventHandler(configWriterFactory)
-        eventHandler.processEvent(StartProcessingEvent(mock(), 0), mock())
+        eventHandler.processEvent(StartProcessingEvent(mock()), mock())
         eventHandler.processEvent(StopEvent(), mock())
 
         verify(configWriter).stop()

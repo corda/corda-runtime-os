@@ -139,7 +139,7 @@ class MemberOpsServiceImpl @Activate constructor(
                 responseType = MembershipRpcResponse::class.java
             ),
             responderProcessor = processor,
-            nodeConfig = messagingConfig
+            messagingConfig = messagingConfig
         ).also { it.start() }
         current?.close()
     }

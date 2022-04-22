@@ -2,12 +2,9 @@ package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -21,6 +18,7 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.isDBBundle
@@ -59,7 +57,6 @@ import java.util.concurrent.TimeUnit
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
-    private lateinit var kafkaConfig: SmartConfig
 
     private companion object {
         const val CLIENT_ID = "integrationTestRPCSender"
@@ -67,12 +64,7 @@ class RPCSubscriptionIntegrationTest {
         private var isDB = false
 
         fun getTopicConfig(topicTemplate: String): Config {
-            val template = if (isDB) {
-                topicTemplate.replace(TopicTemplates.TEST_TOPIC_PREFIX,"")
-            } else {
-                topicTemplate
-            }
-            return ConfigFactory.parseString(template)
+            return ConfigFactory.parseString(topicTemplate)
         }
 
         @Suppress("unused")
@@ -112,16 +104,6 @@ class RPCSubscriptionIntegrationTest {
     @BeforeEach
     fun beforeEach() {
         topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
-        kafkaConfig = SmartConfigImpl.empty()
-            .withValue(
-                net.corda.messaging.integration.IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(
-                    net.corda.messaging.integration.IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
-                )
-            )
-            .withValue(
-                net.corda.messaging.integration.IntegrationTestProperties.TOPIC_PREFIX,
-                ConfigValueFactory.fromAnyRef(TopicTemplates.TEST_TOPIC_PREFIX)
-            )
     }
 
     @Test
@@ -137,10 +119,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCResponderProcessor()
         )
 
         val coordinator1 =
@@ -221,10 +203,10 @@ class RPCSubscriptionIntegrationTest {
             RPCRequest::class.java,
             RPCResponse::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
         val timestamp = Instant.ofEpochMilli(0L)
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCAvroResponderProcessor(timestamp)
+            rpcConfig, TEST_CONFIG, TestRPCAvroResponderProcessor(timestamp)
         )
 
         rpcSender.start()
@@ -277,10 +259,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCErrorResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCErrorResponderProcessor()
         )
 
         rpcSender.start()
@@ -319,10 +301,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCCancelResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCCancelResponderProcessor()
         )
 
         rpcSender.start()
@@ -361,10 +343,10 @@ class RPCSubscriptionIntegrationTest {
             String::class.java,
             String::class.java
         )
-        val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        val rpcSender = publisherFactory.createRPCSender(rpcConfig, TEST_CONFIG)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, TestRPCUnresponsiveResponderProcessor()
+            rpcConfig, TEST_CONFIG, TestRPCUnresponsiveResponderProcessor()
         )
 
         rpcSender.start()

@@ -144,7 +144,7 @@ pipeline {
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
-        }        
+        }
         success {
             // Only delete namespace if we're successful (though it'll get pruned in 3 hours anyway)
             sh 'kubectl delete ns "${NAMESPACE}"'

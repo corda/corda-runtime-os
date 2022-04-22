@@ -2,9 +2,6 @@ package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,11 +15,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.integration.TopicTemplates
-import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.isDBBundle
@@ -51,7 +45,6 @@ class PubSubSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private lateinit var kafkaConfig: SmartConfig
 
     private companion object {
         const val CLIENT_ID = "integrationTestPubSubPublisher"
@@ -60,12 +53,7 @@ class PubSubSubscriptionIntegrationTest {
         private var isDB = false
 
         fun getTopicConfig(topicTemplate: String): Config {
-            val template = if (isDB) {
-                topicTemplate.replace(TEST_TOPIC_PREFIX,"")
-            } else {
-                topicTemplate
-            }
-            return ConfigFactory.parseString(template)
+            return ConfigFactory.parseString(topicTemplate)
         }
 
         @Suppress("unused")
@@ -105,9 +93,6 @@ class PubSubSubscriptionIntegrationTest {
     @BeforeEach
     fun beforeEach() {
         topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
-        kafkaConfig = SmartConfigImpl.empty()
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test
@@ -135,7 +120,7 @@ class PubSubSubscriptionIntegrationTest {
             SubscriptionConfig("pubSub1", PUBSUB_TOPIC1),
             TestPubsubProcessor(latch),
             null,
-            kafkaConfig
+            TEST_CONFIG
         )
         coordinator.followStatusChangesByName(setOf(pubsubSub.subscriptionName))
         pubsubSub.start()
@@ -145,7 +130,7 @@ class PubSubSubscriptionIntegrationTest {
         }
 
         publisherConfig = PublisherConfig(CLIENT_ID + PUBSUB_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 
         while (latch.count > 0) {
             publisher.publish(getDemoRecords(PUBSUB_TOPIC1, 10, 2))

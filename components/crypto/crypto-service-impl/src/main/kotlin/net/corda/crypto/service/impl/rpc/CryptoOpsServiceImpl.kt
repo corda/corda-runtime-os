@@ -2,8 +2,8 @@ package net.corda.crypto.service.impl.rpc
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.CryptoOpsService
+import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinator
@@ -135,7 +135,7 @@ class CryptoOpsServiceImpl @Activate constructor(
                 responseType = RpcOpsResponse::class.java
             ),
             responderProcessor = processor,
-            nodeConfig = messagingConfig
+            messagingConfig = messagingConfig
         ).also { it.start() }
         current?.close()
     }

@@ -16,7 +16,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.utils.getEventsByBatch
@@ -24,6 +24,7 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
@@ -36,8 +37,8 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
-    private val config: StateAndEventConfig,
+internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
+    private val config: ResolvedSubscriptionConfig,
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val cordaAvroSerializer: CordaAvroSerializer<Any>,
@@ -77,25 +78,13 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    private val eventTopic = config.eventTopic
-    private val stateTopic = config.stateTopic
-    private val groupName = config.eventGroupName
-    private val producerClientId: String = config.producerClientId
-    private val consumerThreadStopTimeout = config.consumerThreadStopTimeout
-    private val producerCloseTimeout = config.producerCloseTimeout
-    private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
-    private val processorTimeout = config.processorTimeout
+    private val eventTopic = config.topic
+    private val stateTopic = getStateAndEventStateTopic(config.topic)
     private lateinit var deadLetterRecords: MutableList<ByteArray>
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "$groupName-KafkaStateAndEventSubscription-$stateTopic.$eventTopic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.instanceId
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
-    private val errorMsg = "Failed to read and process records from topic $eventTopic, group $groupName, " +
-            "producerClientId $producerClientId."
+    private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
+            "producerClientId ${config.clientId}."
 
     /**
      * Is the subscription running.
@@ -118,7 +107,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "state/event processing thread $groupName-($stateTopic.$eventTopic)",
+                    name = "state/event processing thread ${config.group}-${config.topic}",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -147,7 +136,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
+        thread?.join(config.threadStopTimeout.toMillis())
     }
 
     fun runConsumeLoop() {
@@ -207,7 +196,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun closeStateAndEventProducerConsumer(){
-        nullableProducer?.close(producerCloseTimeout)
+        nullableProducer?.close()
         nullableStateAndEventConsumer?.close()
         nullableProducer = null
         nullableStateAndEventConsumer = null
@@ -230,7 +219,8 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $eventTopic, group $groupName, producerClientId $producerClientId. " +
+                            "Failed to process records from topic $eventTopic, group ${config.group}, " +
+                                    "producerClientId ${config.clientId}. " +
                                     "Fatal error occurred.", ex
                         )
                     }
@@ -294,7 +284,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
-            { processor.onNext(state, event.toRecord()) }, processorTimeout,
+            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
             "Failed to finish within the time limit for state: $state and event: $event"
         )
         return uncheckedCast(future.tryGetResult())
@@ -323,16 +313,16 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         attempts: Int,
         ex: Exception
     ) {
-        if (attempts <= consumerPollAndProcessMaxRetries) {
+        if (attempts <= config.processorRetries) {
             log.warn(
-                "Failed to process record from topic $eventTopic, group $groupName, " +
-                        "producerClientId $producerClientId. " +
+                "Failed to process record from topic $eventTopic, group ${config.group}, " +
+                        "producerClientId ${config.clientId}. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
             eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
         } else {
-            val message = "Failed to process records from topic $eventTopic, group $groupName, " +
-                    "producerClientId $producerClientId. " +
+            val message = "Failed to process records from topic $eventTopic, group ${config.group}, " +
+                    "producerClientId ${config.clientId}. " +
                     "Attempts: $attempts. Max reties exceeded."
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)

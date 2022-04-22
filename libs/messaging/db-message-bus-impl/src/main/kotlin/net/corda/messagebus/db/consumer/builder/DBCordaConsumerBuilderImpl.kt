@@ -1,12 +1,11 @@
 package net.corda.messagebus.db.consumer.builder
 
-import com.typesafe.config.Config
-import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messagebus.api.configuration.getStringOrDefault
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
-import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
-import net.corda.messagebus.db.consumer.ConsumerGroup.Companion.NULL_GROUP_ID
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
@@ -25,27 +24,31 @@ import org.osgi.service.component.annotations.Reference
 /**
  * Generate a DB-backed [CordaConsumer].
  */
-@Component(service = [MessageBusConsumerBuilder::class])
+@Component(service = [CordaConsumerBuilder::class])
 class DBCordaConsumerBuilderImpl @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-) : MessageBusConsumerBuilder {
+) : CordaConsumerBuilder {
 
     private val consumerGroupFactory = ConsumerGroupFactory()
 
     override fun <K : Any, V : Any> createConsumer(
-        consumerConfig: Config,
+        consumerConfig: ConsumerConfig,
+        messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
         onSerializationError: (ByteArray) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
+        val resolver = MessageBusConfigResolver(messageBusConfig.factory)
+        val resolvedConfig = resolver.resolve(messageBusConfig, consumerConfig)
+
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                consumerConfig,
-                "DB Consumer for ${consumerConfig.getString(ConfigProperties.CLIENT_ID)}",
+                resolvedConfig,
+                "DB Consumer for ${consumerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,
                     CommittedPositionEntry::class.java,
@@ -56,12 +59,12 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         )
 
         val consumerGroup = consumerGroupFactory.getGroupFor(
-            consumerConfig.getStringOrDefault(ConfigProperties.GROUP_ID, NULL_GROUP_ID),
+            consumerConfig.group,
             dbAccess
         )
 
         return DBCordaConsumerImpl(
-            consumerConfig,
+            resolvedConfig,
             dbAccess,
             consumerGroup,
             CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),

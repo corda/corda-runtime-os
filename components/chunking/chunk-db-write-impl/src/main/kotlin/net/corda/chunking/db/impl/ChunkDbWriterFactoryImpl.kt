@@ -94,9 +94,7 @@ class ChunkDbWriterFactoryImpl(
         val validator =
             CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
-
-        val instanceId = if (config.hasPath("instanceId")) config.getInt("instanceId") else 1
-        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic, instanceId)
+        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
             subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, config, null)
         } catch (e: Exception) {

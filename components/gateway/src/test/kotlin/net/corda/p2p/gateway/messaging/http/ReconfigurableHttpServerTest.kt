@@ -65,7 +65,6 @@ class ReconfigurableHttpServerTest {
         listener,
         mock(),
         mock(),
-        1,
     )
 
     @AfterEach

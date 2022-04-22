@@ -13,6 +13,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    implementation "net.corda:corda-config-schema:$cordaApiVersion"
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
