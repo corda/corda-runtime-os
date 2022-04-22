@@ -23,10 +23,9 @@ class FlowOpsResponses(
                 eventTopic = RESPONSE_TOPIC
             ),
             processor = this,
-            nodeConfig = SmartConfigFactory.create(
-                ConfigFactory.empty()
-            ).create(
-                ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
+            messagingConfig = SmartConfigFactory.create(
+                ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
+                .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
             ),
             partitionAssignmentListener = null
         ).also { it.start() }

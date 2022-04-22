@@ -33,7 +33,7 @@ const val MESSAGING_CONFIGURATION_VALUE: String = """
       """
 
 const val BOOT_CONFIGURATION = """
-        instanceId=1
+        instance.id=1
     """
 
 inline fun <reified T> makeClientId(): String =

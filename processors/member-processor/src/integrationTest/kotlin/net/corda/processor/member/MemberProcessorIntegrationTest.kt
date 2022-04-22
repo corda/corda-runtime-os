@@ -11,6 +11,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -181,7 +182,7 @@ class MemberProcessorIntegrationTest {
                 )
             ).also { it.startAndWait() }
 
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
             publisher.publishCryptoConf()
             publisher.publishMessagingConf()
             publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)

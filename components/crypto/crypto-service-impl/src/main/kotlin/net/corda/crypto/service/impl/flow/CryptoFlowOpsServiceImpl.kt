@@ -14,7 +14,6 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,17 +54,14 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         val processor = CryptoFlowOpsProcessor(
             cryptoOpsClient = cryptoOpsClient
         )
-        val bootConfig = event.config[ConfigKeys.BOOT_CONFIG]
-        val instanceId = if (bootConfig?.hasPath("instanceId") == true) bootConfig.getInt("instanceId") else 1
         return ActiveImpl(
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
                     groupName = GROUP_NAME,
-                    eventTopic = FLOW_OPS_MESSAGE_TOPIC,
-                    instanceId = instanceId
+                    eventTopic = FLOW_OPS_MESSAGE_TOPIC
                 ),
                 processor = processor,
-                nodeConfig = messagingConfig,
+                messagingConfig = messagingConfig,
                 partitionAssignmentListener = null
             ).also { it.start() }
         )

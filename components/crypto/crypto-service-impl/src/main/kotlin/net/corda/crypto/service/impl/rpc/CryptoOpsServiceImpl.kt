@@ -64,7 +64,7 @@ class CryptoOpsServiceImpl @Activate constructor(
                     responseType = RpcOpsResponse::class.java
                 ),
                 responderProcessor = processor,
-                nodeConfig = messagingConfig
+                messagingConfig = messagingConfig
             ).also { it.start() }
         )
     }
