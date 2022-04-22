@@ -77,7 +77,7 @@ class ConfigTests {
         val config = processor.config!!
 
         val expectedKeys = setOf(
-            NSTANCE_ID,
+            INSTANCE_ID,
             TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
