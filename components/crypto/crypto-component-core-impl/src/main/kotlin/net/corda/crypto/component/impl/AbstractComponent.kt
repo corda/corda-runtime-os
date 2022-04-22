@@ -63,20 +63,16 @@ abstract class AbstractComponent<IMPL: AutoCloseable>(
 
     private fun activateImpl() {
         logger.info("Activating")
-        swapImpl(createActiveImpl())
+        impl.close()
+        impl = createActiveImpl()
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun deactivateImpl(reason: String) {
         logger.info("Deactivating due {}", reason)
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        swapImpl(createInactiveImpl())
-    }
-
-    private fun swapImpl(newImpl: IMPL) {
-        val current = impl
-        impl = newImpl
-        current.close()
+        impl.close()
+        impl = createInactiveImpl()
     }
 
     protected abstract fun createActiveImpl(): IMPL

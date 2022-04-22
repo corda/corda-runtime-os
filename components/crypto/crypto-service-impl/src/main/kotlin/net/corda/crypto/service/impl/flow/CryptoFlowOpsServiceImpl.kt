@@ -57,7 +57,6 @@ class CryptoFlowOpsServiceImpl @Activate constructor(
         )
         val bootConfig = event.config[ConfigKeys.BOOT_CONFIG]
         val instanceId = if (bootConfig?.hasPath("instanceId") == true) bootConfig.getInt("instanceId") else 1
-        impl.close()
         return ActiveImpl(
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(

@@ -81,20 +81,16 @@ abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
 
     private fun activate(event: ConfigChangedEvent) {
         logger.info("Activating")
-        swapImpl(createActiveImpl(event))
+        impl.close()
+        impl = createActiveImpl(event)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun deactivate(reason: String) {
         logger.info("Deactivating due {}", reason)
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        swapImpl(createInactiveImpl())
-    }
-
-    private fun swapImpl(newImpl: IMPL) {
-        val current = impl
-        impl = newImpl
-        current.close()
+        impl.close()
+        impl = createInactiveImpl()
     }
 
     protected abstract fun createActiveImpl(event: ConfigChangedEvent): IMPL
