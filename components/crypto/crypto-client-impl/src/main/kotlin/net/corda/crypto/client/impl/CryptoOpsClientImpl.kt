@@ -1,6 +1,6 @@
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -70,7 +70,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = ByIdsRpcQuery(
                 candidateKeys.map {
-                    publicKeyIdOf(schemeMetadata.encodeAsByteArray(it))
+                    publicKeyIdFromBytes(schemeMetadata.encodeAsByteArray(it))
                 }
             )
         )
@@ -91,7 +91,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = ByIdsRpcQuery(
                 candidateKeys.map {
-                    publicKeyIdOf(it.array())
+                    publicKeyIdFromBytes(it.array())
                 }
             )
         )
@@ -318,36 +318,6 @@ class CryptoOpsClientImpl(
         )
         return request.execute(CryptoSigningKeys::class.java)!!.keys
     }
-    /*
-    fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? {
-        logger.info(
-            "Sending '{}'(tenant={},alias={})",
-            HSMKeyInfoByAliasRpcQuery::class.java.simpleName,
-            tenantId,
-            alias
-        )
-        val request = createRequest(
-            tenantId,
-            HSMKeyInfoByAliasRpcQuery(alias)
-        )
-        return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
-    }
-
-    fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails? {
-        logger.info(
-            "Sending '{}'(tenant={},publicKey={}..)",
-            HSMKeyInfoByPublicKeyRpcQuery::class.java.simpleName,
-            tenantId,
-            publicKey.toStringShort().take(12)
-        )
-        val request = createRequest(
-            tenantId,
-            HSMKeyInfoByPublicKeyRpcQuery(ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)))
-        )
-        return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
-    }
-
-     */
 
     fun findHSM(tenantId: String, category: String): HSMInfo? {
         logger.info(

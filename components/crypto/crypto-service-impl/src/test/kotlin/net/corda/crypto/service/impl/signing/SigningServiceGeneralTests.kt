@@ -7,7 +7,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
@@ -58,7 +58,7 @@ class SigningServiceGeneralTests {
             schemeMetadata = schemeMetadata
         )
         val keys = (0 until 21).map {
-            publicKeyIdOf(
+            publicKeyIdFromBytes(
                 mock<PublicKey> {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 }.encoded

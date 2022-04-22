@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions
@@ -22,6 +22,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -73,7 +74,7 @@ class TestSigningKeyCacheActions(
             is SigningPublicKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
-                    id = publicKeyIdOf(encodedKey),
+                    id = publicKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -90,7 +91,7 @@ class TestSigningKeyCacheActions(
             is SigningWrappedKeySaveContext -> {
                 val encodedKey = context.key.publicKey.encoded
                 SigningCachedKey(
-                    id = publicKeyIdOf(encodedKey),
+                    id = publicKeyIdFromBytes(encodedKey),
                     tenantId = tenantId,
                     category = context.category,
                     alias = context.alias,
@@ -115,7 +116,7 @@ class TestSigningKeyCacheActions(
         keys.values.firstOrNull { it.alias == alias }
 
     override fun find(publicKey: PublicKey): SigningCachedKey? =
-        keys[publicKeyIdOf(publicKey)]
+        keys[publicKey.publicKeyId()]
 
     @Suppress("ComplexMethod")
     override fun lookup(

@@ -2,7 +2,7 @@ package net.corda.processors.crypto.tests
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.SoftCryptoServiceConfig
@@ -49,6 +49,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -297,7 +298,7 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
-            ids = listOf(publicKeyIdOf(UUID.randomUUID().toString().toByteArray()))
+            ids = listOf(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()))
         )
         assertEquals(0, found.size)
     }
@@ -464,10 +465,10 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookup(
             tenantId = tenantId,
-            ids = listOf(publicKeyIdOf(publicKey))
+            ids = listOf(publicKey.publicKeyId())
         )
         assertEquals(1, found.size)
-        assertEquals(publicKeyIdOf(publicKey), found[0].id)
+        assertEquals(publicKey.publicKeyId(), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
         if(alias.isNullOrBlank()) {
             assertNull(found[0].alias)
@@ -502,7 +503,7 @@ class CryptoProcessorTests {
             )
         )
         assertEquals(1, found.size)
-        assertEquals(publicKeyIdOf(publicKey), found[0].id)
+        assertEquals(publicKey.publicKeyId(), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
         assertEquals(alias, found[0].alias)
         assertEquals(category, found[0].category)

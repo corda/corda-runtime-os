@@ -153,7 +153,7 @@ class CryptoOpsClientComponent @Activate constructor(
 
     internal class InactiveImpl: Impl {
         override val ops: CryptoOpsClientImpl
-            get() = throw IllegalStateException("Compoent is in illegal state.")
+            get() = throw IllegalStateException("Component is in illegal state.")
 
         override fun close() = Unit
     }

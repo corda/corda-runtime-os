@@ -1,9 +1,10 @@
 package net.corda.crypto.persistence.db.model
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.crypto.publicKeyId
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
@@ -24,8 +25,8 @@ class SigningKeyEntityTests {
     fun `Should equal when tenantId and keyId properties are matching`() {
         val random = Random(Instant.now().toEpochMilli())
         val publicKey = MockPublicKey(random.nextBytes(512))
-        val tenantId = publicKeyIdOf(UUID.randomUUID().toString().toByteArray())
-        val keyId = publicKeyIdOf(publicKey)
+        val tenantId = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+        val keyId = publicKey.publicKeyId()
         val e1 = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
@@ -61,8 +62,8 @@ class SigningKeyEntityTests {
     fun `Should equal to itself`() {
         val random = Random(Instant.now().toEpochMilli())
         val publicKey = MockPublicKey(random.nextBytes(512))
-        val tenantId = publicKeyIdOf(UUID.randomUUID().toString().toByteArray())
-        val keyId = publicKeyIdOf(publicKey)
+        val tenantId = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+        val keyId = publicKey.publicKeyId()
         val e1 = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
@@ -84,9 +85,9 @@ class SigningKeyEntityTests {
     fun `Should not equal when tenantId properties are not matching`() {
         val random = Random(Instant.now().toEpochMilli())
         val publicKey = MockPublicKey(random.nextBytes(512))
-        val keyId = publicKeyIdOf(publicKey)
+        val keyId = publicKey.publicKeyId()
         val e1 = SigningKeyEntity(
-            tenantId = publicKeyIdOf(UUID.randomUUID().toString().toByteArray()),
+            tenantId = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()),
             keyId = keyId,
             created = Instant.now().minusSeconds(5),
             category = CryptoConsts.HsmCategories.LEDGER,
@@ -100,7 +101,7 @@ class SigningKeyEntityTests {
             externalId = UUID.randomUUID().toString(),
         )
         val e2 = SigningKeyEntity(
-            tenantId = publicKeyIdOf(UUID.randomUUID().toString().toByteArray()),
+            tenantId = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()),
             keyId = keyId,
             created = Instant.now().minusSeconds(50),
             category = CryptoConsts.HsmCategories.TLS,
@@ -121,9 +122,9 @@ class SigningKeyEntityTests {
     fun `Should not equal to null`() {
         val random = Random(Instant.now().toEpochMilli())
         val publicKey = MockPublicKey(random.nextBytes(512))
-        val keyId = publicKeyIdOf(publicKey)
+        val keyId = publicKey.publicKeyId()
         val e1 = SigningKeyEntity(
-            tenantId = publicKeyIdOf(UUID.randomUUID().toString().toByteArray()),
+            tenantId = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray()),
             keyId = keyId,
             created = Instant.now().minusSeconds(5),
             category = CryptoConsts.HsmCategories.LEDGER,

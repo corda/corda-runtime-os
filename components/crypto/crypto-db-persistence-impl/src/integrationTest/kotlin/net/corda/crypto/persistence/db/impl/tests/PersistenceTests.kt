@@ -10,7 +10,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
@@ -38,13 +38,13 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -128,7 +128,7 @@ class PersistenceTests {
             }
         }
 
-        private fun randomTenantId() = publicKeyIdOf(UUID.randomUUID().toString().toByteArray())
+        private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
         fun generateKeyPair(signatureSchemeName: String): KeyPair {
             val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
@@ -176,7 +176,7 @@ class PersistenceTests {
     fun `Should persist and retrieve raw SigningKeyEntity`() {
         val keyPair = generateKeyPair(EDDSA_ED25519_CODE_NAME)
         val tenantId = randomTenantId()
-        val keyId = publicKeyIdOf(keyPair.public)
+        val keyId = keyPair.public.publicKeyId()
         val entity = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
@@ -337,22 +337,22 @@ class PersistenceTests {
         cache.act(tenantId1) { it.save(w1) }
         cache.act(tenantId2) { it.save(w1) }
         val keyP11 = cache.act(tenantId1) {
-            it.lookup(listOf(publicKeyIdOf(p1.key.publicKey)))
+            it.lookup(listOf(p1.key.publicKey.publicKeyId()))
         }
         assertEquals(1, keyP11.size)
         assertEquals(tenantId1, p1, keyP11.first())
         val keyP12 = cache.act(tenantId2) {
-            it.lookup(listOf(publicKeyIdOf(p1.key.publicKey)))
+            it.lookup(listOf(p1.key.publicKey.publicKeyId()))
         }
         assertEquals(1, keyP12.size)
         assertEquals(tenantId2, p1, keyP12.first())
         val keyW11 = cache.act(tenantId1) {
-            it.lookup(listOf(publicKeyIdOf(w1.key.publicKey)))
+            it.lookup(listOf(w1.key.publicKey.publicKeyId()))
         }
         assertEquals(1, keyW11.size)
         assertEquals(tenantId1, w1, keyW11.first())
         val keyW12 = cache.act(tenantId2) {
-            it.lookup(listOf(publicKeyIdOf(w1.key.publicKey)))
+            it.lookup(listOf(w1.key.publicKey.publicKeyId()))
         }
         assertEquals(1, keyW12.size)
         assertEquals(tenantId2, w1, keyW12.first())
@@ -409,17 +409,17 @@ class PersistenceTests {
         val keys = cache.act(tenantId1) {
             it.lookup(
                 listOf(
-                    publicKeyIdOf(p1.key.publicKey),
-                    publicKeyIdOf(p12.key.publicKey),
-                    publicKeyIdOf(p3.key.publicKey),
-                    publicKeyIdOf(w2.key.publicKey)
+                    p1.key.publicKey.publicKeyId(),
+                    p12.key.publicKey.publicKeyId(),
+                    p3.key.publicKey.publicKeyId(),
+                    w2.key.publicKey.publicKeyId()
                 )
             )
         }
         assertEquals(3, keys.size)
-        assertEquals(tenantId1, p1, keys.firstOrNull { it.id == publicKeyIdOf(p1.key.publicKey) })
-        assertEquals(tenantId1, p3, keys.firstOrNull { it.id == publicKeyIdOf(p3.key.publicKey) })
-        assertEquals(tenantId1, w2, keys.firstOrNull { it.id == publicKeyIdOf(w2.key.publicKey) })
+        assertEquals(tenantId1, p1, keys.firstOrNull { it.id == p1.key.publicKey.publicKeyId() })
+        assertEquals(tenantId1, p3, keys.firstOrNull { it.id == p3.key.publicKey.publicKeyId() })
+        assertEquals(tenantId1, w2, keys.firstOrNull { it.id == w2.key.publicKey.publicKeyId() })
     }
 
     @Test
@@ -574,8 +574,8 @@ class PersistenceTests {
         assertEquals(7, result6.size)
         listOf(p1, p2, p3, p4, w1, w2, w3).sortedBy {
             when (it) {
-                is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
-                is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
+                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
                 else -> throw IllegalArgumentException()
             }
         }.forEachIndexed { i, o ->
@@ -623,8 +623,8 @@ class PersistenceTests {
         assertEquals(2, page1.size)
         listOf(p1, p3, p4, w1).sortedBy {
             when (it) {
-                is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
-                is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
+                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
                 else -> throw IllegalArgumentException()
             }
         }.drop(0).take(2).forEachIndexed { i, o ->
@@ -647,8 +647,8 @@ class PersistenceTests {
         assertEquals(2, page2.size)
         listOf(p1, p3, p4, w1).sortedBy {
             when (it) {
-                is SigningPublicKeySaveContext -> publicKeyIdOf(it.key.publicKey)
-                is SigningWrappedKeySaveContext -> publicKeyIdOf(it.key.publicKey)
+                is SigningPublicKeySaveContext -> it.key.publicKey.publicKeyId()
+                is SigningWrappedKeySaveContext -> it.key.publicKey.publicKeyId()
                 else -> throw IllegalArgumentException()
             }
         }.drop(2).take(2).forEachIndexed { i, o ->
@@ -673,7 +673,7 @@ class PersistenceTests {
 
     private fun assertEquals(tenantId: String, expected: SigningPublicKeySaveContext, actual: SigningCachedKey?) {
         assertNotNull(actual)
-        assertEquals(publicKeyIdOf(expected.key.publicKey), actual!!.id)
+        assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
         assertEquals(tenantId, actual.tenantId)
         assertEquals(expected.category, actual.category)
         assertEquals(expected.alias, actual.alias)
@@ -691,7 +691,7 @@ class PersistenceTests {
 
     private fun assertEquals(tenantId: String, expected: SigningWrappedKeySaveContext, actual: SigningCachedKey?) {
         assertNotNull(actual)
-        assertEquals(publicKeyIdOf(expected.key.publicKey), actual!!.id)
+        assertEquals(expected.key.publicKey.publicKeyId(), actual!!.id)
         assertEquals(tenantId, actual.tenantId)
         assertEquals(expected.category, actual.category)
         assertEquals(expected.alias, actual.alias)

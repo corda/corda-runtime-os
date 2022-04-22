@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.db.impl.signing
 
 import com.github.benmanes.caffeine.cache.Cache
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCacheActions
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
@@ -21,6 +21,7 @@ import net.corda.crypto.persistence.schemeCodeName
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -30,10 +31,10 @@ import javax.persistence.criteria.Predicate
 import kotlin.reflect.KProperty
 
 /**
- * Implementation deliberately caches only keys which are requested by 'find](publicKey: PublicKey' function.
+ * Implementation deliberately caches only keys which are requested by 'find(publicKey: PublicKey' function.
  *
  * As not all databases support unique constrains which ignore null indexed values the implementation relies on
- * that the generation of the keys suing aliases is quite rare occasion and that the existence check is done
+ * that the generation of the keys using aliases is quite rare occasion and that the existence check is done
  * upstream by the higher services.
  */
 class SigningKeyCacheActionsImpl(
@@ -49,7 +50,7 @@ class SigningKeyCacheActionsImpl(
                 val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
                 SigningKeyEntity(
                     tenantId = tenantId,
-                    keyId = publicKeyIdOf(publicKeyBytes),
+                    keyId = publicKeyIdFromBytes(publicKeyBytes),
                     created = Instant.now(),
                     category = context.category,
                     schemeCodeName = context.signatureScheme.codeName,
@@ -66,7 +67,7 @@ class SigningKeyCacheActionsImpl(
                 val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
                 SigningKeyEntity(
                     tenantId = tenantId,
-                    keyId = publicKeyIdOf(publicKeyBytes),
+                    keyId = publicKeyIdFromBytes(publicKeyBytes),
                     created = Instant.now(),
                     category = context.category,
                     schemeCodeName = context.signatureScheme.codeName,
@@ -106,7 +107,7 @@ class SigningKeyCacheActionsImpl(
     }
 
     override fun find(publicKey: PublicKey): SigningCachedKey? =
-        cache.get(publicKeyIdOf(publicKey)) {
+        cache.get(publicKey.publicKeyId()) {
             entityManager.find(
                 SigningKeyEntity::class.java, SigningKeyEntityPrimaryKey(
                     tenantId = tenantId,

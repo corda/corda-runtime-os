@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.rpc
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
-import net.corda.crypto.core.publicKeyIdOf
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory
@@ -214,7 +214,7 @@ class CryptoOpsRpcProcessorTests {
             RpcOpsRequest(
                 context,
                 ByIdsRpcQuery(listOf(
-                    publicKeyIdOf(UUID.randomUUID().toString().toByteArray())
+                    publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
                 ))
             ),
             future
@@ -293,7 +293,7 @@ class CryptoOpsRpcProcessorTests {
             RpcOpsRequest(
                 context2,
                 ByIdsRpcQuery(listOf(
-                    publicKeyIdOf(info.publicKey)
+                    publicKeyIdFromBytes(info.publicKey)
                 ))
             ),
             future2
@@ -372,7 +372,7 @@ class CryptoOpsRpcProcessorTests {
             RpcOpsRequest(
                 context2,
                 ByIdsRpcQuery(listOf(
-                    publicKeyIdOf(info.publicKey)
+                    publicKeyIdFromBytes(info.publicKey)
                 ))
             ),
             future2

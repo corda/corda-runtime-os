@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.publicKeyIdOf
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions
@@ -18,6 +17,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
@@ -181,7 +181,7 @@ open class SigningServiceImpl(
             throw e
         } catch (e: Throwable) {
             throw CryptoServiceException(
-                "Failed to sign using public key '${publicKeyIdOf(publicKey)}' for tenant $tenantId",
+                "Failed to sign using public key '${publicKey.publicKeyId()}' for tenant $tenantId",
                 e
             )
         }
@@ -206,7 +206,7 @@ open class SigningServiceImpl(
         } else {
             cacheActions.find(publicKey)?.let { publicKey to it }
         } ?: throw CryptoServiceBadRequestException(
-            "The tenant $tenantId doesn't own public key '${publicKeyIdOf(publicKey)}'."
+            "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
 
     private fun getCryptoService(tenantId: String, category: String): CryptoServiceRef =
