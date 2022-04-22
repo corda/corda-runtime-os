@@ -7,6 +7,7 @@ internal const val FLAG_MONITOR_PORT = "-p"
 internal const val FLAG_MSG_PARAM = "-m"
 internal const val FLAG_DB_PARAM = "-d"
 internal const val FLAG_ADDITIONAL_PARAM = "-c"
+internal const val FLAG_RECONCILIATION_TASKS_PARAM = "-r"
 
 internal const val VAL_INSTANCE_ID = "123"
 internal const val VALUE_TOPIC_PREFIX = "abc"

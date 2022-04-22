@@ -74,6 +74,7 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Received registration status update ${event.status}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
+                        _securityManager?.close()
                         _securityManager = RBACSecurityManager(
                             permissionManagementService.permissionValidator,
                             permissionManagementService.basicAuthenticationService
@@ -92,6 +93,7 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
+                _securityManager?.close()
                 _securityManager = null
             }
         }
