@@ -16,12 +16,14 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CompletableFuture
 
 class PubSubSubscriptionTest {
     private val config = SubscriptionConfig("group", "topic")
     private val processor = mock<PubSubProcessor<String, Number>> {
         on { keyClass } doReturn String::class.java
         on { valueClass } doReturn Number::class.java
+        on { onNext(any()) } doReturn CompletableFuture.completedFuture(Unit)
     }
     private val consumeLifeCycle = mock<Consumption>()
     private val topicService = mock<TopicService> {
@@ -87,27 +89,6 @@ class PubSubSubscriptionTest {
 
         verify(consumeLifeCycle, times(1)).stop()
     }
-
-//    @Test
-//    fun `processRecords submit to executor`() {
-//        val future = mock<Future<Any>>()
-//        val captor = argumentCaptor<Runnable>()
-//        doReturn(future).whenever(executor).submit(captor.capture())
-//        val record = Record<String, Number>("topic", "key6", 4)
-//        val records = listOf(
-//            RecordMetadata(
-//                offset = 1,
-//                partition = 1,
-//                record = record
-//            )
-//        )
-//
-//        pubSubSubscription.processRecords(records)
-//        verify(processor, never()).onNext(any())
-//
-//        captor.firstValue.run()
-//        verify(processor).onNext(record)
-//    }
 
     @Test
     fun `processRecords send to processor in no executor`() {
