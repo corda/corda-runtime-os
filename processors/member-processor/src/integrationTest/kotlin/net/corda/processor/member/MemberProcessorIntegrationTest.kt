@@ -59,9 +59,10 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -73,175 +74,184 @@ import kotlin.reflect.KFunction
 class MemberProcessorIntegrationTest {
     companion object {
         const val CLIENT_ID = "member-processor-integration-test"
-
         val logger = contextLogger()
-    }
 
-    @InjectService(timeout = 5000L)
-    lateinit var groupPolicyProvider: GroupPolicyProvider
 
-    @InjectService(timeout = 5000L)
-    lateinit var registrationProxy: RegistrationProxy
+        @InjectService(timeout = 5000L)
+        lateinit var groupPolicyProvider: GroupPolicyProvider
 
-    @InjectService(timeout = 5000L)
-    lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
+        @InjectService(timeout = 5000L)
+        lateinit var registrationProxy: RegistrationProxy
 
-    @InjectService(timeout = 5000L)
-    lateinit var cpiInfoReader: CpiInfoReadService
+        @InjectService(timeout = 5000L)
+        lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
 
-    @InjectService(timeout = 5000L)
-    lateinit var publisherFactory: PublisherFactory
+        @InjectService(timeout = 5000L)
+        lateinit var cpiInfoReader: CpiInfoReadService
 
-    @InjectService(timeout = 5000L)
-    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+        @InjectService(timeout = 5000L)
+        lateinit var publisherFactory: PublisherFactory
 
-    @InjectService(timeout = 5000L)
-    lateinit var memberProcessor: MemberProcessor
+        @InjectService(timeout = 5000L)
+        lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
-    @InjectService(timeout = 5000L)
-    lateinit var cryptoProcessor: CryptoProcessor
+        @InjectService(timeout = 5000L)
+        lateinit var memberProcessor: MemberProcessor
 
-    @InjectService(timeout = 5000)
-    lateinit var dbConnectionManager: DbConnectionManager
+        @InjectService(timeout = 5000L)
+        lateinit var cryptoProcessor: CryptoProcessor
 
-    @InjectService(timeout = 5000)
-    lateinit var entitiesRegistry: JpaEntitiesRegistry
+        @InjectService(timeout = 5000)
+        lateinit var dbConnectionManager: DbConnectionManager
 
-    @InjectService(timeout = 5000)
-    lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
+        @InjectService(timeout = 5000)
+        lateinit var entitiesRegistry: JpaEntitiesRegistry
 
-    @InjectService(timeout = 5000)
-    lateinit var lbm: LiquibaseSchemaMigrator
+        @InjectService(timeout = 5000)
+        lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
-    @InjectService(timeout = 5000)
-    lateinit var softCryptoServiceProvider: SoftCryptoServiceProvider
+        @InjectService(timeout = 5000)
+        lateinit var lbm: LiquibaseSchemaMigrator
 
-    @InjectService(timeout = 5000L)
-    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+        @InjectService(timeout = 5000)
+        lateinit var softCryptoServiceProvider: SoftCryptoServiceProvider
 
-    @InjectService(timeout = 5000L)
-    lateinit var lifecycleRegistry: LifecycleRegistry
+        @InjectService(timeout = 5000L)
+        lateinit var coordinatorFactory: LifecycleCoordinatorFactory
 
-    lateinit var publisher: Publisher
+        @InjectService(timeout = 5000L)
+        lateinit var lifecycleRegistry: LifecycleRegistry
 
-    private val invalidHoldingIdentity = HoldingIdentity("", groupId)
+        lateinit var publisher: Publisher
 
-    private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName).toString(), groupId).id
+        private val invalidHoldingIdentity = HoldingIdentity("", groupId)
 
-    private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName).toString(), groupId).id
+        private val aliceVNodeId = HoldingIdentity(MemberX500Name.parse(aliceName).toString(), groupId).id
 
-    private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName).toString(), groupId).id
+        private val bobVNodeId = HoldingIdentity(MemberX500Name.parse(bobName).toString(), groupId).id
 
-    private lateinit var testDependencies: TestDependenciesTracker
+        private val charlieVNodeId = HoldingIdentity(MemberX500Name.parse(charlieName).toString(), groupId).id
 
-    private val clusterDb = TestDbInfo(
-        name = CordaDb.CordaCluster.persistenceUnitName,
-        schemaName = DbSchema.CONFIG
-    )
+        private lateinit var testDependencies: TestDependenciesTracker
 
-    private val cryptoDb = TestDbInfo(
-        name = CordaDb.Crypto.persistenceUnitName,
-        schemaName = DbSchema.CRYPTO
-    )
+        private val clusterDb = TestDbInfo(
+            name = CordaDb.CordaCluster.persistenceUnitName,
+            schemaName = DbSchema.CONFIG
+        )
 
-    private val aliceVNodeDb = TestDbInfo(
-        name = "vnode_crypto_$aliceVNodeId",
-        schemaName = "vnode_crypto_alice"
-    )
+        private val cryptoDb = TestDbInfo(
+            name = CordaDb.Crypto.persistenceUnitName,
+            schemaName = DbSchema.CRYPTO
+        )
 
-    private val bobVNodeDb = TestDbInfo(
-        name = "vnode_crypto_$bobVNodeId",
-        schemaName = "vnode_crypto_bob"
-    )
+        private val aliceVNodeDb = TestDbInfo(
+            name = "vnode_crypto_$aliceVNodeId",
+            schemaName = "vnode_crypto_alice"
+        )
 
-    private val charlieVNodeDb = TestDbInfo(
-        name = "vnode_crypto_$charlieVNodeId",
-        schemaName = "vnode_crypto_charlie"
-    )
+        private val bobVNodeDb = TestDbInfo(
+            name = "vnode_crypto_$bobVNodeId",
+            schemaName = "vnode_crypto_bob"
+        )
 
-    @BeforeEach
-    fun setUp() {
-        setupDatabases()
+        private val charlieVNodeDb = TestDbInfo(
+            name = "vnode_crypto_$charlieVNodeId",
+            schemaName = "vnode_crypto_charlie"
+        )
 
-        // Set basic bootstrap config
-        memberProcessor.start(bootConf)
-        cryptoProcessor.start(bootConf)
+        @JvmStatic
+        @BeforeAll
+        fun setUp() {
+            setupDatabases()
 
-        membershipGroupReaderProvider.start()
+            // Set basic bootstrap config
+            memberProcessor.start(bootConf)
+            cryptoProcessor.start(bootConf)
 
-        testDependencies = TestDependenciesTracker(
-            LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),
-            coordinatorFactory,
-            lifecycleRegistry,
-            setOf(
-                //LifecycleCoordinatorName.forComponent<MemberProcessor>(),
-                LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
-                //LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()
-            )
-        ).also { it.startAndWait() }
+            membershipGroupReaderProvider.start()
 
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
-        publisher.publishCryptoConf()
-        publisher.publishMessagingConf()
-        publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)
+            testDependencies = TestDependenciesTracker(
+                LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),
+                coordinatorFactory,
+                lifecycleRegistry,
+                setOf(
+                    //LifecycleCoordinatorName.forComponent<MemberProcessor>(),
+                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
+                    //LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()
+                )
+            ).also { it.startAndWait() }
 
-        // Wait for published content to be picked up by components.
-        eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+            publisher.publishCryptoConf()
+            publisher.publishMessagingConf()
+            publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)
 
-        dbConnectionManager.bootstrap(clusterDb.config)
-        testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
-        addDbConnectionConfigs(cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
-        softCryptoServiceProvider.getInstance(
-            SoftCryptoServiceConfig(
-                passphrase = "PASSPHRASE",
-                salt = "SALT"
-            )
-        ).createWrappingKey("wrapping-key", false, emptyMap())
-    }
+            // Wait for published content to be picked up by components.
+            eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
 
-    fun runTest(testFunction: KFunction<Unit>) {
-        logger.info("Running test: \"${testFunction.name}\"")
-        testFunction.call()
-    }
+            dbConnectionManager.bootstrap(clusterDb.config)
+            testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
+            addDbConnectionConfigs(cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
+            softCryptoServiceProvider.getInstance(
+                SoftCryptoServiceConfig(
+                    passphrase = "PASSPHRASE",
+                    salt = "SALT"
+                )
+            ).createWrappingKey("wrapping-key", false, emptyMap())
+        }
 
-    private fun setupDatabases() {
-        val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-        databaseInstaller.setupDatabase(
-            clusterDb,
-            "config",
-            ConfigurationEntities.classes
-        ).close()
-        databaseInstaller.setupDatabase(
-            cryptoDb,
-            "crypto",
-            CryptoEntities.classes
-        ).close()
-        databaseInstaller.setupDatabase(
-            aliceVNodeDb,
-            "vnode-crypto",
-            CryptoEntities.classes
-        ).close()
-        databaseInstaller.setupDatabase(
-            bobVNodeDb,
-            "vnode-crypto",
-            CryptoEntities.classes
-        ).close()
-        databaseInstaller.setupDatabase(
-            charlieVNodeDb,
-            "vnode-crypto",
-            CryptoEntities.classes
-        ).close()
-    }
+        @JvmStatic
+        @AfterAll
+        fun cleanup() {
+            if(::testDependencies.isInitialized) {
+                testDependencies.close()
+            }
+        }
 
-    private fun addDbConnectionConfigs(vararg dbs: TestDbInfo) {
-        dbs.forEach { db ->
-            dbConnectionManager.putConnection(
-                name = db.name,
-                privilege = DbPrivilege.DML,
-                config = db.config,
-                description = null,
-                updateActor = "sa"
-            )
+        private fun setupDatabases() {
+            val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
+            databaseInstaller.setupDatabase(
+                clusterDb,
+                "config",
+                ConfigurationEntities.classes
+            ).close()
+            databaseInstaller.setupDatabase(
+                cryptoDb,
+                "crypto",
+                CryptoEntities.classes
+            ).close()
+            databaseInstaller.setupDatabase(
+                aliceVNodeDb,
+                "vnode-crypto",
+                CryptoEntities.classes
+            ).close()
+            databaseInstaller.setupDatabase(
+                bobVNodeDb,
+                "vnode-crypto",
+                CryptoEntities.classes
+            ).close()
+            databaseInstaller.setupDatabase(
+                charlieVNodeDb,
+                "vnode-crypto",
+                CryptoEntities.classes
+            ).close()
+        }
+
+        private fun addDbConnectionConfigs(vararg dbs: TestDbInfo) {
+            dbs.forEach { db ->
+                dbConnectionManager.putConnection(
+                    name = db.name,
+                    privilege = DbPrivilege.DML,
+                    config = db.config,
+                    description = null,
+                    updateActor = "sa"
+                )
+            }
+        }
+
+        private fun runTest(testFunction: KFunction<Unit>) {
+            logger.info("Running test: \"${testFunction.name}\"")
+            testFunction.call()
         }
     }
 
