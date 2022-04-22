@@ -44,7 +44,6 @@ import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.types.toHexString
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -73,8 +72,6 @@ import java.util.stream.Stream
 @ExtendWith(ServiceExtension::class)
 class CryptoProcessorTests {
     companion object {
-        private val logger = contextLogger()
-
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
 
         @InjectService(timeout = 5000L)
