@@ -136,7 +136,7 @@ class PermissionManagementCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                _permissionManagementCache?.stop()
+                _permissionManagementCache?.close()
                 _permissionManagementCache = null
             }
         }
@@ -149,13 +149,13 @@ class PermissionManagementCacheService @Activate constructor(
         configHandle = null
         topicsRegistration?.close()
         topicsRegistration = null
-        userSubscription?.stop()
+        userSubscription?.close()
         userSubscription = null
-        groupSubscription?.stop()
+        groupSubscription?.close()
         groupSubscription = null
-        roleSubscription?.stop()
+        roleSubscription?.close()
         roleSubscription = null
-        permissionSubscription?.stop()
+        permissionSubscription?.close()
         permissionSubscription = null
 
         userSnapshotReceived = false
@@ -175,28 +175,28 @@ class PermissionManagementCacheService @Activate constructor(
         val roleData = ConcurrentHashMap<String, Role>()
         val permissionData = ConcurrentHashMap<String, Permission>()
 
-        userSubscription?.stop()
+        userSubscription?.close()
         val userSubscription = createUserSubscription(userData, config)
             .also {
                 it.start()
                 userSubscription = it
             }
 
-        groupSubscription?.stop()
+        groupSubscription?.close()
         val groupSubscription = createGroupSubscription(groupData, config)
             .also {
                 it.start()
                 groupSubscription = it
             }
 
-        roleSubscription?.stop()
+        roleSubscription?.close()
         val roleSubscription = createRoleSubscription(roleData, config)
             .also {
                 it.start()
                 roleSubscription = it
             }
 
-        permissionSubscription?.stop()
+        permissionSubscription?.close()
         val permissionSubscription = createPermissionSubscription(permissionData, config)
             .also {
                 it.start()
@@ -211,7 +211,7 @@ class PermissionManagementCacheService @Activate constructor(
             )
         )
 
-        _permissionManagementCache?.stop()
+        _permissionManagementCache?.close()
         _permissionManagementCache = permissionManagementCacheFactory.createPermissionManagementCache(
             userData,
             groupData,

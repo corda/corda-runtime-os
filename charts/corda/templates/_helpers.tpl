@@ -100,6 +100,13 @@ Worker image
 {{- end }}
 
 {{/*
+CLI image
+*/}}
+{{- define "corda.bootstrapImage" -}}
+"{{ .Values.bootstrap.image.registry | default .Values.image.registry }}/{{ .Values.bootstrap.image.repository }}:{{ .Values.bootstrap.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
+{{- end }}
+
+{{/*
 Worker JAVA_TOOL_OPTIONS
 */}}
 {{- define "corda.workerJavaToolOptions" -}}
@@ -148,6 +155,34 @@ resources:
     memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
   {{- end }} 
 {{- end }} 
+
+{{/*
+Cluster DB type
+*/}}
+{{- define "corda.clusterDbType" -}}
+{{- .Values.db.cluster.type | default "postgresql" }}
+{{- end -}}
+
+{{/*
+Cluster DB port
+*/}}
+{{- define "corda.clusterDbPort" -}}
+{{- .Values.db.cluster.port | default "5432" }}
+{{- end -}}
+
+{{/*
+Cluster DB user
+*/}}
+{{- define "corda.clusterDbUser" -}}
+{{- .Values.db.cluster.user | default "user" }}
+{{- end -}}
+
+{{/*
+Cluster DB name
+*/}}
+{{- define "corda.clusterDbName" -}}
+{{- .Values.db.cluster.database | default "cordacluster" }}
+{{- end -}}
 
 {{/*
 Cluster DB secret name
