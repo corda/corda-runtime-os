@@ -46,7 +46,6 @@ internal class OutboundMessageHandler(
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         private const val MAX_RETRIES = 1
-        private const val NUM_THREADS = 10
     }
 
     private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
