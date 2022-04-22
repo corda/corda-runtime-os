@@ -83,9 +83,8 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
                 config
             ).apply {
                 start()
-                val tempSub = memberListSubscription
+                memberListSubscription?.close()
                 memberListSubscription = this
-                tempSub?.close()
             }
         }
 
