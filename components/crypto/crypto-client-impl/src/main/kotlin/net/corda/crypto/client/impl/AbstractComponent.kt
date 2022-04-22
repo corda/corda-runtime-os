@@ -92,16 +92,14 @@ abstract class AbstractComponent<RESOURCE: AutoCloseable>(
 
     private fun createResources(event: ConfigChangedEvent) {
         logger.info("Creating resources")
-        val tmp = resources
+        resources?.close()
         resources = allocateResources(event)
-        tmp?.close()
     }
 
     private fun deleteResources() {
         logger.info("Closing resources")
-        val tmp = resources
+        resources?.close()
         resources = null
-        tmp?.close()
     }
 
     protected abstract fun allocateResources(event: ConfigChangedEvent): RESOURCE
