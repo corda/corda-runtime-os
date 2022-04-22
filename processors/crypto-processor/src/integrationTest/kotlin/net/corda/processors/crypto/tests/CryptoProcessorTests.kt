@@ -15,6 +15,7 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
+import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -32,8 +33,7 @@ import net.corda.processors.crypto.tests.infra.CRYPTO_CONFIGURATION_VALUE
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.MESSAGING_CONFIGURATION_VALUE
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
-import net.corda.processors.crypto.tests.infra.TestDbInfo
-import net.corda.processors.crypto.tests.infra.TestLifecycleDependenciesTrackingCoordinator
+import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
@@ -122,7 +122,7 @@ class CryptoProcessorTests {
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
-        private lateinit var testDependencies: TestLifecycleDependenciesTrackingCoordinator
+        private lateinit var testDependencies: TestDependenciesTracker
 
         private val vnodeId: String = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
 
@@ -136,7 +136,7 @@ class CryptoProcessorTests {
             schemaName = DbSchema.CRYPTO
         )
 
-        private val tenantDb = TestDbInfo(
+        private val vnodeDb = TestDbInfo(
             name = "vnode_crypto_$vnodeId",
             schemaName = "vnode_crypto"
         )
@@ -149,9 +149,9 @@ class CryptoProcessorTests {
             setupDatabases()
             startDependencies()
             dbConnectionManager.bootstrap(clusterDb.config)
-            testDependencies.waitUntilAllUp(Duration.ofSeconds(10))
+            testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
             // temporary hack as the DbAdmin doesn't support HSQL
-            addDbConnectionConfigs(cryptoDb, tenantDb)
+            addDbConnectionConfigs(cryptoDb, vnodeDb)
             // temporary hack to create wrapping key
             softCryptoServiceProvider.getInstance(
                 SoftCryptoServiceConfig(
@@ -200,7 +200,7 @@ class CryptoProcessorTests {
         private fun startDependencies() {
             opsClient.startAndWait()
             processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
-            testDependencies = TestLifecycleDependenciesTrackingCoordinator(
+            testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
                 lifecycleRegistry,
@@ -232,35 +232,20 @@ class CryptoProcessorTests {
 
         private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            logger.info(
-                "CREATING DATABASE FOR: ${clusterDb.name}(${clusterDb.emConfig.dataSource.connection.metaData.url})"
-            )
             databaseInstaller.setupDatabase(
-                clusterDb.emConfig,
+                clusterDb,
                 "config",
-                clusterDb.name,
-                ConfigurationEntities.classes,
-                DbSchema.CONFIG
+                ConfigurationEntities.classes
             ).close()
-            logger.info(
-                "CREATING DATABASE FOR: ${cryptoDb.name}(${cryptoDb.emConfig.dataSource.connection.metaData.url})"
-            )
             databaseInstaller.setupDatabase(
-                cryptoDb.emConfig,
+                cryptoDb,
                 "crypto",
-                cryptoDb.name,
-                CryptoEntities.classes,
-                DbSchema.CRYPTO
+                CryptoEntities.classes
             ).close()
-            logger.info(
-                "CREATING DATABASE FOR: ${tenantDb.name}(${tenantDb.emConfig.dataSource.connection.metaData.url})"
-            )
             databaseInstaller.setupDatabase(
-                tenantDb.emConfig,
+                vnodeDb,
                 "vnode-crypto",
-                tenantDb.name,
-                CryptoEntities.classes,
-                "vnode_crypto"
+                CryptoEntities.classes
             ).close()
         }
 

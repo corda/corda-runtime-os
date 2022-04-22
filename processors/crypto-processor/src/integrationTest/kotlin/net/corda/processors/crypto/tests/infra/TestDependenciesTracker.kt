@@ -16,7 +16,7 @@ import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions
 import java.time.Duration
 
-class TestLifecycleDependenciesTrackingCoordinator(
+class TestDependenciesTracker(
     coordinatorName: LifecycleCoordinatorName,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val lifecycleRegistry: LifecycleRegistry,

@@ -53,11 +53,30 @@ class DatabaseInstaller(
     /**
      * Creates the database.
      *
+     * @param db instance of [TestDbInfo] with information about the database.
      * @param resourceSubPath the path segment in the 'net.corda:corda-db-schema' resources following
      * 'net.corda.db.schema', like 'crypto', 'config', etc.
+     * @param entities list of entitles which tables should be created.
+     *
+     * @return [EntityManagerFactory] that can be used to access the database.
+     */
+    fun setupDatabase(
+        db: TestDbInfo,
+        resourceSubPath: String,
+        entities: Set<Class<*>>
+    ): EntityManagerFactory = setupDatabase(db.emConfig, resourceSubPath, db.name, entities, db.schemaName)
+
+    /**
+     * Creates the database.
+     *
+     * @param cfg instance of the [EntityManagerConfiguration] to use to create tables.
+     * @param resourceSubPath the path segment in the 'net.corda:corda-db-schema' resources following
+     * 'net.corda.db.schema', like 'crypto', 'vnode-crypto', 'config', etc.
      * @param persistenceUnitName the persistence unit name as defined in [CordaDb] enum, for the config database
      * use CordaDb.CordaCluster.persistenceUnitName.
      * @param entities list of entitles which tables should be created.
+     * @param schemaName optional database schema name where create the entities and the change log tables.
+     *
      * @return [EntityManagerFactory] that can be used to access the database.
      */
     fun setupDatabase(
