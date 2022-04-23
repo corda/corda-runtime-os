@@ -124,10 +124,7 @@ class CryptoProcessorTests {
 
         private val vnodeId: String = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
 
-        private val clusterDb = TestDbInfo(
-            name = CordaDb.CordaCluster.persistenceUnitName,
-            schemaName = DbSchema.CONFIG
-        )
+        private val clusterDb = TestDbInfo.createConfig()
 
         private val cryptoDb = TestDbInfo(
             name = CordaDb.Crypto.persistenceUnitName,
@@ -230,7 +227,7 @@ class CryptoProcessorTests {
 
         private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            databaseInstaller.setupDatabase(
+            databaseInstaller.setupClusterDatabase(
                 clusterDb,
                 "config",
                 ConfigurationEntities.classes

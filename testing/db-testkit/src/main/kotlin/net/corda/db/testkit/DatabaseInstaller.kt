@@ -60,6 +60,22 @@ class DatabaseInstaller(
      *
      * @return [EntityManagerFactory] that can be used to access the database.
      */
+    fun setupClusterDatabase(
+        db: TestDbInfo,
+        resourceSubPath: String,
+        entities: Set<Class<*>>
+    ): EntityManagerFactory = setupDatabase(db.emConfig, resourceSubPath, db.name, entities)
+
+    /**
+     * Creates the database.
+     *
+     * @param db instance of [TestDbInfo] with information about the database.
+     * @param resourceSubPath the path segment in the 'net.corda:corda-db-schema' resources following
+     * 'net.corda.db.schema', like 'crypto', 'config', etc.
+     * @param entities list of entitles which tables should be created.
+     *
+     * @return [EntityManagerFactory] that can be used to access the database.
+     */
     fun setupDatabase(
         db: TestDbInfo,
         resourceSubPath: String,

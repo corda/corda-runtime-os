@@ -135,10 +135,7 @@ class MemberProcessorIntegrationTest {
 
         private lateinit var testDependencies: TestDependenciesTracker
 
-        private val clusterDb = TestDbInfo(
-            name = CordaDb.CordaCluster.persistenceUnitName,
-            schemaName = DbSchema.CONFIG
-        )
+        private val clusterDb = TestDbInfo.createConfig()
 
         private val cryptoDb = TestDbInfo(
             name = CordaDb.Crypto.persistenceUnitName,
@@ -211,7 +208,7 @@ class MemberProcessorIntegrationTest {
 
         private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            databaseInstaller.setupDatabase(
+            databaseInstaller.setupClusterDatabase(
                 clusterDb,
                 "config",
                 ConfigurationEntities.classes
