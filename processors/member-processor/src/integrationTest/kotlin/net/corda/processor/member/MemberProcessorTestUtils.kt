@@ -17,10 +17,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -34,14 +35,19 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import java.lang.IllegalStateException
-import java.util.UUID
+import java.util.*
 
 class MemberProcessorTestUtils {
     companion object {
-        val bootConf = with(ConfigFactory.parseString("$INSTANCE_ID=1")) {
-            SmartConfigFactory.create(this).create(this)
-        }
+        val bootConf =
+            SmartConfigFactory.create(ConfigFactory.empty()).create(
+                ConfigFactory.parseString(
+                    """
+                       |$INSTANCE_ID=1
+                       |$BUS_TYPE = INMEMORY
+                   """.trimMargin()
+                )
+            )
 
         val cryptoConf = ""
 
@@ -86,8 +92,10 @@ class MemberProcessorTestUtils {
                 groupPolicy = groupPolicy,
                 cpiVersion = cpiVersion
             )
-            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiMetadata.cpiId,
-                null, UUID.randomUUID(), null, UUID.randomUUID())
+            val virtualNodeInfo = VirtualNodeInfo(
+                holdingIdentity, cpiMetadata.cpiId,
+                null, UUID.randomUUID(), null, UUID.randomUUID()
+            )
 
             // Publish test data
             publishCpiMetadata(cpiMetadata)
@@ -127,11 +135,12 @@ class MemberProcessorTestUtils {
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
-        fun getRegistrationResult(registrationProxy: RegistrationProxy): MembershipRequestRegistrationResult = eventually {
-            assertDoesNotThrow {
-                registrationProxy.register(aliceHoldingIdentity)
+        fun getRegistrationResult(registrationProxy: RegistrationProxy): MembershipRequestRegistrationResult =
+            eventually {
+                assertDoesNotThrow {
+                    registrationProxy.register(aliceHoldingIdentity)
+                }
             }
-        }
 
         fun getRegistrationResultFails(registrationProvider: RegistrationProxy) = eventually {
             assertThrows<IllegalStateException> {
@@ -217,8 +226,12 @@ class MemberProcessorTestUtils {
 
         fun getCpiInfo(cpiInfoReadService: CpiInfoReadService, cpiIdentifier: CpiIdentifier?) =
             when (cpiIdentifier) {
-                null -> { null }
-                else -> { cpiInfoReadService.get(cpiIdentifier) }
+                null -> {
+                    null
+                }
+                else -> {
+                    cpiInfoReadService.get(cpiIdentifier)
+                }
             }
 
         fun Publisher.publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {

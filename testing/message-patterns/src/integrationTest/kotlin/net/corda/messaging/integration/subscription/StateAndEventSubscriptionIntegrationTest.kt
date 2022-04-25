@@ -2,8 +2,6 @@ package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,10 +15,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_TOPIC2
@@ -47,8 +42,6 @@ import net.corda.messaging.integration.processors.TestDurableProcessorStrings
 import net.corda.messaging.integration.processors.TestDurableStringProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessorStrings
-import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
-import net.corda.messaging.integration.util.DBSetup
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis

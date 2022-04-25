@@ -23,8 +23,6 @@ import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestEventLogProcessor
-import net.corda.messaging.integration.util.DBSetup
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis

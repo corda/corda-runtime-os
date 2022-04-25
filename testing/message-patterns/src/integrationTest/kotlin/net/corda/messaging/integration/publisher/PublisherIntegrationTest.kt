@@ -1,10 +1,6 @@
 package net.corda.messaging.integration.publisher
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -12,16 +8,18 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
-import net.corda.messaging.integration.TopicTemplates
 import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC1
+import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC2
+import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC3
+import net.corda.messaging.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
+import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -40,25 +38,6 @@ class PublisherIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "durableTestDurablePublisher"
-
-        private var publisherDurableTopic1Config = ConfigFactory.parseString(TopicTemplates.PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE)
-        private var publisherDurableTopic2Config = ConfigFactory.parseString(TopicTemplates.PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE)
-        private var publisherDurableTopic3Config = ConfigFactory.parseString(TopicTemplates.PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE)
-
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            if (DBSetup.isDB) {
-                // Dodgy remove prefix for DB code
-                publisherDurableTopic1Config = ConfigFactory.parseString(
-                    TopicTemplates.PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
-                )
-                publisherDurableTopic2Config = ConfigFactory.parseString(
-                    TopicTemplates.PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX, "")
-                )
-            }
-        }
     }
 
     @InjectService(timeout = 4000)
@@ -80,7 +59,7 @@ class PublisherIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions non-transactionally successfully`() {
-        topicUtils.createTopics(publisherDurableTopic1Config)
+        topicUtils.createTopics(getTopicConfig(PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE))
         publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC1")
         val publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 
@@ -104,7 +83,7 @@ class PublisherIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully`() {
-        topicUtils.createTopics(publisherDurableTopic2Config)
+        topicUtils.createTopics(getTopicConfig(PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE))
         publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC2", true)
         val publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 
@@ -129,7 +108,7 @@ class PublisherIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `publisher can publish records to partitions transactionally successfully from multiple threads`() {
-        topicUtils.createTopics(publisherDurableTopic3Config)
+        topicUtils.createTopics(getTopicConfig(PUBLISHER_TEST_DURABLE_TOPIC3_TEMPLATE))
         publisherConfig = PublisherConfig("$CLIENT_ID.$PUBLISHER_TEST_DURABLE_TOPIC3", true)
         val publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 

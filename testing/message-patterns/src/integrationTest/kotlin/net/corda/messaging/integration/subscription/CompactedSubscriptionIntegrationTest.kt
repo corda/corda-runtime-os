@@ -1,10 +1,6 @@
 package net.corda.messaging.integration.subscription
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,7 +14,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.integration.IntegrationTestProperties
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
@@ -27,6 +22,7 @@ import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC2
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
+import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestCompactedProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -34,7 +30,6 @@ import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -54,24 +49,6 @@ class CompactedSubscriptionIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "integrationTestCompactedPublisher"
-
-        private var compactedTopic1Config = ConfigFactory.parseString(COMPACTED_TOPIC1_TEMPLATE)
-        private var compactedTopic2Config = ConfigFactory.parseString(COMPACTED_TOPIC2_TEMPLATE)
-
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            if (DBSetup.isDB) {
-                // Dodgy remove prefix for DB code
-                compactedTopic1Config = ConfigFactory.parseString(
-                    COMPACTED_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-                compactedTopic2Config = ConfigFactory.parseString(
-                    COMPACTED_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-            }
-        }
     }
 
     @InjectService(timeout = 4000)
@@ -96,7 +73,7 @@ class CompactedSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
-        topicUtils.createTopics(compactedTopic1Config)
+        topicUtils.createTopics(getTopicConfig(COMPACTED_TOPIC1_TEMPLATE))
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
@@ -147,7 +124,7 @@ class CompactedSubscriptionIntegrationTest {
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
     fun `create compacted topic, publish wrong records, start compacted sub`() {
-        topicUtils.createTopics(compactedTopic2Config)
+        topicUtils.createTopics(getTopicConfig(COMPACTED_TOPIC2_TEMPLATE))
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)

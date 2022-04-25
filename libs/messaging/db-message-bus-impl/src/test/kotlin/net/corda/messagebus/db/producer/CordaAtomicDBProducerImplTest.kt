@@ -127,7 +127,6 @@ internal class CordaAtomicDBProducerImplTest {
             producer.sendRecordOffsetsToTransaction(mock(), mock())
         }
         verify(dbAccess).writeAtomicTransactionRecord()
-        verify(dbAccess).getTopicPartitionMap()
         verifyNoMoreInteractions(dbAccess)
     }
 }

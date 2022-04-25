@@ -29,6 +29,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -69,13 +70,15 @@ class FlowFilterServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowSessionFilterService: FlowP2PFilterService
 
-    private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+    private val bootConfig = SmartConfigImpl.empty()
+        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+        .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
 
     @BeforeEach
     fun setup() {
         if (!setup) {
             setup = true
-            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), SmartConfigImpl.empty())
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), bootConfig)
             setupConfig(publisher)
         }
     }
@@ -85,7 +88,7 @@ class FlowFilterServiceIntegrationTest {
         flowSessionFilterService.start()
 
         val testId = "test1"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), SmartConfigImpl.empty())
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
@@ -128,7 +131,7 @@ class FlowFilterServiceIntegrationTest {
         //validate mapper receives 2 inits
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC, 1),
+            SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
             TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2), bootConfig, null
         )
         p2pOutSub.start()
@@ -147,6 +150,7 @@ class FlowFilterServiceIntegrationTest {
 
     private val bootConf = """
         instance.id=1
+        $BUS_TYPE = INMEMORY
     """
 
     private val messagingConf = """
