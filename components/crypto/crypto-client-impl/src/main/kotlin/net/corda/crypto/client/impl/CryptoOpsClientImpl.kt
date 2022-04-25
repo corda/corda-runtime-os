@@ -28,6 +28,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toBase58
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
@@ -312,6 +313,9 @@ class CryptoOpsClientImpl(
             tenantId,
             ids.joinToString()
         )
+        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+            "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
+        }
         val request = createRequest(
             tenantId,
             ByIdsRpcQuery(ids)
