@@ -150,7 +150,9 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         // if(event.keys.contains(ConfigKeys.SANDBOX_CONFIG)) {
 
             // Hack: Can be removed when default handling is part of CORE-3780
-            val cacheSize = if(event.keys.contains(ConfigKeys.SANDBOX_CONFIG) && event.config[ConfigKeys.SANDBOX_CONFIG]!!.hasPath(ConfigKeys.SANDBOX_CACHE_SIZE)) {
+            val cacheSize = if(
+                event.keys.contains(ConfigKeys.SANDBOX_CONFIG)
+                && event.config[ConfigKeys.SANDBOX_CONFIG]!!.hasPath(ConfigKeys.SANDBOX_CACHE_SIZE)) {
                 event.config[ConfigKeys.SANDBOX_CONFIG]!!.getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
             } else {
                 SANDBOX_CACHE_SIZE_DEFAULT
