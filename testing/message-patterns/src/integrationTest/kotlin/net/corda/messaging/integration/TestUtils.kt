@@ -3,7 +3,6 @@ package net.corda.messaging.integration
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.demo.DemoRecord
-import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
@@ -47,12 +46,7 @@ fun getKafkaProperties(): Properties {
     return kafkaProperties
 }
 
-fun getTopicConfig(topicTemplate: String): Config {
-    val template = if (DBSetup.isDB) {
-        topicTemplate.replace(TopicTemplates.TEST_TOPIC_PREFIX,"")
-    } else {
-        topicTemplate
-    }
+fun getTopicConfig(template: String): Config {
     return ConfigFactory.parseString(template)
 }
 

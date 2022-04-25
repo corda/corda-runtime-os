@@ -16,7 +16,7 @@ import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
@@ -28,8 +28,6 @@ class CordaTransactionalDBProducerImpl(
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
-
-    private val defaultTimeout: Duration = Duration.ofSeconds(1)
 
     private val _transaction = ThreadLocal<TransactionRecordEntry>()
     private var transaction

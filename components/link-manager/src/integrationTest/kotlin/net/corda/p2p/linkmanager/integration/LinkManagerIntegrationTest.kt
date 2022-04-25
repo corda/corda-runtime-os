@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
@@ -72,7 +73,10 @@ class LinkManagerIntegrationTest {
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())
-        .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
+        .create(ConfigFactory.empty()
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+            .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+        )
 
     @BeforeEach
     fun setup() {
@@ -93,7 +97,7 @@ class LinkManagerIntegrationTest {
 
         val configPublisher = configPublisherFactory.createPublisher(
             Schemas.Config.CONFIG_TOPIC,
-            SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+            bootstrapConfig
         )
 
         val linkManager = LinkManager(
@@ -158,7 +162,6 @@ class LinkManagerIntegrationTest {
             lifecycleCoordinatorFactory,
             configReadService,
             bootstrapConfig,
-            2,
         )
 
         assertDoesNotThrow {

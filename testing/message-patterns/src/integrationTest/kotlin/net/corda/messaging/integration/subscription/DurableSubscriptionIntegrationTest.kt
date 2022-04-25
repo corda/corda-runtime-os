@@ -2,8 +2,6 @@ package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -30,8 +28,6 @@ import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestDurableProcessor
 import net.corda.messaging.integration.processors.TestDurableStringProcessor
-import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
-import net.corda.messaging.integration.util.DBSetup
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_CONSUMER_MAX_POLL_INTERVAL
 import net.corda.test.util.eventually
