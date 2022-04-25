@@ -12,14 +12,34 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 internal const val STREAM_BUFFER_SIZE = DEFAULT_BUFFER_SIZE
+
+/**
+ * Constant specifying the HMAC SHA-256 algorithm.
+ */
 const val HMAC_SHA256_ALGORITHM = "HmacSHA256"
+
+/**
+ * Constant specifying the HMAC SHA-512 algorithm.
+ */
 const val HMAC_SHA512_ALGORITHM = "HmacSHA512"
+
+/**
+ * Constant specifying the maximum number of key lookup by id items.
+ */
+const val KEY_LOOKUP_INPUT_ITEMS_LIMIT = 20
 
 private fun messageDigestSha256(): MessageDigest =
     MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
+/**
+ * Calculates SHA256 digest of the given byte array.
+ */
 fun ByteArray.sha256Bytes(): ByteArray = messageDigestSha256().digest(this)
 
+/**
+ * Calculates SHA256 digest of the given [PublicKey]. The function gets the key in its encoded format
+ * and then calculates SHA256.
+ */
 fun PublicKey.sha256Bytes(): ByteArray = messageDigestSha256().digest(encoded)
 
 /** Render a public key to its hash (in Base58) of its serialised form using the DL prefix. */
