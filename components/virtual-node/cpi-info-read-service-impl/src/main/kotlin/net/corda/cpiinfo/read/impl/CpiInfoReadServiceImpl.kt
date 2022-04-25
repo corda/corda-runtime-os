@@ -37,9 +37,6 @@ class CpiInfoReadServiceImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    // This eventually needs to be passed in to here from the parent `main`
-    private val instanceId: Int? = null
-
     private val cpiInfoProcessor = CpiInfoReaderProcessor(::setStatusToUp, ::setStatusToError)
 
     /**
@@ -50,7 +47,6 @@ class CpiInfoReadServiceImpl @Activate constructor(
         configurationReadService,
         cpiInfoProcessor,
         subscriptionFactory,
-        instanceId,
         this::onConfigChangeEvent
     )
 

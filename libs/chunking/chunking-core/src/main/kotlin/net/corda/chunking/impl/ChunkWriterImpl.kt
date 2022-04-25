@@ -6,7 +6,6 @@ import net.corda.chunking.ChunkWriter
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.ByteBuffer
@@ -20,7 +19,6 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
     companion object {
         const val KB = 1024
         const val MB = 1024 * KB
-        val log = contextLogger()
     }
 
     var chunkWriteCallback: ChunkWriteCallback? = null
@@ -37,7 +35,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
         val identifier = UUID.randomUUID().toString()
 
         // Ensure we use the same algorithm to read/write
-        val messageDigest = Checksum.getMessageDigest()
+        val messageDigest = Checksum.newMessageDigest()
 
         // Not calling `close()` for this, just wrapping it - the owner of the inputStream
         // should call `close()` on that stream.
@@ -56,7 +54,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
             val byteBuffer = ByteBuffer.wrap(trimmedByteArray, 0, actualBytesRead)
 
             // We don't bother creating a checksum for the individual chunks.
-            // We're trimmed the bytes, so [byteBuffer] implicitly contains the length of this chunk.
+            // We've trimmed the bytes, so [byteBuffer] implicitly contains the length of this chunk.
             writeChunk(identifier, fileName, chunkNumber, byteBuffer, offset)
 
             chunkNumber++
@@ -82,7 +80,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
     ) = chunkWriteCallback!!.onChunk(
         Chunk().also {
             it.requestId = identifier
-            it.fileName = fileName.toString()
+            it.fileName = fileName
             it.partNumber = chunkNumber
             // Must be zero size or you break the code
             it.data = ByteBuffer.wrap(ByteArray(0))
