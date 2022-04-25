@@ -67,18 +67,15 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private var impl: InnerMembershipGroupReaderProvider = InactiveImpl()
 
     private fun activate(configs: Map<String, SmartConfig>, reason: String) {
-        swapImpl(ActiveImpl(subscriptionFactory, layeredPropertyMapFactory, configs))
+        impl.close()
+        impl = ActiveImpl(subscriptionFactory, layeredPropertyMapFactory, configs)
         updateStatus(LifecycleStatus.UP, reason)
     }
 
     private fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
-        swapImpl(InactiveImpl())
-    }
-
-    private fun swapImpl(newImpl: InnerMembershipGroupReaderProvider) {
         val current = impl
-        impl = newImpl
+        impl = InactiveImpl()
         current.close()
     }
 
