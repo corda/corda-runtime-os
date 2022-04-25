@@ -1,0 +1,69 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+    id "corda.osgi-test-conventions"
+}
+
+description "Crypto database (JPA) based persistence"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation 'net.corda:corda-db-schema'
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-component-core-impl")
+    implementation project(":components:crypto:crypto-db-persistence-model")
+    implementation project(":components:crypto:crypto-persistence")
+    implementation project(":components:db:db-connection-manager")
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:layered-property-map")
+    implementation project(":libs:lifecycle:lifecycle")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:registry")
+    testImplementation project(":testing:test-utilities")
+
+    integrationTestImplementation 'net.corda:corda-base'
+    integrationTestImplementation 'net.corda:corda-db-schema'
+    integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
+        // Need to exclude the org.osgi package as will use the BND ones at runtime
+        //  org.osgi ones are added above as compileOnly
+        exclude group: 'org.osgi'
+    }
+
+    integrationTestImplementation project(":libs:configuration:configuration-core")
+    integrationTestImplementation project(":libs:configuration:configuration-datamodel")
+    integrationTestImplementation project(":libs:db:db-admin")
+    integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:db:db-core")
+    integrationTestImplementation project(":libs:messaging:messaging")
+    integrationTestImplementation project(":testing:db-testkit")
+
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":components:db:db-connection-manager-impl")
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
+}
+
+

@@ -3,12 +3,12 @@ package net.corda.crypto.service.impl.signing
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.WrappedKeyPair
-import net.corda.v5.cipher.suite.WrappedPrivateKey
+import net.corda.v5.cipher.suite.GeneratedKey
+import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
-import java.security.PublicKey
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -72,39 +72,9 @@ class CryptoServiceDecorator(
         }
     }
 
-    override fun supportedWrappingSchemes(): Array<SignatureScheme> {
+    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         try {
-            return cryptoService.supportedWrappingSchemes()
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException("CryptoService operation failed", e)
-        }
-    }
-
-    override fun containsKey(alias: String): Boolean {
-        try {
-            return executeWithTimeOut { cryptoService.containsKey(alias) }
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException("CryptoService operation failed", e)
-        }
-    }
-
-    override fun findPublicKey(alias: String): PublicKey? {
-        try {
-            return executeWithTimeOut { cryptoService.findPublicKey(alias) }
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException("CryptoService operation failed", e)
-        }
-    }
-
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean) {
-        try {
-            return executeWithTimeOut { cryptoService.createWrappingKey(masterKeyAlias, failIfExists) }
+            return executeWithTimeOut { cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context) }
         } catch (e: IllegalArgumentException) {
             throw e
         } catch (e: CryptoServiceException) {
@@ -115,32 +85,13 @@ class CryptoServiceDecorator(
     }
 
     override fun generateKeyPair(
-        alias: String,
-        signatureScheme: SignatureScheme,
+        spec: KeyGenerationSpec,
         context: Map<String, String>
-    ): PublicKey {
+    ): GeneratedKey {
         try {
             return executeWithTimeOut {
-                cryptoService.generateKeyPair(alias, signatureScheme, context)
+                cryptoService.generateKeyPair(spec, context)
             }
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException("CryptoService operation failed", e)
-        }
-    }
-
-    override fun generateWrappedKeyPair(
-        masterKeyAlias: String,
-        wrappedSignatureScheme: SignatureScheme,
-        context: Map<String, String>
-    ): WrappedKeyPair {
-        try {
-            return executeWithTimeOut {
-                cryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme, context)
-            }
-        } catch (e: IllegalArgumentException) {
-            throw e
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
@@ -149,29 +100,14 @@ class CryptoServiceDecorator(
     }
 
     override fun sign(
-        alias: String,
-        signatureScheme: SignatureScheme,
+        spec: SigningSpec,
         data: ByteArray,
         context: Map<String, String>
     ): ByteArray {
         try {
             return executeWithTimeOut {
-                cryptoService.sign(alias, signatureScheme, data, context)
+                cryptoService.sign(spec, data, context)
             }
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException("CryptoService operation failed", e)
-        }
-    }
-
-    override fun sign(wrappedKey: WrappedPrivateKey, data: ByteArray, context: Map<String, String>): ByteArray {
-        try {
-            return executeWithTimeOut {
-                cryptoService.sign(wrappedKey, data, context)
-            }
-        } catch (e: IllegalArgumentException) {
-            throw e
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {

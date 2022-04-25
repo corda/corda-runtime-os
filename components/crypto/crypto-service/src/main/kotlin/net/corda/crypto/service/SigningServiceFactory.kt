@@ -13,5 +13,5 @@ interface SigningServiceFactory : Lifecycle {
      * @throws [IllegalStateException] if the factory haven't been started yet
      * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
      */
-    fun getInstance(tenantId: String): SigningService
+    fun getInstance(): SigningService
 }

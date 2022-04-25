@@ -1,33 +1,31 @@
 package net.corda.crypto.service.impl.rpc
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.service.impl.generateKeyPair
-import net.corda.crypto.service.impl.signing.CryptoServicesTestFactory
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignature
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.rpc.FilterMyKeysRpcQuery
-import net.corda.data.crypto.wire.ops.rpc.GenerateFreshKeyRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.GenerateKeyPairCommand
-import net.corda.data.crypto.wire.ops.rpc.PublicKeyRpcQuery
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
-import net.corda.data.crypto.wire.ops.rpc.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithAliasRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithAliasSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.SupportedSchemesRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
+import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -38,11 +36,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import org.hamcrest.CoreMatchers.instanceOf
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.allOf
-import org.hamcrest.Matchers.greaterThanOrEqualTo
-import org.hamcrest.Matchers.lessThanOrEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
@@ -66,14 +60,8 @@ class CryptoOpsRpcProcessorTests {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
         }
 
-        override fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> =
-            if(candidateKeys.any()) {
-                listOf(candidateKeys.first())
-            } else {
-                emptyList()
-            }
-
         override fun generateKeyPair(
+            tenantId: String,
             category: String,
             alias: String,
             context: Map<String, String>
@@ -81,63 +69,59 @@ class CryptoOpsRpcProcessorTests {
             if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
-            return impl.generateKeyPair(category, alias, context)
+            return impl.generateKeyPair(tenantId, category, alias, context)
         }
 
-        override fun freshKey(context: Map<String, String>): PublicKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.freshKey(context)
-        }
-
-        override fun freshKey(externalId: UUID, context: Map<String, String>): PublicKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.freshKey(externalId, context)
-        }
-
-        override fun sign(
-            publicKey: PublicKey,
-            data: ByteArray,
-            context: Map<String, String>
-        ): DigitalSignature.WithKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.sign(publicKey, data, context)
-        }
-
-        override fun sign(
-            publicKey: PublicKey,
-            signatureSpec: SignatureSpec,
-            data: ByteArray,
-            context: Map<String, String>
-        ): DigitalSignature.WithKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.sign(publicKey, signatureSpec, data, context)
-        }
-
-        override fun sign(alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.sign(alias, data, context)
-        }
-
-        override fun sign(
+        override fun generateKeyPair(
+            tenantId: String,
+            category: String,
             alias: String,
-            signatureSpec: SignatureSpec,
-            data: ByteArray,
+            externalId: String,
             context: Map<String, String>
-        ): ByteArray {
+        ): PublicKey {
             if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
-            return impl.sign(alias, signatureSpec, data, context)
+            return impl.generateKeyPair(tenantId, category, alias, externalId, context)
+        }
+
+        override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
+            if (context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.freshKey(tenantId, context)
+        }
+
+        override fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey {
+            if (context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.freshKey(tenantId, externalId, context)
+        }
+
+        override fun sign(
+            tenantId: String,
+            publicKey: PublicKey,
+            data: ByteArray,
+            context: Map<String, String>
+        ): DigitalSignature.WithKey {
+            if (context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(tenantId, publicKey, data, context)
+        }
+
+        override fun sign(
+            tenantId: String,
+            publicKey: PublicKey,
+            signatureSpec: SignatureSpec,
+            data: ByteArray,
+            context: Map<String, String>
+        ): DigitalSignature.WithKey {
+            if (context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(tenantId, publicKey, signatureSpec, data, context)
         }
     }
 
@@ -166,28 +150,24 @@ class CryptoOpsRpcProcessorTests {
             )
     }
 
+    private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
-    private lateinit var factory: CryptoServicesTestFactory
-    private lateinit var services: CryptoServicesTestFactory.CryptoServices
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var signingService: SigningService
     private lateinit var signingFactory: SigningServiceFactory
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsRpcProcessor
 
-    private fun setup(category: String, schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
-        factory = CryptoServicesTestFactory()
-        services = factory.createCryptoServices(
-            category = category
-        )
-        tenantId = services.tenantId
+    private fun setup(schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
+        tenantId = UUID.randomUUID().toString()
+        factory = TestServicesFactory()
         schemeMetadata = factory.schemeMetadata
-        signingService = services.createSigningService(
+        signingService = factory.createSigningService(
             schemeMetadata.findSignatureScheme(schemeCode)
         )
         verifier = factory.verifier
         signingFactory = mock {
-            on { getInstance(tenantId) }.thenReturn(SigningServiceWrapper(signingService))
+            on { getInstance() }.thenReturn(SigningServiceWrapper(signingService))
         }
         processor = CryptoOpsRpcProcessor(
             signingFactory
@@ -215,10 +195,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        assertThat(
-            actual.responseTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
-        )
+        assertThat(actual.responseTimestamp.epochSecond)
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
+            .isLessThanOrEqualTo(now.epochSecond)
         assertTrue(
             actual.other.items.size == expected.other.items.size &&
                     actual.other.items.containsAll(expected.other.items) &&
@@ -227,54 +206,53 @@ class CryptoOpsRpcProcessorTests {
     }
 
     @Test
-    fun `Should return CryptoNoContentValue for unknown key alias`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
-        val alias = newAlias()
+    fun `Should return empty list for unknown key id`() {
+        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
-                PublicKeyRpcQuery(alias)
+                ByIdsRpcQuery(listOf(
+                    publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+                ))
             ),
             future
         )
         val result = future.get()
         assertResponseContext(context, result.context)
         assertNotNull(result.response)
-        assertThat(result.response, instanceOf(CryptoNoContentValue::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
+        assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
     }
 
     @Test
-    fun `Should filer my keys`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+    fun `Should return empty list for look up when the filter does not match`() {
+        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
-        val candidates = listOf<PublicKey>(
-            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
-            generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public
-        )
         processor.onNext(
             RpcOpsRequest(
                 context,
-                FilterMyKeysRpcQuery(candidates.map {
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it))
-                })
+                KeysRpcQuery(
+                    0,
+                    10,
+                    CryptoKeyOrderBy.NONE,
+                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, UUID.randomUUID().toString())))
+                )
             ),
             future
         )
         val result = future.get()
         assertResponseContext(context, result.context)
         assertNotNull(result.response)
-        assertThat(result.response, instanceOf(CryptoPublicKeys::class.java))
-        val keys = result.response as CryptoPublicKeys
-        assertEquals(1, keys.keys.size)
-        assertEquals(candidates[0], schemeMetadata.decodePublicKey(keys.keys[0].array()))
+        assertThat(result.response).isInstanceOf(CryptoSigningKeys::class.java)
+        assertEquals(0, (result.response as CryptoSigningKeys).keys.size)
     }
 
     @Test
-    fun `Should generate key pair and be able to find and then sign using default and custom schemes`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+    fun `Should generate key pair and be able to find and lookup and then sign using default and custom schemes`() {
+        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -288,8 +266,9 @@ class CryptoOpsRpcProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
+                    CryptoConsts.HsmCategories.LEDGER,
                     alias,
+                    null,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -302,9 +281,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = services.getSigningKeyRecord(publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
@@ -313,23 +292,46 @@ class CryptoOpsRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                PublicKeyRpcQuery(alias)
+                ByIdsRpcQuery(listOf(
+                    publicKeyIdFromBytes(info.publicKey)
+                ))
             ),
             future2
         )
         val result2 = future2.get()
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoPublicKey::class.java))
-        val key = result2.response as CryptoPublicKey
-        assertEquals(publicKey, schemeMetadata.decodePublicKey(key.key.array()))
+        assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
+        val key = result2.response as CryptoSigningKeys
+        assertEquals(1, key.keys.size)
+        assertEquals(publicKey, schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
+        // lookup
+        val context3 = createRequestContext()
+        val future3 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context3,
+                KeysRpcQuery(
+                    0,
+                    20,
+                    CryptoKeyOrderBy.NONE,
+                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
+                )
+            ),
+            future3
+        )
+        val result3 = future3.get()
+        assertResponseContext(context3, result3.context)
+        assertThat(result3.response).isInstanceOf(CryptoSigningKeys::class.java)
+        val key3 = result3.response as CryptoSigningKeys
+        assertEquals(1, key3.keys.size)
+        assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         // signing
         testSigningByPublicKeyLookup(publicKey, data)
-        testSigningByAliasLookup(alias, publicKey, data)
     }
 
     @Test
-    fun `Should generate key pair and be able to find and then sign custom signature params`() {
-        setup(category = CryptoConsts.Categories.TLS, schemeCode = RSA_CODE_NAME)
+    fun `Should generate key pair and be able to find and lookup and then sign custom signature params`() {
+        setup(schemeCode = RSA_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -343,8 +345,9 @@ class CryptoOpsRpcProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
+                    CryptoConsts.HsmCategories.LEDGER,
                     alias,
+                    null,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -357,9 +360,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = services.getSigningKeyRecord(publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // find
@@ -368,16 +371,39 @@ class CryptoOpsRpcProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                PublicKeyRpcQuery(alias)
+                ByIdsRpcQuery(listOf(
+                    publicKeyIdFromBytes(info.publicKey)
+                ))
             ),
             future2
         )
         val result2 = future2.get()
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoPublicKey::class.java))
-        val key = result2.response as CryptoPublicKey
-        assertEquals(publicKey, schemeMetadata.decodePublicKey(key.key.array()))
-
+        assertThat(result2.response).isInstanceOf(CryptoSigningKeys::class.java)
+        val key = result2.response as CryptoSigningKeys
+        assertEquals(1, key.keys.size)
+        assertEquals(publicKey, schemeMetadata.decodePublicKey(key.keys[0].publicKey.array()))
+        // lookup
+        val context3 = createRequestContext()
+        val future3 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context3,
+                KeysRpcQuery(
+                    0,
+                    20,
+                    CryptoKeyOrderBy.NONE,
+                    KeyValuePairList(listOf(KeyValuePair(ALIAS_FILTER, alias)))
+                )
+            ),
+            future3
+        )
+        val result3 = future3.get()
+        assertResponseContext(context3, result3.context)
+        assertThat(result3.response).isInstanceOf(CryptoSigningKeys::class.java)
+        val key3 = result3.response as CryptoSigningKeys
+        assertEquals(1, key3.keys.size)
+        assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         //
         val signatureSpec4 = getCustomSignatureSpecWithParams()
         val context4 = createRequestContext()
@@ -404,45 +430,15 @@ class CryptoOpsRpcProcessorTests {
         )
         val result4 = future4.get()
         assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result4.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature4.publicKey.array()))
         verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
-
-        //
-        val signatureSpec5 = getCustomSignatureSpecWithParams()
-        val context5 = createRequestContext()
-        val future5= CompletableFuture<RpcOpsResponse>()
-        val serializedParams5 = schemeMetadata.serialize(signatureSpec5.params!!)
-        processor.onNext(
-            RpcOpsRequest(
-                context5,
-                SignWithAliasSpecRpcCommand(
-                    alias,
-                    CryptoSignatureSpec(
-                        signatureSpec5.signatureName,
-                        signatureSpec5.customDigestName?.name,
-                        CryptoSignatureParameterSpec(
-                            serializedParams5.clazz,
-                            ByteBuffer.wrap(serializedParams5.bytes)
-                        )
-                    ),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future5
-        )
-        val result5 = future5.get()
-        assertResponseContext(context5, result5.context)
-        assertThat(result5.response, instanceOf(CryptoSignature::class.java))
-        val signature5 = result5.response as CryptoSignature
-        verifier.verify(publicKey, signatureSpec5, signature5.bytes.array(), data)
     }
 
     @Test
     fun `Should generate fresh key pair without external id and be able to sign using default and custom schemes`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -468,9 +464,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = services.getSigningKeyRecord(publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertNull(info.externalId)
@@ -480,7 +476,7 @@ class CryptoOpsRpcProcessorTests {
 
     @Test
     fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val context1 = createRequestContext()
@@ -507,9 +503,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = services.getSigningKeyRecord(publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertNull(info.alias)
         assertEquals(externalId, UUID.fromString(info.externalId))
@@ -519,7 +515,7 @@ class CryptoOpsRpcProcessorTests {
 
     @Test
     fun `Should complete future exceptionally in case of service failure`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -533,8 +529,9 @@ class CryptoOpsRpcProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.Categories.LEDGER,
+                    CryptoConsts.HsmCategories.LEDGER,
                     alias,
+                    null,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -547,9 +544,9 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context1, result1.context)
-        assertThat(result1.response, instanceOf(CryptoPublicKey::class.java))
+        assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
-        val info = services.getSigningKeyRecord(publicKey)
+        val info = factory.getSigningCachedKey(tenantId, publicKey)
         assertNotNull(info)
         assertEquals(alias, info.alias)
         // sign using invalid custom scheme
@@ -575,19 +572,19 @@ class CryptoOpsRpcProcessorTests {
             future3.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
+        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
     }
 
     @Test
     fun `Should complete future exceptionally in case of unknown request`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
                 AssignHSMCommand(
-                    CryptoConsts.Categories.LEDGER,
+                    CryptoConsts.HsmCategories.LEDGER,
                     RSA_CODE_NAME,
                     KeyValuePairList(emptyList())
                 )
@@ -598,31 +595,31 @@ class CryptoOpsRpcProcessorTests {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
-        assertThat(exception.cause, instanceOf(CryptoServiceLibraryException::class.java))
-        assertThat(exception.cause?.cause, instanceOf(CryptoServiceBadRequestException::class.java))
+        assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+        assertThat(exception.cause?.cause).isInstanceOf(CryptoServiceBadRequestException::class.java)
     }
 
     @Test
     fun `Should return all supported scheme codes`() {
-        setup(category = CryptoConsts.Categories.LEDGER)
+        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.Categories.LEDGER
+                    CryptoConsts.HsmCategories.LEDGER
                 )
             ),
             future
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSignatureSchemes::class.java)
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
-            CryptoConsts.Categories.LEDGER
+            tenantId,
+            CryptoConsts.HsmCategories.LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
@@ -632,24 +629,25 @@ class CryptoOpsRpcProcessorTests {
 
     @Test
     fun `Should return all supported scheme codes for fresh keys`() {
-        setup(category = CryptoConsts.Categories.FRESH_KEYS)
+        setup()
         val context = createRequestContext()
         val future = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.Categories.FRESH_KEYS
+                    CryptoConsts.HsmCategories.FRESH_KEYS
                 )
             ),
             future
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response, instanceOf(CryptoSignatureSchemes::class.java))
+        assertThat(result.response).isInstanceOf(CryptoSignatureSchemes::class.java)
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
-            CryptoConsts.Categories.LEDGER
+            tenantId,
+            CryptoConsts.HsmCategories.LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
@@ -683,7 +681,7 @@ class CryptoOpsRpcProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result2.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature2 = result2.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
         verifier.verify(publicKey, signature2.bytes.array(), data)
@@ -709,7 +707,7 @@ class CryptoOpsRpcProcessorTests {
         )
         val result3 = future3.get()
         assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result3.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature3 = result3.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
@@ -735,84 +733,9 @@ class CryptoOpsRpcProcessorTests {
         )
         val result4 = future4.get()
         assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(CryptoSignatureWithKey::class.java))
+        assertThat(result4.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature4 = result4.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
-        verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
-    }
-
-    private fun testSigningByAliasLookup(alias: String, publicKey: PublicKey, data: ByteArray) {
-        // sign using public key and default scheme
-        val context2 = createRequestContext()
-        val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
-            KeyValuePair("reason", "Hello World!")
-        )
-        val future2 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context2,
-                SignWithAliasRpcCommand(
-                    alias,
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(operationContext)
-                )
-            ),
-            future2
-        )
-        val result2 = future2.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
-        assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
-        assertEquals(operationContext[1].value, operationContextMap["reason"])
-        assertResponseContext(context2, result2.context)
-        assertThat(result2.response, instanceOf(CryptoSignature::class.java))
-        val signature2 = result2.response as CryptoSignature
-        verifier.verify(publicKey, signature2.bytes.array(), data)
-
-        // sign using public key and full custom scheme
-        val signatureSpec3 = getFullCustomSignatureSpec()
-        val context3 = createRequestContext()
-        val future3 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context3,
-                SignWithAliasSpecRpcCommand(
-                    alias,
-                    CryptoSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name, null),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future3
-        )
-        val result3 = future3.get()
-        assertResponseContext(context3, result3.context)
-        assertThat(result3.response, instanceOf(CryptoSignature::class.java))
-        val signature3 = result3.response as CryptoSignature
-        verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
-
-        // sign using public key and custom scheme
-        val signatureSpec4 = getCustomSignatureSpec()
-        val context4 = createRequestContext()
-        val future4 = CompletableFuture<RpcOpsResponse>()
-        processor.onNext(
-            RpcOpsRequest(
-                context4,
-                SignWithAliasSpecRpcCommand(
-                    alias,
-                    CryptoSignatureSpec(signatureSpec4.signatureName, signatureSpec4.customDigestName?.name, null),
-                    ByteBuffer.wrap(data),
-                    KeyValuePairList(emptyList())
-                )
-            ),
-            future4
-        )
-        val result4 = future4.get()
-        assertResponseContext(context4, result4.context)
-        assertThat(result4.response, instanceOf(CryptoSignature::class.java))
-        val signature4 = result4.response as CryptoSignature
         verifier.verify(publicKey, signatureSpec4, signature4.bytes.array(), data)
     }
 }

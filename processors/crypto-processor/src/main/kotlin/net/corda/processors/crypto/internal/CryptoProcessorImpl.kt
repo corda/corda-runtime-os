@@ -1,13 +1,16 @@
 package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.persistence.SigningKeysPersistenceProvider
-import net.corda.crypto.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.persistence.SigningKeyCacheProvider
+import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.CryptoFlowOpsService
 import net.corda.crypto.service.CryptoOpsService
+import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,10 +41,12 @@ class CryptoProcessorImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = SoftKeysPersistenceProvider::class)
-    private val softKeysPersistenceProvider: SoftKeysPersistenceProvider,
-    @Reference(service = SigningKeysPersistenceProvider::class)
-    private val signingKeysPersistenceProvider: SigningKeysPersistenceProvider,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = SoftCryptoKeyCacheProvider::class)
+    private val softCryptoKeyCacheProvider: SoftCryptoKeyCacheProvider,
+    @Reference(service = SigningKeyCacheProvider::class)
+    private val signingKeyCacheProvider: SigningKeyCacheProvider,
     @Reference(service = SigningServiceFactory::class)
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsService::class)
@@ -49,7 +54,11 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = SoftCryptoServiceProvider::class)
     private val softCryptoServiceProviders: SoftCryptoServiceProvider,
     @Reference(service = CryptoFlowOpsService::class)
-    private val cryptoFlowOpsService: CryptoFlowOpsService
+    private val cryptoFlowOpsService: CryptoFlowOpsService,
+    @Reference(service = CryptoServiceFactory::class)
+    private val cryptoServiceFactory: CryptoServiceFactory,
+    @Reference(service = HSMRegistration::class)
+    private val hsmRegistration: HSMRegistration
 ) : CryptoProcessor {
     private companion object {
         val log = contextLogger()
@@ -61,12 +70,15 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::softKeysPersistenceProvider,
-        ::signingKeysPersistenceProvider,
+        ::dbConnectionManager,
+        ::softCryptoKeyCacheProvider,
+        ::signingKeyCacheProvider,
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsService,
-        ::softCryptoServiceProviders
+        ::softCryptoServiceProviders,
+        ::cryptoServiceFactory,
+        ::hsmRegistration
     )
 
     override val isRunning: Boolean

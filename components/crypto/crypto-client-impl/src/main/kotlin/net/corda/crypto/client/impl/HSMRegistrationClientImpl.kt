@@ -12,7 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 
-internal class HSMRegistrationClientImpl(
+class HSMRegistrationClientImpl(
     private val publisher: Publisher
 ) {
     companion object {

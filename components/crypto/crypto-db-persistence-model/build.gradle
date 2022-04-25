@@ -1,0 +1,30 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Crypto persistent data model'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+
+    api "javax.persistence:javax.persistence-api"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda:corda-db-schema'
+
+    implementation project(":libs:db:db-orm")
+
+    testImplementation project(":libs:crypto:crypto-core")
+}
+
+// This is required for Hibernate Proxy generation. Without it OSGi will report:
+// java.lang.ClassNotFoundException: org.hibernate.proxy.HibernateProxy
+tasks.named('jar', Jar) {
+    bnd '''\
+    DynamicImport-Package: org.hibernate.proxy
+    '''
+}

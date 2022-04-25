@@ -1,0 +1,26 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Crypto serialization'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-cipher-suite"
+    api 'net.corda:corda-serialization'
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(':libs:serialization:serialization-internal')
+    implementation project(":libs:utilities")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

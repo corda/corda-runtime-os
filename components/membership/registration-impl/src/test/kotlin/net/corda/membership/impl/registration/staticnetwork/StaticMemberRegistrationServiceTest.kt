@@ -131,11 +131,11 @@ class StaticMemberRegistrationServiceTest {
     private val signature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), ByteArray(1))
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
-        on { generateKeyPair(any(), any(), any(), any()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq("alice-alias"), any()) } doReturn aliceKey
+        on { generateKeyPair(any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
+        on { generateKeyPair(any(), any(), eq("alice-alias"), any<Map<String, String>>()) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
-        on { generateKeyPair(any(), any(), eq(bob.id), any()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq(charlie.id), any()) } doReturn charlieKey
+        on { generateKeyPair(any(), any(), eq(bob.id), any<Map<String, String>>()) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq(charlie.id), any<Map<String, String>>()) } doReturn charlieKey
         on { sign(any(), any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
     }
 

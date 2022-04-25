@@ -6,7 +6,6 @@ import net.corda.v5.crypto.CompositeKey
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 
 class CordaSecurityProviderTests {
     companion object {
@@ -20,7 +19,6 @@ class CordaSecurityProviderTests {
     }
 
     @Test
-    @Timeout(30)
     fun `get security provider algorithm services`() {
         val keyFactoryType = "KeyFactory"
         val signatureType = "Signature"

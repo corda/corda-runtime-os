@@ -24,9 +24,9 @@ class SpecTest {
 
         spec.run()
 
-        verify(mockLiquibase, times(3)).update(any<Contexts>(), any<FileWriter>())
-        verify(mockWriter, times(3)).flush()
-        verify(mockWriter, times(3)).close()
+        verify(mockLiquibase, times(4)).update(any<Contexts>(), any<FileWriter>())
+        verify(mockWriter, times(4)).flush()
+        verify(mockWriter, times(4)).close()
     }
 
     @Test

@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoPublishResult
 import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -23,23 +24,32 @@ class HSMRegistrationClientComponent @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
-) : AbstractComponent<HSMRegistrationClientComponent.Resources>(
+) : AbstractConfigurableComponent<HSMRegistrationClientComponent.Impl>(
     coordinatorFactory,
     LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>(),
-    configurationReadService
+    configurationReadService,
+    InactiveImpl(),
+    setOf(
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+    )
 ), HSMRegistrationClient {
     companion object {
         const val CLIENT_ID = "crypto.registration.hsm"
-
-        private inline val Resources?.instance: HSMRegistrationClientImpl
-            get() = this?.registrar ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
+    interface Impl : AutoCloseable {
+        val registrar: HSMRegistrationClientImpl
+    }
+
+    override fun createInactiveImpl(): Impl = InactiveImpl()
+
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(publisherFactory, event)
+
     override fun putHSM(config: HSMConfig): CryptoPublishResult =
-        resources.instance.putHSM(config)
+        impl.registrar.putHSM(config)
 
     override fun assignHSM(tenantId: String, category: String, defaultSignatureScheme: String): CryptoPublishResult =
-        resources.instance.assignHSM(tenantId, category, defaultSignatureScheme)
+        impl.registrar.assignHSM(tenantId, category, defaultSignatureScheme)
 
     override fun assignSoftHSM(
         tenantId: String,
@@ -47,19 +57,24 @@ class HSMRegistrationClientComponent @Activate constructor(
         passphrase: String,
         defaultSignatureScheme: String
     ): CryptoPublishResult =
-        resources.instance.assignSoftHSM(tenantId, category, passphrase, defaultSignatureScheme)
+        impl.registrar.assignSoftHSM(tenantId, category, passphrase, defaultSignatureScheme)
 
-    override fun allocateResources(event: ConfigChangedEvent): Resources = Resources(publisherFactory, event)
+    class InactiveImpl : Impl {
+        override val registrar: HSMRegistrationClientImpl
+            get() = throw IllegalStateException("The component is in illegal state.")
 
-    class Resources(
+        override fun close() = Unit
+    }
+
+    class ActiveImpl(
         publisherFactory: PublisherFactory,
         event: ConfigChangedEvent
-    ) : AutoCloseable {
+    ) : Impl {
         private val publisher: Publisher = publisherFactory.createPublisher(
             PublisherConfig(CLIENT_ID),
             event.config.toMessagingConfig()
         )
-        internal val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(publisher)
+        override val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(publisher)
         override fun close() {
             publisher.close()
         }

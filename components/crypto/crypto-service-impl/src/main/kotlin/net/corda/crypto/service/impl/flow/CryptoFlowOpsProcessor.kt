@@ -8,16 +8,15 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.ops.flow.FilterMyKeysFlowQuery
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
-import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
+import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
-import java.util.UUID
 
 class CryptoFlowOpsProcessor(
     private val cryptoOpsClient: CryptoOpsProxyClient
@@ -159,7 +158,7 @@ class CryptoFlowOpsProcessor(
             } else {
                 client.freshKeyProxy(
                     tenantId = context.tenantId,
-                    externalId = UUID.fromString(request.externalId),
+                    externalId = request.externalId,
                     context = request.context
                 )
             }
