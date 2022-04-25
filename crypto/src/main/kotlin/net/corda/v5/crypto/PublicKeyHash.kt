@@ -3,7 +3,17 @@ package net.corda.v5.crypto
 import net.corda.v5.base.types.toHexString
 import java.security.PublicKey
 
-fun PublicKey.calculateHash() = PublicKeyHash.calculate(this)
+/**
+ * Computes the public key hash from a given [PublicKey].
+ */
+fun PublicKey.calculateHash() =
+    PublicKeyHash.calculate(this)
+
+/**
+ * Returns the id as the first 12 characters of an SHA-256 hash from a given [PublicKey].
+ */
+fun PublicKey.publicKeyId(): String =
+    PublicKeyHash.calculate(this).id
 
 /**
  * Container for a public key hash value.
@@ -53,7 +63,21 @@ class PublicKeyHash private constructor(
          */
         fun calculate(publicKey: PublicKey): PublicKeyHash =
             PublicKeyHash(value = publicKey.sha256Bytes().toHexString())
+
+        /**
+         * Computes the public key hash from a given encoded [PublicKey].
+         *
+         * @param publicKey The public key whose hash is to be generated.
+         * @return Returns a [PublicKeyHash] containing the SHA-256 hash.
+         */
+        fun calculate(publicKey: ByteArray): PublicKeyHash =
+            PublicKeyHash(value = publicKey.sha256Bytes().toHexString())
     }
+
+    /**
+     * Returns the id as the first 12 characters of the value which is SHA-256 hash of the public key.
+     */
+    val id: String by lazy(LazyThreadSafetyMode.PUBLICATION) { value.substring(0, 12) }
 
     override fun hashCode() = value.hashCode()
 

@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "SignRpcCommand",
-  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc.commands",
   "doc": "Request to sign using public key and default signature spec.",
   "fields": [
     {

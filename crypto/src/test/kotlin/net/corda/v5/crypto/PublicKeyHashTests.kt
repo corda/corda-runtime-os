@@ -4,7 +4,6 @@ import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.mocks.generateKeyPair
 import net.corda.v5.crypto.mocks.specs
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.MessageDigest
@@ -24,7 +23,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `hash is computed correctly for a given byte array`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash = PublicKeyHash.parse(bytes)
@@ -35,7 +33,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `hash is computed correctly for a given string`() {
         val str = "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"
         val hash = PublicKeyHash.parse(str)
@@ -44,16 +41,49 @@ class PublicKeyHashTests {
 
     @ParameterizedTest
     @MethodSource("publicKeys")
-    @Timeout(10)
-    fun `hash is computed correctly for a given public key`(publicKey: PublicKey) {
+    fun `hash is computed correctly for a given public key using top level function`(publicKey: PublicKey) {
         val hash = publicKey.calculateHash()
         val expected =
             MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
         assertEquals(expected, hash.value)
     }
 
+    @ParameterizedTest
+    @MethodSource("publicKeys")
+    fun `hash is computed correctly for a given public key`(publicKey: PublicKey) {
+        val hash = PublicKeyHash.calculate(publicKey)
+        val expected =
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        assertEquals(expected, hash.value)
+    }
+
+    @ParameterizedTest
+    @MethodSource("publicKeys")
+    fun `hash is computed correctly for a given encoded public key`(publicKey: PublicKey) {
+        val hash = PublicKeyHash.calculate(publicKey.encoded)
+        val expected =
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        assertEquals(expected, hash.value)
+    }
+
+    @ParameterizedTest
+    @MethodSource("publicKeys")
+    fun `id is computed correctly for a given public key`(publicKey: PublicKey) {
+        val hash = PublicKeyHash.calculate(publicKey)
+        val expected =
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        assertEquals(expected.substring(0, 12), hash.id)
+    }
+
+    @ParameterizedTest
+    @MethodSource("publicKeys")
+    fun `id is computed correctly for a given public key using top level function`(publicKey: PublicKey) {
+        val id = publicKey.publicKeyId()
+        val expected =
+            MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(publicKey.encoded).toHexString()
+        assertEquals(expected.substring(0, 12), id)
+    }
     @Test
-    @Timeout(10)
     fun `toString output is Hex representation of hash value`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash = PublicKeyHash.parse(bytes)
@@ -64,7 +94,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `throws IllegalArgumentException if input byte length is not 32`() {
         val bytes = "abc".toByteArray()
         assertFailsWith(IllegalArgumentException::class) {
@@ -73,7 +102,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `throws IllegalArgumentException if input string length is not 64`() {
         val str = "abc"
         assertFailsWith(IllegalArgumentException::class) {
@@ -82,7 +110,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `throws IllegalArgumentException if input is an invalid hex string`() {
         val str = "ZZ7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"
         assertFailsWith(IllegalArgumentException::class) {
@@ -91,7 +118,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `correctly returns false while comparing with null value`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash = PublicKeyHash.parse(bytes)
@@ -99,7 +125,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `correctly compares hash value with string input`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash = PublicKeyHash.parse(bytes)
@@ -108,7 +133,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `correctly compares hash value with byte array input`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash = PublicKeyHash.parse(bytes)
@@ -117,7 +141,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `correctly compares hash objects based on hash value`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash1 = PublicKeyHash.parse(bytes)
@@ -128,7 +151,6 @@ class PublicKeyHashTests {
     }
 
     @Test
-    @Timeout(10)
     fun `correctly returns false while comparing hash object with invalid input type`() {
         val bytes = "abc".toByteArray().sha256Bytes()
         val hash = PublicKeyHash.parse(bytes)

@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "FilterMyKeysRpcQuery",
-  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "name": "FilterMyKeysFlowQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.flow.queries",
   "doc": "Request to filter out keys from the provided collection which don't belong to the member",
   "fields": [
     {

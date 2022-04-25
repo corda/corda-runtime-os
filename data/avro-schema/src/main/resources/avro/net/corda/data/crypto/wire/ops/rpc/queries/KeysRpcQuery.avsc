@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "KeysRpcQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc.queries",
+  "doc": "Request to lookup for keys satisfying the filter condition. All filter values are combined as AND.",
+  "fields": [
+    {
+      "name": "skip",
+      "type": "int",
+      "doc": "The response paging information, number of records to skip."
+    },
+    {
+      "name": "take",
+      "type": "int",
+      "doc": "The response paging information, number of records to return, the actual number may be less than requested."
+    },
+    {
+      "name": "orderBy",
+      "type": {
+        "type": "enum",
+        "name": "CryptoKeyOrderBy",
+        "symbols": [
+          "NONE",
+          "CREATED", "CATEGORY", "SCHEME_CODE_NAME", "ALIAS", "MASTER_KEY_ALIAS", "EXTERNAL_ID", "ID",
+          "CREATED_DESC", "CATEGORY_DESC", "SCHEME_CODE_NAME_DESC", "ALIAS_DESC", "MASTER_KEY_ALIAS_DESC", "EXTERNAL_ID_DESC", "ID_DESC"
+        ]
+      },
+      "doc": "The order by."
+    },
+    {
+      "name": "filter",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "Filter key-values such as category, schemeCodeName, alias, masterKeyAlias, createdAfter, createdBefore."
+    }
+  ]
+}

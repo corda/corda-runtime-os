@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "SignFlowCommand",
-  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "namespace": "net.corda.data.crypto.wire.ops.flow.commands",
   "doc": "Request to sign using public key and default signature spec.",
   "fields": [
     {

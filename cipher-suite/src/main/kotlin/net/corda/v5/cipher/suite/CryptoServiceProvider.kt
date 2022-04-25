@@ -19,8 +19,8 @@ interface CryptoServiceProvider<T : Any> {
 
     /**
      * Returns an instance of the [CryptoService].
-     * @param context crypto service context and configuration
+     * @param config crypto service configuration
      * @throws [CryptoServiceException] for general cryptographic exceptions.
      */
-    fun getInstance(context: CryptoServiceContext<T>): CryptoService
+    fun getInstance(config: T): CryptoService
 }

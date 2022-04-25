@@ -12,10 +12,10 @@
     {
       "name": "request",
       "type": [
-        "SignFlowCommand",
-        "SignWithSpecFlowCommand",
-        "GenerateFreshKeyFlowCommand",
-        "FilterMyKeysFlowQuery"
+        "net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand",
+        "net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand",
+        "net.corda.data.crypto.wire.ops.flow.commands.SignWithSpecFlowCommand",
+        "net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery"
       ],
       "doc": "Request's payload, depends on the requested operation."
     }

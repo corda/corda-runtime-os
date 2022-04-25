@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "CryptoSigningKeys",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Defines a collection of signing key information",
+  "fields": [
+    {
+      "name": "keys",
+      "type": {
+        "type": "array",
+        "items": "CryptoSigningKey"
+      },
+      "doc": "Collection of signing keys information"
+    }
+  ]
+}

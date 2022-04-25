@@ -64,20 +64,12 @@
       "doc": "For how long to wait for a response in milliseconds."
     },
     {
-      "name": "supportedSignatureSchemes",
+      "name": "supportedSchemes",
       "type": {
         "type": "array",
         "items": "string"
       },
       "doc": "List of supported signature scheme codes, must be a subset of schemes defined in the cipher suite."
-    },
-    {
-      "name": "supportedWrappedSignatureSchemes",
-      "type": {
-        "type": "array",
-        "items": "string"
-      },
-      "doc": "List of supported signature scheme codes for wrapped keys, must be a subset of schemes defined in the cipher suite."
     }
   ]
 }

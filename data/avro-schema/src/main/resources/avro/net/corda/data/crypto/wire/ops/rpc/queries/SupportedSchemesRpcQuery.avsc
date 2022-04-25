@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "SupportedSchemesRpcQuery",
-  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc.queries",
   "doc": "Request which signature schemes are supported by the service instance.",
   "fields": [
     {

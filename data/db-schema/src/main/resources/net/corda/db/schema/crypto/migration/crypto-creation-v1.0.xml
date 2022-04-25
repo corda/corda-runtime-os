@@ -1,0 +1,27 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet author="R3.Corda" id="crypto-creation-v1.0">
+        <createTable tableName="crypto_wrapping_key">
+            <column name="alias" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="encoding_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="algorithm_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key_material" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey  columnNames="alias"
+                        constraintName="crypto_wrapping_key_pk"
+                        tableName="crypto_wrapping_key"/>
+    </changeSet>
+</databaseChangeLog>

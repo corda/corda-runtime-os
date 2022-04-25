@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "GenerateFreshKeyRpcCommand",
-  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "name": "GenerateFreshKeyFlowCommand",
+  "namespace": "net.corda.data.crypto.wire.ops.flow.commands",
   "doc": "Request to generate new wrapped key (fresh key) pair.",
   "fields": [
     {

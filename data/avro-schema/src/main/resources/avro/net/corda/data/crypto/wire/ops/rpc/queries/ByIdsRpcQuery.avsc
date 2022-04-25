@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "ByIdsRpcQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc.queries",
+  "doc": "Request to lookup for keys by their ids, the maximum number of items is 20.",
+  "fields": [
+    {
+      "name": "keys",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of key ids."
+    }
+  ]
+}

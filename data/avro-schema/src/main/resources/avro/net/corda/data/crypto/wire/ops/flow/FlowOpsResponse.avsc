@@ -13,7 +13,7 @@
       "name": "response",
       "type": [
         "net.corda.data.crypto.wire.CryptoPublicKey",
-        "net.corda.data.crypto.wire.CryptoPublicKeys",
+        "net.corda.data.crypto.wire.CryptoSigningKeys",
         "net.corda.data.crypto.wire.CryptoSignatureWithKey"
       ],
       "doc": "Response's payload, depends on the requested operation"

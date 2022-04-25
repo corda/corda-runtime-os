@@ -2,21 +2,61 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
-
     <changeSet author="R3.Corda" id="vnode-crypto-creation-v1.0">
-
-        <createTable tableName="vnode_key">
-            <column name="holding_identity_id" type="VARCHAR(12)">
+        <createTable tableName="crypto_signing_key">
+            <column name="tenant_id" type="VARCHAR(12)">
                 <constraints nullable="false"/>
             </column>
-        </createTable>
-        <addPrimaryKey columnNames="holding_identity_id" constraintName="vnode_key_pk" tableName="vnode_key"/>
-
-        <createTable tableName="vnode_certificate">
-            <column name="holding_identity_id" type="VARCHAR(12)">
+            <column name="key_id" type="CHAR(12)">
                 <constraints nullable="false"/>
             </column>
+            <column name="created" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scheme_code_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_key" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key_material" type="VARBINARY(1048576)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="encoding_version" type="INT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="master_key_alias" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="alias" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="hsm_alias" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="external_id" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
         </createTable>
-        <addPrimaryKey columnNames="holding_identity_id" constraintName="vnode_certificate_pk" tableName="vnode_certificate"/>
+        <addPrimaryKey constraintName="crypto_signing_key_pk"
+                       tableName="crypto_signing_key"
+                       columnNames="tenant_id, key_id"/>
+        <createIndex indexName="crypto_signing_key_tenant_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex indexName="crypto_signing_key_tenant_category_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+            <column name="category"/>
+        </createIndex>
+        <createIndex indexName="crypto_signing_key_tenant_alias_idx"
+                     tableName="crypto_signing_key">
+            <column name="tenant_id"/>
+            <column name="alias"/>
+        </createIndex>
     </changeSet>
 </databaseChangeLog>
