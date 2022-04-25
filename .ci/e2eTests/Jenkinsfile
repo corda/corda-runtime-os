@@ -57,11 +57,11 @@ pipeline {
         }
         stage ('Create namespace') {
             steps {
-                sh '''
+                sh """
                     kubectl create ns $NAMESPACE
                     kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
-                    kubectl label ns $NAMESPACE branch="${env.BRANCH_NAME}" --overwrite=true
-                '''
+                    kubectl label ns $NAMESPACE branch=${env.BRANCH_NAME} --overwrite=true
+                """
             }
         }
         stage('Install prereqs') {
