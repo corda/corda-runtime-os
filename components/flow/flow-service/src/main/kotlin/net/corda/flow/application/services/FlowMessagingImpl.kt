@@ -3,7 +3,6 @@ package net.corda.flow.application.services
 import net.corda.data.flow.FlowStackItem
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -24,7 +23,7 @@ class FlowMessagingImpl @Activate constructor(
     private val flowFiberService: FlowFiberService,
     @Reference(service = FlowSessionFactory::class)
     private val flowSessionFactory: FlowSessionFactory
-) : FlowMessaging, SingletonSerializeAsToken, CordaFlowInjectable {
+) : FlowMessaging, SingletonSerializeAsToken {
 
     @Suspendable
     override fun close(sessions: Set<FlowSession>) {
