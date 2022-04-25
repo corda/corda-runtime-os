@@ -40,6 +40,7 @@ class SigningKeyCacheImpl(
     override fun close() {
         cache.values.forEach {
             it.invalidateAll()
+            it.cleanUp()
         }
         cache.clear()
     }

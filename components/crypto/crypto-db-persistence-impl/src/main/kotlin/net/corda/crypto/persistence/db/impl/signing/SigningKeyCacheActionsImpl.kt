@@ -25,6 +25,7 @@ import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 import java.time.Instant
 import javax.persistence.EntityManager
+import javax.persistence.EntityTransaction
 import javax.persistence.PersistenceException
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
@@ -88,13 +89,14 @@ class SigningKeyCacheActionsImpl(
             entityManager.persist(entity)
             trx.commit()
         } catch (e: PersistenceException) {
-            trx.rollback()
+            safelyRollback(trx)
             throw e
         } catch (e: Throwable) {
-            trx.rollback()
+            safelyRollback(trx)
             throw PersistenceException("Failed to save", e)
         }
     }
+
 
     override fun find(alias: String): SigningCachedKey? {
         val result = findByAliases(listOf(alias))
@@ -155,6 +157,14 @@ class SigningKeyCacheActionsImpl(
 
     override fun close() {
         entityManager.close()
+    }
+
+    private fun safelyRollback(trx: EntityTransaction) {
+        try {
+            trx.rollback()
+        } catch (e: Throwable) {
+            // intentional
+        }
     }
 
     private fun findByIds(ids: Collection<String>): Collection<SigningKeyEntity> {
