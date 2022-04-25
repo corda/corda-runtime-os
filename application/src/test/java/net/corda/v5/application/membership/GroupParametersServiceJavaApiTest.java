@@ -24,16 +24,6 @@ public class GroupParametersServiceJavaApiTest {
     }
 
     @Test
-    public void getDefaultHash() {
-        when(groupParametersService.getDefaultHash()).thenReturn(secureHash);
-
-        SecureHash test = groupParametersService.getDefaultHash();
-
-        Assertions.assertThat(test).isNotNull();
-        Assertions.assertThat(test).isEqualTo(secureHash);
-    }
-
-    @Test
     public void lookup() {
         GroupParameters networkParameters = mock(GroupParameters.class);
         when(groupParametersService.lookup(secureHash)).thenReturn(networkParameters);

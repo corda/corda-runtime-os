@@ -3,6 +3,7 @@ package net.corda.v5.application.membership
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
@@ -18,15 +19,19 @@ import java.security.PublicKey
 interface MemberLookup : CordaFlowInjectable, CordaServiceInjectable {
 
     /** Returns our own [MemberInfo] **/
+    @Suspendable
     fun myInfo(): MemberInfo
 
     /** Returns the [MemberInfo]  inside Membership Group with the given [name] name, or null if no such identity is found.**/
+    @Suspendable
     fun lookup(name: MemberX500Name): MemberInfo?
 
     /** Returns the [MemberInfo] inside Membership Group with the given [key] public key, or null if no such identity is found.**/
+    @Suspendable
     fun lookup(key: PublicKey): MemberInfo?
 
     /** Returns all [MemberInfo]s in the Group the node is currently aware of (including ourselves). **/
+    @Suspendable
     fun lookup(): List<MemberInfo>
 
 }

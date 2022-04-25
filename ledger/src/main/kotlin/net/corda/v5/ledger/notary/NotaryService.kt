@@ -1,6 +1,6 @@
 package net.corda.v5.ledger.notary
 
-import net.corda.v5.application.crypto.KeyManagementService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.membership.MemberLookup
@@ -15,7 +15,7 @@ abstract class NotaryService : SingletonSerializeAsToken {
     @CordaInject
     lateinit var memberLookup: MemberLookup
     @CordaInject
-    lateinit var keyManagementService: KeyManagementService
+    lateinit var signingService: SigningService
     @CordaInject
     lateinit var transactionDigestAlgorithmNamesFactory: TransactionDigestAlgorithmNamesFactory
 

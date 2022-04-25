@@ -100,6 +100,7 @@ interface PersistenceService : CordaFlowInjectable, CordaServiceInjectable {
      * @return Cursor configured to poll data for this named query.
      * @throws CordaPersistenceException if an error happens during query operation
      */
+    @Suspendable
     fun <R> query(
         queryName: String,
         namedParameters: Map<String, Any>
@@ -115,6 +116,7 @@ interface PersistenceService : CordaFlowInjectable, CordaServiceInjectable {
      * @return Cursor configured to poll data for this named query.
      * @throws CordaPersistenceException if an error happens during query operation
      */
+    @Suspendable
     fun <R> query(
         queryName: String,
         namedParameters: Map<String, Any>,
@@ -131,6 +133,7 @@ interface PersistenceService : CordaFlowInjectable, CordaServiceInjectable {
      * @return Cursor configured to poll data for this named query.
      * @throws CordaPersistenceException if an error happens during query operation
      */
+    @Suspendable
     fun <R> query(
         queryName: String,
         namedParameters: Map<String, Any>,
@@ -148,6 +151,7 @@ interface PersistenceService : CordaFlowInjectable, CordaServiceInjectable {
      * @return Cursor configured to poll data for this named query.
      * @throws CordaPersistenceException if an error happens during query operation
      */
+    @Suspendable
     fun <R> query(
         queryName: String,
         namedParameters: Map<String, Any>,
@@ -163,6 +167,7 @@ interface PersistenceService : CordaFlowInjectable, CordaServiceInjectable {
      * @return Cursor configured to poll data for this named query.
      * @throws CordaPersistenceException if an error happens during query operation
      */
+    @Suspendable
     fun <R> query(persistenceQueryRequest: PersistenceQueryRequest): Cursor<R>
 }
 
