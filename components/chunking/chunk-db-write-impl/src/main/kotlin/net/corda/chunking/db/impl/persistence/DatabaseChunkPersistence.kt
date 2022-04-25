@@ -93,7 +93,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 .setParameter("requestId", requestId)
                 .resultStream
 
-            val messageDigest = Checksum.getMessageDigest()
+            val messageDigest = Checksum.newMessageDigest()
 
             streamingResults.forEach { e ->
                 if (e.data == null) { // zero chunk

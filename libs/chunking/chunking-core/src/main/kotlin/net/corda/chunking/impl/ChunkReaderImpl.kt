@@ -71,6 +71,9 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             }
 
             chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum)
+
+            // Since all the chunks been received and consumer notified, it is safe to get rid of entry in a map.
+            chunksSoFar.remove(chunk.requestId)
         }
     }
 

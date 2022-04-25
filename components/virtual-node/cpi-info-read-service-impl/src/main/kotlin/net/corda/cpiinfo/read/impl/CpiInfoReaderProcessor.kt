@@ -10,7 +10,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.packaging.converters.toCorda
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import org.slf4j.Logger
 import java.util.Collections
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -25,7 +24,7 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
     CompactedProcessor<CPIIdentifier, CPIMetadata> {
 
     companion object {
-        val log: Logger = contextLogger()
+        private val log = contextLogger()
     }
 
     /**
