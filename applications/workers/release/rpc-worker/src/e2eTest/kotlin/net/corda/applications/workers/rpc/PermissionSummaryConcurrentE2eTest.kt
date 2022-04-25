@@ -9,6 +9,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 /**
@@ -24,6 +25,7 @@ class PermissionSummaryConcurrentE2eTest {
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `permission summary eventually consistent`() {
         val newUser1: String = testToolkit.uniqueName
         val newUser2: String = testToolkit.uniqueName

@@ -14,7 +14,7 @@ class DbAccessProviderH2Test: DbAccessProviderTestBase() {
     lateinit var tempFolder: Path
     private lateinit var server: Server
 
-    private val h2Port = 9092
+    private val h2Port = 9090
     private val jdbcUrl = "jdbc:h2:tcp://localhost:$h2Port/test"
     private val username = "sa"
     private val password = ""

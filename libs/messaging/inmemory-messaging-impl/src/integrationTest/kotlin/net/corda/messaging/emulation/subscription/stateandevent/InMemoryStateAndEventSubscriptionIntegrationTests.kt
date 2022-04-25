@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -7,6 +9,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -38,6 +41,8 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
     private data class Key(val type: Int)
     private data class State(val number: Int)
 
+    private val  config = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+
     @Test
     fun `states and events going to the same partition`() {
 
@@ -53,7 +58,6 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             val subscriptionConfig = SubscriptionConfig(
                 eventTopic = "event.topic.state.and.events.one",
                 groupName = "group",
-                instanceId = it
             )
             val processor = object : StateAndEventProcessor<Key, State, Event> {
                 override fun onNext(state: State?, event: Record<Key, Event>): StateAndEventProcessor.Response<State> {
@@ -81,12 +85,16 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
                 override val stateValueClass = State::class.java
                 override val eventValueClass = Event::class.java
             }
-            subscriptionFactory.createStateAndEventSubscription(subscriptionConfig, processor = processor)
+            subscriptionFactory.createStateAndEventSubscription(
+                subscriptionConfig = subscriptionConfig,
+                processor = processor,
+                messagingConfig = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(it))
+            )
         }.onEach {
             it.start()
         }
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(records)
         }
         countDown.await(1, TimeUnit.MINUTES)
@@ -134,7 +142,11 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val stateValueClass = State::class.java
             override val eventValueClass = Event::class.java
         }
-        val subscription = subscriptionFactory.createStateAndEventSubscription(subscriptionConfig, processor = processor)
+        val subscription = subscriptionFactory.createStateAndEventSubscription(
+            subscriptionConfig = subscriptionConfig,
+            processor = processor,
+            messagingConfig = config
+        )
         subscription.start()
 
         val anotherProcessor = object : StateAndEventProcessor<String, String, String> {
@@ -148,11 +160,15 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val stateValueClass = String::class.java
             override val eventValueClass = String::class.java
         }
-        val anotherSubscription = subscriptionFactory.createStateAndEventSubscription(anotherSubscriptionConfig, processor = anotherProcessor)
+        val anotherSubscription = subscriptionFactory.createStateAndEventSubscription(
+            subscriptionConfig = anotherSubscriptionConfig,
+            processor = anotherProcessor,
+            messagingConfig = config
+        )
         subscription.start()
         anotherSubscription.start()
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(records)
         }
         countDown.await(1, TimeUnit.MINUTES)
@@ -213,14 +229,15 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val eventValueClass = Event::class.java
         }
         val subscription = subscriptionFactory.createStateAndEventSubscription(
-            subscriptionConfig,
+            subscriptionConfig = subscriptionConfig,
+            messagingConfig = config,
             processor = processor,
             stateAndEventListener = listener
         )
 
         subscription.start()
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(
                 records
             )
@@ -246,7 +263,7 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
 
         val publisherConfig = PublisherConfig("client")
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(
                 listOf(
                     Record("${subscriptionConfig.eventTopic}.state", Key(5), State(10))
@@ -292,13 +309,15 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val eventValueClass = Event::class.java
         }
         val subscription = subscriptionFactory.createStateAndEventSubscription(
-            subscriptionConfig, processor = processor,
+            subscriptionConfig = subscriptionConfig,
+            processor = processor,
+            messagingConfig = config,
             stateAndEventListener = listener
         )
 
         subscription.start()
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(
                 records
             )

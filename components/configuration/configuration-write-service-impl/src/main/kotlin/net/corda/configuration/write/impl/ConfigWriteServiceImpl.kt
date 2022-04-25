@@ -38,8 +38,8 @@ internal class ConfigWriteServiceImpl @Activate constructor(
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 
-    override fun startProcessing(config: SmartConfig, instanceId: Int, entityManagerFactory: EntityManagerFactory) {
-        val startProcessingEvent = StartProcessingEvent(config, instanceId)
+    override fun startProcessing(config: SmartConfig, entityManagerFactory: EntityManagerFactory) {
+        val startProcessingEvent = StartProcessingEvent(config)
         coordinator.postEvent(startProcessingEvent)
     }
 

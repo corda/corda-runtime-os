@@ -5,7 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -115,7 +114,7 @@ class FlowMapperService @Activate constructor(
             mutableMapOf()
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC, messagingConfig.getInt(INSTANCE_ID)),
+            SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
             messagingConfig,
             FlowMapperListener(scheduledTaskState!!)

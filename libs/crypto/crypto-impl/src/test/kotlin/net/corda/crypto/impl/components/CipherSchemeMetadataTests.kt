@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -83,13 +82,11 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should use SecureRandom provided by PlatformSecureRandomService`() {
         assertEquals(CordaSecureRandomService.algorithm, schemeMetadata.secureRandom.algorithm)
     }
 
     @Test
-    @Timeout(60)
     fun `SecureRandom should generate new random data each time it's used`() {
         val data1 = ByteArray(37)
         val data2 = ByteArray(37)
@@ -105,7 +102,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should not contain banned digest algorithms`() {
         schemeMetadata.digests.forEach {
             assertFalse(
@@ -116,7 +112,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should contain at least minimal set of digest algorithms`() {
         assertTrue(schemeMetadata.digests.size > 1)
         assertTrue(schemeMetadata.digests.any { it.algorithmName == "SHA-256" })
@@ -128,7 +123,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should contain predefined list of signature schemes`() {
         assertEquals(8, schemeMetadata.schemes.size)
         assertTrue(schemeMetadata.schemes.any { it.codeName == RSA_CODE_NAME })
@@ -142,7 +136,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should contain predefined list of providers`() {
         assertEquals(3, schemeMetadata.providers.size)
         assertTrue(schemeMetadata.providers.containsKey("Corda"))
@@ -151,7 +144,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `findScheme should throw IllegalArgumentException if the algorithm is not supported`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.findSignatureScheme(AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null))
@@ -159,7 +151,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `findScheme should throw IllegalArgumentException if the scheme code name is not supported`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.findSignatureScheme(unknownScheme.codeName)
@@ -167,7 +158,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `findScheme should throw IllegalArgumentException if the public key is not supported`() {
         val publicKey = UnsupportedPublicKey()
         assertThrows<IllegalArgumentException> {
@@ -177,7 +167,6 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    @Timeout(60)
     fun `Should find schemes for all supported scheme code names`(
         signatureScheme: SignatureScheme
     ) {
@@ -187,7 +176,6 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    @Timeout(60)
     fun `Should find schemes for all supported signing algorithms`(
         signatureScheme: SignatureScheme
     ) {
@@ -198,7 +186,6 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    @Timeout(60)
     fun `Should find schemes for all supported public keys`(
         signatureScheme: SignatureScheme
     ) {
@@ -222,7 +209,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `findKeyFactory should throw IllegalArgumentException if the scheme not supported`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.findKeyFactory(unknownScheme)
@@ -231,7 +217,6 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("schemes")
-    @Timeout(60)
     fun `Should find key factories for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -241,7 +226,6 @@ class CipherSchemeMetadataTests {
 
     @ParameterizedTest
     @MethodSource("supportedSignatureParamSpecs")
-    @Timeout(60)
     fun `Should round trip serialize and deserialize supported signature param specs`(params: AlgorithmParameterSpec) {
         val data = schemeMetadata.serialize(params)
         val result = schemeMetadata.deserialize(data)
@@ -249,7 +233,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should throw IllegalArgumentException when serializing unsupported signature param spec`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.serialize(mock())
@@ -257,7 +240,6 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should throw IllegalArgumentException when deserializing unsupported signature param spec`() {
         assertThrows<IllegalArgumentException> {
             schemeMetadata.deserialize(

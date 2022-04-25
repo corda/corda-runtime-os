@@ -79,7 +79,7 @@ class PermissionValidationService @Activate constructor(
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
                 permissionValidationCacheService.stop()
-                _permissionValidator?.stop()
+                _permissionValidator?.close()
                 _permissionValidator = null
                 registration?.close()
                 registration = null
@@ -91,6 +91,7 @@ class PermissionValidationService @Activate constructor(
         checkNotNull(permissionValidationCacheService.permissionValidationCache) {
             "Permission Validation Service received status UP but permission validation cache was null."
         }
+        _permissionValidator?.close()
         _permissionValidator = permissionValidatorFactory.create(permissionValidationCacheService.permissionValidationCache!!)
             .also { it.start() }
     }

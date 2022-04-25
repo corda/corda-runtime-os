@@ -55,7 +55,6 @@ class TrustStoresPublisherTest {
     }
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
-    private val instanceId = 1
     private val publisherFactory = mock<PublisherFactory>()
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
 
@@ -72,7 +71,6 @@ class TrustStoresPublisherTest {
         publisherFactory,
         lifecycleCoordinatorFactory,
         configuration,
-        instanceId,
     )
 
     @AfterEach

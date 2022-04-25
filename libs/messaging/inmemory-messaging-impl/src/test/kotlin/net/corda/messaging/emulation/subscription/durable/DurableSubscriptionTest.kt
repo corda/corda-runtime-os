@@ -41,7 +41,7 @@ class DurableSubscriptionTest {
         on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
     }
     private val subscription =
-        DurableSubscription(subscriptionConfig, processor, null, topicService, lifecycleCoordinatorFactory)
+        DurableSubscription(subscriptionConfig, processor, null, topicService, lifecycleCoordinatorFactory, 1)
 
     @Test
     fun `first start will start a consumption`() {

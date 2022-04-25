@@ -1,7 +1,6 @@
 package net.corda.crypto.impl.components
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -31,7 +30,6 @@ class PSSParameterSpecSerializerTests {
 
     @ParameterizedTest
     @MethodSource("params")
-    @Timeout(60)
     fun `Should round trip serialize and deserialize`(testParams: TestParams) {
         val params = PSSParameterSpec(
             testParams.digestAlgorithm,
@@ -51,7 +49,6 @@ class PSSParameterSpecSerializerTests {
     }
 
     @Test
-    @Timeout(60)
     fun `Should throw IllegalArgumentException to serialize params with non MGF1ParameterSpec`() {
         val params = PSSParameterSpec(
             "SHA-256",

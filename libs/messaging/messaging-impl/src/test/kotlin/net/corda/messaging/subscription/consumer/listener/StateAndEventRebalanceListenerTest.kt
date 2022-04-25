@@ -1,12 +1,10 @@
 package net.corda.messaging.subscription.consumer.listener
 
-import com.typesafe.config.Config
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.createStandardTestConfig
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
-import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.constants.SubscriptionType
+import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.factory.MapFactory
@@ -22,8 +20,7 @@ class StateAndEventRebalanceListenerTest {
 
     private companion object {
         const val TOPIC = "topic"
-        private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
-        private val stateAndEventConfig = StateAndEventConfig.getStateAndEventConfig(config)
+        private val config = createResolvedSubscriptionConfig(SubscriptionType.STATE_AND_EVENT)
     }
 
     @Test
@@ -37,7 +34,7 @@ class StateAndEventRebalanceListenerTest {
             )
         val rebalanceListener =
             StateAndEventRebalanceListener(
-                stateAndEventConfig,
+                config,
                 mapFactory,
                 stateAndEventConsumer,
                 partitionState,
@@ -63,7 +60,7 @@ class StateAndEventRebalanceListenerTest {
             )
         val rebalanceListener =
             StateAndEventRebalanceListener(
-                stateAndEventConfig,
+                config,
                 mapFactory,
                 stateAndEventConsumer,
                 partitionState,

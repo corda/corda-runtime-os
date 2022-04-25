@@ -1,14 +1,12 @@
 package net.corda.messaging.subscription.consumer.wrapper
 
-import com.typesafe.config.Config
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.createStandardTestConfig
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
-import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.constants.SubscriptionType
+import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import org.assertj.core.api.Assertions.assertThat
@@ -27,8 +25,7 @@ class StateAndEventConsumerImplTest {
 
     private companion object {
         const val TOPIC = "topic"
-        private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
-        private val stateAndEventConfig = StateAndEventConfig.getStateAndEventConfig(config)
+        private val config = createResolvedSubscriptionConfig(SubscriptionType.STATE_AND_EVENT)
     }
 
     @Test
@@ -42,7 +39,7 @@ class StateAndEventConsumerImplTest {
             )
         val consumer =
             StateAndEventConsumerImpl(
-                stateAndEventConfig,
+                config,
                 eventConsumer,
                 stateConsumer,
                 partitionState,
@@ -50,8 +47,8 @@ class StateAndEventConsumerImplTest {
             )
         consumer.close()
 
-        verify(eventConsumer, times(1)).close(any())
-        verify(stateConsumer, times(1)).close(any())
+        verify(eventConsumer, times(1)).close()
+        verify(stateConsumer, times(1)).close()
     }
 
     @Test
@@ -70,7 +67,7 @@ class StateAndEventConsumerImplTest {
         )
         val consumer =
             StateAndEventConsumerImpl(
-                stateAndEventConfig,
+                config,
                 eventConsumer,
                 stateConsumer,
                 partitionState,
@@ -92,7 +89,7 @@ class StateAndEventConsumerImplTest {
         )
         val consumer =
             StateAndEventConsumerImpl(
-                stateAndEventConfig,
+                config,
                 eventConsumer,
                 stateConsumer,
                 partitionState,
@@ -121,7 +118,7 @@ class StateAndEventConsumerImplTest {
         )
         val consumer =
             StateAndEventConsumerImpl(
-                stateAndEventConfig,
+                config,
                 eventConsumer,
                 stateConsumer,
                 partitionState,
@@ -145,7 +142,7 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer = StateAndEventConsumerImpl(
-            stateAndEventConfig,
+            config,
             eventConsumer,
             stateConsumer,
             partitionState,
@@ -169,7 +166,7 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer = StateAndEventConsumerImpl(
-            stateAndEventConfig,
+            config,
             eventConsumer,
             stateConsumer,
             partitionState,
@@ -195,7 +192,7 @@ class StateAndEventConsumerImplTest {
     fun testResetPollPosition() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
         val consumer = StateAndEventConsumerImpl(
-            stateAndEventConfig, eventConsumer, stateConsumer, StateAndEventPartitionState
+            config, eventConsumer, stateConsumer, StateAndEventPartitionState
                 (mutableMapOf(), mutableMapOf()), stateAndEventListener
         )
 

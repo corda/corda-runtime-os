@@ -1,15 +1,12 @@
 package net.corda.messagebus.db.consumer
 
-import com.typesafe.config.Config
 import net.corda.data.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
-import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.db.configuration.ResolvedConsumerConfig
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
@@ -22,7 +19,7 @@ import java.time.Duration
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
-    private val consumerConfig: Config,
+    private val consumerConfig: ResolvedConsumerConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup,
     private val keyDeserializer: CordaAvroDeserializer<K>,
@@ -32,22 +29,14 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     enum class SubscriptionType { NONE, ASSIGNED, SUBSCRIBED }
 
-    companion object {
-        const val MAX_POLL_RECORDS = "max.poll.records"
-        const val MAX_POLL_INTERVAL = "max.poll.interval.ms"
-        const val AUTO_OFFSET_RESET = "auto.offset.reset"
-    }
 
     // Also used by the consumer group
-    internal val clientId = consumerConfig.getString(CLIENT_ID)
-
+    internal val clientId = consumerConfig.clientId
     private val log: Logger = LoggerFactory.getLogger(clientId)
-    private val groupId = consumerConfig.getStringOrNull(ConfigProperties.GROUP_ID)
-        ?: throw CordaMessageAPIFatalException("Group Id must be specified for consumers")
-    private val maxPollRecords: Int = consumerConfig.getInt(MAX_POLL_RECORDS)
-    private val maxPollInterval: Long = consumerConfig.getLong(MAX_POLL_INTERVAL)
-    private val autoResetStrategy =
-        CordaOffsetResetStrategy.valueOf(consumerConfig.getString(AUTO_OFFSET_RESET).toUpperCase())
+
+    private val groupId = consumerConfig.group
+    private val maxPollRecords = consumerConfig.maxPollSize
+    private val autoResetStrategy = consumerConfig.offsetResetStrategy
     private var subscriptionType = SubscriptionType.NONE
 
     private var topicPartitions = emptySet<CordaTopicPartition>()
@@ -128,10 +117,6 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         return pausedPartitions
     }
 
-    override fun poll(): List<CordaConsumerRecord<K, V>> {
-        return poll(Duration.ofMillis(maxPollInterval))
-    }
-
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
         val topicPartition = getNextTopicPartition() ?: return emptyList()
         val fromOffset = position(topicPartition)
@@ -183,15 +168,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     }
 
     @Synchronized
-    override fun close(timeout: Duration) {
-        log.info("Closing consumer ${consumerConfig.getString(CLIENT_ID)}")
+    override fun close() {
+        log.info("Closing consumer $clientId")
         consumerGroup.unsubscribe(this)
         updateTopicPartitions() // Will trigger the callback for removed topic partitions
-    }
-
-    @Synchronized
-    override fun close() {
-        close(Duration.ZERO)
     }
 
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {

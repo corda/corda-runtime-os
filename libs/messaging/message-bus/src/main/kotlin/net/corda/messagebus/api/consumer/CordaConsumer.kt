@@ -124,11 +124,6 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
     fun paused(): Set<CordaTopicPartition>
 
     /**
-     * Poll records from the consumer and sort them by timestamp
-     */
-    fun poll(): List<CordaConsumerRecord<K, V>>
-
-    /**
      * Poll records from the consumer and sort them by timestamp with a [timeout]
      *
      * @param timeout The maximum time to block (must not be greater than {@link Long#MAX_VALUE} milliseconds)
@@ -159,17 +154,6 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @return The list of [CordaTopicPartition]s
      */
     fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition>
-
-    /**
-     * Tries to close the consumer cleanly within the specified timeout. This method waits up to
-     * [timeout] for the consumer to complete pending commits and leave the group.
-     * If the consumer is unable to complete offset commits and gracefully leave the group
-     * before the timeout expires, the consumer is force closed.
-     *
-     * @param timeout The maximum time to wait for consumer to close gracefully. The value must be
-     *                non-negative. Specifying a timeout of zero means do not wait for pending requests to complete.
-     */
-    fun close(timeout: Duration)
 
     /**
      * Sets the default [CordaConsumerRebalanceListener] for this [CordaConsumer], if one is desired.

@@ -10,7 +10,6 @@ import net.corda.flow.rpcops.v1.response.HTTPStartFlowResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -54,7 +53,7 @@ class FlowRPCOpsImpl @Activate constructor(
 
     override fun initialise(config: SmartConfig) {
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps", config.getInt(INSTANCE_ID)), config)
+        publisher = publisherFactory.createPublisher(PublisherConfig("FlowRPCOps"), config)
     }
 
     @Suppress("SpreadOperator")

@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -8,6 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -65,13 +68,14 @@ class EventLogSubscriptionIntegrationTest {
         subscriptionFactory.createEventLogSubscription(
             subscriptionConfig = config,
             processor = processor,
-            partitionAssignmentListener = partitionAssignmentListener
+            partitionAssignmentListener = partitionAssignmentListener,
+            messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         )
     }
 
     private fun publish(vararg records: Record<Any, Any>) {
         val publisherConfig = PublisherConfig(clientId)
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, SmartConfigImpl.empty()).use {
             it.publish(records.toList())
         }
     }
@@ -191,7 +195,8 @@ class EventLogSubscriptionIntegrationTest {
             subscriptionFactory.createEventLogSubscription(
                 subscriptionConfig = config,
                 processor = processor,
-                partitionAssignmentListener = null
+                partitionAssignmentListener = null,
+                messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
             )
         }.onEach {
             it.start()

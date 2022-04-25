@@ -6,7 +6,6 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -55,7 +54,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
         flowStatusSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(
-                "Flow Status Subscription", FLOW_STATUS_TOPIC, config.getInt(INSTANCE_ID)
+                "Flow Status Subscription", FLOW_STATUS_TOPIC
             ),
             this,
             config

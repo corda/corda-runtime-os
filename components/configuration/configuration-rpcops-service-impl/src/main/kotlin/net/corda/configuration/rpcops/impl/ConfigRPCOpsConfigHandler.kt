@@ -7,9 +7,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 
 /** Processes configuration changes for `ConfigRPCOpsService`. */
 internal class ConfigRPCOpsConfigHandler(
@@ -35,13 +36,13 @@ internal class ConfigRPCOpsConfigHandler(
      * If [RPC_ENDPOINT_TIMEOUT_MILLIS] is in [configSnapshot], updates [configRPCOps]'s request
      * timeout.
      *
-     * If [BOOTSTRAP_SERVERS] is in [configSnapshot], creates and starts [configRPCOps]'s RPC sender.
+     * If [BOOTSTRAP_SERVER] is in [configSnapshot], creates and starts [configRPCOps]'s RPC sender.
      *
      * @throws ConfigRPCOpsServiceException If [configSnapshot] does not contain any config for key [RPC_CONFIG], or if
      *  [configRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
-        val config = configSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
+        val config = configSnapshot[RPC_CONFIG]?.withFallback(configSnapshot[BOOT_CONFIG]) ?: throw ConfigRPCOpsServiceException(
             "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
         )
 
@@ -50,15 +51,14 @@ internal class ConfigRPCOpsConfigHandler(
             configRPCOps.setTimeout(timeoutMillis)
         }
 
-        if (config.hasPath(BOOTSTRAP_SERVERS)) {
-            try {
-                configRPCOps.createAndStartRPCSender(config)
-            } catch (e: Exception) {
-                coordinator.updateStatus(ERROR)
-                throw ConfigRPCOpsServiceException(
-                    "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
-                )
-            }
+        try {
+            configRPCOps.createAndStartRPCSender(config)
+        } catch (e: Exception) {
+            coordinator.updateStatus(ERROR)
+            throw ConfigRPCOpsServiceException(
+                "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
+            )
         }
+
     }
 }

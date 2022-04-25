@@ -5,6 +5,7 @@ import liquibase.Liquibase
 import liquibase.database.OfflineConnection
 import liquibase.database.core.PostgresDatabase
 import liquibase.resource.ClassLoaderResourceAccessor
+import net.corda.db.schema.DbSchema
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -49,15 +50,18 @@ class Spec(
             deleteFile(databaseChangeLogFile)
         }
 
-        val files = listOf(
-            "net/corda/db/schema/config/db.changelog-master.xml",
-            "net/corda/db/schema/messagebus/db.changelog-master.xml",
-            "net/corda/db/schema/rbac/db.changelog-master.xml",
+        val files = mapOf(
+            "net/corda/db/schema/config/db.changelog-master.xml" to DbMetadata(),
+            "net/corda/db/schema/messagebus/db.changelog-master.xml" to DbMetadata(),
+            "net/corda/db/schema/rbac/db.changelog-master.xml" to DbMetadata(),
+            "net/corda/db/schema/crypto/db.changelog-master.xml" to DbMetadata(
+                defaultSchemaName = DbSchema.CRYPTO
+            )
         )
 
         val filteredFiles = if (schemasToGenerate.isEmpty()) files else files.filter { file ->
             schemasToGenerate.any { schemaName ->
-                file.contains(schemaName)
+                file.key.contains(schemaName)
             }
         }
 
@@ -67,16 +71,23 @@ class Spec(
             // Grabs dirname above db.changelog-master.xml to derive the package
             val test = "([a-zA-Z0-9]+)/db\\.changelog-master\\.xml".toRegex()
             // Make .sql output file
-            val outputFileName = "${outputDir.removeSuffix("/")}/${test.find((file))!!.groupValues.last()}.sql"
+            val outputFileName = "${outputDir.removeSuffix("/")}/${test.find((file.key))!!.groupValues.last()}.sql"
             val outputFile = writerFactory(outputFileName)
             val database = PostgresDatabase()
+            if(!file.value.defaultSchemaName.isNullOrBlank()) {
+                database.defaultSchemaName = file.value.defaultSchemaName
+                outputFile.write(System.lineSeparator())
+                outputFile.write("CREATE SCHEMA IF NOT EXISTS ${file.value.defaultSchemaName};")
+                outputFile.write(System.lineSeparator())
+                outputFile.write(System.lineSeparator())
+            }
             val connection = OfflineConnection(
                 "offline:postgresql",
                 ClassLoaderResourceAccessor()
             )
             database.connection = connection
             connection.attached(database)
-            liquibaseFactory(file, database)
+            liquibaseFactory(file.key, database)
                 .update(
                     Contexts(),
                     outputFile

@@ -220,7 +220,7 @@ class StaticMemberRegistrationService @Activate constructor(
         }
         return cryptoOpsClient.generateKeyPair(
             tenantId = memberId,
-            category = CryptoConsts.Categories.LEDGER,
+            category = CryptoConsts.HsmCategories.LEDGER,
             alias = keyAlias
         )
     }
@@ -240,7 +240,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         return cryptoOpsClient.generateKeyPair(
             tenantId = memberId,
-            category = CryptoConsts.Categories.LEDGER,
+            category = CryptoConsts.HsmCategories.LEDGER,
             alias = keyAlias
         )
     }

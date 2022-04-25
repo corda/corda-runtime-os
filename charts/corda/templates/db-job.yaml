@@ -1,0 +1,120 @@
+apiVersion: batch/v1
+kind: Job
+{{- if .Values.bootstrap.auto }}
+metadata:
+  name: corda-setup-db
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: fin
+          image: {{ include "corda.bootstrapImage" . }}
+          command: ['sh', '-c', "echo 'SQL applied'; cat /tmp/working_dir/*.sql"]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+      initContainers:
+        - name: create-db-schemas
+          image: {{ include "corda.bootstrapImage" . }}
+          args: [ 'database', 'spec', '-c', '-l', '/tmp/working_dir' ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+        - name: apply-db-schemas
+          image: bitnami/postgresql:13
+          command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.clusterDbSecretName" . }}
+                  key: password
+        - name: create-initial-db-config
+          image: {{ include "corda.bootstrapImage" . }}
+          args: [ 'initial-config', 'create-db-config', '-u', 'rbac_user', '-p', 'rbac_password', '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                  key: salt
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                  key: passphrase
+        - name: apply-initial-db-config
+          image: bitnami/postgresql:13
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.clusterDbSecretName" . }}
+                  key: password
+        - name: create-initial-rpc-admin
+          image: {{ include "corda.bootstrapImage" . }}
+          args: [ 'initial-config', 'create-user-config', '-l', '/tmp/working_dir', 'create-dev-config']
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                  key: salt
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                  key: passphrase
+        - name: apply-initial-rpc-admin
+          image: bitnami/postgresql:13
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/rbac-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.clusterDbSecretName" . }}
+                  key: password
+        - name: create-db-users-and-grant
+          image: bitnami/postgresql:13
+          command: [ '/bin/sh', '-e', '-c' ]
+          args:
+            - |
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "CREATE USER rbac_user WITH ENCRYPTED PASSWORD 'rbac_password'" || echo "User rbac_user already existed - skipping"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "GRANT USAGE ON SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't perform usage grant"
+              psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} {{ include "corda.clusterDbName" . }} {{ include "corda.clusterDbUser" . }} -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RPC_RBAC to rbac_user;" || echo "Couldn't DML perform grant"
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.clusterDbSecretName" . }}
+                  key: password
+
+      volumes:
+        - name: working-volume
+          emptyDir: {}
+
+      restartPolicy: Never
+{{- end }}

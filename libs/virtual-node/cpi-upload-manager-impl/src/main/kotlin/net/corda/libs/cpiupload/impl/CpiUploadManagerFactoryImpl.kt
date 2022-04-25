@@ -25,8 +25,7 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
     private val ackProcessor = UploadStatusProcessor()
 
     private fun createChunkPublisher(config: SmartConfig, publisherFactory: PublisherFactory): Publisher {
-        val instanceId = null // explicitly state this is null - do we ever need to read this from config?
-        val publisherConfig = PublisherConfig(CPI_UPLOAD_CLIENT_NAME, instanceId)
+        val publisherConfig = PublisherConfig(CPI_UPLOAD_CLIENT_NAME)
         return publisherFactory.createPublisher(publisherConfig, config)
     }
 
@@ -40,9 +39,8 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
         subscriptionFactory: SubscriptionFactory,
         statusTopic: String
     ): CompactedSubscription<UploadStatusKey, UploadStatus> {
-        val instanceId = null // explicit rather than the 'hidden' default parameter fn call
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic, instanceId),
+            SubscriptionConfig(CPI_UPLOAD_GROUP, statusTopic),
             ackProcessor,
             config
         )

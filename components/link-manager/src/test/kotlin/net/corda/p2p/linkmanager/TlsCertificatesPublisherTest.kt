@@ -55,7 +55,6 @@ class TlsCertificatesPublisherTest {
     private val publisherFactory = mock<PublisherFactory>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
-    private val instanceId = 11
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val identityInfo = HostingMapListener.IdentityInfo(
         HoldingIdentity(
@@ -73,7 +72,6 @@ class TlsCertificatesPublisherTest {
         publisherFactory,
         lifecycleCoordinatorFactory,
         configuration,
-        instanceId
     )
 
     @AfterEach

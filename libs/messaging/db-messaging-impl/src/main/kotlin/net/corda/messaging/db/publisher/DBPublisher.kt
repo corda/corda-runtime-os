@@ -29,7 +29,9 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
                   private val dbAccessProvider: DBAccessProvider,
                   private val offsetTrackersManager: OffsetTrackersManager,
                   private val partitionAssignor: PartitionAssignor,
-                  private val threadPoolSize: Int = 5): Publisher, Lifecycle {
+                  private val instanceId: Int? = null,
+                  private val threadPoolSize: Int = 5,
+): Publisher, Lifecycle {
 
     companion object {
         private val log: Logger = contextLogger()
@@ -88,7 +90,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
     }
 
     private fun publishDbRecords(recordEntries: List<RecordDbEntry>): List<CompletableFuture<Unit>> {
-        return if (publisherConfig.instanceId != null) {
+        return if (instanceId != null) {
             listOf(publishTransactionally(recordEntries))
         } else {
             publishNonTransactionally(recordEntries)

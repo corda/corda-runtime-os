@@ -25,6 +25,7 @@ import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.subscription.rpc.RPCSubscriptionImpl
 import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,7 +52,7 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): Subscription<K, V> {
         return PubSubSubscription(
             subscriptionConfig,
@@ -66,7 +67,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return DurableSubscription(
@@ -74,14 +75,15 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             partitionAssignmentListener,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            messagingConfig.getInt(INSTANCE_ID)
         )
     }
 
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: SmartConfig
+        messagingConfig: SmartConfig
     ): CompactedSubscription<K, V> {
         return InMemoryCompactedSubscription(
             subscriptionConfig,
@@ -95,7 +97,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
         return InMemoryStateAndEventSubscription(
@@ -103,14 +105,15 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             stateAndEventListener,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            messagingConfig.getInt(INSTANCE_ID)
         )
     }
 
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return EventLogSubscription(
@@ -118,13 +121,14 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             partitionAssignmentListener,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            messagingConfig.getInt(INSTANCE_ID)
         )
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        nodeConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
         return RPCSubscriptionImpl(

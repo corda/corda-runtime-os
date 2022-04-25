@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap
 internal class StubGroupPolicyProvider(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    instanceId: Int,
     configuration: SmartConfig,
 ) : LinkManagerGroupPolicyProvider {
     companion object {
@@ -31,7 +30,7 @@ internal class StubGroupPolicyProvider(
         }
     }
 
-    private val groupsSubscriptionConfig = SubscriptionConfig("group-policies-reader", GROUP_POLICIES_TOPIC, instanceId)
+    private val groupsSubscriptionConfig = SubscriptionConfig("group-policies-reader", GROUP_POLICIES_TOPIC)
     private val groupsSubscription = subscriptionFactory.createCompactedSubscription(
         groupsSubscriptionConfig,
         GroupProcessor(),

@@ -16,7 +16,6 @@ import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.UUID
 import kotlin.math.abs
 
@@ -29,7 +28,6 @@ class CordaTransactionalDBProducerImpl(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val defaultTimeout: Duration = Duration.ofSeconds(1)
     private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     private val _transaction = ThreadLocal<TransactionRecordEntry>()
@@ -158,14 +156,12 @@ class CordaTransactionalDBProducerImpl(
         transaction = null
     }
 
-    override fun close(timeout: Duration) {
+    override fun close() {
         if (inTransaction) {
             log.error("Close called during transaction.  Some data may be lost.")
             abortTransaction()
         }
     }
-
-    override fun close() = close(defaultTimeout)
 
     private fun verifyInTransaction() {
         if (!inTransaction) {

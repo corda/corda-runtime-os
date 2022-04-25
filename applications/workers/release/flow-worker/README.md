@@ -99,7 +99,7 @@ This should yield a result similar to this:
 ### Running the Flow Worker
 The flow worker can be run from the command line using:
 ```shell
-libs -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 --messagingParams kafka.common.bootstrap.servers=localhost:9093 
+java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 --messagingParams bus.kafkaProperties.common.bootstrap.servers=localhost:9093 bus.busType=KAFKA
 ```
 
 or it can be run/debugged direct from intelliJ:
@@ -107,7 +107,7 @@ or it can be run/debugged direct from intelliJ:
 2) Set the field with the following values
    1) Path to Jar: Set to the flow worker jar in `applications\workers\release\flow-worker\build\bin\`
    2) VM options: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008'
-   3) Program arguments: '--instanceId=1 --messagingParams kafka.common.bootstrap.servers=localhost:9093'
+   3) Program arguments: '--instanceId=1 -mbus.kafkaProperties.common.bootstrap.servers=localhost:9093 -mbus.busType=KAFKA'
    4) Leaver everything else as-is
 3) Add the following gradle task in the Before Launch section 'applications.workers.release.flow-worker.main:appJar'
 
@@ -115,13 +115,14 @@ or it can be run/debugged direct from intelliJ:
 
 1) Start the flow:
 ```shell
-curl --insecure -u admin:admin -d '{ "requestBody": "{\"inputValue\":\"hello\", \"memberInfoLookup\":\"CN=Bob, O=Bob Corp, L=LDN, C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/start/[HOLDING_ID_HASH]/request1/net.corda.flowworker.development.flows.TestFlow
+curl --insecure -u admin:admin -X PUT -d '{ "requestBody": "{\"inputValue\":\"hello\", \"memberInfoLookup\":\"CN=Bob, O=Bob Corp, L=LDN, 
+C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1/net.corda.flowworker.development.flows.TestFlow
 ```
 The holding ID is taken from the output of the 'create virtual node' step
 
 2) Check on the progress of the flow:
 ```shell
-curl --insecure -u admin:admin https://localhost:8888/api/v1/flow/status/[HOLDING_ID_HASH]/request1
+curl --insecure -u admin:admin https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1
 ```
 
 

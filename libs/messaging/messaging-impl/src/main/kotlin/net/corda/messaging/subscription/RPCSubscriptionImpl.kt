@@ -1,20 +1,21 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messagebus.api.configuration.ConsumerConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.constants.ConsumerRoles
+import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -22,11 +23,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.properties.ConfigProperties
-import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
-import net.corda.messaging.utils.render
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -37,32 +34,21 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
-    private val config: Config,
+internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
+    private val config: ResolvedSubscriptionConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val producerBuilder: CordaProducerBuilder,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
     private val deserializer: CordaAvroDeserializer<REQUEST>,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
-    private val log = LoggerFactory.getLogger(
-        config.getString(CONSUMER_GROUP_ID)
-    )
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val groupName = config.getString(CONSUMER_GROUP_ID)
-    private val topic = config.getString(TOPIC_NAME)
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(
-            "$groupName-RPCSubscription-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(INSTANCE_ID)
-        )
-    ) { _, _ -> }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName) { _, _ -> }
 
-    private val errorMsg = "Failed to read records from group $groupName, topic $topic"
+    private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
     @Volatile
     private var stopped = false
@@ -76,7 +62,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         get() = lifecycleCoordinator.name
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n$config" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -85,7 +71,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "rpc subscription thread $groupName-$topic",
+                    name = "rpc subscription thread ${config.group}-${config.topic}",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -114,7 +100,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
+        thread?.join(config.threadStopTimeout.toMillis())
     }
 
     private fun runConsumeLoop() {
@@ -142,13 +128,16 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun createProducerConsumerAndStartPolling() {
-        producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER)).use { producer ->
-            cordaConsumerBuilder.createRPCConsumer(
-                config.getConfig(KAFKA_CONSUMER),
+        val producerConfig = ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_RESPONDER)
+        producerBuilder.createProducer(producerConfig, config.messageBusConfig).use { producer ->
+            val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_RESPONDER)
+            cordaConsumerBuilder.createConsumer(
+                consumerConfig,
+                config.messageBusConfig,
                 String::class.java,
                 RPCRequest::class.java
             ).use {
-                it.subscribe(topic)
+                it.subscribe(config.topic)
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 pollAndProcessRecords(it, producer)
             }
@@ -157,7 +146,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
         while (!stopped) {
-            val consumerRecords = consumer.poll()
+            val consumerRecords = consumer.poll(config.pollTimeout)
             try {
                 processRecords(consumerRecords, producer)
             } catch (ex: Exception) {
@@ -168,7 +157,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $topic, group $groupName.", ex
+                            "Failed to process records from topic ${config.topic}, group ${config.group}.", ex
                         )
                     }
                 }

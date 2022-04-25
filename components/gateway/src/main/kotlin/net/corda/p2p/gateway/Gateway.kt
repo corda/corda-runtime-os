@@ -30,7 +30,6 @@ class Gateway(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     nodeConfiguration: SmartConfig,
-    instanceId: Int,
 ) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
@@ -39,14 +38,12 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         nodeConfiguration,
-        instanceId
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
         nodeConfiguration,
-        instanceId,
     )
 
     @VisibleForTesting

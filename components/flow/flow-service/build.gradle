@@ -28,7 +28,6 @@ dependencies {
     implementation project(":components:virtual-node:sandbox-group-context-service")
 
     implementation project(":libs:configuration:configuration-core")
-    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")

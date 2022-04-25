@@ -3,12 +3,10 @@ package net.corda.crypto.persistence.config
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import kotlin.test.assertEquals
 
 class ConfigExtensionsTests {
     @Test
-    @Timeout(5)
     fun `Should be able to use all helper properties`() {
         val config = SmartConfigFactory.create(ConfigFactory.empty())
             .create(
@@ -32,7 +30,6 @@ class ConfigExtensionsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should use default values if the 'softPersistence' and 'signingPersistence' paths are not supplied`() {
         val config = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
         assertEquals(60, config.softPersistence.expireAfterAccessMins)
@@ -42,7 +39,6 @@ class ConfigExtensionsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `CryptoPersistenceConfig should return default values if the value is not provided`() {
         val config = CryptoPersistenceConfig(
             SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())

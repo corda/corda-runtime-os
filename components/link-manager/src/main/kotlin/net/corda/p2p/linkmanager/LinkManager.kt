@@ -79,22 +79,20 @@ class LinkManager(
     @Reference(service = ConfigurationReadService::class)
     val configurationReaderService: ConfigurationReadService,
     configuration: SmartConfig,
-    instanceId: Int,
     groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
-        lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+        lifecycleCoordinatorFactory, subscriptionFactory, configuration
     ),
     members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
-        lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration
+        lifecycleCoordinatorFactory, subscriptionFactory, configuration
     ),
     linkManagerHostingMap: LinkManagerHostingMap =
         StubLinkManagerHostingMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
-            instanceId,
             configuration,
         ),
     linkManagerCryptoProcessor: CryptoProcessor =
-        StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
+        StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration),
     private val clock: Clock = Clock.systemUTC()
 ) : LifecycleWithDominoTile {
 
@@ -145,7 +143,6 @@ class LinkManager(
         publisherFactory,
         lifecycleCoordinatorFactory,
         configuration,
-        instanceId,
     ).also {
         groups.registerListener(it)
     }
@@ -155,7 +152,6 @@ class LinkManager(
         publisherFactory,
         lifecycleCoordinatorFactory,
         configuration,
-        instanceId,
     ).also {
         linkManagerHostingMap.registerListener(it)
     }
@@ -170,12 +166,11 @@ class LinkManager(
         members,
         linkManagerCryptoProcessor,
         sessionManager,
-        instanceId,
         clock = clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC),
         InboundMessageProcessor(
             sessionManager,
             groups,
@@ -188,7 +183,7 @@ class LinkManager(
     )
 
     private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC, instanceId),
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC),
         outboundMessageProcessor,
         configuration,
         partitionAssignmentListener = null

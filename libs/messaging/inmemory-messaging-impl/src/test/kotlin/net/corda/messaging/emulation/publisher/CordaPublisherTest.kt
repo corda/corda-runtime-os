@@ -1,11 +1,8 @@
 package net.corda.messaging.emulation.publisher
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory.Companion.PUBLISHER_CLIENT_ID
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -22,11 +19,12 @@ import java.nio.ByteBuffer
 @Suppress("ClassNaming")
 class CordaPublisherTest {
     private val topicService = mock<TopicService>()
-    private val config = ConfigFactory.empty()
-        .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId123"))
+    private val asyncConfig = PublisherConfig("clientId123", false)
+    private val transactionalConfig = PublisherConfig("clientId123", true)
+
     private val topicName = "topic123"
     private val record = Record(topicName, "key1", ByteBuffer.wrap("value1".toByteArray()))
-    private val cordaPublisher = CordaPublisher(config, topicService)
+    private val cordaPublisher = CordaPublisher(asyncConfig, topicService)
 
     @Nested
     inner class `publish tests` {
@@ -46,8 +44,7 @@ class CordaPublisherTest {
         }
         @Test
         fun `successful publish with transaction will return one valid future`() {
-            val configWithInstanceId = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
-            val publisher = CordaPublisher(configWithInstanceId, topicService)
+            val publisher = CordaPublisher(transactionalConfig, topicService)
 
             val futures = publisher.publish(listOf(record, record, record))
             assertThat(futures).hasSize(1).allSatisfy {
@@ -57,8 +54,7 @@ class CordaPublisherTest {
 
         @Test
         fun `failed publish return exceptional futures with transaction`() {
-            val configWithInstanceId = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
-            val publisher = CordaPublisher(configWithInstanceId, topicService)
+            val publisher = CordaPublisher(transactionalConfig, topicService)
             doThrow(CordaRuntimeException("")).whenever(topicService).addRecords(any())
             val futures = publisher.publish(listOf(record, record, record))
             assertThat(futures).hasSize(1).allSatisfy {
@@ -101,8 +97,7 @@ class CordaPublisherTest {
         }
         @Test
         fun `successful publishToPartition with transaction will return one valid future`() {
-            val configWithInstanceId = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
-            val publisher = CordaPublisher(configWithInstanceId, topicService)
+            val publisher = CordaPublisher(transactionalConfig, topicService)
 
             val futures = publisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
             assertThat(futures).hasSize(1).allSatisfy {
@@ -112,8 +107,7 @@ class CordaPublisherTest {
 
         @Test
         fun `failed publishToPartition return exceptional futures with transaction`() {
-            val configWithInstanceId = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
-            val publisher = CordaPublisher(configWithInstanceId, topicService)
+            val publisher = CordaPublisher(transactionalConfig, topicService)
             doThrow(CordaRuntimeException("")).whenever(topicService).addRecordsToPartition(any(), any())
             val futures = publisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
             assertThat(futures).hasSize(1).allSatisfy {

@@ -1,9 +1,6 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,14 +14,12 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
-import net.corda.messaging.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.integration.IntegrationTestProperties
+import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC2
 import net.corda.messaging.integration.TopicTemplates.Companion.COMPACTED_TOPIC2_TEMPLATE
-import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
@@ -56,7 +51,8 @@ class CompactedSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private lateinit var kafkaConfig: SmartConfig
+    private val kafkaProperties = getKafkaProperties()
+
     private companion object {
         const val CLIENT_ID = "integrationTestCompactedPublisher"
 
@@ -71,13 +67,6 @@ class CompactedSubscriptionIntegrationTest {
         ) {
             if (bundleContext.isDBBundle()) {
                 DBSetup.setupEntities(CLIENT_ID)
-                // Dodgy remove prefix for DB code
-                compactedTopic1Config = ConfigFactory.parseString(
-                    COMPACTED_TOPIC1_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
-                compactedTopic2Config = ConfigFactory.parseString(
-                    COMPACTED_TOPIC2_TEMPLATE.replace(TEST_TOPIC_PREFIX,"")
-                )
             }
         }
 
@@ -106,9 +95,6 @@ class CompactedSubscriptionIntegrationTest {
     @BeforeEach
     fun beforeEach() {
         topicUtils = topicUtilFactory.createTopicUtils(getKafkaProperties())
-        kafkaConfig = SmartConfigImpl.empty()
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test
@@ -116,8 +102,8 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
         topicUtils.createTopics(compactedTopic1Config)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 
         val coordinator =
@@ -138,9 +124,9 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
-            kafkaConfig
+            TEST_CONFIG
         )
         coordinator.followStatusChangesByName(setOf(compactedSub.subscriptionName))
         compactedSub.start()
@@ -167,8 +153,8 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish wrong records, start compacted sub`() {
         topicUtils.createTopics(compactedTopic2Config)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2, false)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
         publisher.publish(getStringRecords(COMPACTED_TOPIC2, 1, 5)).forEach { it.get() }
 
         val coordinator =
@@ -189,9 +175,9 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
-            kafkaConfig
+            TEST_CONFIG
         )
         coordinator.followStatusChangesByName(setOf(compactedSub.subscriptionName))
         compactedSub.start()

@@ -1,27 +1,16 @@
 package net.corda.crypto.service.impl.soft
 
-import net.corda.crypto.persistence.SoftKeysPersistenceProvider
+import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
-import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCache
-import net.corda.crypto.service.impl.persistence.SoftCryptoKeyCacheImpl
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,111 +24,58 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
-    @Reference(service = SoftKeysPersistenceProvider::class)
-    private val persistenceFactory: SoftKeysPersistenceProvider
-) : SoftCryptoServiceProvider {
+    @Reference(service = SoftCryptoKeyCacheProvider::class)
+    private val cacheProvider: SoftCryptoKeyCacheProvider
+) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
+    coordinatorFactory,
+    lifecycleCoordinatorName,
+    InactiveImpl(),
+    setOf(LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>())
+), SoftCryptoServiceProvider {
     companion object {
         const val SERVICE_NAME = "soft"
         private val logger: Logger = contextLogger()
+        private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
 
-    private val lifecycleCoordinator =
-        coordinatorFactory.createCoordinator<SoftCryptoServiceProvider>(::eventHandler)
+    interface Impl : AutoCloseable {
+        fun getInstance(config: SoftCryptoServiceConfig): CryptoService
+        override fun close() = Unit
+    }
 
-    private var registrationHandle: RegistrationHandle? = null
+    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, digestService, cacheProvider)
 
-    private var impl: Impl? = null
+    override fun createInactiveImpl(): Impl = InactiveImpl()
 
     override val name: String = SERVICE_NAME
 
     override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
 
-    override val isRunning: Boolean get() = lifecycleCoordinator.isRunning
+    override fun getInstance(config: SoftCryptoServiceConfig): CryptoService =
+        impl.getInstance(config)
 
-    override fun start() {
-        logger.info("Starting...")
-        lifecycleCoordinator.start()
+    override val lifecycleName: LifecycleCoordinatorName
+        get() = lifecycleCoordinatorName
+
+    internal class InactiveImpl : Impl {
+        override fun getInstance(config: SoftCryptoServiceConfig): CryptoService =
+            throw IllegalStateException("The component is in invalid state")
     }
 
-    override fun stop() {
-        logger.info("Stopping...")
-        lifecycleCoordinator.stop()
-    }
-
-    override fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService =
-        impl?.getInstance(context)
-            ?: throw CryptoServiceException("Provider haven't been initialised yet.", true)
-
-    @Suppress("UNUSED_PARAMETER")
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event {}", event)
-        when (event) {
-            is StartEvent -> {
-                logger.info("Received start event, starting wait for UP event from dependencies.")
-                registrationHandle?.close()
-                registrationHandle = lifecycleCoordinator.followStatusChangesByName(
-                    setOf(LifecycleCoordinatorName.forComponent<SoftKeysPersistenceProvider>())
-                )
-            }
-            is StopEvent -> {
-                registrationHandle?.close()
-                registrationHandle = null
-                deleteResources()
-            }
-            is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.UP) {
-                    createResources()
-                    logger.info("Setting status UP.")
-                    this.lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-                } else {
-                    deleteResources()
-                    logger.info("Setting status DOWN.")
-                    this.lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-                }
-            }
-            else -> {
-                logger.error("Unexpected event $event!")
-            }
-        }
-    }
-
-    private fun createResources() {
-        impl = Impl(schemeMetadata, digestService, persistenceFactory)
-    }
-
-    private fun deleteResources() {
-        impl = null
-    }
-
-    private class Impl(
+    internal class ActiveImpl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: DigestService,
-        private val persistenceFactory: SoftKeysPersistenceProvider
-    ) {
-        fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService {
-            logger.info(
-                "Creating instance of the {} for member {} and category",
-                SoftCryptoService::class.java.name,
-                context.tenantId,
-                context.category
-            )
+        private val cacheProvider: SoftCryptoKeyCacheProvider
+    ) : Impl {
+        override fun getInstance(config: SoftCryptoServiceConfig): CryptoService {
+            logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             return SoftCryptoService(
-                cache = makeCache(context, schemeMetadata),
+                cache = cacheProvider.getInstance(
+                    passphrase = config.passphrase,
+                    salt = config.salt
+                ),
                 schemeMetadata = schemeMetadata,
-                hashingService = digestService
-            )
-        }
-
-        private fun makeCache(
-            context: CryptoServiceContext<SoftCryptoServiceConfig>,
-            schemeMetadata: CipherSchemeMetadata
-        ): SoftCryptoKeyCache {
-            return SoftCryptoKeyCacheImpl(
-                tenantId = context.tenantId,
-                passphrase = context.config.passphrase,
-                salt = context.config.salt,
-                schemeMetadata = schemeMetadata,
-                persistenceFactory = persistenceFactory
+                digestService = digestService
             )
         }
     }

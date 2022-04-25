@@ -124,6 +124,7 @@ internal class CordaAtomicDBProducerImplTest {
         }
         verify(dbAccess).getMaxOffsetsPerTopicPartition()
         verify(dbAccess).writeAtomicTransactionRecord()
+        verify(dbAccess).getTopicPartitionMap()
         verifyNoMoreInteractions(dbAccess)
     }
 }

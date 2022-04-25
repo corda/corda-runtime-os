@@ -1,17 +1,15 @@
 package net.corda.messaging.subscription
 
-import com.typesafe.config.Config
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
-import net.corda.messaging.createStandardTestConfig
+import net.corda.messaging.constants.SubscriptionType
+import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.generateMockCordaConsumerRecordList
-import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.stubs.StubPubSubProcessor
-import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,8 +36,8 @@ class PubSubSubscriptionImplTest {
     }
 
     private var mockRecordCount = 5L
-    private val config: Config = createStandardTestConfig().getConfig(PATTERN_PUBSUB)
-    private val consumerPollAndProcessRetriesCount = config.getInt(CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val config = createResolvedSubscriptionConfig(SubscriptionType.PUB_SUB)
+    private val consumerPollAndProcessRetriesCount = config.processorRetries
     private val cordaConsumerBuilder: CordaConsumerBuilder = mock()
     private val mockCordaConsumer: CordaConsumer<String, ByteBuffer> = mock()
     private val mockConsumerRecords = generateMockCordaConsumerRecordList(mockRecordCount, "topic", 1)
@@ -66,14 +64,16 @@ class PubSubSubscriptionImplTest {
             } else {
                 mutableListOf()
             }
-        }.whenever(mockCordaConsumer).poll()
+        }.whenever(mockCordaConsumer).poll(config.pollTimeout)
 
         builderInvocationCount = 0
-        doReturn(mockCordaConsumer).whenever(cordaConsumerBuilder).createPubSubConsumer<String, ByteBuffer>(
+        doReturn(mockCordaConsumer).whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
@@ -97,11 +97,13 @@ class PubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
-        verify(cordaConsumerBuilder, times(1)).createPubSubConsumer<String, ByteBuffer>(
+        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )
     }
 
@@ -125,11 +127,13 @@ class PubSubSubscriptionImplTest {
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
-        verify(cordaConsumerBuilder, times(1)).createPubSubConsumer<String, ByteBuffer>(
+        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )
     }
 
@@ -146,8 +150,8 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createPubSubConsumer<String, ByteBuffer>(any(), any(), any(), any())
-        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
+        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll(config.pollTimeout)
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
         kafkaPubSubSubscription =
@@ -165,13 +169,15 @@ class PubSubSubscriptionImplTest {
         }
 
         assertThat(latch.count).isEqualTo(1)
-        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).commitSyncOffsets(any(), isNull())
-        verify(cordaConsumerBuilder, times(2)).createPubSubConsumer<String, ByteBuffer>(
+        verify(cordaConsumerBuilder, times(2)).createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )
     }
 
@@ -180,11 +186,13 @@ class PubSubSubscriptionImplTest {
      */
     @Test
     fun testFatalExceptionConsumerBuild() {
-        whenever(cordaConsumerBuilder.createPubSubConsumer<String, ByteBuffer>(
+        whenever(cordaConsumerBuilder.createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )).thenThrow(
             CordaMessageAPIFatalException(
                 "Fatal Error",
@@ -206,12 +214,14 @@ class PubSubSubscriptionImplTest {
         while (kafkaPubSubSubscription.isRunning) {
         }
 
-        verify(mockCordaConsumer, times(0)).poll()
-        verify(cordaConsumerBuilder, times(1)).createPubSubConsumer<String, ByteBuffer>(
+        verify(mockCordaConsumer, times(0)).poll(config.pollTimeout)
+        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )
         assertThat(latch.count).isEqualTo(mockRecordCount)
     }
@@ -228,8 +238,8 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createPubSubConsumer<String, ByteBuffer>(any(), any(), any(), any())
-        whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(),any(), anyOrNull())
+        whenever(mockCordaConsumer.poll(config.pollTimeout)).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
             PubSubSubscriptionImpl(
@@ -246,14 +256,16 @@ class PubSubSubscriptionImplTest {
         }
 
         assertThat(latch.count).isEqualTo(mockRecordCount)
-        verify(cordaConsumerBuilder, times(2)).createPubSubConsumer<String, ByteBuffer>(
+        verify(cordaConsumerBuilder, times(2)).createConsumer<String, ByteBuffer>(
             any(),
             any(),
             any(),
-            any()
+            any(),
+            any(),
+            anyOrNull()
         )
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
-        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
     }
 
 
@@ -269,11 +281,11 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createPubSubConsumer<String, ByteBuffer>(any(), any(), any(), any())
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubPubSubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
-        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
+        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll(config.pollTimeout)
 
         kafkaPubSubSubscription = PubSubSubscriptionImpl(
             config, cordaConsumerBuilder,
@@ -287,7 +299,7 @@ class PubSubSubscriptionImplTest {
         }
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
-        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
     }
 
     @Test
@@ -299,11 +311,11 @@ class PubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(cordaConsumerBuilder).createPubSubConsumer<String, ByteBuffer>(any(), any(), any(), any())
+        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(any(), any(), any(), any(), any(), anyOrNull())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubPubSubProcessor(latch, IOException())
-        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
+        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll(config.pollTimeout)
 
         kafkaPubSubSubscription = PubSubSubscriptionImpl(
             config, cordaConsumerBuilder,
@@ -316,6 +328,6 @@ class PubSubSubscriptionImplTest {
         while (kafkaPubSubSubscription.isRunning) {}
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
-        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
     }
 }

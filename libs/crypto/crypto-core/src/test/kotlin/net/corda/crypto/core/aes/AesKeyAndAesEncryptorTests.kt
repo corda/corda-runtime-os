@@ -205,7 +205,7 @@ class AesKeyAndAesEncryptorTests {
     }
 
     @Test
-    fun `AesKey should not be equal to the object of different typr`() {
+    fun `AesKey should not be equal to the object of different type`() {
         val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
         val key = AesKey(key = secretKey)
@@ -250,7 +250,7 @@ class AesKeyAndAesEncryptorTests {
     }
 
     @Test
-    fun `AesEncryptor should not be equal to the object of different typr`() {
+    fun `AesEncryptor should not be equal to the object of different type`() {
         val encoded = AesKey.encodePassPhrase(UUID.randomUUID().toString(), UUID.randomUUID().toString())
         val secretKey = SecretKeySpec(encoded, AES_KEY_ALGORITHM)
         val encryptor = AesEncryptor(AesKey(key = secretKey))

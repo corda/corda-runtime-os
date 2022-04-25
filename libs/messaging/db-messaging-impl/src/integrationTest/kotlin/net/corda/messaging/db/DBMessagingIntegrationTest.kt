@@ -49,7 +49,7 @@ class DBMessagingIntegrationTest {
     lateinit var tempFolder: Path
 
     private lateinit var server: Server
-    private val h2Port = 9092
+    private val h2Port = 9090
     private val jdbcUrl = "jdbc:h2:tcp://localhost:$h2Port/test"
     private val username = "sa"
     private val password = ""
@@ -131,6 +131,7 @@ class DBMessagingIntegrationTest {
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionTopic1 = DBDurableSubscription(
             subscriptionConfigTopic1,
+            1,
             processor1,
             null,
             avroSchemaRegistry,
@@ -143,6 +144,7 @@ class DBMessagingIntegrationTest {
         )
         val subscriptionTopic2 = DBDurableSubscription(
             subscriptionConfigTopic2,
+            1,
             processor2,
             null,
             avroSchemaRegistry,
@@ -154,7 +156,7 @@ class DBMessagingIntegrationTest {
             pollingTimeout
         )
         val publisher =
-            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, 1)
 
         publisher.start()
         subscriptionTopic1.start()
@@ -191,6 +193,7 @@ class DBMessagingIntegrationTest {
         val processor2 = InMemoryEventLogProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionTopic1 = DBEventLogSubscription(
             subscriptionConfigTopic1,
+            1,
             processor1,
             null,
             avroSchemaRegistry,
@@ -203,6 +206,7 @@ class DBMessagingIntegrationTest {
         )
         val subscriptionTopic2 = DBEventLogSubscription(
             subscriptionConfigTopic2,
+            2,
             processor2,
             null,
             avroSchemaRegistry,
@@ -214,7 +218,7 @@ class DBMessagingIntegrationTest {
             pollingTimeout
         )
         val publisher =
-            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, 2)
 
         publisher.start()
         subscriptionTopic1.start()
@@ -250,9 +254,10 @@ class DBMessagingIntegrationTest {
             InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionsForTopic1 = (1..3).map {
-            val subscriptionConfigTopic1 = SubscriptionConfig("group-1", topic1, it)
+            val subscriptionConfigTopic1 = SubscriptionConfig("group-1", topic1)
             DBDurableSubscription(
                 subscriptionConfigTopic1,
+                it,
                 processor1,
                 null,
                 avroSchemaRegistry,
@@ -266,6 +271,7 @@ class DBMessagingIntegrationTest {
         }
         val subscriptionTopic2 = DBDurableSubscription(
             subscriptionConfigTopic2,
+            1,
             processor2,
             null,
             avroSchemaRegistry,
@@ -277,7 +283,7 @@ class DBMessagingIntegrationTest {
             pollingTimeout
         )
         val publisher =
-            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, 1)
 
         publisher.start()
         subscriptionsForTopic1.forEach { it.start() }

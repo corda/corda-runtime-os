@@ -21,6 +21,7 @@ import java.time.Duration
 @Suppress("LongParameterList")
 class DBDurableSubscription<K : Any, V : Any>(
     subscriptionConfig: SubscriptionConfig,
+    instanceId: Int,
     durableProcessor: DurableProcessor<K, V>,
     partitionAssignmentListener: PartitionAssignmentListener?,
     avroSchemaRegistry: AvroSchemaRegistry,
@@ -35,6 +36,7 @@ class DBDurableSubscription<K : Any, V : Any>(
 
     private val eventLogSubscription = DBEventLogSubscription(
         subscriptionConfig,
+        instanceId,
         ForwardingEventLogProcessor(durableProcessor),
         partitionAssignmentListener,
         avroSchemaRegistry,

@@ -8,7 +8,7 @@ fullnameOverride: ""
 # -- override chart name
 nameOverride: ""
 
-# worker image defaults
+# worker and cli image defaults
 image:
   # -- worker image registry
   registry: "corda-os-docker.software.r3.com"
@@ -36,6 +36,8 @@ db:
   cluster:
     # -- the cluster database host (required)
     host: ""
+    # -- the cluster database type
+    type: "postgresql"
     # -- the cluster database port
     port: 5432
     # -- the cluster database user
@@ -55,6 +57,17 @@ kafka:
   partitions: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
+
+# Configuration for the bootstrapper
+bootstrap:
+  auto: true
+  image:
+    # -- cli image registry
+    registry: ""
+    # -- cli image repository
+    repository: "corda-os-plugins"
+    # -- cli default tag
+    tag: ""
 
 # worker configuration
 workers:
@@ -143,6 +156,34 @@ workers:
 
       requests: {}
       # -- the CPU/memory resource limits for the flow worker containers
+
+      limits: {}
+
+  # membership worker configuration
+  membership:
+    # membership worker image configuration
+    image:
+      # -- membership worker image registry, defaults to image.registry
+      registry: ""
+      # -- membership worker image repository
+      repository: "corda-os-member-worker"
+      # -- membership worker image tag, defaults to image.tag
+      tag: ""
+    # -- membership worker replica count
+    replicaCount: 1
+    # membership worker debug configuration
+    debug:
+      # -- run membership worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the membership worker until the debugger is attached
+      suspend: false
+    # resource limits and requests configuration for the membership worker containers
+
+    resources:
+      # -- the CPU/memory resource requests for the membership worker containers
+
+      requests: {}
+      # -- the CPU/memory resource limits for the membership worker containers
 
       limits: {}
 

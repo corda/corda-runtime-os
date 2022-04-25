@@ -27,7 +27,6 @@ class ReconfigurableHttpServer(
     private val listener: HttpServerListener,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    instanceId: Int,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -38,7 +37,6 @@ class ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
-        instanceId,
     )
 
     override val dominoTile = ComplexDominoTile(
