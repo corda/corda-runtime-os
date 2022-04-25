@@ -28,6 +28,7 @@ const val HMAC_SHA512_ALGORITHM = "HmacSHA512"
  */
 const val KEY_LOOKUP_INPUT_ITEMS_LIMIT = 20
 
+
 private fun messageDigestSha256(): MessageDigest =
     MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
