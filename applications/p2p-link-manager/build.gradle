@@ -10,16 +10,18 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':osgi-framework-api')
     implementation project(':components:link-manager')
     implementation project(':components:domino-logic')
     implementation project(':components:p2p-test:stub-crypto-processor')
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'org.slf4j:slf4j-api'
+    implementation project(':osgi-framework-api')
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'org.slf4j:slf4j-api'
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

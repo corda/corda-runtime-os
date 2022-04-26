@@ -13,6 +13,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -27,6 +32,7 @@ import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
+import kotlin.random.Random
 
 @Suppress("UNUSED")
 @Component(immediate = true)
@@ -39,10 +45,8 @@ class GroupPolicyUploader @Activate constructor(
     companion object {
         val logger = contextLogger()
         const val GROUP_ID = "groupId"
-        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
+        const val KAFKA_BOOTSTRAP_SERVER_CONFIG = "bootstrap.servers"
         const val CLIENT_ID = "group-policy-publisher"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
-        const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
     }
 
     @Suppress("SpreadOperator")
@@ -63,8 +67,8 @@ class GroupPolicyUploader @Activate constructor(
             return
         }
         kafkaProperties.load(FileInputStream(kafkaPropertiesFile))
-        if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER)) {
-            logError("No $KAFKA_BOOTSTRAP_SERVER property found in file specified via --kafka!")
+        if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER_CONFIG)) {
+            logError("No $KAFKA_BOOTSTRAP_SERVER_CONFIG property found in file specified via --kafka!")
             shutdown()
             return
         }
@@ -131,10 +135,22 @@ class GroupPolicyUploader @Activate constructor(
     private fun createKafkaConfig(kafkaProperties: Properties): SmartConfig {
         val bootConf = ConfigFactory.empty()
             .withValue(
-                KAFKA_COMMON_BOOTSTRAP_SERVER,
-                ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString())
+                BOOTSTRAP_SERVER,
+                ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER_CONFIG].toString())
             )
-            .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(CLIENT_ID))
+            .withValue(
+                BUS_TYPE,
+                ConfigValueFactory.fromAnyRef("KAFKA")
+            )
+            .withValue(
+                TOPIC_PREFIX,
+                ConfigValueFactory.fromAnyRef("")
+            )
+            .withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(Random.nextInt())
+            )
+            .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(CLIENT_ID))
         return SmartConfigFactory.create(bootConf).create(bootConf)
     }
 

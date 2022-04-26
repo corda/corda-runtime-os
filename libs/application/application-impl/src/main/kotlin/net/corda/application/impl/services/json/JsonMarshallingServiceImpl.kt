@@ -7,14 +7,14 @@ import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import java.security.AccessController.doPrivileged
-import java.security.PrivilegedActionException
-import java.security.PrivilegedExceptionAction
 import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.services.json.JsonMarshallingService
+import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.AccessController.doPrivileged
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
 /**
  * Simple implementation, requires alignment with other serialization such as that used

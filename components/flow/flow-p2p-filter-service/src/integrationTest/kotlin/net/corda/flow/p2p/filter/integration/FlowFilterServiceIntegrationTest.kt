@@ -1,10 +1,10 @@
 package net.corda.flow.p2p.filter.integration
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.config.Configuration
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -27,6 +27,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -67,11 +68,13 @@ class FlowFilterServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowSessionFilterService: FlowP2PFilterService
 
+    private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+
     @BeforeEach
     fun setup() {
         if (!setup) {
             setup = true
-            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId))
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), SmartConfigImpl.empty())
             setupConfig(publisher)
         }
     }
@@ -79,30 +82,44 @@ class FlowFilterServiceIntegrationTest {
     @Test
     fun `verify events are forwarded to the correct topic`() {
         flowSessionFilterService.start()
-        
-        val testId = "test1"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
-        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> {  }
-        val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> {  }
+        val testId = "test1"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), SmartConfigImpl.empty())
+
+        val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
+        val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
 
         val identity = HoldingIdentity(testId, testId)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "flowSession")
         val sessionEvent = SessionEvent(
-                MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(),
-                SessionInit(
-                    testId, testId, null,  ByteBuffer.wrap("".toByteArray())
-                )
+            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(),
+            SessionInit(
+                testId, testId, null, ByteBuffer.wrap("".toByteArray())
             )
+        )
 
         val sessionRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(flowHeader, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+            P2P_IN_TOPIC,
+            testId,
+            AppMessage(
+                AuthenticatedMessage(
+                    flowHeader,
+                    ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))
+                )
+            )
         )
 
         val invalidHeader = AuthenticatedMessageHeader(identity, identity, 1, "", "", "other")
-        val invalidEvent = FlowEvent(FlowKey("", HoldingIdentity("", "")), sessionEvent)
+        val invalidEvent = FlowEvent(testId, sessionEvent)
         val invalidRecord = Record(
-            P2P_IN_TOPIC, testId, AppMessage(AuthenticatedMessage(invalidHeader, ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))))
+            P2P_IN_TOPIC,
+            testId,
+            AppMessage(
+                AuthenticatedMessage(
+                    invalidHeader,
+                    ByteBuffer.wrap(flowEventSerializer.serialize(invalidEvent))
+                )
+            )
         )
 
         publisher.publish(listOf(sessionRecord, sessionRecord, invalidRecord))
@@ -111,12 +128,12 @@ class FlowFilterServiceIntegrationTest {
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
-            TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2), SmartConfigImpl.empty(), null
+            TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2), bootConfig, null
         )
         p2pOutSub.start()
         assertTrue(mapperLatch.await(30, TimeUnit.SECONDS))
         p2pOutSub.stop()
-        
+
         flowSessionFilterService.stop()
     }
 
@@ -128,7 +145,7 @@ class FlowFilterServiceIntegrationTest {
     }
 
     private val bootConf = """
-        instanceId=1
+        instance.id=1
     """
 
     private val messagingConf = """

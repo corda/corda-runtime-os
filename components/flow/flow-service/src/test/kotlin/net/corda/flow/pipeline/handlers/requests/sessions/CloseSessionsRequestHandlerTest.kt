@@ -1,124 +1,98 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.session.SessionProcessState
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
-import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.session.manager.SessionManager
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import net.corda.messaging.api.records.Record
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class CloseSessionsRequestHandlerTest {
+    private val sessionId1 = "s1"
+    private val sessionId2 = "s2"
+    private val sessions = listOf(sessionId1, sessionId2)
+    private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
+    private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
+    private val record = Record("", "", FlowEvent())
+    private val testContext = RequestHandlerTestContext(Any())
+    private val ioRequest = FlowIORequest.CloseSessions(sessions.toSet())
+    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
 
-    private companion object {
-        const val FLOW_ID = "flow id"
-        const val SESSION_ID = "session id"
-        const val ANOTHER_SESSION_ID = "another session id"
-        val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
-        val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
+    @Suppress("Unused")
+    @BeforeEach
+    fun setup() {
+        val flowCheckpoint = testContext.flowCheckpoint
+
+        whenever(flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
+        whenever(flowCheckpoint.getSessionState(sessionId2)).thenReturn(sessionState2)
+
+        whenever(
+            testContext.flowSessionManager.sendCloseMessages(
+                eq(testContext.flowCheckpoint),
+                eq(sessions),
+                any()
+            )
+        ).thenReturn(listOf(sessionState1, sessionState2))
+
+        whenever(testContext.flowRecordFactory.createFlowEventRecord(any(), any())).thenReturn(record)
     }
 
-    private val sessionState = SessionState.newBuilder()
-        .setSessionId(SESSION_ID)
-        .setSessionStartTime(Instant.now())
-        .setLastReceivedMessageTime(Instant.now())
-        .setLastSentMessageTime(Instant.now())
-        .setCounterpartyIdentity(HoldingIdentity("Alice", "group1"))
-        .setSendAck(true)
-        .setReceivedEventsState(SessionProcessState(0, emptyList()))
-        .setSendEventsState(SessionProcessState(0, emptyList()))
-        .setStatus(SessionStateType.CONFIRMED)
-        .build()
+    @Test
+    fun `Returns an updated WaitingFor for close session confirmation`() {
+        val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
 
-    private val anotherSessionState = SessionState.newBuilder(sessionState).setSessionId(ANOTHER_SESSION_ID).build()
-
-    private val sessionManager = mock<SessionManager>()
-
-    private val argumentCaptor = argumentCaptor<SessionEvent>()
-
-    private val closeSessionsRequestHandler = CloseSessionsRequestHandler(sessionManager)
+        val result = waitingFor.value as SessionConfirmation
+        assertThat(result.sessionIds).containsOnly(sessionId1, sessionId2)
+        assertThat(result.type).isEqualTo(SessionConfirmationType.CLOSE)
+    }
 
     @Test
-    fun `Returns an updated WaitingFor of SessionConfirmation (Close)`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = Checkpoint(), inputEventPayload = Unit)
-        val sessions = setOf(SESSION_ID, ANOTHER_SESSION_ID)
-        val result = closeSessionsRequestHandler.getUpdatedWaitingFor(
-            inputContext,
-            FlowIORequest.CloseSessions(sessions)
+    fun `Sends close events and updates the checkpoint with session state when sessions are not in closed statuses`() {
+        whenever(
+            testContext.flowSessionManager.areAllSessionsInStatuses(
+                testContext.flowCheckpoint,
+                sessions,
+                listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+            )
+        ).thenReturn(false)
+
+        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
+
+        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
+        assertThat(outputContext.outputRecords).hasSize(0)
+    }
+
+    @Test
+    fun `Creates Wakeup record and does not send close events or update the checkpoint when all sessions are closed`() {
+        whenever(
+            testContext.flowSessionManager.areAllSessionsInStatuses(
+                testContext.flowCheckpoint,
+                sessions,
+                listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+            )
+        ).thenReturn(true)
+
+        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
+
+        verify(testContext.flowSessionManager, never()).sendCloseMessages(
+            eq(testContext.flowCheckpoint),
+            eq(sessions),
+            any()
         )
-
-        assertEquals(SessionConfirmation(sessions.toList(), SessionConfirmationType.CLOSE), result.value)
-    }
-
-    @Test
-    fun `Updates the checkpoint's sessions with session close events`() {
-        whenever(sessionManager.processMessageToSend(any(), any(), any(), any())).then {
-            val sessionState = it.getArgument(1) as SessionState
-            SessionState.newBuilder(sessionState)
-                .setSendEventsState(
-                    SessionProcessState(
-                        1,
-                        sessionState.sendEventsState.undeliveredMessages.plus(it.getArgument(2) as SessionEvent)
-                    )
-                )
-                .build()
-        }
-
-        val checkpoint = Checkpoint().apply {
-            flowKey = FLOW_KEY
-            fiber = ByteBuffer.wrap(byteArrayOf(1, 1, 1, 1))
-            sessions = listOf(sessionState, anotherSessionState)
-        }
-        val checkpointCopy = Checkpoint().apply {
-            flowKey = checkpoint.flowKey
-            fiber = checkpoint.fiber
-            sessions = checkpoint.sessions
-        }
-
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = checkpointCopy, inputEventPayload = Unit)
-
-        val outputContext = closeSessionsRequestHandler.postProcess(
-            inputContext,
-            FlowIORequest.CloseSessions(setOf(SESSION_ID, ANOTHER_SESSION_ID))
-        )
-
-        val sessionOutput1 = outputContext.checkpoint?.sessions?.get(0)
-        val sessionOutput2 = outputContext.checkpoint?.sessions?.get(1)
-        assertNotEquals(checkpoint, outputContext.checkpoint)
-        assertNotEquals(sessionState, sessionOutput1)
-        assertNotEquals(anotherSessionState, sessionOutput2)
-        assertNotEquals(sessionOutput1, sessionOutput2)
-        verify(sessionManager, times(2)).processMessageToSend(any(), any(), argumentCaptor.capture(), any())
-        assertTrue(argumentCaptor.firstValue.payload is SessionClose)
-        assertTrue(argumentCaptor.secondValue.payload is SessionClose)
-    }
-
-    @Test
-    fun `Throws an exception if there is no checkpoint`() {
-        val inputContext: FlowEventContext<Any> = buildFlowEventContext(checkpoint = null, inputEventPayload = Unit)
-        assertThrows<FlowProcessingException> {
-            closeSessionsRequestHandler.postProcess(inputContext, FlowIORequest.CloseSessions(setOf(SESSION_ID, ANOTHER_SESSION_ID)))
-        }
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
+        assertThat(outputContext.outputRecords).containsOnly(record)
     }
 }

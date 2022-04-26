@@ -16,7 +16,6 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -74,7 +73,6 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should convert public key to PEM and backand and still to able to use for verification for all supported schemes`(
         keyPair: KeyPair
@@ -91,7 +89,6 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     @Suppress("MaxLineLength")
     fun `Should convert public key to byte array and back and and still to able to use for verification for all supported schemes`(
         keyPair: KeyPair
@@ -106,7 +103,6 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     fun `Should round trip encode CompositeKey to byte array with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -127,7 +123,6 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     fun `Should round trip encode CompositeKey to PEM with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -148,7 +143,6 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     fun `Should round trip encode CompositeKey with weighting to byte array with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -174,7 +168,6 @@ class KeyEncodingServiceTests {
 
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     fun `Should round trip encode CompositeKey with weighting to PEM with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,
@@ -201,7 +194,6 @@ class KeyEncodingServiceTests {
     @Suppress("TooGenericExceptionThrown")
     @ParameterizedTest
     @MethodSource("keyPairs")
-    @Timeout(60)
     fun `Test save to keystore with keys for all supported schemes`(
         keyPair1: KeyPair,
         keyPair2: KeyPair,

@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -9,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -65,7 +68,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                         )
                         record
                     }
-                    publisherFactory.createPublisher(publisherConfig).use {
+                    publisherFactory.createPublisher(publisherConfig, SmartConfigImpl.empty()).use {
                         it.publish(records).forEach { it.get() }
                     }
                     published.addAll(records)
@@ -106,7 +109,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
 
                 (1..numberOfConsumerInGroups).forEach { consumerNumber ->
                     val config =
-                        SubscriptionConfig(groupName = groupName, eventTopic = topicName, instanceId = consumerNumber)
+                        SubscriptionConfig(groupName = groupName, eventTopic = topicName)
                     val listener = object : PartitionAssignmentListener {
                         private val myAssignments = ConcurrentHashMap.newKeySet<Int>()
                         override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
@@ -136,7 +139,8 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                     val subscription = subscriptionFactory.createEventLogSubscription(
                         subscriptionConfig = config,
                         processor = processor,
-                        partitionAssignmentListener = listener
+                        partitionAssignmentListener = listener,
+                        messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(consumerNumber))
                     )
                     subscriptions.add(subscription)
                 }

@@ -108,7 +108,7 @@ class PermissionValidationCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                _permissionValidationCache?.stop()
+                _permissionValidationCache?.close()
                 _permissionValidationCache = null
             }
         }
@@ -121,7 +121,7 @@ class PermissionValidationCacheService @Activate constructor(
         configHandle = null
         topicsRegistration?.close()
         topicsRegistration = null
-        permissionSummarySubscription?.stop()
+        permissionSummarySubscription?.close()
         permissionSummarySubscription = null
         permissionSummarySnapshotReceived = false
     }
@@ -134,7 +134,7 @@ class PermissionValidationCacheService @Activate constructor(
     private fun createAndStartSubscriptionsAndCache(config: SmartConfig) {
         val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
 
-        permissionSummarySubscription?.stop()
+        permissionSummarySubscription?.close()
         val permissionSummarySubscription = createPermissionSummarySubscription(permissionSummaryData, config)
             .also {
                 it.start()
@@ -144,7 +144,7 @@ class PermissionValidationCacheService @Activate constructor(
         topicsRegistration?.close()
         topicsRegistration = coordinator.followStatusChangesByName(setOf(permissionSummarySubscription.subscriptionName))
 
-        _permissionValidationCache?.stop()
+        _permissionValidationCache?.close()
         _permissionValidationCache = permissionValidationCacheFactory.createPermissionValidationCache(permissionSummaryData)
             .also { it.start() }
     }

@@ -11,9 +11,10 @@ import org.slf4j.LoggerFactory
  */
 class ForwardingRebalanceListener(private val topic: String,
                                   groupName: String,
+                                  clientId: String,
                                   private val partitionAssignmentListener: PartitionAssignmentListener
 ):
-    LoggingConsumerRebalanceListener(topic, groupName) {
+    LoggingConsumerRebalanceListener(topic, groupName, clientId) {
 
     override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
 

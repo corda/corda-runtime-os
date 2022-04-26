@@ -6,10 +6,8 @@ import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
-import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
@@ -29,8 +27,6 @@ import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 import java.util.Hashtable
-import java.util.concurrent.ConcurrentHashMap
-import java.util.function.Consumer
 
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
 
@@ -47,8 +43,9 @@ class SandboxGroupContextServiceImpl(
     private val sandboxCreationService: SandboxCreationService,
     private val cpkReadService: CpkReadService,
     private val serviceComponentRuntime: ServiceComponentRuntime,
-    private val bundleContext: BundleContext
-) : SandboxGroupContextService, AutoCloseable {
+    private val bundleContext: BundleContext,
+    var cache: SandboxGroupContextCache
+) : SandboxGroupContextService {
     private companion object {
         private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER))"
 
@@ -70,18 +67,15 @@ class SandboxGroupContextServiceImpl(
             = "Component(class=$implementationClass, services=${serviceInterfaces.joinToString()}, scope=$scope, enabled=$defaultEnabled)"
     }
 
-    private val contexts = ConcurrentHashMap<VirtualNodeContext, CloseableSandboxGroupContext>()
-
     fun remove(virtualNodeContext: VirtualNodeContext) {
-        // close actually removes us from the map.
-        contexts[virtualNodeContext]?.close()
+        cache.remove(virtualNodeContext)
     }
 
     override fun getOrCreate(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return contexts[virtualNodeContext] ?: run {
+        return cache.get(virtualNodeContext) {
             val cpks = virtualNodeContext.cpkIdentifiers.mapNotNull(cpkReadService::get)
             if (cpks.size != virtualNodeContext.cpkIdentifiers.size) {
                 logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
@@ -108,7 +102,7 @@ class SandboxGroupContextServiceImpl(
             // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
 
             // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
-            val newContext = CloseableSandboxGroupContext(sandboxGroupContext, ::removeContextIfPresent) {
+            val newContext = CloseableSandboxGroupContextImpl(sandboxGroupContext) {
                 // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
                 initializerAutoCloseable.close()
 
@@ -120,23 +114,7 @@ class SandboxGroupContextServiceImpl(
                 // And unload the (OSGi) sandbox group
                 sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
             }
-
-            contexts.putIfAbsent(virtualNodeContext, newContext)?.also {
-                // Someone has ninja'd another SandboxGroupContext into
-                // the map while we were creating this one. Destroy the
-                // one we just created as we don't need it any more.
-                runIgnoringExceptions(newContext::close)
-            } ?: newContext
-        }
-    }
-
-    private fun removeContextIfPresent(context: CloseableSandboxGroupContext) {
-        contexts.computeIfPresent(context.virtualNodeContext) { _, value ->
-            if (value === context) {
-                null
-            } else {
-                value
-            }
+            newContext
         }
     }
 
@@ -293,38 +271,8 @@ class SandboxGroupContextServiceImpl(
             cpkReadService.get(it) != null
         }
 
-    /**
-     * [MutableSandboxGroupContext] / [SandboxGroupContext] wrapped so that we set [close] now that the user has
-     * returned it as part of their [SandboxGroupContextInitializer]
-     *
-     * We return an instance of this object of type [SandboxGroupContext] to the user once [getOrCreate] is complete.
-     */
-    private class CloseableSandboxGroupContext(
-        private val sandboxGroupContext: SandboxGroupContextImpl,
-        private val removeContextIfPresent: Consumer<CloseableSandboxGroupContext>,
-        private val closeable: AutoCloseable
-    ) : MutableSandboxGroupContext, AutoCloseable {
-        override fun <T : Any> put(key: String, value: T) =
-            sandboxGroupContext.put(key, value)
-
-        override val virtualNodeContext: VirtualNodeContext
-            get() = sandboxGroupContext.virtualNodeContext
-
-        override val sandboxGroup: SandboxGroup
-            get() = sandboxGroupContext.sandboxGroup
-
-        override fun <T : Any> get(key: String, valueType: Class<out T>): T? = sandboxGroupContext.get(key, valueType)
-
-        override fun close() {
-            runIgnoringExceptions { removeContextIfPresent.accept(this) }
-            runIgnoringExceptions(closeable::close)
-        }
-    }
-
     override fun close() {
-        contexts.values.forEach { closeable ->
-            runIgnoringExceptions(closeable::close)
-        }
+        cache.close()
     }
 
     private class CommonServiceRegistration(

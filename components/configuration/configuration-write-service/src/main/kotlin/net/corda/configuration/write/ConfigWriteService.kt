@@ -11,8 +11,7 @@ interface ConfigWriteService : Lifecycle {
      * Starts processing cluster configuration updates.
      *
      * @param config Config to be used by the subscription.
-     * @param instanceId The instance ID to use for subscribing to Kafka.
      * @param entityManagerFactory The factory for creating entity managers for interacting with the cluster database.
      */
-    fun startProcessing(config: SmartConfig, instanceId: Int, entityManagerFactory: EntityManagerFactory)
+    fun startProcessing(config: SmartConfig, entityManagerFactory: EntityManagerFactory)
 }

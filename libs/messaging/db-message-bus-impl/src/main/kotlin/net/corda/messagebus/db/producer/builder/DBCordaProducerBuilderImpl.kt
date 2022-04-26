@@ -1,10 +1,10 @@
 package net.corda.messagebus.db.producer.builder
 
-import com.typesafe.config.Config
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TRANSACTIONAL_ID
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messagebus.db.configuration.MessageBusConfigResolver
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -30,11 +30,15 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaProducerBuilder {
-    override fun createProducer(producerConfig: Config): CordaProducer {
+    override fun createProducer(producerConfig: ProducerConfig, messageBusConfig: SmartConfig): CordaProducer {
+        val isTransactional = producerConfig.transactional
+        val resolver = MessageBusConfigResolver(messageBusConfig.factory)
+        val resolvedConfig = resolver.resolve(messageBusConfig, producerConfig)
+
         val dbAccess = DBAccess(
             entityManagerFactoryFactory.create(
-                producerConfig,
-                "DB Producer for ${producerConfig.getString(CLIENT_ID)}",
+                resolvedConfig,
+                "DB Producer for ${producerConfig.clientId}",
                 listOf(
                     TopicRecordEntry::class.java,
                     CommittedPositionEntry::class.java,
@@ -43,7 +47,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
                 )
             )
         )
-        return if (producerConfig.hasPath(TRANSACTIONAL_ID)) {
+        return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
                 CordaDBAvroSerializerImpl(avroSchemaRegistry),
                 dbAccess

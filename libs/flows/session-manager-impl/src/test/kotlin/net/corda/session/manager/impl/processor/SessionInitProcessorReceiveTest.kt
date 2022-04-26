@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -15,9 +14,12 @@ class SessionInitProcessorReceiveTest {
 
     @Test
     fun `Receive duplicate init when state is not null`() {
-        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(),  null
-        ))
+        val sessionInitEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionInit("flow", "cpiId", "flowId1", null)
+        )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
             "key", buildSessionState(
@@ -37,9 +39,12 @@ class SessionInitProcessorReceiveTest {
 
     @Test
     fun `Receive init in reply to an init`() {
-        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(),  null
-        ))
+        val sessionInitEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionInit("flow", "cpiId", "flowId1", null)
+        )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
             "key", buildSessionState(
@@ -62,9 +67,12 @@ class SessionInitProcessorReceiveTest {
 
     @Test
     fun `Receive init when state is null`() {
-        val sessionInitEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(
-            "flow", "cpiId", FlowKey(),  null
-        ))
+        val sessionInitEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionInit("flow", "cpiId", "flowId1", null)
+        )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())
 

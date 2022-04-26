@@ -11,8 +11,11 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER_KEY
 import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.sql.Timestamp
@@ -33,10 +36,12 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
 
     fun start() {
         (1..clients).forEach { client ->
-            val subscriptionConfig = SubscriptionConfig("app-simulator-sink",
-                APP_RECEIVED_MESSAGES_TOPIC, "$instanceId-$client".hashCode())
+            val subscriptionConfig = SubscriptionConfig("app-simulator-sink", APP_RECEIVED_MESSAGES_TOPIC)
             val kafkaConfig = SmartConfigImpl.empty()
-                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
+                .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaServers))
+                .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
+                .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
             val processor = DBSinkProcessor()
             resources.add(processor)
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, processor, kafkaConfig, null)

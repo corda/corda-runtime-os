@@ -62,7 +62,7 @@ class ConfigureAll : Runnable {
             "get",
             "namespace",
             "-l",
-            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName},p2p-namespace-type=p2p-cluster",
             "-o",
             "jsonpath={range .items[*]}{.metadata.name}{\"|\"}{.metadata.annotations}{\"\\n\"}{end}",
         ).lines()

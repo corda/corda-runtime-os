@@ -4,9 +4,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.VirtualNodeRPCOpsConfigHandler
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
@@ -41,10 +42,11 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(true)
             whenever(getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(timeout)
+            whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).setTimeout(timeout)
     }
@@ -52,10 +54,13 @@ class VirtualNodeRPCOpsConfigHandlerTests {
     @Test
     fun `does not throw if timeout config is not provided under RPC config`() {
         val configRPCOps = mock<VirtualNodeRPCOpsInternal>()
+        val config = mock<SmartConfig>().apply {
+            whenever(withFallback(any())).thenReturn(this)
+        }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock()))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
         }
     }
 
@@ -63,10 +68,11 @@ class VirtualNodeRPCOpsConfigHandlerTests {
     fun `creates RPC sender if RPC config is provided`() {
         val configRPCOps = mock<VirtualNodeRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
+            whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).createAndStartRpcSender(config)
     }
@@ -78,12 +84,13 @@ class VirtualNodeRPCOpsConfigHandlerTests {
             whenever(createAndStartRpcSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
+            whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(coordinator, configRPCOps)
 
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -96,10 +103,13 @@ class VirtualNodeRPCOpsConfigHandlerTests {
     @Test
     fun `does not throw if RPC sender config is not provided under RPC config`() {
         val configRPCOps = mock<VirtualNodeRPCOpsInternal>()
+        val config = mock<SmartConfig>().apply {
+            whenever(withFallback(any())).thenReturn(this)
+        }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock()))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
         }
     }
 

@@ -40,7 +40,7 @@ class SessionStateWaitFinalAckTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, Instant.now())
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
     }
 
     @Test

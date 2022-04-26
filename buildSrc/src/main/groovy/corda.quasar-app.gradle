@@ -26,6 +26,7 @@ quasar {
             'org.mockito**',
             'org.opentest4j**',
             'org.eclipse**',
+            'net.corda.sandboxhooks.**',
             'net.corda.osgi.**'
     ]
 }

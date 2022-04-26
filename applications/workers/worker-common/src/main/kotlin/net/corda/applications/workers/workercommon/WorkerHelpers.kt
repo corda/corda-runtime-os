@@ -3,13 +3,12 @@ package net.corda.applications.workers.workercommon
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.workers.workercommon.internal.CUSTOM_CONFIG_PATH
-import net.corda.applications.workers.workercommon.internal.MSG_CONFIG_PATH
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
-import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
@@ -47,7 +46,7 @@ class WorkerHelpers {
             defaultParams: DefaultWorkerParams,
             extraParams: List<PathAndConfig> = emptyList()
         ): SmartConfig {
-            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.${key.trim()}" }
+            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> key.trim() }
             val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.${key.trim()}" }
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }

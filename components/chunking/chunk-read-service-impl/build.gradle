@@ -28,7 +28,6 @@ dependencies {
     implementation project(':libs:chunking:chunking-core')
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:db:db-orm')
-    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
 
     implementation 'javax.persistence:javax.persistence-api'
     implementation "com.typesafe:config:$typeSafeConfigVersion"

@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.durable
 
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -7,6 +9,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -46,10 +49,10 @@ class DurableSubscriptionIntegrationTests {
         config = SubscriptionConfig(
             eventTopic = "durable.integration.test.topic",
             groupName = "durable.integration.test.group",
-            instanceId = instanceId
         )
         return subscriptionFactory.createDurableSubscription(
             subscriptionConfig = config,
+            messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId)),
             processor = object : DurableProcessor<Key, Value> {
                 override fun onNext(events: List<Record<Key, Value>>): List<Record<*, *>> {
                     return events.flatMap {
@@ -74,10 +77,10 @@ class DurableSubscriptionIntegrationTests {
         otherConfig = SubscriptionConfig(
             eventTopic = "durable.integration.test.other.topic",
             groupName = "durable.integration.test.other.group",
-            instanceId = instanceId
         )
         return subscriptionFactory.createDurableSubscription(
             subscriptionConfig = otherConfig,
+            messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId)),
             processor = object : DurableProcessor<Key, Value> {
                 override fun onNext(events: List<Record<Key, Value>>): List<Record<*, *>> {
                     events.forEach { event ->
@@ -106,7 +109,7 @@ class DurableSubscriptionIntegrationTests {
         val records = (1..numberOfMessagesToSend).map {
             Record(config.eventTopic, Key(0), Value(1))
         }
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, SmartConfigImpl.empty()).use {
             it.publish(records)
         }
 

@@ -87,8 +87,8 @@ services:
       - "5008:5008" # debug port
       - "7003:7000" # healthcheck port
     command:
-      - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9093
+      - -mbus.kafkaProperties.common.bootstrap.servers=localhost:9093
+      - -mbus.busType=KAFKA
     depends_on:
       - init-kafka
     volumes:
@@ -107,8 +107,8 @@ services:
       - "5009:5009" # debug port
       - "7004:7000" # healthcheck port
     command:
-      - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9093
+      - -mbus.kafkaProperties.common.bootstrap.servers=localhost:9093
+      - -mbus.busType=KAFKA
     depends_on:
       - init-kafka
     volumes:
@@ -127,8 +127,8 @@ services:
       - "5010:5010" # debug port
       - "7005:7000" # healthcheck port
     command:
-      - --messagingParams
-      - kafka.common.bootstrap.servers=kafka:9093
+      - -mbus.kafkaProperties.common.bootstrap.servers=localhost:9093
+      - -mbus.busType=KAFKA
     depends_on:
       - init-kafka
     volumes:

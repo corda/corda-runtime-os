@@ -220,8 +220,8 @@ class SessionManagerTest {
         mock(),
         linkManagerHostingMap,
         protocolFactory,
+        mockTimeFacilitiesProvider.mockClock,
         sessionReplayer,
-        mockTimeFacilitiesProvider.mockClock
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
@@ -1036,8 +1036,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1086,8 +1086,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1157,8 +1157,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1217,8 +1217,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1276,8 +1276,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1342,8 +1342,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
@@ -1409,8 +1409,8 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mockTimeFacilitiesProvider.mockClock,
             sessionReplayer,
-            mockTimeFacilitiesProvider.mockClock
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(

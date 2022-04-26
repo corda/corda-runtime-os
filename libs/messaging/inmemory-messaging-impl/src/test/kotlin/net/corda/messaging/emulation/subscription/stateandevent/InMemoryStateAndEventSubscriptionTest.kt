@@ -39,7 +39,8 @@ class InMemoryStateAndEventSubscriptionTest {
         mock(),
         mock(),
         topicService,
-        lifecycleCoordinatorFactory
+        lifecycleCoordinatorFactory,
+        1
     )
 
     @BeforeEach

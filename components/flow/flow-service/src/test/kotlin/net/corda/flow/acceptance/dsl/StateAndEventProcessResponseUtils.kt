@@ -8,11 +8,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.uncheckedCast
 
-fun StateAndEventProcessor.Response<Checkpoint>.filterOutputFlowTopicRecords(): List<Record<FlowKey, FlowEvent>> {
+fun StateAndEventProcessor.Response<Checkpoint>.filterOutputFlowTopicRecords(): List<Record<String, FlowEvent>> {
     return responseEvents
         .filter { it.topic == Schemas.Flow.FLOW_EVENT_TOPIC }
         .map { record ->
-            require(record.key is FlowKey) {
+            require(record.key is String) {
                 "${Schemas.Flow.FLOW_EVENT_TOPIC} should only receive records with keys of type ${FlowKey::class.qualifiedName}"
             }
             require(record.value is FlowEvent) {

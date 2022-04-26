@@ -4,15 +4,15 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.flow.FilterMyKeysFlowQuery
+import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.crypto.wire.ops.flow.GenerateFreshKeyFlowCommand
-import net.corda.data.crypto.wire.ops.flow.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.SignWithSpecFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
+import net.corda.data.crypto.wire.ops.flow.commands.SignWithSpecFlowCommand
+import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import java.nio.ByteBuffer
@@ -51,7 +51,7 @@ class CryptoFlowOpsTransformer(
     /**
      * Creates [FilterMyKeysFlowQuery].
      */
-    fun createFilterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): FlowOpsRequest {
+    fun createFilterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): FlowOpsRequest {
         return createRequest(
             tenantId = tenantId,
             request = FilterMyKeysFlowQuery(
@@ -80,12 +80,12 @@ class CryptoFlowOpsTransformer(
      */
     fun createFreshKey(
         tenantId: String,
-        externalId: UUID,
+        externalId: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
-            GenerateFreshKeyFlowCommand(externalId.toString(), context.toWire())
+            GenerateFreshKeyFlowCommand(externalId, context.toWire())
         )
     }
 
@@ -128,14 +128,14 @@ class CryptoFlowOpsTransformer(
      * Transforms the response type.
      *
      * @return [PublicKey] for [GenerateFreshKeyFlowCommand] request and [CryptoPublicKey] response type,
-     * [List<PublicKey>] for [FilterMyKeysFlowQuery] request and [CryptoPublicKeys] response type
+     * [List<PublicKey>] for [FilterMyKeysFlowQuery] request and [CryptoSigningKeys] response type
      * [DigitalSignature.WithKey] for [SignFlowCommand] or [SignWithSpecFlowCommand] request
      * with [CryptoSignatureWithKey] response type
      *
      * @throws [IllegalArgumentException] if the request type is not one of
      * [SignWithSpecFlowCommand], [SignFlowCommand], [GenerateFreshKeyFlowCommand], [FilterMyKeysFlowQuery]
      * or the response is not one of
-     * [CryptoPublicKey], [CryptoPublicKeys], [CryptoSignatureWithKey]
+     * [CryptoPublicKey], [CryptoSigningKeys], [CryptoSignatureWithKey]
      *
      * @throws [IllegalStateException]  if the response contains error or its TTL is greater than expected.
      */
@@ -150,7 +150,7 @@ class CryptoFlowOpsTransformer(
             SignWithSpecFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
             SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
             GenerateFreshKeyFlowCommand::class.java -> transformCryptoPublicKey(response)
-            FilterMyKeysFlowQuery::class.java -> transformCryptoPublicKeys(response)
+            FilterMyKeysFlowQuery::class.java -> transformCryptoSigningKeys(response)
             else -> throw IllegalArgumentException(
                 "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}")
         }
@@ -165,12 +165,12 @@ class CryptoFlowOpsTransformer(
     }
 
     /**
-     * Transforms [CryptoPublicKeys]
+     * Transforms [CryptoSigningKeys]
      */
-    private fun transformCryptoPublicKeys(response: FlowOpsResponse): List<PublicKey> {
-        val resp = response.validateAndGet<CryptoPublicKeys>()
+    private fun transformCryptoSigningKeys(response: FlowOpsResponse): List<PublicKey> {
+        val resp = response.validateAndGet<CryptoSigningKeys>()
         return resp.keys.map {
-            keyEncodingService.decodePublicKey(it.array())
+            keyEncodingService.decodePublicKey(it.publicKey.array())
         }
     }
 

@@ -1,9 +1,8 @@
 package net.corda.messaging.emulation.publisher
 
-import com.typesafe.config.Config
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
@@ -16,17 +15,16 @@ import java.util.concurrent.CompletableFuture
  * @property topicService service to interact with the in-memory storage of topics.
  */
 class CordaPublisher(
-    private val config: Config,
+    private val config: PublisherConfig,
     private val topicService: TopicService
 ) : Publisher {
 
     private companion object {
         private val log: Logger = contextLogger()
-        const val PUBLISHER_CLIENT_ID = "clientId"
     }
 
-    private val clientId = config.getString(PUBLISHER_CLIENT_ID)
-    private val instanceId = if (config.hasPath(INSTANCE_ID)) config.getString(INSTANCE_ID) else null
+    private val clientId = config.clientId
+    private val transactional = config.transactional
 
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         return runAndCreateFutures(records.size) {
@@ -39,14 +37,14 @@ class CordaPublisher(
             block()
             CompletableFuture.completedFuture(Unit)
         } catch (ex: Exception) {
-            val message = "Corda publisher clientId $clientId, instanceId $instanceId, " +
+            val message = "Corda publisher clientId $clientId, transactional $transactional, " +
                 "failed to send record."
             log.error(message, ex)
             CompletableFuture.failedFuture(CordaMessageAPIFatalException(message, ex))
         }
 
         // if not a transaction emulate multiple sends
-        return if (instanceId != null) {
+        return if (transactional) {
             listOf(future)
         } else {
             List(size) { future }

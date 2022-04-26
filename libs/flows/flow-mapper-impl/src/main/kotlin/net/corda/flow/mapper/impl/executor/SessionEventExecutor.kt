@@ -63,7 +63,7 @@ class SessionEventExecutor(
         val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
             Record(outputTopic, sessionEvent.sessionId, generateAppMessage(sessionEvent, sessionEventSerializer))
         } else {
-            Record(outputTopic, flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))
+            Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
         }
 
         return FlowMapperResult(flowMapperState, listOf(outputRecord))

@@ -100,6 +100,13 @@ Worker image
 {{- end }}
 
 {{/*
+CLI image
+*/}}
+{{- define "corda.bootstrapImage" -}}
+"{{ .Values.bootstrap.image.registry | default .Values.image.registry }}/{{ .Values.bootstrap.image.repository }}:{{ .Values.bootstrap.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
+{{- end }}
+
+{{/*
 Worker JAVA_TOOL_OPTIONS
 */}}
 {{- define "corda.workerJavaToolOptions" -}}
@@ -120,10 +127,62 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mkafka.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
+- -mbus.kafkaProperties.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
+- -mbus.busType=KAFKA
 - --topicPrefix={{ .Values.kafka.topicPrefix }}
 {{- end }}
 
+{{/*
+Resources for corda workers
+*/}}
+{{- define "corda.workerResources" }}
+
+resources:
+  requests:
+  {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
+    cpu: {{ default .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
+
+  {{- end }}
+  {{- if or .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
+    memory: {{ default .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
+  {{- end}}
+  limits:
+  {{- if or .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
+    cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
+
+  {{- end }}
+  {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
+    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
+  {{- end }} 
+{{- end }} 
+
+{{/*
+Cluster DB type
+*/}}
+{{- define "corda.clusterDbType" -}}
+{{- .Values.db.cluster.type | default "postgresql" }}
+{{- end -}}
+
+{{/*
+Cluster DB port
+*/}}
+{{- define "corda.clusterDbPort" -}}
+{{- .Values.db.cluster.port | default "5432" }}
+{{- end -}}
+
+{{/*
+Cluster DB user
+*/}}
+{{- define "corda.clusterDbUser" -}}
+{{- .Values.db.cluster.user | default "user" }}
+{{- end -}}
+
+{{/*
+Cluster DB name
+*/}}
+{{- define "corda.clusterDbName" -}}
+{{- .Values.db.cluster.database | default "cordacluster" }}
+{{- end -}}
 
 {{/*
 Cluster DB secret name

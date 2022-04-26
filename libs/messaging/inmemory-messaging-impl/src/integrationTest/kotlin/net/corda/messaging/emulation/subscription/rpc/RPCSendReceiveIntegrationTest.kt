@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.rpc
 
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -24,6 +25,7 @@ class RPCSendReceiveIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
+    private val messagingConfig = SmartConfigImpl.empty()
     private val responseProcessor = object : RPCResponderProcessor<String, String> {
         override fun onNext(request: String, respFuture: CompletableFuture<String>) {
             receivedRequest = request
@@ -45,16 +47,17 @@ class RPCSendReceiveIntegrationTest {
         // Create subscriber for processing requests and start it
         subscriptionFactory.createRPCSubscription(
             rpcConfig = config,
-            responderProcessor = responseProcessor
+            responderProcessor = responseProcessor,
+            messagingConfig = messagingConfig
         ).start()
 
         // Create a sender and send a request
-        val sender = publisherFactory.createRPCSender(rpcConfig = config)
+        val sender = publisherFactory.createRPCSender(rpcConfig = config, messagingConfig = messagingConfig)
         sender.start()
-        var requestCompletion = sender.sendRequest(requestMsg)
+        val requestCompletion = sender.sendRequest(requestMsg)
 
         // wait for the response and validate it
-        var response = requestCompletion.get()
+        val response = requestCompletion.get()
         assertThat(response).isEqualTo(responseMsg)
 
         // assert the original request message was received by the

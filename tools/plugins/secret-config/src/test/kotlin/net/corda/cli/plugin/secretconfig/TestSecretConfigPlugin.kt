@@ -13,12 +13,13 @@ import java.util.stream.Stream
 class TestSecretConfigPlugin {
     @Test
     fun testEncryption() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = SecretConfigPlugin.PluginEntryPoint()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
-            ).execute("password", "-p", "not so secure", "-s", "not so secret", "create")
+            ).setColorScheme(colorScheme).execute("password", "-p", "not so secure", "-s", "not so secret", "create")
         }
 
         println(outText)
@@ -27,12 +28,13 @@ class TestSecretConfigPlugin {
 
     @Test
     fun testDecryption() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = SecretConfigPlugin.PluginEntryPoint()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
-            ).execute(
+            ).setColorScheme(colorScheme).execute(
                 "clCX2yEq3d/F0TvQsnqCp1n5ppEMKp+6WLnCJbufaJIxi4uI",
                 "-p",
                 "not so secure",
@@ -49,11 +51,12 @@ class TestSecretConfigPlugin {
     @ParameterizedTest
     @MethodSource("badCommandLineInputs")
     fun testBadCommandline(caseName: String, args: Array<String>, expectedError: String) {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = SecretConfigPlugin.PluginEntryPoint()
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
-            ).execute(
+            ).setColorScheme(colorScheme).execute(
                 *args
             )
         }

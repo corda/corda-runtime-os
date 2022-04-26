@@ -8,7 +8,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.services.CordaService
+import net.corda.v5.services.CordaService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -35,6 +35,10 @@ class VirtualNodeService @Activate constructor(
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
         private fun generateHoldingIdentity() = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
+    }
+    init {
+        // setting cache size to 2 as some tests require 2 concurrent sandboxes for validating they don't overlap
+        sandboxGroupContextComponent.initCache(2)
     }
 
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()

@@ -9,9 +9,8 @@ import java.time.Duration
 class ReplayCalculatorTest {
 
     companion object {
-        private val CONFIG = ReplayScheduler.ReplaySchedulerConfig(
-            Duration.ofSeconds(1),
-            Duration.ofSeconds(7),
+        private val CONFIG = ReplayScheduler.ReplaySchedulerConfig.ConstantReplaySchedulerConfig(
+            Duration.ZERO,
             100
         )
     }

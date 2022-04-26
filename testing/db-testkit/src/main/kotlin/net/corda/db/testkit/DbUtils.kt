@@ -38,11 +38,15 @@ object DbUtils {
      * Get a Postgres EntityManager configuration if system properties set as necessary. Otherwise, falls back on
      * in-memory implementation.
      */
-    fun getEntityManagerConfiguration(inMemoryDbName: String, dbUser:String? = null, dbPassword: String? = null
+    fun getEntityManagerConfiguration(
+        inMemoryDbName: String,
+        dbUser:String? = null,
+        dbPassword: String? = null,
+        schemaName: String? = null
     ): EntityManagerConfiguration {
         val port = System.getProperty("postgresPort")
         return if (!port.isNullOrBlank()) {
-            val ds = createPostgresDataSource(dbUser, dbPassword)
+            val ds = createPostgresDataSource(dbUser, dbPassword, schemaName)
             DbEntityManagerConfiguration(ds, true, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
@@ -58,11 +62,18 @@ object DbUtils {
      * @param dbPassword DB password. If value is not provided, value of the system property "postgresPassword" is used.
      *                   If system property is not set then value "password" is used
      */
-    fun createPostgresDataSource(dbUser:String? = null, dbPassword: String? = null): CloseableDataSource {
+    fun createPostgresDataSource(
+        dbUser:String? = null,
+        dbPassword: String? = null,
+        schemaName: String? = null
+    ): CloseableDataSource {
         val port = System.getProperty("postgresPort")
         val postgresDb = getPostgresDatabase()
         val host = getPropertyNonBlank("postgresHost", "localhost")
-        val jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+        if(!schemaName.isNullOrBlank()) {
+            jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
+        }
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
@@ -70,15 +81,24 @@ object DbUtils {
         return PostgresDataSourceFactory().create(jdbcUrl, user, password, maximumPoolSize = 5)
     }
 
-    fun createConfig(inMemoryDbName: String, dbUser:String? = null, dbPassword: String? = null): Config {
+    fun createConfig(
+        inMemoryDbName: String,
+        dbUser:String? = null,
+        dbPassword: String? = null,
+        schemaName: String? = null
+    ): Config {
         val port = System.getProperty("postgresPort")
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
         if(!port.isNullOrBlank()) {
             val postgresDb = getPostgresDatabase()
             val host = getPropertyNonBlank("postgresHost", "localhost")
+            var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+            if(!schemaName.isNullOrBlank()) {
+                jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
+            }
             return ConfigFactory.empty()
-                .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:postgresql://$host:$port/$postgresDb"))
+                .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
                 .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(user))
                 .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(password))
         } else {

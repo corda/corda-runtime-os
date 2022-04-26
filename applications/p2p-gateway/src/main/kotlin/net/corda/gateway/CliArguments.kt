@@ -3,6 +3,10 @@ package net.corda.gateway
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import picocli.CommandLine
 import picocli.CommandLine.Option
 import kotlin.random.Random
@@ -32,7 +36,7 @@ internal class CliArguments {
 
     @Option(
         names = ["-k", "--kafka-servers"],
-        description = ["The kafka servers (default: \${DEFAULT-VALUE})"]
+        description = ["A comma-separated list of addresses of Kafka brokers (default: \${DEFAULT-VALUE})"]
     )
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
@@ -51,12 +55,20 @@ internal class CliArguments {
     val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
             .withValue(
-                "messaging.kafka.common.bootstrap.servers",
+                BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(kafkaServers)
             )
             .withValue(
-                "messaging.topic.prefix",
+                BUS_TYPE,
+                ConfigValueFactory.fromAnyRef("KAFKA")
+            )
+            .withValue(
+                TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(topicPrefix)
+            )
+            .withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(instanceId)
             )
     }
 }

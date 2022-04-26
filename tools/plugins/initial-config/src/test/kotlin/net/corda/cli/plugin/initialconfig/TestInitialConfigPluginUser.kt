@@ -10,12 +10,13 @@ class TestInitialConfigPluginUser {
 
     @Test
     fun testDevSetupScript() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = tapSystemOutNormalized {
             CommandLine(
                 app
-            ).execute("create-user-config", "create-dev-config")
+            ).setColorScheme(colorScheme).execute("create-user-config", "create-dev-config")
         }
 
         // can only compare the first bit as timestamp and salted hash will change.
@@ -27,12 +28,13 @@ class TestInitialConfigPluginUser {
 
     @Test
     fun testSetupScript() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = tapSystemOutNormalized {
             CommandLine(
                 app
-            ).execute("create-user-config", "-u", "user1", "-p", "password")
+            ).setColorScheme(colorScheme).execute("create-user-config", "-u", "user1", "-p", "password")
         }
 
         // can only compare the first bit as timestamp and salted hash will change.
@@ -46,24 +48,26 @@ class TestInitialConfigPluginUser {
 
     @Test
     fun testSetupScriptMissingUser() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = tapSystemErrNormalized {
             CommandLine(
                 app
-            ).execute("create-user-config")
+            ).setColorScheme(colorScheme).execute("create-user-config")
         }
         assertThat(outText).startsWith("A user id must be specified.")
     }
 
     @Test
     fun testSetupScriptNoPassword() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
 
         val outText = tapSystemOutNormalized {
             CommandLine(
                 app
-            ).execute("create-user-config", "-u", "user1")
+            ).setColorScheme(colorScheme).execute("create-user-config", "-u", "user1")
         }
 
         assertThat(outText).startsWith(

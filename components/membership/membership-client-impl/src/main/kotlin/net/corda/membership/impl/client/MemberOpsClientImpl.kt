@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
@@ -8,16 +9,25 @@ import net.corda.data.membership.rpc.request.RegistrationRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationResponse
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
-import net.corda.membership.impl.client.lifecycle.MemberOpsClientLifecycleHandler
+import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -39,6 +49,9 @@ class MemberOpsClientImpl @Activate constructor(
 ) : MemberOpsClient {
     companion object {
         private val logger: Logger = contextLogger()
+
+        const val CLIENT_ID = "membership.ops.rpc"
+        const val GROUP_NAME = "membership.ops.rpc"
     }
 
     private interface InnerMemberOpsClient : AutoCloseable {
@@ -49,14 +62,13 @@ class MemberOpsClientImpl @Activate constructor(
 
     private var impl: InnerMemberOpsClient = InactiveImpl()
 
-    private val lifecycleHandler = MemberOpsClientLifecycleHandler(
-        publisherFactory,
-        configurationReadService,
-        ::activate,
-        ::deactivate
-    )
+    // for watching the config changes
+    private var configHandle: AutoCloseable? = null
 
-    private val coordinator = coordinatorFactory.createCoordinator<MemberOpsClient>(lifecycleHandler)
+    // for checking the components' health
+    private var componentHandle: AutoCloseable? = null
+
+    private val coordinator = coordinatorFactory.createCoordinator<MemberOpsClient>(::processEvent)
 
     private val className = this::class.java.simpleName
 
@@ -73,24 +85,8 @@ class MemberOpsClientImpl @Activate constructor(
         coordinator.stop()
     }
 
-    private fun activate(rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>, reason: String) {
-        implSwap(ActiveImpl(rpcSender))
-        updateStatus(LifecycleStatus.UP, reason)
-    }
-
-    private fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
-        implSwap(InactiveImpl())
-    }
-
-    private fun implSwap(newImpl: InnerMemberOpsClient) {
-        val current = impl
-        impl = newImpl
-        current.close()
-    }
-
-    private fun updateStatus(status: LifecycleStatus, reason: String){
-        if(coordinator.status != status) {
+    private fun updateStatus(status: LifecycleStatus, reason: String) {
+        if (coordinator.status != status) {
             coordinator.updateStatus(status, reason)
         }
     }
@@ -100,6 +96,64 @@ class MemberOpsClientImpl @Activate constructor(
 
     override fun checkRegistrationProgress(holdingIdentityId: String) =
         impl.checkRegistrationProgress(holdingIdentityId)
+
+    private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> {
+                componentHandle?.close()
+                componentHandle = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                    )
+                )
+            }
+            is StopEvent -> {
+                componentHandle?.close()
+                configHandle?.close()
+                deactivate("Handling the stop event for component.")
+            }
+            is RegistrationStatusChangeEvent -> {
+                when (event.status) {
+                    LifecycleStatus.UP -> {
+                        configHandle?.close()
+                        configHandle = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                        )
+                    }
+                    else -> {
+                        configHandle?.close()
+                        deactivate("Service dependencies have changed status causing this component to deactivate.")
+                    }
+                }
+            }
+            is ConfigChangedEvent -> {
+                impl.close()
+                impl = ActiveImpl(
+                    publisherFactory.createRPCSender(
+                        RPCConfig(
+                            groupName = GROUP_NAME,
+                            clientName = CLIENT_ID,
+                            requestTopic = Schemas.Membership.MEMBERSHIP_RPC_TOPIC,
+                            requestType = MembershipRpcRequest::class.java,
+                            responseType = MembershipRpcResponse::class.java
+                        ),
+                        event.config.toMessagingConfig()
+                    ).also {
+                        it.start()
+                    }
+                )
+                updateStatus(LifecycleStatus.UP, "Dependencies are UP and configuration received.")
+            }
+        }
+    }
+
+    private fun deactivate(reason: String) {
+        updateStatus(LifecycleStatus.DOWN, reason)
+        val current = impl
+        impl = InactiveImpl()
+        current.close()
+    }
 
     private class InactiveImpl : InnerMemberOpsClient {
         companion object {

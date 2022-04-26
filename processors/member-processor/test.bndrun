@@ -3,13 +3,6 @@
 -runee: JavaSE-11
 -runtrace: true
 
--runproperties: \
-    org.slf4j.simpleLogger.defaultLogLevel=info,\
-    org.slf4j.simpleLogger.showShortLogName=true,\
-    org.slf4j.simpleLogger.showThreadName=false,\
-    org.slf4j.simpleLogger.showDateTime=true,\
-    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
-
 -runsystempackages: \
     sun.security.x509
 
@@ -21,22 +14,39 @@
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.cpi-info-read-service-impl',\
     bnd.identity;id='net.corda.layered-property-map',\
-    bnd.identity;id='net.corda.membership-application',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.membership-service-impl',\
     bnd.identity;id='net.corda.crypto-processor',\
-    bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.crypto-client-impl',\
-    bnd.identity;id='net.corda.crypto-messaging-persistence-impl',\
+    bnd.identity;id='net.corda.crypto-db-persistence-impl',\
     bnd.identity;id='net.corda.crypto-impl',\
+    bnd.identity;id='net.corda.crypto-service-impl',\
+    bnd.identity;id='net.corda.db-connection-manager-impl',\
+    bnd.identity;id='net.corda.db-orm-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.inmemory-messaging-impl',\
     bnd.identity;id='junit-jupiter-engine',\
+    bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
-    bnd.identity;id='junit-platform-launcher'
+    bnd.identity;id='net.bytebuddy.byte-buddy',\
+    bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='org.postgresql.jdbc'
 
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
+
+-runproperties: \
+    org.osgi.framework.bsnversion=multiple,\
+    postgresHost=${project.postgresHost},\
+    postgresPort=${project.postgresPort},\
+    postgresDb=${project.postgresDb},\
+    postgresUser=${project.postgresUser},\
+    postgresPassword=${project.postgresPassword},\
+    org.slf4j.simpleLogger.defaultLogLevel=info,\
+    org.slf4j.simpleLogger.showShortLogName=true,\
+    org.slf4j.simpleLogger.showThreadName=false,\
+    org.slf4j.simpleLogger.showDateTime=true,\
+    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'

@@ -129,7 +129,7 @@ class MemberOpsServiceImpl @Activate constructor(
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
         val messagingConfig = event.config.toMessagingConfig()
         val processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
-        val current = subscription
+        subscription?.close()
         subscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,
@@ -139,8 +139,7 @@ class MemberOpsServiceImpl @Activate constructor(
                 responseType = MembershipRpcResponse::class.java
             ),
             responderProcessor = processor,
-            nodeConfig = messagingConfig
+            messagingConfig = messagingConfig
         ).also { it.start() }
-        current?.close()
     }
 }

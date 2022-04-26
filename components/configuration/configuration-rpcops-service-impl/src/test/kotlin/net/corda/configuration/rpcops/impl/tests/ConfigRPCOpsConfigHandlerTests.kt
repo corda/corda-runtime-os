@@ -7,9 +7,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
+import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -41,10 +42,11 @@ class ConfigRPCOpsConfigHandlerTests {
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(true)
             whenever(getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(timeout)
+            whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).setTimeout(timeout)
     }
@@ -54,8 +56,12 @@ class ConfigRPCOpsConfigHandlerTests {
         val configRPCOps = mock<ConfigRPCOpsInternal>()
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
+        val config = mock<SmartConfig>().apply {
+            whenever(withFallback(any())).thenReturn(this)
+        }
+
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock()))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
         }
     }
 
@@ -63,10 +69,11 @@ class ConfigRPCOpsConfigHandlerTests {
     fun `creates RPC sender if RPC config is provided`() {
         val configRPCOps = mock<ConfigRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
+            whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).createAndStartRPCSender(config)
     }
@@ -78,12 +85,12 @@ class ConfigRPCOpsConfigHandlerTests {
             whenever(createAndStartRPCSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
 
         val e = assertThrows<ConfigRPCOpsServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -96,10 +103,14 @@ class ConfigRPCOpsConfigHandlerTests {
     @Test
     fun `does not throw if RPC sender config is not provided under RPC config`() {
         val configRPCOps = mock<ConfigRPCOpsInternal>()
+        val config = mock<SmartConfig>().apply {
+            whenever(withFallback(any())).thenReturn(this)
+        }
+
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock()))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
         }
     }
 

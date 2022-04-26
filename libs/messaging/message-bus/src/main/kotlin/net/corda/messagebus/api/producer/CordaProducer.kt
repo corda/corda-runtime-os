@@ -2,7 +2,6 @@ package net.corda.messagebus.api.producer
 
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import java.time.Duration
 
 /**
  * A Corda client that publishes messages to the underlying message bus.
@@ -114,16 +113,4 @@ interface CordaProducer : AutoCloseable {
      * This call may throw an exception immediately if any prior [send] calls failed.
      */
     fun abortTransaction()
-
-    /**
-     * Close this producer.
-     *
-     * If the producer is unable to complete all requests before the timeout expires, this method will fail
-     * any unsent and unacknowledged records immediately. It will also abort the ongoing transaction if it's not
-     * already completing.
-     *
-     * @param timeout The maximum time to wait for producer to complete any pending requests. The value should be
-     *                non-negative. Specifying a timeout of zero means do not wait for pending send requests to complete.
-     */
-    fun close(timeout: Duration)
 }

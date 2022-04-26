@@ -1,13 +1,12 @@
 package net.corda.configuration.rpcops.impl.tests
 
 import net.corda.data.flow.FlowInitiatorType
-import net.corda.data.flow.FlowStatusKey
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.impl.CacheLoadCompleteEvent
 import net.corda.flow.rpcops.impl.FlowStatusCacheServiceImpl
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -19,6 +18,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,7 +37,7 @@ class FlowStatusCacheServiceImplTest {
     private val lifecycleEventRegistration = mock<RegistrationHandle>()
 
     private var eventHandler = mock<LifecycleEventHandler>()
-    private val topicSubscription = mock<CompactedSubscription<FlowStatusKey, FlowStatus>>()
+    private val topicSubscription = mock<CompactedSubscription<FlowKey, FlowStatus>>()
     private val topicSubscriptionName = LifecycleCoordinatorName("c")
     private lateinit var flowStatusCacheService: FlowStatusCacheServiceImpl
     private val config = mock<SmartConfig> { whenever(it.getInt(INSTANCE_ID)).thenReturn(2) }
@@ -47,7 +47,7 @@ class FlowStatusCacheServiceImplTest {
         whenever(lifecycleCoordinator.followStatusChangesByName(any())).thenReturn(lifecycleEventRegistration)
 
         whenever(topicSubscription.subscriptionName).thenReturn(topicSubscriptionName)
-        whenever(subscriptionFactory.createCompactedSubscription<FlowStatusKey, FlowStatus>(any(), any(), any()))
+        whenever(subscriptionFactory.createCompactedSubscription<FlowKey, FlowStatus>(any(), any(), any()))
             .thenReturn(topicSubscription)
 
         flowStatusCacheService =
@@ -58,7 +58,7 @@ class FlowStatusCacheServiceImplTest {
 
     @Test
     fun `Test compacted subscription key class is flow status key`() {
-        assertThat(flowStatusCacheService.keyClass).isEqualTo(FlowStatusKey::class.java)
+        assertThat(flowStatusCacheService.keyClass).isEqualTo(FlowKey::class.java)
     }
 
     @Test
@@ -89,8 +89,7 @@ class FlowStatusCacheServiceImplTest {
 
         val expectedSubscriptionCfg = SubscriptionConfig(
             "Flow Status Subscription",
-            FLOW_STATUS_TOPIC,
-            2
+            FLOW_STATUS_TOPIC
         )
 
         verify(subscriptionFactory).createCompactedSubscription(
@@ -140,8 +139,8 @@ class FlowStatusCacheServiceImplTest {
 
     @Test
     fun `Test on subscription snapshot cache is updated with only RPC statuses`() {
-        val key1 = FlowStatusKey("a1", HoldingIdentity("b1", "c1"))
-        val key2 = FlowStatusKey("a2", HoldingIdentity("b2", "c2"))
+        val key1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
+        val key2 = FlowKey("a2", HoldingIdentity("b2", "c2"))
 
         val value1 = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
         val value2 = FlowStatus().apply { initiatorType = FlowInitiatorType.P2P }
@@ -156,7 +155,7 @@ class FlowStatusCacheServiceImplTest {
 
     @Test
     fun `Test on subscription snapshot cache load complete event is posted`() {
-        val key = FlowStatusKey("a1", HoldingIdentity("b1", "c1"))
+        val key = FlowKey("a1", HoldingIdentity("b1", "c1"))
         val value = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
 
         flowStatusCacheService.onSnapshot(mapOf(key to value))
@@ -166,7 +165,7 @@ class FlowStatusCacheServiceImplTest {
 
     @Test
     fun `Test on next inserts new item`() {
-        val key = FlowStatusKey("a1", HoldingIdentity("b1", "c1"))
+        val key = FlowKey("a1", HoldingIdentity("b1", "c1"))
         val value1 = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
 
         flowStatusCacheService.onSnapshot(mapOf())
@@ -177,8 +176,8 @@ class FlowStatusCacheServiceImplTest {
 
     @Test
     fun `Test on next deletes removed item`() {
-        val key1 = FlowStatusKey("a1", HoldingIdentity("b1", "c1"))
-        val key2 = FlowStatusKey("a2", HoldingIdentity("b2", "c2"))
+        val key1 = FlowKey("a1", HoldingIdentity("b1", "c1"))
+        val key2 = FlowKey("a2", HoldingIdentity("b2", "c2"))
 
         val value1 = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
         val value2 = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
@@ -192,7 +191,7 @@ class FlowStatusCacheServiceImplTest {
 
     @Test
     fun `Test on next updates existing item`() {
-        val key = FlowStatusKey("a1", HoldingIdentity("b1", "c1"))
+        val key = FlowKey("a1", HoldingIdentity("b1", "c1"))
         val value1 = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
         val value2 = FlowStatus().apply { initiatorType = FlowInitiatorType.RPC }
 

@@ -1,18 +1,13 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.FlowStatusKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.StateMachineState
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.handlers.addOrReplaceSession
-import net.corda.flow.pipeline.handlers.getSession
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
@@ -24,7 +19,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
@@ -42,6 +36,7 @@ class SessionEventHandler @Activate constructor(
     override val type = SessionEvent::class.java
 
     override fun preProcess(context: FlowEventContext<SessionEvent>): FlowEventContext<SessionEvent> {
+        val checkpoint = context.checkpoint
         val sessionEvent = context.inputEventPayload
 
         log.info("Session event in handler: ${sessionEvent.payload}")
@@ -50,7 +45,7 @@ class SessionEventHandler @Activate constructor(
 
         val updatedSessionState = sessionManager.processMessageReceived(
             sessionEvent.sessionId,
-            context.checkpoint?.getSession(sessionEvent.sessionId),
+            if (checkpoint.doesExist) checkpoint.getSessionState(sessionEvent.sessionId) else null,
             sessionEvent,
             now
         )
@@ -59,63 +54,44 @@ class SessionEventHandler @Activate constructor(
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         when (val sessionInit = nextSessionEvent?.payload) {
             is SessionInit -> {
-                if (context.checkpoint != null) {
-                    throw FlowProcessingException(
-                        "Flow [${context.checkpoint.flowKey.flowId}] already has a checkpoint while processing session init event"
-                    )
-                }
-                val checkpoint =
-                    createInitiatedFlowCheckpoint(context, updatedSessionState, sessionInit, nextSessionEvent.initiatingIdentity)
-                checkpoint.sessions.add(updatedSessionState)
-                return context.copy(checkpoint = checkpoint)
+                createInitiatedFlowCheckpoint(context, sessionInit,nextSessionEvent)
             }
         }
 
-        context.checkpoint?.addOrReplaceSession(updatedSessionState)
+        checkpoint.putSessionState(updatedSessionState)
 
         return context
     }
 
     private fun createInitiatedFlowCheckpoint(
         context: FlowEventContext<*>,
-        sessionState: SessionState,
         sessionInit: SessionInit,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity
-    ): Checkpoint {
-        val sessionId = sessionState.sessionId
+        sessionEvent: SessionEvent
+    ) {
+        val sessionId = sessionEvent.sessionId
+        val initiatingIdentity = sessionEvent.initiatingIdentity
+        val initiatedIdentity = sessionEvent.initiatedIdentity
         val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(initiatingIdentity.toCorda())
-        val initiatedFlow = initiatingToInitiatedFlows[sessionInit.cpiId to sessionInit.flowName] ?: throw FlowProcessingException(
-            "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
-        )
-
-        val state = StateMachineState.newBuilder()
-            .setSuspendCount(0)
-            .setIsKilled(false)
-            .setWaitingFor(WaitingFor(WaitingForSessionInit(sessionId)))
-            .setSuspendedOn(null)
-            .build()
+        val initiatedFlow = initiatingToInitiatedFlows[sessionInit.cpiId to sessionInit.flowName]
+                ?: throw FlowProcessingException(
+                    "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
+                )
         val startContext = FlowStartContext.newBuilder()
-            .setStatusKey(FlowStatusKey(context.inputEvent.flowKey.flowId, context.inputEvent.flowKey.identity))
+            .setStatusKey(FlowKey(sessionId, initiatedIdentity))
             .setInitiatorType(FlowInitiatorType.P2P)
             .setRequestId(sessionId)
-            .setIdentity(context.inputEvent.flowKey.identity)
+            .setIdentity(initiatedIdentity)
             .setCpiId(sessionInit.cpiId)
             .setInitiatedBy(initiatingIdentity)
             .setFlowClassName(initiatedFlow)
             .setCreatedTimestamp(Instant.now())
             .build()
-        return Checkpoint.newBuilder()
-            .setFlowKey(sessionInit.flowKey)
-            .setFiber(ByteBuffer.wrap(byteArrayOf()))
-            .setFlowStartContext(startContext)
-            .setFlowState(state)
-            .setSessions(mutableListOf())
-            .setFlowStackItems(mutableListOf())
-            .build()
+
+        context.checkpoint.initFromNew(sessionInit.flowId, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
     }
 
-    private fun getInitiatingToInitiatedFlowsFromSandbox(holdingIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
-        return flowSandboxService.get(holdingIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
-            ?: throw FlowProcessingException("Sandbox for identity: $holdingIdentity has not been initialised correctly")
+    private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
+        return flowSandboxService.get(initiatedIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
+            ?: throw FlowProcessingException("Sandbox for identity: $initiatedIdentity has not been initialised correctly")
     }
 }

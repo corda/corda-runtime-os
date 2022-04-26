@@ -2,13 +2,11 @@ package net.corda.flow.service
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -45,16 +43,15 @@ class FlowExecutor(
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
 
-    private var messagingSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>? = null
+    private var messagingSubscription: StateAndEventSubscription<String, Checkpoint, FlowEvent>? = null
 
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }
                 val messagingConfig = config.toMessagingConfig()
-                val instanceId = messagingConfig.getInt(INSTANCE_ID)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC, instanceId),
+                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     // TODO Needs to be reviewed as part of CORE-3780, using temporary config for FLOW_CONFIG until then
                     // flowEventProcessorFactory.create(config[FLOW_CONFIG] ?: throw CordaMessageAPIConfigException(FLOW_CONFIG)),
                     flowEventProcessorFactory.create(tempFlowSmartConfig),

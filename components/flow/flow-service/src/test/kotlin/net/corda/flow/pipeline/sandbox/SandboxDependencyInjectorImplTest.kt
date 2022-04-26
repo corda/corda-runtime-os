@@ -3,7 +3,7 @@ package net.corda.flow.pipeline.sandbox
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaInject
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -53,10 +53,14 @@ class SandboxDependencyInjectorImplTest {
     @Test
     fun `an exception is thrown if the same interface is implemented by more than once service`() {
         Assertions.assertThatIllegalArgumentException()
-            .isThrownBy { SandboxDependencyInjectorImpl(mapOf(
-                s2 to serviceTypes2,
-                DuplicateService2Impl() to serviceTypes2
-            )) {} }
+            .isThrownBy {
+                SandboxDependencyInjectorImpl(
+                    mapOf(
+                        s2 to serviceTypes2,
+                        DuplicateService2Impl() to serviceTypes2
+                    )
+                ) {}
+            }
             .withMessage(
                 "An implementation of type '${Service2::class.qualifiedName}' has been already been " +
                         "registered by '${Service2Impl::class.qualifiedName}' it can't be registered again " +

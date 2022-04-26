@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.compacted
 
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -25,6 +26,8 @@ class CompactedSubscriptionMultipleConsumersIntegrationTest {
 
     private val topic = "compacted.Topic"
 
+    private val config = SmartConfigImpl.empty()
+
     private val snapshotSize = 5
     private val additionalData = 10
 
@@ -34,7 +37,7 @@ class CompactedSubscriptionMultipleConsumersIntegrationTest {
             Record(topic, "key.$it", "value.0.$it")
         }
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(records).forEach { it.get() }
         }
     }
@@ -45,7 +48,7 @@ class CompactedSubscriptionMultipleConsumersIntegrationTest {
             Record(topic, "key.$it", "value.1.$it")
         }
 
-        publisherFactory.createPublisher(publisherConfig).use {
+        publisherFactory.createPublisher(publisherConfig, config).use {
             it.publish(records).forEach { it.get() }
         }
     }
@@ -83,6 +86,7 @@ class CompactedSubscriptionMultipleConsumersIntegrationTest {
         fun waitForSnapshot() {
             snapshotLatch.await()
         }
+
         fun waitForChanges() {
             changesLatch.await()
         }
@@ -96,8 +100,8 @@ class CompactedSubscriptionMultipleConsumersIntegrationTest {
         val processor1 = Processor()
         val processor2 = Processor()
 
-        val subscriber1 = subscriptionFactory.createCompactedSubscription(config, processor1)
-        val subscriber2 = subscriptionFactory.createCompactedSubscription(config, processor2)
+        val subscriber1 = subscriptionFactory.createCompactedSubscription(config, processor1, SmartConfigImpl.empty())
+        val subscriber2 = subscriptionFactory.createCompactedSubscription(config, processor2, SmartConfigImpl.empty())
         subscriber1.start()
         subscriber2.start()
 

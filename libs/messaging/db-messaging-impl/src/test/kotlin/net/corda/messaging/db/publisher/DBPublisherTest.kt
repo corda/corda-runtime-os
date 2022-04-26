@@ -22,7 +22,7 @@ import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.sql.SQLNonTransientException
 import java.sql.SQLTransientException
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicLong
 
@@ -78,12 +78,13 @@ class DBPublisherTest {
         `when`(assign(anyOrNull(), anyInt())).thenReturn(2)
     }
 
-    private val transactionalConfig = PublisherConfig("client-id", 1)
+    private val transactionalConfig = PublisherConfig("client-id")
     private val nonTransactionalConfig = PublisherConfig("client-id")
 
     @Test
     fun `transactional publisher writes records and releases offsets successfully`() {
-        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager,
+            partitionAssignor, 1)
         dbPublisher.start()
         val records = listOf(
             Record(topic, "key1", "value1"),
@@ -161,7 +162,8 @@ class DBPublisherTest {
 
     @Test
     fun `publisher can write records with null values successfully`() {
-        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager,
+            partitionAssignor,1 )
         dbPublisher.start()
         val records = listOf(
             Record(topic, "key1", null),
@@ -189,7 +191,8 @@ class DBPublisherTest {
     @Test
     fun `when db access fails with transient error, the publisher fails the requests with intermittent exception`() {
         failureToSimulateForDbWrite = SQLTransientException()
-        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager,
+            partitionAssignor, 1)
         dbPublisher.start()
         val records = listOf(
             Record(topic, "key1", null),
@@ -212,7 +215,8 @@ class DBPublisherTest {
     @Test
     fun `when db access fails with non-transient error, the publisher fails the requests with fatal exception`() {
         failureToSimulateForDbWrite = SQLNonTransientException()
-        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val dbPublisher = DBPublisher(transactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager,
+            partitionAssignor, 1)
         dbPublisher.start()
         val records = listOf(
             Record(topic, "key1", null),

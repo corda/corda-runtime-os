@@ -2,7 +2,6 @@ package net.corda.flow.dummy.link
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -88,7 +87,7 @@ class DummyLinkManagerService @Activate constructor(
         durableSub?.close()
 
         durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schemas.P2P.P2P_OUT_TOPIC, messagingConfig.getInt(INSTANCE_ID)),
+            SubscriptionConfig(CONSUMER_GROUP, Schemas.P2P.P2P_OUT_TOPIC),
             DummyLinkManagerProcessor(),
             messagingConfig,
             null

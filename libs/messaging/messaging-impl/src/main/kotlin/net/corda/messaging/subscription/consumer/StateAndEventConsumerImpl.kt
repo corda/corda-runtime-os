@@ -5,8 +5,9 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.tryGetResult
+import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
@@ -16,11 +17,11 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
-class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
-    private val config: StateAndEventConfig,
+internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
+    private val config: ResolvedSubscriptionConfig,
     override val eventConsumer: CordaConsumer<K, E>,
     override val stateConsumer: CordaConsumer<K, S>,
-    private val partitionState: StateAndEventPartitionState<K, S>,
+    partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
 ) : StateAndEventConsumer<K, S, E>, AutoCloseable {
 
@@ -40,13 +41,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val consumerCloseTimeout = config.consumerCloseTimeout
-    private val maxPollInterval = config.maxPollInterval
+    private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
-
-    private val eventTopic = config.eventTopic
-    private val stateTopic = config.stateTopic
-    private val groupName = config.eventGroupName
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
@@ -84,8 +80,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun close() {
-        eventConsumer.close(consumerCloseTimeout)
-        stateConsumer.close(consumerCloseTimeout)
+        eventConsumer.close()
+        stateConsumer.close()
         executor.shutdown()
     }
 
@@ -94,6 +90,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         val statePartitionsToSync = partitionsToSync.toMap()
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
+            val stateTopic = getStateAndEventStateTopic(config.topic)
             val stateTopicPartition = CordaTopicPartition(stateTopic, partitionId)
             val stateConsumerPollPosition = stateConsumer.position(stateTopicPartition)
             val endOffset = partition.value
@@ -103,7 +100,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                             "end offset $endOffset"
                 }
                 partitionsToSync.remove(partitionId)
-                partitionsSynced.add(CordaTopicPartition(eventTopic, partitionId))
+                partitionsSynced.add(CordaTopicPartition(config.topic, partitionId))
             }
         }
 
@@ -179,10 +176,11 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
+                val stateTopic = getStateAndEventStateTopic(config.topic)
                 //will never be null, created on assignment in rebalance listener
                 val currentStatesByPartition = currentStates[partitionId]
                     ?: throw CordaMessageAPIFatalException("Current State map for " +
-                            "group $groupName on topic $stateTopic[$partitionId] is null.")
+                            "group ${config.group} on topic $stateTopic[$partitionId] is null.")
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)

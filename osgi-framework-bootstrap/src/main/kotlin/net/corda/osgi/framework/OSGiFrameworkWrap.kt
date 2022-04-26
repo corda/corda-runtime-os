@@ -523,13 +523,24 @@ class OSGiFrameworkWrap(
         }
         val frameworkContext = framework.bundleContext
         val applicationServiceReference = frameworkContext.getServiceReference(Application::class.java)
+
+        //  Log errors that occur in the OSGi framework, such trying to instantiate missing implementations.
+        frameworkContext.addFrameworkListener {
+            if (it.type and FrameworkEvent.ERROR != 0) {
+                logger.error(it.throwable.localizedMessage, it.throwable.cause)
+            }
+        }
+
         if (applicationServiceReference != null) {
             val application = frameworkContext.getService(applicationServiceReference)
             if (application != null) {
                 application.startup(args)
             } else {
-                logger.error("Your Application could not be instantiated - check your constructor @Reference parameters\n" +
-                        "Remove all parameters and add them back one at a time to locate the problem.")
+                logger.error("Your Application could not be instantiated:\n" +
+                        "* Check your constructor @Reference parameters\n" +
+                        "  Remove all parameters and add them back one at a time to locate the problem.\n" +
+                        "* Split packages are NOT allowed in OSGi:\n" +
+                        "  check that your interface (bundle) and impl (bundle) are in different packages")
             }
         } else {
             throw ClassNotFoundException(

@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
@@ -55,7 +54,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("bannedDigests")
-    @Timeout(30)
     fun `Should not be using unsafe (banned) digest algorithms`(
         algorithmName: DigestAlgorithmName
     ) {
@@ -66,7 +64,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("majorDigests")
-    @Timeout(30)
     fun `Should support major digests algorithms`(
         algorithmName: DigestAlgorithmName
     ) {
@@ -83,7 +80,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate sha2-256 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_256)
         assertEquals(32, hash.size)
@@ -96,7 +92,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate sha2-384 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_384)
         assertEquals(48, hash.size)
@@ -112,7 +107,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate sha2-512 secure hash`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_512)
         assertEquals(64, hash.size)
@@ -127,7 +121,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate sha3-256 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_256)
@@ -144,7 +137,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate sha3-384 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_384)
@@ -162,7 +154,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate sha3-512 secure hash`() {
         assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.JAVA_11))
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_512)
@@ -180,7 +171,6 @@ class DigestServiceTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate secure hash using custom factory`() {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), CUSTOM_DIGEST)
         assertEquals(32, hash.size)
@@ -199,7 +189,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("digests")
-    @Timeout(30)
     fun `Should not retain state between same-thread invocations for all supported digests`(
         digestScheme: DigestScheme
     ) {
@@ -217,7 +206,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("digests")
-    @Timeout(30)
     fun `Should calculate hash for array for all supported digests`(
         digestScheme: DigestScheme
     ) {
@@ -239,7 +227,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("digests")
-    @Timeout(30)
     fun `Should calculate hash for short input streams for all supported digests`(
         digestScheme: DigestScheme
     ) {
@@ -263,7 +250,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("digests")
-    @Timeout(30)
     fun `Should calculate hash for medium sized input streams for all supported digests`(
         digestScheme: DigestScheme
     ) {
@@ -286,7 +272,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("digests")
-    @Timeout(30)
     fun `Should calculate hash for large sized input streams for all supported digests`(
         digestScheme: DigestScheme
     ) {
@@ -309,7 +294,6 @@ class DigestServiceTests {
 
     @ParameterizedTest
     @MethodSource("digests")
-    @Timeout(30)
     fun `Should calculate hash for input streams with sizes around buffer size for all supported digests`(
         digestScheme: DigestScheme
     ) {

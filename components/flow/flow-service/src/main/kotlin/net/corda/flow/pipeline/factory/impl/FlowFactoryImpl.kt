@@ -4,7 +4,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowSession
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Component
 

@@ -1,37 +1,52 @@
 package net.corda.p2p.setup
 
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
+import net.corda.messagebus.kafka.producer.builder.KafkaCordaProducerBuilderImpl
+import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.osgi.api.Application
-import net.corda.osgi.api.Shutdown
+import net.corda.messaging.publisher.factory.CordaPublisherFactory
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.FrameworkUtil
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
+import kotlin.system.exitProcess
 
-@Component(immediate = true)
-class Setup @Activate constructor(
-    @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-) : Application {
+fun main(args: Array<String>) {
+    Setup(args).run()
+}
+class Setup(
+    private val args: Array<String>,
+) : Runnable {
+
+    private val publisherFactory by lazy {
+        val registry = AvroSchemaRegistryImpl()
+        val serializationFactory = CordaAvroSerializationFactoryImpl(registry)
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl(registry)
+        val producerBuilder = KafkaCordaProducerBuilderImpl(registry)
+        val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        CordaPublisherFactory(
+            serializationFactory,
+            producerBuilder,
+            consumerBuilder,
+            coordinatorFactory
+        )
+    }
     private companion object {
         private val logger = contextLogger()
     }
 
-    override fun startup(args: Array<String>) {
+    override fun run() {
         val command = Command()
         val commandLine = CommandLine(command)
             .setCaseInsensitiveEnumValuesAllowed(true)
         @Suppress("SpreadOperator")
         val exitCode = commandLine.execute(*args)
         if (exitCode != 0) {
-            throw SetupException("Error in setup")
+            exitProcess(exitCode)
         }
+
         val records = commandLine.parseResult.subcommands().mapNotNull {
             it.commandSpec().commandLine().getExecutionResult<Any?>() as? List<*>
         }.flatten()
@@ -49,11 +64,5 @@ class Setup @Activate constructor(
                 logger.info("Published ${records.size} records")
             }
         }
-
-        shutdown()
-    }
-
-    override fun shutdown() {
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 }

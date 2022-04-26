@@ -5,13 +5,14 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.v5.application.flows.FlowInfo
-import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.application.flows.UntrustworthyData
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.v5.application.messaging.FlowInfo
+import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.UntrustworthyData
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
 import java.io.NotSerializableException
 
@@ -19,15 +20,11 @@ class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
-    private var state: State
+    private var initiated: Boolean
 ) : FlowSession {
 
     private companion object {
         val log = contextLogger()
-    }
-
-    enum class State {
-        UNINITIATED, INITIATED, CLOSED
     }
 
     private val fiber: FlowFiber<*> get() = flowFiberService.getExecutingFiber()
@@ -43,7 +40,6 @@ class FlowSessionImpl(
         ensureSessionIsOpen()
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
-        // TODO CORE-4156 Re-add `checkPayloadIs` code in `FlowSessionImpl`
         return deserializeReceivedPayload(received, receiveType)
     }
 
@@ -53,7 +49,6 @@ class FlowSessionImpl(
         ensureSessionIsOpen()
         val request = FlowIORequest.Receive(setOf(sourceSessionId))
         val received = fiber.suspend(request)
-        // TODO CORE-4156 Re-add `checkPayloadIs` code in `FlowSessionImpl`
         return deserializeReceivedPayload(received, receiveType)
     }
 
@@ -64,37 +59,22 @@ class FlowSessionImpl(
         return fiber.suspend(request)
     }
 
-    // marking closed here does not prevent a session closed at the end of a subflow, from being returned to the parent flow and then
-    // executed upon. `closed` will still be false and it will go into the handlers and break further down, that is probably fine if we
-    // convey a good error message back to the flow later on.
     @Suspendable
     override fun close() {
-        when (state) {
-            State.UNINITIATED -> log.info("Ignoring close on uninitiated session: $sourceSessionId")
-            State.INITIATED -> {
-                fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-                val sessionIds = flowFiberService
-                    .getExecutingFiber()
-                    .getExecutionContext()
-                    .flowStackService
-                    .peek()
-                    ?.sessionIds
-                    ?.toMutableList()
-                sessionIds?.remove(sourceSessionId)
-                flowFiberService.getExecutingFiber().getExecutionContext().flowStackService.peek()?.sessionIds = sessionIds
-                state = State.CLOSED
-                log.info("Closed session: $sourceSessionId")
-            }
-            State.CLOSED -> log.info("Ignoring duplicate close on session: $sourceSessionId")
+        if (initiated) {
+            fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
+            log.info("Closed session: $sourceSessionId")
+        } else {
+            log.info("Ignoring close on uninitiated session: $sourceSessionId")
         }
     }
 
     @Suspendable
     private fun ensureSessionIsOpen() {
-        if (state == State.UNINITIATED) {
+        if (!initiated) {
             flowFiberService.getExecutingFiber().suspend(FlowIORequest.InitiateFlow(counterparty, sourceSessionId))
-            state = State.INITIATED
-        } else if (state == State.CLOSED) throw CordaRuntimeException("Session: $sourceSessionId is closed")
+            initiated = true
+        }
     }
 
     /**
@@ -111,16 +91,26 @@ class FlowSessionImpl(
     private fun <R : Any> deserializeReceivedPayload(received: Map<String, ByteArray>, receiveType: Class<R>): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
-                UntrustworthyData(deserialize(it, receiveType))
+                val payload = getSerializationService().deserialize(it, receiveType)
+                checkPayloadIs(payload, receiveType)
+                UntrustworthyData(payload)
             } catch (e: NotSerializableException) {
                 log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
                 throw e
             }
-        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+        }
+            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
-    private fun <R : Any> deserialize(payload: ByteArray, receiveType: Class<R>): R {
-        return getSerializationService().deserialize(payload, receiveType)
+    /**
+     * AMQP deserialization outputs an object whose type is solely based on the serialized content, therefore although the generic type is
+     * specified, it can still be the wrong type. We check this type here, so that we can throw an accurate error instead of failing later
+     * on when the object is used.
+     */
+    private fun <R : Any> checkPayloadIs(payload: Any, receiveType: Class<R>) {
+        receiveType.castIfPossible(payload) ?: throw CordaRuntimeException(
+            "Expecting to receive a ${receiveType.name} but received a ${payload.javaClass.name} instead, payload: ($payload)"
+        )
     }
 
     private fun getSerializationService(): SerializationService {
@@ -130,9 +120,10 @@ class FlowSessionImpl(
         }
     }
 
-    override fun equals(other: Any?): Boolean = other === this || other is FlowSessionImpl && other.sourceSessionId == sourceSessionId
+    override fun equals(other: Any?): Boolean =
+        other === this || other is FlowSessionImpl && other.sourceSessionId == sourceSessionId
 
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
-    override fun toString(): String = "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, state=$state)"
+    override fun toString(): String = "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$initiated)"
 }

@@ -1,11 +1,13 @@
 package net.corda.p2p.linkmanager.delivery
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY_POSTFIX
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CUTOFF_REPLAY_KEY_POSTFIX
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -13,9 +15,10 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicReference
 
@@ -27,10 +30,9 @@ internal class ReplayScheduler<M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configReadService: ConfigurationReadService,
     private val limitTotalReplays: Boolean,
-    private val replaySchedulerConfigKey: String,
     private val replayMessage: (message: M) -> Unit,
     private val executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
-    private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
+    private val clock: Clock
     ) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
@@ -86,17 +88,43 @@ internal class ReplayScheduler<M>(
 
     /**
      * Controls how added messages are replayed.
-     * [baseReplayPeriod] The period between the original message being sent and a replay. This will double on every subsequent replay,
-     * until [cutOff] is reached.
-     * [cutOff] The maximum period between two replays of the same message.
      * [maxReplayingMessages] The maximum number of replaying messages for each [SessionManager.SessionCounterparties]. This limit is only
      * applied if [limitTotalReplays] is true.
      */
-    internal data class ReplaySchedulerConfig(
-        val baseReplayPeriod: Duration,
-        val cutOff: Duration,
-        val maxReplayingMessages: Int
-    )
+    sealed class ReplaySchedulerConfig(open val maxReplayingMessages: Int) {
+
+        /**
+         * Schedule messages for replay with a constant delay between subsequent replays.
+         * [replayPeriod] The period between replays.
+         */
+        data class ConstantReplaySchedulerConfig(
+            val replayPeriod: Duration,
+            override val maxReplayingMessages: Int
+        ): ReplaySchedulerConfig(maxReplayingMessages) {
+            constructor(config: Config, innerConfig: Config): this(
+                innerConfig.getDuration(REPLAY_PERIOD_KEY),
+                config.getInt(MAX_REPLAYING_MESSAGES_PER_PEER)
+            )
+        }
+
+        /**
+         * Schedule messages for replay with exponential backoff.
+         * [baseReplayPeriod] The period between the original message being sent and a replay. This will double on every subsequent replay,
+         * until [cutOff] is reached.
+         * [cutOff] The maximum period between two replays of the same message.
+         */
+        data class ExponentialBackoffReplaySchedulerConfig(
+            val baseReplayPeriod: Duration,
+            val cutOff: Duration,
+            override val maxReplayingMessages: Int
+        ): ReplaySchedulerConfig(maxReplayingMessages) {
+            constructor(config: Config, innerConfig: Config): this(
+                innerConfig.getDuration(BASE_REPLAY_PERIOD_KEY),
+                innerConfig.getDuration(REPLAY_PERIOD_CUTOFF_KEY),
+                config.getInt(MAX_REPLAYING_MESSAGES_PER_PEER)
+            )
+        }
+    }
 
     inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(configReadService,
         LinkManagerConfiguration.CONFIG_KEY,
@@ -107,36 +135,61 @@ internal class ReplayScheduler<M>(
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             val configUpdateResult = CompletableFuture<Unit>()
-            if (newConfiguration.baseReplayPeriod.isNegative || newConfiguration.cutOff.isNegative) {
-                configUpdateResult.completeExceptionally(
-                    IllegalArgumentException("The duration configurations (with keys " +
-                        "$replaySchedulerConfigKey$BASE_REPLAY_PERIOD_KEY_POSTFIX and $replaySchedulerConfigKey$CUTOFF_REPLAY_KEY_POSTFIX" +
-                         ") must be positive.")
-                )
-                return configUpdateResult
-            }
-            //CORE-4572 will optionally re-enable exponential backoff.
-            val newConstantReplayCalculator = ConstantReplayCalculator(limitTotalReplays, newConfiguration)
-            replayCalculator.set(newConstantReplayCalculator)
-            val extraMessages = oldConfiguration?.maxReplayingMessages?.let { newConstantReplayCalculator.extraMessagesToReplay(it) } ?: 0
-            queuedMessagesPerSessionCounterparties.forEach { (sessionCounterparties, queuedMessages) ->
-                for (i in 0 until extraMessages) {
-                    queuedMessages.poll()?.let {
-                        addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionCounterparties)
+            when (newConfiguration) {
+                is ReplaySchedulerConfig.ConstantReplaySchedulerConfig -> {
+                    if (newConfiguration.replayPeriod.isNegative) {
+                        configUpdateResult.completeExceptionally(
+                            IllegalArgumentException("The duration configurations (with key $REPLAY_PERIOD_KEY) must be positive.")
+                        )
+                        return configUpdateResult
                     }
+                    replayCalculator.set(ConstantReplayCalculator(limitTotalReplays, newConfiguration))
+                }
+                is ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig -> {
+                    if (newConfiguration.baseReplayPeriod.isNegative || newConfiguration.cutOff.isNegative) {
+                        configUpdateResult.completeExceptionally(
+                            IllegalArgumentException("The duration configurations (with keys $BASE_REPLAY_PERIOD_KEY and " +
+                                "$REPLAY_PERIOD_CUTOFF_KEY) must be positive.")
+                        )
+                        return configUpdateResult
+                    }
+                    replayCalculator.set(ExponentialBackoffReplayCalculator(limitTotalReplays, newConfiguration))
                 }
             }
+            val extraMessages = oldConfiguration?.maxReplayingMessages?.let { replayCalculator.get().extraMessagesToReplay(it) } ?: 0
+            queueExtraMessages(extraMessages)
             configUpdateResult.complete(Unit)
             return configUpdateResult
         }
     }
 
-    private fun fromConfig(config: Config): ReplaySchedulerConfig {
-        return ReplaySchedulerConfig(
-            config.getDuration(replaySchedulerConfigKey + BASE_REPLAY_PERIOD_KEY_POSTFIX),
-            config.getDuration(replaySchedulerConfigKey + CUTOFF_REPLAY_KEY_POSTFIX),
-            config.getInt(replaySchedulerConfigKey + MAX_REPLAYING_MESSAGES_PER_PEER_POSTFIX)
-        )
+    private fun queueExtraMessages(extraMessages: Int) {
+        queuedMessagesPerSessionCounterparties.forEach { (sessionCounterparties, queuedMessages) ->
+            for (i in 0 until extraMessages) {
+                queuedMessages.poll()?.let {
+                    addForReplay(it.originalAttemptTimestamp, it.uniqueId, it.message, sessionCounterparties)
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    internal fun fromConfig(config: Config): ReplaySchedulerConfig {
+        for (replayAlgorithm in LinkManagerConfiguration.ReplayAlgorithm.values()) {
+            if (config.hasPath(replayAlgorithm.configKeyName())) {
+                val innerConfig = config.getConfig(replayAlgorithm.configKeyName())
+                return when (replayAlgorithm) {
+                    LinkManagerConfiguration.ReplayAlgorithm.Constant -> {
+                        ReplaySchedulerConfig.ConstantReplaySchedulerConfig(config, innerConfig)
+                    }
+                    LinkManagerConfiguration.ReplayAlgorithm.ExponentialBackoff -> {
+                        ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(config, innerConfig)
+                    }
+                }
+            }
+        }
+        throw ConfigException.Missing("Expected config to contain the one of the following paths: " +
+                "${LinkManagerConfiguration.ReplayAlgorithm.values().map { it.configKeyName() }}.")
     }
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
@@ -186,7 +239,7 @@ internal class ReplayScheduler<M>(
 
     private fun scheduleForReplay(originalAttemptTimestamp: Long, messageId: MessageId, message: M) {
         val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
-        val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
+        val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
         val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
         replayInfoPerMessageId[messageId] = ReplayInfo(firstReplayPeriod, future)
     }

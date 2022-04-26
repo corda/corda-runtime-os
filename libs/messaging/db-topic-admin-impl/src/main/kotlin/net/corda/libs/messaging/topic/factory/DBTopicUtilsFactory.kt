@@ -7,8 +7,6 @@ import net.corda.db.schema.DbSchema.DB_MESSAGE_BUS
 import net.corda.libs.messaging.topic.DBTopicUtils
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
-import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -34,9 +32,13 @@ class DBTopicUtilsFactory @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : TopicUtilsFactory {
 
+    private companion object {
+        const val CLIENT_ID = "client.id"
+    }
+
     override fun createTopicUtils(props: Properties): TopicUtils {
         val config = ConfigFactory.parseProperties(props)
-        val jdbcUrl = config.getStringOrNull(JDBC_URL)
+        val jdbcUrl = if (config.hasPath(JDBC_URL)) config.getString(JDBC_URL) else null
         val dbSource = if (jdbcUrl == null) {
             InMemoryDataSourceFactory().create(DB_MESSAGE_BUS)
         } else {
@@ -51,7 +53,7 @@ class DBTopicUtilsFactory @Activate constructor(
 
         return DBTopicUtils(
             entityManagerFactoryFactory.create(
-                "DB Consumer for ${config.getString(ConfigProperties.CLIENT_ID)}",
+                "DB Consumer for ${config.getString(CLIENT_ID)}",
                 listOf(
                     TopicRecordEntry::class.java,
                     CommittedPositionEntry::class.java,

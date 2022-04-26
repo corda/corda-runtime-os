@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_KEY_PREFIX
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -25,11 +24,13 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
@@ -43,7 +44,7 @@ class DeliveryTracker(
     members: LinkManagerMembershipGroupReader,
     cryptoProcessor: CryptoProcessor,
     sessionManager: SessionManager,
-    instanceId: Int,
+    clock: Clock,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
 
@@ -57,13 +58,13 @@ class DeliveryTracker(
         coordinatorFactory,
         configReadService,
         true,
-        MESSAGE_REPLAY_KEY_PREFIX,
         appMessageReplayer::replayMessage,
+        clock = clock
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS, instanceId),
+        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
         messageTracker.processor,
         configuration,
         messageTracker.listener
@@ -142,6 +143,7 @@ class DeliveryTracker(
                 return when (markerType) {
                     is LinkManagerSentMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
                     is LinkManagerReceivedMarker -> Response(null, emptyList())
+                    is TtlExpiredMarker -> Response(null, emptyList())
                     else -> respond(state)
                 }
             }

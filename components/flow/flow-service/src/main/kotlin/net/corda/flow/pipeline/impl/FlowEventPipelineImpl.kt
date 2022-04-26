@@ -6,6 +6,7 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
+import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
@@ -46,8 +47,8 @@ data class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
-        val waitingFor = context.checkpoint?.flowState?.waitingFor?.value
-            ?: throw FlowProcessingException("Flow [${context.checkpoint?.flowKey?.flowId}] waiting for is null")
+        val waitingFor = context.checkpoint.waitingFor.value
+            ?: throw FlowProcessingException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
         val handler = getFlowWaitingForHandler(waitingFor)
 
@@ -64,9 +65,7 @@ data class FlowEventPipelineImpl(
     override fun setCheckpointSuspendedOn(): FlowEventPipelineImpl {
         // If the flow fiber did not run or resume then there is no `suspendedOn` to change to.
         output?.let {
-            requireCheckpoint(context) { "The flow must have a checkpoint after suspending" }
-                .flowState
-                .suspendedOn = it::class.qualifiedName
+            context.checkpoint.suspendedOn = it::class.qualifiedName!!
         }
         return this
     }
@@ -74,9 +73,7 @@ data class FlowEventPipelineImpl(
     override fun setWaitingFor(): FlowEventPipelineImpl {
         output?.let {
             val waitingFor = getFlowRequestHandler(it).getUpdatedWaitingFor(context, it)
-            requireCheckpoint(context) { "The flow must have a checkpoint after suspending" }
-                .flowState
-                .waitingFor = waitingFor
+            context.checkpoint.waitingFor = waitingFor
         }
         return this
     }
@@ -94,13 +91,13 @@ data class FlowEventPipelineImpl(
 
     override fun toStateAndEventResponse(): StateAndEventProcessor.Response<Checkpoint> {
         log.info("Sending output records to message bus: ${context.outputRecords}")
-        return StateAndEventProcessor.Response(context.checkpoint, context.outputRecords)
+        return StateAndEventProcessor.Response(context.checkpoint.toAvro(), context.outputRecords)
     }
 
     private fun getFlowWaitingForHandler(waitingFor: Any): FlowWaitingForHandler<Any> {
         // This [uncheckedCast] is required to pass the [waitingFor] into the returned [FlowWaitingForHandler] further in the pipeline.
         return uncheckedCast(flowWaitingForHandlers[waitingFor::class.java])
-            ?: throw FlowProcessingException("${waitingFor::class.qualifiedName} does not have an associated flow waiting for handler")
+            ?: throw FlowProcessingException("${waitingFor::class.qualifiedName} does not have an associated flow status handler")
     }
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
@@ -108,13 +105,6 @@ data class FlowEventPipelineImpl(
         // The [out] cannot be kept as it leaks onto the [FlowRequestHandler] interface eventually leading to code that cannot compile.
         return uncheckedCast(flowRequestHandlers[request::class.java])
             ?: throw FlowProcessingException("${request::class.qualifiedName} does not have an associated flow request handler")
-    }
-
-    private inline fun requireCheckpoint(context: FlowEventContext<Any>, message: () -> String): Checkpoint {
-        return context.checkpoint ?: message().let {
-            log.error("$it. Context: $context")
-            throw FlowProcessingException(it)
-        }
     }
 
     private fun updateContextFromFlowExecution(outcome: FlowContinuation): FlowEventPipelineImpl {
@@ -128,11 +118,11 @@ data class FlowEventPipelineImpl(
         */
         return when (val flowResult = flowResultFuture.get()) {
             is FlowIORequest.FlowFinished -> {
-                context.checkpoint!!.fiber = ByteBuffer.wrap(byteArrayOf())
+                context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 copy(output = flowResult)
             }
             is FlowIORequest.FlowSuspended<*> -> {
-                context.checkpoint!!.fiber = flowResult.fiber
+                context.checkpoint.serializedFiber = flowResult.fiber
                 copy(output = flowResult.output)
             }
             is FlowIORequest.FlowFailed -> {

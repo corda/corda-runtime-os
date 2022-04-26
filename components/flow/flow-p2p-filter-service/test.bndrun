@@ -3,6 +3,9 @@
 -runee: JavaSE-11
 -runtrace: true
 
+#uncomment to remote debug
+#-runjdb: 5005
+
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\

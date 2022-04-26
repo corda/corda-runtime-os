@@ -27,12 +27,11 @@ internal class VirtualNodeWriterFactory(
      * Creates a [VirtualNodeWriter].
      *
      * @param config Config to use for subscribing to Kafka.
-     * @param instanceId The instance ID to use for subscribing to Kafka.
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    fun create(config: SmartConfig, instanceId: Int): VirtualNodeWriter {
-        val vnodePublisher = createPublisher(config, instanceId)
+    fun create(config: SmartConfig): VirtualNodeWriter {
+        val vnodePublisher = createPublisher(config)
         val subscription = createRPCSubscription(config, vnodePublisher)
         return VirtualNodeWriter(subscription, vnodePublisher)
     }
@@ -42,8 +41,8 @@ internal class VirtualNodeWriterFactory(
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    private fun createPublisher(config: SmartConfig, instanceId: Int): Publisher {
-        val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
+    private fun createPublisher(config: SmartConfig): Publisher {
+        val publisherConfig = PublisherConfig(CLIENT_NAME_DB)
         return publisherFactory.createPublisher(publisherConfig, config)
     }
 

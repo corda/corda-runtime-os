@@ -3,14 +3,12 @@ package net.corda.crypto.impl.components
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
 import kotlin.random.Random
 
 class DoubleSHA256DigestTests {
     @Test
-    @Timeout(5)
     fun `Should calculate hash for array`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
@@ -27,7 +25,6 @@ class DoubleSHA256DigestTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate hash for short input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
@@ -45,7 +42,6 @@ class DoubleSHA256DigestTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate hash for medium sized input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
@@ -63,7 +59,6 @@ class DoubleSHA256DigestTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate hash for large sized input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
@@ -81,7 +76,6 @@ class DoubleSHA256DigestTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should calculate hash for input streams with sizes around buffer size`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)

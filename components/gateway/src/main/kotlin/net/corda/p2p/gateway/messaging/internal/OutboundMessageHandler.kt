@@ -25,7 +25,7 @@ import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
@@ -42,7 +42,6 @@ internal class OutboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    instanceId: Int,
     private val retryThreadPool: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 ) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
     companion object {
@@ -60,12 +59,11 @@ internal class OutboundMessageHandler(
     private val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        nodeConfiguration,
-        instanceId
+        nodeConfiguration
     )
 
     private val outboundSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC, instanceId),
+        SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC),
         this,
         nodeConfiguration,
         null

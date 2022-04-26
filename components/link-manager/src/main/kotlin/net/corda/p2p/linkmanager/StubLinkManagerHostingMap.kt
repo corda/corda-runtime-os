@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 class StubLinkManagerHostingMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    instanceId: Int,
     configuration: SmartConfig,
 ) : LinkManagerHostingMap {
     companion object {
@@ -38,7 +37,6 @@ class StubLinkManagerHostingMap(
         SubscriptionConfig(
             GROUP_NAME,
             HOSTED_MAP_TOPIC,
-            instanceId
         ),
         Processor(),
         configuration,
