@@ -20,6 +20,7 @@ object DBSetup: BeforeAllCallback {
     override fun beforeAll(context: ExtensionContext?) {
         val bundleContext = FrameworkUtil.getBundle(this::class.java.classLoader).get().bundleContext
         isDB = bundleContext.isDBBundle()
+        println("%%% isDb: $isDB")
         if (isDB) {
             setupEntities()
         }
