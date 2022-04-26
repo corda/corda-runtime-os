@@ -121,3 +121,12 @@ bin/
 
 # Ignore node folders
 node_modules/
+
+# testing
+/applications/workers/release/deploy/schemas/*
+
+/testing/soak/.vscode
+/testing/soak/.venv/
+/testing/soak/GroupPolicy.json
+/testing/soak/*.cpi
+/testing/soak/*.csv

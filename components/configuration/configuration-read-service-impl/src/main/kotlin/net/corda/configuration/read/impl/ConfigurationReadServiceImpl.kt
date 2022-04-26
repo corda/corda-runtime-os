@@ -9,6 +9,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
 /**
@@ -58,6 +59,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
+    @Deactivate
     override fun close() {
         lifecycleCoordinator.close()
     }
