@@ -71,16 +71,15 @@ class MemberProcessorTestUtils {
         val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
         val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
-        val bobHoldingIdentity = HoldingIdentity(bobName, groupId)
 
         fun Publisher.publishRawGroupPolicyData(
             virtualNodeInfoReader: VirtualNodeInfoReadService,
             cpiInfoReadService: CpiInfoReadService,
-            holdingIdentity: HoldingIdentity,
+            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
             groupPolicy: String = sampleGroupPolicy1
         ) {
             val cpiVersion = UUID.randomUUID().toString()
-            val previous = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
+            val previous = getVirtualNodeInfo(virtualNodeInfoReader)
             val previousCpiInfo = getCpiInfo(cpiInfoReadService, previous?.cpiIdentifier)
             // Create test data
             val cpiMetadata = getCpiMetadata(
@@ -104,7 +103,7 @@ class MemberProcessorTestUtils {
 
             // wait for virtual node info reader to pick up changes
             eventually {
-                val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
+                val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader)
                 assertNotNull(newVNodeInfo)
                 assertNotEquals(previous, newVNodeInfo)
                 assertEquals(virtualNodeInfo.cpiIdentifier, newVNodeInfo?.cpiIdentifier)
@@ -128,15 +127,15 @@ class MemberProcessorTestUtils {
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
-        fun getRegistrationResult(registrationProxy: RegistrationProxy, holdingIdentity: HoldingIdentity): MembershipRequestRegistrationResult = eventually {
+        fun getRegistrationResult(registrationProxy: RegistrationProxy): MembershipRequestRegistrationResult = eventually {
             assertDoesNotThrow {
-                registrationProxy.register(holdingIdentity)
+                registrationProxy.register(aliceHoldingIdentity)
             }
         }
 
-        fun getRegistrationResultFails(registrationProvider: RegistrationProxy, holdingIdentity: HoldingIdentity) = eventually {
+        fun getRegistrationResultFails(registrationProvider: RegistrationProxy) = eventually {
             assertThrows<IllegalStateException> {
-                registrationProvider.register(holdingIdentity)
+                registrationProvider.register(aliceHoldingIdentity)
             }
         }
 
@@ -159,7 +158,7 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity,
+            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
             expectedException: Class<out Exception> = IllegalStateException::class.java
         ) = eventually {
             val e = assertThrows<Exception> { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
@@ -168,7 +167,7 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicy(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity
+            holdingIdentity: HoldingIdentity = aliceHoldingIdentity
         ) = eventually {
             assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
         }
@@ -213,8 +212,8 @@ class MemberProcessorTestUtils {
             groupPolicy
         )
 
-        fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService, holdingIdentity: HoldingIdentity) =
-            virtualNodeInfoReader.get(holdingIdentity)
+        fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService) =
+            virtualNodeInfoReader.get(aliceHoldingIdentity)
 
         fun getCpiInfo(cpiInfoReadService: CpiInfoReadService, cpiIdentifier: CpiIdentifier?) =
             when (cpiIdentifier) {
