@@ -154,7 +154,7 @@ class PubSubSubscriptionIntegrationTest {
 
         val processor = TestPubsubProcessor(latch, completeFuture = false)
         val pubsubSub = subscriptionFactory.createPubSubSubscription(
-            SubscriptionConfig("pubSub1", PUBSUB_TOPIC1),
+            SubscriptionConfig("pubSub2", PUBSUB_TOPIC1),
             processor,
             kafkaConfig
         )
