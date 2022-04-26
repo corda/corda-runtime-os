@@ -13,7 +13,7 @@ import java.net.URL
 /** Tests of [HealthMonitorImpl]. */
 class HealthMonitorImplTests {
     private val isHealthyUrl = URL("http://localhost:$HEALTH_MONITOR_PORT$HTTP_HEALTH_ROUTE")
-    private val isReadyUrl = URL("http://localhost:$HEALTH_MONITOR_PORT$HTTP_READINESS_ROUTE")
+    private val statusUrl = URL("http://localhost:$HEALTH_MONITOR_PORT$HTTP_STATUS_ROUTE")
 
     @Test
     fun `worker is considered healthy and ready if there are no components in the lifecycle registry`() {
@@ -50,7 +50,7 @@ class HealthMonitorImplTests {
         val healthMonitor = startHealthMonitor(componentStatuses)
         val (healthyCode, _) = getHealthAndReadinessCodes()
 
-        assertEquals(HTTP_INTERNAL_SERVER_ERROR_CODE, healthyCode)
+        assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, healthyCode)
 
         healthMonitor.stop()
     }
@@ -77,7 +77,7 @@ class HealthMonitorImplTests {
         val healthMonitor = startHealthMonitor(componentStatuses)
         val (_, readyCode) = getHealthAndReadinessCodes()
 
-        assertEquals(HTTP_INTERNAL_SERVER_ERROR_CODE, readyCode)
+        assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, readyCode)
 
         healthMonitor.stop()
     }
@@ -91,7 +91,7 @@ class HealthMonitorImplTests {
         val healthMonitor = startHealthMonitor(componentStatuses)
         val (_, readyCode) = getHealthAndReadinessCodes()
 
-        assertEquals(HTTP_INTERNAL_SERVER_ERROR_CODE, readyCode)
+        assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, readyCode)
 
         healthMonitor.stop()
     }
@@ -113,7 +113,7 @@ class HealthMonitorImplTests {
     /** Retrieves the HTTP codes of the health and readiness endpoints of a running [HealthMonitor]. */
     private fun getHealthAndReadinessCodes(): Pair<Int, Int> {
         val responseCodeHealthy = (isHealthyUrl.openConnection() as HttpURLConnection).responseCode
-        val responseCodeReady = (isReadyUrl.openConnection() as HttpURLConnection).responseCode
+        val responseCodeReady = (statusUrl.openConnection() as HttpURLConnection).responseCode
         return responseCodeHealthy to responseCodeReady
     }
 }
