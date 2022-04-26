@@ -5,7 +5,6 @@ import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -33,8 +32,8 @@ import java.util.UUID
 @TestInstance(PER_CLASS)
 class SandboxInjectableTest {
     companion object {
-        private const val CPB_INJECT = "sandbox-cpk-inject-package.cpb"
-        private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
+        private const val CPB_INJECT = "flow-worker-dev-package.cpb"
+        private const val FLOW_CLASS_NAME = "net.corda.flowworker.development.flows.MessagingFlow"
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
         private val holdingIdentity = HoldingIdentity(X500_NAME, UUID.randomUUID().toString())
@@ -75,7 +74,7 @@ class SandboxInjectableTest {
                     SingletonSerializeAsToken::class.java.name, CORDA_SANDBOX_FILTER
                 ) as? Array<ServiceReference<out SingletonSerializeAsToken>>
                     ?: fail("No sandbox services found")
-                assertThat(references).hasSize(2)
+                assertThat(references).hasSize(4)
 
                 assertAllCordaSingletons(references)
 
@@ -88,8 +87,6 @@ class SandboxInjectableTest {
                     .allSatisfy { serviceClass ->
                         assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
                     }
-                
-                assertThat(serviceClasses.any{ DigestService::class.java.isAssignableFrom(it)}).isTrue
             }
         } finally {
             sandboxFactory.unloadVirtualNode(vnodeInfo)

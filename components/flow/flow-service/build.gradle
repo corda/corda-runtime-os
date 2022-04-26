@@ -66,7 +66,7 @@ dependencies {
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
-    cpks project(path: ':testing:cpbs:sandbox-cpk-inject', configuration: 'cordaCPB')
+    cpks project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:application:application-impl')
