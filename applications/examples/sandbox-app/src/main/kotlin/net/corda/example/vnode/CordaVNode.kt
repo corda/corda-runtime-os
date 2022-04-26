@@ -39,6 +39,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import org.osgi.service.permissionadmin.PermissionAdmin
+import java.io.FilePermission
 import java.lang.management.ManagementFactory
 import java.lang.management.ManagementPermission
 import java.lang.reflect.ReflectPermission
@@ -225,7 +226,7 @@ class CordaVNode @Activate constructor(
                 ManagementPermission("monitor"),
                 PropertyPermission("*", "read,write"),
                 SocketPermission("*", "accept,connect,listen"),
-//                FilePermission("<<ALL FILES>>", "read,write,execute,delete,readlink")
+                FilePermission("<<ALL FILES>>", "read,write,execute,delete,readlink")
             ))
             securityManager.grantPermissions("FLOW/*", listOf(
                 PackagePermission("net.corda.v5.*", IMPORT),
