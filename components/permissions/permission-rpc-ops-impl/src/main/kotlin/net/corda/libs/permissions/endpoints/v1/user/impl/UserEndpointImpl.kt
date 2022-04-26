@@ -7,6 +7,7 @@ import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandle
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.server.security.local.HttpRpcLocalJwtSigner
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -35,6 +36,8 @@ class UserEndpointImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionManagementService::class)
     private val permissionManagementService: PermissionManagementService,
+    @Reference(service = HttpRpcLocalJwtSigner::class)
+    private val httpRpcLocalJwtSigner: HttpRpcLocalJwtSigner,
 ) : UserEndpoint, PluggableRPCOps<UserEndpoint>, Lifecycle {
 
     private companion object {
@@ -106,7 +109,18 @@ class UserEndpointImpl @Activate constructor(
         loginName: String, password: String
     ): JWTResponseType {
 
-        return JWTResponseType(token = "")
+        // VERIFY USER CREDS
+//        rpcSecurityManager.authenticate(credential.username, Password(credential.password))
+
+        val claims = """
+            {
+                "iss":"R3",
+                "sub":"$loginName",
+                "ath":"local",
+            }
+        """.trimIndent()
+
+        return JWTResponseType(token = httpRpcLocalJwtSigner.buildAndSignJwt(claims))
     }
 
     private fun getRpcThreadLocalContext(): String {
