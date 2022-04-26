@@ -138,7 +138,7 @@ class PubSubSubscriptionIntegrationTest {
 
         val latch = AtomicReference(CountDownLatch(2))
         val coordinator =
-            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("pubSubTest"))
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("anotherPubSubTest"))
             { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
                 when (event) {
                     is RegistrationStatusChangeEvent -> {
