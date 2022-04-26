@@ -16,7 +16,10 @@ configurations {
 sourceSets {
     nonOsgiIntegrationTest {
         kotlin {
-            srcDirs += [ 'src/nonOsgiIntegrationTest/kotlin' ]
+            srcDirs = [ 'src/nonOsgiIntegrationTest/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/nonOsgiIntegrationTest/resources' ]
         }
         compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
