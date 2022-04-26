@@ -392,18 +392,4 @@ class MemberProcessorIntegrationTest {
         assertEquals(bobMemberInfo, lookUpFromPublicKey(groupReader, bobMemberInfo))
 
     }
-
-    @Test
-    fun `Registration proxy fails to register if registration service is down`() {
-        // bringing down the group policy provider brings down the static registration service
-        groupPolicyProvider.stopAndWait()
-
-        getRegistrationResultFails(registrationProxy, bobHoldingIdentity)
-
-        // bring back up
-        groupPolicyProvider.startAndWait()
-
-        // Wait for it to pass again before moving to next test
-        getRegistrationResult(registrationProxy, bobHoldingIdentity)
-    }
 }
