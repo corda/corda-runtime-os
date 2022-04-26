@@ -18,7 +18,11 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.CoreMatchers.instanceOf
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.allOf
+import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -64,8 +68,10 @@ class MemberOpsServiceProcessorTest {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
         val now = Instant.now()
-        assertThat(actual.responseTimestamp.epochSecond).isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
-        assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
+        assertThat(
+            actual.responseTimestamp.epochSecond,
+            allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
+        )
     }
 
     @Test
@@ -111,6 +117,6 @@ class MemberOpsServiceProcessorTest {
             future.get()
         }
         assertNotNull(exception.cause)
-        assertThat(exception.cause).isInstanceOf(MembershipRegistrationException::class.java)
+        assertThat(exception.cause, instanceOf(MembershipRegistrationException::class.java))
     }
 }
