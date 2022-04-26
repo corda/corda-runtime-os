@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
@@ -9,6 +10,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.JWTResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
@@ -98,6 +100,13 @@ class UserEndpointImpl @Activate constructor(
             result.permissions.map { it.convertToEndpointType() },
             result.lastUpdateTimestamp
         )
+    }
+
+    override fun generateLocalAuthToken(
+        loginName: String, password: String
+    ): JWTResponseType {
+
+        return JWTResponseType(token = "")
     }
 
     private fun getRpcThreadLocalContext(): String {

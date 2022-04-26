@@ -9,6 +9,7 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.JWTResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 
@@ -70,4 +71,13 @@ interface UserEndpoint : RpcOps {
         @HttpRpcPathParameter(description = "Login Name of the user.")
         loginName: String
     ): UserPermissionSummaryResponseType
+
+    /**
+     * Generates a JWT for the user
+     */
+    @HttpRpcPOST(path = "generateLocalAuthToken", description = "Generates a JWT auth token")
+    fun generateLocalAuthToken(
+        @HttpRpcRequestBodyParameter(description = "Login name of the user.") loginName: String,
+        @HttpRpcRequestBodyParameter(description = "Password of the user") password: String
+    ): JWTResponseType
 }
