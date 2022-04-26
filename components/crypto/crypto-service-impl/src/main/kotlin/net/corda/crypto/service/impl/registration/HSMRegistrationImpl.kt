@@ -73,7 +73,7 @@ class HSMRegistrationImpl @Activate constructor(
                     CryptoConsts.HsmCategories.TLS
                 ),
                 0,
-                5000,
+                15000,
                 listOf(
                     RSA_CODE_NAME,
                     ECDSA_SECP256K1_CODE_NAME,
