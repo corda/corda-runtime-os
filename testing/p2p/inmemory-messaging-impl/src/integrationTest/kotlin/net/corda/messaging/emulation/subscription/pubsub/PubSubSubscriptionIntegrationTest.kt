@@ -7,6 +7,9 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -170,14 +173,16 @@ class PubSubSubscriptionIntegrationTest {
         )
         assertThat(processed).isEmpty()
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
-        assertThat(futures.size).isEqualTo(1)
-
+        eventually(duration = 1.seconds, waitBetween = 50.millis) {
+            assertThat(futures.size).isEqualTo(1)
+        }
         waitForProcessed.set(CountDownLatch(1))
         publish(
             Record(topic, "key2", Event("one", 1)),
         )
 
         // Verify it was not processed
+        Thread.sleep(1000)
         assertThat(processed.map { it.key }).containsOnly("key1")
 
         val future = futures[0]
