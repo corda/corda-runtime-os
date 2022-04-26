@@ -25,7 +25,6 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
@@ -70,7 +69,11 @@ class PermissionStorageReaderImpl(
     }
 
     override fun publishUpdatedRole(role: AvroRole) {
-        publisher.publish(listOf(Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role))).single().getOrThrow()
+        log.info("CONAL - Publishing role with id ${role.id}")
+        val futures = publisher.publish(listOf(Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role)))
+        log.info("CONAL - Publishing role with id ${role.id} finished, there are ${futures.size} futures. The next line calls " +
+                "futures.single(), could this be where we lose a request?")
+        futures.single().getOrThrow()
     }
 
     override fun publishNewPermission(permission: AvroPermission) {
@@ -86,22 +89,24 @@ class PermissionStorageReaderImpl(
     }
 
     override fun reconcilePermissionSummaries() {
-        log.trace { "Reconciliation of permission summaries triggered." }
+        log.info("Reconciliation of permission summaries triggered.")
         val startTime = System.currentTimeMillis()
 
         val permissionSummariesFromDb: Map<UserLogin, InternalUserPermissionSummary> = permissionRepository.findAllPermissionSummaries()
+        log.info("CONAL - found ${permissionSummariesFromDb.size} permission summaries in db.")
 
         val permissionsToReconcile: Map<UserLogin, AvroUserPermissionSummary?> = permissionSummaryReconciler.getSummariesForReconciliation(
             permissionSummariesFromDb,
             permissionValidationCache.permissionSummaries
         )
+        log.info("CONAL - found ${permissionsToReconcile.size} permissions in cache to reconcile.")
 
         if (permissionsToReconcile.isNotEmpty()) {
             publisher.publish(createPermissionSummaryRecords(permissionsToReconcile))
             val duration = System.currentTimeMillis() - startTime
             log.info("Permission summary reconciliation completed and published ${permissionsToReconcile.size} user(s) in ${duration}ms.")
         } else {
-            log.trace { "Permission summary reconciliation found everything up-to-date." }
+            log.info("Permission summary reconciliation found everything up-to-date.")
         }
     }
 

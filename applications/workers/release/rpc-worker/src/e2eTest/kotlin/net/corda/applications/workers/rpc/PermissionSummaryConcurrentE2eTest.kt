@@ -25,7 +25,6 @@ class PermissionSummaryConcurrentE2eTest {
     }
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `permission summary eventually consistent`() {
         val newUser1: String = testToolkit.uniqueName
         val newUser2: String = testToolkit.uniqueName
@@ -50,7 +49,7 @@ class PermissionSummaryConcurrentE2eTest {
             assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
         }
 
-        val permissionsCount = 50
+        val permissionsCount = 1000
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, "admin", "admin")
         val proxy = client.start().proxy
         val permissionIdsAllow = (1..permissionsCount).map {
@@ -61,7 +60,7 @@ class PermissionSummaryConcurrentE2eTest {
         }
         val allPermissionIds = permissionIdsAllow + permissionIdsDeny
 
-        val executorService = Executors.newFixedThreadPool(2)
+        val executorService = Executors.newFixedThreadPool(8)
         val role1PopulationFuture = executorService.submit {
             adminTestHelper.addPermissionsToRole(roleId1, *permissionIdsAllow.toTypedArray())
         }

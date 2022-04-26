@@ -12,12 +12,14 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import org.junit.jupiter.api.Disabled
 
 class CreateUserE2eTest {
 
     private val testToolkit by TestToolkitProperty()
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun testCreateAndGet() {
         testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
             val userName = testToolkit.uniqueName

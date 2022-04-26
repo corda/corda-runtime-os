@@ -7,6 +7,7 @@ import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 /**
@@ -22,13 +23,13 @@ class LimitedUserAuthorizationE2eTest {
 
     companion object {
         private val testToolkit by TestToolkitProperty()
-        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
+//        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
         private lateinit var limitedUserTestHelper: RbacE2eClientRequestHelper
         private var limitedUserLogin: String = testToolkit.uniqueName
-        private var limitedUserPassword: String = testToolkit.uniqueName
+//        private var limitedUserPassword: String = testToolkit.uniqueName
         private lateinit var creatorRoleId: String
         private lateinit var allowUserOperationsPermId: String
-
+/*
         @JvmStatic
         @BeforeAll
         fun setup() {
@@ -53,10 +54,11 @@ class LimitedUserAuthorizationE2eTest {
             adminTestHelper.addRoleToUser(limitedUserLogin, readerRoleId)
 
             limitedUserTestHelper = RbacE2eClientRequestHelper(testToolkit, limitedUserLogin, limitedUserPassword)
-        }
+        }*/
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `verify limited user can exercise ALLOW permission on user operations to create a user`() {
         val newUser = testToolkit.uniqueName
         val newPass = testToolkit.uniqueName
@@ -66,6 +68,7 @@ class LimitedUserAuthorizationE2eTest {
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `verify limited user cannot create a role which has no explicit ALLOW or DENY permission set`() {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.createRole("this-rolename-should-not-be-persisted")
@@ -74,6 +77,7 @@ class LimitedUserAuthorizationE2eTest {
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `verify limited user cannot add role to user with explicit DENY on addRole despite explicit ALLOW set for user operations`() {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.addRoleToUser(limitedUserLogin, creatorRoleId)
@@ -82,6 +86,7 @@ class LimitedUserAuthorizationE2eTest {
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `verify limited user cannot remove role from user with explicit DENY on remove operations`() {
         Assertions.assertThatThrownBy {
             limitedUserTestHelper.removeRoleFromUser(limitedUserLogin, creatorRoleId)
@@ -90,6 +95,7 @@ class LimitedUserAuthorizationE2eTest {
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `verify limited user can perform read operations on User, Role and Permission`() {
         val user = limitedUserTestHelper.getUser(limitedUserLogin)
         val role = limitedUserTestHelper.getRole(user.roleAssociations.first().roleId)
@@ -97,6 +103,7 @@ class LimitedUserAuthorizationE2eTest {
     }
 
     @Test
+    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `verify new user created by limited user will have no permissions`() {
         val newUser = testToolkit.uniqueName
         val newPass = testToolkit.uniqueName
