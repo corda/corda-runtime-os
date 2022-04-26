@@ -101,6 +101,32 @@ class PubSubSubscriptionImplTest {
         )
     }
 
+    @Test
+    fun `testPubSubConsumer if future results in IOException`() {
+        processor = StubPubSubProcessor(latch, null, IOException())
+        kafkaPubSubSubscription =
+            PubSubSubscriptionImpl(
+                config,
+                cordaConsumerBuilder,
+                processor,
+                lifecycleCoordinatorFactory
+            )
+        kafkaPubSubSubscription.start()
+
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+
+        kafkaPubSubSubscription.stop()
+        assertThat(latch.count).isEqualTo(0)
+        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            anyOrNull()
+        )
+    }
+
     /**
      * Check that the exceptions thrown during building exits correctly
      */

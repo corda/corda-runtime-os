@@ -8,7 +8,8 @@ import java.util.concurrent.CountDownLatch
 
 class StubPubSubProcessor(
     private val latch: CountDownLatch,
-    private val exception: Exception? = null
+    private val exception: Exception? = null,
+    private val futureException: Exception? = null,
 ) : PubSubProcessor<String, ByteBuffer> {
     override fun onNext(event: Record<String, ByteBuffer>): CompletableFuture<Unit> {
         latch.countDown()
@@ -16,7 +17,13 @@ class StubPubSubProcessor(
         if (exception != null) {
             throw exception
         }
-        return CompletableFuture.completedFuture(Unit)
+        return if (futureException != null) {
+            val future = CompletableFuture<Unit>()
+            future.completeExceptionally(futureException)
+            future
+        } else {
+            CompletableFuture.completedFuture(Unit)
+        }
     }
 
     override val keyClass: Class<String>

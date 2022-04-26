@@ -14,7 +14,9 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -56,6 +58,27 @@ class PubSubSubscriptionIntegrationTest {
         )
     }
 
+    private val futures = CopyOnWriteArrayList<CompletableFuture<Unit>>()
+    private val asynchronousSubscription by lazy {
+        val config = SubscriptionConfig(groupName = group + "asynchronous", eventTopic = topic)
+        val processor = object : PubSubProcessor<String, Event> {
+
+            override val keyClass = String::class.java
+            override val valueClass = Event::class.java
+            override fun onNext(event: Record<String, Event>): CompletableFuture<Unit> {
+                processed.add(event)
+                waitForProcessed.get().countDown()
+                val future = CompletableFuture<Unit>()
+                futures.add(future)
+                return future
+            }
+        }
+        subscriptionFactory.createPubSubSubscription(
+            subscriptionConfig = config,
+            processor = processor,
+        )
+    }
+
     private fun publish(vararg records: Record<Any, Any>) {
         val publisherConfig = PublisherConfig(clientId)
         publisherFactory.createPublisher(publisherConfig, SmartConfigImpl.empty()).use {
@@ -68,7 +91,6 @@ class PubSubSubscriptionIntegrationTest {
         publish(
             Record(topic, "key0", Event("one", 1)),
         )
-
         assertThat(subscription.isRunning).isFalse
 
         // Start the subscription
@@ -136,5 +158,34 @@ class PubSubSubscriptionIntegrationTest {
         // Stop the subscriber
         subscription.stop()
         assertThat(subscription.isRunning).isFalse
+    }
+
+    @Test
+    fun `test pub sub subscription with asynchronous processor`() {
+        asynchronousSubscription.start()
+        assertThat(processed).isEmpty()
+        waitForProcessed.set(CountDownLatch(1))
+        publish(
+            Record(topic, "key1", Event("one", 1)),
+        )
+        assertThat(processed).isEmpty()
+        waitForProcessed.get().await(1, TimeUnit.SECONDS)
+        assertThat(futures.size).isEqualTo(1)
+
+        waitForProcessed.set(CountDownLatch(1))
+        publish(
+            Record(topic, "key2", Event("one", 1)),
+        )
+
+        // Verify it was not processed
+        assertThat(processed.map { it.key }).containsOnly("key1")
+
+        val future = futures[0]
+        future.complete(Unit)
+        waitForProcessed.get().await(1, TimeUnit.SECONDS)
+        assertThat(processed.map { it.key }).containsOnly("key1", "key2")
+
+        asynchronousSubscription.stop()
+        assertThat(asynchronousSubscription.isRunning).isFalse
     }
 }

@@ -16,6 +16,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.io.IOException
 import java.util.concurrent.CompletableFuture
 
 class PubSubSubscriptionTest {
@@ -91,7 +92,7 @@ class PubSubSubscriptionTest {
     }
 
     @Test
-    fun `processRecords send to processor in no executor`() {
+    fun `processRecords send to processor`() {
         val subscription = PubSubSubscription(config, processor, topicService, lifecycleCoordinatorFactory, "0")
         val record = Record<String, Number>("topic", "key6", 3)
         val records = listOf(
@@ -103,8 +104,34 @@ class PubSubSubscriptionTest {
         )
 
         subscription.processRecords(records)
+        subscription.processRecords(records)
 
-        verify(processor).onNext(record)
+        verify(processor, times(2)).onNext(record)
+    }
+
+    @Test
+    fun `processRecords send to processor if ExecutionException`() {
+        val future = CompletableFuture<Unit>()
+        future.completeExceptionally(IOException(""))
+        val exceptionProcessor = mock<PubSubProcessor<String, Number>> {
+            on { keyClass } doReturn String::class.java
+            on { valueClass } doReturn Number::class.java
+            on { onNext(any()) } doReturn future
+        }
+        val subscription =
+            PubSubSubscription(config, exceptionProcessor, topicService, lifecycleCoordinatorFactory, "0")
+        val record = Record<String, Number>("topic", "key6", 3)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record
+            )
+        )
+
+        subscription.processRecords(records)
+        subscription.processRecords(records)
+        verify(exceptionProcessor, times(2)).onNext(record)
     }
 
     @Test
