@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal
 
+import com.typesafe.config.ConfigException
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigurationReadService
@@ -38,7 +39,7 @@ import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -134,6 +135,7 @@ class DBProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         log.debug { "DB processor received event $event." }
 
@@ -158,7 +160,25 @@ class DBProcessorImpl @Activate constructor(
                     log.info("DB processor is ${event.status}")
                     coordinator.updateStatus(event.status)
                     if (event.status == LifecycleStatus.UP) {
-                        startUpReconciliations()
+                        try {
+                            val rims = bootstrapConfig!!.getInt(RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS)
+
+                            if (rims > 0) {
+                                log.info("DB Reconciliation Enabled")
+                                startUpReconciliations()
+                            }
+                            else {
+                                log.info("DB Reconciliation Disabled")
+                            }
+                        }
+                        catch (ex: ConfigException.Missing)
+                        {
+                            log.info("DB Reconciliation - ConfigException.Missing")
+                        }
+                        catch (ex: ConfigException.WrongType)
+                        {
+                            log.info("DB Reconciliation - ConfigException.WrongType")
+                        }
                     }
                 }
             }
