@@ -84,7 +84,6 @@ def testingBundle = tasks.register('testingBundle', Bundle) {
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
     Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
-//    Test-Cases: net.corda.messaging.integration.publisher.PublisherIntegrationTest
 """
 }
 

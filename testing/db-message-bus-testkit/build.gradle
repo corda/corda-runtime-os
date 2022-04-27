@@ -14,6 +14,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-config-schema'
     implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
@@ -23,6 +24,7 @@ dependencies {
     implementation project(":testing:db-testkit")
     implementation project(":testing:test-utilities")
 
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 }
 
 description 'Database Message Bus Internal Testkit'
