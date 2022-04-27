@@ -2,8 +2,6 @@ package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -41,7 +39,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
-class KafkaEventLogSubscriptionIntegrationTest {
+class EventLogSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher

@@ -38,7 +38,7 @@ fun buildSessionEvent(
     messageDirection: MessageDirection,
     sessionId: String,
     sequenceNum: Int?,
-    payload: Any = Unit,
+    payload: Any? = null,
     receivedSequenceNum: Int = 0,
     outOfOrderSeqNums: List<Int> = listOf(0),
     timestamp: Instant = Instant.now(),

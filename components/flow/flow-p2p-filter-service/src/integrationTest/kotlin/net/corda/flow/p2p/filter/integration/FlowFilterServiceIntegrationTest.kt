@@ -142,16 +142,10 @@ class FlowFilterServiceIntegrationTest {
     }
 
     private fun setupConfig(publisher: Publisher) {
-        val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
         publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, "1"))))
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }
-
-    private val bootConf = """
-        instance.id=1
-        $BUS_TYPE = INMEMORY
-    """
 
     private val messagingConf = """
             componentVersion="5.1"
