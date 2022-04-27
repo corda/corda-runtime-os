@@ -36,7 +36,7 @@ class ClusterBootstrapTest {
                     if (response in 200..299)
                         println("${it.key} is ready")
                     else
-                        softly.fail("Problem with ${it.key} (${it.value}), \"isReady\" returns: $response")
+                        softly.fail("Problem with ${it.key} (${it.value}), \"status\" returns: $response")
                 }
             }.awaitAll()
 
@@ -64,7 +64,7 @@ class ClusterBootstrapTest {
     }
 
     private fun checkReady(name: String, endpoint: String): HttpResponse<String> {
-        val url = "${endpoint}isReady"
+        val url = "${endpoint}status"
         println("Checking $name on $url")
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
