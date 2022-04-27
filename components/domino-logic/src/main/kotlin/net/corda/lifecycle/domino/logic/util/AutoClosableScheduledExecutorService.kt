@@ -1,4 +1,4 @@
-package net.corda.p2p.linkmanager.utilities
+package net.corda.lifecycle.domino.logic.util
 
 import java.util.concurrent.ScheduledExecutorService
 

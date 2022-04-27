@@ -7,6 +7,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.AutoClosableScheduledExecutorService
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
@@ -24,7 +26,7 @@ import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -40,7 +42,8 @@ internal class OutboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    private val retryThreadPool: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
+    private val retryThreadPoolFactory: () -> ScheduledExecutorService
+        = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
     companion object {
@@ -77,8 +80,20 @@ internal class OutboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
-        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile)
+        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
+        createResources = ::createResources
     )
+
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
+        retryThreadPool = retryThreadPoolFactory()
+        resources.keep(AutoClosableScheduledExecutorService(retryThreadPool))
+        future.complete(Unit)
+        return future
+    }
+
+    @Volatile
+    private lateinit var retryThreadPool: ScheduledExecutorService
 
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
         return dominoTile.withLifecycleLock {
