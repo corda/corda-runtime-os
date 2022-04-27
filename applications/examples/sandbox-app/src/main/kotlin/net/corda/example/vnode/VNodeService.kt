@@ -2,6 +2,7 @@ package net.corda.example.vnode
 
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
@@ -24,12 +25,19 @@ class VNodeServiceImpl @Activate constructor(
     private val flowSandboxService: FlowSandboxService,
 
     @Reference
+    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+
+    @Reference
     private val cpiLoader: CpiLoader,
 
     @Reference
     private val virtualNodeLoader: VirtualNodeLoader
 ) : VNodeService {
     private val logger = loggerFor<VNodeService>()
+
+    init {
+        sandboxGroupContextComponent.initCache(1)
+    }
 
     override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
         return virtualNodeLoader.loadVirtualNode(resourceName, holdingIdentity)
