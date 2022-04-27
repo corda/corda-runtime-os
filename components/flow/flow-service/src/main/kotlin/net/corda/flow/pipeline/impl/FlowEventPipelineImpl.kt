@@ -149,7 +149,7 @@ data class FlowEventPipelineImpl(
                 copy(output = flowResult.output)
             }
             is FlowIORequest.FlowFailed -> {
-                copy(output = null)
+                copy(output = flowResult)
             }
             else -> throw FlowProcessingException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
         }

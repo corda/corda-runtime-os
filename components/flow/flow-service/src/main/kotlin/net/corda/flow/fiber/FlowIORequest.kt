@@ -83,7 +83,7 @@ interface FlowIORequest<out R> {
 
     data class SubFlowFinished(val flowStackItem: FlowStackItem) : FlowIORequest<FlowStackItem?>
 
-    data class SubFlowFailed(val exception: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
+    data class SubFlowFailed(val throwable: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
 
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 

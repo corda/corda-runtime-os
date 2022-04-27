@@ -11,7 +11,6 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.session.manager.SessionManager
@@ -199,7 +198,7 @@ class FlowSessionManagerImplTest {
 
         val instant = Instant.now()
 
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowSessionMissingException> {
             flowSessionManager.sendDataMessages(
                 checkpoint,
                 mapOf(SESSION_ID to byteArrayOf(), ANOTHER_SESSION_ID to byteArrayOf()),
@@ -273,7 +272,7 @@ class FlowSessionManagerImplTest {
 
         val instant = Instant.now()
 
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowSessionMissingException> {
             flowSessionManager.sendCloseMessages(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
@@ -325,7 +324,7 @@ class FlowSessionManagerImplTest {
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
 
-        assertThrows<FlowProcessingException> {
+        assertThrows<FlowSessionMissingException> {
             flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
         }
     }
@@ -381,6 +380,63 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
+    fun `getSessionsWithStatus returns sessions that have the passed in status`() {
+        sessionState.status = SessionStateType.CLOSED
+        anotherSessionState.status = SessionStateType.CONFIRMED
+
+        assertEquals(
+            listOf(sessionState),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                SessionStateType.CLOSED
+            )
+        )
+    }
+
+    @Test
+    fun `getSessionsWithStatus returns an empty list if no sessions have the passed in status`() {
+        sessionState.status = SessionStateType.CONFIRMED
+        anotherSessionState.status = SessionStateType.CONFIRMED
+
+        assertEquals(
+            emptyList<SessionState>(),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                SessionStateType.CLOSED
+            )
+        )
+    }
+
+    @Test
+    fun `getSessionsWithStatus throws an exception if a session does not exist`() {
+        sessionState.status = SessionStateType.CLOSED
+
+        whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
+
+        assertThrows<FlowSessionMissingException> {
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                SessionStateType.CLOSED
+            )
+        }
+    }
+
+    @Test
+    fun `getSessionsWithStatus returns an empty list if no sessions`() {
+        assertEquals(
+            emptyList<SessionState>(),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                emptyList(),
+                SessionStateType.CLOSED
+            )
+        )
+    }
+
+    @Test
     fun `doAllSessionsHaveStatus returns true if all sessions have the passed in status`() {
         sessionState.status = SessionStateType.CLOSED
         anotherSessionState.status = SessionStateType.CLOSED
@@ -420,6 +476,21 @@ class FlowSessionManagerImplTest {
                 SessionStateType.CLOSED
             )
         )
+    }
+
+    @Test
+    fun `doAllSessionsHaveStatus throws an exception if a session does not exist`() {
+        sessionState.status = SessionStateType.CLOSING
+
+        whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(null)
+
+        assertThrows<FlowSessionMissingException> {
+            flowSessionManager.doAllSessionsHaveStatus(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                SessionStateType.CLOSED
+            )
+        }
     }
 
     @Test
