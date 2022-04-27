@@ -20,12 +20,12 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import java.nio.file.Path
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import net.corda.httprpc.test.TestFileUploadImpl
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
@@ -34,7 +34,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl()),
+                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl()),
                 securityManager,
                 httpRpcSettings,
                 multipartDir,
@@ -126,6 +126,130 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
 
             val deleteParams = delete.parameters
             assertEquals("query", deleteParams[0].name)
+        }
+    }
+
+    @Test
+    fun `OpenApi spec json should include correctly formatted multipart file upload endpoints`() {
+
+        val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
+        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+        assertEquals("application/json", apiSpec.headers["Content-Type"])
+        val body = apiSpec.body!!.compact()
+        assertTrue(body.contains(""""openapi" : "3.0.1""""))
+        assertFalse(body.contains("\"null\""))
+        assertFalse(body.contains("null,"))
+
+        val openAPI = Json.mapper().readValue(body, OpenAPI::class.java)
+
+        with(openAPI.paths["/fileupload/upload"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type, "Multipart file type should be a string.")
+            assertEquals("binary", file.format, "Multipart file format should be binary.")
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/uploadwithname"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(2, multipartFormData.schema.properties.size)
+            val fileName = multipartFormData.schema.properties["fileName"]
+            assertNotNull(fileName)
+            assertEquals("string", fileName.type, "Multipart file type should be a string.")
+            assertFalse(fileName.nullable)
+            val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type, "Multipart file type should be a string.")
+            assertEquals("binary", file.format, "Multipart file format should be binary.")
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/uploadwithoutparameterannotations"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(2, multipartFormData.schema.properties.size)
+            val fileName = multipartFormData.schema.properties["fileName"]
+            assertNotNull(fileName)
+            assertEquals("string", fileName.type, "Multipart file type should be a string.")
+            assertFalse(fileName.nullable)
+            val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type, "Multipart file type should be a string.")
+            assertEquals("binary", file.format, "Multipart file format should be binary.")
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/fileuploadobject"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type, "Multipart file type should be a string.")
+            assertEquals("binary", file.format, "Multipart file format should be binary.")
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/multifileuploadobject"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(2, multipartFormData.schema.properties.size)
+            val file1 = multipartFormData.schema.properties["file1"]
+            assertNotNull(file1)
+            assertEquals("string", file1.type, "Multipart file type should be a string.")
+            assertEquals("binary", file1.format, "Multipart file format should be binary.")
+            assertFalse(file1.nullable)
+            val file2 = multipartFormData.schema.properties["file2"]
+            assertNotNull(file2)
+            assertEquals("string", file2.type, "Multipart file type should be a string.")
+            assertEquals("binary", file2.format, "Multipart file format should be binary.")
+            assertFalse(file2.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/multiinputstreamfileupload"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(2, multipartFormData.schema.properties.size)
+            val file1 = multipartFormData.schema.properties["file1"]
+            assertNotNull(file1)
+            assertEquals("string", file1.type, "Multipart file type should be a string.")
+            assertEquals("binary", file1.format, "Multipart file format should be binary.")
+            assertFalse(file1.nullable)
+            val file2 = multipartFormData.schema.properties["file2"]
+            assertNotNull(file2)
+            assertEquals("string", file2.type, "Multipart file type should be a string.")
+            assertEquals("binary", file2.format, "Multipart file format should be binary.")
+            assertFalse(file2.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/fileuploadobjectlist"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val files = multipartFormData.schema.properties["files"]
+            assertNotNull(files)
+            assertTrue(files is ArraySchema)
+            assertEquals("string", files.items.type)
+            assertEquals("binary", files.items.format)
+            assertFalse(files.items.nullable)
         }
     }
 

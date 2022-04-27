@@ -14,6 +14,7 @@ import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.tags.Tag
+import java.io.InputStream
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
@@ -32,9 +33,13 @@ import net.corda.v5.base.util.trace
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
 import java.util.Collections.singletonList
+import net.corda.httprpc.HttpFileUpload
 
 private val log =
     LoggerFactory.getLogger("net.corda.httprpc.server.impl.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
+
+private const val MULTIPART_CONTENT_TYPE = "multipart/form-data"
+private const val APPLICATION_JSON_CONTENT_TYPE = "application/json"
 
 /**
  * Convert a Resource list to an OpenAPI object
@@ -107,10 +112,11 @@ internal fun List<EndpointParameter>.toRequestBody(
 ): RequestBody? {
     log.trace { "Map ${this.size} EndpointParameters to RequestBody." }
     if (this.isEmpty()) return null
+
     return RequestBody()
         .description("requestBody")
         .required(this.any { it.required })
-        .content(Content().addMediaType("application/json", this.toMediaType(schemaModelProvider, schemaName)))
+        .content(Content().addMediaType(determineContentType(), this.toMediaType(schemaModelProvider, schemaName)))
         .also { log.trace { "Map ${this.size} EndpointParameters to RequestBody: $it completed." } }
 }
 
@@ -121,7 +127,12 @@ private fun List<EndpointParameter>.toMediaType(
     val isSingleRef = this.count() == 1 && schemaModelProvider.toSchemaModel(this.first()) is SchemaRefObjectModel
     val multiParams = this.count() > 1
 
-    return if (isSingleRef || multiParams) {
+    return if (this.isMultipartFileUpload()) {
+        MediaType().schema(
+            Schema<Any>().properties(this.toProperties(schemaModelProvider))
+                .type(DataType.OBJECT.toString().toLowerCase())
+        )
+    } else if (isSingleRef || multiParams) {
         MediaType().schema(
             SchemaModelToOpenApiSchemaConverter.convert(
                 schemaModelProvider.toSchemaModel(this, methodName + "Request")
@@ -134,6 +145,21 @@ private fun List<EndpointParameter>.toMediaType(
         )
     }
 }
+
+private fun List<EndpointParameter>.isMultipartFileUpload(): Boolean {
+    return this.any { endpointParameter ->
+        endpointParameter.classType == InputStream::class.java ||
+                endpointParameter.classType == HttpFileUpload::class.java ||
+                endpointParameter.parameterizedTypes.any { it.clazz == InputStream::class.java || it.clazz == HttpFileUpload::class.java }
+    }
+}
+
+private fun List<EndpointParameter>.determineContentType() =
+    if (this.isMultipartFileUpload()) {
+        MULTIPART_CONTENT_TYPE
+    } else {
+        APPLICATION_JSON_CONTENT_TYPE
+    }
 
 @VisibleForTesting
 internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModelProvider): Operation {
@@ -172,7 +198,7 @@ private fun ApiResponse.withResponseBodyFrom(
         val response = if (!endpoint.responseBody.type.isNull()) {
             this.content(
                 Content().addMediaType(
-                    "application/json",
+                    APPLICATION_JSON_CONTENT_TYPE,
                     MediaType().schema(
                         SchemaModelToOpenApiSchemaConverter.convert(
                             schemaModelProvider.toSchemaModel(
