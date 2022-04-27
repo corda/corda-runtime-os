@@ -17,6 +17,7 @@ const val CRYPTO_CONFIGURATION_VALUE: String = "{}"
 
 const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
+            bus.busType = "INMEMORY"
             subscription {
                 consumer {
                     close.timeout = 6000
@@ -34,6 +35,7 @@ const val MESSAGING_CONFIGURATION_VALUE: String = """
 
 const val BOOT_CONFIGURATION = """
         instance.id=1
+        bus.busType = INMEMORY
     """
 
 inline fun <reified T> makeClientId(): String =

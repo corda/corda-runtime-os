@@ -1,0 +1,29 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-config-schema'
+    implementation project(":libs:messaging:db-message-bus-datamodel")
+    implementation project(":libs:db:db-core")
+    implementation project(":libs:db:db-orm")
+    implementation project(":libs:db:db-admin")
+    implementation project(":libs:db:db-admin-impl")
+    implementation project(":testing:db-testkit")
+    implementation project(":testing:test-utilities")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+}
+
+description 'Database Message Bus Internal Testkit'

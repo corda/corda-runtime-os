@@ -21,6 +21,7 @@ import net.corda.crypto.persistence.schemeCodeName
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 import java.time.Instant
@@ -140,8 +141,8 @@ class SigningKeyCacheActionsImpl(
     }
 
     override fun lookup(ids: List<String>): Collection<SigningCachedKey> {
-        if (ids.size > 20) {
-            throw IllegalArgumentException("The maximum size should not exceed 20 items, received ${ids.size}.")
+        require (ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+            "The number of ids exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
         val cached = cache.getAllPresent(ids)
         if (cached.size == ids.size) {

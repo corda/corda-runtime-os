@@ -1,5 +1,6 @@
 package net.corda.applications.workers.workercommon.internal
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.lifecycle.LifecycleStatus
@@ -23,6 +24,7 @@ internal class HealthMonitorImpl @Activate constructor(
 ) : HealthMonitor {
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
+    private val objectMapper = ObjectMapper()
 
     override fun listen(port: Int) {
         server = Javalin
@@ -30,16 +32,14 @@ internal class HealthMonitorImpl @Activate constructor(
             .apply { startServer(this, port) }
             .get(HTTP_HEALTH_ROUTE) { context ->
                 val anyComponentsUnhealthy = existsComponentWithAnyOf(setOf(LifecycleStatus.ERROR))
-                val status = if (anyComponentsUnhealthy) HTTP_INTERNAL_SERVER_ERROR_CODE else HTTP_OK_CODE
+                val status = if (anyComponentsUnhealthy) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
                 context.status(status)
             }
-            .get(HTTP_READINESS_ROUTE) { context ->
+            .get(HTTP_STATUS_ROUTE) { context ->
                 val anyComponentsNotReady = existsComponentWithAnyOf(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
-                val status = if (anyComponentsNotReady) HTTP_INTERNAL_SERVER_ERROR_CODE else HTTP_OK_CODE
+                val status = if (anyComponentsNotReady) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
                 context.status(status)
-                // Print as text so to avoid bringing in a JSON serialiser
-                // TODO - should we return json?
-                context.result(lifecycleRegistry.componentStatus().toString())
+                context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
             }
     }
 

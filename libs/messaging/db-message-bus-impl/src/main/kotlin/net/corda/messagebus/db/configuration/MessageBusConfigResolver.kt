@@ -31,7 +31,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         private const val ENFORCED_CONFIG_FILE = "messaging-enforced.conf"
         private const val DEFAULT_CONFIG_FILE = "messaging-defaults.conf"
 
-        private const val EXPECTED_BUS_TYPE = "DATABASE"
+        private val EXPECTED_BUS_TYPES = listOf("DATABASE", "INMEMORY")
 
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
@@ -55,13 +55,17 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      */
     private fun resolve(messageBusConfig: SmartConfig, rolePath: String, configParams: SmartConfig): SmartConfig {
         val busType = messageBusConfig.getString(BUS_TYPE)
-        if (busType != EXPECTED_BUS_TYPE) {
+        if (busType !in EXPECTED_BUS_TYPES) {
             throw CordaMessageAPIConfigException(
-                "Tried to configure the DB bus but received $busType configuration instead"
+                "Tried to configure the DB/In-Mem bus but received $busType configuration instead"
             )
         }
 
-        val dbParams = messageBusConfig.getConfig(DB_PROPERTIES)
+        val dbParams = if (messageBusConfig.hasPath(DB_PROPERTIES)) {
+            messageBusConfig.getConfig(DB_PROPERTIES)
+        } else {
+            ConfigFactory.empty()
+        }
         val resolvedConfig = enforced
             .withFallback(dbParams)
             .withFallback(configParams)

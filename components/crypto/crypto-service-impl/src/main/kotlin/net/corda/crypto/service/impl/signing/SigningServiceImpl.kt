@@ -14,6 +14,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
@@ -58,8 +59,8 @@ open class SigningServiceImpl(
 
     override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
         logger.debug("lookup(tenantId={}, ids=[{}])", tenantId, ids.joinToString())
-        if (ids.size > 20) {
-            throw IllegalArgumentException("The maximum size should not exceed 20 items, received ${ids.size}.")
+        require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
+            "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
         return cache.act(tenantId) {
             it.lookup(ids).map { key -> key.toSigningKeyInfo() }

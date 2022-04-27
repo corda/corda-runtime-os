@@ -97,9 +97,8 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
             }
 
         override fun close() {
-            val current = instances
+            instances.values.forEach { it.close() }
             instances.clear()
-            current.values.forEach { it.close() }
         }
     }
 }

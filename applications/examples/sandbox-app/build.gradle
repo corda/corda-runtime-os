@@ -51,7 +51,8 @@ dependencies {
     runtimeOnly project(':libs:crypto:crypto-impl')
     runtimeOnly project(':libs:flows:session-manager-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
-    runtimeOnly project(':libs:messaging:inmemory-messaging-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:messaging:db-message-bus-impl')
     runtimeOnly project(':libs:serialization:serialization-checkpoint-api')
     runtimeOnly project(':libs:serialization:serialization-kryo')
 

@@ -12,15 +12,13 @@ import java.security.MessageDigest
  */
 object Checksum {
     const val ALGORITHM = "SHA-256"
-    fun getMessageDigest(): MessageDigest = MessageDigest.getInstance(ALGORITHM)
-
-    private val messageDigest = getMessageDigest()
+    fun newMessageDigest(): MessageDigest = MessageDigest.getInstance(ALGORITHM)
 
     /**
      * Return the checksum for some file on some [Path]
      */
     fun digestForPath(path: Path): SecureHash {
-        messageDigest.reset()
+        val messageDigest = newMessageDigest()
         DigestInputStream(Files.newInputStream(path), messageDigest).use { inputStream ->
             val bytes = ByteArray(1024 * 1024)
             @Suppress("EmptyWhileBlock")

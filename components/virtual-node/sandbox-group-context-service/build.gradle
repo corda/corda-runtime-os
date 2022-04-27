@@ -30,9 +30,9 @@ dependencies {
 
     implementation "net.corda:corda-packaging-avro-converters"
 
+    api project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
     implementation project(':libs:virtual-node:packaging-core')
@@ -42,6 +42,8 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-common")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:configuration:configuration-read-service")
+
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
     runtimeOnly project(':libs:sandbox-hooks')
 
@@ -62,7 +64,8 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-application'
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
-    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
     // Gather locations of CPIs to add into `resources`
     cpis project(path: ':testing:cpbs:crypto-custom-digest-one-consumer', configuration: 'cordaCPB')

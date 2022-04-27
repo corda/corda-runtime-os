@@ -1,0 +1,40 @@
+-tester: biz.aQute.tester.junit-platform
+-runfw: org.apache.felix.framework
+-runee: JavaSE-11
+-runtrace: true
+
+-resolve.effective: resolve,active
+
+-runvm: \
+    -Djava.io.tmpdir=${task.temporaryDir},\
+    --add-opens, 'java.base/java.net=ALL-UNNAMED'
+-runsystempackages: \
+    javax.xml.stream;version=1.0.0,\
+    javax.xml.stream.events;version=1.0.0,\
+    javax.xml.stream.util;version=1.0.0,\
+    sun.security.x509
+
+# Enable debugging.
+# -runjdb: 1044
+
+-runrequires: \
+    bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.link-manager',\
+    bnd.identity;id='net.corda.db-message-bus-impl',\
+    bnd.identity;id='net.corda.db-message-bus-testkit',\
+    bnd.identity;id='net.corda.db-topic-admin-impl',\
+    bnd.identity;id='net.corda.configuration-publish-impl',\
+    bnd.identity;id='net.corda.configuration-read-service-impl',\
+    bnd.identity;id='net.corda.messaging-impl',\
+    bnd.identity;id='net.corda.schema-registry-impl',\
+    bnd.identity;id='net.bytebuddy.byte-buddy',\
+    bnd.identity;id='junit-jupiter-engine',\
+    bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='org.hsqldb.hsqldb',\
+    bnd.identity;id='org.postgresql.jdbc',\
+    bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='${project.archivesBaseName}-tests',\
+
+-runstartlevel: \
+    order=sortbynameversion,\
+    begin=-1

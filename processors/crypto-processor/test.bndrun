@@ -6,6 +6,9 @@
 -runsystempackages: \
     sun.security.x509
 
+# Enable debugging.
+# -runjdb: 5055
+
 -runrequires: \
     bnd.identity;id='net.corda.crypto-processor',\
     bnd.identity;id='crypto-processor-tests',\
@@ -16,9 +19,12 @@
     bnd.identity;id='net.corda.crypto-service-impl',\
     bnd.identity;id='net.corda.db-connection-manager-impl',\
     bnd.identity;id='net.corda.db-orm-impl',\
-    bnd.identity;id='net.corda.inmemory-messaging-impl',\
     bnd.identity;id='net.corda.layered-property-map',\
     bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.db-message-bus-impl',\
+    bnd.identity;id='net.corda.db-orm-impl',\
+    bnd.identity;id='net.corda.messaging-impl',\
+    bnd.identity;id='net.corda.schema-registry-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\

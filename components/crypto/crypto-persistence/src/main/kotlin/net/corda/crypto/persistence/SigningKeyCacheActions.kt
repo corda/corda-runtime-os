@@ -48,6 +48,8 @@ interface SigningKeyCacheActions : AutoCloseable {
      * Returns list of keys for provided key ids.
      *
      * @param ids The list of the key ids to look up for, the maximum number of items is 20.
+     *
+     * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookup(
         ids: List<String>

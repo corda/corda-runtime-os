@@ -16,19 +16,18 @@ import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import kotlin.math.abs
 
 class CordaTransactionalDBProducerImpl(
     private val serializer: CordaAvroSerializer<Any>,
-    private val dbAccess: DBAccess
+    private val dbAccess: DBAccess,
+    private val writeOffsets: WriteOffsets
 ) : CordaProducer {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
-
-    private val writeOffsets = WriteOffsets(dbAccess.getMaxOffsetsPerTopicPartition())
 
     private val _transaction = ThreadLocal<TransactionRecordEntry>()
     private var transaction

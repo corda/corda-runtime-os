@@ -7,11 +7,11 @@ import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -65,13 +65,15 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
 import kotlin.reflect.KFunction
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MemberProcessorIntegrationTest {
     companion object {
         const val CLIENT_ID = "member-processor-integration-test"
@@ -179,7 +181,7 @@ class MemberProcessorIntegrationTest {
                 )
             ).also { it.startAndWait() }
 
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), bootConf)
             publisher.publishCryptoConf()
             publisher.publishMessagingConf()
             publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader)

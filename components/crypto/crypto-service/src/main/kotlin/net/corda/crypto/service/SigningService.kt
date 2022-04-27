@@ -58,6 +58,8 @@ interface SigningService {
      *
      * @param tenantId the tenant's id which the keys belong to.
      * @param ids The list of the key ids to look up for, the maximum number of items is 20.
+     *
+     * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookup(
         tenantId: String,

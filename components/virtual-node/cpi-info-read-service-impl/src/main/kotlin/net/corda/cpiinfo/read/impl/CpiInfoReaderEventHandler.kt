@@ -16,7 +16,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.common.ConfigChangedEvent
 import net.corda.virtualnode.common.MessagingConfigEventHandler
-import org.slf4j.Logger
 
 /**
  * Handle the events inside the [CpiInfoReader] component.
@@ -27,12 +26,11 @@ class CpiInfoReaderEventHandler(
     configurationReadService: ConfigurationReadService,
     private val cpiInfoProcessor: CpiInfoReaderProcessor,
     private val subscriptionFactory: SubscriptionFactory,
-    private val instanceId: Int?,
     configChangedEventCallback: (ConfigChangedEvent) -> Unit
 ) : LifecycleEventHandler, AutoCloseable {
     companion object {
         internal const val GROUP_NAME = "CPI_INFO_READER"
-        val log: Logger = contextLogger()
+        private val log = contextLogger()
     }
 
     /**

@@ -27,6 +27,10 @@ dependencies {
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:schema-registry:schema-registry")
 
+    runtimeOnly project(':libs:db:db-orm-impl')
+    runtimeOnly project(':libs:schema-registry:schema-registry-impl')
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+
     testImplementation project(":testing:test-utilities")
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

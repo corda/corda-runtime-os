@@ -62,7 +62,8 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
