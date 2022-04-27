@@ -38,7 +38,6 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")

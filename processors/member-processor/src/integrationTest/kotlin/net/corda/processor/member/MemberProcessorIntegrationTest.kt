@@ -264,7 +264,6 @@ class MemberProcessorIntegrationTest {
         }
         logger.info("Running ${RegistrationProxy::class.simpleName} tests.")
         for (test in registrationProxyTests) {
-            // Temporarily disabled until CORE-4690 is fixed
             runTest(test)
         }
         logger.info("Finished test run.")

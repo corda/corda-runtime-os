@@ -18,7 +18,6 @@ dependencies {
     implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
-    implementation project(":libs:db:db-orm-impl")
     implementation project(":libs:db:db-admin")
     implementation project(":libs:db:db-admin-impl")
     implementation project(":testing:db-testkit")

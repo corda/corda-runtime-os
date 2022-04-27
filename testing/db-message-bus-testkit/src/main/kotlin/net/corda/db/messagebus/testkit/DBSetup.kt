@@ -4,7 +4,6 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.InMemoryEntityManagerConfiguration
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.test.util.LoggingUtils.emphasise
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -31,10 +30,6 @@ object DBSetup: BeforeAllCallback {
     }
 
     private fun setupEntities() {
-        // We need this because it sets up the database
-        EntityManagerFactoryFactoryImpl()
-        val lbm = LiquibaseSchemaMigratorImpl()
-
         logger.info("Using in-memory (HSQL) DB".emphasise())
         val dbConfig = InMemoryEntityManagerConfiguration(DbSchema.DB_MESSAGE_BUS)
 
@@ -50,6 +45,7 @@ object DBSetup: BeforeAllCallback {
                 ),
             )
         )
+        val lbm = LiquibaseSchemaMigratorImpl()
         StringWriter().use {
             lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
         }
