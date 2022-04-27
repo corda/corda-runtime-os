@@ -24,6 +24,12 @@ class WriteOffsets(
 
     private val latestOffsets: MutableMap<CordaTopicPartition, Long> = ConcurrentHashMap(initialState)
 
+    @Synchronized
+    fun sync(state: Map<CordaTopicPartition, Long>) {
+        latestOffsets.clear()
+        latestOffsets.putAll(state)
+    }
+
     fun getNextOffsetFor(topicPartition: CordaTopicPartition): Long {
         return latestOffsets.compute(topicPartition) { _: CordaTopicPartition, offset: Long? ->
             offset?.plus(1) ?: 0L

@@ -64,7 +64,8 @@ dependencies {
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
-    integrationTestRuntimeOnly project(':libs:messaging:inmemory-messaging-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
     // Gather locations of CPIs to add into `resources`
     cpis project(path: ':testing:cpbs:crypto-custom-digest-one-consumer', configuration: 'cordaCPB')

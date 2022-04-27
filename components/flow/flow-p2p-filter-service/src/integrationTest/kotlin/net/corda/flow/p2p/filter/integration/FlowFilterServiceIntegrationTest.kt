@@ -10,6 +10,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
 import net.corda.libs.configuration.SmartConfigFactory
@@ -28,6 +29,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -40,7 +42,7 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowFilterServiceIntegrationTest {
 
@@ -68,13 +70,15 @@ class FlowFilterServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowSessionFilterService: FlowP2PFilterService
 
-    private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+    private val bootConfig = SmartConfigImpl.empty()
+        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+        .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
 
     @BeforeEach
     fun setup() {
         if (!setup) {
             setup = true
-            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), SmartConfigImpl.empty())
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), bootConfig)
             setupConfig(publisher)
         }
     }
@@ -84,7 +88,7 @@ class FlowFilterServiceIntegrationTest {
         flowSessionFilterService.start()
 
         val testId = "test1"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), SmartConfigImpl.empty())
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
         val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
         val flowEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<FlowEvent> { }
@@ -138,15 +142,10 @@ class FlowFilterServiceIntegrationTest {
     }
 
     private fun setupConfig(publisher: Publisher) {
-        val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
         publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, "1"))))
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }
-
-    private val bootConf = """
-        instance.id=1
-    """
 
     private val messagingConf = """
             componentVersion="5.1"

@@ -26,12 +26,18 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
+
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
 description "Flow P2P Filter Component"

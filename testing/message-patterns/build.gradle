@@ -51,10 +51,9 @@ dependencies {
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-orm")
-    integrationTestImplementation project(":libs:db:db-orm-impl")
     integrationTestImplementation project(":libs:messaging:db-message-bus-datamodel")
-    integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation project(":libs:messaging:topic-admin")
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     //runtime implementation dependencies
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")

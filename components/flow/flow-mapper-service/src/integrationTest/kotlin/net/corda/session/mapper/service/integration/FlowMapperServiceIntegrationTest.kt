@@ -15,6 +15,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -30,6 +31,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.test.flow.util.buildSessionEvent
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -41,11 +43,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowMapperServiceIntegrationTest {
 
@@ -70,13 +73,15 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowMapperService: FlowMapperService
 
-    private val bootConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+    private val bootConfig = SmartConfigImpl.empty()
+        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+        .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
 
     @BeforeEach
     fun setup() {
         if (!setup) {
             setup = true
-            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), SmartConfigImpl.empty())
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), bootConfig)
             setupConfig(publisher)
             flowMapperService.start()
         }
@@ -85,7 +90,7 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testSessionInitOutAndDataInbound() {
         val testId = "test1"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), SmartConfigImpl.empty())
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
@@ -111,7 +116,7 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData())
+                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray())))
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -120,7 +125,7 @@ class FlowMapperServiceIntegrationTest {
         val flowEventLatch = CountDownLatch(1)
         val testProcessor =   TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
         val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC, ),
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
             testProcessor,
             bootConfig,
             null
@@ -134,7 +139,7 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testStartRPCDuplicatesAndCleanup() {
         val testId = "test2"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), SmartConfigImpl.empty())
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
         //2 startRPCRecord, 1 duplicate
         val identity = HoldingIdentity(testId, testId)
@@ -152,7 +157,7 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 StartFlow(
                     context,
-                    null
+                    ""
                 )
             )
         )
@@ -193,12 +198,12 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testNoStateForMapper() {
         val testId = "test3"
-        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), SmartConfigImpl.empty())
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData())
+                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("".toByteArray())))
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -224,6 +229,7 @@ class FlowMapperServiceIntegrationTest {
 
     private val bootConf = """
         $INSTANCE_ID=1
+        $BUS_TYPE = INMEMORY
     """
 
     private val flowConf = """

@@ -3,6 +3,7 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,6 +16,8 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,13 +30,14 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class ConfigurationReadServiceImplTest {
 
     companion object {
         private const val BOOT_CONFIG_STRING = """
-            {}
+            $INSTANCE_ID = 1
+            $BUS_TYPE = INMEMORY
         """
 
         private const val TIMEOUT = 10000L

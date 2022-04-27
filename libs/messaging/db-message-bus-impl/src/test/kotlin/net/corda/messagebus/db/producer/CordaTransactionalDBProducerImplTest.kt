@@ -10,6 +10,7 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -35,7 +36,8 @@ internal class CordaTransactionalDBProducerImplTest {
 
         val producer = CordaTransactionalDBProducerImpl(
             mock(),
-            dbAccess
+            dbAccess,
+            mock()
         ) as CordaProducer
 
         val record = CordaProducerRecord(topic, key, value)
@@ -75,7 +77,7 @@ internal class CordaTransactionalDBProducerImplTest {
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess)
+        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, mock())
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -86,20 +88,25 @@ internal class CordaTransactionalDBProducerImplTest {
         verify(dbAccess).writeTransactionRecord(dbTransaction.capture())
 
         val initialTransactionRecord = dbTransaction.allValues.single()
-        verify(dbAccess).setTransactionRecordState(eq(initialTransactionRecord.transactionId), eq(TransactionState.ABORTED))
+        verify(dbAccess).setTransactionRecordState(
+            eq(initialTransactionRecord.transactionId),
+            eq(TransactionState.ABORTED)
+        )
     }
 
     @Test
     fun `transactional producer sends correct entry to database`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
-        whenever(dbAccess.getMaxOffsetsPerTopicPartition()).thenReturn(mapOf(CordaTopicPartition(topic, 0) to 5))
+        val writeOffsets = mock<WriteOffsets>() {
+            on{ getNextOffsetFor(any()) }.thenReturn(6)
+        }
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
         val callback: CordaProducer.Callback = mock()
 
-        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess)
+        val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, writeOffsets)
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
         producer.beginTransaction()
@@ -124,6 +131,9 @@ internal class CordaTransactionalDBProducerImplTest {
         assertThat(record.transactionId).isEqualTo(initialTransactionRecord)
         assertThat(initialTransactionRecord.state).isEqualTo(TransactionState.PENDING)
 
-        verify(dbAccess).setTransactionRecordState(eq(initialTransactionRecord.transactionId), eq(TransactionState.COMMITTED))
+        verify(dbAccess).setTransactionRecordState(
+            eq(initialTransactionRecord.transactionId),
+            eq(TransactionState.COMMITTED)
+        )
     }
 }
