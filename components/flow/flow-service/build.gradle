@@ -59,7 +59,6 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
 
     testImplementation project(":libs:flows:session-manager-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
@@ -80,7 +79,6 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
     integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
     integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
-
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 }

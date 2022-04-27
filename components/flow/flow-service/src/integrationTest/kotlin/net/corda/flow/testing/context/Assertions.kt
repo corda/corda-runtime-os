@@ -8,64 +8,32 @@ import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.v5.base.util.contextLogger
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
-
-fun getMatchedFlowEventRecords(
-    flowId: String,
-    response: StateAndEventProcessor.Response<Checkpoint>
-): List<FlowEvent> {
-    return response.responseEvents
-        .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_EVENT_TOPIC || it.value is FlowEvent }
-        .map { it.value as FlowEvent }
-}
-
-fun getMatchedFlowMapperEventRecords(
-    response: StateAndEventProcessor.Response<Checkpoint>
-): List<FlowMapperEvent> {
-    return response.responseEvents
-        .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
-        .map { it.value as FlowMapperEvent }
-}
-
-fun getMatchedSessionEvents(
-    sessionId: String,
-    initiatingIdentity: net.corda.data.identity.HoldingIdentity,
-    initiatedIdentity: net.corda.data.identity.HoldingIdentity,
-    flowMapperEvents: List<FlowMapperEvent>
-): List<SessionEvent> {
-    val sessionEvents = flowMapperEvents.filter { it.payload is SessionEvent }.map { it.payload as SessionEvent }
-    log("found ${sessionEvents.size} session events in ${flowMapperEvents.size} flow mapper events.")
-
-    val foundEvents = sessionEvents.filter {
-        it.sessionId == sessionId &&
-                it.initiatedIdentity == initiatedIdentity &&
-                it.initiatingIdentity == initiatingIdentity
-    }
-
-    log("found ${foundEvents.size} matching session events in ${flowMapperEvents.size} flow mapper events.")
-    return foundEvents
-}
-
-fun log(msg: String) {
-    println(msg)
-}
 
 class OutputAssertionsImpl(
     private val flowId: String,
-    private val sessionInitiatingIdentity: net.corda.data.identity.HoldingIdentity? = null,
-    private val sessionInitiatedIdentity: net.corda.data.identity.HoldingIdentity? = null,
-    ) : OutputAssertions {
+    private val sessionInitiatingIdentity: HoldingIdentity? = null,
+    private val sessionInitiatedIdentity: HoldingIdentity? = null,
+) : OutputAssertions {
+
+    private companion object {
+        val log = contextLogger()
+    }
+
     val asserts = mutableListOf<(TestRun) -> Unit>()
 
     override fun sessionAckEvent(
         flowId: String,
         sessionId: String,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity?,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity?
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
     ) {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response value")
@@ -73,14 +41,16 @@ class OutputAssertionsImpl(
             assertTrue(eventRecords.any(), "Expected at least one event record")
 
             val sessionEvents =
-                getMatchedSessionEvents(sessionId,initiatingIdentity?:sessionInitiatingIdentity!!, initiatingIdentity?:sessionInitiatedIdentity!!, eventRecords)
+                getMatchedSessionEvents(
+                    sessionId,
+                    initiatingIdentity ?: sessionInitiatingIdentity!!,
+                    initiatingIdentity ?: sessionInitiatedIdentity!!,
+                    eventRecords
+                )
             assertTrue(sessionEvents.any(), "Expected at least one session event record")
 
             val foundAcks = sessionEvents.filter { it.payload is SessionAck }
-            assertTrue(
-                foundAcks.size == 1,
-                "Expected exactly least one ack event, found ${eventRecords.size}"
-            )
+            assertEquals(1, foundAcks.size, "Expected exactly least one ack event")
         }
     }
 
@@ -92,31 +62,23 @@ class OutputAssertionsImpl(
 
     override fun flowResumedWithSessionData(vararg sessionData: Pair<String, ByteArray>) {
         asserts.add { testRun ->
-            assertNotNull(testRun.flowContinuation,"flow not resumed")
-            assertTrue(testRun.flowContinuation is FlowContinuation.Run,"Expecting flow continuation to be of type  Run")
+            assertThat(testRun.flowContinuation).isInstanceOf(FlowContinuation.Run::class.java)
             val value = (testRun.flowContinuation as FlowContinuation.Run).value
-
-            assertTrue(value is Map<*,*>,"flow not resumed")
-
-            val expected = sessionData.toMap()
-            val actual = value as Map<*,*>
-            assertEquals(expected, actual)
+            assertThat(value).isInstanceOf(Map::class.java)
+            assertEquals(sessionData.toMap(), value as Map<*, *>)
         }
     }
 
     override fun wakeUpEvent() {
         asserts.add { testRun ->
-            assertNotNull(testRun.response, "Test run response value")
+            assertNotNull(testRun.response, "Test run response")
 
             val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
             assertTrue(eventRecords.any(), "Expected at least one event record")
 
-            val wakeupEvents =eventRecords.filter { it.payload is Wakeup }
+            val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
 
-            assertTrue(
-                wakeupEvents.size == 1,
-                "Expected exactly least one wakeup event, found ${eventRecords.size}"
-            )
+            assertEquals(1, wakeupEvents.size, "Expected one wakeup event")
         }
     }
 
@@ -152,5 +114,41 @@ class OutputAssertionsImpl(
         asserts.add {
             assertNull(it.response?.updatedState, "Expected to receive NULL for output state")
         }
+    }
+
+    private fun getMatchedFlowEventRecords(
+        flowId: String,
+        response: StateAndEventProcessor.Response<Checkpoint>
+    ): List<FlowEvent> {
+        return response.responseEvents
+            .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_EVENT_TOPIC || it.value is FlowEvent }
+            .map { it.value as FlowEvent }
+    }
+
+    private fun getMatchedFlowMapperEventRecords(
+        response: StateAndEventProcessor.Response<Checkpoint>
+    ): List<FlowMapperEvent> {
+        return response.responseEvents
+            .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
+            .map { it.value as FlowMapperEvent }
+    }
+
+    private fun getMatchedSessionEvents(
+        sessionId: String,
+        initiatingIdentity: HoldingIdentity,
+        initiatedIdentity: HoldingIdentity,
+        flowMapperEvents: List<FlowMapperEvent>
+    ): List<SessionEvent> {
+        val sessionEvents = flowMapperEvents.filter { it.payload is SessionEvent }.map { it.payload as SessionEvent }
+        log.info("found ${sessionEvents.size} session events in ${flowMapperEvents.size} flow mapper events.")
+
+        val foundEvents = sessionEvents.filter {
+            it.sessionId == sessionId &&
+                    it.initiatedIdentity == initiatedIdentity &&
+                    it.initiatingIdentity == initiatingIdentity
+        }
+
+        log.info("found ${foundEvents.size} matching session events in ${flowMapperEvents.size} flow mapper events.")
+        return foundEvents
     }
 }

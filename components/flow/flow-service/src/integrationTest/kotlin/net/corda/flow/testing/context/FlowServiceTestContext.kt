@@ -12,6 +12,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeCpiInfoReadService
@@ -33,20 +34,20 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
 
 @Suppress("Unused")
-@Component(service = [FlowServiceTestContext::class], scope = ServiceScope.PROTOTYPE)
+@Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
     @Reference(service = FakeVirtualNodeInfoReadService::class)
     val virtualNodeInfoReadService: FakeVirtualNodeInfoReadService,
@@ -62,11 +63,15 @@ class FlowServiceTestContext @Activate constructor(
     val flowFiberFactory: FakeFlowFiberFactory,
 ) : GivenSetup, WhenSetup, ThenSetup {
 
+    private companion object {
+        val log = contextLogger()
+    }
+
     private val testRuns = mutableListOf<TestRun>()
     private val assertions = mutableListOf<OutputAssertionsImpl>()
     private var lastPublishedState: Checkpoint? = null
-    private var sessionInitiatingIdentity: net.corda.data.identity.HoldingIdentity? = null
-    private var sessionInitiatedIdentity: net.corda.data.identity.HoldingIdentity? = null
+    private var sessionInitiatingIdentity: HoldingIdentity? = null
+    private var sessionInitiatedIdentity: HoldingIdentity? = null
     private val testConfig = ConfigFactory.empty()
         .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
         .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
@@ -79,14 +84,13 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingIdX500: String, groupId: String) {
-        val holdingId = HoldingIdentity(holdingIdX500, groupId)
+    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
         val emptyUUID = UUID(0, 0)
 
         virtualNodeInfoReadService.addVirtualNodeInfo(
-            holdingId,
+            holdingId.toCorda(),
             VirtualNodeInfo(
-                holdingId,
+                holdingId.toCorda(),
                 getCpiIdentifier(cpiId),
                 emptyUUID,
                 emptyUUID,
@@ -135,22 +139,22 @@ class FlowServiceTestContext @Activate constructor(
         sandboxGroupContextComponent.putCpk(getCpkIdentifier(cpkId))
     }
 
-    override fun membershipGroupFor(owningMember: net.corda.data.identity.HoldingIdentity) {
-        membershipGroupReaderProvider.put(HoldingIdentity(owningMember.x500Name, owningMember.groupId))
+    override fun membershipGroupFor(owningMember: HoldingIdentity) {
+        membershipGroupReaderProvider.put(owningMember.toCorda())
     }
 
-    override fun sessionInitiatingIdentity(initiatingIdentity: net.corda.data.identity.HoldingIdentity) {
+    override fun sessionInitiatingIdentity(initiatingIdentity: HoldingIdentity) {
         this.sessionInitiatingIdentity = initiatingIdentity
     }
 
-    override fun sessionInitiatedIdentity(initiatedIdentity: net.corda.data.identity.HoldingIdentity) {
+    override fun sessionInitiatedIdentity(initiatedIdentity: HoldingIdentity) {
         this.sessionInitiatedIdentity = initiatedIdentity
     }
 
     override fun startFlowEventReceived(
         flowId: String,
         requestId: String,
-        holdingId: net.corda.data.identity.HoldingIdentity,
+        holdingId: HoldingIdentity,
         cpiId: String,
         args: String
     ): FlowIoRequestSetup {
@@ -172,8 +176,8 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity?,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity?,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?,
         receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
@@ -192,8 +196,8 @@ class FlowServiceTestContext @Activate constructor(
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity?,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity?,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?,
         receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
@@ -222,25 +226,36 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     fun execute() {
-        testRuns.forEach {
+        testRuns.forEachIndexed { iteration, testRun ->
+            log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
-            flowFiberFactory.fiber.ioToCompleteWith = it.ioRequest
-            val response = flowEventProcessor.onNext(lastPublishedState, it.event)
-            it.flowContinuation = flowFiberFactory.fiber.flowContinuation
-            it.response = response
+            flowFiberFactory.fiber.ioToCompleteWith = testRun.ioRequest
+            val response = flowEventProcessor.onNext(lastPublishedState, testRun.event)
+            testRun.flowContinuation = flowFiberFactory.fiber.flowContinuation
+            testRun.response = response
             lastPublishedState = response.updatedState
         }
     }
 
     fun assert() {
-        assertEquals(assertions.size, testRuns.size, "number of output assertions does not match the number of input events")
+        assertEquals(
+            assertions.size,
+            testRuns.size,
+            "number of output assertions does not match the number of input events"
+        )
         var index = 0
         testRuns.forEach {
             assertions[index++].asserts.forEach { assert -> assert(it) }
         }
     }
 
-    fun resetAllServices() {
+    fun resetTestContext() {
+        testRuns.clear()
+        assertions.clear()
+        lastPublishedState = null
+        sessionInitiatingIdentity = null
+        sessionInitiatedIdentity = null
+
         virtualNodeInfoReadService.reset()
         cpiInfoReadService.reset()
         sandboxGroupContextComponent.reset()
@@ -250,9 +265,9 @@ class FlowServiceTestContext @Activate constructor(
     private fun createAndAddSessionEvent(
         flowId: String,
         sessionId: String,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity?,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity?,
-        payload:Any,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?,
+        payload: Any,
         sequenceNum: Int,
         receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
@@ -264,10 +279,10 @@ class FlowServiceTestContext @Activate constructor(
             receivedSequenceNum ?: sequenceNum,
             listOf(0),
             Instant.now(),
-            initiatingIdentity?:sessionInitiatingIdentity!!,
-            initiatedIdentity?:sessionInitiatedIdentity!!
+            initiatingIdentity ?: sessionInitiatingIdentity!!,
+            initiatedIdentity ?: sessionInitiatedIdentity!!
         )
-        return  addTestRun(getEventRecord(flowId,sessionEvent))
+        return addTestRun(getEventRecord(flowId, sessionEvent))
     }
 
     private fun getEventRecord(key: String, payload: Any): Record<String, FlowEvent> {

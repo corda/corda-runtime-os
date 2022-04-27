@@ -14,17 +14,11 @@ import org.osgi.test.junit5.service.ServiceExtension
 @Execution(ExecutionMode.SAME_THREAD)
 class StartFlowTest : FlowServiceTestBase() {
 
-    @Suppress("Unused")
-    @BeforeEach
-    fun setup() {
-        testContext.resetAllServices()
-    }
-
     @Test
     fun `start Flow`() {
 
         given {
-            virtualNode(CPI1, BOB_X500)
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
             sandboxCpk(CPK1)
             membershipGroupFor(BOB_HOLDING_IDENTITY)

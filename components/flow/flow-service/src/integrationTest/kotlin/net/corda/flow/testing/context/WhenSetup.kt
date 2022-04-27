@@ -1,10 +1,12 @@
 package net.corda.flow.testing.context
 
+import net.corda.data.identity.HoldingIdentity
+
 interface WhenSetup {
     fun startFlowEventReceived(
         flowId: String,
         requestId: String,
-        holdingId: net.corda.data.identity.HoldingIdentity,
+        holdingId: HoldingIdentity,
         cpiId: String,
         args: String
     ): FlowIoRequestSetup
@@ -13,8 +15,8 @@ interface WhenSetup {
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity? = null,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity? = null,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null,
         receivedSequenceNum: Int? = null
     ): FlowIoRequestSetup
 
@@ -23,8 +25,8 @@ interface WhenSetup {
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity? = null,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity? = null,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null,
         receivedSequenceNum: Int? = null
     ): FlowIoRequestSetup
 

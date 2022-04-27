@@ -16,7 +16,7 @@ class SessionEventHandlingTest: FlowServiceTestBase() {
     fun `(Receive) Given two sessions receiving all session data events resumes the flow and sends session acks`() {
         given {
             // Background setup
-            virtualNode(CPI1, BOB_X500)
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
             sandboxCpk(CPK1)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
