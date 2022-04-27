@@ -39,7 +39,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
-import java.lang.reflect.Modifier
 
 @Suppress("LongParameterList")
 @Component(
@@ -225,5 +224,3 @@ class FlowSandboxServiceImpl @Activate constructor(
         putObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS, initiatingToInitiatedFlows)
     }
 }
-
-private const val PUBLIC_ABSTRACT = Modifier.PUBLIC or Modifier.ABSTRACT
