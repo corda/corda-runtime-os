@@ -1,0 +1,40 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-app'
+}
+
+description "P2P Testing tools - Dump topic"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation "org.slf4j:slf4j-api"
+    implementation "net.corda:corda-base"
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+
+    implementation project(":osgi-framework-api")
+
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+}
