@@ -71,9 +71,9 @@ class PermissionStorageReaderImpl(
     override fun publishUpdatedRole(role: AvroRole) {
         log.info("CONAL - Publishing role with id ${role.id}")
         val futures = publisher.publish(listOf(Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role)))
-        log.info("CONAL - Publishing role with id ${role.id} finished, there are ${futures.size} futures. The next line calls " +
-                "futures.single(), could this be where we lose a request?")
+        log.info("CONAL - Publishing role with id ${role.id} finished, there are ${futures.size} futures.")
         futures.single().getOrThrow()
+        log.info("CONAL - Published role with id ${role.id} finished. Role has: ${role.permissions.size} permissions")
     }
 
     override fun publishNewPermission(permission: AvroPermission) {
