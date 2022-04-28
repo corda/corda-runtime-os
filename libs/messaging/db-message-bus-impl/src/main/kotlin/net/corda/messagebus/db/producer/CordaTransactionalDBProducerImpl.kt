@@ -160,6 +160,7 @@ class CordaTransactionalDBProducerImpl(
             log.error("Close called during transaction.  Some data may be lost.")
             abortTransaction()
         }
+        dbAccess.close()
     }
 
     private fun verifyInTransaction() {

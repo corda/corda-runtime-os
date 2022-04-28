@@ -19,6 +19,7 @@ import org.mockito.Mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.time.Instant
@@ -338,5 +339,12 @@ internal class DBCordaConsumerImplTest {
 
         assertThat(consumer.beginningOffsets(setOf(partition0, partition1, partition2))).isEqualTo(earliestPositions)
         assertThat(consumer.endOffsets(setOf(partition0, partition1, partition2))).isEqualTo(latestPositions)
+    }
+
+    @Test
+    fun `consumer correctly closes down dbAccess when closed`() {
+        val consumer = makeConsumer()
+        consumer.close()
+        verify(dbAccess).close()
     }
 }
