@@ -1,5 +1,7 @@
 package net.corda.messaging.integration
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
@@ -42,6 +44,10 @@ fun getKafkaProperties(): Properties {
     kafkaProperties[BOOTSTRAP_SERVERS_CONFIG] = IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
     kafkaProperties[CLIENT_ID] = "test"
     return kafkaProperties
+}
+
+fun getTopicConfig(template: String): Config {
+    return ConfigFactory.parseString(template)
 }
 
 class KafkaOnlyTest: ExecutionCondition {

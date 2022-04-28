@@ -1,7 +1,9 @@
 package net.corda.processors.crypto.tests
 
-import net.corda.crypto.core.CryptoConsts
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -12,11 +14,12 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -44,6 +47,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
@@ -67,10 +71,10 @@ import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.stream.Stream
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
     companion object {
         private val CLIENT_ID = makeClientId<CryptoProcessorTests>()
@@ -177,7 +181,15 @@ class CryptoProcessorTests {
                 responseTopic = RESPONSE_TOPIC,
                 keyEncodingService = keyEncodingService
             )
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), SmartConfigImpl.empty())
+            publisher = publisherFactory.createPublisher(
+                PublisherConfig(CLIENT_ID),
+                SmartConfigFactory.create(ConfigFactory.empty())
+                    .create(
+                        ConfigFactory.empty()
+                            .withValue(MessagingConfig.Boot.INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+                            .withValue(MessagingConfig.Bus.BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+                    )
+            )
         }
 
         private fun addDbConnectionConfigs(vararg dbs: TestDbInfo) {
@@ -450,7 +462,7 @@ class CryptoProcessorTests {
         assertEquals(1, found.size)
         assertEquals(publicKey.publicKeyId(), found[0].id)
         assertEquals(tenantId, found[0].tenantId)
-        if(alias.isNullOrBlank()) {
+        if (alias.isNullOrBlank()) {
             assertNull(found[0].alias)
         } else {
             assertEquals(alias, found[0].alias)
@@ -459,7 +471,7 @@ class CryptoProcessorTests {
         assertTrue(publicKey.encoded.contentEquals(found[0].publicKey.array()))
         assertNotNull(found[0].schemeCodeName)
         assertNotNull(found[0].masterKeyAlias)
-        if(externalId.isNullOrBlank()) {
+        if (externalId.isNullOrBlank()) {
             assertNull(found[0].externalId)
         } else {
             assertEquals(externalId, found[0].externalId)

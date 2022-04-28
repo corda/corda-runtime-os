@@ -5,7 +5,7 @@
 -resolve.effective: resolve, active
 
 #uncomment to remote debug
-#-runjdb: 5005
+# -runjdb: 5005
 
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
@@ -25,8 +25,8 @@
     bnd.identity;id='net.corda.schema-registry-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.db-topic-admin-impl',\
-    bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\
+    bnd.identity;id='net.corda.db-message-bus-testkit',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
