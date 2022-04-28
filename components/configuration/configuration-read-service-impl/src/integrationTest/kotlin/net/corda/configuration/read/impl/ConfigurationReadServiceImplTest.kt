@@ -75,8 +75,10 @@ class ConfigurationReadServiceImplTest {
             receivedConfig = config
             latch.countDown()
         }
+        latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
         assertTrue(receivedKeys.contains(BOOT_CONFIG))
         assertEquals(bootConfig, receivedConfig[BOOT_CONFIG], "Incorrect config")
+        latch = CountDownLatch(1)
 
         // Publish new configuration and verify it gets delivered
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
