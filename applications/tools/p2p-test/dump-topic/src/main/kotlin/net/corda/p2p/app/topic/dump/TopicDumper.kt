@@ -70,7 +70,7 @@ internal class TopicDumper(
             } catch (e: ClassNotFoundException) {
                 null
             }
-        }.first()
+        }.firstOrNull() ?: throw Application.TopicDumperException("Could not find class $values")
 
         return object : DurableProcessor<String, T> {
             override fun onNext(events: List<Record<String, T>>): List<Record<*, *>> {
@@ -98,7 +98,7 @@ internal class TopicDumper(
     override fun run() {
         output.parentFile.mkdirs()
         logger.info("Connecting to $kafkaServers")
-        val subscriptionConfig = SubscriptionConfig(UUID.randomUUID().toString(), topic, Random.nextInt())
+        val subscriptionConfig = SubscriptionConfig("topic-dumper-${UUID.randomUUID()}", topic, Random.nextInt())
         val kafkaConfig = SmartConfigImpl.empty()
             .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
         subscription = subscriptionFactory.createDurableSubscription(subscriptionConfig, createProcessor(), kafkaConfig, null).also {

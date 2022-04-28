@@ -26,7 +26,7 @@ java -jar \
 ```
 
 The command parameters are:
-* `kafka-servers` A list of kafka servers
+* `kafka-servers` A comma-separated list of addresses of Kafka brokers. Default to localhost:9092
 * `topic` The name of the topic to dump
-* `values` The class name of the expected value
+* `values` The class name of the expected value (full canonical name)
 * `output` An output file to save all the data
