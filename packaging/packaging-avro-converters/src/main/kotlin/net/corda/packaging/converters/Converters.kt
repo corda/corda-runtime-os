@@ -145,4 +145,5 @@ fun CPI.Metadata.toAvro() = CPIMetadata.newBuilder().also {
     it.hash = SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes))
     it.cpks = cpks.map(CPK.Metadata::toAvro)
     it.groupPolicy = groupPolicy
+    it.version = -1 // This value is required for initialization, but isn't used by except by the DB Reconciler.
 }.build()

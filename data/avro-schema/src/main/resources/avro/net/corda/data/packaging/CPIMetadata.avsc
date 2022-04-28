@@ -18,6 +18,10 @@
     {
       "name": "groupPolicy",
       "type": ["string", "null"]
+    },
+    {
+      "name": "version",
+      "type": "int"
     }
   ]
 }
