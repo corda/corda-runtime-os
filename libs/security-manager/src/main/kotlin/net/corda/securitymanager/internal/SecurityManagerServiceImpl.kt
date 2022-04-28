@@ -26,16 +26,15 @@ class SecurityManagerServiceImpl @Activate constructor(
 
     // The OSGi security manager that is installed at framework start. This may be temporarily replaced by the
     // `DiscoverySecurityManager`.
-    private val osgiSecurityManager = System.getSecurityManager()
+    private val osgiSecurityManager: SecurityManager? = System.getSecurityManager()
 
     // The current Corda security manager.
     private var cordaSecurityManager: CordaSecurityManager? = null
 
     override fun start() {
         cordaSecurityManager?.stop()
-        System.setSecurityManager(osgiSecurityManager)
         log.info("Starting restrictive Corda security manager.")
-        cordaSecurityManager = RestrictiveSecurityManager(conditionalPermissionAdmin)
+        cordaSecurityManager = RestrictiveSecurityManager(conditionalPermissionAdmin, osgiSecurityManager)
     }
 
     override fun startDiscoveryMode(prefixes: Collection<String>) {
