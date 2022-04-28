@@ -64,7 +64,10 @@ class ConfigurationReadServiceImplTest {
         val receivedKeys = mutableSetOf<String>()
         var receivedConfig = mapOf<String, SmartConfig>()
         eventually(duration = 5.seconds) {
-            assertTrue(configurationReadService.isRunning)
+            assertEquals(
+                LifecycleStatus.UP,
+                lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
+            )
         }
         val reg = configurationReadService.registerForUpdates { keys, config ->
             println("received keys: ${keys.joinToString()}".emphasise())
@@ -72,10 +75,8 @@ class ConfigurationReadServiceImplTest {
             receivedConfig = config
             latch.countDown()
         }
-        latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
         assertTrue(receivedKeys.contains(BOOT_CONFIG))
         assertEquals(bootConfig, receivedConfig[BOOT_CONFIG], "Incorrect config")
-        latch = CountDownLatch(1)
 
         // Publish new configuration and verify it gets delivered
         val flowConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
@@ -87,10 +88,6 @@ class ConfigurationReadServiceImplTest {
             "$FLOW_CONFIG key was missing from received keys (${receivedKeys.joinToString()})"
         )
         assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
-        assertEquals(
-            LifecycleStatus.UP,
-            lifecycleRegistry.componentStatus()[LifecycleCoordinatorName.forComponent<ConfigurationReadService>()]?.status
-        )
 
         // Cleanup
         reg.close()
