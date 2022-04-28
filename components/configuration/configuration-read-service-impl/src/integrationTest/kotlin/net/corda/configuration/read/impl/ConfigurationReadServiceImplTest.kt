@@ -80,7 +80,10 @@ class ConfigurationReadServiceImplTest {
         val confString = flowConfig.root().render()
         publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1"))))
         latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
-        assertTrue(receivedKeys.contains(FLOW_CONFIG), "$FLOW_CONFIG key was missing from received keys")
+        assertTrue(
+            receivedKeys.contains(FLOW_CONFIG),
+            "$FLOW_CONFIG key was missing from received keys (${receivedKeys.joinToString()})"
+        )
         assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
         assertEquals(
             LifecycleStatus.UP,
