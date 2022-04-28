@@ -17,7 +17,6 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.test.util.LoggingUtils.emphasise
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -70,7 +69,6 @@ class ConfigurationReadServiceImplTest {
             )
         }
         val reg = configurationReadService.registerForUpdates { keys, config ->
-            println("received keys: ${keys.joinToString()}".emphasise())
             receivedKeys.addAll(keys)
             receivedConfig = config
             latch.countDown()
@@ -85,10 +83,7 @@ class ConfigurationReadServiceImplTest {
         val confString = flowConfig.root().render()
         publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(confString, "1"))))
         latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
-        assertTrue(
-            receivedKeys.contains(FLOW_CONFIG),
-            "$FLOW_CONFIG key was missing from received keys (${receivedKeys.joinToString()})"
-        )
+        assertTrue(receivedKeys.contains(FLOW_CONFIG), "$FLOW_CONFIG key was missing from received keys")
         assertEquals(flowConfig, receivedConfig[FLOW_CONFIG], "Incorrect config")
 
         // Cleanup

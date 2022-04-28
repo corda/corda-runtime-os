@@ -51,7 +51,6 @@ class CordaTransactionalDBProducerImpl(
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
-        println(" %%% Sending ${records.joinToString()}")
         verifyInTransaction()
         sendRecordsToPartitions(records.map {
             // Determine the partition
