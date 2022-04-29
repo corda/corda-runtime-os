@@ -8,7 +8,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
@@ -155,11 +154,7 @@ class FlowRunnerImpl @Activate constructor(
         val checkpoint = context.checkpoint
         val sandbox = getSandbox(checkpoint)
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
-
-        val flowFiber = fiberContext.checkpointSerializer.deserialize(
-            checkpoint.serializedFiber.array(),
-            FlowFiberImpl::class.java
-        )
+        val flowFiber = flowFiberFactory.createFlowFiber(fiberContext)
 
         return flowFiber.resume(fiberContext, flowContinuation, scheduler)
     }

@@ -3,6 +3,9 @@
 -runee: JavaSE-11
 -runtrace: true
 
+# Enable debugging.
+# -runjdb: 1044
+
 -resolve.effective: resolve,active
 
 -runvm: \
@@ -13,9 +16,6 @@
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
     sun.security.x509
-
-# Enable debugging.
-# -runjdb: 1044
 
 -runrequires: \
     bnd.identity;id='flow-service-tests',\

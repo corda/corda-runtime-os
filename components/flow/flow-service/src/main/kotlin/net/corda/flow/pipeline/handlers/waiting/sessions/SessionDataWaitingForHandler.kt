@@ -31,7 +31,7 @@ class SessionDataWaitingForHandler @Activate constructor(
         }
     }
 
-    private fun convertToIncomingPayloads(receivedEvents: List<Pair<SessionState, SessionEvent>>): Map<String, Any> {
+    private fun convertToIncomingPayloads(receivedEvents: List<Pair<SessionState, SessionEvent>>): Map<String, ByteArray> {
         return receivedEvents.associate { (_, event) ->
             when (val sessionPayload = event.payload) {
                 is net.corda.data.flow.event.session.SessionData -> Pair(event.sessionId, sessionPayload.payload.array())
