@@ -19,7 +19,9 @@ import net.corda.httprpc.client.processing.WebResponse
 import net.corda.httprpc.client.serialization.objectMapper
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.trace
+import org.apache.http.client.config.RequestConfig
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
@@ -134,7 +136,12 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             val httpClient = HttpClients.custom()
                 .setSSLContext(sslContext)
                 .setSSLHostnameVerifier(NoopHostnameVerifier())
+                .setDefaultRequestConfig(
+                    RequestConfig.custom()
+                        .setSocketTimeout(30.seconds.toMillis().toInt())
+                        .build())
                 .build()
+
 
             Unirest.config().let { config ->
                 config.httpClient(ApacheClient.builder(httpClient).apply(config))
