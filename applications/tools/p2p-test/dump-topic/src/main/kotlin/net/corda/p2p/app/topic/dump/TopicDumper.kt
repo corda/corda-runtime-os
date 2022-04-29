@@ -1,11 +1,13 @@
 package net.corda.p2p.app.topic.dump
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import org.apache.avro.generic.IndexedRecord
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
@@ -62,6 +64,37 @@ internal class TopicDumper(
 
     private var subscription: AutoCloseable? = null
 
+    private val objectMapper = ObjectMapper()
+
+    private fun toDisplayableMap(value: Any?): Any? {
+        return when (value) {
+            null, is Number, is Boolean, is String -> value
+            is Map<*, *> -> {
+                value.mapValues {
+                    toDisplayableMap(it.value)
+                }.mapKeys {
+                    it.key?.toString() ?: "null"
+                }
+            }
+            is Collection<*> -> {
+                value.map { toDisplayableMap(it) }
+            }
+            is Array<*> -> {
+                value.map { toDisplayableMap(it) }
+            }
+            is IndexedRecord -> {
+                mapOf(
+                    "type" to value.javaClass.name,
+                    "content" to value.schema.fields.associate { field ->
+                        field.name() to toDisplayableMap(value.get(field.pos()))
+                    }
+
+                )
+            }
+            else -> value.toString()
+        }
+    }
+
     private fun <T : Any> createProcessor(): DurableProcessor<String, T> {
         val clz = FrameworkUtil.getBundle(this.javaClass).bundleContext.bundles.mapNotNull { bundle ->
             try {
@@ -76,7 +109,9 @@ internal class TopicDumper(
         return object : DurableProcessor<String, T> {
             override fun onNext(events: List<Record<String, T>>): List<Record<*, *>> {
                 events.forEach {
-                    output.appendText("${it.key}| ${it.value}\n")
+                    val valueAsMap = toDisplayableMap(it.value)
+                    val valueAsString = objectMapper.writeValueAsString(valueAsMap)
+                    output.appendText("${it.key}| $valueAsString\n")
                     count.incrementAndGet()
                 }
                 return emptyList()

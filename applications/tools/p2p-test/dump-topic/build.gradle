@@ -12,6 +12,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation "org.apache.avro:avro:$avroVersion"
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
