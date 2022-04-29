@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.packaging.converters.toCorda
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -84,6 +84,7 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         oldValue: CPIMetadata?,
         currentData: Map<CPIIdentifier, CPIMetadata>
     ) {
+        println(" %%% Received a record: ${newRecord.key}")
         if (newRecord.value != null) {
             try {
                 cpiInfoMap.put(newRecord.key, newRecord.value!!)
