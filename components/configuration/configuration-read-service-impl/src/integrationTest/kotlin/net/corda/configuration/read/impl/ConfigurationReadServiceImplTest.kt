@@ -56,7 +56,6 @@ class ConfigurationReadServiceImplTest {
     @Test
     fun `config read service delivers configuration updates to clients`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
-        var latch = CountDownLatch(1)
         configurationReadService.start()
         configurationReadService.bootstrapConfig(bootConfig)
         val publisher = publisherFactory.createPublisher(PublisherConfig("foo"), bootConfig)
@@ -71,7 +70,6 @@ class ConfigurationReadServiceImplTest {
         val reg = configurationReadService.registerForUpdates { keys, config ->
             receivedKeys.addAll(keys)
             receivedConfig = config
-            latch.countDown()
         }
         eventually {
             assertTrue(receivedKeys.contains(BOOT_CONFIG))
