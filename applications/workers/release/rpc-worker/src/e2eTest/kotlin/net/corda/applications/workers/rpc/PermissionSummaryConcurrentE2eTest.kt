@@ -9,7 +9,6 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 
 /**
@@ -22,7 +21,6 @@ class PermissionSummaryConcurrentE2eTest {
     private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
     private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, "admin", "admin")
 
-    @RepeatedTest(10)
     @Test
     fun `permission summary eventually consistent`() {
         val newUser1: String = testToolkit.uniqueName
