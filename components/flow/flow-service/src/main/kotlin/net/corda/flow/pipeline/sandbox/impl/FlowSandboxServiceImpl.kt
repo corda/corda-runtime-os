@@ -115,12 +115,6 @@ class FlowSandboxServiceImpl @Activate constructor(
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
-        // Declare services implemented within this sandbox group for CordaInject support.
-        val sandboxServices = sandboxGroupContextComponent.registerMetadataServices(
-            sandboxGroupContext,
-            serviceNames = { metadata -> metadata.cordappManifest.services }
-        )
-
         val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
         sandboxGroupContext.putObjectByKey(DEPENDENCY_INJECTOR, injectorService)
 
@@ -146,7 +140,6 @@ class FlowSandboxServiceImpl @Activate constructor(
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
             injectorService.close()
-            sandboxServices.close()
             customCrypto.close()
         }
     }
