@@ -1,38 +1,44 @@
 package net.corda.configuration.rpcops.impl.v1
 
-import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
+import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
-import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
-import net.corda.httprpc.exception.BadRequestException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.v5.base.util.contextLogger
 
 /** An implementation of [ConfigRPCOpsInternal]. */
 @Suppress("Unused")
 @Component(service = [ConfigRPCOpsInternal::class, PluggableRPCOps::class], immediate = true)
 internal class ConfigRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = ConfigurationValidatorFactory::class)
+    private val configurationValidatorFactory: ConfigurationValidatorFactory
 ) : ConfigRPCOpsInternal, PluggableRPCOps<ConfigRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
@@ -46,6 +52,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val logger = contextLogger()
     }
 
+    private val validator = configurationValidatorFactory.createConfigValidator()
     override val targetInterface = ConfigRPCOps::class.java
     override val protocolVersion = 1
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
@@ -69,17 +76,31 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     }
 
     override fun updateConfig(request: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
-        validateRequestedConfig(request.config)
+        validateRequestedConfig(request)
 
         val actor = CURRENT_RPC_CONTEXT.get().principal
-        val rpcRequest = request.run { ConfigurationManagementRequest(section, config, schemaVersion, actor, version) }
+        val rpcRequest = request.run {
+            ConfigurationManagementRequest(
+                section,
+                config,
+                ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
+                actor,
+                version
+            )
+        }
         val response = sendRequest(rpcRequest)
+        rpcRequest.updateActor
 
         return if (response.success) {
-            HTTPUpdateConfigResponse(response.section, response.config, response.schemaVersion, response.version)
+            HTTPUpdateConfigResponse(
+                response.section, response.config, Version(
+                    response.schemaVersion.majorVersion,
+                    response.schemaVersion.minorVersion
+                ), response.version
+            )
         } else {
             val exception = response.exception
-            if(exception == null){
+            if (exception == null) {
                 logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
                 throw InternalServerException("Request was unsuccessful but no exception was provided.")
             }
@@ -93,11 +114,17 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         }
     }
 
-    /** Validates that the [config] can be parsed into a `Config` object. */
-    private fun validateRequestedConfig(config: String) = try {
-        ConfigFactory.parseString(config)
-    } catch (e: ConfigException.Parse) {
-        val message = "Configuration \"$config\" could not be parsed. Valid JSON or HOCON expected. Cause: ${e.message}"
+    /**
+     * Validates that the [request] config can be parsed into a `Config` object and that its values are valid based on the defined
+     * schema for this request.
+     */
+    private fun validateRequestedConfig(request: HTTPUpdateConfigRequest) = try {
+        val config = request.config
+        val smartConfig = SmartConfigFactory.create(ConfigFactory.parseString(config)).create(ConfigFactory.parseString(config))
+        val updatedConfig = validator.validate(request.section, request.schemaVersion, smartConfig)
+        logger.debug { "UpdatedConfig: $updatedConfig" }
+    } catch (e: Exception) {
+        val message = "Configuration \"${request.config}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"
         throw BadRequestException(message)
     }
 

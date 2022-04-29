@@ -3,6 +3,7 @@ package net.corda.configuration.write.impl.tests.writer
 import net.corda.configuration.write.WrongConfigVersionException
 import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.data.config.ConfigurationManagementRequest
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
@@ -21,10 +22,11 @@ class ConfigEntityWriterTests {
     private val clock = mock<Clock>().apply {
         whenever(instant()).thenReturn(Instant.MIN)
     }
-    private val config = ConfigEntity("section", "a=b", 0, Instant.MIN, "actor")
+    private val config = ConfigEntity("section", "a=b", 0, 0, Instant.MIN, "actor")
     private val configAudit = ConfigAuditEntity(config)
     private val configMgmtReq = config.run {
-        ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version)
+        ConfigurationManagementRequest(section, config, ConfigurationSchemaVersion(schemaVersionMajor, schemaVersionMinor),
+            updateActor, version)
     }
 
     /** Creates a mock [EntityManager]. */

@@ -6,13 +6,18 @@ import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.validation.ConfigurationValidator
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -24,7 +29,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
-import net.corda.httprpc.ResponseCode
 
 /** Tests of [ConfigRPCOpsImpl]. */
 class ConfigRPCOpsImplTests {
@@ -42,11 +46,20 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val req = HTTPUpdateConfigRequest("section", 999, "a=b", 888)
+    private val req = HTTPUpdateConfigRequest("section", 999, "a=b", Version(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
-        ConfigurationManagementResponse(true, null, req.section, req.config, req.schemaVersion, req.version)
+        ConfigurationManagementResponse(
+            true, null, req.section, req.config, ConfigurationSchemaVersion(
+                req.schemaVersion.major, req.schemaVersion.minor
+            ), req.version
+        )
     }
-    private val successResponse = HTTPUpdateConfigResponse(req.section, req.config, req.schemaVersion, req.version)
+    private val successResponse = HTTPUpdateConfigResponse(
+        req.section, req.config, Version(
+            req.schemaVersion.major,
+            req.schemaVersion.minor
+        ), req.version
+    )
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
@@ -79,7 +92,14 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `updateConfig sends the correct request to the RPC sender`() {
-        val rpcRequest = req.run { ConfigurationManagementRequest(section, config, schemaVersion, actor, version) }
+        val rpcRequest = req.run {
+            ConfigurationManagementRequest(
+                section, config, ConfigurationSchemaVersion(
+                    schemaVersion.major,
+                    schemaVersion.minor
+                ), actor, version
+            )
+        }
 
         val (rpcSender, configRPCOps) = getConfigRPCOps()
 
@@ -103,7 +123,7 @@ class ConfigRPCOpsImplTests {
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
         val invalidConfig = "a=b\nc"
-        val expectedMessage = "Configuration \"$invalidConfig\" could not be parsed. Valid JSON or HOCON expected. " +
+        val expectedMessage = "Configuration \"$invalidConfig\" could not be validated. Valid JSON or HOCON expected. " +
                 "Cause: String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
@@ -119,7 +139,14 @@ class ConfigRPCOpsImplTests {
     fun `updateConfig throws HttpApiException if response is failure`() {
         val exception = ExceptionEnvelope("ErrorType", "ErrorMessage.")
         val response = req.run {
-            ConfigurationManagementResponse(false, exception, section, config, schemaVersion, version)
+            ConfigurationManagementResponse(
+                false,
+                exception,
+                section,
+                config,
+                ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
+                version
+            )
         }
         val future = CompletableFuture.supplyAsync { response }
 
@@ -138,7 +165,7 @@ class ConfigRPCOpsImplTests {
     @Test
     fun `updateConfig throws HttpApiException if request fails but no exception is provided`() {
         val (_, configRPCOps) = getConfigRPCOps(CompletableFuture.supplyAsync {
-            ConfigurationManagementResponse(false, null, "", "", 0, 0)
+            ConfigurationManagementResponse(false, null, "", "", ConfigurationSchemaVersion(0, 0), 0)
         })
 
         configRPCOps.createAndStartRPCSender(mock())
@@ -153,7 +180,7 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `updateConfig throws if RPC sender is not set`() {
-        val configRPCOps = ConfigRPCOpsImpl(mock())
+        val (_, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.setTimeout(1000)
         val e = assertThrows<ConfigRPCOpsServiceException> {
@@ -197,7 +224,7 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `is not running if RPC sender is not created`() {
-        val configRPCOps = ConfigRPCOpsImpl(mock())
+        val configRPCOps = ConfigRPCOpsImpl(mock(), mock())
         configRPCOps.setTimeout(0)
         assertFalse(configRPCOps.isRunning)
     }
@@ -229,6 +256,12 @@ class ConfigRPCOpsImplTests {
             whenever(createRPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>(any(), any()))
                 .thenReturn(rpcSender)
         }
-        return rpcSender to ConfigRPCOpsImpl(publisherFactory)
+        val validator = mock<ConfigurationValidator>().apply {
+            whenever(validate(any(), any(), any(), any())).thenAnswer { it.arguments[2] }
+        }
+        val validatorFactory = mock<ConfigurationValidatorFactory>().apply {
+            whenever(createConfigValidator()).thenReturn(validator)
+        }
+        return rpcSender to ConfigRPCOpsImpl(publisherFactory, validatorFactory)
     }
 }

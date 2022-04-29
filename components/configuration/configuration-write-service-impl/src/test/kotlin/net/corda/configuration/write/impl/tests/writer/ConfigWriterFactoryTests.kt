@@ -8,6 +8,7 @@ import net.corda.configuration.write.impl.writer.GROUP_NAME
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -36,9 +37,14 @@ class ConfigWriterFactoryTests {
         whenever(createPublisher(any(), any())).thenReturn(mock())
     }
 
+    /** Returns a mock [ConfigurationValidatorFactory]. */
+    private fun getConfigValidatorFactory() = mock<ConfigurationValidatorFactory>().apply {
+        whenever(createConfigValidator()).thenReturn(mock())
+    }
+
     @Test
     fun `factory does not start the config writer`() {
-        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), getPublisherFactory(), mock())
+        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), getPublisherFactory(), getConfigValidatorFactory(), mock())
         val configWriter = configWriterFactory.create(mock())
         assertFalse(configWriter.isRunning)
     }
@@ -49,7 +55,7 @@ class ConfigWriterFactoryTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val publisherFactory = getPublisherFactory()
-        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), publisherFactory, mock())
+        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), publisherFactory, getConfigValidatorFactory(), mock())
         configWriterFactory.create(expectedConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -67,7 +73,7 @@ class ConfigWriterFactoryTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
-        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, getPublisherFactory(), mock())
+        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, getPublisherFactory(), getConfigValidatorFactory(), mock())
         configWriterFactory.create(expectedConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())

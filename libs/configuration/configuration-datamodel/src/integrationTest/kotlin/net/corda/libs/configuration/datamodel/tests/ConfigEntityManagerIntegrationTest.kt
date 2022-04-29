@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
@@ -68,7 +68,7 @@ class ConfigEntityManagerIntegrationTest {
     @Test
     fun `can persist and read back config entities`() {
         val config = ConfigEntity(
-            "${random.nextInt()}", "a=b", 999,
+            "${random.nextInt()}", "a=b", 999, 0,
             // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
             Instant.now().truncatedTo(ChronoUnit.MILLIS), "actor"
         )
@@ -86,7 +86,7 @@ class ConfigEntityManagerIntegrationTest {
     @Test
     fun `can persist and read back config audit entities`() {
         val config = ConfigEntity(
-            "${random.nextInt()}", "a=b", 999,
+            "${random.nextInt()}", "a=b", 999, 0,
             // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
             Instant.now().truncatedTo(ChronoUnit.MILLIS), "joel"
         )
@@ -131,7 +131,7 @@ hello=world
             em.persist(dbConnectionAudit)
         }
 
-        var results = entityManagerFactory.createEntityManager().transaction {
+        val results = entityManagerFactory.createEntityManager().transaction {
             val table = DbConnectionAudit::class.simpleName
             val query = "SELECT c FROM $table c WHERE c.name=:name AND c.privilege=:privilege"
 

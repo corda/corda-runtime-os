@@ -1,5 +1,7 @@
 package net.corda.libs.configuration.endpoints.v1.types
 
+import net.corda.v5.base.versioning.Version
+
 /**
  * The data object received via HTTP in response to a request to update cluster configuration.
  *
@@ -11,6 +13,6 @@ package net.corda.libs.configuration.endpoints.v1.types
 data class HTTPUpdateConfigResponse(
     val section: String,
     val config: String,
-    val schemaVersion: Int,
+    val schemaVersion: Version,
     val version: Int
 )
