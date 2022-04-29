@@ -18,8 +18,8 @@ internal class Application @Activate constructor(
 ) : Application {
     private val topicDumper = TopicDumper(subscriptionFactory)
     override fun startup(args: Array<String>) {
-        @Suppress("SpreadOperator")
         val command = CommandLine(topicDumper)
+        @Suppress("SpreadOperator")
         if (command.execute(*args) != 0) {
             throw TopicDumperException("Could not execute")
         }
