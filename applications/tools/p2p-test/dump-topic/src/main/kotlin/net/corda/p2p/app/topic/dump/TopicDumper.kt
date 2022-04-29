@@ -70,7 +70,8 @@ internal class TopicDumper(
             } catch (e: ClassNotFoundException) {
                 null
             }
-        }.firstOrNull() ?: throw Application.TopicDumperException("Could not find class $values")
+        }.firstOrNull()
+            ?: throw Application.TopicDumperException("Could not find Avro type for class $values.")
 
         return object : DurableProcessor<String, T> {
             override fun onNext(events: List<Record<String, T>>): List<Record<*, *>> {
