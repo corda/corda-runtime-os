@@ -16,10 +16,12 @@ import org.junit.jupiter.api.Test
  */
 class PermissionSummaryConcurrentE2eTest {
 
-    private val testToolkit by TestToolkitProperty()
-    private val concurrentTestToolkit by TestToolkitProperty()
-    private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
-    private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, "admin", "admin")
+    companion object {
+        private val testToolkit by TestToolkitProperty()
+        private val concurrentTestToolkit by TestToolkitProperty()
+        private val adminTestHelper = RbacE2eClientRequestHelper(testToolkit, "admin", "admin")
+        private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, "admin", "admin")
+    }
 
     @Test
     fun `permission summary eventually consistent`() {
@@ -46,7 +48,7 @@ class PermissionSummaryConcurrentE2eTest {
             assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
         }
 
-        val permissionsCount = 1000
+        val permissionsCount = 50
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, "admin", "admin")
         val proxy = client.start().proxy
         val permissionIdsAllow = (1..permissionsCount).map {
@@ -57,7 +59,7 @@ class PermissionSummaryConcurrentE2eTest {
         }
         val allPermissionIds = permissionIdsAllow + permissionIdsDeny
 
-        val executorService = Executors.newFixedThreadPool(8)
+        val executorService = Executors.newFixedThreadPool(2)
         val role1PopulationFuture = executorService.submit {
             adminTestHelper.addPermissionsToRole(roleId1, *permissionIdsAllow.toTypedArray())
         }
