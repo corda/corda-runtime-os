@@ -7,6 +7,7 @@ import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
+import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
@@ -71,7 +72,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
 import kotlin.reflect.KFunction
 
-@ExtendWith(ServiceExtension::class)
+@ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MemberProcessorIntegrationTest {
     companion object {
