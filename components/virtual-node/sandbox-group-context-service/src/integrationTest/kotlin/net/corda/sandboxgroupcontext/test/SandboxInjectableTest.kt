@@ -6,7 +6,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -33,8 +32,6 @@ class SandboxInjectableTest {
     companion object {
         private const val CPB_INJECT = "META-INF/sandbox-cpk-inject-package.cpb"
         private const val FLOW_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleFlow"
-        private const val SERVICE_ONE_CLASS_NAME = "com.example.sandbox.cpk.inject.ExampleServiceOne"
-        private const val SERVICE_TWO_CLASS_NAME = "com.example.sandbox.cpk.inject.impl.ExampleServiceTwo"
     }
 
     @RegisterExtension
@@ -65,8 +62,6 @@ class SandboxInjectableTest {
             val flowClass = sandbox.loadClassFromMainBundles(FLOW_CLASS_NAME)
             val flowBundle = FrameworkUtil.getBundle(flowClass)
             val flowContext = flowBundle.bundleContext
-            val serviceOneClass = flowBundle.loadClass(SERVICE_ONE_CLASS_NAME)
-            val serviceTwoClass = flowBundle.loadClass(SERVICE_TWO_CLASS_NAME)
 
             @Suppress("unchecked_cast")
             val references = flowContext.getServiceReferences(
@@ -83,15 +78,9 @@ class SandboxInjectableTest {
                 }
             }.map(Any::javaClass)
             assertThat(serviceClasses)
-                .contains(serviceOneClass, serviceTwoClass)
                 .allSatisfy { serviceClass ->
                     assertThat(SingletonSerializeAsToken::class.java).isAssignableFrom(serviceClass)
                 }
-
-            // Given the proposed changes to Corda services, this test should no longer be checking if services are
-            // loaded correctly - it's likely this API will significantly change. Proof that custom digest services
-            // still function is however valid.
-            assertThat(serviceClasses.any { DigestService::class.java.isAssignableFrom(it) }).isTrue
         } finally {
             virtualNode.unloadSandbox(sandboxContext)
         }

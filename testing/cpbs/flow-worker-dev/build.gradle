@@ -2,8 +2,6 @@ plugins {
     id 'net.corda.plugins.cordapp-cpb'
 }
 
-version = ''
-
 cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
