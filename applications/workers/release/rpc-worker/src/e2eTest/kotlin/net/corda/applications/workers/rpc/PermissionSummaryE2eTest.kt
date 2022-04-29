@@ -5,7 +5,6 @@ import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 /**
@@ -20,7 +19,6 @@ class PermissionSummaryE2eTest {
     }
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `permission summary added to kafka when a permission is added to a single user and a single role`() {
         val newUser: String = testToolkit.uniqueName
         val newUserPassword: String = testToolkit.uniqueName
@@ -52,7 +50,6 @@ class PermissionSummaryE2eTest {
     }
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `permission summary added to kafka when multiple users are assigned a role with multiple permissions`() {
         val newUser1: String = testToolkit.uniqueName
         val newUser2: String = testToolkit.uniqueName
@@ -117,7 +114,6 @@ class PermissionSummaryE2eTest {
     }
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `permission summary added to kafka when user is assigned multiple roles with multiple permissions`() {
         val newUser1: String = testToolkit.uniqueName
         val newUserPassword: String = testToolkit.uniqueName

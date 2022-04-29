@@ -9,7 +9,6 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 
@@ -18,7 +17,6 @@ class CreatePermissionE2eTest {
     private val testToolkit by TestToolkitProperty()
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun testCreateAndGet() {
         testToolkit.httpClientFor(PermissionEndpoint::class.java).use { client ->
             val proxy = client.start().proxy

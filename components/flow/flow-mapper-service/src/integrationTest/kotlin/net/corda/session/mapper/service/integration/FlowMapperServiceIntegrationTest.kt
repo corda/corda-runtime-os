@@ -36,7 +36,6 @@ import net.corda.test.flow.util.buildSessionEvent
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -50,7 +49,6 @@ import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("Unrelated Flaky test")
 class FlowMapperServiceIntegrationTest {
 
     private companion object {

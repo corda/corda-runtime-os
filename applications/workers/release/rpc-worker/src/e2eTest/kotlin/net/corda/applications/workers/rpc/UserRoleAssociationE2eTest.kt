@@ -12,7 +12,6 @@ import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 
@@ -21,7 +20,6 @@ class UserRoleAssociationE2eTest {
     private val testToolkit by TestToolkitProperty()
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     fun `test association of user and role`() {
 
         val roleId = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->

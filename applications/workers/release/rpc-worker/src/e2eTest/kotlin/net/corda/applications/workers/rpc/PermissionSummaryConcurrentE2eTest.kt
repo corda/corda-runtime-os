@@ -9,7 +9,6 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 
 /**
@@ -24,7 +23,6 @@ class PermissionSummaryConcurrentE2eTest {
         private val concurrentAdminTestHelper = RbacE2eClientRequestHelper(concurrentTestToolkit, "admin", "admin")
     }
 
-    @RepeatedTest(10)
     @Test
     fun `permission summary eventually consistent`() {
         val newUser1: String = testToolkit.uniqueName
@@ -50,7 +48,7 @@ class PermissionSummaryConcurrentE2eTest {
             assertEquals(0, this.permissions.size, "Permission summary should be empty before the role is assigned")
         }
 
-        val permissionsCount = 1000
+        val permissionsCount = 50
         val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, "admin", "admin")
         val proxy = client.start().proxy
         val permissionIdsAllow = (1..permissionsCount).map {
@@ -61,7 +59,7 @@ class PermissionSummaryConcurrentE2eTest {
         }
         val allPermissionIds = permissionIdsAllow + permissionIdsDeny
 
-        val executorService = Executors.newFixedThreadPool(8)
+        val executorService = Executors.newFixedThreadPool(2)
         val role1PopulationFuture = executorService.submit {
             adminTestHelper.addPermissionsToRole(roleId1, *permissionIdsAllow.toTypedArray())
         }

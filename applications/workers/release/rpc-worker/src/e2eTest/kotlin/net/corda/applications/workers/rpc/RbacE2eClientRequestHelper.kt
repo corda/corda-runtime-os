@@ -14,7 +14,6 @@ import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.assertDoesNotThrow
 
@@ -23,11 +22,6 @@ class RbacE2eClientRequestHelper(
     private val requestUserName: String,
     private val requestUserPassword: String,
 ) {
-
-    companion object {
-        private val logger = contextLogger()
-    }
-
     fun createUser(newUserName: String, newUserPassword: String, newUserPasswordExpiry: Instant) {
         val client = testToolkit.httpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
@@ -94,13 +88,11 @@ class RbacE2eClientRequestHelper(
         val client = testToolkit.httpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         for(permissionId in permissionIds) {
-            logger.info("Adding permission($permissionId) to a role($roleId)")
             with(proxy.addPermission(roleId, permissionId)) {
                 SoftAssertions.assertSoftly {
                     it.assertThat(this.permissions.map { perm -> perm.id }).contains(permissionId)
                 }
             }
-            logger.info("Done adding permission($permissionId) to a role($roleId)")
         }
     }
 

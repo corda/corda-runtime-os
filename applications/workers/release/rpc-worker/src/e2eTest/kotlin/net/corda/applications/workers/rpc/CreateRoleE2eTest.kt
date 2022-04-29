@@ -13,7 +13,6 @@ import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -30,7 +29,6 @@ class CreateRoleE2eTest {
     }
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     @Order(1)
     fun `test getRole and createRole HTTP APIs including validation`() {
         testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
@@ -82,7 +80,6 @@ class CreateRoleE2eTest {
     }
 
     @Test
-    @Disabled("The test is flaky, will be fixed by CORE-4656")
     @Order(2)
     fun `test add and remove permission to a role`() {
         val roleId = requireNotNull(sharedRoleId)

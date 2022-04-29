@@ -29,7 +29,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import org.junit.jupiter.api.Disabled
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -56,7 +55,6 @@ class ConfigurationReadServiceImplTest {
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @Test
-    @Disabled("Re-add later")
     fun `config read service delivers configuration updates to clients`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         configurationReadService.start()
@@ -95,7 +93,6 @@ class ConfigurationReadServiceImplTest {
     }
 
     @Test
-    @Disabled("Re-add later")
     fun `when a client registers all current configuration is delivered to the client`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
         val latch = CountDownLatch(1)
