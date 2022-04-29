@@ -3,7 +3,6 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
-import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,7 +30,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.Disabled
 
-@ExtendWith(ServiceExtension::class, DBSetup::class)
+@ExtendWith(ServiceExtension::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class ConfigurationReadServiceImplTest {
 
