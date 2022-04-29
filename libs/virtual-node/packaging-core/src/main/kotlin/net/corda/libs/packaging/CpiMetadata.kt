@@ -34,6 +34,7 @@ data class CpiMetadata(
             net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cpksMetadata.map { it.toAvro() },
             groupPolicy,
+            -1
         )
     }
 }
