@@ -7,7 +7,7 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'jacoco' // test coverage
     id 'maven-publish'
-    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
+    id "com.jfrog.artifactory"
     id 'com.r3.internal.gradle.plugins.r3-docker' apply false
 }
 
