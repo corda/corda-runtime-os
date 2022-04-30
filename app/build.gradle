@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' 
     id 'application'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'com.r3.internal.gradle.plugins.r3-docker'
 }
 

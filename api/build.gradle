@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'maven-publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 group = "net.corda.cli.host"
