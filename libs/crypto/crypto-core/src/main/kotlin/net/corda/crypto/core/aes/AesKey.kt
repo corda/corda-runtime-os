@@ -20,6 +20,7 @@ class AesKey(
 
         /**
          * Creates an instance of [AesKey] by generating a new AES key.
+         * The resulting key is random.
          */
         fun generate(): AesKey {
             val keyGenerator = KeyGenerator.getInstance(AES_KEY_ALGORITHM, AES_PROVIDER)
@@ -29,6 +30,14 @@ class AesKey(
 
         /**
          * Creates an instance of [AesKey] by derives the AES key using passphrase and salt.
+         * The resulting key is deterministic.
+         */
+        fun derive(credentials: KeyCredentials): AesKey =
+            derive(credentials.passphrase, credentials.salt)
+
+        /**
+         * Creates an instance of [AesKey] by derives the AES key using passphrase and salt.
+         * The resulting key is deterministic.
          */
         fun derive(passphrase: String, salt: String): AesKey {
             val encoded = encodePassPhrase(passphrase, salt)

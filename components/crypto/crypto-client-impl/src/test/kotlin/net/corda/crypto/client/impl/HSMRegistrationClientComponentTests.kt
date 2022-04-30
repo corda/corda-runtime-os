@@ -1,30 +1,30 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.client.CryptoPublishResult
-import net.corda.crypto.client.impl.infra.PublishActResult
+import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
-import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
-import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
-import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
-import net.corda.data.crypto.wire.registration.hsm.AssignSoftHSMCommand
-import net.corda.data.crypto.wire.registration.hsm.HSMRegistrationRequest
+import net.corda.data.crypto.wire.CryptoNoContentValue
+import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
+import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
+import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
+import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.schema.Schemas
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.base.util.toHex
+import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -34,7 +34,7 @@ import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
-import java.nio.ByteBuffer
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -45,7 +45,8 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class HSMRegistrationClientComponentTests {
-    private lateinit var publisher: Publisher
+    private lateinit var knownTenantId: String
+    private lateinit var sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var publisherFactory: PublisherFactory
@@ -53,12 +54,11 @@ class HSMRegistrationClientComponentTests {
 
     @BeforeEach
     fun setup() {
+        knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
         coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-        publisher = mock {
-            on { publish(any()) } doReturn listOf(CompletableFuture<Unit>().also { it.complete(Unit) })
-        }
+        sender = mock()
         publisherFactory = mock {
-            on { createPublisher(any(), any()) } doReturn publisher
+            on { createRPCSender<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any()) } doReturn sender
         }
         configurationReadService = TestConfigurationReadService(
             coordinatorFactory
@@ -75,124 +75,166 @@ class HSMRegistrationClientComponentTests {
         )
     }
 
-    private fun assertRequestContext(
-        result: PublishActResult<CryptoPublishResult>,
-        expectedTenantId: String
-    ): HSMRegistrationRequest {
-        val req = result.firstRecord.value as HSMRegistrationRequest
-        val context = req.context
-        assertEquals(expectedTenantId, context.tenantId)
-        assertEquals(result.value.requestId, context.requestId)
+    private fun setupCompletedResponse(respFactory: (HSMRegistrationRequest) -> Any) {
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
+            val future = CompletableFuture<HSMRegistrationResponse>()
+            future.complete(
+                HSMRegistrationResponse(
+                    CryptoResponseContext(
+                        req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        UUID.randomUUID().toString(),
+                        Instant.now(),
+                        req.context.tenantId,
+                        req.context.other
+                    ), respFactory(req)
+                )
+            )
+            future
+        }
+    }
+
+    private fun assertRequestContext(result: SendActResult<HSMRegistrationRequest, *>) {
+        val context = result.firstRequest.context
+        assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(HSMRegistrationClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items).isEmpty()
-        return req
     }
 
-    private inline fun <reified OP> assertOperationType(result: PublishActResult<CryptoPublishResult>): OP {
-        val req = result.firstRecord.value as HSMRegistrationRequest
-        Assertions.assertNotNull(req.request)
-        assertThat(req.request).isInstanceOf(OP::class.java)
-        return req.request as OP
+    private inline fun <reified OP> assertOperationType(result: SendActResult<HSMRegistrationRequest, *>): OP {
+        Assertions.assertNotNull(result.firstRequest.request)
+        assertThat(result.firstRequest.request).isInstanceOf(OP::class.java)
+        return result.firstRequest.request as OP
     }
 
     @Test
-    fun `Should publish command to add HSM configuration`() {
+    fun `Should assign HSM`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val config = HSMConfig(
-            HSMInfo(
-                UUID.randomUUID().toString(),
-                Instant.now(),
-                7,
-                "default",
-                "Test HSM",
-                "default",
-                null,
-                listOf(CryptoConsts.HsmCategories.LEDGER, CryptoConsts.HsmCategories.TLS),
-                11,
-                5500,
-                listOf(ECDSA_SECP256K1_CODE_NAME, ECDSA_SECP256R1_CODE_NAME, EDDSA_ED25519_CODE_NAME)
+        val response = HSMInfo(
+            "id",
+            Instant.now(),
+            2,
+            "label",
+            "description",
+            "serviceName",
+            "byoTenantId",
+            listOf(
+                CryptoConsts.HsmCategories.LEDGER,
+                CryptoConsts.HsmCategories.TLS
             ),
-            ByteBuffer.allocate(0)
+            1,
+            5000,
+            listOf(
+                "scheme1",
+                "scheme2"
+            )
         )
-        val result = publisher.act {
-            component.putHSM(config)
+        setupCompletedResponse {
+            response
         }
-        assertThat(result.value.requestId).isNotNull.isNotEmpty
-        assertEquals(1, result.messages.size)
-        assertEquals(1, result.messages.first().size)
-        assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
-        assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
-        assertThat(result.firstRecord.value).isInstanceOf(HSMRegistrationRequest::class.java)
-        assertRequestContext(result, CryptoConsts.CLUSTER_TENANT_ID)
-        val command = assertOperationType<AddHSMCommand>(result)
-        assertSame(config, command.config)
-        assertNotNull(command.context)
-        assertNotNull(command.context.items)
-        assertThat(command.context.items).isEmpty()
-    }
-
-    @Test
-    fun `Should publish command to assign HSM`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val result = publisher.act {
+        val result = sender.act {
             component.assignHSM(
-                tenantId = "some-tenant",
-                category = CryptoConsts.HsmCategories.LEDGER,
-                defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
+                tenantId = knownTenantId,
+                category = CryptoConsts.HsmCategories.LEDGER
             )
         }
-        assertThat(result.value.requestId).isNotNull.isNotEmpty
-        assertEquals(1, result.messages.size)
-        assertEquals(1, result.messages.first().size)
-        assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
-        assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
-        assertThat(result.firstRecord.value).isInstanceOf(HSMRegistrationRequest::class.java)
-        val req = assertRequestContext(result, "some-tenant")
-        assertEquals("some-tenant", req.context.tenantId)
+        assertSame(response, result.value)
         val command = assertOperationType<AssignHSMCommand>(result)
         assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
-        assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
-        assertNotNull(command.context)
-        assertNotNull(command.context.items)
-        assertThat(command.context.items).isEmpty()
+        assertRequestContext(result)
     }
 
     @Test
-    fun `Should publish command to assign Soft HSM`() {
+    fun `Should assign Soft HSM`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val result = publisher.act {
+        val response = HSMInfo(
+            "id",
+            Instant.now(),
+            2,
+            "label",
+            "description",
+            "serviceName",
+            "byoTenantId",
+            listOf(
+                CryptoConsts.HsmCategories.LEDGER,
+                CryptoConsts.HsmCategories.TLS
+            ),
+            1,
+            5000,
+            listOf(
+                "scheme1",
+                "scheme2"
+            )
+        )
+        setupCompletedResponse {
+            response
+        }
+        val result = sender.act {
             component.assignSoftHSM(
-                tenantId = "some-tenant",
+                tenantId = knownTenantId,
                 category = CryptoConsts.HsmCategories.LEDGER,
-                passphrase = "1234",
-                defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
+                passphrase = "PASSPHRASE1"
             )
         }
-        assertThat(result.value.requestId).isNotNull.isNotEmpty
-        assertEquals(1, result.messages.size)
-        assertEquals(1, result.messages.first().size)
-        assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
-        assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
-        assertThat(result.firstRecord.value).isInstanceOf(HSMRegistrationRequest::class.java)
-        val req = assertRequestContext(result, "some-tenant")
-        assertEquals("some-tenant", req.context.tenantId)
+        assertSame(response, result.value)
         val command = assertOperationType<AssignSoftHSMCommand>(result)
         assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
-        assertEquals ("1234", command.passphrase)
-        assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
-        assertNotNull(command.context)
-        assertNotNull(command.context.items)
-        assertThat(command.context.items).isEmpty()
+        assertEquals ("PASSPHRASE1", command.passphrase)
+        assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should find hsm details`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val expectedValue = HSMInfo()
+        setupCompletedResponse {
+            expectedValue
+        }
+        val result = sender.act {
+            component.findHSM(
+                tenantId = knownTenantId,
+                category = CryptoConsts.HsmCategories.LEDGER
+            )
+        }
+        assertNotNull(result.value)
+        assertEquals(expectedValue, result.value)
+        val query = assertOperationType<AssignedHSMQuery>(result)
+        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
+        assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should return null for hsm details when it is not found`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        setupCompletedResponse {
+            CryptoNoContentValue()
+        }
+        val result = sender.act {
+            component.findHSM(
+                tenantId = knownTenantId,
+                category = CryptoConsts.HsmCategories.LEDGER
+            )
+        }
+        assertNull(result.value)
+        val query = assertOperationType<AssignedHSMQuery>(result)
+        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
+        assertRequestContext(result)
     }
 
     @Test
@@ -231,7 +273,7 @@ class HSMRegistrationClientComponentTests {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(HSMRegistrationClientComponent.InactiveImpl::class.java, component.impl)
-        Mockito.verify(publisher, times(1)).close()
+        Mockito.verify(sender, times(1)).close()
     }
 
     @Test
@@ -259,6 +301,6 @@ class HSMRegistrationClientComponentTests {
         }
         assertInstanceOf(HSMRegistrationClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.registrar)
-        Mockito.verify(publisher, atLeast(1)).close()
+        Mockito.verify(sender, atLeast(1)).close()
     }
 }

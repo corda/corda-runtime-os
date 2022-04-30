@@ -1,6 +1,5 @@
 package net.corda.crypto.client
 
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
@@ -156,11 +155,4 @@ interface CryptoOpsClient : Lifecycle {
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
-
-    /**
-     * Looks up information about the assigned HSM.
-     *
-     * @return The HSM's info if it's assigned otherwise null.
-     */
-    fun findHSM(tenantId: String, category: String) : HSMInfo?
 }

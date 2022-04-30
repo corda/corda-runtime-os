@@ -25,6 +25,7 @@ dependencies {
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:db:db-connection-manager")
     implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
 

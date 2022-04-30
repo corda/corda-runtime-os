@@ -5,11 +5,14 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.Lob
 import javax.persistence.Table
 
 /**
  * An entity representing a wrapping key which is used by Soft HSM implementation of the CryptoService
  * to wrap.
+ *
+ * The records are immutable.
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
@@ -42,17 +45,7 @@ class WrappingKeyEntity(
     /**
      * Key material for the wrapping key. It's encrypted by by another key which is obtained through the configuration.
      */
+    @Lob
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition="BLOB")
     var keyMaterial: ByteArray
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is WrappingKeyEntity) return false
-        if (alias != other.alias) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return alias.hashCode()
-    }
-}
+)

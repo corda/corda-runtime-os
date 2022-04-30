@@ -6,7 +6,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -130,9 +129,6 @@ class CryptoOpsClientComponent @Activate constructor(
             tenantId = tenantId,
             ids = ids
         )
-
-    override fun findHSM(tenantId: String, category: String): HSMInfo? =
-        impl.ops.findHSM(tenantId, category)
 
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)

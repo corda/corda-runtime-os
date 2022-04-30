@@ -3,10 +3,10 @@ package net.corda.crypto.persistence.db.impl.signing
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.impl.signingPersistence
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions
-import net.corda.crypto.persistence.config.softPersistence
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -31,7 +31,7 @@ class SigningKeyCacheImpl(
         return SigningKeyCacheActionsImpl(
             tenantId = tenantId,
             entityManager = getEntityManagerFactory(tenantId).createEntityManager(),
-            cache = getCache(tenantId),
+            cache = buildCache(tenantId),
             layeredPropertyMapFactory = layeredPropertyMapFactory,
             keyEncodingService = keyEncodingService
         )
@@ -61,11 +61,13 @@ class SigningKeyCacheImpl(
                 )
         }
 
-    private fun getCache(tenantId: String): Cache<String, SigningCachedKey> =
-        cache.computeIfAbsent(tenantId) {
+    private fun buildCache(tenantId: String): Cache<String, SigningCachedKey> {
+        val persistenceConfig = config.signingPersistence()
+        return cache.computeIfAbsent(tenantId) {
             Caffeine.newBuilder()
-                .expireAfterAccess(config.softPersistence.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.softPersistence.maximumSize)
+                .expireAfterAccess(persistenceConfig.expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(persistenceConfig.maximumSize)
                 .build()
         }
+    }
 }

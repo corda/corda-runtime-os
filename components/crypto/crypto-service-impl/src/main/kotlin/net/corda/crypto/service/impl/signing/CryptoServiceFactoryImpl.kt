@@ -5,20 +5,23 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.component.impl.AbstractComponent
-import net.corda.crypto.service.HSMRegistration
+import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.impl.rootEncryptor
+import net.corda.crypto.impl.toCryptoConfig
+import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.LifecycleNameProvider
-import net.corda.data.crypto.config.HSMConfig
-import net.corda.data.crypto.config.TenantHSMConfig
+import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -31,24 +34,30 @@ import java.util.concurrent.ConcurrentHashMap
 class CryptoServiceFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = HSMRegistration::class)
-    private val hsmRegistrar: HSMRegistration,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReadService: ConfigurationReadService,
+    @Reference(service = HSMService::class)
+    private val hsmRegistrar: HSMService,
     @Reference(
         service = CryptoServiceProvider::class,
         cardinality = ReferenceCardinality.AT_LEAST_ONE,
         policyOption = ReferencePolicyOption.GREEDY
     )
     private val cryptoServiceProviders: List<CryptoServiceProvider<*>>
-) : AbstractComponent<CryptoServiceFactoryImpl.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
-    InactiveImpl(),
-    setOf(LifecycleCoordinatorName.forComponent<HSMRegistration>()) +
+) : AbstractConfigurableComponent<CryptoServiceFactoryImpl.Impl>(
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<CryptoServiceFactory>(),
+    configurationReadService = configurationReadService,
+    impl = InactiveImpl(),
+    dependencies = setOf(LifecycleCoordinatorName.forComponent<HSMService>()) +
             cryptoServiceProviders.filterIsInstance(LifecycleNameProvider::class.java).map {
                 it.lifecycleName
-            }
+            },
+    configKeys = setOf(
+        ConfigKeys.MESSAGING_CONFIG,
+        ConfigKeys.BOOT_CONFIG,
+        ConfigKeys.CRYPTO_CONFIG
+    )
 ), CryptoServiceFactory {
     companion object {
         private val logger = contextLogger()
@@ -59,9 +68,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
         override fun close() = Unit
     }
 
-    override fun createActiveImpl(): Impl = ActiveImpl(
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(
+        event,
         hsmRegistrar,
-        schemeMetadata,
         cryptoServiceProviders
     )
 
@@ -76,8 +85,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
     }
 
     internal class ActiveImpl(
-        private val hsmRegistrar: HSMRegistration,
-        private val schemeMetadata: CipherSchemeMetadata,
+        event: ConfigChangedEvent,
+        private val hsmRegistrar: HSMService,
         cryptoServiceProviders: List<CryptoServiceProvider<*>>
     ) : Impl {
         companion object {
@@ -96,28 +105,32 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         private val cryptoServices = ConcurrentHashMap<String, CryptoServiceRef>()
 
+        private val encryptor = event.config.toCryptoConfig().rootEncryptor()
+
         override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
-            val config = getConfig(tenantId, category)
-            val key = config.tenant.hsmConfigId
+            val association = hsmRegistrar.getPrivateTenantAssociation(tenantId, category)
+            val info = association.config.info
+            val key = association.config.info.id
             logger.debug(
                 "Getting the crypto service  for hsmConfigId={} (tenantId={}, category={})",
                 key, tenantId, category
             )
             return cryptoServices.computeIfAbsent(key) {
-                val provider = findCryptoServiceProvider(config)
+                val provider = findCryptoServiceProvider(association.config.info)
                 try {
                     CryptoServiceRef(
                         tenantId = tenantId,
                         category = category,
-                        signatureScheme = schemeMetadata.findSignatureScheme(
-                            config.tenant.defaultScheme
-                        ),
-                        masterKeyAlias = config.tenant.wrappingKeyAlias,
-                        aliasSecret = config.tenant.aliasSecret?.array(),
-                        instance = createCryptoService(config, provider)
+                        masterKeyAlias = info.masterKeyAlias,
+                        aliasSecret = association.aliasSecret,
+                        instance = createCryptoService(
+                            info,
+                            association.config.serviceConfig.array(),
+                            provider
+                        )
                     )
                 } catch (e: Throwable) {
-                    throw CryptoServiceLibraryException(
+                    throw CryptoServiceException(
                         "Failed to create ${CryptoService::class.java.name} for $key",
                         e
                     )
@@ -125,38 +138,26 @@ class CryptoServiceFactoryImpl @Activate constructor(
             }
         }
 
-        private fun getConfig(tenantId: String, category: String): Config {
-            val tenantConfig = hsmRegistrar.getTenantConfig(tenantId, category)
-            return Config(
-                hsmRegistrar.getHSMConfig(tenantConfig.hsmConfigId),
-                tenantConfig
-            )
-        }
-
         @Suppress("UNCHECKED_CAST")
-        private fun findCryptoServiceProvider(config: Config) =
-            cryptoServiceProvidersMap[config.hsm.info.serviceName] as? CryptoServiceProvider<Any>
-                ?: throw CryptoServiceLibraryException(
-                    "Cannot find ${config.hsm.info.serviceName} for hsmConfigId=${config.tenant.hsmConfigId}",
-                    isRecoverable = false
-                )
+        private fun findCryptoServiceProvider(info: HSMInfo) =
+            cryptoServiceProvidersMap[info.serviceName] as? CryptoServiceProvider<Any>
+                ?: throw CryptoServiceException("Cannot find ${info.serviceName}", isRecoverable = false)
 
         private fun createCryptoService(
-            config: Config,
+            info: HSMInfo,
+            serviceConfig: ByteArray,
             provider: CryptoServiceProvider<Any>
         ): CryptoService {
             return CryptoServiceDecorator(
                 cryptoService = provider.getInstance(
-                    objectMapper.readValue(config.hsm.serviceConfig.array(), provider.configType)
+                    objectMapper.readValue(
+                        encryptor.decrypt(serviceConfig),
+                        provider.configType
+                    )
                 ),
-                timeout = Duration.ofMillis(config.hsm.info.timeoutMills),
-                retries = config.hsm.info.retries
+                timeout = Duration.ofMillis(info.timeoutMills),
+                retries = info.retries
             )
         }
-
-        private data class Config(
-            val hsm: HSMConfig,
-            val tenant: TenantHSMConfig
-        )
     }
 }

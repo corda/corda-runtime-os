@@ -226,10 +226,10 @@ class PersistenceTests {
         val cache = SoftCryptoKeyCacheImpl(
             config = configFactory.create(ConfigFactory.empty()),
             entityManagerFactory = cryptoEmf,
-            masterKey = WrappingKey.createWrappingKey(schemeMetadata)
+            masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
         )
         val alias1 = UUID.randomUUID().toString()
-        val newKey1 = WrappingKey.createWrappingKey(schemeMetadata)
+        val newKey1 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
             it.saveWrappingKey(alias1, newKey1, false)
             val cached = it.findWrappingKey(alias1)
@@ -237,7 +237,7 @@ class PersistenceTests {
             assertEquals(newKey1, cached)
         }
         val alias2 = UUID.randomUUID().toString()
-        val newKey2 = WrappingKey.createWrappingKey(schemeMetadata)
+        val newKey2 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
             it.saveWrappingKey(alias2, newKey2, false)
             val cached = it.findWrappingKey(alias2)
@@ -261,17 +261,17 @@ class PersistenceTests {
         val cache = SoftCryptoKeyCacheImpl(
             config = configFactory.create(ConfigFactory.empty()),
             entityManagerFactory = cryptoEmf,
-            masterKey = WrappingKey.createWrappingKey(schemeMetadata)
+            masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
         )
         val alias = UUID.randomUUID().toString()
-        val newKey1 = WrappingKey.createWrappingKey(schemeMetadata)
+        val newKey1 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
             it.saveWrappingKey(alias, newKey1, true)
             val cached = it.findWrappingKey(alias)
             assertNotNull(cached)
             assertEquals(newKey1, cached)
         }
-        val newKey2 = WrappingKey.createWrappingKey(schemeMetadata)
+        val newKey2 = WrappingKey.generateWrappingKey(schemeMetadata)
         assertThrows(PersistenceException::class.java) {
             cache.act {
                 it.saveWrappingKey(alias, newKey2, true)
@@ -284,17 +284,17 @@ class PersistenceTests {
         val cache = SoftCryptoKeyCacheImpl(
             config = configFactory.create(ConfigFactory.empty()),
             entityManagerFactory = cryptoEmf,
-            masterKey = WrappingKey.createWrappingKey(schemeMetadata)
+            masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
         )
         val alias = UUID.randomUUID().toString()
-        val newKey1 = WrappingKey.createWrappingKey(schemeMetadata)
+        val newKey1 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
             it.saveWrappingKey(alias, newKey1, false)
             val cached = it.findWrappingKey(alias)
             assertNotNull(cached)
             assertEquals(newKey1, cached)
         }
-        val newKey2 = WrappingKey.createWrappingKey(schemeMetadata)
+        val newKey2 = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
             it.saveWrappingKey(alias, newKey2, false)
         }

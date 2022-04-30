@@ -10,7 +10,6 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 class CryptoServiceRef(
     val tenantId: String,
     val category: String,
-    val signatureScheme: SignatureScheme,
     val masterKeyAlias: String?,
     val aliasSecret: ByteArray?,
     val instance: CryptoService

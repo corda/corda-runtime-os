@@ -9,8 +9,8 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
-import net.corda.crypto.service.impl.soft.SoftCryptoService
-import net.corda.crypto.service.impl.soft.SoftCryptoServiceProviderImpl
+import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
+import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -62,7 +62,7 @@ class TestServicesFactory {
     }
 
     val registration by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TestHSMRegistration(coordinatorFactory).also {
+        TestHSMService(coordinatorFactory).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)

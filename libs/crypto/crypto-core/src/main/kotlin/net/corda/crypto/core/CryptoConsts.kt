@@ -15,6 +15,14 @@ object CryptoConsts {
         const val NOTARY = "NOTARY"
         const val SESSION = "SESSION"
         const val TLS = "TLS"
+
+        fun all() = listOf(
+            FRESH_KEYS,
+            LEDGER,
+            NOTARY,
+            SESSION,
+            TLS
+        )
     }
 
     /**

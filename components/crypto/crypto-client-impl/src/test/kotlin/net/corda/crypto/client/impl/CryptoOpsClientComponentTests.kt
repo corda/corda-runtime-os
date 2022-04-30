@@ -16,7 +16,6 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -30,7 +29,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
@@ -42,12 +40,14 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -88,7 +88,7 @@ class CryptoOpsClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        knownTenantId = UUID.randomUUID().toString()
+        knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
         knownAlias = UUID.randomUUID().toString()
         knownOperationContext = mapOf(
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
@@ -831,50 +831,6 @@ class CryptoOpsClientComponentTests {
         assertEquals(PSSParameterSpec::class.java.name, command.signatureSpec.params.className)
         assertTrue(command.signatureSpec.params.bytes.array().isNotEmpty())
         assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should find hsm details`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val expectedValue = HSMInfo()
-        setupCompletedResponse {
-            expectedValue
-        }
-        val result = sender.act {
-            component.findHSM(
-                tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
-            )
-        }
-        assertNotNull(result.value)
-        assertEquals(expectedValue, result.value)
-        val query = assertOperationType<AssignedHSMRpcQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should return null for hsm details when it is not found`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        setupCompletedResponse {
-            CryptoNoContentValue()
-        }
-        val result = sender.act {
-            component.findHSM(
-                tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
-            )
-        }
-        assertNull(result.value)
-        val query = assertOperationType<AssignedHSMRpcQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
         assertRequestContext(result)
     }
 

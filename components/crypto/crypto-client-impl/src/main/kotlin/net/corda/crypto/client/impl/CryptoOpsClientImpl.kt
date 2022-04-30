@@ -2,7 +2,6 @@ package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
@@ -17,7 +16,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
@@ -321,20 +319,6 @@ class CryptoOpsClientImpl(
             ByIdsRpcQuery(ids)
         )
         return request.execute(CryptoSigningKeys::class.java)!!.keys
-    }
-
-    fun findHSM(tenantId: String, category: String): HSMInfo? {
-        logger.info(
-            "Sending '{}'(tenant={},category={})",
-            AssignedHSMRpcQuery::class.java.simpleName,
-            tenantId,
-            category
-        )
-        val request = createRequest(
-            tenantId,
-            AssignedHSMRpcQuery(category)
-        )
-        return request.execute(HSMInfo::class.java, allowNoContentValue = true)
     }
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
