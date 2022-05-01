@@ -61,6 +61,7 @@ def fatJar = tasks.register('fatJar', Jar) {
     }
 
     archiveBaseName = 'corda-cli'
+    archiveVersion = project.version
 }
 
 tasks.named("publishOSGiImage").configure{
