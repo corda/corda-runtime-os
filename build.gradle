@@ -11,6 +11,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3-docker' apply false
 }
 
+  
 ext.pluginsDir = "$buildDir/plugins"
 
 if (System.getenv("RELEASE_VERSION")?.trim()) {

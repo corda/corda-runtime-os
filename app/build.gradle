@@ -29,6 +29,7 @@ test {
 }
 
 def appMainClass = "net.corda.cli.application.BootKt"
+def vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-cli-plugin-host.git'
 
 application {
     mainClass = appMainClass
@@ -84,4 +85,41 @@ tasks.named("publishOSGiImage").configure{
 
 artifacts {
     archives fatJar
+}
+
+// required as fatJar artifact not handled by r3Publish
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifact fatJar
+            artifactId = "corda-cli"
+            version  = project.version
+
+            pom {
+                name = 'corda-cli'
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
+                
+                if ((project.hasProperty("licenseName")) && (project.hasProperty("licenseUrl"))) {
+                    licenses {
+                        license {
+                            name = licenseName
+                            url = licenseUrl
+                            distribution = licenseUrl
+                        }
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
 }
