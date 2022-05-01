@@ -15,8 +15,7 @@ run `./gradlew build`
 
 As part of the build process scripts are generated in the 'build/generatedScripts' directory. This ensures scripts will always refer to the correct version of the corda-cli.jar. Running './gradlew build' will trigger copying of scripts from the root 'scripts' directory to 'build/generatedScripts' and update the version referenced in the scripts accordingly, along with generation of the needed Jars. You may also manually trigger this task with './gradlew generateVersionedScripts' if required, but the corda-cli jar must be generated and present in the 'app\build\libs' to execute these scripts.
 
-In the build/generatedScripts directory there is a windows cmd shell command script that can be called after a gradlew
-Build. `corda-cli.cmd` etc
+In the build/generatedScripts directory there is a windows cmd and shell command script that can be called after a gradlew Build. `corda-cli.cmd` etc
 
 ## The Plugins
 
