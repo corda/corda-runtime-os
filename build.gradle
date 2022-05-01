@@ -115,4 +115,4 @@ tasks.register("copyScripts", Copy){
 }
 
 // Automatically ran as part of build process
-build.finalizedBy(generateVersionedScripts)
+assemble.finalizedBy(generateVersionedScripts)
