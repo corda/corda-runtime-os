@@ -34,7 +34,8 @@ class CpiInfoDbReaderTest {
         CpiMetadataEntity(
             "", "",
             DUMMY_HASH, "",
-            DUMMY_HASH, "", "", ""
+            DUMMY_HASH, "", "", "",
+            -1
         )
 
     @Test

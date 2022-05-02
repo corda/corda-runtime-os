@@ -4,12 +4,16 @@ import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.reconciliation.VersionedRecord
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [CpiInfoReadService::class, FakeCpiInfoReadService::class])
 class FakeCpiInfoReadService : CpiInfoReadService {
+
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<FakeCpiInfoReadService>()
 
     private val cpiData = mutableMapOf<CpiIdentifier, CpiMetadata>()
 
@@ -37,6 +41,12 @@ class FakeCpiInfoReadService : CpiInfoReadService {
 
     override fun registerCallback(listener: CpiInfoListener): AutoCloseable {
         TODO("Not yet implemented")
+    }
+
+    override fun getAllVersionedRecords(): Sequence<VersionedRecord<CpiIdentifier, CpiMetadata>>
+    {
+        val list : MutableList<VersionedRecord<CpiIdentifier, CpiMetadata>> = mutableListOf()
+        return list.asSequence()
     }
 
     override val isRunning: Boolean

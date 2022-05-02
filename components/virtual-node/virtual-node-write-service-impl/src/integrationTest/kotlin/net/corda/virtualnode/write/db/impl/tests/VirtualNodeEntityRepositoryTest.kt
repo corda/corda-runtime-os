@@ -83,7 +83,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
                 id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID"
+                "Test Group Policy", "Test Group ID", "Request ID", -1
             )
         }
 
@@ -277,7 +277,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
                 id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID"
+                "Test Group Policy", "Test Group ID", "Request ID", -1
             )
         }
         val holdingIdentityEntity = with(holdingIdentity) {
@@ -314,7 +314,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
                 id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID"
+                "Test Group Policy", "Test Group ID", "Request ID", -1
             )
         }
         val holdingIdentityEntity = with(holdingIdentity) {

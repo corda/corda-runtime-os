@@ -217,7 +217,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             checksum.toString(),
             cpi.metadata.groupPolicy!!,
             groupId,
-            requestId
+            requestId,
+            -1
         )
     }
 }

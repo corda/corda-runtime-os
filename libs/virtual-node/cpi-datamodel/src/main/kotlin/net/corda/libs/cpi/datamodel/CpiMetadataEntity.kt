@@ -1,8 +1,6 @@
 package net.corda.libs.cpi.datamodel
 
 import net.corda.db.schema.DbSchema
-import net.corda.db.schema.DbSchema.CPI_REVISION_SEQUENCE
-import net.corda.db.schema.DbSchema.CPI_REVISION_SEQUENCE_ALLOC_SIZE
 import java.io.Serializable
 import java.time.Instant
 import java.util.stream.Stream
@@ -11,15 +9,13 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.EntityManager
 import javax.persistence.FetchType
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.OneToMany
-import javax.persistence.SequenceGenerator
 import javax.persistence.Table
 
-private const val CPI_REVERSION_GENERATOR = "cpi_reversion_generator"
+// This is not yet used
+// private const val CPI_REVERSION_GENERATOR = "cpi_reversion_generator"
 
 /**
  * Cpi entity
@@ -32,12 +28,13 @@ private const val CPI_REVERSION_GENERATOR = "cpi_reversion_generator"
  * @property groupPolicy Group Policy JSON document
  * @property groupId MGM Group ID
  * @property fileUploadRequestId optional request ID for the file upload
+ * @property reversion reversion number
  */
 @Entity
 @Table(name = "cpi", schema = DbSchema.CONFIG)
 @IdClass(CpiMetadataEntityKey::class)
 @Suppress("LongParameterList")
-class CpiMetadataEntity private constructor(
+data class CpiMetadataEntity (
     @Id
     @Column(name = "name", nullable = false)
     val name: String,
@@ -57,39 +54,27 @@ class CpiMetadataEntity private constructor(
     val groupId: String,
     @Column(name = "file_upload_request_id", nullable = false)
     val fileUploadRequestId: String,
+    /* This is not yet used
+    import net.corda.db.schema.DbSchema.CPI_REVISION_SEQUENCE
+    import net.corda.db.schema.DbSchema.CPI_REVISION_SEQUENCE_ALLOC_SIZE
+    import javax.persistence.GeneratedValue
+    import javax.persistence.GenerationType.SEQUENCE
+    import javax.persistence.SequenceGenerator
+
     @SequenceGenerator(
         name = CPI_REVERSION_GENERATOR,
         sequenceName = CPI_REVISION_SEQUENCE,
         allocationSize = CPI_REVISION_SEQUENCE_ALLOC_SIZE
     )
     @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
+    */
     @Column(name = "reversion", nullable = false)
-    val reversion: Int
+    val reversion: Int,
 ) {
-    constructor(
-        name: String,
-        version: String,
-        signerSummaryHash: String,
-        fileName: String,
-        fileChecksum: String,
-        groupPolicy: String,
-        groupId: String,
-        fileUploadRequestId: String,
-    ) : this(
-        name,
-        version,
-        signerSummaryHash,
-        fileName,
-        fileChecksum,
-        groupPolicy,
-        groupId,
-        fileUploadRequestId,
-        -1 // this value will not get persisted
-    )
-
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
-            "", "", "", "", "", "", "", "")
+            "", "", "", "", "",
+            "", "", "", -1)
     }
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")

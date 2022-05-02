@@ -65,7 +65,8 @@ class CpiEntitiesIntegrationTest {
             "test-cpi.cpi-$cpiId-hash",
             "{group-policy-json}",
             "group-id",
-            "file-upload-request-id-$cpiId"
+            "file-upload-request-id-$cpiId",
+            1234
         )
 
         EntityManagerFactoryFactoryImpl().create(
@@ -149,7 +150,8 @@ class CpiEntitiesIntegrationTest {
             "test-cpi.cpi-$cpiId-hash",
             "{group-policy-json}",
             "group-id",
-            "file-upload-request-id-$cpiId"
+            "file-upload-request-id-$cpiId",
+            5678
         )
         val cpkId = UUID.randomUUID()
         val cpk = CpkDataEntity(
