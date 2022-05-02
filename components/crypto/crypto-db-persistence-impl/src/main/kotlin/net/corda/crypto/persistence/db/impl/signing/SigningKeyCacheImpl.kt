@@ -3,7 +3,7 @@ package net.corda.crypto.persistence.db.impl.signing
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.impl.signingPersistence
+import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheActions

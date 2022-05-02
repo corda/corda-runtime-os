@@ -5,7 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.persistence.SoftCryptoKeyCache
 import net.corda.crypto.persistence.SoftCryptoKeyCacheActions
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.impl.softPersistence
+import net.corda.crypto.impl.config.softPersistence
 import net.corda.libs.configuration.SmartConfig
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory

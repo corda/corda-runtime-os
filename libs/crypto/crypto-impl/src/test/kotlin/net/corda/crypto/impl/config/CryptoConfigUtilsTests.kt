@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -36,7 +36,8 @@ class CryptoConfigUtilsTests {
             )
             smartConfig = createDefaultCryptoConfig(
                 smartFactoryKey = KeyCredentials("key", "salt"),
-                cryptoRootKey = KeyCredentials("some-passphrase", "some-salt")
+                cryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+                softKey = KeyCredentials("soft-passphrase", "soft-salt")
             )
         }
     }
@@ -66,8 +67,8 @@ class CryptoConfigUtilsTests {
         val encryptorFromConfig = smartConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
-                passphrase = "some-passphrase",
-                salt = "some-salt"
+                passphrase = "root-passphrase",
+                salt = "root-salt"
             )
         )
         val original = UUID.randomUUID().toString().toByteArray()
@@ -80,7 +81,7 @@ class CryptoConfigUtilsTests {
     fun `Should throw CryptoConfigurationException to get default root encryptor when passphrase is missing`() {
         val config = configFactory.create(
             ConfigFactory.empty()
-                .withValue("rootKey.salt", ConfigValueFactory.fromAnyRef("some-salt"))
+                .withValue("rootKey.salt", ConfigValueFactory.fromAnyRef("root-salt"))
         )
         assertThrows<CryptoConfigurationException> {
             config.rootEncryptor()
@@ -93,7 +94,7 @@ class CryptoConfigUtilsTests {
             ConfigFactory.empty()
                 .withValue(
                     "rootKey.passphrase", ConfigValueFactory.fromMap(
-                        configFactory.makeSecret("some-passphrase").root().unwrapped()
+                        configFactory.makeSecret("root-passphrase").root().unwrapped()
                     )
                 )
         )
@@ -103,14 +104,16 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `Should be able to get soft persistence config and its properties`() {
+    fun `Should be able to get CryptoSoftPersistenceConfig and its properties`() {
         val config = smartConfig.softPersistence()
         assertEquals(240, config.expireAfterAccessMins)
         assertEquals(1000, config.maximumSize)
+        assertEquals("soft-salt", config.salt)
+        assertEquals("soft-passphrase", config.passphrase)
     }
 
     @Test
-    fun `Should be able to get signing persistence config and its properties`() {
+    fun `Should be able to get CryptoSigningPersistenceConfigTests and its properties`() {
         val config = smartConfig.signingPersistence()
         assertEquals(90, config.expireAfterAccessMins)
         assertEquals(20, config.maximumSize)
@@ -133,36 +136,62 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `CryptoPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
-        val config = CryptoPersistenceConfig(
-            configFactory.create(
-                ConfigFactory.parseMap(
-                    mapOf(
-                        "maximumSize" to "26"
-                    )
-                )
-            )
+    fun `CryptoSigningPersistenceConfigTests should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+        val config = CryptoSigningPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
         )
-        assertEquals(26, config.maximumSize)
         assertThrows<CryptoConfigurationException> {
             config.expireAfterAccessMins
         }
     }
 
     @Test
-    fun `CryptoPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
-        val config = CryptoPersistenceConfig(
-            configFactory.create(
-                ConfigFactory.parseMap(
-                    mapOf(
-                        "expireAfterAccessMins" to "91",
-                    )
-                )
-            )
+    fun `CryptoSigningPersistenceConfigTests should throw CryptoConfigurationException when maximumSize is empty`() {
+        val config = CryptoSigningPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
         )
-        assertEquals(91, config.expireAfterAccessMins)
         assertThrows<CryptoConfigurationException> {
             config.maximumSize
+        }
+    }
+
+    @Test
+    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+        val config = CryptoSoftPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.expireAfterAccessMins
+        }
+    }
+
+    @Test
+    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
+        val config = CryptoSoftPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.maximumSize
+        }
+    }
+
+    @Test
+    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when salt is empty`() {
+        val config = CryptoSoftPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.salt
+        }
+    }
+
+    @Test
+    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when passphrase is empty`() {
+        val config = CryptoSoftPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.passphrase
         }
     }
 }

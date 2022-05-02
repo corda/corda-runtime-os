@@ -1,136 +1,81 @@
 package net.corda.crypto.service.impl.hsm.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.service.HSMService
+import net.corda.crypto.core.Encryptor
+import net.corda.crypto.impl.config.rootEncryptor
+import net.corda.crypto.impl.config.softPersistence
+import net.corda.crypto.persistence.HSMCache
+import net.corda.crypto.persistence.HSMTenantAssociation
 import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.StartEvent
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.time.Instant
+import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import java.security.SecureRandom
 
-@Component(service = [HSMService::class])
-class HSMServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory
-) : HSMService {
-    companion object {
-        private val serializer = ObjectMapper()
+class HSMServiceImpl(
+    config: SmartConfig,
+    private val hsmCache: HSMCache
+) : AutoCloseable {
+    private val encryptor: Encryptor
+
+    private val softSalt: String
+
+    private val softPassphrase: String
+
+    init {
+        encryptor = config.rootEncryptor()
+        val softConfig = config.softPersistence()
+        softSalt = softConfig.salt
+        softPassphrase = softConfig.passphrase
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName.forComponent<HSMService>()
-    ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
+    private val secretRandom by lazy(LazyThreadSafetyMode.PUBLICATION) { SecureRandom() }
 
-    override val isRunning: Boolean
-        get() = coordinator.isRunning
-
-    override fun start() {
-        coordinator.start()
-    }
-
-    override fun stop() {
-        coordinator.stop()
-    }
-
-    override fun assignHSM(tenantId: String, category: String): HSMInfo {
+    fun assignHSM(tenantId: String, category: String): HSMInfo {
         TODO("Not yet implemented")
     }
 
-    override fun assignSoftHSM(tenantId: String, category: String, passphrase: String): HSMInfo {
-        TODO("Not yet implemented")
-    }
-
-    override fun findAssignedHSM(tenantId: String, category: String): HSMInfo? {
-        TODO("Not yet implemented")
-    }
-
-    override fun putHSMConfig(config: HSMConfig) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getHSMConfig(id: String): HSMConfig {
-        check(isRunning) {
-            "The component is in invalid state."
-        }
-        require(id.startsWith("dummy-")) {
-            "Currently supports only hardcoded Soft HSM configuration with ids having 'dummy-' prefix."
-        }
-        return HSMConfig(
-            HSMInfo(
-                "dummy",
-                Instant.now(),
-                1,
-                "default",
-                "Dummy configuration",
-                SoftCryptoServiceProviderImpl.SERVICE_NAME,
-                null,
-                listOf(
-                    CryptoConsts.HsmCategories.FRESH_KEYS,
-                    CryptoConsts.HsmCategories.LEDGER,
-                    CryptoConsts.HsmCategories.NOTARY,
-                    CryptoConsts.HsmCategories.SESSION,
-                    CryptoConsts.HsmCategories.TLS
-                ),
-                0,
-                15000,
-                listOf(
-                    RSA_CODE_NAME,
-                    ECDSA_SECP256K1_CODE_NAME,
-                    ECDSA_SECP256R1_CODE_NAME,
-                    EDDSA_ED25519_CODE_NAME,
-                    SPHINCS256_CODE_NAME,
-                    SM2_CODE_NAME,
-                    GOST3410_GOST3411_CODE_NAME
-                )
-            ),
-            ByteBuffer.wrap(
-                serializer.writeValueAsBytes(
-                    SoftCryptoServiceConfig(
-                        passphrase = "PASSPHRASE",
-                        salt = "SALT"
-                    )
-                )
-            )
+    fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
+        // there is only one SOFT HSM configuration
+        val config = SoftCryptoServiceConfig(
+            salt = softSalt,
+            passphrase = softPassphrase
         )
+        TODO("Not yet implemented")
     }
 
-    override fun getPrivateTenantAssociation(tenantId: String, category: String): TenantHSMConfig {
-        check(isRunning) {
-            "The component is in invalid state."
+    fun findAssignedHSM(tenantId: String, category: String): HSMInfo? =
+        hsmCache.act {
+            it.findTenantAssociation(tenantId, category)?.config?.info
         }
-        return when(category) {
-            CryptoConsts.HsmCategories.TLS -> TenantHSMConfig(
-                tenantId,
-                "dummy-$category",
-                category,
-                RSA_CODE_NAME,
-                "wrapping-key",
-                null
-            )
-            else -> TenantHSMConfig(
-                tenantId,
-                "dummy-$category",
-                category,
-                ECDSA_SECP256R1_CODE_NAME,
-                "wrapping-key",
-                null
-            )
+
+    fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation =
+        hsmCache.act {
+            it.findTenantAssociation(tenantId, category)
+                ?: throw CryptoServiceLibraryException(
+                    "Cannot find tenant association for $tenantId and $category."
+                )
         }
+
+    fun putHSMConfig(config: HSMConfig) {
+        hsmCache.act {
+            if(config.info.id.isNullOrBlank()) {
+                it.add(config.info, encryptor.encrypt(config.serviceConfig.array()))
+            } else if(it.exists(config.info.id)) {
+                it.merge(config.info, encryptor.encrypt(config.serviceConfig.array()))
+            } else {
+                throw CryptoServiceLibraryException(
+                    "Cannot update the HSM Config with id '${config.info.id}' as it doesn't exist."
+                )
+            }
+        }
+    }
+
+    fun lookup(): List<HSMInfo> {
+        TODO("Not yet implemented")
+    }
+
+    override fun close() {
+        TODO("Not yet implemented")
     }
 }

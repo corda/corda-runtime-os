@@ -10,8 +10,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.impl.rootEncryptor
-import net.corda.crypto.impl.toCryptoConfig
+import net.corda.crypto.impl.config.rootEncryptor
+import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.wire.hsm.HSMInfo
