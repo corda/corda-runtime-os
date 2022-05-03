@@ -256,6 +256,8 @@ class LinkManager(
             ): List<Record<String, *>> {
                 val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
                 return if (partitions.isEmpty()) {
+                    println("QQQ partitions is empty!")
+                    Exception("QQQ No partition").printStackTrace(System.out)
                     val sessionIds = state.messages.map { it.first }
                     logger.warn(
                         "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
