@@ -68,7 +68,7 @@ data class CpiMetadataEntity (
     )
     @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
     */
-    @Column(name = "reversion", nullable = false)
+    @Column(name = "entity_version", nullable = false)
     val reversion: Int,
 ) {
     companion object {
