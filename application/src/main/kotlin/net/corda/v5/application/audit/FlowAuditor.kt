@@ -1,12 +1,11 @@
 package net.corda.v5.application.audit
 
 import net.corda.v5.application.flows.exceptions.FlowException
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 
 @DoNotImplement
-interface FlowAuditor : CordaFlowInjectable {
+interface FlowAuditor {
     /**
      * Flows can call this method to ensure that the active FlowInitiator is authorised for a particular action.
      * This provides fine-grained control over application level permissions, when RPC control over starting the flow is insufficient,

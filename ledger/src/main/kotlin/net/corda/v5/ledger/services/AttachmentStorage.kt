@@ -1,7 +1,5 @@
 package net.corda.v5.ledger.services
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.Attachment
@@ -15,7 +13,7 @@ typealias AttachmentId = SecureHash
  * An attachment store records potentially large binary objects, identified by their hash.
  */
 @DoNotImplement
-interface AttachmentStorage : CordaServiceInjectable, CordaFlowInjectable {
+interface AttachmentStorage {
 
     /**
      * Returns a handle to a locally stored attachment, or null if it's not known. The handle can be used to open a stream for the data,

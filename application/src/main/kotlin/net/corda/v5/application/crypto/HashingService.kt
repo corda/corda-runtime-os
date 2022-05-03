@@ -1,7 +1,5 @@
 package net.corda.v5.application.crypto
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -15,7 +13,7 @@ import java.io.InputStream
  * Delegates all functionality to [DigestService].
  */
 @DoNotImplement
-interface HashingService : CordaServiceInjectable, CordaFlowInjectable {
+interface HashingService {
 
     /**
      * Default [DigestAlgorithmName] for this hashing service.

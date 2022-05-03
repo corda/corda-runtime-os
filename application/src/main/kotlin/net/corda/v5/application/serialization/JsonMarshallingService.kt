@@ -1,7 +1,5 @@
 package net.corda.v5.application.serialization
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**
@@ -9,7 +7,7 @@ import net.corda.v5.base.annotations.DoNotImplement
  * mappers.
  */
 @DoNotImplement
-interface JsonMarshallingService : CordaServiceInjectable, CordaFlowInjectable {
+interface JsonMarshallingService {
 
     /**
      * Serialize the [input] object into JSON.

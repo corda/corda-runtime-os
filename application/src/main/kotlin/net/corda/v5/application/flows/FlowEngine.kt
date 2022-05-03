@@ -1,6 +1,5 @@
 package net.corda.v5.application.flows
 
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -8,7 +7,7 @@ import java.time.Duration
 import java.util.*
 
 @DoNotImplement
-interface FlowEngine : CordaFlowInjectable {
+interface FlowEngine {
     /**
      * Returns a wrapped [UUID][java.util.UUID] object that identifies this flow or it's top level instance (i.e. subflows have the same
      * identifier as their parents).

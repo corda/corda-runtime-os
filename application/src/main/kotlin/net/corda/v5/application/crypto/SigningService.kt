@@ -1,7 +1,5 @@
 package net.corda.v5.application.crypto
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKey
@@ -17,7 +15,7 @@ import java.util.*
  * call out to a hardware security module that enforces various auditing and frequency-of-use requirements.
  */
 @DoNotImplement
-interface SigningService : CordaServiceInjectable, CordaFlowInjectable {
+interface SigningService {
 
     /**
      * Using the provided signing [PublicKey], internally looks up the matching [PrivateKey] and signs the data.

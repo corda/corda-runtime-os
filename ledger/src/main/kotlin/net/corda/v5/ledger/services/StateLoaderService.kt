@@ -1,7 +1,5 @@
 package net.corda.v5.ledger.services
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.LinearPointer
@@ -14,7 +12,7 @@ import net.corda.v5.ledger.contracts.TransactionResolutionException
 import net.corda.v5.ledger.transactions.LedgerTransaction
 
 @DoNotImplement
-interface StateLoaderService : CordaServiceInjectable, CordaFlowInjectable {
+interface StateLoaderService {
 
     /**
      * Given a [StateRef] loads the referenced transaction and looks up the specified output [ContractState].

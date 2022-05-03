@@ -1,12 +1,11 @@
 package net.corda.v5.application.messaging
 
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
 @DoNotImplement
-interface FlowMessaging : CordaFlowInjectable {
+interface FlowMessaging {
 
     /**
      * Creates a communication session with [party]. Subsequently you may send/receive using this session object. Note

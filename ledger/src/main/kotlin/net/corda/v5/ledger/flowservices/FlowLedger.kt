@@ -1,12 +1,11 @@
 package net.corda.v5.ledger.flowservices
 
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.StateRef
 import net.corda.v5.ledger.transactions.SignedTransaction
 
-interface FlowLedger : CordaFlowInjectable {
+interface FlowLedger {
 
     /**
      * Suspends the flow until the transaction with the specified ID is received, successfully verified and sent to the vault for

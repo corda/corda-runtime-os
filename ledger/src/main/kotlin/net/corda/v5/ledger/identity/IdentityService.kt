@@ -1,7 +1,5 @@
 package net.corda.v5.ledger.identity
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.MemberX500Name
 import java.security.PublicKey
@@ -21,7 +19,7 @@ import java.util.*
  * between parties in a transaction being built). The service links confidential identity to a particular X.500 name.
  */
 @DoNotImplement
-interface IdentityService : CordaServiceInjectable, CordaFlowInjectable {
+interface IdentityService {
 
     /**
      * Converts a [PublicKey] of a well-known or confidential identity to X.500 name under which the original identity was registered.

@@ -1,7 +1,5 @@
 package net.corda.v5.ledger.services
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.contracts.AttachmentResolutionException
 import net.corda.v5.ledger.contracts.TransactionResolutionException
@@ -17,7 +15,7 @@ import java.security.SignatureException
  * Provides a transaction verification service.
  */
 @DoNotImplement
-interface TransactionVerificationService : CordaServiceInjectable, CordaFlowInjectable {
+interface TransactionVerificationService {
 
     /**
      * Verifies a [SignedTransaction].
