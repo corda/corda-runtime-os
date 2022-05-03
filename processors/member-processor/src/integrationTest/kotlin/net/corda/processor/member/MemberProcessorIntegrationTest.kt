@@ -40,7 +40,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieX500
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicy
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicyFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResult
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.getRegistrationResultFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.groupId
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
@@ -64,6 +63,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -71,7 +71,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
-import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -166,10 +165,12 @@ class MemberProcessorIntegrationTest {
             setupDatabases()
 
             // Set basic bootstrap config
-            memberProcessor.start(bootConf)
             cryptoProcessor.start(bootConf)
+            eventually { assertTrue(cryptoProcessor.isRunning) }
+            memberProcessor.start(bootConf)
+            eventually { assertTrue(memberProcessor.isRunning) }
 
-            membershipGroupReaderProvider.start()
+            membershipGroupReaderProvider.startAndWait()
 
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),
@@ -205,7 +206,7 @@ class MemberProcessorIntegrationTest {
         @JvmStatic
         @AfterAll
         fun cleanup() {
-            if(::testDependencies.isInitialized) {
+            if (::testDependencies.isInitialized) {
                 testDependencies.close()
             }
         }
