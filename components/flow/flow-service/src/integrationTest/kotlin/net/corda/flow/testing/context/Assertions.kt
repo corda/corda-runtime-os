@@ -29,12 +29,7 @@ class OutputAssertionsImpl(
 
     val asserts = mutableListOf<(TestRun) -> Unit>()
 
-    override fun sessionAckEvent(
-        flowId: String,
-        sessionId: String,
-        initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
-    ) {
+    override fun sessionAckEvent(sessionId: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response value")
             val eventRecords = getMatchedFlowMapperEventRecords(testRun.response!!)

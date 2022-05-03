@@ -30,5 +30,14 @@ interface WhenSetup {
         receivedSequenceNum: Int? = null
     ): FlowIoRequestSetup
 
+    fun sessionCloseEventReceived(
+        flowId: String,
+        sessionId: String,
+        sequenceNum: Int,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null,
+        receivedSequenceNum: Int? = null
+    ): FlowIoRequestSetup
+
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
 }
