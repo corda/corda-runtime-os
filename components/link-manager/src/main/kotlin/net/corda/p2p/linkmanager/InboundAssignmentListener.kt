@@ -3,7 +3,9 @@ package net.corda.p2p.linkmanager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -13,7 +15,12 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
+        createResources = ::createResources,
     )
+
+    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+        return CompletableFuture()
+    }
 
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
