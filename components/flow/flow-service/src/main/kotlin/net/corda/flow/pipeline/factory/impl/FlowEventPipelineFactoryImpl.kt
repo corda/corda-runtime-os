@@ -5,17 +5,15 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
-import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
+import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -69,25 +67,19 @@ class FlowEventPipelineFactoryImpl(
 
     override fun create(checkpoint: Checkpoint?, event: FlowEvent, config: SmartConfig): FlowEventPipeline {
         val context = FlowEventContext<Any>(
-            checkpoint = flowCheckpointFactory.create(checkpoint),
+            checkpoint = flowCheckpointFactory.create(checkpoint, config),
             inputEvent = event,
             inputEventPayload = event.payload,
             config = config,
             outputRecords = emptyList()
         )
         return FlowEventPipelineImpl(
-            getFlowEventHandler(event),
+            flowEventHandlerMap,
             flowWaitingForHandlerMap,
             flowRequestHandlerMap,
             flowRunner,
             flowGlobalPostProcessor,
             context
         )
-    }
-
-    private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
-        return flowEventHandlerMap[event.payload::class.java]
-            ?.let { uncheckedCast(it) }
-            ?: throw FlowProcessingException("${event.payload::class.java.name} does not have an associated flow event handler")
     }
 }

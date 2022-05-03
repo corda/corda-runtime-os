@@ -5,6 +5,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
+import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
@@ -36,9 +37,14 @@ class FlowGlobalPostProcessorImplTest {
     private val record2 = Record("t", "2", FlowMapperEvent(Any()))
     private val sessionManager = mock<SessionManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
+    private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
-    private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager, flowRecordFactory)
+    private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
+        sessionManager,
+        flowMessageFactory,
+        flowRecordFactory
+    )
 
     @Suppress("Unused")
     @BeforeEach

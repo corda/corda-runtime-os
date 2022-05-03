@@ -37,6 +37,9 @@ class FlowExecutor(
         private val tempFlowConfig = ConfigFactory.empty()
             .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+            .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
+            .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5L))
+            .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(16000L))
         private val configFactory = SmartConfigFactory.create(tempFlowConfig)
         private val tempFlowSmartConfig = configFactory.create(tempFlowConfig)
     }

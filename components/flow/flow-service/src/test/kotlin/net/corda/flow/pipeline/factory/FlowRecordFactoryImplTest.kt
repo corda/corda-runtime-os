@@ -36,3 +36,4 @@ class FlowRecordFactoryImplTest {
         assertThat(FlowRecordFactoryImpl().createFlowMapperSessionEventRecord(sessionEvent)).isEqualTo(expected)
     }
 }
+

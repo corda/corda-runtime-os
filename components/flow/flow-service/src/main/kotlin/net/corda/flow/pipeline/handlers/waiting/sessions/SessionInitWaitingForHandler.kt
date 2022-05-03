@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
