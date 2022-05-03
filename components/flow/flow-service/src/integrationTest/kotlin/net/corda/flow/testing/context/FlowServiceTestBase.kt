@@ -14,19 +14,20 @@ abstract class FlowServiceTestBase {
         testContext.resetTestContext()
     }
 
-    protected fun given(givenSetup: GivenSetup.() -> Unit){
+    protected fun given(stepSetup: StepSetup.() -> Unit){
         testContext.clearTestRuns()
-        givenSetup(testContext)
+        stepSetup(testContext)
         testContext.execute()
     }
 
-    protected fun `when`(whenSetup: WhenSetup.() -> Unit){
+    protected fun `when`(stepSetup: StepSetup.() -> Unit){
         testContext.clearTestRuns()
-        whenSetup(testContext)
+        stepSetup(testContext)
         testContext.execute()
     }
 
     protected fun then(thenSetup: ThenSetup.() -> Unit){
+        testContext.clearAssertions()
         thenSetup(testContext)
         testContext.assert()
     }

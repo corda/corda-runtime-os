@@ -3,9 +3,10 @@ package net.corda.flow.pipeline.factory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
+import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -26,8 +27,7 @@ import org.mockito.kotlin.whenever
 class FlowEventPipelineFactoryImplTest {
 
     private val wakeupPayload = Wakeup()
-    private val flowKey = "flow id"
-    private val flowEvent = FlowEvent(flowKey, wakeupPayload)
+    private val flowEvent = FlowEvent(FLOW_ID_1, wakeupPayload)
     private val checkpoint = Checkpoint()
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()

@@ -82,6 +82,29 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun noFlowEvents() {
+        asserts.add { testRun ->
+            val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
+            assertEquals(0, eventRecords.size, "Matched FlowEvents")
+        }
+    }
+
+    override fun checkpointHasRetry(expectedCount: Int) {
+        asserts.add { testRun ->
+            assertThat(testRun.response?.updatedState?.retryState).isNotNull
+            val retry = testRun.response!!.updatedState!!.retryState
+
+            assertThat(retry.retryCount).isEqualTo(expectedCount)
+            assertThat(retry.failedEvent).isEqualTo(testRun.event.value)
+        }
+    }
+
+    override fun checkpointDoesNotHaveRetry() {
+        asserts.add { testRun ->
+            assertThat(testRun.response?.updatedState?.retryState).isNull()
+        }
+    }
+
     override fun flowStatus(state: FlowStates, result: String?, error: Exception?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response)

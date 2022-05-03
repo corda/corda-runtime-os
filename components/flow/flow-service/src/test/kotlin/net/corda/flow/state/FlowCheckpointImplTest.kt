@@ -15,11 +15,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
+import java.time.Instant
 
 class FlowCheckpointImplTest {
 
+    private val now = Instant.MIN
+
     private fun createFlowCheckpoint(checkpoint: Checkpoint? = null): FlowCheckpointImpl {
-        return FlowCheckpointImpl(checkpoint)
+        return FlowCheckpointImpl(checkpoint) { now }
     }
 
     @Test

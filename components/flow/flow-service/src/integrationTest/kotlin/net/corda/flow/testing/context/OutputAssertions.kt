@@ -16,6 +16,12 @@ interface OutputAssertions {
 
     fun wakeUpEvent()
 
+    fun noFlowEvents()
+
+    fun checkpointHasRetry(expectedCount: Int)
+
+    fun checkpointDoesNotHaveRetry()
+
     fun flowStatus(state: FlowStates, result: String? = null, error: Exception? = null)
 
     fun nullStateRecord()

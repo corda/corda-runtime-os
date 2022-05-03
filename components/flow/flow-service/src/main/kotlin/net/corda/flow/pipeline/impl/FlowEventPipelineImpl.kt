@@ -8,7 +8,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
@@ -33,7 +33,7 @@ data class FlowEventPipelineImpl(
     val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     val flowRunner: FlowRunner,
     val flowGlobalPostProcessor: FlowGlobalPostProcessor,
-    val context: FlowEventContext<Any>,
+    override val context: FlowEventContext<Any>,
     val output: FlowIORequest<*>? = null
 ) : FlowEventPipeline {
 

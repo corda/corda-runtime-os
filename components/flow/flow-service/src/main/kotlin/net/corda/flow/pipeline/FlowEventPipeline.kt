@@ -11,6 +11,11 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 interface FlowEventPipeline {
 
     /**
+     * The current pipeline processing context
+     */
+    val context: FlowEventContext<Any>
+
+    /**
      * Performs flow event pre-processing on the pipeline.
      *
      * @return The updated pipeline instance.

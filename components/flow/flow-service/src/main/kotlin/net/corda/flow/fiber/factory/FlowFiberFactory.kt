@@ -7,7 +7,9 @@ import net.corda.v5.application.flows.Flow
 
 interface FlowFiberFactory {
 
-    fun createFlowFiber(flowId: String, logic: Flow<*>, scheduler: FiberScheduler) : FlowFiber<Any?>
+    val currentScheduler: FiberScheduler
+
+    fun createFlowFiber(flowId: String, logic: Flow<*>) : FlowFiber<Any?>
 
     fun createFlowFiber(flowFiberExecutionContext: FlowFiberExecutionContext) : FlowFiber<*>
 }

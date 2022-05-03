@@ -14,6 +14,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeCpiInfoReadService
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
@@ -61,25 +62,25 @@ class FlowServiceTestContext @Activate constructor(
     val eventProcessorFactory: FlowEventProcessorFactory,
     @Reference(service = FakeFlowFiberFactory::class)
     val flowFiberFactory: FakeFlowFiberFactory,
-) : GivenSetup, WhenSetup, ThenSetup {
+) : StepSetup, ThenSetup {
 
     private companion object {
         val log = contextLogger()
     }
+
+    private val testConfig = mutableMapOf<String,Any>(
+        FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
+        FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
+        FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
+        FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 16
+    )
 
     private val testRuns = mutableListOf<TestRun>()
     private val assertions = mutableListOf<OutputAssertionsImpl>()
     private var lastPublishedState: Checkpoint? = null
     private var sessionInitiatingIdentity: HoldingIdentity? = null
     private var sessionInitiatedIdentity: HoldingIdentity? = null
-    private val testConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-        .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-    private val flowEventProcessor = eventProcessorFactory.create(
-        SmartConfigFactory
-            .create(testConfig)
-            .create(testConfig)
-    )
+
 
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
@@ -151,6 +152,10 @@ class FlowServiceTestContext @Activate constructor(
         this.sessionInitiatedIdentity = initiatedIdentity
     }
 
+    override fun flowConfiguration(key: String, value: Any) {
+        testConfig[key] = value
+    }
+
     override fun startFlowEventReceived(
         flowId: String,
         requestId: String,
@@ -215,6 +220,12 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, Wakeup()))
     }
 
+    override fun replayEventFromRetry(): FlowIoRequestSetup {
+        val checkpoint = checkNotNull(lastPublishedState){"No checkpoint to replay from"}
+        val retry = checkNotNull(checkpoint.retryState){"checkpoint does not contain a replay state"}
+        return addTestRun(getEventRecord(checkpoint.flowId, retry.failedEvent.payload))
+    }
+
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {
         val assertionsCapture = OutputAssertionsImpl(flowId, sessionInitiatingIdentity, sessionInitiatedIdentity)
         assertions.add(assertionsCapture)
@@ -225,7 +236,13 @@ class FlowServiceTestContext @Activate constructor(
         testRuns.clear()
     }
 
+    fun clearAssertions() {
+        assertions.clear()
+    }
+
     fun execute() {
+        val flowEventProcessor = getFlowEventProcessor()
+
         testRuns.forEachIndexed { iteration, testRun ->
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
@@ -283,6 +300,15 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity ?: sessionInitiatedIdentity!!
         )
         return addTestRun(getEventRecord(flowId, sessionEvent))
+    }
+
+    private fun getFlowEventProcessor(): FlowEventProcessor{
+        val cfg = ConfigFactory.parseMap(testConfig)
+        return eventProcessorFactory.create(
+            SmartConfigFactory
+                .create(cfg)
+                .create(cfg)
+        )
     }
 
     private fun getEventRecord(key: String, payload: Any): Record<String, FlowEvent> {

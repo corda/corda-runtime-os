@@ -1,25 +1,34 @@
 package net.corda.flow.state.impl
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
 import net.corda.flow.state.FlowStack
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
+import java.lang.Exception
 import java.nio.ByteBuffer
+import java.time.Instant
 
-class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowCheckpoint {
+class FlowCheckpointImpl(
+    private var nullableCheckpoint: Checkpoint?,
+    private val instantProvider: () -> Instant
+) : FlowCheckpoint {
     init {
         if (nullableCheckpoint != null) {
 
-            checkNotNull(checkpoint.flowState){"The flow state has not been set on the checkpoint."}
-            checkNotNull(checkpoint.flowStartContext){"The flow start context has not been set on the checkpoint."}
+            checkNotNull(checkpoint.flowState) { "The flow state has not been set on the checkpoint." }
+            checkNotNull(checkpoint.flowStartContext) { "The flow start context has not been set on the checkpoint." }
 
             // ensure all lists are initialised.
             checkpoint.sessions = checkpoint.sessions ?: mutableListOf()
@@ -82,6 +91,12 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
     override val doesExist: Boolean
         get() = nullableCheckpoint != null
 
+    override val currentRetryCount: Int
+        get() = checkpoint.retryState?.retryCount ?: -1
+
+    override val inRetryState: Boolean
+        get() = doesExist && checkpoint.retryState != null
+
     override fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor) {
         if (nullableCheckpoint != null) {
             val key = flowStartContext.statusKey
@@ -123,6 +138,32 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
         nullableCheckpoint = null
     }
 
+    override fun rollback() {
+        // Reset the sessions and flow stack to their original checkpoint states
+        validateAndAddSessions()
+        validateAndAddFlowStack()
+    }
+
+    override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
+        if (checkpoint.retryState == null) {
+            checkpoint.retryState = RetryState().apply {
+                retryCount = 1
+                failedEvent = flowEvent
+                error = createAvroExceptionEnvelope(exception)
+                firstFailureTimestamp = instantProvider()
+                lastFailureTimestamp = firstFailureTimestamp
+            }
+        } else {
+            checkpoint.retryState.retryCount++
+            checkpoint.retryState.error = createAvroExceptionEnvelope(exception)
+            checkpoint.retryState.lastFailureTimestamp = instantProvider()
+        }
+    }
+
+    override fun markRetrySuccess() {
+        checkpoint.retryState = null
+    }
+
     override fun toAvro(): Checkpoint? {
         if (nullableCheckpoint == null) {
             return null
@@ -152,6 +193,13 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
         }
 
         nullableFlowStack = FlowStackImpl(checkpoint.flowStackItems.toMutableList())
+    }
+
+    private fun createAvroExceptionEnvelope(exception: Exception): ExceptionEnvelope {
+        return ExceptionEnvelope().apply {
+            errorType = FLOW_TRANSIENT_EXCEPTION
+            errorMessage = exception.message
+        }
     }
 
     private class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack {
