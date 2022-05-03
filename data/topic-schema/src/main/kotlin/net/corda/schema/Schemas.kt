@@ -105,6 +105,7 @@ class Schemas {
             const val CPI_UPLOAD_TOPIC = "cpi.upload"
             const val CPI_UPLOAD_STATUS_TOPIC = "cpi.upload.status"
             const val CPK_FILE_TOPIC = "cpk.file"
+            const val ENTITY_PROCESSOR = "db.entity.processor"
         }
     }
 

@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "EntityResponse",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was created."
+    },
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "id of this request for tracking"
+    },
+    {
+      "name": "result",
+      "doc": "Result of request",
+      "type": [
+        "null",
+        "bytes",
+        "net.corda.data.ExceptionEnvelope"
+      ]
+    }
+  ]
+}

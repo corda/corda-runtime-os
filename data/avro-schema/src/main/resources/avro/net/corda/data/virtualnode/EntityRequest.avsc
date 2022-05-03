@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "EntityRequest",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was created."
+    },
+    {
+      "name": "flowKey",
+      "type": "net.corda.data.flow.FlowKey",
+      "doc": "The unique ID for tracking the flow status"
+    },
+    {
+      "name": "request",
+      "doc": "Entity that we want to persist, merge, or delete",
+      "type": [
+        "net.corda.data.virtualnode.PersistEntity",
+        "net.corda.data.virtualnode.MergeEntity",
+        "net.corda.data.virtualnode.DeleteEntity",
+        "net.corda.data.virtualnode.FindEntity"
+      ]
+    }
+  ]
+}

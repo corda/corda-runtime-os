@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "FindEntity",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "entityClassName",
+      "type": "string",
+      "doc": "the fully qualified entity class name"
+    },
+    {
+      "name": "primaryKey",
+      "type": "bytes",
+      "doc": "the primary key"
+    }
+  ]
+}

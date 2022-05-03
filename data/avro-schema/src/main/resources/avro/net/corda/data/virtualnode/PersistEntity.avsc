@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "PersistEntity",
+  "namespace": "net.corda.data.virtualnode",
+  "fields": [
+    {
+      "name": "entity",
+      "type": "bytes",
+      "doc": "the serialized entity"
+    }
+  ]
+}
