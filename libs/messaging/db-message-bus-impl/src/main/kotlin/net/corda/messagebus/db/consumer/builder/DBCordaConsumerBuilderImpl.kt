@@ -32,7 +32,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : CordaConsumerBuilder {
 
-    private val consumerGroupFactory = ConsumerGroupFactory()
+    private val consumerGroupFactory = ConsumerGroupFactory(entityManagerFactoryFactory)
 
     override fun <K : Any, V : Any> createConsumer(
         consumerConfig: ConsumerConfig,
@@ -60,7 +60,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
 
         val consumerGroup = consumerGroupFactory.getGroupFor(
             consumerConfig.group,
-            dbAccess
+            resolvedConfig
         )
 
         return DBCordaConsumerImpl(
