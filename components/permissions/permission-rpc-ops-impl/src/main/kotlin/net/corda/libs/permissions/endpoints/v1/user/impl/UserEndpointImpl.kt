@@ -1,7 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
@@ -26,6 +25,11 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.temporal.TemporalUnit
+import java.util.Date
+import kotlin.reflect.jvm.internal.impl.descriptors.Visibilities.Local
 
 /**
  * An RPC Ops endpoint for User operations.
@@ -105,20 +109,19 @@ class UserEndpointImpl @Activate constructor(
         )
     }
 
-    override fun generateLocalAuthToken(
-        loginName: String, password: String
-    ): JWTResponseType {
+    override fun generateLocalAuthToken(): JWTResponseType {
+        val principal = getRpcThreadLocalContext()
+        val now = LocalDateTime.now(ZoneOffset.UTC)
 
-        // VERIFY USER CREDS
-//        rpcSecurityManager.authenticate(credential.username, Password(credential.password))
-
-        val claims = """
-            {
-                "iss":"R3",
-                "sub":"$loginName",
-                "ath":"local",
-            }
-        """.trimIndent()
+        // TODO the exp claim should in the future be configured via a config file
+        val claims = mapOf(
+            "iss" to "R3",
+            "sub" to principal,
+            "ath" to "local",
+            "iat" to now.toEpochSecond(ZoneOffset.UTC).toString(),
+            "exp" to now.plusDays(1).toEpochSecond(ZoneOffset.UTC).toString(),
+            "nbf" to now.toEpochSecond(ZoneOffset.UTC).toString()
+        )
 
         return JWTResponseType(token = httpRpcLocalJwtSigner.buildAndSignJwt(claims))
     }

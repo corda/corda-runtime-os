@@ -29,6 +29,8 @@ dependencies {
 
     implementation project(":osgi-framework-api")
 
+    implementation "org.json:json:20220320"
+
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

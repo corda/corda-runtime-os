@@ -1,26 +1,19 @@
 package net.corda.httprpc.server.impl.security.provider.bearer.local
 
-import com.nimbusds.jose.proc.BadJOSEException
-import com.nimbusds.jwt.JWT
-import com.nimbusds.jwt.JWTParser
+import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.common.json.serialization.jacksonObjectMapper
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
-import net.corda.httprpc.server.impl.security.provider.bearer.oauth.JwtAuthenticationProvider
-import net.corda.httprpc.server.impl.security.provider.bearer.oauth.JwtProcessor
-import net.corda.httprpc.server.impl.security.provider.bearer.oauth.PriorityListJwtClaimExtractor
-import net.corda.httprpc.server.impl.security.provider.credentials.AuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.security.local.HttpRpcLocalJwtSigner
 import net.corda.v5.base.util.contextLogger
-import org.bouncycastle.util.encoders.Base64Encoder
 import java.util.*
 import javax.security.auth.login.FailedLoginException
 
 internal class LocalJwtAuthenticationProvider(
-    val jwtProcessor: HttpRpcLocalJwtSigner,
-    val rpcSecurityManager: RPCSecurityManager
+    private val jwtProcessor: HttpRpcLocalJwtSigner,
+    private val rpcSecurityManager: RPCSecurityManager
 ) : BearerTokenAuthenticationProvider() {
 
     companion object {
@@ -29,12 +22,11 @@ internal class LocalJwtAuthenticationProvider(
 
     override fun doAuthenticate(credential: BearerTokenAuthenticationCredentials): AuthorizingSubject {
 
-        val jwt = try {
-            if(jwtProcessor.verify(credential.token)){
-
-                val decoded = String(Base64.getDecoder().decode(credential.token.split(".")[1]))
-
-                rpcSecurityManager.buildSubject(decoded)
+        try {
+            if (jwtProcessor.verify(credential.token)) {
+                val decodedClaims = String(Base64.getDecoder().decode(credential.token.split(".")[1]))
+                val subject = extractSubFromJwt(decodedClaims)
+                return rpcSecurityManager.buildSubject(subject)
             } else {
                 throw FailedLoginException("Failed to parse JWT token.")
             }
@@ -48,4 +40,14 @@ internal class LocalJwtAuthenticationProvider(
         }
     }
 
+    private fun extractSubFromJwt(claims: String): String {
+        val claimsMap: Map<String, String> = jacksonObjectMapper().readValue(claims)
+        if (claimsMap.isEmpty()) {
+            throw Exception("Claims unable to be parsed or missing")
+        }
+        val sub = claimsMap["sub"]
+        if (!sub.isNullOrBlank())
+            return sub
+        else throw Exception("some error")
+    }
 }

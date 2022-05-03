@@ -76,8 +76,5 @@ interface UserEndpoint : RpcOps {
      * Generates a JWT for the user
      */
     @HttpRpcPOST(path = "generateLocalAuthToken", description = "Generates a JWT auth token")
-    fun generateLocalAuthToken(
-        @HttpRpcRequestBodyParameter(description = "Login name of the user.") loginName: String,
-        @HttpRpcRequestBodyParameter(description = "Password of the user") password: String
-    ): JWTResponseType
+    fun generateLocalAuthToken(): JWTResponseType
 }
