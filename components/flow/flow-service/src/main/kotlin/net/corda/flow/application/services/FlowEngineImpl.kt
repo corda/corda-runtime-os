@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -24,7 +23,7 @@ import java.util.UUID
 class FlowEngineImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : FlowEngine, SingletonSerializeAsToken, CordaFlowInjectable {
+) : FlowEngine, SingletonSerializeAsToken {
 
     private companion object {
         val log = contextLogger()
