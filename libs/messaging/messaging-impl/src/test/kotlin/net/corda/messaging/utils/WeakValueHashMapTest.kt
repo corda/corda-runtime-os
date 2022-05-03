@@ -3,9 +3,12 @@ package net.corda.messaging.utils
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 @Suppress("ExplicitGarbageCollectionCall")
 class WeakValueHashMapTest {
@@ -47,5 +50,21 @@ class WeakValueHashMapTest {
         Assertions.assertEquals(setOf("future"), map.keys)
         map.clear()
         Assertions.assertTrue(map.isEmpty())
+    }
+
+    @Test
+    fun `concurrent use test`() {
+        val map = WeakValueHashMap<String, Int>()
+
+        val pairs: List<Pair<String, Int>> = (1..1000).map {
+            "$it" to it
+        }
+
+        val executor = Executors.newFixedThreadPool(8)
+        val futures: List<Future<*>> = pairs.map { executor.submit { map[it.first] = it.second } }
+        futures.forEach { it.get() }
+        executor.shutdown()
+
+        assertThat(map.size).isEqualTo(pairs.size)
     }
 }
