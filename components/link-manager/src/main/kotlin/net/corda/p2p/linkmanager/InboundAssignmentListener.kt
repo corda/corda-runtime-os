@@ -27,19 +27,24 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
 
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
+            Exception("QQQ").printStackTrace(System.out)
+            println("QQQ Unassigned -> $topicPartitions")
             for ((topic, partition) in topicPartitions) {
                 topicToPartition[topic]?.remove(partition)
             }
+            println("QQQ status -> $topicToPartition")
             callCallbacks(topicPartitions.map { it.first }.toSet())
         }
     }
 
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
+            println("QQQ Assigned -> $topicPartitions")
             for ((topic, partition) in topicPartitions) {
                 val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
                 partitionSet.add(partition)
             }
+            println("QQQ status -> $topicToPartition")
             callCallbacks(topicPartitions.map { it.first }.toSet())
             if (firstAssignment) {
                 firstAssignment = false
