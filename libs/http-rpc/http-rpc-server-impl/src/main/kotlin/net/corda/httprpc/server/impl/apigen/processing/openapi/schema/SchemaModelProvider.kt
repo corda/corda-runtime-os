@@ -14,6 +14,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.S
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaDurationBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaEnumBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaFloatBuilder
+import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaHttpFileUploadBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaInputStreamBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaIntegerBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaLongBuilder
@@ -72,6 +73,7 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
         SchemaBigDecimalBuilder(),
         SchemaStringBuilder(),
         SchemaByteArrayBuilder(),
+        SchemaHttpFileUploadBuilder(),
         SchemaInputStreamBuilder(),
         SchemaDateBuilder(),
         SchemaDateTimeBuilder(),

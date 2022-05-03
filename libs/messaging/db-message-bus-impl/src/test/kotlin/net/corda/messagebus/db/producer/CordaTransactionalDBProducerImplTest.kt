@@ -136,4 +136,12 @@ internal class CordaTransactionalDBProducerImplTest {
             eq(TransactionState.COMMITTED)
         )
     }
+
+    @Test
+    fun `producer correctly closes down dbAccess when closed`() {
+        val dbAccess: DBAccess = mock()
+        val producer = CordaTransactionalDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
+        producer.close()
+        verify(dbAccess).close()
+    }
 }

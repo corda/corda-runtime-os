@@ -30,6 +30,7 @@ class WriteOffsets(
         latestOffsets.putAll(state)
     }
 
+    @Synchronized
     fun getNextOffsetFor(topicPartition: CordaTopicPartition): Long {
         return latestOffsets.compute(topicPartition) { _: CordaTopicPartition, offset: Long? ->
             offset?.plus(1) ?: 0L

@@ -3,6 +3,7 @@ package net.corda.messaging.utils
 import net.corda.v5.base.util.uncheckedCast
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 
 
 /**
@@ -11,8 +12,8 @@ import java.lang.ref.WeakReference
  */
 class WeakValueHashMap<K, V>: MutableMap<K, V> {
 
-    /* Hash table mapping Keys to WeakValues */
-    private val map = HashMap<K, WeakValueRef<K, V>>()
+    /* Mutable map of Keys to WeakValues */
+    private val map: MutableMap<K, WeakValueRef<K, V>> = ConcurrentHashMap()
 
     /* Reference queue for cleared WeakValues */
     private val queue = ReferenceQueue<V>()
