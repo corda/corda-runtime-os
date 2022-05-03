@@ -97,6 +97,7 @@ class CordaAtomicDBProducerImpl(
     }
 
     override fun close() {
+        dbAccess.close()
     }
 
     private fun throwNonTransactionalLogic() {

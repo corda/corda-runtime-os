@@ -35,6 +35,10 @@ class DBAccess(
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
 
+    fun close() {
+        entityManagerFactory.close()
+    }
+
     fun getMaxCommittedPositions(
         groupId: String,
         topicPartitions: Set<CordaTopicPartition>
