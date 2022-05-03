@@ -46,6 +46,7 @@ class LinkManagerApp @Activate constructor(
 
             // TODO - move to common worker and pick up secrets params
             consoleLogger.info("Starting the configuration service")
+            println("QQQ arguments.instanceId = ${arguments.instanceId}")
             val secretsConfig = ConfigFactory.empty()
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.kafkaNodeConfiguration)
             configurationReadService.start()

@@ -139,7 +139,7 @@ class ComplexDominoTile(
         coordinator.postEvent(ConfigApplied(configUpdateResult))
     }
 
-    private fun resourcesStarted(error: Throwable? = null) {
+    fun resourcesStarted(error: Throwable? = null) {
         if (error != null) {
             coordinator.postEvent(ErrorEvent(error))
         } else {

@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -14,8 +13,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
 
 class InboundAssignmentListenerTest {
 
@@ -27,15 +26,12 @@ class InboundAssignmentListenerTest {
     private val assign2 = listOf(2, 3, 4)
 
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
-    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doReturn(true)
         @Suppress("UNCHECKED_CAST")
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
-        @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
     }
 
     @AfterEach
@@ -57,15 +53,12 @@ class InboundAssignmentListenerTest {
     }
 
     @Test
-    fun `the future completes when partitions are assigned`() {
+    fun `resource started is called when topic has partitions`() {
         val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        val readyFuture = createResources!!(mock())
-        assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(firstAssignment)
-        val secondAssignment = assign2.map { TOPIC_1 to it } + assign1.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(secondAssignment)
-        assertThat(readyFuture.isDone).isTrue
+        val assignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
+        listener.onPartitionsAssigned(assignment)
+
+        verify(dominoTile.constructed().first()).resourcesStarted()
     }
 
     @Test
