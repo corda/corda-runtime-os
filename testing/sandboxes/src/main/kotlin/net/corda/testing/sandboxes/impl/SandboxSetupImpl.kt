@@ -108,7 +108,7 @@ class SandboxSetupImpl @Activate constructor(
         }
 
         /**
-         * Deactivate the [InstallService] and then wait
+         * Deactivate the [CpkReadService] and then wait
          * for the framework to unregister it.
          */
         with(componentContext) {

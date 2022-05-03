@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
 import java.security.Policy
+import java.security.URIParameter
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -95,7 +96,9 @@ class OSGiFrameworkMain {
              * Set the Java security policy programmatically, as required by OSGi Security.
              * @see <a href="https://felix.apache.org/documentation/subprojects/apache-felix-framework-security.html">Felix Framework Security</a>
              */
-            Policy.setPolicy(AllPermissionsPolicy())
+            OSGiFrameworkMain::class.java.getResource("all-permissions.policy")?.also { policy ->
+                Policy.setPolicy(Policy.getInstance("JavaPolicy", URIParameter(policy.toURI())))
+            }
 
             /**
              * `java.util.logging` logs directly to the console for Apache Aries and Liquibase (at least),
