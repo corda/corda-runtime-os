@@ -151,17 +151,14 @@ abstract class SubscriptionDominoTileBase(
                         dependentChildrenRegistration -> {
                             when(event.status) {
                                 LifecycleStatus.UP -> {
-                                    println("QQQ for $coordinatorName - All is up, going up $dependentChildren")
                                     logger.info("All dependencies are started now, starting subscription.")
                                     subscription.start()
                                 }
                                 LifecycleStatus.DOWN -> {
-                                    println("QQQ for $coordinatorName - Something is down, going down, $dependentChildren")
                                     logger.info("One of the dependencies went down, stopping subscription.")
                                     subscription.stop()
                                 }
                                 LifecycleStatus.ERROR -> {
-                                    println("QQQ for $coordinatorName - had error, going down, $dependentChildren")
                                     logger.info("One of the dependencies had an error, stopping subscription.")
                                     subscription.stop()
                                 }
