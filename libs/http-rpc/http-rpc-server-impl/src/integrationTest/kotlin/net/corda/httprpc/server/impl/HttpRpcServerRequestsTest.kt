@@ -27,7 +27,7 @@ import java.time.Instant
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import net.corda.httprpc.server.impl.utils.TestClientFileUpload
-import net.corda.httprpc.test.utls.Checksum
+import net.corda.httprpc.test.utls.ChecksumUtil
 
 class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     companion object {
@@ -468,8 +468,8 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val inputStream1 = "test text".byteInputStream()
         val inputStream2 = "test text".byteInputStream()
 
-        val checksum1 = Checksum.generateChecksum(inputStream1)
-        val checksum2 = Checksum.generateChecksum(inputStream2)
+        val checksum1 = ChecksumUtil.generateChecksum(inputStream1)
+        val checksum2 = ChecksumUtil.generateChecksum(inputStream2)
 
         assertEquals(checksum1, checksum2)
     }
@@ -489,7 +489,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             password
         )
 
-        val expectedChecksum = Checksum.generateChecksum(text.byteInputStream())
+        val expectedChecksum = ChecksumUtil.generateChecksum(text.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"$expectedChecksum\"", createEntityResponse.body)
@@ -511,7 +511,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             password
         )
 
-        val expectedResult = "some-text-as-parameter,${Checksum.generateChecksum(text.byteInputStream())}"
+        val expectedResult = "some-text-as-parameter,${ChecksumUtil.generateChecksum(text.byteInputStream())}"
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"$expectedResult\"", createEntityResponse.body)
@@ -532,7 +532,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             password
         )
 
-        val expectedResult = Checksum.generateChecksum(text.byteInputStream())
+        val expectedResult = ChecksumUtil.generateChecksum(text.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"$expectedResult\"", createEntityResponse.body)
@@ -555,7 +555,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             password
         )
 
-        val expectedResult = Checksum.generateChecksum(text1.byteInputStream()) + "," + Checksum.generateChecksum(text2.byteInputStream())
+        val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + "," + ChecksumUtil.generateChecksum(text2.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"$expectedResult\"", createEntityResponse.body)

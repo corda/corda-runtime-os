@@ -231,11 +231,8 @@ internal class HttpRpcServerInternal(
         try {
             log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
 
-            if (routeInfo.isMultipartFileUpload) {
-                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
-            } else {
-                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
-            }
+            addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
+
             log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {
             "Error during adding routes".let {
@@ -301,7 +298,7 @@ internal class HttpRpcServerInternal(
 
                 val parametersRetrieverContext = ParametersRetrieverContext(ctx)
                 val paramValues = parameters.map {
-                    val parameterRetriever = ParameterRetrieverFactory.create(it)
+                    val parameterRetriever = ParameterRetrieverFactory.create(it, this.isMultipartFileUpload)
                     parameterRetriever.apply(parametersRetrieverContext)
                 }.toTypedArray()
 
@@ -317,52 +314,34 @@ internal class HttpRpcServerInternal(
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
                 log.warn("Error invoking path '${this.fullPath}'.", e)
+                if(ctx.isMultipartFormData()) {
+                    cleanUpMultipartRequest(ctx)
+                }
                 throw HttpExceptionMapper.mapToResponse(e)
+            }
+        }
+    }
+
+    private fun cleanUpMultipartRequest(ctx: Context) {
+        ctx.uploadedFiles().forEach { it.content.close() }
+        // Remove all the parts and associated file storage once we are done with them
+        ctx.req.parts.forEach { part ->
+            try {
+                part.delete()
+            } catch (e: Exception) {
+                log.warn("Could not delete part: ${part.name}", e)
             }
         }
     }
 
     private fun validateRequestContentType(routeInfo: RouteInfo, ctx: Context) {
-        val endpointExpectsMultipart = routeInfo.isMultipartFileUpload
-        val requestIsMultipart = ctx.isMultipart()
+        val expectsMultipart = routeInfo.isMultipartFileUpload
+        val receivesMultipartRequest = ctx.isMultipart()
 
-        if(endpointExpectsMultipart && !requestIsMultipart) {
-            throw IllegalArgumentException("Endpoint expects multipart content.")
-        } else if(!endpointExpectsMultipart && requestIsMultipart) {
-            throw IllegalArgumentException("Endpoint did not expect multipart content type.")
-        }
-    }
-
-    private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
-        return { ctx ->
-            log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
-            log.trace { "Get parameter values." }
-            try {
-                validateRequestContentType(this, ctx)
-
-                val parametersRetrieverContext = ParametersRetrieverContext(ctx)
-                val paramValues = parameters.map {
-                    val parameterRetriever = MultipartParameterRetriever(it)
-                    parameterRetriever.apply(parametersRetrieverContext)
-                }.toTypedArray()
-
-                val result = invokeDelegatedMethod(*paramValues)
-                if (result != null) {
-                    ctx.json(result)
-                }
-            } catch (e: Exception) {
-                throw HttpExceptionMapper.mapToResponse(e)
-            } finally {
-                ctx.uploadedFiles().forEach { it.content.close() }
-                // Remove all the parts and associated file storage once we are done with them
-                ctx.req.parts.forEach { part ->
-                    try {
-                        part.delete()
-                    } catch (e: Exception) {
-                        log.warn("Could not delete part: ${part.name}", e)
-                    }
-                }
-            }
+        if(expectsMultipart && !receivesMultipartRequest) {
+            throw IllegalArgumentException("Endpoint expects Content-Type [multipart/form-data] but received [${ctx.contentType()}].")
+        } else if(receivesMultipartRequest && !expectsMultipart) {
+            throw IllegalArgumentException("Unexpected Content-Type [${ctx.contentType()}].")
         }
     }
 

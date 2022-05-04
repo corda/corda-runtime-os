@@ -1,10 +1,9 @@
 package net.corda.httprpc.test.utls
 
 import java.io.InputStream
-import java.security.DigestInputStream
 import java.security.MessageDigest
 
-object Checksum {
+object ChecksumUtil {
     private const val HASH_ALGORITHM = "SHA-256"
 
     fun generateChecksum(input: InputStream): String {

@@ -49,10 +49,10 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         }.addOriginHeader()
 
         if(request is HttpRequestWithBody) {
-            applyBody(webRequest, request)
+            request = applyBody(webRequest, request)
         }
 
-        applyQueryParameters(webRequest, request)
+        request = applyQueryParameters(webRequest, request)
 
         val response = request.asObject(responseClass)
         return WebResponse(
@@ -123,14 +123,15 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
     }
 
     private fun <T> applyQueryParameters(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request
         webRequest.queryParameters?.forEach { item ->
             if (item.value is Collection<*>) {
-                (item.value as Collection<*>).forEach { request.queryString(item.key, it) }
+                (item.value as Collection<*>).forEach { requestBuilder = requestBuilder.queryString(item.key, it) }
             } else {
-                request.queryString(item.key, item.value)
+                requestBuilder = requestBuilder.queryString(item.key, item.value)
             }
         }
-        return request
+        return requestBuilder
     }
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String> {

@@ -21,12 +21,17 @@ internal interface ParameterRetriever : Function<ParametersRetrieverContext, Any
 private fun String.decodeRawString(): String = URLDecoder.decode(this, "UTF-8")
 
 internal object ParameterRetrieverFactory {
-    fun create(parameter: Parameter): ParameterRetriever =
+    fun create(parameter: Parameter, multipartFileUpload: Boolean): ParameterRetriever =
         when (parameter.type) {
             ParameterType.PATH -> PathParameterRetriever(parameter)
-            ParameterType.QUERY -> if (parameter.classType == List::class.java) QueryParameterListRetriever(parameter)
-            else QueryParameterRetriever(parameter)
-            ParameterType.BODY -> BodyParameterRetriever(parameter)
+            ParameterType.QUERY -> {
+                if (parameter.classType == List::class.java) QueryParameterListRetriever(parameter)
+                else QueryParameterRetriever(parameter)
+            }
+            ParameterType.BODY -> {
+                if(multipartFileUpload) MultipartParameterRetriever(parameter)
+                else BodyParameterRetriever(parameter)
+            }
         }
 }
 
@@ -134,6 +139,7 @@ internal class MultipartParameterRetriever(private val parameter: Parameter) : P
         private val log = contextLogger()
     }
 
+    @Suppress("ComplexMethod")
     override fun apply(ctx: ParametersRetrieverContext): Any {
         try {
             log.trace { "Cast \"${parameter.name}\" to body parameter." }
