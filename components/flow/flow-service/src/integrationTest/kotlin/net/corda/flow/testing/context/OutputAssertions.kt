@@ -5,11 +5,22 @@ import net.corda.data.identity.HoldingIdentity
 
 interface OutputAssertions {
 
-    fun sessionAckEvent(sessionId: String, initiatingIdentity: HoldingIdentity? = null, initiatedIdentity: HoldingIdentity? = null)
+    fun sessionAckEvent(
+        sessionId: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
+    fun sessionDataEvent(
+        sessionId: String,
+        data: ByteArray,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
 
     fun flowDidNotResume()
 
-    fun flowResumedWithSessionData(vararg sessionData: Pair<String, ByteArray>)
+    fun <T> flowResumedWith(value: T)
 
     fun wakeUpEvent()
 

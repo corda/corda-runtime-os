@@ -5,9 +5,9 @@ The test coverage of the flow event pipeline's acceptance tests are documented h
 This document should be maintained so that we can ensure that we have quick visibility into our coverage as we are expecting a number of scenarios to be exercised.
 
 ## Sending
-- (Send) Calling 'send' on an initiated session sends a session data event and schedules a wakeup event to resume the flow
+- (Send) (Send) Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event ✅
 - (Send) Calling 'send' on a closed session schedules an error event (not fully implemented, assert CLOSING, CLOSED, WAIT_FOR_FINAL_ACK states)
-- (Send) Calling 'send' multiple times on an initiated session resumes the flow and sends a session data event each time
+- (Send) Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time ✅
 
 ## Send + receiving
 
@@ -17,7 +17,7 @@ This document should be maintained so that we can ensure that we have quick visi
 ## Receiving (can use parameterised tests to assert the same behaviour for sendAndReceive)
 
 - (Receive) Receiving an out-of-order message does not resume the flow and sends a session ack ✅
-- (Receive) Receiving a non-session-data event does not resume the flow and resends any unacknowledged events ✅
+- (Receive) Receiving a non-session-data event does not resume the flow and resends any unacknowledged events ✅ (Still requires the resends to be asserted)
 - (Receive) Receiving all session data events for closing sessions resumes the flow and sends a session ack (not fully implemented)
 - (Receive) Receiving a session data event for an unrelated session does not resume the flow and sends a session ack ✅
 - (Receive) Receiving a session close event for an unrelated session does not resume the flow and sends a session ack ✅ (can be parameterised with the test above?)

@@ -62,10 +62,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -108,10 +108,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -141,10 +141,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
         }
 
@@ -174,10 +174,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
         }
 
@@ -207,10 +207,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -244,12 +244,12 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
             // Alice acknowledges the session and Bob creates a second session
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
             // Alice acknowledges the second session and Bob requests to receive data for both
             // sessions
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -271,7 +271,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWithSessionData(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
+                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionAckEvent(SESSION_ID_2)
                 wakeUpEvent()
             }
@@ -292,10 +292,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, 1)
@@ -329,10 +329,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 0)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, 1)
@@ -354,7 +354,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWithSessionData(SESSION_ID_1 to DATA_MESSAGE_1)
+                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
                 wakeUpEvent()
             }
         }
@@ -376,13 +376,13 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                     .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-                sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+                sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                     .suspendsWith(request)
             } else {
                 startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                     .suspendsWith(request)
 
-                sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 0)
+                sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
                     .suspendsWith(FlowIORequest.ForceCheckpoint)
             }
         }
