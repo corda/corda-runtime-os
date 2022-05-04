@@ -13,14 +13,20 @@ import java.security.Permission
 
 /** A [CordaSecurityManager] that provides control over what permissions are granted or denied. */
 class RestrictiveSecurityManager(
-    private val conditionalPermissionAdmin: ConditionalPermissionAdmin
+    private val conditionalPermissionAdmin: ConditionalPermissionAdmin,
+    osgiSecurityManager: SecurityManager?
 ) : CordaSecurityManager {
     companion object {
         private val allPermInfo = PermissionInfo(AllPermission::class.java.name, "*", "*")
     }
 
-    /** Grants all permissions to all bundles. */
     init {
+        // Ensure OSGi's SecurityManager is installed.
+        if (System.getSecurityManager() !== osgiSecurityManager) {
+            System.setSecurityManager(osgiSecurityManager)
+        }
+
+        /** Grants all permissions to all bundles. */
         val grantAllPermissions = conditionalPermissionAdmin.newConditionalPermissionInfo(
             null, null, arrayOf(allPermInfo), ALLOW
         )

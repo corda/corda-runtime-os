@@ -1,9 +1,8 @@
 package net.corda.flow.pipeline.sandbox
 
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -19,8 +18,7 @@ class SandboxDependencyInjectorImplTest {
     )
     private val serviceTypes2 = arrayOf(
         Service2::class.java.name,
-        SingletonSerializeAsToken::class.java.name,
-        CordaFlowInjectable::class.java.name
+        SingletonSerializeAsToken::class.java.name
     )
     private val flowDependencyInjector = SandboxDependencyInjectorImpl(mapOf(s1 to serviceTypes1, s2 to serviceTypes2), mock())
 
@@ -73,9 +71,9 @@ interface Service1
 class Service1Impl : Service1, SingletonSerializeAsToken
 
 interface Service2
-class Service2Impl : Service2, SingletonSerializeAsToken, CordaFlowInjectable
+class Service2Impl : Service2, SingletonSerializeAsToken
 
-class DuplicateService2Impl : Service2, SingletonSerializeAsToken, CordaFlowInjectable
+class DuplicateService2Impl : Service2, SingletonSerializeAsToken
 
 class ExampleFlow : Flow<String> {
     @CordaInject

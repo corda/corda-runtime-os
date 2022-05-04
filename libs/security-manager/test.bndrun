@@ -1,7 +1,11 @@
 -tester: biz.aQute.tester.junit-platform
--runfw: org.apache.felix.framework;
+-runfw: org.apache.felix.framework
 -runee: JavaSE-11
 -runtrace: true
+
+# Canonicalise the permissions paths
+-runvm: \
+    -Djdk.io.permissionsUseCanonicalPath=true
 
 -runsystempackages: \
     sun.security.x509

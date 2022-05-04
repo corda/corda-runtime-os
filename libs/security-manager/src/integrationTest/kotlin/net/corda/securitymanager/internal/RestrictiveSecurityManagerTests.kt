@@ -1,6 +1,7 @@
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -31,6 +32,7 @@ class RestrictiveSecurityManagerTests {
     @BeforeEach
     fun reset() {
         securityManagerService.start()
+        assertNotNull(System.getSecurityManager())
     }
 
     @Test

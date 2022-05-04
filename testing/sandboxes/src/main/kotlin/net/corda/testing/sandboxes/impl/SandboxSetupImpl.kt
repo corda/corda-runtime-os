@@ -51,9 +51,9 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.crypto",
             "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
             "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
+            "net.corda.membership",
             "net.corda.persistence",
             "net.corda.serialization",
-            "net.corda.services",
             "org.apache.aries.spifly.dynamic.bundle",
             "org.apache.felix.framework",
             "org.apache.felix.scr",
@@ -108,7 +108,7 @@ class SandboxSetupImpl @Activate constructor(
         }
 
         /**
-         * Deactivate the [InstallService] and then wait
+         * Deactivate the [CpkReadService] and then wait
          * for the framework to unregister it.
          */
         with(componentContext) {

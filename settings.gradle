@@ -302,8 +302,6 @@ include 'testing:db-message-bus-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
 include 'testing:cpbs:calculator'
-include 'testing:cpbs:corda-services'
-include 'testing:cpbs:corda-services:services-cpk'
 include 'testing:cpbs:crypto-custom-digest-one-cpk'
 include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
@@ -311,7 +309,6 @@ include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:connect4'
 include 'testing:cpbs:flow-worker-dev'
 include 'testing:cpbs:mandelbrot'
-include 'testing:cpbs:sandbox-cpk-inject'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
@@ -350,7 +347,6 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
-            substitute module('net.corda:corda-services') using project(':services')
         }
     }
 }

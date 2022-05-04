@@ -2,7 +2,6 @@ package net.corda.flow.application.services
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.calculateHash
@@ -19,7 +18,7 @@ import java.security.PublicKey
 class MemberLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-) : MemberLookup, SingletonSerializeAsToken, CordaFlowInjectable {
+) : MemberLookup, SingletonSerializeAsToken {
     override fun lookup(): List<MemberInfo> {
         return getGroupReader().lookup().toList()
     }
