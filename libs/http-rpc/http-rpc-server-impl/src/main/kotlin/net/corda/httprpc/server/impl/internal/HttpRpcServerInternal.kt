@@ -296,17 +296,14 @@ internal class HttpRpcServerInternal(
             try {
                 validateRequestContentType(this, ctx)
 
-                val parametersRetrieverContext = ParametersRetrieverContext(ctx)
-                val paramValues = parameters.map {
-                    val parameterRetriever = ParameterRetrieverFactory.create(it, this.isMultipartFileUpload)
-                    parameterRetriever.apply(parametersRetrieverContext)
-                }.toTypedArray()
+                val paramValues = retrieveParameters(ctx)
 
                 log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
 
                 @Suppress("SpreadOperator")
                 //TODO if one parameter is a list and it's exposed as a query parameter, we may need to cast list elements here
                 val result = invokeDelegatedMethod(*paramValues)
+
                 if (result != null) {
                     ctx.json(result)
                 }
@@ -314,22 +311,11 @@ internal class HttpRpcServerInternal(
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
                 log.warn("Error invoking path '${this.fullPath}'.", e)
+                throw HttpExceptionMapper.mapToResponse(e)
+            } finally {
                 if(ctx.isMultipartFormData()) {
                     cleanUpMultipartRequest(ctx)
                 }
-                throw HttpExceptionMapper.mapToResponse(e)
-            }
-        }
-    }
-
-    private fun cleanUpMultipartRequest(ctx: Context) {
-        ctx.uploadedFiles().forEach { it.content.close() }
-        // Remove all the parts and associated file storage once we are done with them
-        ctx.req.parts.forEach { part ->
-            try {
-                part.delete()
-            } catch (e: Exception) {
-                log.warn("Could not delete part: ${part.name}", e)
             }
         }
     }
@@ -342,6 +328,27 @@ internal class HttpRpcServerInternal(
             throw IllegalArgumentException("Endpoint expects Content-Type [multipart/form-data] but received [${ctx.contentType()}].")
         } else if(receivesMultipartRequest && !expectsMultipart) {
             throw IllegalArgumentException("Unexpected Content-Type [${ctx.contentType()}].")
+        }
+    }
+
+    private fun RouteInfo.retrieveParameters(ctx: Context): Array<Any?> {
+        val parametersRetrieverContext = ParametersRetrieverContext(ctx)
+        val paramValues = parameters.map {
+            val parameterRetriever = ParameterRetrieverFactory.create(it, this.isMultipartFileUpload)
+            parameterRetriever.apply(parametersRetrieverContext)
+        }.toTypedArray()
+        return paramValues
+    }
+
+    private fun cleanUpMultipartRequest(ctx: Context) {
+        ctx.uploadedFiles().forEach { it.content.close() }
+        // Remove all the parts and associated file storage once we are done with them
+        ctx.req.parts.forEach { part ->
+            try {
+                part.delete()
+            } catch (e: Exception) {
+                log.warn("Could not delete part: ${part.name}", e)
+            }
         }
     }
 
