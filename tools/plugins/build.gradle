@@ -1,12 +1,15 @@
-plugins {
-    id 'com.r3.internal.gradle.plugins.r3-docker'
-}
 
 group 'net.corda.cli.deployment'
 
-tasks.named('publishOSGiImage') {
-    def sourceTasks = subprojects.collect{ it.tasks.named("plugin").get()}
+tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+    def sourceTasks = subprojects.collect { it.tasks.named("plugin").get() }
+    def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
     dependsOn(sourceTasks)
+
+    if (cordaCliIncluded) {
+        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
+        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
+    }
     it.sourceTasks = sourceTasks
     it.subDir = "plugins/"
     it.setEntry = false
@@ -28,16 +31,19 @@ tasks.named('publishOSGiImage') {
 
     // Has to be different as jenkins will always try use zulu
     if (project.hasProperty('cliBaseImage')) {
-        baseImageName = baseImage
+        baseImageName = cliBaseImage
     } else {
-        // Will be corda-os-docker for build
-        baseImageName = "corda-os-docker.software.r3.com/corda-os-cli"
+        // cater for local composite build
+        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
     if (project.hasProperty('baseTag')) {
         baseImageTag = baseTag
     } else {
-        // Will be latest/version for build
-        it.baseImageTag = "unstable"
+        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+    }
+
+    if (project.hasProperty('useDockerDaemon')) {
+        useDaemon = useDockerDaemon.toBoolean()
     }
 }

@@ -20,11 +20,9 @@ plugins {
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
-    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
     id 'maven-publish'
     id 'jacoco'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
-    id 'com.r3.internal.gradle.plugins.r3-docker' apply false
 }
 
 wrapper {
@@ -366,9 +364,8 @@ subprojects {
     // apply docker publishing to workers and select testing applications
     def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'app-simulator', 'configuration-publisher']
     if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
-        apply plugin: 'com.r3.internal.gradle.plugins.r3-docker'
 
-        tasks.named('publishOSGiImage').configure{
+        tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
             // Bit of a hack to ensure we always get a flat list of tasks
             def sourceTasks = (List<Task>)[project.tasks.named("appJar").get()].flatten()
             dependsOn(sourceTasks)
@@ -392,6 +389,10 @@ subprojects {
 
             if (project.hasProperty('baseImage')) {
                 baseImageName = baseImage
+            }
+
+            if(project.hasProperty('useDockerDaemon')){
+                useDaemon = useDockerDaemon.toBoolean()
             }
         }
 

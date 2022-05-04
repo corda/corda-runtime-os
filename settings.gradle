@@ -57,12 +57,10 @@ pluginManagement {
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
-        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
-        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
-        id "com.r3.internal.gradle.plugins.r3-docker" version internalDockerVersion
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
     }
 }
 
@@ -329,7 +327,7 @@ include 'tools:plugins:secret-config'
 // If this evaluates to true local source code will be used in place of binary dependencies.
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
 
-if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
+if (file("${cordaApiLocation}").exists()) {
     includeBuild('../corda-api') {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
@@ -349,6 +347,9 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
     }
+}
+if (file("${cordaCliHostLocation}").exists()) {
+    includeBuild('../corda-cli-plugin-host')
 }
 
 gradleEnterprise {
