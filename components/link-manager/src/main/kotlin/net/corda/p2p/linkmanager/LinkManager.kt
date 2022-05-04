@@ -376,7 +376,8 @@ class LinkManager(
 
             return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                 is SessionState.NewSessionsNeeded -> {
-                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId} - SessionState.NewSessionsNeeded")
+                    println("QQQ processNoTtlRemoteAuthenticatedMessage " +
+                            "${messageAndKey.message.header.messageId} - SessionState.NewSessionsNeeded")
                     logger.trace {
                         "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                             "Initiating a new one.."
@@ -385,7 +386,8 @@ class LinkManager(
                     recordsForNewSessions(state)
                 }
                 is SessionState.SessionEstablished -> {
-                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId} - SessionState.SessionEstablished")
+                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId}" +
+                            " - SessionState.SessionEstablished")
                     logger.trace {
                         "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
                             " Using this to send outbound message."
@@ -393,7 +395,8 @@ class LinkManager(
                     recordsForSessionEstablished(state, messageAndKey)
                 }
                 is SessionState.SessionAlreadyPending -> {
-                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId} - SessionState.SessionAlreadyPending")
+                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId}" +
+                            " - SessionState.SessionAlreadyPending")
                     logger.trace {
                         "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                             "Message queued until session is established."
