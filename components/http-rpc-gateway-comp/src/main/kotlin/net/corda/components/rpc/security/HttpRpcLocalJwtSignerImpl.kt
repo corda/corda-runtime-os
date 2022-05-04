@@ -18,9 +18,9 @@ import java.util.*
 @Component(service = [HttpRpcLocalJwtSigner::class])
 class HttpRpcLocalJwtSignerImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient,
+    val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService
+    val keyEncodingService: KeyEncodingService
 ) : HttpRpcLocalJwtSigner, Lifecycle {
 
     private val JWT_HEADER = base64EncodeJsonMap(
