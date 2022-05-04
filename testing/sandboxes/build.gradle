@@ -26,9 +26,6 @@ dependencies {
 
     implementation project(':libs:packaging:packaging-core')
 
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":components:reconciliation:reconciliation")
-
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')
 }

@@ -28,9 +28,6 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:sandbox-group-context")
 
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":components:reconciliation:reconciliation")
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"

@@ -23,8 +23,8 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
+    api project(":components:reconciliation:reconciliation")
     implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:reconciliation:reconciliation")
     implementation project(":components:virtual-node:virtual-node-common")
 
     implementation project(":libs:configuration:configuration-core")
