@@ -41,6 +41,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
             callCallbacks(topicPartitions.map { it.first }.toSet())
             if(topicPartitions.isEmpty()) {
                 firstAssignment = true
+                println("QQQ Stopping myself")
                 dominoTile.resourcesStarted(Exception("No partitions assign to this Link manager"))
             }
         }
@@ -57,6 +58,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
             callCallbacks(topicPartitions.map { it.first }.toSet())
             if ((firstAssignment) && (topicPartitions.isNotEmpty())) {
                 firstAssignment = false
+                println("QQQ Starting myself")
                 dominoTile.resourcesStarted()
             }
         }

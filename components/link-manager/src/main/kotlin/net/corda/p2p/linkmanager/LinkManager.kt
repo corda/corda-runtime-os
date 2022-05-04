@@ -335,6 +335,8 @@ class LinkManager(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
+            println("QQQ processAuthenticatedMessage ${messageAndKey.message.header.messageId}")
+            println("QQQ inbound listener status is ${inboundAssignmentListener.isRunning}")
             logger.trace {
                 "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                     "to ${messageAndKey.message.header.destination.toHoldingIdentity()}."
@@ -370,9 +372,12 @@ class LinkManager(
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
+            println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId}")
 
             return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                 is SessionState.NewSessionsNeeded -> {
+                    println("QQQ processNoTtlRemoteAuthenticatedMessage " +
+                            "${messageAndKey.message.header.messageId} - SessionState.NewSessionsNeeded")
                     logger.trace {
                         "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                             "Initiating a new one.."
@@ -381,6 +386,8 @@ class LinkManager(
                     recordsForNewSessions(state)
                 }
                 is SessionState.SessionEstablished -> {
+                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId}" +
+                            " - SessionState.SessionEstablished")
                     logger.trace {
                         "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
                             " Using this to send outbound message."
@@ -388,6 +395,8 @@ class LinkManager(
                     recordsForSessionEstablished(state, messageAndKey)
                 }
                 is SessionState.SessionAlreadyPending -> {
+                    println("QQQ processNoTtlRemoteAuthenticatedMessage ${messageAndKey.message.header.messageId}" +
+                            " - SessionState.SessionAlreadyPending")
                     logger.trace {
                         "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                             "Message queued until session is established."
