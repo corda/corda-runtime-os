@@ -13,8 +13,6 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 @Component(service = [CpiInfoReadService::class, FakeCpiInfoReadService::class])
 class FakeCpiInfoReadService : CpiInfoReadService {
 
-    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<FakeCpiInfoReadService>()
-
     private val cpiData = mutableMapOf<CpiIdentifier, CpiMetadata>()
 
     fun add(cpiMetadata: CpiMetadata) {
@@ -43,11 +41,12 @@ class FakeCpiInfoReadService : CpiInfoReadService {
         TODO("Not yet implemented")
     }
 
-    override fun getAllVersionedRecords(): Sequence<VersionedRecord<CpiIdentifier, CpiMetadata>>
-    {
-        val list : MutableList<VersionedRecord<CpiIdentifier, CpiMetadata>> = mutableListOf()
-        return list.asSequence()
+    override fun getAllVersionedRecords(): Sequence<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
+        TODO("Not yet implemented")
     }
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = TODO("Not yet implemented")
 
     override val isRunning: Boolean
         get() = true

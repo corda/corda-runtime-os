@@ -20,16 +20,11 @@ class CpiInfoServiceImpl @Activate constructor(
 ): CpiInfoReadService {
     private val logger = loggerFor<CpiInfoServiceImpl>()
 
-    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+    override val lifecycleCoordinatorName =
+        TODO("Not yet implemented")
 
     override fun getAllVersionedRecords() =
-        getAll().asSequence().map {
-            VersionedRecord(
-                it.version,
-                it.cpiId,
-                it
-            )
-        }
+        TODO("Not yet implemented")
 
     override val isRunning: Boolean
         get() = true
