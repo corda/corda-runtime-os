@@ -1,0 +1,38 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Virtual Node Info Service Component"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-packaging"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+
+    api project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:messaging:messaging")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":components:virtual-node:virtual-node-common")
+
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":components:configuration:configuration-read-service")
+
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+}

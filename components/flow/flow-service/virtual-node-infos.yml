@@ -1,0 +1,17 @@
+virtualNodeInfos:
+  - cpiIdentifier:
+      name: flow-worker-dev
+      version: 5.0.0.0-SNAPSHOT
+    cryptoDmlConnectionId: 7bd23070-74fd-42e4-8778-f63443ac0684
+    holdingIdentity:
+      groupId: flow-worker-dev
+      x500Name: "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+    vaultDmlConnectionId: 490691d0-8b16-4d4a-adbe-8d8bfd017fdf
+  - cpiIdentifier:
+      name: flow-worker-dev
+      version: 5.0.0.0-SNAPSHOT
+    cryptoDmlConnectionId: 7bd23070-74fd-42e4-8778-f63443ac0684
+    holdingIdentity:
+      groupId: flow-worker-dev
+      x500Name: "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+    vaultDmlConnectionId: 490691d0-8b16-4d4a-adbe-8d8bfd017fdf

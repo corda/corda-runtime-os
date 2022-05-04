@@ -19,7 +19,6 @@ import net.corda.flow.testing.fakes.FakeCpiInfoReadService
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
-import net.corda.flow.testing.fakes.FakeVirtualNodeInfoReadService
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CpiIdentifier
@@ -30,6 +29,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.ManifestCordappInfo
+import net.corda.sandbox.fakes.FakeVirtualNodeInfoReadService
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -87,8 +87,7 @@ class FlowServiceTestContext @Activate constructor(
     override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
         val emptyUUID = UUID(0, 0)
 
-        virtualNodeInfoReadService.addVirtualNodeInfo(
-            holdingId.toCorda(),
+        virtualNodeInfoReadService.addOrUpdate(
             VirtualNodeInfo(
                 holdingId.toCorda(),
                 getCpiIdentifier(cpiId),
