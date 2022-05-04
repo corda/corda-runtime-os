@@ -84,7 +84,6 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         oldValue: CPIMetadata?,
         currentData: Map<CPIIdentifier, CPIMetadata>
     ) {
-        println(" %%% Received a record: ${newRecord.key}")
         if (newRecord.value != null) {
             try {
                 cpiInfoMap.put(newRecord.key, newRecord.value!!)

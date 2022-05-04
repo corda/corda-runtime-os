@@ -74,7 +74,6 @@ dependencies {
 
 
     integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
-//    integrationTestRuntimeOnly project(":testing:p2p:inmemory-messaging-impl")
     integrationTestImplementation "net.corda:corda-avro-schema"
     integrationTestImplementation project(":libs:messaging:db-message-bus-datamodel")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
