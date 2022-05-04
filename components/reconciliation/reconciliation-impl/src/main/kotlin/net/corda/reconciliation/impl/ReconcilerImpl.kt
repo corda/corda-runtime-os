@@ -25,7 +25,7 @@ class ReconcilerImpl<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val reconciliationInterval: Duration
+    private var reconciliationInterval: Duration
 ) : Reconciler {
     companion object {
         private val logger = contextLogger()
@@ -46,6 +46,7 @@ class ReconcilerImpl<K : Any, V : Any>(
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ReconcileEvent -> onReconcileEvent(event, coordinator)
+            is UpdateIntervalEvent -> onUpdateIntervalEvent(event)
             is StopEvent -> onStopEvent()
         }
     }
@@ -93,6 +94,11 @@ class ReconcilerImpl<K : Any, V : Any>(
         coordinator.setTimer(name, reconciliationInterval.toMillis()) { reconcileEvent }
     }
 
+    private fun onUpdateIntervalEvent(event: UpdateIntervalEvent) {
+        logger.info("Updating interval of $name to ${event.intervalMs} ms")
+        reconciliationInterval = Duration.ofMillis(event.intervalMs)
+    }
+
     private fun onStopEvent() {
         coordinator.cancelTimer(name)
         closeResources()
@@ -128,6 +134,10 @@ class ReconcilerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun updateInterval(intervalMs: Long) {
+        coordinator.postEvent(UpdateIntervalEvent(intervalMs))
+    }
+
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
@@ -142,10 +152,18 @@ class ReconcilerImpl<K : Any, V : Any>(
         closeResources()
     }
 
+    override fun close() {
+        logger.info("$name closing")
+        coordinator.close()
+        closeResources()
+    }
+
     private fun closeResources() {
         readersWritersRegistration?.close()
         readersWritersRegistration = null
     }
 
     private data class ReconcileEvent(override val key: String) : TimerEvent
+
+    private data class UpdateIntervalEvent(val intervalMs: Long): LifecycleEvent
 }

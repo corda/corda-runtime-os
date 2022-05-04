@@ -116,7 +116,8 @@ class DBProcessorImpl @Activate constructor(
         ::cpiInfoWriteService
     )
 
-    private val reconcilers = mutableListOf<Reconciler>()
+    private var cpiInfoDbReader: CpiInfoDbReader? = null
+    private var cpiInfoReconciler: Reconciler? = null
 
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
@@ -173,8 +174,8 @@ class DBProcessorImpl @Activate constructor(
                 event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(ConfigKeys.RECONCILIATION_CPI_INFO_INTERVAL_MS)
                     ?.let { cpiInfoReconciliationIntervalMs ->
                         log.info("Cpi info reconciliation interval set to $cpiInfoReconciliationIntervalMs ms")
-                        startUpReconciliations(cpiInfoReconciliationIntervalMs)
-                }
+                        createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs)
+                    }
             }
             is BootConfigEvent -> {
                 bootstrapConfig = event.config
@@ -185,7 +186,10 @@ class DBProcessorImpl @Activate constructor(
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
-                reconcilers.forEach { it.stop() }
+                cpiInfoReconciler?.close()
+                cpiInfoReconciler = null
+                cpiInfoDbReader?.close()
+                cpiInfoDbReader = null
                 dbManagerRegistrationHandler?.close()
                 dbManagerRegistrationHandler = null
             }
@@ -195,18 +199,27 @@ class DBProcessorImpl @Activate constructor(
         }
     }
 
-    private fun startUpReconciliations(reconciliationIntervalMs: Long) {
-        log.info("Starting up reconciliations")
-        val cpiInfoDbReader = CpiInfoDbReader(coordinatorFactory, dbConnectionManager)
-        val reconciler = reconcilerFactory.create(
-            dbReader = cpiInfoDbReader,
-            kafkaReader = cpiInfoReadService,
-            writer = cpiInfoWriteService,
-            keyClass = CpiIdentifier::class.java,
-            valueClass = CpiMetadata::class.java,
-            reconciliationInterval = Duration.ofMillis(reconciliationIntervalMs)
-        )
-        reconcilers.add(reconciler.also { it.start() })
+    private fun createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs: Long) {
+        if (cpiInfoDbReader == null) {
+            log.info("Creating ${CpiInfoDbReader::class.java.name}")
+            cpiInfoDbReader =
+                CpiInfoDbReader(coordinatorFactory, dbConnectionManager).also { it.start() }
+        }
+
+        if (cpiInfoReconciler == null) {
+            log.info("Creating and starting Cpi Info ${Reconciler::class.java.name}")
+            cpiInfoReconciler = reconcilerFactory.create(
+                dbReader = cpiInfoDbReader!!,
+                kafkaReader = cpiInfoReadService,
+                writer = cpiInfoWriteService,
+                keyClass = CpiIdentifier::class.java,
+                valueClass = CpiMetadata::class.java,
+                reconciliationInterval = Duration.ofMillis(cpiInfoReconciliationIntervalMs)
+            ).also { it.start() }
+        } else {
+            log.info("Updating Cpi Info ${Reconciler::class.java.name}")
+            cpiInfoReconciler!!.updateInterval(cpiInfoReconciliationIntervalMs)
+        }
     }
 }
 

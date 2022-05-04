@@ -12,4 +12,6 @@ import net.corda.lifecycle.Lifecycle
  * [ReconcilerWriter]. On error, if the error is transient it will go [LifecycleStatus.DOWN] and try to
  * resume later, or will go [LifecycleStatus.ERROR] otherwise. On [stop] it will stop reconciliations.
  */
-interface Reconciler : Lifecycle
+interface Reconciler : Lifecycle {
+    fun updateInterval(intervalMs: Long)
+}
