@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import java.io.InputStream
+import net.corda.httprpc.HttpFileUpload
 
 @HttpRpcResource(
     name = "CpiUploadRPCOps",
@@ -26,7 +26,7 @@ interface CpiUploadRPCOps : RpcOps {
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun cpi(cpiFileName: String, cpiContent: InputStream): UploadResponse
+    fun cpi(cpiFile: HttpFileUpload): UploadResponse
 
     /** Simple class to return the status of the upload request */
     data class Status(val status: String, val checksum: String)

@@ -41,6 +41,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
+import java.lang.IllegalArgumentException
 import java.nio.file.Path
 import javax.security.auth.login.FailedLoginException
 import javax.servlet.MultipartConfigElement
@@ -229,9 +230,8 @@ internal class HttpRpcServerInternal(
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
             log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-            // TODO the following hardcoded handler registration is only meant for Scaffold and needs change
-            //  once "multipart/form-data" support gets implemented correctly as part of CORE-3813.
-            if (routeInfo.fullPath == "/api/v1/cpi" && handlerType == HandlerType.POST) {
+
+            if (routeInfo.isMultipartFileUpload) {
                 addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMultiPartMethod())
             } else {
                 addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
@@ -297,6 +297,8 @@ internal class HttpRpcServerInternal(
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
             try {
+                validateRequestContentType(this, ctx)
+
                 val parametersRetrieverContext = ParametersRetrieverContext(ctx)
                 val paramValues = parameters.map {
                     val parameterRetriever = ParameterRetrieverFactory.create(it)
@@ -320,21 +322,38 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    // TODO the following method should be integrated to the normal RPC handlers registering flow (i.e. `RouteInfo.invokeMethod`)
+    private fun validateRequestContentType(routeInfo: RouteInfo, ctx: Context) {
+        val endpointExpectsMultipart = routeInfo.isMultipartFileUpload
+        val requestIsMultipart = ctx.isMultipart()
+
+        if(endpointExpectsMultipart && !requestIsMultipart) {
+            throw IllegalArgumentException("Endpoint expects multipart content.")
+        } else if(!endpointExpectsMultipart && requestIsMultipart) {
+            throw IllegalArgumentException("Endpoint did not expect multipart content type.")
+        }
+    }
+
     private fun RouteInfo.invokeMultiPartMethod(): (Context) -> Unit {
         return { ctx ->
+            log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
+            log.trace { "Get parameter values." }
             try {
-                // TODO uploadedFiles can be more than one
-                val uploadedFile = ctx.uploadedFiles().single()
-                val fileName = uploadedFile.filename
-                val stream = uploadedFile.content
-                val result = stream.use { invokeDelegatedMethod(fileName, it) }
+                validateRequestContentType(this, ctx)
+
+                val parametersRetrieverContext = ParametersRetrieverContext(ctx)
+                val paramValues = parameters.map {
+                    val parameterRetriever = MultipartParameterRetriever(it)
+                    parameterRetriever.apply(parametersRetrieverContext)
+                }.toTypedArray()
+
+                val result = invokeDelegatedMethod(*paramValues)
                 if (result != null) {
                     ctx.json(result)
                 }
             } catch (e: Exception) {
                 throw HttpExceptionMapper.mapToResponse(e)
             } finally {
+                ctx.uploadedFiles().forEach { it.content.close() }
                 // Remove all the parts and associated file storage once we are done with them
                 ctx.req.parts.forEach { part ->
                     try {

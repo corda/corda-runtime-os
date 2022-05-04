@@ -16,7 +16,7 @@ import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.io.InputStream
+import net.corda.httprpc.HttpFileUpload
 
 @Component(service = [PluggableRPCOps::class])
 class CpiUploadRPCOpsImpl @Activate constructor(
@@ -47,10 +47,10 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun stop() = coordinator.close()
 
-    override fun cpi(cpiFileName: String, cpiContent: InputStream): CpiUploadRPCOps.UploadResponse {
-        logger.info("Uploading CPI: $cpiFileName")
+    override fun cpi(cpiFile: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
+        logger.info("Uploading CPI: ${cpiFile.fileName}")
         requireRunning()
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpiFileName, cpiContent)
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(cpiFile.fileName, cpiFile.content)
         return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId)
     }
 

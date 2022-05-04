@@ -36,7 +36,11 @@ data class EndpointParameter(
     /**
      * The parameterized types of the variable, as specified in its signature via generics
      */
-    val parameterizedTypes: List<GenericParameterizedType> = emptyList()
+    val parameterizedTypes: List<GenericParameterizedType> = emptyList(),
+    /**
+     * Whether this parameter represents a file to be uploaded.
+     */
+    val isFile: Boolean
 )
 
 enum class ParameterType {

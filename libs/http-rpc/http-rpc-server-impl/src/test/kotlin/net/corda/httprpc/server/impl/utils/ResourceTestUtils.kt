@@ -46,7 +46,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = false,
         classType = String::class.java,
         type = ParameterType.QUERY,
-        default = null
+        default = null,
+        isFile = false
       ),
       EndpointParameter(
         id = "pathParam",
@@ -55,7 +56,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = true,
         classType = String::class.java,
         type = ParameterType.PATH,
-        default = null
+        default = null,
+        isFile = false
       )
 
     ),
@@ -77,7 +79,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = true,
         classType = String::class.java,
         type = ParameterType.PATH,
-        default = null
+        default = null,
+        isFile = false
       ),
       EndpointParameter(
         id = "param",
@@ -86,7 +89,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = false,
         classType = Integer::class.java,
         type = ParameterType.QUERY,
-        default = null
+        default = null,
+        isFile = false
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
@@ -106,7 +110,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = false,
         classType = TestHealthCheckAPI.PingPongData::class.java,
         type = ParameterType.BODY,
-        default = null
+        default = null,
+        isFile = false
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
@@ -127,7 +132,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         classType = List::class.java,
         type = ParameterType.QUERY,
         default = null,
-        parameterizedTypes = listOf(GenericParameterizedType(String::class.java))
+        parameterizedTypes = listOf(GenericParameterizedType(String::class.java)),
+        isFile = false
       )
     ),
     responseBody = ResponseBody(
@@ -151,7 +157,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = true,
         classType = Long::class.java,
         type = ParameterType.PATH,
-        default = null
+        default = null,
+        isFile = false
       )
     ),
     responseBody = ResponseBody(description = "", type = Long::class.java),
@@ -171,7 +178,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = true,
         classType = String::class.java,
         type = ParameterType.BODY,
-        default = null
+        default = null,
+        isFile = false
       ),
       EndpointParameter(
         id = "s2",
@@ -180,7 +188,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = false,
         classType = String::class.java,
         type = ParameterType.BODY,
-        default = null
+        default = null,
+        isFile = false
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
@@ -200,7 +209,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
         required = true,
         classType = TestHealthCheckAPI.TimeCallDto::class.java,
         type = ParameterType.BODY,
-        default = null
+        default = null,
+        isFile = false
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),

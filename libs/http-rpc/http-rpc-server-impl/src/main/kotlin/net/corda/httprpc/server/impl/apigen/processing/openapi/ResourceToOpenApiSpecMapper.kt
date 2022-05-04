@@ -151,7 +151,7 @@ private fun List<EndpointParameter>.isMultipartFileUpload(): Boolean {
     return this.any { endpointParameter ->
         endpointParameter.classType == InputStream::class.java ||
                 endpointParameter.classType == HttpFileUpload::class.java ||
-                endpointParameter.parameterizedTypes.any { it.clazz == InputStream::class.java || it.clazz == HttpFileUpload::class.java }
+                endpointParameter.parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
     }
 }
 
