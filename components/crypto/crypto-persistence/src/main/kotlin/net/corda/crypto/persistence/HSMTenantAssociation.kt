@@ -6,7 +6,6 @@ import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 class HSMTenantAssociation(
     val tenantId: String,
     val category: String,
-    val masterKeyPolicy: MasterKeyPolicy,
     val masterKeyAlias: String?,
     val aliasSecret: ByteArray?,
     val config: HSMConfig

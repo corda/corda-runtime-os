@@ -13,12 +13,15 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
+import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.softPersistence
+import net.corda.crypto.persistence.HSMTenantAssociation
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.db.impl.hsm.HSMCacheImpl
 import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheImpl
 import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyCacheImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -156,6 +159,86 @@ class PersistenceTests {
         }
     }
 
+    private fun createHSMEntities(
+        tenantId: String,
+        category: String,
+        masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
+        capacity: Int = 3
+    ): HSMCategoryAssociationEntity {
+        val configId = UUID.randomUUID().toString()
+        val associationId = UUID.randomUUID().toString()
+        val categoryAssociationId = UUID.randomUUID().toString()
+        val config = HSMConfigEntity(
+            id = configId,
+            timestamp = Instant.now(),
+            workerLabel = null,
+            description = "Test configuration",
+            masterKeyPolicy = masterKeyPolicy,
+            masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.SHARED) "some-alias" else null,
+            supportedSchemes = "CORDA.RSA,CORDA.ECDSA.SECP256K1,CORDA.ECDSA.SECP256R1,CORDA.EDDSA.ED25519",
+            retries = 0,
+            timeoutMills = 5000,
+            serviceName = "test",
+            serviceConfig = "{}".toByteArray(),
+            capacity = capacity
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(config)
+        }
+        val association = HSMAssociationEntity(
+            id = associationId,
+            tenantId = tenantId,
+            config = config,
+            timestamp = Instant.now(),
+            masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.NEW) {
+                UUID.randomUUID().toString().toByteArray().toHex().take(30)
+            } else {
+                null
+            },
+            aliasSecret = "Hello World!".toByteArray()
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(association)
+        }
+        val categoryAssociation = HSMCategoryAssociationEntity(
+            id = categoryAssociationId,
+            category = category,
+            hsm = association,
+            timestamp = Instant.now()
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(categoryAssociation)
+        }
+        return categoryAssociation
+    }
+
+    private fun assertHSMCategoryAssociationEntity(
+        expected: HSMCategoryAssociationEntity,
+        actual: HSMTenantAssociation?
+    ) {
+        assertNotNull(actual)
+        assertEquals(expected.category, actual!!.category)
+        assertEquals(expected.hsm.config.id, actual.config.info.id)
+        assertEquals(expected.hsm.tenantId, actual.tenantId)
+        assertEquals(expected.hsm.masterKeyAlias, actual.masterKeyAlias)
+        assertArrayEquals(expected.hsm.aliasSecret, actual.aliasSecret)
+        assertEquals(expected.hsm.config.id, actual.config.info.id)
+        assertEquals(expected.hsm.config.masterKeyAlias, actual.config.info.masterKeyAlias)
+        assertEquals(expected.hsm.config.workerLabel, actual.config.info.workerLabel)
+        assertEquals(expected.hsm.config.description, actual.config.info.description)
+        assertEquals(expected.hsm.config.retries, actual.config.info.retries)
+        assertEquals(expected.hsm.config.timeoutMills, actual.config.info.timeoutMills)
+        val expectedList = expected.hsm.config.supportedSchemes.split(",")
+        assertTrue(actual.config.info.supportedSchemes.isNotEmpty())
+        assertEquals(expectedList.size, actual.config.info.supportedSchemes.size)
+        assertTrue(expectedList.all { actual.config.info.supportedSchemes.contains(it) })
+        assertEquals(expected.hsm.config.serviceName, actual.config.info.serviceName)
+        assertArrayEquals(expected.hsm.config.serviceConfig, actual.config.serviceConfig.array())
+        assertEquals(expected.hsm.config.masterKeyPolicy.name, actual.config.info.masterKeyPolicy.name)
+        assertEquals(expected.hsm.config.capacity, actual.config.info.capacity)
+        assertEquals(expected.hsm.config.version, actual.config.info.version)
+    }
+
     @Test
     fun `Should persist and retrieve raw WrappingKeyEntity`() {
         val entity = WrappingKeyEntity(
@@ -241,15 +324,16 @@ class PersistenceTests {
         val config = HSMConfigEntity(
             id = configId,
             timestamp = Instant.now(),
-            workerLabel = null,
+            workerLabel = "label1",
             description = "Test configuration",
-            masterKeyPolicy = MasterKeyPolicy.NEW,
-            masterKeyAlias = null,
+            masterKeyPolicy = MasterKeyPolicy.SHARED,
+            masterKeyAlias = "some-alias",
             supportedSchemes = "CORDA.RSA,CORDA.ECDSA.SECP256K1,CORDA.ECDSA.SECP256R1,CORDA.EDDSA.ED25519",
             retries = 0,
             timeoutMills = 5000,
             serviceName = "test",
-            serviceConfig = "{}".toByteArray()
+            serviceConfig = "{}".toByteArray(),
+            capacity = 17
         )
         cryptoEmf.transaction { em ->
             em.persist(config)
@@ -268,7 +352,7 @@ class PersistenceTests {
                     id = categoryMappingId2,
                     category = CryptoConsts.HsmCategories.TLS,
                     config = config,
-                    keyPolicy = PrivateKeyPolicy.ALIASED
+                    keyPolicy = PrivateKeyPolicy.WRAPPED
                 )
             )
         }
@@ -278,7 +362,7 @@ class PersistenceTests {
             config = config,
             timestamp = Instant.now(),
             masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
-            aliasSecret = null
+            aliasSecret = "Hello World!".toByteArray()
         )
         cryptoEmf.transaction { em ->
             em.persist(association)
@@ -303,17 +387,19 @@ class PersistenceTests {
             assertEquals(tenantId, retrieved.hsm.tenantId)
             assertEquals(association.masterKeyAlias, retrieved.hsm.masterKeyAlias)
             assertEquals(association.version, retrieved.hsm.version)
-            assertNull(retrieved.hsm.aliasSecret)
+            assertArrayEquals(association.aliasSecret, retrieved.hsm.aliasSecret)
             assertNotSame(config, retrieved.hsm.config)
             assertEquals(configId, retrieved.hsm.config.id)
-            assertNull(retrieved.hsm.config.masterKeyAlias)
-            assertNull(retrieved.hsm.config.workerLabel)
+            assertEquals("some-alias", retrieved.hsm.config.masterKeyAlias)
+            assertEquals("label1", retrieved.hsm.config.workerLabel)
             assertEquals(config.description, retrieved.hsm.config.description)
             assertEquals(config.retries, retrieved.hsm.config.retries)
             assertEquals(config.timeoutMills, retrieved.hsm.config.timeoutMills)
             assertEquals(config.supportedSchemes, retrieved.hsm.config.supportedSchemes)
             assertEquals(config.serviceName, retrieved.hsm.config.serviceName)
             assertArrayEquals(config.serviceConfig, retrieved.hsm.config.serviceConfig)
+            assertEquals(MasterKeyPolicy.SHARED, config.masterKeyPolicy)
+            assertEquals(17, retrieved.hsm.config.capacity)
             assertEquals(config.version, retrieved.hsm.config.version)
 
             val retrievedMapping1 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId1)
@@ -323,9 +409,24 @@ class PersistenceTests {
 
             val retrievedMapping2 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId2)
             assertEquals(CryptoConsts.HsmCategories.TLS, retrievedMapping2.category)
-            assertEquals(PrivateKeyPolicy.ALIASED, retrievedMapping2.keyPolicy)
+            assertEquals(PrivateKeyPolicy.WRAPPED, retrievedMapping2.keyPolicy)
             assertEquals(configId, retrievedMapping2.config.id)
         }
+    }
+
+    @Test
+    fun `Should be able to find tenant HSM associations with categories`() {
+        val tenantId1 = randomTenantId()
+        val a1 = createHSMEntities(tenantId1, CryptoConsts.HsmCategories.LEDGER, MasterKeyPolicy.NEW)
+        val a2 = createHSMEntities(tenantId1, CryptoConsts.HsmCategories.SESSION, MasterKeyPolicy.SHARED)
+        val cache = HSMCacheImpl(
+            config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).hsmPersistence(),
+            entityManagerFactory = cryptoEmf
+        )
+        val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.HsmCategories.LEDGER) }
+        val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.HsmCategories.SESSION) }
+        assertHSMCategoryAssociationEntity(a1, r1)
+        assertHSMCategoryAssociationEntity(a2, r2)
     }
 
     @Test

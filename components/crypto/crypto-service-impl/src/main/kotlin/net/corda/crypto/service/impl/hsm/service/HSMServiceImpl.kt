@@ -113,7 +113,7 @@ class HSMServiceImpl(
     }
 
     private fun ensureWrappingKey(association: HSMTenantAssociation) {
-        if (association.masterKeyPolicy == MasterKeyPolicy.NEW) {
+        if (association.config.info.masterKeyPolicy == MasterKeyPolicy.NEW) {
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
             opsProxyClient.createWrappingKey(

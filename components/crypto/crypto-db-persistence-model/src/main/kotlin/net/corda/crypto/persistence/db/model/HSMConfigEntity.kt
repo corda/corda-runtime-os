@@ -93,7 +93,10 @@ class HSMConfigEntity(
      */
     @Lob
     @Column(name = "service_config", nullable = false, columnDefinition="BLOB")
-    var serviceConfig: ByteArray
+    var serviceConfig: ByteArray,
+
+    @Column(name = "capacity", nullable = false)
+    var capacity: Int
 ) {
     @Version
     @Column(name = "version", nullable = false)

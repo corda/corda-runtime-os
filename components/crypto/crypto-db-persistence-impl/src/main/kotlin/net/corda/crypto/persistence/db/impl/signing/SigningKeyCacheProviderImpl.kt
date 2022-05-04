@@ -1,17 +1,16 @@
 package net.corda.crypto.persistence.db.impl.signing
 
-import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.signingPersistence
+import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
@@ -80,8 +79,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         private val config: SmartConfig
 
         init {
-            config = event.config[ConfigKeys.CRYPTO_CONFIG] ?:
-                    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+            config = event.config.toCryptoConfig()
         }
 
         private val instance by lazy(LazyThreadSafetyMode.PUBLICATION) {
