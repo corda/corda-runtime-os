@@ -143,9 +143,9 @@ class VersionComparator : Comparator<String?> {
             // - if one is empty and two is not an alpha, two is newer.
             // - if one is an alpha, two is newer.
             // - otherwise one is newer.
-            return if (remaining1.isEmpty() && !Character.isAlphabetic(remaining2.first().toInt())) {
+            return if (remaining1.isEmpty() && !Character.isAlphabetic(remaining2.first().code)) {
                 -1
-            } else if (remaining1.isNotEmpty() && Character.isAlphabetic(remaining1.first().toInt())) {
+            } else if (remaining1.isNotEmpty() && Character.isAlphabetic(remaining1.first().code)) {
                 -1
             } else {
                 1
@@ -204,7 +204,7 @@ class VersionComparator : Comparator<String?> {
             if (str.isEmpty()) return startIndex
             var idx = startIndex
             while (idx < str.length) {
-                if (!Character.isAlphabetic(str[idx].toInt())) break
+                if (!Character.isAlphabetic(str[idx].code)) break
                 idx++
             }
             return idx
@@ -231,7 +231,7 @@ class VersionComparator : Comparator<String?> {
             var idx = 0
             while (idx < str.length) {
                 val ch = str[idx]
-                if (Character.isAlphabetic(ch.toInt()) || Character.isDigit(ch)) break
+                if (Character.isAlphabetic(ch.code) || Character.isDigit(ch)) break
                 idx++
             }
             return idx

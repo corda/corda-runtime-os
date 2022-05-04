@@ -84,7 +84,7 @@ interface CPK : AutoCloseable {
              * @return a [Type] instance
              */
             @JvmStatic
-            fun parse(text : String) = map[text.toLowerCase()] ?: UNKNOWN
+            fun parse(text : String) = map[text.lowercase()] ?: UNKNOWN
         }
     }
 

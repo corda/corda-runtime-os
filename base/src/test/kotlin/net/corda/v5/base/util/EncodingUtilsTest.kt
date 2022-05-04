@@ -53,7 +53,7 @@ class EncodingUtilsTest {
 
     @Test
     fun `decoding lowercase and mixed HEX`() {
-        val testHexStringLowercase = testHexString.toLowerCase()
+        val testHexStringLowercase = testHexString.lowercase()
         assertEquals(testHexString.hexToRealString(), testHexStringLowercase.hexToRealString())
 
         val testHexStringMixed = testHexString.replace('C', 'c')

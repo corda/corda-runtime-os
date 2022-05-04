@@ -114,7 +114,7 @@ open class ZipTweaker {
             try {
                 object : ZipTweaker() {
                     override fun tweakEntry(inputStream: ZipInputStream, outputStream: ZipOutputStream, currentEntry: ZipEntry, buffer: ByteArray): AfterTweakAction {
-                        return if(currentEntry.name.startsWith("META-INF/") && currentEntry.name.toUpperCase().endsWith(".SF"))
+                        return if(currentEntry.name.startsWith("META-INF/") && currentEntry.name.uppercase().endsWith(".SF"))
                             AfterTweakAction.DO_NOTHING
                         else
                             AfterTweakAction.WRITE_ORIGINAL_ENTRY

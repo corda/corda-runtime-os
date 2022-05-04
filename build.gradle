@@ -148,14 +148,12 @@ subprojects {
         tasks.withType(KotlinCompile).configureEach {
             kotlinOptions {
                 allWarningsAsErrors = true
-                languageVersion = '1.4'
-                apiVersion = '1.4'
+                languageVersion = '1.6'
+                apiVersion = '1.6'
                 verbose = true
                 jvmTarget = javaVersion
                 freeCompilerArgs += [
                     "-Xjvm-default=all",
-                    // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
-                    "-Xskip-runtime-version-check",
                     "-java-parameters"
                 ]
             }

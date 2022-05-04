@@ -43,7 +43,7 @@ class ZipTweakerTest {
                         SecureHash(algo, md.digest())
                     }
                 }.filter {
-                    !it.first.toUpperCase().endsWith(".SF")
+                    !it.first.uppercase().endsWith(".SF")
                 }.associate { it }
             }
             val dest = testDir.resolve("mainBundle.jar")
@@ -68,7 +68,7 @@ class ZipTweakerTest {
                         SecureHash(algo, md.digest())
                     }
                 }.filter {
-                    !it.first.toUpperCase().endsWith(".SF")
+                    !it.first.uppercase().endsWith(".SF")
                 }.associate { it }
             }
 

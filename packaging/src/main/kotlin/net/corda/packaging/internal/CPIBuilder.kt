@@ -50,7 +50,7 @@ internal class CPIBuilder(
             val cpkFiles = Files.list(archivePath).use { stream ->
                 stream.asSequence()
                     .filter { it.toRealPath() !in rootSet }
-                    .filter { it.fileName.toString().toLowerCase().endsWith(CPK.fileExtension) }
+                    .filter { it.fileName.toString().lowercase().endsWith(CPK.fileExtension) }
                     .toList()
             }
             index(cpkFiles, index)

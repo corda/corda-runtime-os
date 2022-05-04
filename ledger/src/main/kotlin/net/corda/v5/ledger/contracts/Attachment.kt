@@ -34,7 +34,6 @@ import java.util.jar.JarInputStream
 interface Attachment {
     fun open(): InputStream
 
-    @JvmDefault
     fun openAsJAR(): JarInputStream {
         val stream = open()
         return try {
@@ -48,7 +47,6 @@ interface Attachment {
      * Finds the named file case insensitively and copies it to the output stream.
      * @throws [FileNotFoundException] if the given path doesn't exist in the attachment.
      */
-    @JvmDefault
     fun extractFile(path: String, outputTo: OutputStream)
 
     /**

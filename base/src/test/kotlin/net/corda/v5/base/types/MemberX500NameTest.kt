@@ -20,7 +20,7 @@ class MemberX500NameTest {
         val bytes = ByteArray(length)
         val random = Random(Instant.now().toEpochMilli())
          for (i in bytes.indices) {
-             bytes[i] = random.nextInt('A'.toInt(), 'Z'.toInt()).toByte()
+             bytes[i] = random.nextInt('A'.code, 'Z'.code).toByte()
          }
         return String(bytes)
     }

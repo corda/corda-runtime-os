@@ -25,7 +25,6 @@ interface TransactionWithSignatures {
     /**
      * Return the [PublicKey]s for which we still need signatures.
      */
-    @JvmDefault
     val missingSigningKeys: Set<PublicKey>
         get() {
             val sigKeys = sigs.map { it.by }.toSet()

@@ -52,7 +52,7 @@ class PublicKeyHash private constructor(
             require(str.all { (it in '0'..'9') || (it in 'A'..'F') || (it in 'a'..'f') }) {
                 "Input is an invalid Hex string."
             }
-            return PublicKeyHash(value = str.toUpperCase())
+            return PublicKeyHash(value = str.uppercase())
         }
 
         /**
