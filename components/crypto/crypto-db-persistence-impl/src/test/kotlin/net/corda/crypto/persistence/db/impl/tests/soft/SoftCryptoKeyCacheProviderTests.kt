@@ -23,7 +23,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -69,8 +68,8 @@ class SoftCryptoKeyCacheProviderTests {
         )
     }
 
-    private fun act(passphrase: String = "PASSPHRASE", salt: String = "SALT") =
-        component.impl.getInstance(passphrase = passphrase, salt = salt)
+    private fun act() =
+        component.impl.getInstance()
 
     @Test
     fun `Should create subscription only after the component is up`() {
@@ -108,26 +107,6 @@ class SoftCryptoKeyCacheProviderTests {
     }
 
     @Test
-    fun `Should return same instance for the same password and salt and another for different`() {
-        assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
-        assertThrows<IllegalStateException> { act() }
-        component.start()
-        eventually {
-            assertTrue(component.isRunning)
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
-        val instance11 = act()
-        val instance12 = act()
-        val instance1X = act(salt = UUID.randomUUID().toString())
-        assertNotNull(instance11)
-        assertNotNull(instance1X)
-        assertSame(instance11, instance12)
-        assertNotSame(instance11, instance1X)
-    }
-
-    @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
         assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
@@ -140,11 +119,8 @@ class SoftCryptoKeyCacheProviderTests {
         assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
         val instance11 = act()
         val instance12 = act()
-        val instance1X = act(salt = UUID.randomUUID().toString())
         assertNotNull(instance11)
-        assertNotNull(instance1X)
         assertSame(instance11, instance12)
-        assertNotSame(instance11, instance1X)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)

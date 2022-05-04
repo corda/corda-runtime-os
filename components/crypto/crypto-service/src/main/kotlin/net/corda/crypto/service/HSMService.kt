@@ -40,4 +40,10 @@ interface HSMService : Lifecycle {
      * by the CryptoService factory to instantiate the corresponding services.
      */
     fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation
+
+    /**
+     * Completely internal operation as it returns some sensitive information about the configuration. It's used
+     * by the CryptoService factory to instantiate the corresponding services.
+     */
+    fun getPrivateHSMConfig(configId: String): HSMConfig
 }

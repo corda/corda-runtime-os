@@ -18,6 +18,7 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignWithSpecFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.DigitalSignature
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -194,13 +195,18 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key without external id`() {
         val result = act {
-            buildTransformer().createFreshKey(knownTenantId, knownOperationContext)
+            buildTransformer().createFreshKey(
+                knownTenantId,
+                EDDSA_ED25519_CODE_NAME,
+                knownOperationContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
         val command = result.value.request as GenerateFreshKeyFlowCommand
         assertNull(command.externalId)
+        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
         assertRequestContext<GenerateFreshKeyFlowCommand>(result)
         assertOperationContext(knownOperationContext, command.context)
     }
@@ -208,13 +214,14 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key without external id and with empty operation context`() {
         val result = act {
-            buildTransformer().createFreshKey(knownTenantId)
+            buildTransformer().createFreshKey(knownTenantId, EDDSA_ED25519_CODE_NAME)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
         val command = result.value.request as GenerateFreshKeyFlowCommand
         assertNull(command.externalId)
+        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
         assertRequestContext<GenerateFreshKeyFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
     }
@@ -222,13 +229,14 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key with external id`() {
         val result = act {
-            buildTransformer().createFreshKey(knownTenantId, knownExternalId, knownOperationContext)
+            buildTransformer().createFreshKey(knownTenantId, knownExternalId, EDDSA_ED25519_CODE_NAME, knownOperationContext)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
         val command = result.value.request as GenerateFreshKeyFlowCommand
         assertEquals(knownExternalId, command.externalId)
+        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
         assertRequestContext<GenerateFreshKeyFlowCommand>(result)
         assertOperationContext(knownOperationContext, command.context)
     }
@@ -236,13 +244,14 @@ class CryptoFlowOpsTransformerTests {
     @Test
     fun `Should create command to generate new fresh key with external id and with empty operation context`() {
         val result = act {
-            buildTransformer().createFreshKey(knownTenantId, knownExternalId)
+            buildTransformer().createFreshKey(knownTenantId, knownExternalId, EDDSA_ED25519_CODE_NAME)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
         assertInstanceOf(GenerateFreshKeyFlowCommand::class.java, result.value.request)
         val command = result.value.request as GenerateFreshKeyFlowCommand
         assertEquals(knownExternalId, command.externalId)
+        assertEquals(EDDSA_ED25519_CODE_NAME, command.schemeCodeName)
         assertRequestContext<GenerateFreshKeyFlowCommand>(result)
         assertOperationContext(emptyMap(), command.context)
     }

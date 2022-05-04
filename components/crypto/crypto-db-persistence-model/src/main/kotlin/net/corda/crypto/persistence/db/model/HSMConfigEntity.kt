@@ -25,7 +25,7 @@ class HSMConfigEntity(
      * The configuration id.
      */
     @Id
-    @Column(name = "id", nullable = false, updatable = false, length = 64)
+    @Column(name = "id", nullable = false, updatable = false, length = 36)
     val id: String,
 
     /**
@@ -38,12 +38,12 @@ class HSMConfigEntity(
      * A label (topic name suffix) which overrides the defaults in order to be able to route to HSM instances which
      * has a limit of a single login per machine.
      */
-    @Column(name = "worker_label", nullable = false, length = 512)
-    var workerLabel: String,
+    @Column(name = "worker_label", nullable = true, length = 512)
+    var workerLabel: String?,
 
     /**
      * Human-readable description. Note that the field is required so the users will be able to distinguish between
-     * instances as the informatiom which allows to it is actually encrypted in the [serviceConfig] field.
+     * instances as the information which allows to it is actually encrypted in the [serviceConfig] field.
      */
     @Column(name = "description", nullable = false, length = 1024)
     var description: String,
@@ -58,7 +58,7 @@ class HSMConfigEntity(
     /**
      * If the [masterKeyPolicy] == SHARED then this filed must contain the wrapping key name to be used.
      */
-    @Column(name = "master_key_alias", nullable = true, length = 64)
+    @Column(name = "master_key_alias", nullable = true, length = 30)
     var masterKeyAlias: String?,
 
     /**
@@ -98,24 +98,4 @@ class HSMConfigEntity(
     @Version
     @Column(name = "version", nullable = false)
     var version: Int = -1
-}
-
-/**
- * Defines how wrapping key should be used for each tenant.
- */
-enum class MasterKeyPolicy {
-    /**
-     * No action related to wrapping key generation.
-     */
-    NONE,
-
-    /**
-     * All tenants for that instance will use the same wrapping key.
-     */
-    SHARED,
-
-    /**
-     * Each tenant will get auto generated wrapping key.
-     */
-    NEW
 }

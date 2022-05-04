@@ -110,6 +110,8 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, config.maximumSize)
         assertEquals("soft-salt", config.salt)
         assertEquals("soft-passphrase", config.passphrase)
+        assertEquals(0, config.retries)
+        assertEquals(5000, config.timeoutMills)
     }
 
     @Test
@@ -117,6 +119,13 @@ class CryptoConfigUtilsTests {
         val config = smartConfig.signingPersistence()
         assertEquals(90, config.expireAfterAccessMins)
         assertEquals(20, config.maximumSize)
+    }
+
+    @Test
+    fun `Should be able to get CryptoHSMPersistenceConfigTests and its properties`() {
+        val config = smartConfig.hsmPersistence()
+        assertEquals(240, config.expireAfterAccessMins)
+        assertEquals(1000, config.maximumSize)
     }
 
     @Test
@@ -136,7 +145,15 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `CryptoSigningPersistenceConfigTests should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+    fun `Should throw CryptoConfigurationException when HSM persistence is missing`() {
+        val config = configFactory.create(ConfigFactory.empty())
+        assertThrows<CryptoConfigurationException> {
+            config.hsmPersistence()
+        }
+    }
+
+    @Test
+    fun `CryptoSigningPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
         val config = CryptoSigningPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
@@ -146,7 +163,7 @@ class CryptoConfigUtilsTests {
     }
 
     @Test
-    fun `CryptoSigningPersistenceConfigTests should throw CryptoConfigurationException when maximumSize is empty`() {
+    fun `CryptoSigningPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
         val config = CryptoSigningPersistenceConfig(
             configFactory.create(ConfigFactory.empty())
         )
@@ -192,6 +209,46 @@ class CryptoConfigUtilsTests {
         )
         assertThrows<CryptoConfigurationException> {
             config.passphrase
+        }
+    }
+
+    @Test
+    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when retries is empty`() {
+        val config = CryptoSoftPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.retries
+        }
+    }
+
+    @Test
+    fun `CryptoSoftPersistenceConfig should throw CryptoConfigurationException when timeoutMills is empty`() {
+        val config = CryptoSoftPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.timeoutMills
+        }
+    }
+
+    @Test
+    fun `CryptoHSMPersistenceConfig should throw CryptoConfigurationException when expireAfterAccessMins is empty`() {
+        val config = CryptoHSMPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.expireAfterAccessMins
+        }
+    }
+
+    @Test
+    fun `CryptoHSMPersistenceConfig should throw CryptoConfigurationException when maximumSize is empty`() {
+        val config = CryptoHSMPersistenceConfig(
+            configFactory.create(ConfigFactory.empty())
+        )
+        assertThrows<CryptoConfigurationException> {
+            config.maximumSize
         }
     }
 }

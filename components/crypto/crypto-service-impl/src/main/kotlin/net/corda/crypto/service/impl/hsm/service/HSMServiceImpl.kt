@@ -1,67 +1,99 @@
 package net.corda.crypto.service.impl.hsm.service
 
-import net.corda.crypto.core.Encryptor
+import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.HSMCache
+import net.corda.crypto.persistence.HSMCacheActions
 import net.corda.crypto.persistence.HSMTenantAssociation
 import net.corda.crypto.service.SoftCryptoServiceConfig
+import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
+import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
+import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.libs.configuration.SmartConfig
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import java.security.SecureRandom
+import java.time.Instant
 
 class HSMServiceImpl(
     config: SmartConfig,
-    private val hsmCache: HSMCache
+    private val hsmCache: HSMCache,
+    private val schemeMetadata: CipherSchemeMetadata,
+    private val opsProxyClient: CryptoOpsProxyClient
 ) : AutoCloseable {
-    private val encryptor: Encryptor
-
-    private val softSalt: String
-
-    private val softPassphrase: String
-
-    init {
-        encryptor = config.rootEncryptor()
-        val softConfig = config.softPersistence()
-        softSalt = softConfig.salt
-        softPassphrase = softConfig.passphrase
+    companion object {
+        private val logger = contextLogger()
     }
 
-    private val secretRandom by lazy(LazyThreadSafetyMode.PUBLICATION) { SecureRandom() }
+    private val encryptor = config.rootEncryptor()
+
+    private val softConfig = config.softPersistence()
 
     fun assignHSM(tenantId: String, category: String): HSMInfo {
-        TODO("Not yet implemented")
+        logger.info("assignHSM(tenant={}, category={})", tenantId, category)
+        val association = hsmCache.act {
+            val min = it.getHSMStats(category).minByOrNull { s -> s.usages }
+                ?: throw CryptoServiceLibraryException("There is no available HSMs.")
+            it.associate(tenantId = tenantId, category = category, hsm = min.hsm)
+        }
+        ensureWrappingKey(association)
+        logger.info("assignHSM(tenant={}, category={})={}", tenantId, category, association.config.info)
+        return association.config.info
     }
 
     fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
-        // there is only one SOFT HSM configuration
-        val config = SoftCryptoServiceConfig(
-            salt = softSalt,
-            passphrase = softPassphrase
-        )
-        TODO("Not yet implemented")
+        logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
+        val association = hsmCache.act {
+            val hsm = it.findConfig(CryptoConsts.SOFT_HSM_CONFIG_ID)?.info
+                ?: it.addSoftConfig()
+            it.associate(tenantId = tenantId, category = category, hsm = hsm)
+        }
+        ensureWrappingKey(association)
+        logger.info("assignSoftHSM(tenant={}, category={})={}", tenantId, category, association.config.info)
+        return association.config.info
     }
 
-    fun findAssignedHSM(tenantId: String, category: String): HSMInfo? =
-        hsmCache.act {
+    fun findAssignedHSM(tenantId: String, category: String): HSMInfo? {
+        logger.debug("findAssignedHSM(tenant={}, category={})", tenantId, category)
+        return hsmCache.act {
             it.findTenantAssociation(tenantId, category)?.config?.info
         }
+    }
 
-    fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation =
-        hsmCache.act {
+    fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation {
+        logger.debug("getPrivateTenantAssociation(tenant={}, category={})", tenantId, category)
+        return hsmCache.act {
             it.findTenantAssociation(tenantId, category)
                 ?: throw CryptoServiceLibraryException(
                     "Cannot find tenant association for $tenantId and $category."
                 )
         }
+    }
+
+    fun getPrivateHSMConfig(configId: String): HSMConfig {
+        logger.debug("getPrivateHSMConfig(configId={})", configId)
+        return hsmCache.act {
+            it.findConfig(configId)
+                ?: throw CryptoServiceLibraryException("Cannot find config id=$configId.")
+        }
+    }
 
     fun putHSMConfig(config: HSMConfig) {
+        logger.info("putHSMConfig(id={},description={})", config.info.id, config.info.description)
+        if(config.info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
+            require(!config.info.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias must be specified for '${config.info.masterKeyPolicy}' master key policy."
+            }
+        }
         hsmCache.act {
             if(config.info.id.isNullOrBlank()) {
                 it.add(config.info, encryptor.encrypt(config.serviceConfig.array()))
-            } else if(it.exists(config.info.id)) {
+            } else if(it.findConfig(config.info.id) != null) {
                 it.merge(config.info, encryptor.encrypt(config.serviceConfig.array()))
             } else {
                 throw CryptoServiceLibraryException(
@@ -69,13 +101,59 @@ class HSMServiceImpl(
                 )
             }
         }
+        ensureWrappingKey(config.info)
     }
 
     fun lookup(): List<HSMInfo> {
-        TODO("Not yet implemented")
+        return hsmCache.act { it.lookup() }
     }
 
     override fun close() {
-        TODO("Not yet implemented")
+        hsmCache.close()
+    }
+
+    private fun ensureWrappingKey(association: HSMTenantAssociation) {
+        if (association.masterKeyPolicy == MasterKeyPolicy.NEW) {
+            // All config information at that point is persisted, so it's safe to call crypto operations
+            // for that tenant and category
+            opsProxyClient.createWrappingKey(
+                configId = association.config.info.id,
+                failIfExists = false,
+                context = emptyMap()
+            )
+        }
+    }
+
+    private fun ensureWrappingKey(info: HSMInfo) {
+        if (info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
+            // All config information at that point is persisted, so it's safe to call crypto operations
+            // for that tenant and category
+            opsProxyClient.createWrappingKey(
+                configId = info.id,
+                failIfExists = false,
+                context = emptyMap()
+            )
+        }
+    }
+
+    private fun HSMCacheActions.addSoftConfig(): HSMInfo {
+        logger.info("Creating config for Soft HSM")
+        val info = HSMInfo(
+            CryptoConsts.SOFT_HSM_CONFIG_ID,
+            Instant.now(),
+            1,
+            null,
+            "Standard Soft HSM configuration",
+            MasterKeyPolicy.NEW,
+            null,
+            softConfig.retries,
+            softConfig.timeoutMills,
+            SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.codeName },
+            SoftCryptoServiceProviderImpl.SERVICE_NAME,
+            -1
+        )
+        val serviceConfig = ObjectMapper().writeValueAsBytes(SoftCryptoServiceConfig())
+        add(info, encryptor.encrypt(serviceConfig))
+        return info
     }
 }

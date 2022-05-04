@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.persistence.SigningKeyCache
 import net.corda.crypto.persistence.SigningKeyCacheProvider
 import net.corda.db.connection.manager.DbConnectionManager
@@ -85,7 +86,7 @@ class SigningKeyCacheProviderImpl @Activate constructor(
 
         private val instance by lazy(LazyThreadSafetyMode.PUBLICATION) {
             SigningKeyCacheImpl(
-                config = config,
+                config = config.signingPersistence(),
                 dbConnectionOps = dbConnectionOps,
                 jpaEntitiesRegistry = jpaEntitiesRegistry,
                 layeredPropertyMapFactory = layeredPropertyMapFactory,

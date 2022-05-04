@@ -3,6 +3,7 @@ package net.corda.crypto.persistence.db.impl.signing
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.impl.config.CryptoSigningPersistenceConfig
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyCache
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
 class SigningKeyCacheImpl(
-    private val config: SmartConfig,
+    private val config: CryptoSigningPersistenceConfig,
     private val dbConnectionOps: DbConnectionOps,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
@@ -62,11 +63,10 @@ class SigningKeyCacheImpl(
         }
 
     private fun buildCache(tenantId: String): Cache<String, SigningCachedKey> {
-        val persistenceConfig = config.signingPersistence()
         return cache.computeIfAbsent(tenantId) {
             Caffeine.newBuilder()
-                .expireAfterAccess(persistenceConfig.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(persistenceConfig.maximumSize)
+                .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(config.maximumSize)
                 .build()
         }
     }

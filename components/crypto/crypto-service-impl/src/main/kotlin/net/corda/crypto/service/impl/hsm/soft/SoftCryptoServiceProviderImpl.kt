@@ -70,10 +70,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         override fun getInstance(config: SoftCryptoServiceConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             return SoftCryptoService(
-                cache = cacheProvider.getInstance(
-                    passphrase = config.passphrase,
-                    salt = config.salt
-                ),
+                cache = cacheProvider.getInstance(),
                 schemeMetadata = schemeMetadata,
                 digestService = digestService
             )

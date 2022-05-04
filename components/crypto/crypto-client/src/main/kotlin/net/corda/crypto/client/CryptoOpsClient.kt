@@ -39,6 +39,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param category The key category, such as TLS, LEDGER, etc. Don't use FRESH_KEY category as there is separate API
      * for the fresh keys which is base around wrapped keys.
      * @param alias the tenant defined key alias for the key pair to be generated.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The public part of the pair.
@@ -47,6 +48,7 @@ interface CryptoOpsClient : Lifecycle {
         tenantId: String,
         category: String,
         alias: String,
+        scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -58,6 +60,7 @@ interface CryptoOpsClient : Lifecycle {
      * for the fresh keys which is base around wrapped keys.
      * @param alias the tenant defined key alias for the key pair to be generated.
      * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The public part of the pair.
@@ -67,6 +70,7 @@ interface CryptoOpsClient : Lifecycle {
         category: String,
         alias: String,
         externalId: String,
+        scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -74,11 +78,16 @@ interface CryptoOpsClient : Lifecycle {
      * Generates a new random [KeyPair] and adds it to the internal key storage.
      *
      * @param tenantId The tenant owning the key.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
-    fun freshKey(tenantId: String, context: Map<String, String> = EMPTY_CONTEXT): PublicKey
+    fun freshKey(
+        tenantId: String,
+        scheme: String,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): PublicKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
@@ -86,6 +95,7 @@ interface CryptoOpsClient : Lifecycle {
      *
      * @param tenantId The tenant owning the key.
      * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [PublicKey] of the generated [KeyPair].
@@ -93,6 +103,7 @@ interface CryptoOpsClient : Lifecycle {
     fun freshKey(
         tenantId: String,
         externalId: String,
+        scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 

@@ -17,20 +17,16 @@ import net.corda.v5.crypto.exceptions.CryptoServiceException
 fun CryptoServiceRef.getSupportedSchemes(): List<String> =
     instance.supportedSchemes().map { it.codeName }
 
-fun CryptoServiceRef.createWrappingKey(failIfExists: Boolean) {
-    require(!masterKeyAlias.isNullOrBlank()) {
-        "Wrapping key is not specified."
-    }
-    instance.createWrappingKey(masterKeyAlias!!, failIfExists, emptyMap())
-}
-
 fun CryptoServiceRef.generateKeyPair(
-    alias: String?, context: Map<String, String>
+    alias: String?,
+    scheme: SignatureScheme,
+    context: Map<String, String>
 ): GeneratedKey =
     instance.generateKeyPair(
         KeyGenerationSpec(
             tenantId = tenantId,
-            signatureScheme = signatureScheme,
+            category = category,
+            signatureScheme = scheme,
             alias = alias,
             masterKeyAlias = masterKeyAlias,
             secret = aliasSecret
@@ -41,13 +37,14 @@ fun CryptoServiceRef.generateKeyPair(
 fun CryptoServiceRef.toSaveKeyContext(
     key: GeneratedKey,
     alias: String?,
+    scheme: SignatureScheme,
     externalId: String?
 ): SigningKeySaveContext =
     when(key) {
         is GeneratedPublicKey -> SigningPublicKeySaveContext(
             key = key,
             alias = alias,
-            signatureScheme = signatureScheme,
+            signatureScheme = scheme,
             category = category,
             externalId = externalId,
         )
@@ -56,7 +53,7 @@ fun CryptoServiceRef.toSaveKeyContext(
             masterKeyAlias = masterKeyAlias,
             externalId = externalId,
             alias = alias,
-            signatureScheme = signatureScheme,
+            signatureScheme = scheme,
             category = category
         )
         else -> throw CryptoServiceException("Unknown key generation response: ${key::class.java.name}")
@@ -64,7 +61,7 @@ fun CryptoServiceRef.toSaveKeyContext(
 
 fun CryptoServiceRef.sign(
     record: SigningCachedKey,
-    signatureScheme: SignatureScheme,
+    scheme: SignatureScheme,
     data: ByteArray,
     context: Map<String, String>
 ): ByteArray {
@@ -80,7 +77,7 @@ fun CryptoServiceRef.sign(
             keyMaterial = record.keyMaterial!!,
             masterKeyAlias = record.masterKeyAlias,
             encodingVersion = record.encodingVersion!!,
-            signatureScheme = signatureScheme
+            signatureScheme = scheme
         )
     } else {
         require(!record.hsmAlias.isNullOrBlank()) {
@@ -89,7 +86,7 @@ fun CryptoServiceRef.sign(
         SigningAliasSpec(
             tenantId = tenantId,
             hsmAlias = record.hsmAlias!!,
-            signatureScheme = signatureScheme
+            signatureScheme = scheme
         )
     }
     return instance.sign(spec, data, context)

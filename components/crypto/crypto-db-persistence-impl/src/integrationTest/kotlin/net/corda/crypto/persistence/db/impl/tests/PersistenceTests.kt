@@ -9,8 +9,12 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.EXTERNAL_ID_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
+import net.corda.crypto.impl.config.signingPersistence
+import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningPublicKeySaveContext
@@ -18,6 +22,12 @@ import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheImpl
 import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyCacheImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.crypto.persistence.db.model.HSMAssociationEntity
+import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
+import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
+import net.corda.crypto.persistence.db.model.HSMConfigEntity
+import net.corda.crypto.persistence.db.model.MasterKeyPolicy
+import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
@@ -38,6 +48,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -45,11 +56,11 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -160,7 +171,6 @@ class PersistenceTests {
         cryptoEmf.use { em ->
             val retrieved = em.find(WrappingKeyEntity::class.java, entity.alias)
             assertNotNull(retrieved)
-            assertThat(retrieved).isEqualTo(entity)
             assertEquals(entity.alias, retrieved.alias)
             assertEquals(
                 entity.created.epochSecond,
@@ -202,7 +212,6 @@ class PersistenceTests {
                 )
             )
             assertNotNull(retrieved)
-            assertThat(retrieved).isEqualTo(entity)
             assertEquals(entity.tenantId, retrieved.tenantId)
             assertEquals(entity.keyId, retrieved.keyId)
             assertEquals(
@@ -222,9 +231,107 @@ class PersistenceTests {
     }
 
     @Test
+    fun `Should persist and retrieve raw HSM related entities`() {
+        val tenantId = randomTenantId()
+        val configId = UUID.randomUUID().toString()
+        val associationId = UUID.randomUUID().toString()
+        val categoryAssociationId = UUID.randomUUID().toString()
+        val categoryMappingId1 = UUID.randomUUID().toString()
+        val categoryMappingId2 = UUID.randomUUID().toString()
+        val config = HSMConfigEntity(
+            id = configId,
+            timestamp = Instant.now(),
+            workerLabel = null,
+            description = "Test configuration",
+            masterKeyPolicy = MasterKeyPolicy.NEW,
+            masterKeyAlias = null,
+            supportedSchemes = "CORDA.RSA,CORDA.ECDSA.SECP256K1,CORDA.ECDSA.SECP256R1,CORDA.EDDSA.ED25519",
+            retries = 0,
+            timeoutMills = 5000,
+            serviceName = "test",
+            serviceConfig = "{}".toByteArray()
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(config)
+        }
+        cryptoEmf.transaction { em ->
+            em.persist(
+                HSMCategoryMapEntity(
+                    id = categoryMappingId1,
+                    category = CryptoConsts.HsmCategories.LEDGER,
+                    config = config,
+                    keyPolicy = PrivateKeyPolicy.WRAPPED
+                )
+            )
+            em.persist(
+                HSMCategoryMapEntity(
+                    id = categoryMappingId2,
+                    category = CryptoConsts.HsmCategories.TLS,
+                    config = config,
+                    keyPolicy = PrivateKeyPolicy.ALIASED
+                )
+            )
+        }
+        val association = HSMAssociationEntity(
+            id = associationId,
+            tenantId = tenantId,
+            config = config,
+            timestamp = Instant.now(),
+            masterKeyAlias = UUID.randomUUID().toString().toByteArray().toHex().take(30),
+            aliasSecret = null
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(association)
+        }
+        val categoryAssociation = HSMCategoryAssociationEntity(
+            id = categoryAssociationId,
+            category = CryptoConsts.HsmCategories.LEDGER,
+            hsm = association,
+            timestamp = Instant.now()
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(categoryAssociation)
+        }
+        cryptoEmf.use { em ->
+            val retrieved = em.find(HSMCategoryAssociationEntity::class.java, categoryAssociationId)
+            assertNotNull(retrieved)
+            assertNotSame(categoryAssociation, retrieved)
+            assertEquals(categoryAssociationId, retrieved.id)
+            assertEquals(CryptoConsts.HsmCategories.LEDGER, retrieved.category)
+            assertNotSame(association, retrieved.hsm)
+            assertEquals(associationId, retrieved.hsm.id)
+            assertEquals(tenantId, retrieved.hsm.tenantId)
+            assertEquals(association.masterKeyAlias, retrieved.hsm.masterKeyAlias)
+            assertEquals(association.version, retrieved.hsm.version)
+            assertNull(retrieved.hsm.aliasSecret)
+            assertNotSame(config, retrieved.hsm.config)
+            assertEquals(configId, retrieved.hsm.config.id)
+            assertNull(retrieved.hsm.config.masterKeyAlias)
+            assertNull(retrieved.hsm.config.workerLabel)
+            assertEquals(config.description, retrieved.hsm.config.description)
+            assertEquals(config.retries, retrieved.hsm.config.retries)
+            assertEquals(config.timeoutMills, retrieved.hsm.config.timeoutMills)
+            assertEquals(config.supportedSchemes, retrieved.hsm.config.supportedSchemes)
+            assertEquals(config.serviceName, retrieved.hsm.config.serviceName)
+            assertArrayEquals(config.serviceConfig, retrieved.hsm.config.serviceConfig)
+            assertEquals(config.version, retrieved.hsm.config.version)
+
+            val retrievedMapping1 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId1)
+            assertEquals(CryptoConsts.HsmCategories.LEDGER, retrievedMapping1.category)
+            assertEquals(PrivateKeyPolicy.WRAPPED, retrievedMapping1.keyPolicy)
+            assertEquals(configId, retrievedMapping1.config.id)
+
+            val retrievedMapping2 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId2)
+            assertEquals(CryptoConsts.HsmCategories.TLS, retrievedMapping2.category)
+            assertEquals(PrivateKeyPolicy.ALIASED, retrievedMapping2.keyPolicy)
+            assertEquals(configId, retrievedMapping2.config.id)
+        }
+    }
+
+    @Test
     fun `Should be able to cache and then retrieve repeatedly wrapping keys`() {
         val cache = SoftCryptoKeyCacheImpl(
-            config = configFactory.create(ConfigFactory.empty()),
+            config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).softPersistence(),
             entityManagerFactory = cryptoEmf,
             masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
         )
@@ -259,7 +366,7 @@ class PersistenceTests {
     @Test
     fun `Should fail to save wrapping key with same alias when failIfExists equals true`() {
         val cache = SoftCryptoKeyCacheImpl(
-            config = configFactory.create(ConfigFactory.empty()),
+            config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).softPersistence(),
             entityManagerFactory = cryptoEmf,
             masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
         )
@@ -282,7 +389,7 @@ class PersistenceTests {
     @Test
     fun `Should not override existing wrapping key with same alias when failIfExists equals false`() {
         val cache = SoftCryptoKeyCacheImpl(
-            config = configFactory.create(ConfigFactory.empty()),
+            config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).softPersistence(),
             entityManagerFactory = cryptoEmf,
             masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
         )
@@ -708,7 +815,7 @@ class PersistenceTests {
     }
 
     private fun createSigningKeyCacheImpl() = SigningKeyCacheImpl(
-        config = configFactory.create(ConfigFactory.empty()),
+        config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).signingPersistence(),
         dbConnectionOps = object : DbConnectionOps {
             override fun putConnection(
                 name: String,

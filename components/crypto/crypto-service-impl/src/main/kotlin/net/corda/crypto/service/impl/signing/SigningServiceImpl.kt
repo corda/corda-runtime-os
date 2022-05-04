@@ -12,6 +12,7 @@ import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
@@ -67,10 +68,27 @@ open class SigningServiceImpl(
         }
     }
 
+    override fun createWrappingKey(
+        tenantId: String,
+        category: String,
+        failIfExists: Boolean,
+        context: Map<String, String>
+    ) {
+        logger.debug(
+            "createWrappingKey(tenant={}category={}, failIfExists=[{}])",
+            tenantId,
+            category,
+            failIfExists
+        )
+        val cryptoService = getCryptoService(tenantId, category)
+        cryptoService.createWrappingKey(failIfExists)
+    }
+
     override fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
+        scheme: SignatureScheme,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -78,6 +96,7 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = null,
+            scheme = scheme,
             context = context
         )
 
@@ -86,6 +105,7 @@ open class SigningServiceImpl(
         category: String,
         alias: String,
         externalId: String,
+        scheme: SignatureScheme,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -93,24 +113,36 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = externalId,
+            scheme = scheme,
             context = context
         )
 
-    override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey =
+    override fun freshKey(
+        tenantId: String,
+        scheme: SignatureScheme,
+        context: Map<String, String>
+    ): PublicKey =
         doGenerateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.HsmCategories.FRESH_KEYS,
             alias = null,
             externalId = null,
+            scheme = scheme,
             context = context
         )
 
-    override fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey =
+    override fun freshKey(
+        tenantId: String,
+        externalId: String,
+        scheme: SignatureScheme,
+        context: Map<String, String>
+    ): PublicKey =
         doGenerateKeyPair(
             tenantId = tenantId,
             category = CryptoConsts.HsmCategories.FRESH_KEYS,
             alias = null,
             externalId = externalId,
+            scheme = scheme,
             context = context
         )
 
@@ -136,6 +168,7 @@ open class SigningServiceImpl(
         category: String,
         alias: String?,
         externalId: String?,
+        scheme: SignatureScheme,
         context: Map<String, String>
     ): PublicKey =
         try {
@@ -147,8 +180,8 @@ open class SigningServiceImpl(
                         "The key with alias $alias already exist for tenant $tenantId"
                     )
                 }
-                val generatedKey = cryptoService.generateKeyPair(alias, context)
-                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, externalId))
+                val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
+                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
                 generatedKey.publicKey
             }
         } catch (e: CryptoServiceException) {

@@ -10,6 +10,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
+import java.util.UUID
 
 /*
 {
@@ -33,6 +34,10 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
     "signingPersistence": {
         "expireAfterAccessMins": 60,
         "maximumSize": 100
+    },
+    "hsmPersistence": {
+        "expireAfterAccessMins": 60,
+        "maximumSize": 100
     }
 }
  */
@@ -41,12 +46,26 @@ private const val ROOT_KEY_PASSPHRASE = "rootKey.passphrase"
 private const val ROOT_KEY_SALT = "rootKey.salt"
 private const val SOFT_PERSISTENCE_OBJ = "softPersistence"
 private const val SIGNING_PERSISTENCE_OBJ = "signingPersistence"
+private const val HSM_PERSISTENCE_OBJ = "hsmPersistence"
+
+fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
+    createDefaultCryptoConfig(
+        smartFactoryKey = smartFactoryKey,
+        cryptoRootKey = KeyCredentials(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString()
+        ),
+        softKey = KeyCredentials(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString()
+        )
+    )
 
 fun createDefaultCryptoConfig(
     smartFactoryKey: KeyCredentials,
     cryptoRootKey: KeyCredentials,
     softKey: KeyCredentials
-) = try {
+): SmartConfig = try {
     SmartConfigFactory.create(
         ConfigFactory.parseString(
             """
@@ -81,7 +100,9 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                         CryptoSoftPersistenceConfig::salt.name to softKey.salt,
                         CryptoSoftPersistenceConfig::passphrase.name to ConfigValueFactory.fromMap(
                             makeSecret(softKey.passphrase).root().unwrapped()
-                        )
+                        ),
+                        CryptoSoftPersistenceConfig::retries.name to "0",
+                        CryptoSoftPersistenceConfig::timeoutMills.name to "5000"
                     )
                 )
             )
@@ -90,6 +111,13 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                     mapOf(
                         "expireAfterAccessMins" to "90",
                         "maximumSize" to "20"
+                    )
+                )
+            ).withValue(
+                HSM_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
+                    mapOf(
+                        "expireAfterAccessMins" to "240",
+                        "maximumSize" to "1000"
                     )
                 )
             )
@@ -118,12 +146,19 @@ fun SmartConfig.softPersistence(): CryptoSoftPersistenceConfig =
     try {
         CryptoSoftPersistenceConfig(getConfig(SOFT_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoPersistenceConfig.", e)
+        throw CryptoConfigurationException("Failed to create CryptoSoftPersistenceConfig.", e)
     }
 
 fun SmartConfig.signingPersistence(): CryptoSigningPersistenceConfig =
     try {
         CryptoSigningPersistenceConfig(getConfig(SIGNING_PERSISTENCE_OBJ))
     } catch (e: Throwable) {
-        throw CryptoConfigurationException("Failed to create CryptoPersistenceConfig.", e)
+        throw CryptoConfigurationException("Failed to create CryptoSigningPersistenceConfig.", e)
+    }
+
+fun SmartConfig.hsmPersistence(): CryptoHSMPersistenceConfig =
+    try {
+        CryptoHSMPersistenceConfig(getConfig(HSM_PERSISTENCE_OBJ))
+    } catch (e: Throwable) {
+        throw CryptoConfigurationException("Failed to create CryptoHSMPersistenceConfig.", e)
     }
