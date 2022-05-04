@@ -203,8 +203,8 @@ class LinkManager(
     private val inboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
-        dependentChildren = commonChildren,
-        managedChildren = setOf(inboundAssignmentListener.dominoTile)
+        dependentChildren = commonChildren + setOf(inboundAssignmentListener.dominoTile),
+        managedChildren = emptyList(),
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
@@ -231,6 +231,7 @@ class LinkManager(
             sessionManager.dominoTile,
             trustStoresPublisher.dominoTile,
             tlsCertificatesPublisher.dominoTile,
+            inboundAssignmentListener.dominoTile,
         ) + commonChildren
     )
 
