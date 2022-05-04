@@ -10,18 +10,20 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || findProperty('cordaAr
         publishing {
             publications {
                 register('maven', MavenPublication) {
-                    artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
-                    groupId group.toString()
-                    from components.findByName('kotlin') ?: components.java
+                    afterEvaluate {
+                        artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
+                        groupId group.toString()
+                        from components.findByName('kotlin') ?: components.java
 
-                    pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
-                        artifact tasks.named('cpk', Jar)
-                    }
-                    if (project.hasProperty("sourceJar")) {
-                        maven.artifact(tasks.getByName("sourcesJar"))
-                    }
-                    if (project.hasProperty("javaDoc")) {
-                        maven.artifact(tasks.getByName("javadocJar"))
+                        pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
+                            artifact tasks.named('cpk', Jar)
+                        }
+                        if (project.hasProperty("sourceJar")) {
+                            maven.artifact(tasks.getByName("sourcesJar"))
+                        }
+                        if (project.hasProperty("javaDoc")) {
+                            maven.artifact(tasks.getByName("javadocJar"))
+                        }
                     }
                 }
             }
