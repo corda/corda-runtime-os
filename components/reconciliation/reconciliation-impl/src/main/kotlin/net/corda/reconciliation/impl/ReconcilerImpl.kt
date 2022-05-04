@@ -101,12 +101,12 @@ class ReconcilerImpl<K : Any, V : Any>(
     // TODO revise check for running state of sub services
     // Perhaps failure at some point during reconciliation could inform us where it stopped so that next reconciliation can take it
     // from there, or perhaps that could be done under timestamps optimization and then we update max timestamp reconciled.
-    /*private*/ fun reconcile() {
+    @VisibleForTesting
+    internal fun reconcile() {
         val kafkaRecords =
             kafkaReader.getAllVersionedRecords()?.associateBy { it.key } ?: run {
-                // Error occurred in kafka getAllVersionedRecords,
-                // we need to return and wait on failure to surface
-                // by RegistrationStatusChangeEvent to come
+                // Error occurred in kafka getAllVersionedRecords, we need to return and wait on failure to surface
+                // by upcoming RegistrationStatusChangeEvent
                 logger.warn("Error occurred while retrieving kafka records. Aborting reconciliation.")
                 return
             }
@@ -117,9 +117,8 @@ class ReconcilerImpl<K : Any, V : Any>(
                 // || dbRecord.isDeleted == true // reconcile db delete
             } ?: true // reconcile db insert
         } ?: run {
-            // Error occurred in db getAllVersionedRecords,
-            // we need to return and wait on failure to surface
-            // by RegistrationStatusChangeEvent to come
+            // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
+            // by upcoming RegistrationStatusChangeEvent
             logger.warn("Error occurred while retrieving db records. Aborting reconciliation.")
             return
         }
