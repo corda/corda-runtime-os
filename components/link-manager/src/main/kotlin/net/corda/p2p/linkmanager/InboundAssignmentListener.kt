@@ -39,7 +39,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
             }
             println("QQQ status -> $topicToPartition")
             callCallbacks(topicPartitions.map { it.first }.toSet())
-            if(topicPartitions.isEmpty()) {
+            if(topicToPartition.isEmpty()) {
                 firstAssignment = true
                 println("QQQ Stopping myself")
                 dominoTile.resourcesStarted(Exception("No partitions assign to this Link manager"))
