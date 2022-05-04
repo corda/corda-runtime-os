@@ -1,8 +1,8 @@
 package net.corda.processors.db.internal
 
-import com.typesafe.config.ConfigException
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -39,7 +39,7 @@ import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -121,6 +121,7 @@ class DBProcessorImpl @Activate constructor(
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
     private var dbManagerRegistrationHandler: RegistrationHandle? = null
+    private var configSubscription: AutoCloseable? = null
     private var bootstrapConfig: SmartConfig? = null
     private var instanceId: Int? = null
 
@@ -158,28 +159,21 @@ class DBProcessorImpl @Activate constructor(
                     configurationReadService.bootstrapConfig(bootstrapConfig!!)
                 } else {
                     log.info("DB processor is ${event.status}")
-                    coordinator.updateStatus(event.status)
                     if (event.status == LifecycleStatus.UP) {
-                        try {
-                            val rims = bootstrapConfig!!.getInt(RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS)
-
-                            if (rims > 0) {
-                                log.info("DB Reconciliation Enabled")
-                                startUpReconciliations()
-                            }
-                            else {
-                                log.info("DB Reconciliation Disabled")
-                            }
-                        }
-                        catch (ex: ConfigException.Missing)
-                        {
-                            log.info("DB Reconciliation - ConfigException.Missing")
-                        }
-                        catch (ex: ConfigException.WrongType)
-                        {
-                            log.info("DB Reconciliation - ConfigException.WrongType")
-                        }
+                        configSubscription = configurationReadService.registerComponentForUpdates(
+                            coordinator, setOf(
+                                ConfigKeys.RECONCILIATION_CONFIG
+                            )
+                        )
                     }
+                    coordinator.updateStatus(event.status)
+                }
+            }
+            is ConfigChangedEvent -> {
+                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(ConfigKeys.RECONCILIATION_CPI_INFO_INTERVAL_MS)
+                    ?.let { cpiInfoReconciliationIntervalMs ->
+                        log.info("Cpi info reconciliation interval set to $cpiInfoReconciliationIntervalMs ms")
+                        startUpReconciliations(cpiInfoReconciliationIntervalMs)
                 }
             }
             is BootConfigEvent -> {
@@ -201,7 +195,8 @@ class DBProcessorImpl @Activate constructor(
         }
     }
 
-    private fun startUpReconciliations() {
+    private fun startUpReconciliations(reconciliationIntervalMs: Long) {
+        log.info("Starting up reconciliations")
         val cpiInfoDbReader = CpiInfoDbReader(coordinatorFactory, dbConnectionManager)
         val reconciler = reconcilerFactory.create(
             dbReader = cpiInfoDbReader,
@@ -209,7 +204,7 @@ class DBProcessorImpl @Activate constructor(
             writer = cpiInfoWriteService,
             keyClass = CpiIdentifier::class.java,
             valueClass = CpiMetadata::class.java,
-            reconciliationInterval = Duration.ofMillis(5000) // TODO make configurable
+            reconciliationInterval = Duration.ofMillis(reconciliationIntervalMs)
         )
         reconcilers.add(reconciler.also { it.start() })
     }
