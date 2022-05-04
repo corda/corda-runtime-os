@@ -1,6 +1,6 @@
 // plugin to cater for R3 vs Non R3 users building code base. R3 employees will leverage internal plugins non
 // R3 users will use standard Maven publishing conventions as provided by the Maven-publish gradle plugin
-if (System.getenv("CORDA_ARTIFACTORY_USERNAME") != null) {
+if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || findProperty('cordaArtifactoryUsername')) {
     logger.lifecycle("Internal R3 user - resolving publication build dependencies from internal plugins")
     pluginManager.apply('com.r3.internal.gradle.plugins.r3Publish')
 } else {
@@ -10,9 +10,10 @@ if (System.getenv("CORDA_ARTIFACTORY_USERNAME") != null) {
         publishing {
             publications {
                 register('maven', MavenPublication) {
-                    artifactId "corda-${project.name}"
+                    artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
                     groupId group.toString()
-                    from components.java
+                    from components.findByName('kotlin') ?: components.java
+
                     pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
                         artifact tasks.named('cpk', Jar)
                     }

@@ -61,6 +61,10 @@ pluginManagement {
         id 'com.github.ben-manes.versions' version gradleVersions
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
+        if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || settings.ext.find('cordaArtifactoryUsername')) {
+            id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
+            id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
+        }
     }
 }
 

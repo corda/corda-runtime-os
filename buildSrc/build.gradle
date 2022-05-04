@@ -10,7 +10,6 @@ def bndVersion = constants.getProperty('bndVersion')
 def cordaGradlePluginsVersion = constants.getProperty('cordaGradlePluginsVersion')
 def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
 def jibCoreVersion = constants.getProperty('jibCoreVersion')
-def internalPublishVersion = constants.getProperty('internalPublishVersion')
 
 dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
@@ -18,9 +17,6 @@ dependencies {
 
     implementation "net.corda.plugins:quasar-utils:$cordaGradlePluginsVersion"
     implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
-    if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty("cordaArtifactoryUsername")){
-        implementation "com.r3.internal.gradle.plugins.r3Publish:com.r3.internal.gradle.plugins.r3Publish.gradle.plugin:${internalPublishVersion}"
-    }
 }
 
 repositories {
