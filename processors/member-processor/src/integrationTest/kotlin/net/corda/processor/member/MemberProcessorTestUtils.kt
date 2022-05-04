@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import java.time.Duration
 import java.lang.IllegalStateException
 import java.util.UUID
 
@@ -137,18 +138,21 @@ class MemberProcessorTestUtils {
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
-        fun getRegistrationResult(registrationProxy: RegistrationProxy, holdingIdentity: HoldingIdentity): MembershipRequestRegistrationResult =
-            eventually {
+        /**
+         * Registration is not a call expected to happen repeatedly in quick succession so allowing more time in
+         * between calls for a more realistic set up.
+         */
+        fun getRegistrationResult(
+            registrationProxy: RegistrationProxy,
+            holdingIdentity: HoldingIdentity
+        ): MembershipRequestRegistrationResult =
+            eventually(
+                waitBetween = Duration.ofMillis(1000)
+            ) {
                 assertDoesNotThrow {
                     registrationProxy.register(holdingIdentity)
                 }
             }
-
-        fun getRegistrationResultFails(registrationProvider: RegistrationProxy, holdingIdentity: HoldingIdentity) = eventually {
-            assertThrows<IllegalStateException> {
-                registrationProvider.register(holdingIdentity)
-            }
-        }
 
         fun lookup(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
             val lookupResult = groupReader.lookup(holdingIdentity)
