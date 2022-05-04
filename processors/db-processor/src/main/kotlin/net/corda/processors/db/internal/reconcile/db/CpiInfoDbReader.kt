@@ -118,7 +118,7 @@ class CpiInfoDbReader(
                 // (https://r3-cev.atlassian.net/browse/CORE-4658), it will now wipe out values on Kafka.
                 listOf(),
                 it.groupPolicy,
-                it.reversion
+                it.entityVersion
             )
 
             VersionedRecord(

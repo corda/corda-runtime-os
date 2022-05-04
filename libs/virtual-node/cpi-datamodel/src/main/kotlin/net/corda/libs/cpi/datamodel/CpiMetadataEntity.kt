@@ -28,7 +28,7 @@ import javax.persistence.Table
  * @property groupPolicy Group Policy JSON document
  * @property groupId MGM Group ID
  * @property fileUploadRequestId optional request ID for the file upload
- * @property reversion reversion number
+ * @property entityVersion Entity version number
  */
 @Entity
 @Table(name = "cpi", schema = DbSchema.CONFIG)
@@ -69,7 +69,7 @@ data class CpiMetadataEntity (
     @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
     */
     @Column(name = "entity_version", nullable = false)
-    val reversion: Int,
+    val entityVersion: Int,
 ) {
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
