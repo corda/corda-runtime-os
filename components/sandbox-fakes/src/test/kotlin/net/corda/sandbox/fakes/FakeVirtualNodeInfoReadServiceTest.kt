@@ -3,7 +3,6 @@ package net.corda.sandbox.fakes
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.StringReader
