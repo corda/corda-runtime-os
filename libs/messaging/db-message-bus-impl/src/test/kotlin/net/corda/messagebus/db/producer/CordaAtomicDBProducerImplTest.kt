@@ -141,7 +141,7 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `producer correctly closes down dbAccess when closed`() {
         val dbAccess: DBAccess = mock()
-        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
+        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
         producer.close()
         verify(dbAccess).close()
     }
