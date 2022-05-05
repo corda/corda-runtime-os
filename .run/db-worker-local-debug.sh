@@ -11,4 +11,4 @@ DATABASE_PASS=$(kubectl get secret prereqs-postgresql -o go-template='{{ .data.p
 
 PROGRAM_PARAMETERS="--instanceId=2 -mbus.kafkaProperties.common.bootstrap.servers=prereqs-kafka.corda:9092 -mbus.busType=KAFKA -spassphrase=$PASSPHRASE -ssalt=$SALT -ddatabase.user=user -ddatabase.pass=$DATABASE_PASS -ddatabase.jdbc.url=jdbc:postgresql://prereqs-postgresql.corda:5432/cordacluster"
 
-java $VM_PARAMETERS -jar $JAR_PATH $PROGRAM_PARAMETERS
+java $VM_PARAMETERS -Dlog4j.configurationFile=log4j2-console.xml -jar $JAR_PATH $PROGRAM_PARAMETERS
