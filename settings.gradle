@@ -328,7 +328,7 @@ include 'tools:plugins:secret-config'
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
 
 if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
-    includeBuild('../corda-api') {
+    includeBuild("${cordaApiLocation}") {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
             substitute module('net.corda:corda-base') using project(':base')
@@ -349,7 +349,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
     }
 }
 if ("${compositeBuild}".toBoolean() && file("${cordaCliHostLocation}").exists()) {
-    includeBuild('../corda-cli-plugin-host')
+    includeBuild("${cordaCliHostLocation}")
 }
 
 gradleEnterprise {
