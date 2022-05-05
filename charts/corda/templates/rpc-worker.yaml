@@ -55,6 +55,13 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: health
+
+          periodSeconds: 10
+          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /isHealthy
