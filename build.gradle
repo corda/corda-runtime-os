@@ -67,21 +67,20 @@ subprojects {
     apply plugin: 'jacoco'
     apply plugin: 'maven-publish'
 
-    detekt {
+    tasks.named("detekt").configure {
+        if(file("$projectDir/detekt-baseline.xml").exists()){
+            baseline = file("$projectDir/detekt-baseline.xml")
+        }
+        ignoreFailures = true
         config.setFrom(files("$rootDir/detekt-config.yml"))
         parallel = true
-        ignoreFailures = true
         reports {
-            xml {
-                enabled = true
-                destination = file("$projectDir/build/detekt-report.xml")
+            xml{
+                outputLocation.set(file("$projectDir/build/detekt-report.xml"))
             }
-            html {
-                enabled = false
-            }
-            txt {
-                enabled = false
-            }
+            txt.required.set(false)
+            sarif.required.set(false)
+            html.required.set(false)
         }
     }
 }
