@@ -1,6 +1,6 @@
 package net.corda.libs.packaging
 
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 
@@ -19,7 +19,7 @@ data class CpkIdentifier(
     override val signerSummaryHash: SecureHash?,
 ) : Identifier, Comparable<CpkIdentifier> {
     companion object {
-        fun fromAvro(other: net.corda.data.packaging.CPKIdentifier): CpkIdentifier {
+        fun fromAvro(other: net.corda.data.packaging.CpkIdentifier): CpkIdentifier {
             return CpkIdentifier(
                 other.name,
                 other.version,
@@ -27,15 +27,15 @@ data class CpkIdentifier(
             )
         }
 
-        fun fromLegacy(legacyId: CPK.Identifier): CpkIdentifier {
+        fun fromLegacy(legacyId: Cpk.Identifier): CpkIdentifier {
             return CpkIdentifier(legacyId.name, legacyId.version, legacyId.signerSummaryHash)
         }
     }
 
     override fun compareTo(other: CpkIdentifier) = identifierComparator.compare(this, other)
 
-    fun toAvro(): net.corda.data.packaging.CPKIdentifier {
-        return net.corda.data.packaging.CPKIdentifier(
+    fun toAvro(): net.corda.data.packaging.CpkIdentifier {
+        return net.corda.data.packaging.CpkIdentifier(
             name,
             version,
             signerSummaryHash?.let { hash ->

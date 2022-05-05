@@ -1,6 +1,6 @@
 package net.corda.libs.packaging
 
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 
@@ -18,22 +18,22 @@ data class CpiIdentifier(
     override val signerSummaryHash: SecureHash?,
 ) : Identifier, Comparable<CpiIdentifier> {
     companion object {
-        fun fromAvro(other: net.corda.data.packaging.CPIIdentifier) = CpiIdentifier(
+        fun fromAvro(other: net.corda.data.packaging.CpiIdentifier) = CpiIdentifier(
             other.name,
             other.version,
             other.signerSummaryHash?.let { SecureHash(it.algorithm, it.serverHash.array()) },
         )
 
         // TODO - remove
-        fun fromLegacy(legacyId: CPI.Identifier): CpiIdentifier {
+        fun fromLegacy(legacyId: Cpi.Identifier): CpiIdentifier {
             return CpiIdentifier(legacyId.name, legacyId.version, legacyId.signerSummaryHash)
         }
     }
 
     override fun compareTo(other: CpiIdentifier) = identifierComparator.compare(this, other)
 
-    fun toAvro(): net.corda.data.packaging.CPIIdentifier {
-        return net.corda.data.packaging.CPIIdentifier(
+    fun toAvro(): net.corda.data.packaging.CpiIdentifier {
+        return net.corda.data.packaging.CpiIdentifier(
             name,
             version,
             signerSummaryHash?.let { hash ->

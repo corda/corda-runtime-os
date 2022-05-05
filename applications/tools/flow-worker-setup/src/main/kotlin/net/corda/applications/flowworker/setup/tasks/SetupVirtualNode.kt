@@ -10,7 +10,7 @@ import net.corda.chunking.toAvro
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.packaging.converters.toAvro
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
@@ -79,14 +79,14 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         context.publish(vNodeCpiRecords)
     }
 
-    private fun scanCPIs(packageRepository: Path, cacheDir: Path): List<CPI> {
+    private fun scanCPIs(packageRepository: Path, cacheDir: Path): List<Cpi> {
         return packageRepository.takeIf(Files::exists)?.let { path ->
             Files.list(path).use { stream ->
                 stream.filter {
                     val fileName = it.fileName.toString()
-                    CPI.fileExtensions.any(fileName::endsWith)
+                    Cpi.fileExtensions.any(fileName::endsWith)
                 }.map {
-                    CPI.from(Files.newInputStream(it), cacheDir, it.toString(), true)
+                    Cpi.from(Files.newInputStream(it), cacheDir, it.toString(), true)
                 }.toList()
             }
         } ?: listOf()
