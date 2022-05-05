@@ -166,7 +166,7 @@ class PersistenceTests {
         category: String,
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
         capacity: Int = 3,
-        categories: Set<HSMCategoryMapEntity> = emptySet()
+        categories: (HSMConfigEntity) -> Set<HSMCategoryMapEntity> = { emptySet() }
     ): HSMCategoryAssociationEntity {
         val configId = UUID.randomUUID().toString()
         val associationId = UUID.randomUUID().toString()
@@ -209,9 +209,27 @@ class PersistenceTests {
         serviceName: String = "test",
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
         capacity: Int = 3,
-        categories: Set<HSMCategoryMapEntity> = emptySet()
+        categories: (HSMConfigEntity) -> Set<HSMCategoryMapEntity> = { emptySet() }
     ): HSMConfigEntity {
-        val config = HSMConfigEntity(
+        val config = createHSMConfigEntity(
+            configId = configId,
+            serviceName = serviceName,
+            masterKeyPolicy = masterKeyPolicy,
+            capacity = capacity
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(config)
+            categories(config).forEach { c -> em.persist(c) }
+        }
+        return config
+    }
+
+    private fun createHSMConfigEntity(
+        configId: String,
+        serviceName: String = "test",
+        masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
+        capacity: Int = 3
+    ) = HSMConfigEntity(
             id = configId,
             timestamp = Instant.now(),
             workerLabel = UUID.randomUUID().toString(),
@@ -224,18 +242,7 @@ class PersistenceTests {
             serviceName = serviceName,
             serviceConfig = "{}".toByteArray(),
             capacity = capacity
-        ).also {
-            it.categories = categories
-            it.categories.forEach { c ->
-                c.config = it
-            }
-        }
-        cryptoEmf.transaction { em ->
-            em.persist(config)
-            config.categories.forEach { c -> em.persist(c) }
-        }
-        return config
-    }
+        )
 
     private fun createHSMCacheImpl() = HSMCacheImpl(
         config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).hsmPersistence(),
@@ -361,21 +368,22 @@ class PersistenceTests {
         val categoryAssociationId = UUID.randomUUID().toString()
         val categoryMappingId1 = UUID.randomUUID().toString()
         val categoryMappingId2 = UUID.randomUUID().toString()
-        val config = createAndPersistHSMConfigEntity(
-            configId = configId,
-            categories = setOf(
+        val config = createAndPersistHSMConfigEntity(configId = configId) {
+            setOf(
                 HSMCategoryMapEntity(
                     id = categoryMappingId1,
                     category = CryptoConsts.HsmCategories.LEDGER,
-                    keyPolicy = PrivateKeyPolicy.WRAPPED
+                    keyPolicy = PrivateKeyPolicy.WRAPPED,
+                    config = it
                 ),
                 HSMCategoryMapEntity(
                     id = categoryMappingId2,
                     category = CryptoConsts.HsmCategories.TLS,
-                    keyPolicy = PrivateKeyPolicy.WRAPPED
+                    keyPolicy = PrivateKeyPolicy.WRAPPED,
+                    config = it
                 )
             )
-        )
+        }
         val association = HSMAssociationEntity(
             id = associationId,
             tenantId = tenantId,
@@ -426,19 +434,11 @@ class PersistenceTests {
             assertEquals(CryptoConsts.HsmCategories.LEDGER, retrievedMapping1.category)
             assertEquals(PrivateKeyPolicy.WRAPPED, retrievedMapping1.keyPolicy)
             assertEquals(configId, retrievedMapping1.config.id)
-            val mapped1 = config.categories.first { it.id == categoryMappingId1 }
-            assertEquals(CryptoConsts.HsmCategories.LEDGER, mapped1.category)
-            assertEquals(PrivateKeyPolicy.WRAPPED, mapped1.keyPolicy)
-            assertEquals(configId, mapped1.config.id)
 
             val retrievedMapping2 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId2)
             assertEquals(CryptoConsts.HsmCategories.TLS, retrievedMapping2.category)
             assertEquals(PrivateKeyPolicy.WRAPPED, retrievedMapping2.keyPolicy)
             assertEquals(configId, retrievedMapping2.config.id)
-            val mapped2 = config.categories.first { it.id == categoryMappingId2 }
-            assertEquals(CryptoConsts.HsmCategories.TLS, mapped2.category)
-            assertEquals(PrivateKeyPolicy.WRAPPED, mapped2.keyPolicy)
-            assertEquals(configId, mapped2.config.id)
         }
     }
 
@@ -554,46 +554,46 @@ class PersistenceTests {
 
     @Test
     fun `Should assiciate and getHSMStats should reflect those associations`() {
+        val cache = createHSMCacheImpl()
         val configId1 = UUID.randomUUID().toString()
         val configId2 = UUID.randomUUID().toString()
-        createAndPersistHSMConfigEntity(
-            configId = configId1,
-            categories = setOf(
+        createAndPersistHSMConfigEntity(configId = configId1, capacity = 5) {
+            setOf(
                 HSMCategoryMapEntity(
                     id = UUID.randomUUID().toString(),
                     category = CryptoConsts.HsmCategories.LEDGER,
-                    keyPolicy = PrivateKeyPolicy.ALIASED
+                    keyPolicy = PrivateKeyPolicy.ALIASED,
+                    config = it
                 ),
                 HSMCategoryMapEntity(
                     id = UUID.randomUUID().toString(),
                     category = CryptoConsts.HsmCategories.TLS,
-                    keyPolicy = PrivateKeyPolicy.BOTH
+                    keyPolicy = PrivateKeyPolicy.BOTH,
+                    config = it
                 )
-            ),
-            capacity = 3
-        )
-        createAndPersistHSMConfigEntity(
-            configId = configId2,
-            categories = setOf(
+            )
+        }
+        createAndPersistHSMConfigEntity(configId = configId2, capacity = 3) {
+            setOf(
                 HSMCategoryMapEntity(
                     id = UUID.randomUUID().toString(),
                     category = CryptoConsts.HsmCategories.LEDGER,
-                    keyPolicy = PrivateKeyPolicy.ALIASED
+                    keyPolicy = PrivateKeyPolicy.ALIASED,
+                    config = it
                 ),
                 HSMCategoryMapEntity(
                     id = UUID.randomUUID().toString(),
                     category = CryptoConsts.HsmCategories.TLS,
-                    keyPolicy = PrivateKeyPolicy.ALIASED
+                    keyPolicy = PrivateKeyPolicy.ALIASED,
+                    config = it
                 )
-            ),
-            capacity = 3
-        )
+            )
+        }
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
         val tenantId3 = randomTenantId()
         val tenantId4 = randomTenantId()
         val tenantId5 = randomTenantId()
-        val cache = createHSMCacheImpl()
         cache.act {
             it.associate(tenantId1, CryptoConsts.HsmCategories.LEDGER, configId1)
             it.associate(tenantId2, CryptoConsts.HsmCategories.LEDGER, configId2)
@@ -605,14 +605,18 @@ class PersistenceTests {
         assertEquals(0, actual1.size)
         val actual2 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.LEDGER) }
         assertEquals(2, actual2.size)
+        assertEquals(5, actual2.first { it.configId == configId1 }.capacity)
         assertEquals(2, actual2.first { it.configId == configId1 }.usages)
+        assertEquals(3, actual2.first { it.configId == configId2 }.capacity)
         assertEquals(3, actual2.first { it.configId == configId2 }.usages)
         cache.act {
             it.associate(tenantId3, CryptoConsts.HsmCategories.TLS, configId2)
         }
         val actual3 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.LEDGER) }
         assertEquals(2, actual3.size)
+        assertEquals(5, actual3.first { it.configId == configId1 }.capacity)
         assertEquals(2, actual3.first { it.configId == configId1 }.usages)
+        assertEquals(3, actual3.first { it.configId == configId2 }.capacity)
         assertEquals(4, actual3.first { it.configId == configId2 }.usages)
     }
 

@@ -2,11 +2,15 @@ package net.corda.crypto.persistence.db.impl.hsm
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.HSMCacheActions
+import net.corda.crypto.persistence.HSMCategoryInfo
 import net.corda.crypto.persistence.HSMStat
 import net.corda.crypto.persistence.HSMTenantAssociation
+import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
+import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
 import net.corda.crypto.persistence.db.model.HSMConfigEntity
+import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
@@ -17,8 +21,6 @@ import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
-import javax.persistence.EntityTransaction
-import javax.persistence.PersistenceException
 import javax.persistence.Tuple
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
@@ -30,9 +32,7 @@ class HSMCacheActionsImpl(
     private val secureRandom = SecureRandom()
 
     override fun findConfig(configId: String): HSMConfig? =
-        entityManager.find(HSMConfigEntity::class.java, configId)?.let {
-            it.toHSMConfig()
-        }
+        entityManager.find(HSMConfigEntity::class.java, configId)?.toHSMConfig()
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMTenantAssociation? {
         val result = entityManager.createQuery(
@@ -51,15 +51,7 @@ class HSMCacheActionsImpl(
         return if (result.isEmpty()) {
             null
         } else {
-            result[0].let {
-                HSMTenantAssociation(
-                    tenantId = tenantId,
-                    category = category,
-                    masterKeyAlias = it.hsm.masterKeyAlias,
-                    aliasSecret = it.hsm.aliasSecret,
-                    config = it.hsm.config.toHSMConfig()
-                )
-            }
+            result[0].toHSMTenantAssociation()
         }
     }
 
@@ -81,35 +73,58 @@ class HSMCacheActionsImpl(
                                 WHERE mm.config = a.config AND (mm.keyPolicy = 'ALIASED' OR mm.keyPolicy = 'BOTH')
                         ) AND a.config = c
                     ) as usages,   
-                    c.id as configId
+                    c.id as configId,
+                    c.capacity as capacity
             FROM HSMConfigEntity c
                 WHERE EXISTS(SELECT 1 FROM HSMCategoryMapEntity m WHERE m.config = c AND m.category = :category)
             """.trimIndent(),
             Tuple::class.java
         ).setParameter("category", category).resultList.map {
-            HSMStat((it.get("usages") as Number).toInt(), it.get("configId") as String)
+            HSMStat(
+                usages = (it.get("usages") as Number).toInt(),
+                configId = it.get("configId") as String,
+                capacity = (it.get("capacity") as Number).toInt(),
+            )
+        }
+    }
+
+    override fun linkCategories(configId: String, links: Set<HSMCategoryInfo>) {
+        val config = getExistingHSMConfigEntity(configId)
+        val map = links.map {
+            HSMCategoryMapEntity(
+                id = UUID.randomUUID().toString(),
+                category = it.category,
+                keyPolicy = PrivateKeyPolicy.valueOf(it.keyPolicy.name),
+                config = config
+            )
+        }
+        entityManager.doInTransaction {
+            entityManager.createQuery("""
+                DELETE FROM HSMCategoryMapEntity m WHERE m.config = :config
+            """.trimIndent()).setParameter("config", config).executeUpdate()
+            map.forEach { m ->
+                it.persist(m)
+            }
         }
     }
 
     override fun add(info: HSMInfo, serviceConfig: ByteArray): String {
-        TODO("Not yet implemented")
+        val config = info.toHSMConfigEntity(serviceConfig)
+        entityManager.doInTransaction {
+            it.persist(config)
+        }
+        return config.id
     }
 
     override fun merge(info: HSMInfo, serviceConfig: ByteArray) {
-        TODO("Not yet implemented")
+        val config = info.toHSMConfigEntity(serviceConfig)
+        entityManager.doInTransaction {
+            it.merge(config)
+        }
     }
 
     override fun associate(tenantId: String, category: String, configId: String): HSMTenantAssociation {
-        val association = entityManager.createQuery(
-            """
-                SELECT a FROM HSMAssociationEntity a JOIN a.config c
-                WHERE a.tenantId = :tenantId AND c.id = :configId
-            """.trimIndent(),
-            HSMAssociationEntity::class.java
-        )
-            .setParameter("tenantId", tenantId)
-            .setParameter("configId", configId)
-            .resultList.singleOrNull()
+        val association = findHSMAssociationEntity(tenantId, configId)
             ?: createAndPersistAssociation(tenantId, configId)
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
@@ -120,22 +135,29 @@ class HSMCacheActionsImpl(
         entityManager.doInTransaction {
             it.persist(categoryAssociation)
         }
-        return HSMTenantAssociation(
-            tenantId = tenantId,
-            category = category,
-            masterKeyAlias = association.masterKeyAlias,
-            aliasSecret = association.aliasSecret,
-            config = association.config.toHSMConfig()
-        )
+        return categoryAssociation.toHSMTenantAssociation()
     }
 
     override fun close() {
         entityManager.close()
     }
 
+    private fun findHSMAssociationEntity(
+        tenantId: String,
+        configId: String
+    ) = entityManager.createQuery(
+        """
+                    SELECT a FROM HSMAssociationEntity a JOIN a.config c
+                    WHERE a.tenantId = :tenantId AND c.id = :configId
+                """.trimIndent(),
+        HSMAssociationEntity::class.java
+    )
+        .setParameter("tenantId", tenantId)
+        .setParameter("configId", configId)
+        .resultList.singleOrNull()
+
     private fun createAndPersistAssociation(tenantId: String, configId: String): HSMAssociationEntity {
-        val config = entityManager.find(HSMConfigEntity::class.java, configId)
-            ?: throw CryptoServiceLibraryException("The HSM with id=$configId does not exists.")
+        val config = getExistingHSMConfigEntity(configId)
         val aliasSecret = ByteArray(32)
         secureRandom.nextBytes(aliasSecret)
         val association = HSMAssociationEntity(
@@ -143,7 +165,7 @@ class HSMCacheActionsImpl(
             tenantId = tenantId,
             config = config,
             timestamp = Instant.now(),
-            masterKeyAlias = if(config.masterKeyPolicy == net.corda.crypto.persistence.db.model.MasterKeyPolicy.NEW) {
+            masterKeyAlias = if (config.masterKeyPolicy == net.corda.crypto.persistence.db.model.MasterKeyPolicy.NEW) {
                 generateRandomShortAlias()
             } else {
                 null
@@ -156,34 +178,9 @@ class HSMCacheActionsImpl(
         return association
     }
 
-    private fun <R> EntityManager.doInTransaction(block: (EntityManager) -> R): R {
-        val trx = entityManager.beginTransaction()
-        try {
-            val result = block(this)
-            trx.commit()
-            return result
-        } catch (e: PersistenceException) {
-            trx.safelyRollback()
-            throw e
-        } catch (e: Throwable) {
-            trx.safelyRollback()
-            throw PersistenceException("Failed to execute in transaction.", e)
-        }
-    }
-
-    private fun EntityTransaction.safelyRollback() {
-        try {
-            rollback()
-        } catch (e: Throwable) {
-            // intentional
-        }
-    }
-
-    private fun EntityManager.beginTransaction(): EntityTransaction {
-        val trx = transaction
-        trx.begin()
-        return trx
-    }
+    private fun getExistingHSMConfigEntity(configId: String): HSMConfigEntity =
+        (entityManager.find(HSMConfigEntity::class.java, configId)
+            ?: throw CryptoServiceLibraryException("The HSM with id=$configId does not exists."))
 
     private fun generateRandomShortAlias() =
         UUID.randomUUID().toString().toByteArray().toHex().take(12)
@@ -193,21 +190,43 @@ class HSMCacheActionsImpl(
         ByteBuffer.wrap(serviceConfig)
     )
 
-    private fun HSMConfigEntity.toHSMInfo() =
-        HSMInfo(
-            id,
-            timestamp,
-            version,
-            workerLabel,
-            description,
-            MasterKeyPolicy.valueOf(masterKeyPolicy.name),
-            masterKeyAlias,
-            retries,
-            timeoutMills,
-            supportedSchemes.split(","),
-            serviceName,
-            capacity
-        )
+    private fun HSMInfo.toHSMConfigEntity(serviceConfig: ByteArray) = HSMConfigEntity(
+        id = if(id.isNullOrBlank()) UUID.randomUUID().toString() else id,
+        timestamp = Instant.now(),
+        workerLabel = workerLabel,
+        description = description,
+        masterKeyPolicy = net.corda.crypto.persistence.db.model.MasterKeyPolicy.valueOf(masterKeyPolicy.name),
+        masterKeyAlias = masterKeyAlias,
+        supportedSchemes = supportedSchemes.joinToString(","),
+        retries = retries,
+        timeoutMills = timeoutMills,
+        serviceName = serviceName,
+        capacity = capacity,
+        serviceConfig = serviceConfig
+    )
+
+    private fun HSMConfigEntity.toHSMInfo() = HSMInfo(
+        id,
+        timestamp,
+        version,
+        workerLabel,
+        description,
+        MasterKeyPolicy.valueOf(masterKeyPolicy.name),
+        masterKeyAlias,
+        retries,
+        timeoutMills,
+        supportedSchemes.split(","),
+        serviceName,
+        capacity
+    )
+
+    private fun HSMCategoryAssociationEntity.toHSMTenantAssociation() = HSMTenantAssociation(
+        tenantId = hsm.tenantId,
+        category = category,
+        masterKeyAlias = hsm.masterKeyAlias,
+        aliasSecret = hsm.aliasSecret,
+        config = hsm.config.toHSMConfig()
+    )
 
     private class LookupBuilder(
         private val entityManager: EntityManager

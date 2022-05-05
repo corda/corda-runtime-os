@@ -34,9 +34,9 @@ class HSMCategoryMapEntity(
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "key_policy", nullable = false, length = 16)
-    var keyPolicy: PrivateKeyPolicy
-) {
+    var keyPolicy: PrivateKeyPolicy,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "config_id", nullable = false, updatable = false)
-    lateinit var config: HSMConfigEntity
-}
+    var config: HSMConfigEntity
+)

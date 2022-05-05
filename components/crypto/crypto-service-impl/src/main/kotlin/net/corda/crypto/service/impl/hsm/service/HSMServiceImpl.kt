@@ -37,8 +37,11 @@ class HSMServiceImpl(
     fun assignHSM(tenantId: String, category: String): HSMInfo {
         logger.info("assignHSM(tenant={}, category={})", tenantId, category)
         val association = hsmCache.act {
-            val min = it.getHSMStats(category).minByOrNull { s -> s.usages }
-                ?: throw CryptoServiceLibraryException("There is no available HSMs.")
+            val min = it.getHSMStats(category).filter { s ->
+                s.usages < s.capacity
+            }.minByOrNull { s ->
+                s.usages
+            } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
             it.associate(tenantId = tenantId, category = category, configId = min.configId)
         }
         ensureWrappingKey(association)

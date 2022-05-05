@@ -13,6 +13,7 @@ import net.corda.crypto.persistence.alias
 import net.corda.crypto.persistence.category
 import net.corda.crypto.persistence.createdAfter
 import net.corda.crypto.persistence.createdBefore
+import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
 import net.corda.crypto.persistence.externalId
@@ -26,8 +27,6 @@ import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 import java.time.Instant
 import javax.persistence.EntityManager
-import javax.persistence.EntityTransaction
-import javax.persistence.PersistenceException
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
 import kotlin.reflect.KProperty
@@ -84,17 +83,8 @@ class SigningKeyCacheActionsImpl(
             }
             else -> throw IllegalArgumentException("Unknown context type: ${context::class.java.name}")
         }
-        val trx = entityManager.transaction
-        trx.begin()
-        try {
+        entityManager.doInTransaction {
             entityManager.persist(entity)
-            trx.commit()
-        } catch (e: PersistenceException) {
-            safelyRollback(trx)
-            throw e
-        } catch (e: Throwable) {
-            safelyRollback(trx)
-            throw PersistenceException("Failed to save", e)
         }
     }
 
@@ -158,14 +148,6 @@ class SigningKeyCacheActionsImpl(
 
     override fun close() {
         entityManager.close()
-    }
-
-    private fun safelyRollback(trx: EntityTransaction) {
-        try {
-            trx.rollback()
-        } catch (e: Throwable) {
-            // intentional
-        }
     }
 
     private fun findByIds(ids: Collection<String>): Collection<SigningKeyEntity> {
