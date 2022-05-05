@@ -1,6 +1,7 @@
 package net.corda.crypto.persistence.db.model
 
 import net.corda.db.schema.DbSchema
+import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.EnumType
@@ -33,8 +34,14 @@ class HSMCategoryMapEntity(
      * Defines how wrapping key should be used for each tenant.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "key_policy", nullable = false, length = 16)
+    @Column(name = "key_policy", nullable = false, updatable = false, length = 16)
     var keyPolicy: PrivateKeyPolicy,
+
+    /**
+     * When the configuration was created.
+     */
+    @Column(name = "timestamp", nullable = false, updatable = false)
+    var timestamp: Instant,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "config_id", nullable = false, updatable = false)

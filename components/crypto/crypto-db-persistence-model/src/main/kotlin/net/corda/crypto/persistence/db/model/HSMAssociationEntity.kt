@@ -36,15 +36,15 @@ class HSMAssociationEntity(
     var config: HSMConfigEntity,
 
     /**
-     * When the configuration was created or updated.
+     * When the configuration was created.
      */
-    @Column(name = "timestamp", nullable = false)
+    @Column(name = "timestamp", nullable = false, updatable = false)
     var timestamp: Instant,
 
     /**
      * Master key alias which should be used.
      */
-    @Column(name = "master_key_alias", nullable = true, updatable = true, length = 30)
+    @Column(name = "master_key_alias", nullable = true, updatable = false, length = 30)
     var masterKeyAlias: String?,
 
     /**
@@ -53,10 +53,6 @@ class HSMAssociationEntity(
      * it's encrypted using system key.
      */
     @Lob
-    @Column(name = "alias_secret", nullable = true, updatable = true, columnDefinition="BLOB")
+    @Column(name = "alias_secret", nullable = true, updatable = false, columnDefinition="BLOB")
     var aliasSecret: ByteArray?
-) {
-    @Version
-    @Column(name = "version", nullable = false)
-    var version: Int = -1
-}
+)

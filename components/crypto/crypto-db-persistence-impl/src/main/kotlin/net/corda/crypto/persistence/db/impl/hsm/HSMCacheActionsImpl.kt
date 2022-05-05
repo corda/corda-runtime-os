@@ -2,7 +2,6 @@ package net.corda.crypto.persistence.db.impl.hsm
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.HSMCacheActions
-import net.corda.crypto.persistence.HSMCategoryInfo
 import net.corda.crypto.persistence.HSMStat
 import net.corda.crypto.persistence.HSMTenantAssociation
 import net.corda.crypto.persistence.db.impl.doInTransaction
@@ -11,6 +10,7 @@ import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
 import net.corda.crypto.persistence.db.model.HSMConfigEntity
 import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
+import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
@@ -95,6 +95,7 @@ class HSMCacheActionsImpl(
                 id = UUID.randomUUID().toString(),
                 category = it.category,
                 keyPolicy = PrivateKeyPolicy.valueOf(it.keyPolicy.name),
+                timestamp = Instant.now(),
                 config = config
             )
         }
@@ -203,7 +204,7 @@ class HSMCacheActionsImpl(
         serviceName = serviceName,
         capacity = capacity,
         serviceConfig = serviceConfig
-    )
+    ).also { it.version = version }
 
     private fun HSMConfigEntity.toHSMInfo() = HSMInfo(
         id,

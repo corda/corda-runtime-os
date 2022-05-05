@@ -34,8 +34,8 @@ class HSMCategoryAssociationEntity(
     var hsm: HSMAssociationEntity,
 
     /**
-     * When the configuration was created or updated.
+     * When the configuration was created.
      */
-    @Column(name = "timestamp", nullable = false)
+    @Column(name = "timestamp", nullable = false, updatable = false)
     var timestamp: Instant
 )

@@ -1,5 +1,6 @@
 package net.corda.crypto.persistence
 
+import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 
