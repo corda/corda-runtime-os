@@ -13,7 +13,7 @@ class PubSubConsumer<K : Any, V : Any>(
     override val topicName = subscription.subscriptionConfig.eventTopic
     override val offsetStrategy = OffsetStrategy.LATEST
     override val partitionAssignmentListener = null
-    override val commitStrategy = CommitStrategy.COMMIT_AFTER_PROCESSING
+    override val commitStrategy = CommitStrategy.NO_COMMIT
     override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
 
     override fun handleRecords(records: Collection<RecordMetadata>) {
