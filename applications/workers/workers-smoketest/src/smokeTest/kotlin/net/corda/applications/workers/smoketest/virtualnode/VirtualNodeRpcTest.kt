@@ -49,7 +49,7 @@ class VirtualNodeRpcTest {
         private val FLOW_WAIT_DURATION = Duration.ofSeconds(60)
     }
 
-    private val clusterUri = URI(System.getProperty("rpcHost"))
+    private val clusterUri = URI("https://localhost:8888")
     private val username = "admin"
     private val password = "admin"
 

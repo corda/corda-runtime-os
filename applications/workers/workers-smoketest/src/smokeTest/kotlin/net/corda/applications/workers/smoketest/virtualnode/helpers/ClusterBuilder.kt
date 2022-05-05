@@ -19,21 +19,25 @@ class ClusterBuilder {
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
-    private fun postMultiPart(cmd: String, resourceName: String, groupId: String): SimpleResponse {
+    private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.get(resourceName, groupId).use { client!!.postMultiPart(cmd, fileName, it) }
+        return CpiLoader.get(resourceName, groupId).use {
+            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+        }
     }
 
-    private fun postMultiPartUnmodifiedResource(cmd: String, resourceName: String): SimpleResponse {
+    private fun uploadUnmodifiedResource(cmd: String, resourceName: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.getRawResource(resourceName).use { client!!.postMultiPart(cmd, fileName, it) }
+        return CpiLoader.getRawResource(resourceName).use {
+            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+        }
     }
 
     /** Assumes the resource *is* a CPB */
-    fun cpbUpload(resourceName: String) = postMultiPartUnmodifiedResource("/api/v1/cpi/", resourceName)
+    fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun cpiUpload(resourceName: String, groupId: String) = postMultiPart("/api/v1/cpi/", resourceName, groupId)
+    fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
