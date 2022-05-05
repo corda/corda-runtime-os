@@ -30,6 +30,15 @@ dependencies {
     implementation "org.eclipse.jetty.websocket:websocket-servlet:$jettyVersion"
     implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
     implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
+    constraints {
+        implementation("org.yaml:snakeyaml") {
+            version {
+                strictly("1.29")
+            }
+            because("avoid copy left licence")
+        }
+    }
+
     implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
     // Constraints block can be removed when Swagger is upgraded to the next version
@@ -37,13 +46,8 @@ dependencies {
         implementation("com.fasterxml.jackson.core:$jacksonVersion") {
             because 'sonatype-2021-4682'
         }
-        // avoid License-Copyleft licence in 1:30
-        implementation('org.yaml:snakeyaml') {
-            version {
-                strictly '1.29'
-            }
-        }
     }
+
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation project(":libs:http-rpc:http-rpc-common")
 
