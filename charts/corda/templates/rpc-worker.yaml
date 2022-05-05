@@ -58,7 +58,8 @@ spec:
         readinessProbe:
           httpGet:
             path: /status
-            port: 7000
+            port: health
+
           periodSeconds: 10
           failureThreshold: 1
         livenessProbe:
