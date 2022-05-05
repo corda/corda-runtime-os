@@ -1,9 +1,8 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.util.PartitionObserverDominoTile
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -12,10 +11,9 @@ import kotlin.concurrent.write
 
 class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory): PartitionAssignmentListener, LifecycleWithDominoTile {
 
-    override val dominoTile = ComplexDominoTile(
+    override val dominoTile = PartitionObserverDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        createResources = ::createResources
     )
 
     private val lock = ReentrantReadWriteLock()
@@ -70,10 +68,8 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
             val callbacks = topicToCallback[topic]
             val partitions = topicToPartition[topic]
             partitions?.let { callbacks?.forEach { callback -> callback(partitions) } }
+            // need to enforce single topic in this class and then we can invoke only for this one here.
+            partitions?.let { dominoTile.partitionAllocationChanged(it.toList()) }
         }
-    }
-
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
-        return future
     }
 }
