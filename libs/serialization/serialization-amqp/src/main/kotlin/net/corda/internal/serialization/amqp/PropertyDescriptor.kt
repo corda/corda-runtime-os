@@ -10,6 +10,7 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Type
 import java.util.EnumMap
+import java.util.Locale
 
 /**
  * Encapsulates the property of a class and its potential getter and setter methods.
@@ -145,7 +146,7 @@ private fun Sequence<Method>.toCalculatedProperties(): Map<String, PropertyDescr
             "Calculated property name must have no parameters, and a non-void return type"
         }
 
-        val propertyName = propertyNamedMethod.fieldName.decapitalize()
+        val propertyName = propertyNamedMethod.fieldName.replaceFirstChar { it.lowercase(Locale.getDefault()) }
         methodsByName.compute(propertyName) { _, existingMethod ->
             if (existingMethod == null) method
             else leastGenericBy({ genericReturnType }, existingMethod, method)
@@ -161,7 +162,7 @@ private fun getPropertyNamedMethod(method: Method): PropertyNamedMethod? {
     return propertyMethodRegex.find(method.name)?.let { result ->
         PropertyNamedMethod(
                 result.groups[2]!!.value,
-                MethodClassifier.valueOf(result.groups[1]!!.value.toUpperCase()),
+                MethodClassifier.valueOf(result.groups[1]!!.value.uppercase()),
                 method)
     }
 }
@@ -197,10 +198,14 @@ private fun EnumMap<MethodClassifier, Method>.merge(classifier: MethodClassifier
 }
 
 // Make the property name conform to the underlying field name, if there is one.
-private fun getPropertyName(propertyName: String, fieldNames: Set<String>) =
-        if (propertyName.decapitalize() in fieldNames) propertyName.decapitalize()
-        else propertyName
-
+private fun getPropertyName(propertyName: String, fieldNames: Set<String>):String {
+    val lowerName = propertyName.replaceFirstChar { it.lowercase(Locale.getDefault()) }
+    return if (lowerName in fieldNames) {
+        lowerName
+    } else {
+        propertyName
+    }
+}
 
 // Which of the three types of property method the method is.
 private enum class MethodClassifier { GET, SET, IS }

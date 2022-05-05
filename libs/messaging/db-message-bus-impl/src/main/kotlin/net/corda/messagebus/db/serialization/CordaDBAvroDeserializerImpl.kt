@@ -3,7 +3,6 @@ package net.corda.messagebus.db.serialization
 import net.corda.data.CordaAvroDeserializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
 
 class CordaDBAvroDeserializerImpl<T : Any>(
@@ -17,18 +16,19 @@ class CordaDBAvroDeserializerImpl<T : Any>(
     }
 
     override fun deserialize(data: ByteArray): T? {
-        when (expectedClass) {
+        @Suppress("unchecked_cast")
+        return when (expectedClass) {
             String::class.java -> {
-                return uncheckedCast(data.decodeToString())
+                data.decodeToString()
             }
             ByteArray::class.java -> {
-                return uncheckedCast(data)
+                data
             }
             else -> {
-                return try {
+                try {
                     val dataBuffer = ByteBuffer.wrap(data)
                     val classType = schemaRegistry.getClassType(dataBuffer)
-                    uncheckedCast(schemaRegistry.deserialize(dataBuffer, classType, null))
+                    schemaRegistry.deserialize(dataBuffer, classType, null)
                 } catch (ex: Throwable) {
                     log.error("Failed to deserialise to expected class $expectedClass", ex)
                     // We don't want to throw back as that would mean the entire poll (with possibly
@@ -38,6 +38,6 @@ class CordaDBAvroDeserializerImpl<T : Any>(
                     null
                 }
             }
-        }
+        } as? T?
     }
 }

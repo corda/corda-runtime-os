@@ -55,7 +55,7 @@ class CreateUserE2eTest {
             // Try to create a user with the same login name again and verify that it fails
             assertThatThrownBy { proxy.createUser(createUserType.copy(fullName = "Alice")) }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("User '${userName.toLowerCase()}' already exists.")
+                .hasMessageContaining("User '${userName.lowercase()}' already exists.")
         }
     }
 }

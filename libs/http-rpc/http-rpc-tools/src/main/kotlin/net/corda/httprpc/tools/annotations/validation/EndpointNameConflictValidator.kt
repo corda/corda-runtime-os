@@ -32,7 +32,7 @@ internal class EndpointNameConflictValidator(private val clazz: Class<out RpcOps
         method: Method,
         type: EndpointType
     ): HttpRpcValidationResult {
-        val path = method.endpointPath(type)?.toLowerCase()
+        val path = method.endpointPath(type)?.lowercase()
         return if (this.contains(path to type)) {
             HttpRpcValidationResult(listOf(error(path, type, method)))
         } else {

@@ -6,8 +6,6 @@ import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
-import net.corda.v5.base.util.uncheckedCast
-import java.util.*
 
 /**
  * For serializing instances if [Throwable] honoring the fact that [java.lang.Throwable.suppressedExceptions]
@@ -19,7 +17,7 @@ import java.util.*
 class ThrowableSerializer<T>(kryo: Kryo, type: Class<T>) : Serializer<Throwable>(false, true) {
 
     private companion object {
-        private val IS_OPENJ9 = System.getProperty("java.vm.name").toLowerCase().contains("openj9")
+        private val IS_OPENJ9 = System.getProperty("java.vm.name").lowercase().contains("openj9")
         private val suppressedField = Throwable::class.java.getDeclaredField("suppressedExceptions")
 
         private val sentinelValue = let {
@@ -28,7 +26,7 @@ class ThrowableSerializer<T>(kryo: Kryo, type: Class<T>) : Serializer<Throwable>
                 sentinelField.isAccessible = true
                 sentinelField.get(null)
             } else {
-                Collections.EMPTY_LIST
+                emptyList<Any?>()
             }
         }
 
@@ -37,8 +35,9 @@ class ThrowableSerializer<T>(kryo: Kryo, type: Class<T>) : Serializer<Throwable>
         }
     }
 
+    @Suppress("unchecked_cast")
     private val delegate: Serializer<Throwable> =
-        uncheckedCast(ReflectionSerializerFactory.makeSerializer(kryo, FieldSerializer::class.java, type))
+        ReflectionSerializerFactory.makeSerializer(kryo, FieldSerializer::class.java, type) as Serializer<Throwable>
 
     override fun write(kryo: Kryo, output: Output, throwable: Throwable) {
         delegate.write(kryo, output, throwable)

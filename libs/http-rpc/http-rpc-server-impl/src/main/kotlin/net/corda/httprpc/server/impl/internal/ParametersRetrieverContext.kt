@@ -23,13 +23,13 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
         // Moving all the parameters' keys to the lowercase.
         // Result will not be predictable if the same keys is used in the mixed case
         val ctxPathParamMap = ctx.pathParamMap()
-        pathParamsMap = ctxPathParamMap.mapKeys { it.key.toLowerCase() }
+        pathParamsMap = ctxPathParamMap.mapKeys { it.key.lowercase() }
         if (pathParamsMap.size != ctxPathParamMap.size) {
             logger.warn("Some path parameters keys were dropped. " +
                     "Original map: $ctxPathParamMap, transformed map: $pathParamsMap")
         }
         val ctxQueryParamMap = ctx.queryParamMap()
-        queryParamsMap = ctxQueryParamMap.mapKeys { it.key.toLowerCase() }
+        queryParamsMap = ctxQueryParamMap.mapKeys { it.key.lowercase() }
         if (queryParamsMap.size != ctxQueryParamMap.size) {
             logger.warn("Some query parameters keys were dropped. " +
                     "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap")
@@ -41,11 +41,11 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
     fun <T> bodyAsClass(clazz: Class<T>): T = ctx.bodyAsClass(clazz)
 
     fun pathParam(key: String): String {
-        return ContextUtil.pathParamOrThrow(pathParamsMap, key.toLowerCase(), ctx.matchedPath())
+        return ContextUtil.pathParamOrThrow(pathParamsMap, key.lowercase(), ctx.matchedPath())
     }
 
-    fun queryParams(key: String): List<String> = queryParamsMap[key.toLowerCase()] ?: emptyList()
+    fun queryParams(key: String): List<String> = queryParamsMap[key.lowercase()] ?: emptyList()
 
     fun queryParam(key: String, default: String? = null): String? =
-        queryParamsMap[key.toLowerCase()]?.firstOrNull() ?: default
+        queryParamsMap[key.lowercase()]?.firstOrNull() ?: default
 }

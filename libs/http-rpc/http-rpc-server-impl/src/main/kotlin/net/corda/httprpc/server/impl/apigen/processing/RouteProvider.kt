@@ -118,7 +118,7 @@ internal class RouteInfo(
 
     private fun generateFullPath(resourcePath: String, endpointPath: String?): String {
         val combinedPath = joinResourceAndEndpointPaths("/${basePath}/v${apiVersion}/${resourcePath}", endpointPath)
-        return combinedPath.toLowerCase().also {
+        return combinedPath.lowercase().also {
             log.trace { "Full path $it generated." }
         }
     }

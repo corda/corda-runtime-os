@@ -26,7 +26,7 @@ internal class PermissionValidationCacheImpl(
 
     override fun getPermissionSummary(loginName: String): UserPermissionSummary? {
         validateCacheIsRunning()
-        return permissionSummaries[loginName.toLowerCase()]
+        return permissionSummaries[loginName.lowercase()]
     }
 
     private fun validateCacheIsRunning() {
