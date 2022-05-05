@@ -9,7 +9,6 @@ import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.Table
-import javax.persistence.Version
 
 /**
  * An entity representing an HSM instance configuration.
@@ -97,8 +96,4 @@ class HSMConfigEntity(
 
     @Column(name = "capacity", nullable = false)
     var capacity: Int
-) {
-    @Version
-    @Column(name = "version", nullable = false)
-    var version: Int = -1
-}
+)

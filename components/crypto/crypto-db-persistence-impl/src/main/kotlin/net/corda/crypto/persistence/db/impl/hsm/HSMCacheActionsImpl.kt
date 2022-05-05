@@ -204,12 +204,11 @@ class HSMCacheActionsImpl(
         serviceName = serviceName,
         capacity = capacity,
         serviceConfig = serviceConfig
-    ).also { it.version = version }
+    )
 
     private fun HSMConfigEntity.toHSMInfo() = HSMInfo(
         id,
         timestamp,
-        version,
         workerLabel,
         description,
         MasterKeyPolicy.valueOf(masterKeyPolicy.name),

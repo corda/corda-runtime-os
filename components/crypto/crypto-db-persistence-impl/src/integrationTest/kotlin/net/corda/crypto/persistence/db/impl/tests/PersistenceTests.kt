@@ -254,7 +254,6 @@ class PersistenceTests {
     ) = HSMInfo(
         configId,
         Instant.now(),
-        1,
         UUID.randomUUID().toString(),
         "Test configuration",
         masterKeyPolicy,
@@ -307,7 +306,6 @@ class PersistenceTests {
         assertEquals(expected.serviceName, actual.serviceName)
         assertEquals(expected.masterKeyPolicy.name, actual.masterKeyPolicy.name)
         assertEquals(expected.capacity, actual.capacity)
-        assertEquals(expected.version, actual.version)
     }
 
     private fun getHSMCategoryMapEntities(
@@ -466,7 +464,6 @@ class PersistenceTests {
             assertArrayEquals(config.serviceConfig, retrieved.hsm.config.serviceConfig)
             assertEquals(MasterKeyPolicy.SHARED, config.masterKeyPolicy)
             assertEquals(config.capacity, retrieved.hsm.config.capacity)
-            assertEquals(config.version, retrieved.hsm.config.version)
 
             val retrievedMapping1 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId1)
             assertEquals(CryptoConsts.HsmCategories.LEDGER, retrievedMapping1.category)
@@ -728,7 +725,6 @@ class PersistenceTests {
         val updated = HSMInfo(
             configId,
             Instant.now(),
-            info.version,
             "new-worker-label",
             "New test configuration",
             net.corda.data.crypto.wire.hsm.MasterKeyPolicy.NONE,

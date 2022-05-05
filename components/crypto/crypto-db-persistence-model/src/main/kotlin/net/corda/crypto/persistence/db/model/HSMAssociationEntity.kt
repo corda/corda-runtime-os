@@ -10,7 +10,6 @@ import javax.persistence.JoinColumn
 import javax.persistence.Lob
 import javax.persistence.ManyToOne
 import javax.persistence.Table
-import javax.persistence.Version
 
 /**
  * Defines a tenant associations for HSMs per category.
