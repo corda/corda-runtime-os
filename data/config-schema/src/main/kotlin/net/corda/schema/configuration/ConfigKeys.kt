@@ -18,6 +18,7 @@ object ConfigKeys {
     const val SECRETS_CONFIG = "corda.secrets"
     const val SANDBOX_CONFIG = "corda.sandbox"
     const val RECONCILIATION_CONFIG = "corda.reconciliation"
+    const val SECURITY_CONFIG = "corda.security"
 
     //  RPC
     const val RPC_ADDRESS = "address"
@@ -49,4 +50,7 @@ object ConfigKeys {
 
     // Sandbox
     const val SANDBOX_CACHE_SIZE = "cache.size"
+
+    // Security
+    const val SECURITY_POLICY = "policy"
 }
