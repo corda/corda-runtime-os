@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
 import java.util.concurrent.TimeUnit.MINUTES
+import java.util.Locale
 import java.util.stream.Stream
 
 @Timeout(5, unit = MINUTES)
@@ -53,6 +54,14 @@ class CheckNullabilityTest {
         }
     }
 
+    private fun String.capitalise() = replaceFirstChar { c ->
+        if (c.isLowerCase()) {
+            c.titlecase(Locale.getDefault())
+        } else {
+            c.toString()
+        }
+    }
+
     @ParameterizedTest(name = "{displayName} => {0} nullability={1}")
     @DisplayName("KotlinExample:ExtendedKotlinApi")
     @ArgumentsSource(ExtendedKotlinApiPropertyProvider::class)
@@ -67,7 +76,7 @@ class CheckNullabilityTest {
     @ArgumentsSource(KotlinBasePropertyProvider::class)
     fun testKotlinExampleInheritedProperties(propertyName: String, isNullable: Boolean) {
         assertNull(KotlinExample::class.kotlinClass.declaredMemberProperties.find { it.name == propertyName })
-        val getter = KotlinExample::class.java.getMethod("get${propertyName.capitalize()}")
+        val getter = KotlinExample::class.java.getMethod("get${propertyName.capitalise()}")
         val property = getter.declaringClass.kotlinClass.findPropertyForGetter(getter)
                 ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
@@ -87,7 +96,7 @@ class CheckNullabilityTest {
     @ArgumentsSource(KotlinBasePropertyProvider::class)
     fun testJavaExampleInheritedProperties(propertyName: String, isNullable: Boolean) {
         assertNull(JavaExample::class.kotlinClass.declaredMemberProperties.find { it.name == propertyName })
-        val getter = JavaExample::class.java.getMethod("get${propertyName.capitalize()}")
+        val getter = JavaExample::class.java.getMethod("get${propertyName.capitalise()}")
         val property = getter.declaringClass.kotlinClass.findPropertyForGetter(getter)
                 ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)

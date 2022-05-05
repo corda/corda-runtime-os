@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.packaging.converters.toCorda
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 

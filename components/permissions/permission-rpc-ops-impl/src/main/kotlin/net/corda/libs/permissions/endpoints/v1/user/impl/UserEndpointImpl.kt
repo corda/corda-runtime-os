@@ -61,7 +61,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRpcThreadLocalContext()
 
         val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            getUser(GetUserRequestDto(principal, loginName.toLowerCase()))
+            getUser(GetUserRequestDto(principal, loginName.lowercase()))
         }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
@@ -71,7 +71,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            addRoleToUser(AddRoleToUserRequestDto(principal, loginName.toLowerCase(), roleId))
+            addRoleToUser(AddRoleToUserRequestDto(principal, loginName.lowercase(), roleId))
         }
         return result!!.convertToEndpointType()
     }
@@ -80,7 +80,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.toLowerCase(), roleId))
+            removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.lowercase(), roleId))
         }
         return result!!.convertToEndpointType()
     }
@@ -89,7 +89,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            getPermissionSummary(GetPermissionSummaryRequestDto(principal, loginName.toLowerCase()))
+            getPermissionSummary(GetPermissionSummaryRequestDto(principal, loginName.lowercase()))
         } ?: throw ResourceNotFoundException("User", loginName)
 
         return UserPermissionSummaryResponseType(
