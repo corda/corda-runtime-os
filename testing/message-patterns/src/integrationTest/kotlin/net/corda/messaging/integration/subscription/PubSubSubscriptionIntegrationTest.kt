@@ -1,11 +1,6 @@
 package net.corda.messaging.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -26,14 +21,9 @@ import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestPubsubProcessor
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
-<<<<<<< HEAD
-=======
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
->>>>>>> d7f85646b (Add unit and integration test of Asynchronous Pub Sub Subscription)
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -101,13 +91,8 @@ class PubSubSubscriptionIntegrationTest {
         val processor = TestPubsubProcessor(AtomicReference(latch))
         val pubsubSub = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("pubSub1", PUBSUB_TOPIC1),
-<<<<<<< HEAD
-            TestPubsubProcessor(latch),
-            TEST_CONFIG
-=======
             processor,
-            kafkaConfig
->>>>>>> d7f85646b (Add unit and integration test of Asynchronous Pub Sub Subscription)
+            TEST_CONFIG
         )
         coordinator.followStatusChangesByName(setOf(pubsubSub.subscriptionName))
         pubsubSub.start()
@@ -156,7 +141,7 @@ class PubSubSubscriptionIntegrationTest {
         val pubsubSub = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("pubSub2", PUBSUB_TOPIC1),
             processor,
-            kafkaConfig
+            TEST_CONFIG
         )
         coordinator.followStatusChangesByName(setOf(pubsubSub.subscriptionName))
         pubsubSub.start()
@@ -166,7 +151,7 @@ class PubSubSubscriptionIntegrationTest {
         }
 
         publisherConfig = PublisherConfig(CLIENT_ID + PUBSUB_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
 
         publisher.publish(getDemoRecords(PUBSUB_TOPIC1, 1, 1))
         var firstFuture: CompletableFuture<Unit>? = null
