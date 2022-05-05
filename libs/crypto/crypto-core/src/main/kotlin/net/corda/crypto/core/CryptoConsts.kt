@@ -17,12 +17,15 @@ object CryptoConsts {
         const val SESSION = "SESSION"
         const val TLS = "TLS"
 
+        const val JWT_KEY = "JWT_KEY"
+
         fun all() = listOf(
             FRESH_KEYS,
             LEDGER,
             NOTARY,
             SESSION,
-            TLS
+            TLS,
+            JWT_KEY
         )
     }
 

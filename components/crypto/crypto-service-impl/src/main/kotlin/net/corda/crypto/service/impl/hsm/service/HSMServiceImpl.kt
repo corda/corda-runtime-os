@@ -39,7 +39,7 @@ class HSMServiceImpl(
         val association = hsmCache.act {
             val min = it.getHSMStats(category).minByOrNull { s -> s.usages }
                 ?: throw CryptoServiceLibraryException("There is no available HSMs.")
-            it.associate(tenantId = tenantId, category = category, hsm = min.hsm)
+            it.associate(tenantId = tenantId, category = category, configId = min.configId)
         }
         ensureWrappingKey(association)
         logger.info("assignHSM(tenant={}, category={})={}", tenantId, category, association.config.info)
@@ -51,7 +51,7 @@ class HSMServiceImpl(
         val association = hsmCache.act {
             val hsm = it.findConfig(CryptoConsts.SOFT_HSM_CONFIG_ID)?.info
                 ?: it.addSoftConfig()
-            it.associate(tenantId = tenantId, category = category, hsm = hsm)
+            it.associate(tenantId = tenantId, category = category, configId = hsm.id)
         }
         ensureWrappingKey(association)
         logger.info("assignSoftHSM(tenant={}, category={})={}", tenantId, category, association.config.info)

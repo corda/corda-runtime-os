@@ -19,5 +19,5 @@ interface HSMCacheActions : AutoCloseable {
 
     fun merge(info: HSMInfo, serviceConfig: ByteArray)
 
-    fun associate(tenantId: String, category: String, hsm: HSMInfo): HSMTenantAssociation
+    fun associate(tenantId: String, category: String, configId: String): HSMTenantAssociation
 }

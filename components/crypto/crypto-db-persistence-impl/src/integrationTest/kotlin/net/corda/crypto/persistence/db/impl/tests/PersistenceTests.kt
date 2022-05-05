@@ -553,8 +553,9 @@ class PersistenceTests {
     }
 
     @Test
-    fun `getHSMStats should return correct usage stats`() {
+    fun `Should assiciate and getHSMStats should reflect those associations`() {
         val configId1 = UUID.randomUUID().toString()
+        val configId2 = UUID.randomUUID().toString()
         createAndPersistHSMConfigEntity(
             configId = configId1,
             categories = setOf(
@@ -568,14 +569,51 @@ class PersistenceTests {
                     category = CryptoConsts.HsmCategories.TLS,
                     keyPolicy = PrivateKeyPolicy.BOTH
                 )
-            )
+            ),
+            capacity = 3
         )
+        createAndPersistHSMConfigEntity(
+            configId = configId2,
+            categories = setOf(
+                HSMCategoryMapEntity(
+                    id = UUID.randomUUID().toString(),
+                    category = CryptoConsts.HsmCategories.LEDGER,
+                    keyPolicy = PrivateKeyPolicy.ALIASED
+                ),
+                HSMCategoryMapEntity(
+                    id = UUID.randomUUID().toString(),
+                    category = CryptoConsts.HsmCategories.TLS,
+                    keyPolicy = PrivateKeyPolicy.ALIASED
+                )
+            ),
+            capacity = 3
+        )
+        val tenantId1 = randomTenantId()
+        val tenantId2 = randomTenantId()
+        val tenantId3 = randomTenantId()
+        val tenantId4 = randomTenantId()
+        val tenantId5 = randomTenantId()
         val cache = createHSMCacheImpl()
+        cache.act {
+            it.associate(tenantId1, CryptoConsts.HsmCategories.LEDGER, configId1)
+            it.associate(tenantId2, CryptoConsts.HsmCategories.LEDGER, configId2)
+            it.associate(tenantId3, CryptoConsts.HsmCategories.LEDGER, configId2)
+            it.associate(tenantId4, CryptoConsts.HsmCategories.TLS, configId2)
+            it.associate(tenantId5, CryptoConsts.HsmCategories.TLS, configId1)
+        }
         val actual1 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.SESSION) }
         assertEquals(0, actual1.size)
         val actual2 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.LEDGER) }
-        assertEquals(1, actual2.size)
-        println(">>>>>>>>>>>>>>>>>>: ${actual2[0].configId}=${actual2[0].usages}")
+        assertEquals(2, actual2.size)
+        assertEquals(2, actual2.first { it.configId == configId1 }.usages)
+        assertEquals(3, actual2.first { it.configId == configId2 }.usages)
+        cache.act {
+            it.associate(tenantId3, CryptoConsts.HsmCategories.TLS, configId2)
+        }
+        val actual3 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.LEDGER) }
+        assertEquals(2, actual3.size)
+        assertEquals(2, actual3.first { it.configId == configId1 }.usages)
+        assertEquals(4, actual3.first { it.configId == configId2 }.usages)
     }
 
     @Test
