@@ -165,12 +165,10 @@ class MemberProcessorIntegrationTest {
             setupDatabases()
 
             // Set basic bootstrap config
-            cryptoProcessor.start(bootConf)
-            eventually { assertTrue(cryptoProcessor.isRunning) }
             memberProcessor.start(bootConf)
-            eventually { assertTrue(memberProcessor.isRunning) }
+            cryptoProcessor.start(bootConf)
 
-            membershipGroupReaderProvider.startAndWait()
+            membershipGroupReaderProvider.start()
 
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),

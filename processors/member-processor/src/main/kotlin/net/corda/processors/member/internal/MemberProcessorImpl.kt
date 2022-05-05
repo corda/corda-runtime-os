@@ -58,9 +58,6 @@ class MemberProcessorImpl @Activate constructor(
             MemberProcessorLifecycleHandler(configurationReadService, dependentComponents)
         )
 
-    override val isRunning: Boolean
-        get() = coordinator.isRunning
-
 
     override fun start(bootConfig: SmartConfig) {
         logger.info("Member processor starting.")
