@@ -4,6 +4,7 @@ import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.component.impl.AbstractComponent
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
@@ -33,7 +34,6 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     setOf(LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>())
 ), SoftCryptoServiceProvider {
     companion object {
-        const val SERVICE_NAME = "soft"
         private val logger: Logger = contextLogger()
         private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<SoftCryptoServiceProvider>()
     }
@@ -47,7 +47,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
 
-    override val name: String = SERVICE_NAME
+    override val name: String = SOFT_HSM_SERVICE_NAME
 
     override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
 

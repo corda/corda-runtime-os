@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.hsm.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.HSMCache
@@ -10,10 +11,11 @@ import net.corda.crypto.persistence.HSMCacheActions
 import net.corda.crypto.persistence.HSMTenantAssociation
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
+import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
+import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -38,7 +40,8 @@ class HSMServiceImpl(
         logger.info("assignHSM(tenant={}, category={})", tenantId, category)
         val association = hsmCache.act {
             val min = it.getHSMStats(category).filter { s ->
-                s.usages < s.capacity
+                s.usages < s.capacity &&
+                        (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
             }.minByOrNull { s ->
                 s.usages
             } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
@@ -133,7 +136,6 @@ class HSMServiceImpl(
         val info = HSMInfo(
             CryptoConsts.SOFT_HSM_CONFIG_ID,
             Instant.now(),
-            1,
             null,
             "Standard Soft HSM configuration",
             MasterKeyPolicy.NEW,
@@ -141,11 +143,17 @@ class HSMServiceImpl(
             softConfig.retries,
             softConfig.timeoutMills,
             SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.codeName },
-            SoftCryptoServiceProviderImpl.SERVICE_NAME,
+            SOFT_HSM_SERVICE_NAME,
             -1
         )
         val serviceConfig = ObjectMapper().writeValueAsBytes(SoftCryptoServiceConfig())
         add(info, encryptor.encrypt(serviceConfig))
+        linkCategories(
+            info.id,
+            CryptoConsts.HsmCategories.all().map {
+                HSMCategoryInfo(it, PrivateKeyPolicy.WRAPPED)
+            }.toSet()
+        )
         return info
     }
 }

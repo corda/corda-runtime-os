@@ -2,6 +2,7 @@ package net.corda.crypto.persistence.db.impl.tests
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
@@ -593,7 +594,10 @@ class PersistenceTests {
         val configId1 = UUID.randomUUID().toString()
         val configId2 = UUID.randomUUID().toString()
         cache.act {
-            it.add(createHSMInfo(configId = configId1, capacity = 5), "{}".toByteArray())
+            it.add(
+                createHSMInfo(configId = configId1, capacity = 5, serviceName = SOFT_HSM_SERVICE_NAME),
+                "{}".toByteArray()
+            )
         }
         cache.act {
             it.linkCategories(

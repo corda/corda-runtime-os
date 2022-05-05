@@ -74,6 +74,7 @@ class HSMCacheActionsImpl(
                         ) AND a.config = c
                     ) as usages,   
                     c.id as configId,
+                    c.serviceName as serviceName,
                     c.capacity as capacity
             FROM HSMConfigEntity c
                 WHERE EXISTS(SELECT 1 FROM HSMCategoryMapEntity m WHERE m.config = c AND m.category = :category)
@@ -83,6 +84,7 @@ class HSMCacheActionsImpl(
             HSMStat(
                 usages = (it.get("usages") as Number).toInt(),
                 configId = it.get("configId") as String,
+                serviceName = it.get("serviceName") as String,
                 capacity = (it.get("capacity") as Number).toInt(),
             )
         }
