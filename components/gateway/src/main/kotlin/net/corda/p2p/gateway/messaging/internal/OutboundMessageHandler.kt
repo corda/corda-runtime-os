@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * This is an implementation of an [PubSubProcessor] used to consume messages from a P2P message subscription. The received
- * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
+ * events are processed and fed into the HTTP pipeline.
  */
 @Suppress("LongParameterList")
 internal class OutboundMessageHandler(
@@ -101,7 +101,8 @@ internal class OutboundMessageHandler(
                 throw IllegalStateException("Can not handle events")
             }
 
-            return@withLifecycleLock event.value?.let { peerMessage ->
+            val peerMessage = event.value
+            return@withLifecycleLock if (peerMessage != null) {
                 try {
                     val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
 
@@ -127,12 +128,15 @@ internal class OutboundMessageHandler(
                         .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
                     responseFuture.whenCompleteAsync({ response, error ->
                         handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
-                    }, retryThreadPool).thenApply { }
+                    }, retryThreadPool).thenApply { Unit }
                 } catch (e: IllegalArgumentException) {
                     logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                     CompletableFuture.completedFuture(Unit)
                 }
-            } ?: CompletableFuture.completedFuture(Unit)
+            } else {
+                logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
+                CompletableFuture.completedFuture(Unit)
+            }
         }
     }
 

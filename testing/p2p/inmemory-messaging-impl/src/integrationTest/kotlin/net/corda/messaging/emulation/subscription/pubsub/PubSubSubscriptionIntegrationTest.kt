@@ -61,7 +61,7 @@ class PubSubSubscriptionIntegrationTest {
         )
     }
 
-    private val futures = CopyOnWriteArrayList<CompletableFuture<Unit>>()
+    private val lastFuture = AtomicReference<CompletableFuture<Unit>>()
     private val asynchronousSubscription by lazy {
         val config = SubscriptionConfig(groupName = group + "asynchronous", eventTopic = topic)
         val processor = object : PubSubProcessor<String, Event> {
@@ -72,7 +72,7 @@ class PubSubSubscriptionIntegrationTest {
                 processed.add(event)
                 waitForProcessed.get().countDown()
                 val future = CompletableFuture<Unit>()
-                futures.add(future)
+                lastFuture.set(future)
                 return future
             }
         }
@@ -175,8 +175,9 @@ class PubSubSubscriptionIntegrationTest {
         assertThat(processed).isEmpty()
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
         eventually(duration = 1.seconds, waitBetween = 50.millis) {
-            assertThat(futures.size).isEqualTo(1)
+            assertThat(lastFuture.get()).isNotNull
         }
+        val firstFuture = lastFuture.get()
         waitForProcessed.set(CountDownLatch(1))
         publish(
             Record(topic, "key2", Event("one", 1)),
@@ -186,8 +187,7 @@ class PubSubSubscriptionIntegrationTest {
         Thread.sleep(1000)
         assertThat(processed.map { it.key }).containsOnly("key1")
 
-        val future = futures[0]
-        future.complete(Unit)
+        firstFuture.complete(Unit)
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
         assertThat(processed.map { it.key }).containsOnly("key1", "key2")
 

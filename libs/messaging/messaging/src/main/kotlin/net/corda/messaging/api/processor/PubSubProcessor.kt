@@ -16,9 +16,11 @@ interface PubSubProcessor<K : Any, V : Any> {
 
     /**
      * Implement this method to receive the next [event] record from the subscription feed.
-     * The processor will process a batch of events, calling [onNext] for each event.
-     * The next batch, will only be processed after the futures returned by [onNext] have completed.
-     * If blocking the next batch, is unnecessary then a CompletableFuture.completedFuture(Unit) should be returned.
+     * The subscription will invoke [onNext] on the processor for the current batch of records, wait for the completion of the returned
+     * futures and then continue with the next batch of records. The processor is responsible for imposing any timeouts required on the
+     * returned futures. Any errors thrown from the returned futures will be logged, but the subscription will continue processing records.
+     * The subscription waiting on the completion of the current batch creates some degree of back-pressure. If this blocking behaviour is
+     * not necessary, the processor can return a completed future (e.g. `CompletableFuture.completedFuture(Unit)`).
      */
     fun onNext(event: Record<K, V>): Future<Unit>
 
