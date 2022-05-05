@@ -14,7 +14,7 @@ interface TestFileUploadAPI : RpcOps {
     fun upload(@HttpRpcRequestBodyParameter file: InputStream): String
 
     @HttpRpcPOST(path = "uploadWithName")
-    fun uploadWithName(@HttpRpcRequestBodyParameter fileName: String, @HttpRpcRequestBodyParameter file: InputStream): String
+    fun uploadWithName(@HttpRpcRequestBodyParameter name: String, @HttpRpcRequestBodyParameter file: InputStream): String
 
     @HttpRpcPOST(path = "uploadWithoutParameterAnnotations")
     fun uploadWithoutParameterAnnotations(fileName: String, file: InputStream): String

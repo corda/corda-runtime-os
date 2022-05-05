@@ -1,6 +1,7 @@
 package net.corda.httprpc.server.impl.utils
 
 import io.javalin.core.util.Header.ORIGIN
+import java.io.InputStream
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
 import kong.unirest.Unirest
@@ -11,12 +12,23 @@ import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
 import javax.net.ssl.SSLContext
+import kong.unirest.MultipartBody
 
-data class WebRequest<T>(val path: String, val body: T? = null, val queryParameters: Map<String, Any>? = null)
+data class TestClientFileUpload(val fileContent: InputStream, val fileName: String)
+
+data class WebRequest<T>(
+    val path: String,
+    val body: T? = null,
+    val queryParameters: Map<String, Any>? = null,
+    val formParameters: Map<String, Any>? = null
+)
+
 data class WebResponse<T>(val body: T?, val headers: Map<String, String>, val responseStatus: Int, val responseStatusText: String?)
 
 interface TestHttpClient {
-    fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String = "", password: String = ""): WebResponse<R> where R: Any
+    fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String = "", password: String = ""):
+            WebResponse<R> where R : Any
+
     fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String = "", password: String = ""): WebResponse<String>
     fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String>
     val baseAddress: String
@@ -24,7 +36,8 @@ interface TestHttpClient {
 
 class TestHttpClientUnirestImpl(override val baseAddress: String, private val enableSsl: Boolean = false) : TestHttpClient {
 
-    override fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String): WebResponse<R> where R: Any {
+    override fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String):
+            WebResponse<R> where R : Any {
 
         addSslParams()
 
@@ -35,26 +48,24 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
             HttpVerb.DELETE -> Unirest.delete(baseAddress + webRequest.path).basicAuth(userName, password)
         }.addOriginHeader()
 
-        if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
-        webRequest.queryParameters?.forEach{ item ->
-            if (item.value is Collection<*>) {
-                (item.value as Collection<*>).forEach { request = request.queryString(item.key, it) }
-            }
-            else {
-                request = request.queryString(item.key, item.value)
-            }
+        if(request is HttpRequestWithBody) {
+            request = applyBody(webRequest, request)
         }
 
-        val response =  request.asObject(responseClass)
-        return WebResponse(response.body, response.headers.all()
-                .associateBy({ it.name }, { it.value }), response.status, response.statusText)
+        request = applyQueryParameters(webRequest, request)
+
+        val response = request.asObject(responseClass)
+        return WebResponse(
+            response.body, response.headers.all()
+                .associateBy({ it.name }, { it.value }), response.status, response.statusText
+        )
     }
 
     private fun HttpRequest<*>.addOriginHeader() = header(ORIGIN, "localhost")
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String, password: String): WebResponse<String> {
         return doCall(verb, webRequest) {
-            if (userName.isNotEmpty() || password.isNotEmpty()){
+            if (userName.isNotEmpty() || password.isNotEmpty()) {
                 basicAuth(userName, password)
             }
         }
@@ -74,19 +85,53 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
         request.encodeAuth()
 
-        if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
-        webRequest.queryParameters?.forEach { item ->
-            if (item.value is Collection<*>) {
-                (item.value as Collection<*>).forEach { request = request.queryString(item.key, it) }
-            }
-            else {
-                request = request.queryString(item.key, item.value)
-            }
+        if(request is HttpRequestWithBody) {
+            request = applyBody(webRequest, request)
         }
+        request = applyQueryParameters(webRequest, request)
 
         val response = request.asString()
-        return WebResponse(response.body, response.headers.all()
-                .associateBy({ it.name }, { it.value }), response.status, response.statusText)
+        return WebResponse(
+            response.body, response.headers.all()
+                .associateBy({ it.name }, { it.value }), response.status, response.statusText
+        )
+    }
+
+    private fun <T> applyBody(webRequest: WebRequest<T>, request: HttpRequestWithBody): HttpRequest<*> {
+        var requestBuilder: HttpRequest<*> = request
+        if (!webRequest.formParameters.isNullOrEmpty()) {
+            requestBuilder = applyFormParameters(request, webRequest.formParameters)
+        } else if (webRequest.body != null) {
+            requestBuilder = request.body(webRequest.body)
+        }
+        return requestBuilder
+    }
+
+    private fun applyFormParameters(request: HttpRequestWithBody, formParameters: Map<String, Any>): MultipartBody {
+        val multiPartContent = request.multiPartContent()
+        val formParamNames = formParameters.keys
+        for (paramName in formParamNames) {
+            val paramValue = formParameters[paramName]
+            // this doesn't support lists of form parameters
+            if (paramValue is TestClientFileUpload) {
+                multiPartContent.field(paramName, paramValue.fileContent, paramValue.fileName)
+            } else if (paramValue is String) {
+                multiPartContent.field(paramName, paramValue)
+            }
+        }
+        return multiPartContent
+    }
+
+    private fun <T> applyQueryParameters(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request
+        webRequest.queryParameters?.forEach { item ->
+            if (item.value is Collection<*>) {
+                (item.value as Collection<*>).forEach { requestBuilder = requestBuilder.queryString(item.key, it) }
+            } else {
+                requestBuilder = requestBuilder.queryString(item.key, item.value)
+            }
+        }
+        return requestBuilder
     }
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String> {
@@ -98,13 +143,13 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
     private fun addSslParams() {
         if (enableSsl) {
             val sslContext: SSLContext = SSLContexts.custom()
-                    .loadTrustMaterial(TrustAllStrategy())
-                    .build()
+                .loadTrustMaterial(TrustAllStrategy())
+                .build()
 
             val httpClient = HttpClients.custom()
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier(NoopHostnameVerifier())
-                    .build()
+                .setSSLContext(sslContext)
+                .setSSLHostnameVerifier(NoopHostnameVerifier())
+                .build()
 
             Unirest.config().let { config ->
                 config.httpClient(ApacheClient.builder(httpClient).apply(config))

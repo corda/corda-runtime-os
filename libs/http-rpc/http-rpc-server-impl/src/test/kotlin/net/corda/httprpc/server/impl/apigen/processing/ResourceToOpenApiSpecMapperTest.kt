@@ -296,7 +296,8 @@ class ResourceToOpenApiSpecMapperTest {
                     classType = InputStream::class.java,
                     parameterizedTypes = emptyList(),
                     type = ParameterType.BODY,
-                    default = ""
+                    default = "",
+                    isFile = true
                 )
             ),
             responseBody = ResponseBody(
@@ -349,7 +350,8 @@ class ResourceToOpenApiSpecMapperTest {
                     required = true,
                     classType = InputStream::class.java,
                     type = ParameterType.BODY,
-                    default = ""
+                    default = "",
+                    isFile = true
                 )
             ),
             responseBody = ResponseBody(

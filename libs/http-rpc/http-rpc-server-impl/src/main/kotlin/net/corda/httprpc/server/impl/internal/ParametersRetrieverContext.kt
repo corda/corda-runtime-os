@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl.internal
 
 import io.javalin.http.Context
 import io.javalin.http.util.ContextUtil
+import net.corda.httprpc.HttpFileUpload
 import net.corda.v5.base.util.contextLogger
 
 /**
@@ -18,6 +19,7 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
 
     private val pathParamsMap: Map<String, String?>
     private val queryParamsMap: Map<String, List<String>>
+    private val formParamsMap: Map<String, List<String>>
 
     init {
         // Moving all the parameters' keys to the lowercase.
@@ -34,6 +36,12 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
             logger.warn("Some query parameters keys were dropped. " +
                     "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap")
         }
+        val ctxFormParamMap = ctx.formParamMap()
+        formParamsMap = ctxFormParamMap.mapKeys { it.key.lowercase() }
+        if (formParamsMap.size != ctxFormParamMap.size) {
+            logger.warn("Some form parameter keys were dropped. " +
+                    "Original map: $ctxFormParamMap, transformed map: $formParamsMap")
+        }
     }
 
     fun body(): String = ctx.body()
@@ -48,4 +56,11 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
 
     fun queryParam(key: String, default: String? = null): String? =
         queryParamsMap[key.lowercase()]?.firstOrNull() ?: default
+
+    fun formParams(key: String): List<String> = formParamsMap[key.lowercase()] ?: emptyList()
+
+    fun uploadedFiles(paramName: String): List<HttpFileUpload> {
+        val files = ctx.uploadedFiles(paramName)
+        return files.map { file -> HttpFileUpload(file.content, file.contentType, file.extension, file.filename, file.size) }
+    }
 }

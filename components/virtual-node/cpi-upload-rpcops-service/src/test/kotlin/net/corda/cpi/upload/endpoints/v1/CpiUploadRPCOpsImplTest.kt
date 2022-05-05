@@ -18,6 +18,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.util.UUID
+import net.corda.httprpc.HttpFileUpload
 
 class CpiUploadRPCOpsImplTest {
     private lateinit var cpiUploadRPCOpsImpl: CpiUploadRPCOpsImpl
@@ -54,7 +55,7 @@ class CpiUploadRPCOpsImplTest {
 
         whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent))).thenReturn(cpiUploadRequestId)
 
-        val httpResponse = cpiUploadRPCOpsImpl.cpi(DUMMY_FILE_NAME, cpiContent)
+        val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, "file", ".cpi", DUMMY_FILE_NAME, 12L))
         assertNotNull(httpResponse)
         assertEquals(cpiUploadRequestId.requestId, httpResponse.id)
     }

@@ -6,21 +6,33 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
-import java.io.InputStream
 import java.net.URI
 import javax.net.ssl.SSLContext
+import kong.unirest.HttpRequestWithBody
+import kong.unirest.MultipartBody
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  : HttpsClient {
     init {
         addSslParams()
     }
 
-    override fun postMultiPart(cmd: String, fileName: String, inputStream: InputStream): SimpleResponse {
+    override fun postMultiPart(cmd: String, fields: Map<String, String>, files: Map<String, HttpsClientFileUpload>): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
-        val response = Unirest.post(url).basicAuth(username, password)
-            .field("file", inputStream, fileName)
-            .asString()
+        var request = Unirest.post(url)
+            .basicAuth(username, password)
+            .multiPartContent()
+
+        fields.keys.map { name ->
+            request = request.field(name, fields[name])
+        }
+
+        files.keys.map { name ->
+            val file = files[name]!!
+            request = request.field(name, file.content, file.filename)
+        }
+
+        val response = request.asString()
 
         return SimpleResponse(response.status, response.body, url)
     }
