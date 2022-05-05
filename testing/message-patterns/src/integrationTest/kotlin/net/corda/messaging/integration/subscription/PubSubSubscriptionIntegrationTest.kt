@@ -88,7 +88,7 @@ class PubSubSubscriptionIntegrationTest {
             }
         coordinator.start()
 
-        val processor = TestPubsubProcessor(AtomicReference(latch))
+        val processor = TestPubsubProcessor(latch)
         val pubsubSub = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("pubSub1", PUBSUB_TOPIC1),
             processor,
@@ -121,7 +121,7 @@ class PubSubSubscriptionIntegrationTest {
     fun `start pubsub subscription and publish records with asynchronus processor`() {
         topicUtils.createTopics(getTopicConfig(TopicTemplates.PUBSUB_TOPIC1_TEMPLATE))
 
-        val latch = AtomicReference(CountDownLatch(2))
+        val latch = CountDownLatch(2)
         val coordinator =
             lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("anotherPubSubTest"))
             { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
@@ -163,7 +163,7 @@ class PubSubSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(PUBSUB_TOPIC1, 1, 1))
         var secondFuture: CompletableFuture<Unit>? = null
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
-            assertThat(latch.get().count).isEqualTo(1)
+            assertThat(latch.count).isEqualTo(1)
         }
         firstFuture!!.complete(Unit)
 
@@ -173,7 +173,7 @@ class PubSubSubscriptionIntegrationTest {
         }
 
         secondFuture!!.complete(Unit)
-        latch.get().await()
+        latch.await()
 
         publisher.close()
         pubsubSub.stop()

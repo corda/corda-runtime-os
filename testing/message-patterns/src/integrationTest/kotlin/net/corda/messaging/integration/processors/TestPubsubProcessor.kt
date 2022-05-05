@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 
 class TestPubsubProcessor(
-    private val latch: AtomicReference<CountDownLatch>,
+    private val latch: CountDownLatch,
     private val completeFuture: Boolean = true
 ) : PubSubProcessor<String, DemoRecord> {
     override val keyClass: Class<String>
@@ -18,7 +18,7 @@ class TestPubsubProcessor(
     val future = AtomicReference<CompletableFuture<Unit>>(null)
 
     override fun onNext(event: Record<String, DemoRecord>): CompletableFuture<Unit> {
-        latch.get().countDown()
+        latch.countDown()
         val thisFuture = CompletableFuture<Unit>()
         if (completeFuture) {
             thisFuture.complete(Unit)
