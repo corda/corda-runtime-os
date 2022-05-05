@@ -38,8 +38,10 @@ dependencies {
             because 'sonatype-2021-4682'
         }
         // avoid License-Copyleft licence in 1:30
-        implementation("org.yaml:snakeyaml:1.29") {
-            because 'sonatype-2021-4682'
+        implementation('org.yaml:snakeyaml') {
+            version {
+                strictly '1.29'
+            }
         }
     }
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
