@@ -10,25 +10,32 @@ import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.ServiceScope
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.File
 import java.io.Reader
 
 
 @ServiceRanking(Int.MAX_VALUE)
-@Component(service = [VirtualNodeInfoReadService::class, FakeVirtualNodeInfoReadService::class],
-    scope = ServiceScope.SINGLETON)
-class FakeVirtualNodeInfoReadService @Activate constructor() : VirtualNodeInfoReadService {
+@Component(service = [VirtualNodeInfoReadService::class, VirtualNodeInfoReadServiceFake::class])
+class VirtualNodeInfoReadServiceFake internal constructor(
+    map: Map<HoldingIdentity, VirtualNodeInfo>,
+    callbacks: List<VirtualNodeInfoListener>,
+) : VirtualNodeInfoReadService {
 
-    private val map = mutableMapOf<HoldingIdentity, VirtualNodeInfo>()
-    private val callbacks = mutableListOf<VirtualNodeInfoListener>()
+    @Activate
+    constructor() : this(emptyMap(), emptyList())
+
+    internal constructor(
+        vararg virtualNodeInfos: VirtualNodeInfo,
+        callbacks: List<VirtualNodeInfoListener> = emptyList(),
+    ) : this(virtualNodeInfos.associateBy { it.holdingIdentity }, callbacks)
+
+    private val map: MutableMap<HoldingIdentity, VirtualNodeInfo> = map.toMutableMap()
+    private val callbacks: MutableList<VirtualNodeInfoListener> = callbacks.toMutableList()
 
     init {
         val file = File("virtual-node-infos.yml")
-        if (file.exists()) {
-            file.reader().use(::loadFrom)
-        }
+        if (file.exists()) file.reader().use(::loadFrom)
     }
 
     fun addOrUpdate(virtualNodeInfo: VirtualNodeInfo) {
@@ -47,8 +54,6 @@ class FakeVirtualNodeInfoReadService @Activate constructor() : VirtualNodeInfoRe
         map.clear()
         callbacks.clear()
     }
-
-    data class InitData(val virtualNodeInfos: List<VirtualNodeInfo>)
 
     fun loadFrom(reader: Reader) {
         val mapper = ObjectMapper(YAMLFactory())

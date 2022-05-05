@@ -58,7 +58,7 @@ dependencies {
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(":components:sandbox-fakes")
+    integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

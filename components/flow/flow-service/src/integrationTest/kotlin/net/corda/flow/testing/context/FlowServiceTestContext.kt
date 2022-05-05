@@ -29,7 +29,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.ManifestCordappInfo
-import net.corda.sandbox.fakes.FakeVirtualNodeInfoReadService
+import net.corda.sandbox.fakes.VirtualNodeInfoReadServiceFake
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -49,8 +49,8 @@ import java.util.*
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
-    @Reference(service = FakeVirtualNodeInfoReadService::class)
-    val virtualNodeInfoReadService: FakeVirtualNodeInfoReadService,
+    @Reference(service = VirtualNodeInfoReadServiceFake::class)
+    val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
     @Reference(service = FakeCpiInfoReadService::class)
     val cpiInfoReadService: FakeCpiInfoReadService,
     @Reference(service = FakeSandboxGroupContextComponent::class)

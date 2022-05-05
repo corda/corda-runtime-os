@@ -22,7 +22,7 @@
     bnd.identity;id='net.corda.flow-service',\
     bnd.identity;id='net.corda.application-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\
-    bnd.identity;id='net.corda.sandbox-fakes',\
+    bnd.identity;id='net.corda.virtual-node-info-read-service-fake',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
