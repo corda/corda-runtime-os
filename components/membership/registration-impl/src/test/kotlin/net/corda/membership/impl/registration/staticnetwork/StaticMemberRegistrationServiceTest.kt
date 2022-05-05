@@ -220,10 +220,10 @@ class StaticMemberRegistrationServiceTest {
             val signedMemberPublished = it.value as PersistentMemberInfo
             val memberPublished = toMemberInfo(
                 layeredPropertyMapFactory.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished.signedMemberInfo.memberContext).toSortedMap()
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished.memberContext).toSortedMap()
                 ),
                 layeredPropertyMapFactory.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished.signedMemberInfo.mgmContext).toSortedMap()
+                    KeyValuePairList.fromByteBuffer(signedMemberPublished.mgmContext).toSortedMap()
                 )
             )
             assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)

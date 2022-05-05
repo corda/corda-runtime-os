@@ -7,7 +7,6 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.toWire
@@ -28,7 +27,6 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoImpl
-import net.corda.membership.impl.buildMerkleTree
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
@@ -150,37 +148,38 @@ class StaticMemberRegistrationService @Activate constructor(
         val staticMemberList = policy.staticMembers
         require(staticMemberList.isNotEmpty()) { "Static member list inside the group policy file cannot be empty." }
 
-        val processedMembers = mutableListOf<String>()
-        @Suppress("SpreadOperator")
-        staticMemberList.forEach { staticMember ->
-            isValidStaticMemberDeclaration(processedMembers, staticMember)
-            val memberName = MemberX500Name.parse(staticMember.name!!).toString()
-            val memberId = HoldingIdentity(memberName, groupId).id
-            val memberKey = getIdentityKey(staticMember, memberId)
-            val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
-            val mgmKey = getMgmIdentityKey(memberId, policy)
-            val memberInfo = MemberInfoImpl(
-                memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-                    sortedMapOf(
-                        PARTY_NAME to memberName,
-                        PARTY_OWNING_KEY to encodedMemberKey,
-                        GROUP_ID to groupId,
-                        *generateIdentityKeys(encodedMemberKey).toTypedArray(),
-                        *generateIdentityKeyHashes(memberKey).toTypedArray(),
-                        *convertEndpoints(staticMember).toTypedArray(),
-                        SOFTWARE_VERSION to staticMember.softwareVersion,
-                        PLATFORM_VERSION to staticMember.platformVersion,
-                        SERIAL to staticMember.serial,
-                    )
-                ),
-                mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
-                    sortedMapOf(
-                        STATUS to staticMember.status,
-                        MODIFIED_TIME to staticMember.modifiedTime,
-                    )
-                )
+        val staticMemberInfo = staticMemberList.firstOrNull { it.name == member.x500Name }
+            ?: throw IllegalArgumentException("Our membership is not listed on the static member list or the member's " +
+                    "name is not provided in the list.")
+
+        isValidStaticMemberDeclaration(staticMemberInfo)
+        val memberName = MemberX500Name.parse(staticMemberInfo.name!!).toString()
+        val memberId = HoldingIdentity(memberName, groupId).id
+        val memberKey = generateOwningKey(staticMemberInfo, memberId)
+        val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
+
+        val memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
+            sortedMapOf(
+                PARTY_NAME to memberName,
+                PARTY_OWNING_KEY to encodedMemberKey,
+                GROUP_ID to groupId,
+                *generateIdentityKeys(encodedMemberKey).toTypedArray(),
+                *generateIdentityKeyHashes(memberKey).toTypedArray(),
+                *convertEndpoints(staticMemberInfo).toTypedArray(),
+                SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
+                PLATFORM_VERSION to staticMemberInfo.platformVersion,
+                SERIAL to staticMemberInfo.serial,
             )
-            val signedMemberInfo = signMemberInfo(memberId, memberInfo, memberKey, mgmKey)
+        )
+
+        val mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
+            sortedMapOf(
+                STATUS to staticMemberInfo.status,
+                MODIFIED_TIME to staticMemberInfo.modifiedTime,
+            )
+        )
+
+        //staticMemberList.forEach {
             members.add(
                 Record(
                     MEMBER_LIST_TOPIC,
@@ -188,17 +187,12 @@ class StaticMemberRegistrationService @Activate constructor(
                     PersistentMemberInfo(registeringMember.toAvro(), signedMemberInfo)
                 )
             )
-            processedMembers.add(memberName)
-        }
+        //}
+
         return members
     }
 
-    private fun isValidStaticMemberDeclaration(processedMembers: List<String>, member: StaticMember) {
-        val memberName = member.name
-        require(!memberName.isNullOrBlank()) { "Member's name is not provided." }
-        require(!processedMembers.contains(
-            MemberX500Name.parse(memberName).toString()
-        )) { "Duplicated static member declaration." }
+    private fun isValidStaticMemberDeclaration(member: StaticMember) {
         require(
             member.keys.any { it.startsWith(endpointUrlIdentifier) }
         ) { "Endpoint urls are not provided." }
@@ -218,22 +212,6 @@ class StaticMemberRegistrationService @Activate constructor(
         if (keyAlias.isNullOrBlank()) {
             keyAlias = memberId
         }
-        return getOrGenerateKeyPair(memberId, keyAlias)
-    }
-
-    /**
-     * Generates the MGM's key used for signing the MemberInfo from the static template.
-     */
-    private fun getMgmIdentityKey(
-        memberId: String,
-        policy: GroupPolicy
-    ): PublicKey {
-        val staticMgm = policy.staticMgm
-        require(staticMgm.isNotEmpty()) { "Static mgm inside the group policy file should be defined." }
-
-        val keyAlias: String? = staticMgm[KEY_ALIAS]
-        require(!keyAlias.isNullOrBlank()) { "MGM's key alias is not provided." }
-
         return getOrGenerateKeyPair(memberId, keyAlias)
     }
 
@@ -319,37 +297,5 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    /**
-     * Creates and returns a [SignedMemberInfo] object.
-     */
-    private fun signMemberInfo(
-        memberId: String,
-        memberInfo: MemberInfo,
-        memberKey: PublicKey,
-        mgmKey: PublicKey,
-    ): SignedMemberInfo {
-        val memberContextBF = memberInfo.memberProvidedContext.toWire()
-        val mgmContextBF = memberInfo.mgmProvidedContext.toWire()
-        return SignedMemberInfo(
-            memberContextBF,
-            mgmContextBF,
-            memberContextBF
-                .array()
-                .toCryptoSignatureWithKey(memberId, memberKey),
-            buildMerkleTree(
-                mgmContextBF,
-                memberContextBF,
-                digestService
-            ).hash.bytes.toCryptoSignatureWithKey(memberId, mgmKey)
-        )
-    }
-
     private fun ByteArray.toByteBuffer(): ByteBuffer = ByteBuffer.wrap(this)
-    private fun ByteArray.toCryptoSignatureWithKey(
-        memberId: String,
-        signingKey: PublicKey
-    ) = CryptoSignatureWithKey(
-        keyEncodingService.encodeAsByteArray(signingKey).toByteBuffer(),
-        cryptoOpsClient.sign(memberId, signingKey, this).bytes.toByteBuffer()
-    )
 }
