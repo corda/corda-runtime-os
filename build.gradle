@@ -11,30 +11,34 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3-docker' apply false
 }
 
+  
 ext.pluginsDir = "$buildDir/plugins"
+
+if (System.getenv("RELEASE_VERSION")?.trim()) {
+    version = System.getenv("RELEASE_VERSION")
+} else {
+    def versionSuffix = '-SNAPSHOT'
+    if (System.getenv('VERSION_SUFFIX')) {
+        versionSuffix = System.getenv('VERSION_SUFFIX')
+    }
+    version = "$cliHostVersion$versionSuffix"
+}
 
 subprojects {
 
-    if (System.getenv("RELEASE_VERSION")?.trim()) {
-        version = System.getenv("RELEASE_VERSION")
-    } else {
-        def versionSuffix = '-SNAPSHOT'
-        if (System.getenv('VERSION_SUFFIX')) {
-            versionSuffix = System.getenv('VERSION_SUFFIX')
-        }
-        version = "$cliHostVersion$versionSuffix"
-    }
     group = 'net.corda.cli'
+    version rootProject.version
 
 
     pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
         apply plugin: 'io.gitlab.arturbosch.detekt'
 
-
         dependencies {
             detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
         }
     }
+
+
 
     tasks.withType(KotlinCompile).configureEach {
         kotlinOptions {
@@ -86,3 +90,28 @@ wrapper {
     gradleVersion = '7.4.2'
     distributionType = Wrapper.DistributionType.BIN
 }
+
+tasks.register("generateVersionedScripts"){
+    description 'Wrapper task to ensure we have the correct version specified in provided scripts'
+    dependsOn cleanDir, copyScripts
+}
+
+
+tasks.register("cleanDir", Delete){
+    description 'Removes any previously generated scripts'
+    delete 'build/generatedScripts' 
+}
+
+tasks.register("copyScripts", Copy){
+    mustRunAfter cleanDir
+    description 'Copy corda-cli scripts to a location in build dir and update to use correct version'
+
+    from 'script' 
+    into 'build/generatedScripts' 
+    filter {
+            String line -> line.replaceAll("corda-cli-.(.)*.jar", "corda-cli-${version}.jar")
+        }
+}
+
+// Automatically ran as part of build process
+assemble.finalizedBy(generateVersionedScripts)
