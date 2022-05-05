@@ -29,7 +29,7 @@ internal object ParameterRetrieverFactory {
                 else QueryParameterRetriever(parameter)
             }
             ParameterType.BODY -> {
-                if(multipartFileUpload) MultipartParameterRetriever(parameter)
+                if (multipartFileUpload) MultipartParameterRetriever(parameter)
                 else BodyParameterRetriever(parameter)
             }
         }
@@ -134,7 +134,7 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
 }
 
 @Suppress("TooGenericExceptionThrown")
-internal class MultipartParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
+private class MultipartParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
         private val log = contextLogger()
     }
@@ -147,13 +147,13 @@ internal class MultipartParameterRetriever(private val parameter: Parameter) : P
             if (parameter.isFileUpload) {
                 val uploadedFiles = ctx.uploadedFiles(parameter.name)
 
-                if(uploadedFiles.isEmpty())
+                if (uploadedFiles.isEmpty())
                     throw IllegalArgumentException("Expected file with parameter name ${parameter.name} but it was not found.")
 
-                if(Collection::class.java.isAssignableFrom(parameter.classType))
+                if (Collection::class.java.isAssignableFrom(parameter.classType))
                     return uploadedFiles
 
-                if(InputStream::class.java.isAssignableFrom(parameter.classType)) {
+                if (InputStream::class.java.isAssignableFrom(parameter.classType)) {
                     return uploadedFiles.first().content
                 }
 
@@ -168,11 +168,10 @@ internal class MultipartParameterRetriever(private val parameter: Parameter) : P
 
             log.trace { "Cast \"${parameter.name}\" to multipart form parameter completed." }
 
-            if(Collection::class.java.isAssignableFrom(parameter.classType)){
+            if (Collection::class.java.isAssignableFrom(parameter.classType)) {
                 return formParameterAsList
             }
             return formParameterAsList.first()
-
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to multipart form parameter".let {
                 log.error("$it: ${e.message}")

@@ -45,8 +45,7 @@ class ResourceToOpenApiSpecMapperTest {
             required = true,
             default = "default",
             classType = String::class.java,
-            type = ParameterType.QUERY,
-            isFile = false
+            type = ParameterType.QUERY
         )
         val openApiQueryParameter = queryParameter.toOpenApiParameter(schemaModelProvider)
         assertEquals("name", openApiQueryParameter.name)
@@ -67,8 +66,7 @@ class ResourceToOpenApiSpecMapperTest {
             required = true,
             default = "default",
             classType = String::class.java,
-            type = ParameterType.QUERY,
-            isFile = false
+            type = ParameterType.QUERY
         )
         val openApiQueryParameter = queryParameter.toOpenApiParameter(schemaModelProvider)
         assertEquals("id", openApiQueryParameter.name)
@@ -95,8 +93,7 @@ class ResourceToOpenApiSpecMapperTest {
             default = "default",
             classType = List::class.java,
             parameterizedTypes = listOf(GenericParameterizedType(TestParamClass::class.java)),
-            type = ParameterType.BODY,
-            isFile = false
+            type = ParameterType.BODY
         )
         val schemaModelContextHolder = SchemaModelContextHolder()
         val schemaModelProvider = DefaultSchemaModelProvider(schemaModelContextHolder)
@@ -133,8 +130,7 @@ class ResourceToOpenApiSpecMapperTest {
             required = true,
             default = "default",
             classType = String::class.java,
-            type = ParameterType.BODY,
-            isFile = false
+            type = ParameterType.BODY
         )
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val requestBody = listOf(bodyParameter).toRequestBody(schemaModelProvider, "testSchemaName")
@@ -199,8 +195,7 @@ class ResourceToOpenApiSpecMapperTest {
                         )
                     ),
                     type = ParameterType.BODY,
-                    default = "",
-                    isFile = false
+                    default = ""
                 )
             ),
             responseBody = ResponseBody(
@@ -302,7 +297,7 @@ class ResourceToOpenApiSpecMapperTest {
                     parameterizedTypes = emptyList(),
                     type = ParameterType.BODY,
                     default = "",
-                    isFile = false
+                    isFile = true
                 )
             ),
             responseBody = ResponseBody(
@@ -346,8 +341,7 @@ class ResourceToOpenApiSpecMapperTest {
                     required = true,
                     classType = String::class.java,
                     type = ParameterType.BODY,
-                    default = "default",
-                    isFile = false
+                    default = "default"
                 ),
                 EndpointParameter(
                     id = "file_id",
@@ -357,7 +351,7 @@ class ResourceToOpenApiSpecMapperTest {
                     classType = InputStream::class.java,
                     type = ParameterType.BODY,
                     default = "",
-                    isFile = false
+                    isFile = true
                 )
             ),
             responseBody = ResponseBody(

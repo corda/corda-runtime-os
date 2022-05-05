@@ -721,8 +721,7 @@ class SchemaModelProviderTest {
             id = "id",
             nullable = true,
             required = true,
-            type = ParameterType.PATH,
-            isFile = false
+            type = ParameterType.PATH
         )
     }
 

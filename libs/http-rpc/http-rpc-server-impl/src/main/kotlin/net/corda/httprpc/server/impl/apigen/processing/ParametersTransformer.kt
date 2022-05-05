@@ -64,8 +64,7 @@ private class PathParametersTransformer(
             default = null,
             classType = parameter.type.jvmErasure.java,
             parameterizedTypes = parameter.getParameterizedTypes(),
-            type = ParameterType.PATH,
-            isFile = false
+            type = ParameterType.PATH
         ).also { log.trace { "Transform path parameter \"${parameter.name}\" completed. Result:\n$it" } }
     }
 }
@@ -89,8 +88,7 @@ private class QueryParametersTransformer(
             default = annotation.default.ifBlank { null },
             classType = parameter.type.jvmErasure.java,
             parameterizedTypes = parameter.getParameterizedTypes(),
-            type = ParameterType.QUERY,
-            isFile = false
+            type = ParameterType.QUERY
         ).also { log.trace { "Transform query parameter \"${parameter.name}\" completed. Result:\n$it" } }
     }
 }

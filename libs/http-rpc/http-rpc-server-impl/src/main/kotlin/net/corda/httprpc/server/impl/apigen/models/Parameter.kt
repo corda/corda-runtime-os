@@ -40,7 +40,7 @@ data class EndpointParameter(
     /**
      * Whether this parameter represents a file to be uploaded.
      */
-    val isFile: Boolean
+    val isFile: Boolean = false
 )
 
 enum class ParameterType {

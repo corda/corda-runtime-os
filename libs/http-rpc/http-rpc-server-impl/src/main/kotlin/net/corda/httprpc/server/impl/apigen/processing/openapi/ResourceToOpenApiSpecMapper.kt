@@ -147,6 +147,13 @@ private fun List<EndpointParameter>.toMediaType(
     }
 }
 
+private fun List<EndpointParameter>.determineContentType() =
+    if (this.isMultipartFileUpload()) {
+        MULTIPART_CONTENT_TYPE
+    } else {
+        APPLICATION_JSON_CONTENT_TYPE
+    }
+
 private fun List<EndpointParameter>.isMultipartFileUpload(): Boolean {
     return this.any { endpointParameter ->
         endpointParameter.classType == InputStream::class.java ||
@@ -154,13 +161,6 @@ private fun List<EndpointParameter>.isMultipartFileUpload(): Boolean {
                 endpointParameter.parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
     }
 }
-
-private fun List<EndpointParameter>.determineContentType() =
-    if (this.isMultipartFileUpload()) {
-        MULTIPART_CONTENT_TYPE
-    } else {
-        APPLICATION_JSON_CONTENT_TYPE
-    }
 
 @VisibleForTesting
 internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModelProvider): Operation {

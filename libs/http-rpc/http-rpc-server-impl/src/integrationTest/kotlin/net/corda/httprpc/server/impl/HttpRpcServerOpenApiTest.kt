@@ -161,7 +161,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(2, multipartFormData.schema.properties.size)
-            val fileName = multipartFormData.schema.properties["fileName"]
+            val fileName = multipartFormData.schema.properties["name"]
             assertNotNull(fileName)
             assertEquals("string", fileName.type, "Multipart file type should be a string.")
             assertFalse(fileName.nullable)
