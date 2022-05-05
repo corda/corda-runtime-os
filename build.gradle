@@ -20,7 +20,7 @@ plugins {
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
-    id 'maven-publish'
+    id 'corda.root-publish'
     id 'jacoco'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
