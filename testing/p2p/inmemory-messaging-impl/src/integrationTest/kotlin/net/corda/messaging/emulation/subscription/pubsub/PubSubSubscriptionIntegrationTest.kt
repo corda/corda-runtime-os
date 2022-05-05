@@ -79,6 +79,7 @@ class PubSubSubscriptionIntegrationTest {
         subscriptionFactory.createPubSubSubscription(
             subscriptionConfig = config,
             processor = processor,
+            messagingConfig = SmartConfigImpl.empty()
         )
     }
 
