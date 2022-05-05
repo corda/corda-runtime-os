@@ -69,6 +69,35 @@ class InboundAssignmentListenerTest {
     }
 
     @Test
+    fun `the future will not completes when no partitions are assigned`() {
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        val readyFuture = createResources!!(mock())
+        listener.onPartitionsAssigned(emptyList())
+        assertThat(readyFuture.isDone).isFalse
+    }
+
+    @Test
+    fun `A new future is created after the first completion`() {
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        val futureOne = createResources!!(mock())
+
+        listener.onPartitionsAssigned(listOf("topic" to 1))
+
+        val futureTwo = createResources!!(mock())
+        assertThat(futureOne).isNotSameAs(futureTwo)
+    }
+
+    @Test
+    fun `createResources return the same future without completion`() {
+        InboundAssignmentListener(lifecycleCoordinatorFactory)
+
+        val futureOne = createResources!!(mock())
+
+        val futureTwo = createResources!!(mock())
+        assertThat(futureOne).isSameAs(futureTwo)
+    }
+
+    @Test
     fun `the callback is called on assignment if registered before the first assignment`() {
         val topic1CallbackArguments = mutableListOf<Set<Int>>()
         val topic2CallbackArguments = mutableListOf<Set<Int>>()
@@ -104,5 +133,53 @@ class InboundAssignmentListenerTest {
         val unAssignTopic = 1
         listener.onPartitionsUnassigned(listOf(TOPIC_1 to unAssignTopic))
         assertThat(callbackArguments.last()).containsExactlyInAnyOrderElementsOf(assign1 - listOf(unAssignTopic))
+    }
+
+    @Test
+    fun `future will complete exceptionally after all partitions had been unassigned`() {
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        listener.onPartitionsAssigned(listOf("topic" to 1, "topic" to 2))
+        listener.onPartitionsAssigned(listOf("topic" to 3, "topic" to 2))
+        val readyFuture = createResources!!(mock())
+
+        listener.onPartitionsUnassigned(listOf("topic" to 3, "topic" to 2, "topic" to 1))
+
+        assertThat(readyFuture).isCompletedExceptionally
+    }
+
+    @Test
+    fun `future will not complete after some partitions had been unassigned`() {
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        listener.onPartitionsAssigned(listOf("topic" to 1, "topic" to 2))
+        listener.onPartitionsAssigned(listOf("topic" to 3, "topic" to 2))
+        val readyFuture = createResources!!(mock())
+
+        listener.onPartitionsUnassigned(listOf("topic" to 3, "topic" to 1))
+
+        assertThat(readyFuture).isNotCompleted
+    }
+
+    @Test
+    fun `future will be replaced after exceptionally completion`() {
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        listener.onPartitionsAssigned(listOf("topic" to 1))
+        val futureOne = createResources!!(mock())
+
+        listener.onPartitionsUnassigned(listOf("topic" to 2, "topic" to 1))
+
+        val futureTwo = createResources!!(mock())
+        assertThat(futureOne).isNotSameAs(futureTwo)
+    }
+
+    @Test
+    fun `future will not be replaced after non completion`() {
+        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+        listener.onPartitionsAssigned(listOf("topic" to 1, "topic" to 120))
+        val futureOne = createResources!!(mock())
+
+        listener.onPartitionsUnassigned(listOf("topic" to 2, "topic" to 1))
+
+        val futureTwo = createResources!!(mock())
+        assertThat(futureOne).isSameAs(futureTwo)
     }
 }

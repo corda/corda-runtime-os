@@ -10,25 +10,38 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory): PartitionAssignmentListener, LifecycleWithDominoTile {
+class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory) : PartitionAssignmentListener, LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        createResources = ::createResources
+        createResources = ::createResources,
+        continuesResourceStarter = true,
     )
 
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
-    private var firstAssignment = true
+    private var needToComplete = true
     private val topicToCallback = mutableMapOf<String, MutableList<(partitions: Set<Int>) -> Unit>>()
-
-    private val future: CompletableFuture<Unit> = CompletableFuture()
+    private var future = CompletableFuture<Unit>()
 
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
-            for ((topic, partition) in topicPartitions) {
-                topicToPartition[topic]?.remove(partition)
+            topicPartitions.forEach { (topic, partition) ->
+                topicToPartition.computeIfPresent(topic) { _, knownPartitions ->
+                    knownPartitions.remove(partition)
+                    if (knownPartitions.isEmpty()) {
+                        null
+                    } else {
+                        knownPartitions
+                    }
+                }
+            }
+            if (topicToPartition.isEmpty()) {
+                needToComplete = true
+                val oldFuture = future
+                future = CompletableFuture()
+                oldFuture.completeExceptionally(NoPartitionAssigned())
             }
             callCallbacks(topicPartitions.map { it.first }.toSet())
         }
@@ -37,18 +50,21 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
         lock.write {
             for ((topic, partition) in topicPartitions) {
-                val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
-                partitionSet.add(partition)
+                topicToPartition.computeIfAbsent(topic) {
+                    mutableSetOf()
+                }.add(partition)
             }
             callCallbacks(topicPartitions.map { it.first }.toSet())
-            if (firstAssignment) {
-                firstAssignment = false
-                future.complete(Unit)
+            if ((needToComplete) && (topicToPartition.isNotEmpty())) {
+                needToComplete = false
+                val oldFuture = future
+                future = CompletableFuture()
+                oldFuture.complete(Unit)
             }
         }
     }
 
-    fun getCurrentlyAssignedPartitions(topic: String) : Set<Int> {
+    fun getCurrentlyAssignedPartitions(topic: String): Set<Int> {
         return lock.read {
             topicToPartition[topic] ?: emptySet()
         }
@@ -59,7 +75,7 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
             topicToCallback.compute(topic) { _, callbacks ->
                 callbacks?.apply { add(callback) } ?: mutableListOf(callback)
             }
-            if (future.isDone) {
+            if ((!needToComplete) && (topicToCallback.isNotEmpty())) {
                 callCallbacks(setOf(topic))
             }
         }
@@ -74,6 +90,10 @@ class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory)
     }
 
     private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
-        return future
+        return lock.read {
+            future
+        }
     }
+
+    internal class NoPartitionAssigned : Exception("No partition assign")
 }

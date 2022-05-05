@@ -146,7 +146,8 @@ open class SessionManagerImpl(
         ::createResources,
         dependentChildren = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile
+            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile,
+            inboundAssignmentListener.dominoTile,
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()

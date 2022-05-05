@@ -417,6 +417,39 @@ class ComplexDominoTileTest {
 
             assertThat(tile.state).isEqualTo(DominoTileState.Started)
         }
+        @Test
+        fun `tile with continuesResourceStarter will call createResources again if future is not the same`() {
+            var createResourceCalled = 0
+            @Suppress("UNUSED_PARAMETER")
+            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+                val future = CompletableFuture<Unit>()
+                if (++createResourceCalled < 4) {
+                    future.complete(Unit)
+                }
+                return future
+            }
+
+            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources, continuesResourceStarter = true)
+            tile.start()
+
+            assertThat(createResourceCalled).isEqualTo(4)
+        }
+
+        @Test
+        fun `tile with continuesResourceStarter will not call createResources for the same future`() {
+            var createResourceCalled = 0
+            val future = CompletableFuture.completedFuture(Unit)
+            @Suppress("UNUSED_PARAMETER")
+            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+                ++createResourceCalled
+                return future
+            }
+
+            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources, continuesResourceStarter = true)
+            tile.start()
+
+            assertThat(createResourceCalled).isEqualTo(2)
+        }
     }
 
     private data class Configuration(val data: Int)
@@ -430,7 +463,7 @@ class ComplexDominoTileTest {
         private val service = mock<ConfigurationReadService> {
             on { registerForUpdates(configurationHandler.capture()) } doReturn registration
         }
-        private val configFactory = mock<(Config)-> Configuration> {
+        private val configFactory = mock<(Config) -> Configuration> {
             on { invoke(any()) } doAnswer {
                 Configuration((it.arguments[0] as Config).getInt(""))
             }
@@ -751,8 +784,10 @@ class ComplexDominoTileTest {
 
     @Nested
     inner class InternalTileTest {
-        private fun tile(dependentChildren: Collection<ComplexDominoTile>,
-                         managedChildren: Collection<ComplexDominoTile>): ComplexDominoTile =
+        private fun tile(
+            dependentChildren: Collection<ComplexDominoTile>,
+            managedChildren: Collection<ComplexDominoTile>
+        ): ComplexDominoTile =
             ComplexDominoTile(
                 TILE_NAME,
                 factory,
@@ -830,14 +865,29 @@ class ComplexDominoTileTest {
 
                 // simulate children starting
                 children[0].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[0].second,
+                        StatusChangeEvent(DominoTileState.Started)
+                    ),
+                    coordinator
+                )
                 children[1].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[1].second,
+                        StatusChangeEvent(DominoTileState.Started)
+                    ),
+                    coordinator
+                )
                 children[2].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[2].second,
+                        StatusChangeEvent(DominoTileState.Started)
+                    ),
+                    coordinator
+                )
 
                 assertThat(tile.isRunning).isTrue
                 assertThat(tile.state).isEqualTo(DominoTileState.Started)
@@ -846,9 +896,9 @@ class ComplexDominoTileTest {
             @Test
             fun `parent status will not be set to Started if some children have not started yet`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
-                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
                 registerChildren(coordinator, children)
 
@@ -857,11 +907,21 @@ class ComplexDominoTileTest {
 
                 // simulate only 2 out of 3 children starting
                 children[0].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[0].second,
+                        StatusChangeEvent(DominoTileState.Started)
+                    ),
+                    coordinator
+                )
                 children[1].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[1].second,
+                        StatusChangeEvent(DominoTileState.Started)
+                    ),
+                    coordinator
+                )
 
                 assertThat(tile.state).isEqualTo(DominoTileState.Created)
                 assertThat(tile.isRunning).isFalse
@@ -870,9 +930,9 @@ class ComplexDominoTileTest {
             @Test
             fun `parent will stop if one of the children was stopped by a different parent component`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
-                    StubDominoTile(LifecycleCoordinatorName("component" , "1")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "2")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component" , "3")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
+                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
                 registerChildren(coordinator, children)
 
@@ -881,8 +941,13 @@ class ComplexDominoTileTest {
 
                 // simulate children starting
                 children[0].first.setState(DominoTileState.StoppedByParent)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.StoppedByParent)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[0].second,
+                        StatusChangeEvent(DominoTileState.StoppedByParent)
+                    ),
+                    coordinator
+                )
 
                 assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
             }
@@ -920,8 +985,13 @@ class ComplexDominoTileTest {
                 tile.start()
 
                 children[0].first.setState(DominoTileState.StoppedDueToError)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.StoppedDueToError)), coordinator)
+                handler.lastValue.processEvent(
+                    CustomEvent(
+                        children[0].second,
+                        StatusChangeEvent(DominoTileState.StoppedDueToError)
+                    ),
+                    coordinator
+                )
 
                 assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
             }
@@ -1019,7 +1089,7 @@ class ComplexDominoTileTest {
         private val service = mock<ConfigurationReadService> {
             on { registerForUpdates(configurationHandler.capture()) } doReturn registration
         }
-        private val configFactory = mock<(Config)-> Configuration> {
+        private val configFactory = mock<(Config) -> Configuration> {
             on { invoke(any()) } doAnswer {
                 Configuration((it.arguments[0] as Config).getInt(""))
             }
@@ -1179,7 +1249,6 @@ class ComplexDominoTileTest {
         fun setState(state: DominoTileState) {
             currentState = state
         }
-
     }
 
     private fun registerChildren(coordinator: LifecycleCoordinator, children: Array<Pair<StubDominoTile, RegistrationHandle>>) {
