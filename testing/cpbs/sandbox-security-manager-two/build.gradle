@@ -1,0 +1,26 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Security Manager Two'
+
+group 'com.example.securitymanager'
+
+cordapp {
+    targetPlatformVersion 999 as Integer
+    workflow {
+        name 'Security Manager Two CPK'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.slf4j:slf4j-api'
+}

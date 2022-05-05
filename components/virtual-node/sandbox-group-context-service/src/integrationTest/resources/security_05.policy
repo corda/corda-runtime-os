@@ -1,0 +1,4 @@
+ALLOW {
+[org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
+(java.lang.reflect.ReflectPermission "suppressAccessChecks" "")
+} "allow reflection"
