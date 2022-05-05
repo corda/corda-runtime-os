@@ -1,10 +1,7 @@
 // plugin to cater for R3 vs Non R3 users building code base. R3 employees will leverage internal plugins non
 // R3 users will use standard Maven publishing conventions as provided by the Maven-publish gradle plugin
-if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || (hasProperty('cordaArtifactoryUsername') && project.cordaArtifactoryUsername)) {
+if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
     logger.info("Internal R3 user - resolving publication build dependencies from internal plugins")
-    if (!rootProject.pluginManager.hasPlugin("com.r3.internal.gradle.plugins.r3ArtifactoryPublish")) {
-        rootProject.pluginManager.apply("com.r3.internal.gradle.plugins.r3ArtifactoryPublish")
-    }
     pluginManager.apply('com.r3.internal.gradle.plugins.r3Publish')
 } else {
     logger.info("External user - using standard maven publishing")

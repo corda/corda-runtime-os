@@ -1,7 +1,5 @@
 // Apply artifactory r3ArtifactoryPublish plugin
-if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || (hasProperty('cordaArtifactoryUsername') && project.cordaArtifactoryUsername)) {
-    logger.lifecycle("artifactory Internal R3 user - resolving publication build dependencies from internal plugins")
-
+if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
     project.pluginManager.apply('com.r3.internal.gradle.plugins.r3ArtifactoryPublish')
 }
 

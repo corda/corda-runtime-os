@@ -33,13 +33,6 @@ wrapper {
 def javaVersion = VERSION_11
 
 allprojects {
-    if (!project.hasProperty('cordaArtifactoryUsername')) {
-        ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-    }
-
-    if (!project.hasProperty('cordaArtifactoryPassword')) {
-        ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-    }
 
     pluginManager.withPlugin('java') {
         java {
@@ -128,8 +121,8 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/corda-os-maven"
             credentials {
-                username = cordaArtifactoryUsername
-                password = cordaArtifactoryPassword
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
 
@@ -137,8 +130,8 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/engineering-tools-maven-unstable-local"
             credentials {
-                username = cordaArtifactoryUsername
-                password = cordaArtifactoryPassword
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
 
@@ -365,7 +358,7 @@ subprojects {
     def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'app-simulator', 'configuration-publisher']
     if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
 
-        tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+        tasks.register('publishOSGiImage', DeployableContainerBuilder) {
             // Bit of a hack to ensure we always get a flat list of tasks
             def sourceTasks = (List<Task>)[project.tasks.named("appJar").get()].flatten()
             dependsOn(sourceTasks)

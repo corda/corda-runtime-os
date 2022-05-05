@@ -1,7 +1,7 @@
 
 group 'net.corda.cli.deployment'
 
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     def sourceTasks = subprojects.collect { it.tasks.named("plugin").get() }
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
     dependsOn(sourceTasks)
