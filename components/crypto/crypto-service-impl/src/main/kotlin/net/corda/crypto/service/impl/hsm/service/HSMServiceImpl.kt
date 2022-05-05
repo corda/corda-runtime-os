@@ -58,28 +58,17 @@ class HSMServiceImpl(
         return association.config.info
     }
 
-    fun findAssignedHSM(tenantId: String, category: String): HSMInfo? {
+    fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
         logger.debug("findAssignedHSM(tenant={}, category={})", tenantId, category)
         return hsmCache.act {
-            it.findTenantAssociation(tenantId, category)?.config?.info
-        }
-    }
-
-    fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation {
-        logger.debug("getPrivateTenantAssociation(tenant={}, category={})", tenantId, category)
-        return hsmCache.act {
             it.findTenantAssociation(tenantId, category)
-                ?: throw CryptoServiceLibraryException(
-                    "Cannot find tenant association for $tenantId and $category."
-                )
         }
     }
 
-    fun getPrivateHSMConfig(configId: String): HSMConfig {
+    fun findHSMConfig(configId: String): HSMConfig? {
         logger.debug("getPrivateHSMConfig(configId={})", configId)
         return hsmCache.act {
             it.findConfig(configId)
-                ?: throw CryptoServiceLibraryException("Cannot find config id=$configId.")
         }
     }
 
@@ -104,8 +93,8 @@ class HSMServiceImpl(
         ensureWrappingKey(config.info)
     }
 
-    fun lookup(): List<HSMInfo> {
-        return hsmCache.act { it.lookup() }
+    fun lookup(filter: Map<String, String>): List<HSMInfo> {
+        return hsmCache.act { it.lookup(filter) }
     }
 
     override fun close() {

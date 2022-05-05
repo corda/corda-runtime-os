@@ -8,7 +8,7 @@ interface HSMCacheActions : AutoCloseable {
 
     fun findTenantAssociation(tenantId: String, category: String): HSMTenantAssociation?
 
-    fun lookup(): List<HSMInfo>
+    fun lookup(filter: Map<String, String>): List<HSMInfo>
 
     fun getHSMStats(category: String): List<HSMStat>
 

@@ -18,7 +18,7 @@ interface HSMService : Lifecycle {
     /**
      * Returns list of all configured HSMs (except Soft HSM)
      */
-    fun lookup(): List<HSMInfo>
+    fun lookup(filter: Map<String, String> = emptyMap()): List<HSMInfo>
 
     /**
      * Assigns an HSM out of existing pull of configured HSMs (except Soft HSM)
@@ -33,17 +33,10 @@ interface HSMService : Lifecycle {
     /**
      * Returns information about assigned HSM.
      */
-    fun findAssignedHSM(tenantId: String, category: String): HSMInfo?
+    fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation?
 
     /**
-     * Completely internal operation as it returns some sensitive information about the configuration. It's used
-     * by the CryptoService factory to instantiate the corresponding services.
+     * Returns information about an HSM. It's used by the CryptoService factory.
      */
-    fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation
-
-    /**
-     * Completely internal operation as it returns some sensitive information about the configuration. It's used
-     * by the CryptoService factory to instantiate the corresponding services.
-     */
-    fun getPrivateHSMConfig(configId: String): HSMConfig
+    fun findHSMConfig(configId: String): HSMConfig?
 }

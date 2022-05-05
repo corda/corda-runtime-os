@@ -6,8 +6,10 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
+import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.Lob
+import javax.persistence.OneToMany
 import javax.persistence.Table
 import javax.persistence.Version
 
@@ -96,7 +98,10 @@ class HSMConfigEntity(
     var serviceConfig: ByteArray,
 
     @Column(name = "capacity", nullable = false)
-    var capacity: Int
+    var capacity: Int,
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "config", targetEntity = HSMCategoryMapEntity::class)
+    var categories: Set<HSMCategoryMapEntity> = emptySet()
 ) {
     @Version
     @Column(name = "version", nullable = false)

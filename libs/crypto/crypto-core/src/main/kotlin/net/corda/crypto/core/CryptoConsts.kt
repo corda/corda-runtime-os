@@ -65,4 +65,14 @@ object CryptoConsts {
          */
         const val CREATED_BEFORE_FILTER = "createdBefore"
     }
+
+    /**
+     * Constants defining keys for the filter in the lookup function of Signing Service.
+     */
+    object HSMFilters {
+        /**
+         * The key's signature scheme name.
+         */
+        const val SERVICE_NAME_FILTER = "serviceName"
+    }
 }
