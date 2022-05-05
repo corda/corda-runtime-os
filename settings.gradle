@@ -327,7 +327,7 @@ include 'tools:plugins:secret-config'
 // If this evaluates to true local source code will be used in place of binary dependencies.
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
 
-if ( file("${cordaApiLocation}").exists()) {
+if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
     includeBuild('../corda-api') {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
@@ -348,7 +348,7 @@ if ( file("${cordaApiLocation}").exists()) {
         }
     }
 }
-if (file("${cordaCliHostLocation}w").exists()) {
+if ("${compositeBuild}".toBoolean() && file("${cordaCliHostLocation}").exists()) {
     includeBuild('../corda-cli-plugin-host')
 }
 
