@@ -6,16 +6,22 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.packaging.CPI
 import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
 
-class ValidationFunctions(
+internal class ValidationFunctions(
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path
 ) {
+
+    companion object {
+        val log = contextLogger()
+    }
+
     /**
      * Assembles the CPI from chunks in the database, and returns the temporary path
      * that we've stored the recreated binary, plus any filename associated with it.
@@ -26,26 +32,30 @@ class ValidationFunctions(
      */
     fun getFileInfo(persistence: ChunkPersistence, requestId: RequestId): FileInfo {
         var fileName: String? = null
-        var tempPath: Path? = null
-        var checksum: SecureHash? = null
+        lateinit var tempPath: Path
+        lateinit var checksum: SecureHash
+        var forceUploadLocal: Boolean = false
 
         // Set up chunk reader.  If onComplete is never called, we've failed.
         val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
-            onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash ->
+            onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, forceUpload: Boolean ->
                 fileName = originalFileName
                 tempPath = tempPathOfBinary
                 checksum = fileChecksum
+                forceUploadLocal = forceUpload
             }
         }
 
         // Now read chunks, and create CPI on local disk
         persistence.forEachChunk(requestId, reader::read)
 
-        if (fileName == null || tempPath == null || checksum == null) {
-            throw ValidationException("Did not combine all chunks to produce file for $requestId")
-        }
+        return with(fileName) {
+            if (this == null) {
+                throw ValidationException("Did not combine all chunks to produce file for $requestId")
+            }
 
-        return FileInfo(fileName!!, tempPath!!, checksum!!)
+            FileInfo(this, tempPath, checksum, forceUploadLocal)
+        }
     }
 
     /** Loads, parses, and expands CPI, into cpks and metadata */
@@ -85,12 +95,16 @@ class ValidationFunctions(
         try {
             val groupId = getGroupId(cpi)
 
-            if (!chunkPersistence.cpiExists(
-                    cpi.metadata.id.name,
-                    cpi.metadata.id.version,
-                    cpi.metadata.id.signerSummaryHash?.toString() ?: ""
-                )
-            ) {
+            val cpiExists = chunkPersistence.cpiExists(
+                cpi.metadata.id.name,
+                cpi.metadata.id.version,
+                cpi.metadata.id.signerSummaryHash?.toString() ?: "")
+
+            if (cpiExists && fileInfo.forceUpload) {
+                log.info("Force uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
+            }
+
+            if (!cpiExists || fileInfo.forceUpload) {
                 chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else {
                 throw ValidationException(

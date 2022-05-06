@@ -70,7 +70,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
                 throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
             }
 
-            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum)
+            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum, chunk.forceUpload)
 
             // Since all the chunks been received and consumer notified, it is safe to get rid of entry in a map.
             chunksSoFar.remove(chunk.requestId)

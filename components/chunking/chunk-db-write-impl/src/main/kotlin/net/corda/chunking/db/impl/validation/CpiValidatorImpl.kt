@@ -41,8 +41,10 @@ class CpiValidatorImpl(
         publisher.update(requestId, "Checking group id in CPI")
         validationFunctions.getGroupId(cpi)
 
-        publisher.update(requestId, "Validating group id against DB")
-        validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+        if (!fileInfo.forceUpload) {
+            publisher.update(requestId, "Validating group id against DB")
+            validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+        }
 
         publisher.update(requestId, "Persisting CPI")
         validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)

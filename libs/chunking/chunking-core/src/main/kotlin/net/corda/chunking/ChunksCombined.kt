@@ -12,5 +12,5 @@ fun interface ChunksCombined {
      *
      *     Files.move(tempPathOfBinary, destPath.resolve(originalFileName) /*, opts */)
      */
-    fun onChunksCombined(originalFileName: String, tempPathOfBinary: Path, checksum: SecureHash)
+    fun onChunksCombined(originalFileName: String, tempPathOfBinary: Path, checksum: SecureHash, forceUpload: Boolean)
 }
