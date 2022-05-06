@@ -56,6 +56,7 @@ class SerializationTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
+            // TODO - look at using generic fake implementations for these.
             virtualNode = setup.fetchService(timeout = 1000)
             cpiInfoReadService = setup.fetchService(timeout = 1000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 1000)

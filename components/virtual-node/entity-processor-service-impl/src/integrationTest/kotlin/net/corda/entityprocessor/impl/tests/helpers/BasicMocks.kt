@@ -11,8 +11,7 @@ object BasicMocks {
     fun dbConnectionManager(): DbConnectionManager {
         val mockEntityManagerFactory = Mockito.mock(EntityManagerFactory::class.java)
         val dbm = Mockito.mock(DbConnectionManager::class.java)
-        Mockito.doReturn(mockEntityManagerFactory).`when`(dbm).getOrCreateEntityManagerFactory(
-            MockitoHelper.anyObject(),
+        Mockito.doReturn(mockEntityManagerFactory).`when`(dbm).createEntityManagerFactory(
             MockitoHelper.anyObject(),
             MockitoHelper.anyObject()
         )
