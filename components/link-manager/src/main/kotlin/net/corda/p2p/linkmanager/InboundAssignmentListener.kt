@@ -25,7 +25,7 @@ class InboundAssignmentListener(
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
         topicPartitions.forEach { (topic, partition) ->
             if (topic != partitionsTopic) {
-                logger.warn("Unexpected topic: $topic unassigned, expected $topicPartitions")
+                logger.warn("Unexpected notifications: notifications for $topic were received, but expected notifications only for $topicPartitions")
             } else {
                 partitions.remove(partition)
             }
