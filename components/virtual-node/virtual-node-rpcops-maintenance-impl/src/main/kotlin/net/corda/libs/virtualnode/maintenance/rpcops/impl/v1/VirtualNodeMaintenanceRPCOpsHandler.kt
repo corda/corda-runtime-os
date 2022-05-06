@@ -1,27 +1,21 @@
-package net.corda.cpi.upload.endpoints.common
+package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
-/**
- * Monitors the status of [CpiUploadRPCOpsService] so that it can know when [CpiUploadRPCOpsImpl.cpiUploadManager] is ready for use.
- */
-internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
+internal class VirtualNodeMaintenanceRPCOpsHandler : LifecycleEventHandler {
 
-    @VisibleForTesting
-    internal var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
+    private var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
 
     companion object {
         val logger = contextLogger()
@@ -38,8 +32,7 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
         cpiUploadRPCOpsServiceRegistrationHandle = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
+                LifecycleCoordinatorName.forComponent<CpiUploadRPCOpsService>()
             )
         )
     }
@@ -48,7 +41,7 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        logger.info("Changing ${CpiUploadRPCOps::class.java.simpleName} state to: ${event.status}")
+        logger.info("Changing ${VirtualNodeMaintenanceRPCOps::class.java.simpleName} state to: ${event.status}")
         if (event.status == LifecycleStatus.ERROR) {
             closeResources()
         }

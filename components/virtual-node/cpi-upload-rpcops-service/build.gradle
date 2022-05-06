@@ -16,7 +16,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
-    implementation project(':libs:virtual-node:cpi-upload-manager')
+    api project(':libs:virtual-node:cpi-upload-manager')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:virtual-node:packaging-core')
     implementation 'net.corda:corda-base'
