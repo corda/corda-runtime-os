@@ -9,25 +9,14 @@ quasar {
     instrumentTests = false
     instrumentJavaExec = false
     excludePackages = [
-            'co.paralleluniverse**',
-            'com.esotericsoftware.**',
-            'jdk**',
-            'junit**',
-            'kotlin**',
-            'net.rubygrapefruit.**',
-            'org.gradle.**',
-            'org.apache.**',
-            'org.jacoco.**',
-            'org.junit**',
-            'org.slf4j**',
-            'worker.org.gradle.**',
-            'org.assertj**',
-            'org.hamcrest**',
-            'org.mockito**',
-            'org.opentest4j**',
-            'org.eclipse**',
-            'net.corda.sandboxhooks.**',
-            'net.corda.osgi.**'
+        'co.paralleluniverse**',
+        'com.esotericsoftware.**',
+        'jdk**',
+        'kotlin**',
+        'org.apache.**',
+        'org.slf4j**',
+        'net.corda.sandboxhooks.**',
+        'net.corda.osgi.**'
     ]
 }
 
