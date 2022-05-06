@@ -1,8 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' 
     id 'application'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'com.r3.internal.gradle.plugins.r3-docker'
+    id 'corda.common-publishing'
 }
 
 dependencies {
@@ -65,7 +64,7 @@ def fatJar = tasks.register('fatJar', Jar) {
     archiveVersion = project.version
 }
 
-tasks.named("publishOSGiImage").configure{
+tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     sourceTasks = Arrays.asList(fatJar.get())
     dependsOn(fatJar)
     overrideEntryName = 'cli'
@@ -76,6 +75,9 @@ tasks.named("publishOSGiImage").configure{
     }
     if (project.hasProperty('baseImage')) {
         baseImageName = baseImage
+    }
+    if (project.hasProperty('useDockerDaemon')) {
+        useDaemon = useDockerDaemon.toBoolean()
     }
     environment = Map.of(
         "CORDA_CLI_HOME_DIR", "/opt/override/home"

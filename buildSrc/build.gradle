@@ -1,0 +1,51 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+// We can't get the values directly from `gradle.properties` from here for some gradle-y reason.
+// So we'll load it into our own object to grab what we need.
+def constants = new Properties()
+file("$rootDir/../gradle.properties").withInputStream { InputStream input -> constants.load(input) }
+def internalPublishVersion = constants.getProperty('internalPublishVersion')
+def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
+def jibCoreVersion = constants.getProperty('jibCoreVersion')
+
+dependencies {
+    implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
+
+    if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
+        implementation "com.r3.internal.gradle.plugins:publish:$internalPublishVersion"
+    }
+}
+
+repositories {
+    def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+    if (cordaUseCache != null) {
+        maven {
+            url = "$artifactoryContextUrl/${cordaUseCache}"
+            name = "R3 Maven remote repositories"
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+        }
+    } else {
+        maven {
+            url "${artifactoryContextUrl}/engineering-tools-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+            content {
+                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
+            }
+        }
+        gradlePluginPortal()
+    }
+}
