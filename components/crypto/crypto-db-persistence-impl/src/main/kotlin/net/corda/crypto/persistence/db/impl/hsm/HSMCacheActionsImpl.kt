@@ -74,9 +74,10 @@ class HSMCacheActionsImpl(
                     ) as usages,   
                     c.id as configId,
                     c.serviceName as serviceName,
-                    c.capacity as capacity
+                    c.capacity as capacity,
+                    m.keyPolicy as privateKeyPolicy
             FROM HSMConfigEntity c
-                WHERE EXISTS(SELECT 1 FROM HSMCategoryMapEntity m WHERE m.config = c AND m.category = :category)
+                    JOIN HSMCategoryMapEntity m ON m.config = c AND m.category = :category
             """.trimIndent(),
             Tuple::class.java
         ).setParameter("category", category).resultList.map {
@@ -84,6 +85,9 @@ class HSMCacheActionsImpl(
                 usages = (it.get("usages") as Number).toInt(),
                 configId = it.get("configId") as String,
                 serviceName = it.get("serviceName") as String,
+                privateKeyPolicy = net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.valueOf(
+                    (it.get("privateKeyPolicy") as PrivateKeyPolicy).name
+                ),
                 capacity = (it.get("capacity") as Number).toInt(),
             )
         }

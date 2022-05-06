@@ -140,7 +140,7 @@ interface CryptoOpsClient : Lifecycle {
      * requested.
      * @param orderBy the order by.
      * @param tenantId the tenant's id which the keys belong to.
-     * @param filter the layered property map of the filter parameters such as
+     * @param filter the optional layered property map of the filter parameters such as
      * category (the HSM's category which handles the keys),
      * schemeCodeName (the key's signature scheme name),
      * alias (the alias which is assigned by the tenant),

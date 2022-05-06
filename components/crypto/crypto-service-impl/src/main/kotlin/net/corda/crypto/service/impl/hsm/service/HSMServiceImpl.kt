@@ -3,12 +3,15 @@ package net.corda.crypto.service.impl.hsm.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.hsm.HSMCache
 import net.corda.crypto.persistence.hsm.HSMCacheActions
 import net.corda.crypto.persistence.hsm.HSMConfig
+import net.corda.crypto.persistence.hsm.HSMStat
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
@@ -36,21 +39,38 @@ class HSMServiceImpl(
 
     private val softConfig = config.softPersistence()
 
-    fun assignHSM(tenantId: String, category: String): HSMInfo {
+    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         logger.info("assignHSM(tenant={}, category={})", tenantId, category)
+        val stats = hsmCache.act {
+            it.getHSMStats(category)
+        }.filter { s ->
+            s.usages < s.capacity && (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
+        }
+        val chosen = if(context[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_ALIASED) {
+            tryChooseAliased(stats)
+        } else {
+            tryChooseAny(stats)
+        }
         val association = hsmCache.act {
-            val min = it.getHSMStats(category).filter { s ->
-                s.usages < s.capacity &&
-                        (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
-            }.minByOrNull { s ->
-                s.usages
-            } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
-            it.associate(tenantId = tenantId, category = category, configId = min.configId)
+            it.associate(tenantId = tenantId, category = category, configId = chosen.configId)
         }
         ensureWrappingKey(association)
         logger.info("assignHSM(tenant={}, category={})={}", tenantId, category, association.config.info)
         return association.config.info
     }
+
+    private fun tryChooseAliased(stats: List<HSMStat>): HSMStat =
+        stats.filter {
+            it.privateKeyPolicy == PrivateKeyPolicy.ALIASED ||
+            it.privateKeyPolicy == PrivateKeyPolicy.BOTH
+        }.minByOrNull { s ->
+            s.usages
+        } ?: tryChooseAny(stats)
+
+    private fun tryChooseAny(stats: List<HSMStat>): HSMStat =
+        stats.minByOrNull { s ->
+            s.usages
+        } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
 
     fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
         logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
@@ -78,18 +98,19 @@ class HSMServiceImpl(
         }
     }
 
-    fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray) {
+    fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
         if(info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
             require(!info.masterKeyAlias.isNullOrBlank()) {
                 "The master key alias must be specified for '${info.masterKeyPolicy}' master key policy."
             }
         }
-        hsmCache.act {
+        val id = hsmCache.act {
             if(info.id.isNullOrBlank()) {
                 it.add(info, encryptor.encrypt(serviceConfig))
             } else if(it.findConfig(info.id) != null) {
                 it.merge(info, encryptor.encrypt(serviceConfig))
+                info.id
             } else {
                 throw CryptoServiceLibraryException(
                     "Cannot update the HSM Config with id '${info.id}' as it doesn't exist."
@@ -97,6 +118,7 @@ class HSMServiceImpl(
             }
         }
         ensureWrappingKey(info)
+        return id
     }
 
     fun lookup(filter: Map<String, String>): List<HSMInfo> {

@@ -71,12 +71,24 @@ object CryptoConsts {
     }
 
     /**
-     * Constants defining keys for the filter in the lookup function of Signing Service.
+     * Constants defining keys for the filter in the lookup function of HSM services.
      */
     object HSMFilters {
         /**
          * The key's signature scheme name.
          */
         const val SERVICE_NAME_FILTER = "serviceName"
+    }
+
+    /**
+     * Constants defining keys for the context in the HSM services functions.
+     */
+    object HSMContext {
+        /**
+         * The optional preferred private key policy, accepted values are NONE, ALIASED
+         */
+        const val PREFERRED_PRIVATE_KEY_POLICY_KEY = "preferredPrivateKeyPolicy"
+        const val PREFERRED_PRIVATE_KEY_POLICY_NONE = "NONE"
+        const val PREFERRED_PRIVATE_KEY_POLICY_ALIASED = "ALIASED"
     }
 }
