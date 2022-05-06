@@ -528,4 +528,46 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
+    @Test
+    fun `(CloseSessions) Given a flow resumes after receiving session data events calling 'close' on the sessions sends session close events and no session ack for the session that resumed the flow`() {
+        given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
+            cpkMetadata(CPI1, CPK1)
+            sandboxCpk(CPK1)
+            membershipGroupFor(ALICE_HOLDING_IDENTITY)
+
+            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
+            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                sessionAckEvents(SESSION_ID_1)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
+                sessionAckEvents()
+            }
+        }
+    }
 }

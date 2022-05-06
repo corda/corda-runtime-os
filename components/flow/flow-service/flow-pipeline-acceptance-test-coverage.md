@@ -8,11 +8,14 @@ This document should be maintained so that we can ensure that we have quick visi
 - (Send) (Send) Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event ✅
 - (Send) Calling 'send' on a closed session schedules an error event (not fully implemented, assert CLOSING, CLOSED, WAIT_FOR_FINAL_ACK states)
 - (Send) Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time ✅
+- (Send) Given a flow resumes after receiving a session data event calling 'send' on the session sends a session data event and no session ack ✅
+- (Send) Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow ✅
 
 ## Send + receiving
 
-- (SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event
+- (SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event ✅
 - (SendAndReceive) Calling 'sendAndReceive' on a closed session schedules an error event
+- (SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow ✅
 
 ## Receiving (can use parameterised tests to assert the same behaviour for sendAndReceive)
 
@@ -43,6 +46,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - (CloseSessions) Given two sessions where one has already received a session close event calling close and then receiving a session close event for the other session resumes the flow and sends a session ack ✅ (add to receive)
 - (CloseSessions) Given two sessions have already received their session close events when the flow calls 'close' for both sessions at once the flow should schedule a wakeup event ✅
 - (CloseSessions) Given two sessions have already received their session data events when the flow calls 'receive' for each session individually the flow should schedule a wakeup event ✅
+- (CloseSessions) Given a flow resumes after receiving session data events calling 'close' on the sessions sends session close events and no session ack for the session that resumed the flow ✅
 - (Any-non-close-request-type) Receiving a session close event does not resume the flow and sends a session ack ✅
 
 ## SubFlow session closing
