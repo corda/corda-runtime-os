@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.publisher.Publisher
@@ -200,6 +201,11 @@ class LinkManagerTest {
         @Suppress("UNCHECKED_CAST")
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
     }
+    private val simpleDominoTile = Mockito.mockConstruction(SimpleDominoTile::class.java) { mock, context ->
+        whenever(mock.isRunning).doReturn(true)
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
+    }
     private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
 
     private val testPublisher = TestListBasedPublisher()
@@ -221,6 +227,7 @@ class LinkManagerTest {
         dominoTile.close()
         subscriptionTile.close()
         publisherTile.close()
+        simpleDominoTile.close()
     }
 
     class TestListBasedPublisher : Publisher {
@@ -300,7 +307,7 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener(mock())
+        val listener = InboundAssignmentListener(mock(), LINK_IN_TOPIC)
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }

@@ -49,8 +49,6 @@ import kotlin.concurrent.write
  *  If one of them goes down, this tile will also go down.
  * @param configurationChangeHandler the callback handler that handles new configuration.
  * If no configuration is needed, it can be left undefined.
- * @param continuesResourceStarter If wet to true, the till will try to create the resource continuously.
- * This should be useful to allow the tile to indicate that it is closed after it had started.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 class ComplexDominoTile(
@@ -60,7 +58,6 @@ class ComplexDominoTile(
     override val dependentChildren: Collection<DominoTile> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
-    private val continuesResourceStarter: Boolean = false,
 ) : DominoTile {
 
     companion object {
@@ -231,7 +228,7 @@ class ComplexDominoTile(
                         if (child == null) {
                             logger.warn(
                                 "Signal change status received from registration " +
-                                    "(${event.registration}) that didn't map to a component."
+                                        "(${event.registration}) that didn't map to a component."
                             )
                             return
                         }
@@ -367,31 +364,18 @@ class ComplexDominoTile(
         return dependentChildren.all { latestChildStateMap[it] == Started }
     }
 
-    private fun startResources(
-        future: CompletableFuture<Unit>,
-        createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-    ) {
-        future.whenComplete { _, exception ->
-            if (exception != null) {
-                resourcesStarted(exception)
-            } else {
-                resourcesStarted()
-            }
-            if (continuesResourceStarter) {
-                val nextFuture = createResources.invoke(resources)
-                if (nextFuture != future) {
-                    startResources(nextFuture, createResources)
-                }
-            }
-        }
-    }
-
     private fun createResourcesAndStart() {
         if (createResources != null && !resourcesReady) {
             resources.close()
             logger.info("Starting resources")
             val future = createResources.invoke(resources)
-            startResources(future, createResources)
+            future.whenComplete { _, exception ->
+                if (exception != null) {
+                    resourcesStarted(exception)
+                } else {
+                    resourcesStarted()
+                }
+            }
         }
 
         if (configRegistration == null && configurationChangeHandler != null) {
@@ -472,6 +456,6 @@ class ComplexDominoTile(
 
     override fun toString(): String {
         return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it.coordinatorName }}, " +
-            "managed children: ${managedChildren.map { it.coordinatorName }})"
+                "managed children: ${managedChildren.map { it.coordinatorName }})"
     }
 }

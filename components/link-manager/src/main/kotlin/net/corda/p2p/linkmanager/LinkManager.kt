@@ -106,7 +106,7 @@ class LinkManager(
         }
     }
 
-    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory)
+    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory, LINK_IN_TOPIC)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
@@ -249,7 +249,7 @@ class LinkManager(
                 inboundAssignmentListener: InboundAssignmentListener,
                 logger: Logger
             ): List<Record<String, *>> {
-                val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions()
                 return if (partitions.isEmpty()) {
                     val sessionIds = state.messages.map { it.first }
                     logger.warn(
@@ -261,7 +261,7 @@ class LinkManager(
                     state.messages.flatMap {
                         listOf(
                             Record(LINK_OUT_TOPIC, generateKey(), it.second),
-                            Record(SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions))
+                            Record(SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions.toList()))
                         )
                     }
                 }
@@ -472,14 +472,14 @@ class LinkManager(
                 when (val payload = message.payload) {
                     is InitiatorHelloMessage -> {
                         val partitionsAssigned =
-                            inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                            inboundAssignmentListener.getCurrentlyAssignedPartitions()
                         if (partitionsAssigned.isNotEmpty()) {
                             listOf(
                                 Record(LINK_OUT_TOPIC, generateKey(), response),
                                 Record(
                                     SESSION_OUT_PARTITIONS,
                                     payload.header.sessionId,
-                                    SessionPartitions(partitionsAssigned)
+                                    SessionPartitions(partitionsAssigned.toList())
                                 )
                             )
                         } else {
