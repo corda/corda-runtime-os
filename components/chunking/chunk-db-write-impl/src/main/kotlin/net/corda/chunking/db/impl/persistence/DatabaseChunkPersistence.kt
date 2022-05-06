@@ -46,7 +46,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 cordaSecureHash?.toString(),
                 chunk.partNumber,
                 chunk.offset,
-                data
+                data,
+                chunk.forceUpload
             )
             it.persist(entity)
 
@@ -136,7 +137,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 // Do the reverse of [persist] particularly for data - if null, return zero bytes.
                 val checksum = if (entity.checksum != null) SecureHash.create(entity.checksum!!).toAvro() else null
                 val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
-                val chunk = Chunk(requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data)
+                val chunk = Chunk(requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,
+                    entity.forceUpload)
                 onChunk(chunk)
             }
         }

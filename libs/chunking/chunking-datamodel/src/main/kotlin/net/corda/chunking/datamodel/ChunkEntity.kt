@@ -27,7 +27,9 @@ data class ChunkEntity(
     @Column(name = "data_offset", nullable = false)
     var offset: Long,
     @Column(name = "data", nullable = true)
-    var data: ByteArray?
+    var data: ByteArray?,
+    @Column(name = "force_upload", nullable = false)
+    var forceUpload: Boolean
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -41,6 +43,7 @@ data class ChunkEntity(
         if (partNumber != other.partNumber) return false
         if (offset != other.offset) return false
         if (!data.contentEquals(other.data)) return false
+        if (forceUpload != other.forceUpload) return false
 
         return true
     }
@@ -52,6 +55,7 @@ data class ChunkEntity(
         result = 31 * result + partNumber
         result = 31 * result + offset.hashCode()
         result = 31 * result + data.contentHashCode()
+        result = 31 * result + forceUpload.hashCode()
         return result
     }
 }
