@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
 class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)

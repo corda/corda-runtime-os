@@ -17,7 +17,7 @@ internal class VirtualNodeMaintenanceRPCOpsHandler : LifecycleEventHandler {
 
     private var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
 
-    companion object {
+    private companion object {
         val logger = contextLogger()
     }
 

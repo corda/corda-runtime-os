@@ -38,6 +38,7 @@ dependencies {
     runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(':components:virtual-node:virtual-node-rpcops-service-impl')
+    runtimeOnly project(':components:virtual-node:virtual-node-rpcops-maintenance-impl')
     runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')
