@@ -13,10 +13,12 @@ interface HSMCacheActions : AutoCloseable {
 
     fun getHSMStats(category: String): List<HSMStat>
 
+    fun getLinkedCategories(configId: String): List<HSMCategoryInfo>
+
     /**
      * Replaces the category to HSM configuration mappings.
      */
-    fun linkCategories(configId: String, links: Set<HSMCategoryInfo>)
+    fun linkCategories(configId: String, links: List<HSMCategoryInfo>)
 
     /**
      * @return the id of the new configuration.

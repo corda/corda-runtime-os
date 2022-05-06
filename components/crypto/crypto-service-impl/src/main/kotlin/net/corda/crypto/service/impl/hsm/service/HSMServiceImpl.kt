@@ -152,7 +152,7 @@ class HSMServiceImpl(
             info.id,
             CryptoConsts.HsmCategories.all().map {
                 HSMCategoryInfo(it, PrivateKeyPolicy.WRAPPED)
-            }.toSet()
+            }
         )
         return info
     }

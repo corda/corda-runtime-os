@@ -168,7 +168,7 @@ class PersistenceTests {
         category: String,
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
         capacity: Int = 3,
-        categories: (HSMConfigEntity) -> Set<HSMCategoryMapEntity> = { emptySet() }
+        categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() }
     ): HSMCategoryAssociationEntity {
         val configId = UUID.randomUUID().toString()
         val associationId = UUID.randomUUID().toString()
@@ -211,7 +211,7 @@ class PersistenceTests {
         serviceName: String = "test",
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
         capacity: Int = 3,
-        categories: (HSMConfigEntity) -> Set<HSMCategoryMapEntity> = { emptySet() }
+        categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() }
     ): HSMConfigEntity {
         val config = createHSMConfigEntity(
             configId = configId,
@@ -405,7 +405,7 @@ class PersistenceTests {
         val categoryMappingId1 = UUID.randomUUID().toString()
         val categoryMappingId2 = UUID.randomUUID().toString()
         val config = createAndPersistHSMConfigEntity(configId = configId) {
-            setOf(
+            listOf(
                 HSMCategoryMapEntity(
                     id = categoryMappingId1,
                     category = CryptoConsts.HsmCategories.LEDGER,
@@ -601,7 +601,7 @@ class PersistenceTests {
         }
         cache.act {
             it.linkCategories(
-                configId1, setOf(
+                configId1, listOf(
                     HSMCategoryInfo(
                         CryptoConsts.HsmCategories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
@@ -618,7 +618,7 @@ class PersistenceTests {
         }
         cache.act {
             it.linkCategories(
-                configId2, setOf(
+                configId2, listOf(
                     HSMCategoryInfo(
                         CryptoConsts.HsmCategories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
@@ -664,13 +664,13 @@ class PersistenceTests {
     @Test
     fun `linkCategories should replace previous mapping`() {
         val cache = createHSMCacheImpl()
-        val configId1 = UUID.randomUUID().toString()
+        val configId = UUID.randomUUID().toString()
         cache.act {
-            it.add(createHSMInfo(configId = configId1, capacity = 5), "{}".toByteArray())
+            it.add(createHSMInfo(configId = configId, capacity = 5), "{}".toByteArray())
         }
         cache.act {
             it.linkCategories(
-                configId1, setOf(
+                configId, listOf(
                     HSMCategoryInfo(
                         CryptoConsts.HsmCategories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
@@ -683,7 +683,7 @@ class PersistenceTests {
             )
         }
         val mapping1 = cryptoEmf.use {
-            getHSMCategoryMapEntities(it, configId1)
+            getHSMCategoryMapEntities(it, configId)
         }
         assertEquals(2, mapping1.size)
         assertTrue(mapping1.any {
@@ -696,7 +696,7 @@ class PersistenceTests {
         })
         cache.act {
             it.linkCategories(
-                configId1, setOf(
+                configId, listOf(
                     HSMCategoryInfo(
                         CryptoConsts.HsmCategories.SESSION,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.WRAPPED
@@ -705,12 +705,47 @@ class PersistenceTests {
             )
         }
         val mapping2 = cryptoEmf.use {
-            getHSMCategoryMapEntities(it, configId1)
+            getHSMCategoryMapEntities(it, configId)
         }
         assertEquals(1, mapping2.size)
         assertTrue(mapping2.any {
             it.category == CryptoConsts.HsmCategories.SESSION &&
                     it.keyPolicy == PrivateKeyPolicy.WRAPPED
+        })
+    }
+
+    @Test
+    fun `Should return linked categories`() {
+        val cache = createHSMCacheImpl()
+        val configId = UUID.randomUUID().toString()
+        cache.act {
+            it.add(createHSMInfo(configId = configId, capacity = 5), "{}".toByteArray())
+        }
+        cache.act {
+            it.linkCategories(
+                configId, listOf(
+                    HSMCategoryInfo(
+                        CryptoConsts.HsmCategories.LEDGER,
+                        net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
+                    ),
+                    HSMCategoryInfo(
+                        CryptoConsts.HsmCategories.TLS,
+                        net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
+                    )
+                )
+            )
+        }
+        val links = cache.act {
+            it.getLinkedCategories(configId)
+        }
+        assertEquals(2, links.size)
+        assertTrue(links.any {
+            it.category == CryptoConsts.HsmCategories.LEDGER &&
+                    it.keyPolicy == net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
+        })
+        assertTrue(links.any {
+            it.category == CryptoConsts.HsmCategories.TLS &&
+                    it.keyPolicy == net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
         })
     }
 

@@ -90,7 +90,21 @@ class HSMCacheActionsImpl(
         }
     }
 
-    override fun linkCategories(configId: String, links: Set<HSMCategoryInfo>) {
+    override fun getLinkedCategories(configId: String): List<HSMCategoryInfo> {
+        val config = getExistingHSMConfigEntity(configId)
+        return entityManager.createQuery(
+            """
+            SELECT m FROM HSMCategoryMapEntity m WHERE m.config=:config
+        """.trimIndent(), HSMCategoryMapEntity::class.java
+        ).setParameter("config", config).resultList.map {
+            HSMCategoryInfo(
+                it.category,
+                net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.valueOf(it.keyPolicy.name)
+            )
+        }
+    }
+
+    override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {
         val config = getExistingHSMConfigEntity(configId)
         val map = links.map {
             HSMCategoryMapEntity(
