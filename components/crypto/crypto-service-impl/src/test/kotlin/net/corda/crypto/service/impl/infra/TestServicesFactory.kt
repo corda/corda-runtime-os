@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
-import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl

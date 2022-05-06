@@ -1,9 +1,10 @@
 package net.corda.crypto.persistence.db.impl.hsm
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.persistence.HSMCacheActions
-import net.corda.crypto.persistence.HSMStat
-import net.corda.crypto.persistence.HSMTenantAssociation
+import net.corda.crypto.persistence.hsm.HSMCacheActions
+import net.corda.crypto.persistence.hsm.HSMConfig
+import net.corda.crypto.persistence.hsm.HSMStat
+import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
@@ -11,12 +12,10 @@ import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
 import net.corda.crypto.persistence.db.model.HSMConfigEntity
 import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
-import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import java.nio.ByteBuffer
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
@@ -204,7 +203,7 @@ class HSMCacheActionsImpl(
 
     private fun HSMConfigEntity.toHSMConfig() = HSMConfig(
         toHSMInfo(),
-        ByteBuffer.wrap(serviceConfig)
+        serviceConfig
     )
 
     private fun HSMInfo.toHSMConfigEntity(serviceConfig: ByteArray) = HSMConfigEntity(

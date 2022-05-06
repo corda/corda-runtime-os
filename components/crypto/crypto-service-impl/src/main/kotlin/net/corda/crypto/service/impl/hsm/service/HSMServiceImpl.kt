@@ -6,13 +6,13 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
-import net.corda.crypto.persistence.HSMCache
-import net.corda.crypto.persistence.HSMCacheActions
-import net.corda.crypto.persistence.HSMTenantAssociation
+import net.corda.crypto.persistence.hsm.HSMCache
+import net.corda.crypto.persistence.hsm.HSMCacheActions
+import net.corda.crypto.persistence.hsm.HSMConfig
+import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
-import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
@@ -78,25 +78,25 @@ class HSMServiceImpl(
         }
     }
 
-    fun putHSMConfig(config: HSMConfig) {
-        logger.info("putHSMConfig(id={},description={})", config.info.id, config.info.description)
-        if(config.info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
-            require(!config.info.masterKeyAlias.isNullOrBlank()) {
-                "The master key alias must be specified for '${config.info.masterKeyPolicy}' master key policy."
+    fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray) {
+        logger.info("putHSMConfig(id={},description={})", info.id, info.description)
+        if(info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
+            require(!info.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias must be specified for '${info.masterKeyPolicy}' master key policy."
             }
         }
         hsmCache.act {
-            if(config.info.id.isNullOrBlank()) {
-                it.add(config.info, encryptor.encrypt(config.serviceConfig.array()))
-            } else if(it.findConfig(config.info.id) != null) {
-                it.merge(config.info, encryptor.encrypt(config.serviceConfig.array()))
+            if(info.id.isNullOrBlank()) {
+                it.add(info, encryptor.encrypt(serviceConfig))
+            } else if(it.findConfig(info.id) != null) {
+                it.merge(info, encryptor.encrypt(serviceConfig))
             } else {
                 throw CryptoServiceLibraryException(
-                    "Cannot update the HSM Config with id '${config.info.id}' as it doesn't exist."
+                    "Cannot update the HSM Config with id '${info.id}' as it doesn't exist."
                 )
             }
         }
-        ensureWrappingKey(config.info)
+        ensureWrappingKey(info)
     }
 
     fun lookup(filter: Map<String, String>): List<HSMInfo> {

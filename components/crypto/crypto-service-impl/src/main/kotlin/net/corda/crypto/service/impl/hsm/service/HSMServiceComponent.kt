@@ -4,8 +4,8 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.persistence.HSMCacheProvider
-import net.corda.crypto.persistence.HSMTenantAssociation
+import net.corda.crypto.persistence.hsm.HSMCacheProvider
+import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo

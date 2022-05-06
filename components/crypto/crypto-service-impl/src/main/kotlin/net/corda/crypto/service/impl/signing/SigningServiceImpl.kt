@@ -1,10 +1,10 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyCache
-import net.corda.crypto.persistence.SigningKeyCacheActions
-import net.corda.crypto.persistence.SigningKeyOrderBy
+import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyCache
+import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy

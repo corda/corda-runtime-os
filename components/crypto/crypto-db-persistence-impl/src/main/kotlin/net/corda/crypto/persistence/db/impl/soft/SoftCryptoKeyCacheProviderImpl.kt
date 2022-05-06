@@ -3,8 +3,8 @@ package net.corda.crypto.persistence.db.impl.soft
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.persistence.SoftCryptoKeyCache
-import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.impl.config.toCryptoConfig

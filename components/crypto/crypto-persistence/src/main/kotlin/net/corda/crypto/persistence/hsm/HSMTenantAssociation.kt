@@ -1,6 +1,4 @@
-package net.corda.crypto.persistence
-
-import net.corda.data.crypto.wire.hsm.HSMConfig
+package net.corda.crypto.persistence.hsm
 
 class HSMTenantAssociation(
     val tenantId: String,

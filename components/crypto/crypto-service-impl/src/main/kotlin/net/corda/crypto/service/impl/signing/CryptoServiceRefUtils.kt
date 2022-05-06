@@ -1,9 +1,9 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.crypto.persistence.SigningKeySaveContext
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeySaveContext
+import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey

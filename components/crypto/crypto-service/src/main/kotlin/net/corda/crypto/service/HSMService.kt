@@ -1,6 +1,6 @@
 package net.corda.crypto.service
 
-import net.corda.crypto.persistence.HSMTenantAssociation
+import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.Lifecycle

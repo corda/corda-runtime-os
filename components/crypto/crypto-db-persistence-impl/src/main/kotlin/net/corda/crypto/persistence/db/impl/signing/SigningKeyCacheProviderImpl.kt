@@ -5,8 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.persistence.SigningKeyCache
-import net.corda.crypto.persistence.SigningKeyCacheProvider
+import net.corda.crypto.persistence.signing.SigningKeyCache
+import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory

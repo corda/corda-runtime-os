@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.db.impl.soft
 
 import com.github.benmanes.caffeine.cache.Cache
-import net.corda.crypto.persistence.SoftCryptoKeyCacheActions
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheActions
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity

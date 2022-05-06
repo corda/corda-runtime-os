@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.hsm.soft
 
-import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.component.impl.AbstractComponent

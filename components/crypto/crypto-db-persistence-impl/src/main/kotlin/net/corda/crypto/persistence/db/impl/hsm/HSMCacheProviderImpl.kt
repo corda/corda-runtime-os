@@ -5,8 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.persistence.HSMCache
-import net.corda.crypto.persistence.HSMCacheProvider
+import net.corda.crypto.persistence.hsm.HSMCache
+import net.corda.crypto.persistence.hsm.HSMCacheProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
@@ -14,7 +14,6 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

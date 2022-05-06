@@ -1,4 +1,4 @@
-package net.corda.crypto.persistence
+package net.corda.crypto.persistence.soft
 
 interface SoftCryptoKeyCache : AutoCloseable {
     fun act(): SoftCryptoKeyCacheActions

@@ -1,8 +1,8 @@
 package net.corda.crypto.persistence.db.impl.hsm
 
 import net.corda.crypto.impl.config.CryptoHSMPersistenceConfig
-import net.corda.crypto.persistence.HSMCache
-import net.corda.crypto.persistence.HSMCacheActions
+import net.corda.crypto.persistence.hsm.HSMCache
+import net.corda.crypto.persistence.hsm.HSMCacheActions
 import javax.persistence.EntityManagerFactory
 
 class HSMCacheImpl(

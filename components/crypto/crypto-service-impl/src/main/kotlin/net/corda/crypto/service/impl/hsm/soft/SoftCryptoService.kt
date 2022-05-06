@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.impl.SignatureInstances
-import net.corda.crypto.persistence.SoftCryptoKeyCache
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

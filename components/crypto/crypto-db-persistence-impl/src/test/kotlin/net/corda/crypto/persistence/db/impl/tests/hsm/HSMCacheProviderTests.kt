@@ -1,6 +1,6 @@
-package net.corda.crypto.persistence.db.impl.tests.soft
+package net.corda.crypto.persistence.db.impl.tests.hsm
 
-import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyCacheProviderImpl
+import net.corda.crypto.persistence.db.impl.hsm.HSMCacheProviderImpl
 import net.corda.crypto.persistence.db.impl.tests.infra.TestConfigurationReadService
 import net.corda.crypto.persistence.db.impl.tests.infra.TestDbConnectionManager
 import net.corda.db.core.DbPrivilege
@@ -24,11 +24,11 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 
-class SoftCryptoKeyCacheProviderTests {
+class HSMCacheProviderTests {
     private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var dbConnectionManager: TestDbConnectionManager
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var component: SoftCryptoKeyCacheProviderImpl
+    private lateinit var component: HSMCacheProviderImpl
 
     @BeforeEach
     fun setup() {
@@ -48,11 +48,10 @@ class SoftCryptoKeyCacheProviderTests {
         whenever(dbConnectionManager._mock.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)).doReturn(
             mock()
         )
-        component = SoftCryptoKeyCacheProviderImpl(
+        component = HSMCacheProviderImpl(
             coordinatorFactory,
             configurationReadService,
-            dbConnectionManager,
-            mock()
+            dbConnectionManager
         )
     }
 
@@ -62,49 +61,49 @@ class SoftCryptoKeyCacheProviderTests {
     @Test
     fun `Should create ActiveImpl only after the component is up`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(act())
     }
 
     @Test
     fun `Should use InactiveImpl when component is stopped`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(act())
         component.stop()
         eventually {
             assertFalse(component.isRunning)
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
     }
 
     @Test
     fun `Should go UP and DOWN as its dependencies go UP and DOWN`() {
         assertFalse(component.isRunning)
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
         component.start()
         eventually {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.ActiveImpl::class.java, component.impl)
         val instance11 = act()
         val instance12 = act()
         assertNotNull(instance11)
@@ -113,12 +112,12 @@ class SoftCryptoKeyCacheProviderTests {
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.InactiveImpl::class.java, component.impl)
         configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertInstanceOf(SoftCryptoKeyCacheProviderImpl.ActiveImpl::class.java, component.impl)
+        assertInstanceOf(HSMCacheProviderImpl.ActiveImpl::class.java, component.impl)
         val instance21 = act()
         val instance22 = act()
         assertNotNull(instance21)

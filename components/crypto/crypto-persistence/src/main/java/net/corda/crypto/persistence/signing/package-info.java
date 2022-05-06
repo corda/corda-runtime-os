@@ -1,4 +1,4 @@
 @Export
-package net.corda.crypto.persistence.config;
+package net.corda.crypto.persistence.signing;
 
 import org.osgi.annotation.bundle.Export;
