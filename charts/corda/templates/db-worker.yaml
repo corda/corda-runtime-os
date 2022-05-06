@@ -58,6 +58,7 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if not .Values.workers.db.debug.enabled }}
         livenessProbe:
           httpGet:
             path: /isHealthy
@@ -70,6 +71,7 @@ spec:
             port: health
           periodSeconds: 10
           failureThreshold: 5
+        {{- end }}
       nodeSelector:
         kubernetes.io/os: linux
         kubernetes.io/arch: amd64
