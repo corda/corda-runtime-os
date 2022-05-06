@@ -53,4 +53,6 @@ osgiRun {
             "org.osgi.framework.bundle.parent" : "app"
     ]
     agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
+
+    addOpensAttribute.addAll 'java.base/java.lang', 'java.base/java.lang.invoke', 'java.base/java.nio', 'java.base/java.util'
 }
