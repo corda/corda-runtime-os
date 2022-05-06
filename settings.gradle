@@ -55,9 +55,8 @@ pluginManagement {
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
-        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin  
-        id 'com.r3.internal.gradle.plugins.r3-docker' version internalDockerVersion
-
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
     }
 }
 
