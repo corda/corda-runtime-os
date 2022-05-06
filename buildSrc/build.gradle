@@ -11,7 +11,31 @@ repositories {
 def constants = new Properties()
 file("$rootDir/../gradle.properties").withInputStream { InputStream input -> constants.load(input) }
 def bndVersion = constants.getProperty('bndVersion')
+def internalPublishVersion = constants.getProperty('internalPublishVersion')
+def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
+
+repositories {
+        maven {
+            url "$artifactoryContextUrl/engineering-tools-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+            content {
+                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
+            }
+        }
+        gradlePluginPortal()
+}
 
 dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
+
+    if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('cordaArtifactoryUsername')) {
+        implementation "com.r3.internal.gradle.plugins:publish:$internalPublishVersion"
+    }
+
 }

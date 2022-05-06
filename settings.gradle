@@ -9,8 +9,8 @@ pluginManagement {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         } else {
@@ -23,19 +23,6 @@ pluginManagement {
             gradlePluginPortal()
         }
 
-        maven {
-            url "$artifactoryContextUrl/engineering-tools-maven"
-            authentication {
-                basic(BasicAuthentication)
-            }
-            credentials {
-                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-            }
-            content {
-                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
-            }
-        }
     }
 
     plugins {
@@ -47,15 +34,13 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'org.ajoberstar.grgit' version grgitPluginVersion // used for GIT interaction (e.g. extract commit hash)
-        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
-        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.dorongold.task-tree' version taskTreePluginVersion // utility to visualise Gradle task DAG
         id 'biz.aQute.bnd.builder' version bndVersion // used to create OSGi bundles
         id 'org.jetbrains.dokka' version dokkaVersion
         id "com.github.davidmc24.gradle.plugin.avro-base" version avroGradlePluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
-
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
     }
 }
 plugins {
@@ -75,8 +60,8 @@ dependencyResolutionManagement {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         } else {

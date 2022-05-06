@@ -1,7 +1,7 @@
 plugins {
     id 'corda-api.common-library'
     id 'org.jetbrains.kotlin.jvm'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description "Packaging avro converters"

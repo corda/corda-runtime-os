@@ -17,8 +17,7 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id "org.gradle.test-retry" apply false
     id 'org.ajoberstar.grgit' // used for GIT interaction (e.g. extract commit hash)
-    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
-    id 'maven-publish'
+    id 'corda.root-publish'
     id 'jacoco' // test coverage
     id 'com.dorongold.task-tree' // utility to visualise Gradle task DAG
     id 'org.jetbrains.dokka'

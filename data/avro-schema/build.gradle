@@ -4,7 +4,7 @@ import groovy.text.SimpleTemplateEngine
 
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id "com.github.davidmc24.gradle.plugin.avro-base"
     id 'biz.aQute.bnd.builder'
     id 'java-library'
