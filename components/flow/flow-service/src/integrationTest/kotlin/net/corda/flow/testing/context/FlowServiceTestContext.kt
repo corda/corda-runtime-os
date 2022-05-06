@@ -176,10 +176,9 @@ class FlowServiceTestContext @Activate constructor(
     override fun sessionAckEventReceived(
         flowId: String,
         sessionId: String,
-        sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
-        receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -187,7 +186,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionAck(),
-            sequenceNum,
+            sequenceNum = null,
             receivedSequenceNum,
         )
     }
@@ -197,9 +196,9 @@ class FlowServiceTestContext @Activate constructor(
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?,
-        receivedSequenceNum: Int?
+        initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -216,9 +215,9 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?,
-        receivedSequenceNum: Int?
+        initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -288,7 +287,7 @@ class FlowServiceTestContext @Activate constructor(
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
-        sequenceNum: Int,
+        sequenceNum: Int?,
         receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
@@ -296,7 +295,7 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             sequenceNum,
             payload,
-            receivedSequenceNum ?: sequenceNum,
+            receivedSequenceNum ?: sequenceNum ?: 0,
             listOf(0),
             Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,

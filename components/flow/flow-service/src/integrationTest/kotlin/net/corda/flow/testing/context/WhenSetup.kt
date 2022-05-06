@@ -14,10 +14,9 @@ interface WhenSetup {
     fun sessionAckEventReceived(
         flowId: String,
         sessionId: String,
-        sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null,
-        receivedSequenceNum: Int? = null
+        initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
     fun sessionDataEventReceived(
@@ -25,18 +24,18 @@ interface WhenSetup {
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null,
-        receivedSequenceNum: Int? = null
+        initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
     fun sessionCloseEventReceived(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null,
-        receivedSequenceNum: Int? = null
+        initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup

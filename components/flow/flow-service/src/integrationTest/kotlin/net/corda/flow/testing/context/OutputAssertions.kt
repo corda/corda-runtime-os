@@ -5,15 +5,20 @@ import net.corda.data.identity.HoldingIdentity
 
 interface OutputAssertions {
 
-    fun sessionAckEvent(
-        sessionId: String,
+    fun sessionAckEvents(
+        vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     )
 
-    fun sessionDataEvent(
-        sessionId: String,
-        data: ByteArray,
+    fun sessionDataEvents(
+        vararg sessionToPayload: Pair<String, ByteArray>,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
+    fun sessionCloseEvents(
+        vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     )

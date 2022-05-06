@@ -33,19 +33,18 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionDataEvent(SESSION_ID_1, DATA_MESSAGE_1)
-                sessionDataEvent(SESSION_ID_2, DATA_MESSAGE_2)
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
                 wakeUpEvent()
             }
         }
@@ -65,12 +64,12 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)))
 
             wakeupEventReceived(FLOW_ID1)
@@ -82,22 +81,19 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionDataEvent(SESSION_ID_1, DATA_MESSAGE_1)
-                sessionDataEvent(SESSION_ID_2, DATA_MESSAGE_2)
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
                 wakeUpEvent()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
-                sessionDataEvent(SESSION_ID_1, DATA_MESSAGE_3)
-                sessionDataEvent(SESSION_ID_2, DATA_MESSAGE_4)
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)
                 wakeUpEvent()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
-                sessionDataEvent(SESSION_ID_1, DATA_MESSAGE_5)
-                sessionDataEvent(SESSION_ID_2, DATA_MESSAGE_6)
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_5, SESSION_ID_2 to DATA_MESSAGE_6)
                 wakeUpEvent()
             }
         }
