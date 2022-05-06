@@ -60,9 +60,6 @@ dependencies {
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

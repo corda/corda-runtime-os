@@ -81,6 +81,10 @@ class FlowServiceTestContext @Activate constructor(
             .create(testConfig)
     )
 
+    fun start() {
+        virtualNodeInfoReadService.start()
+    }
+
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
