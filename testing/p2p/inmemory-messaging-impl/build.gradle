@@ -1,7 +1,7 @@
 plugins {
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description 'In-Memory Messaging API Impl'
