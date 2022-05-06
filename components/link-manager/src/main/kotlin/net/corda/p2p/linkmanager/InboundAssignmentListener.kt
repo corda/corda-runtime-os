@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class InboundAssignmentListener(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val partitionsTopic: String,
+    private val observedTopic: String,
 ) : PartitionAssignmentListener, LifecycleWithDominoTile {
 
     override val dominoTile = SimpleDominoTile(
@@ -24,14 +24,18 @@ class InboundAssignmentListener(
 
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
         topicPartitions.forEach { (topic, partition) ->
-            if (topic != partitionsTopic) {
-                logger.warn("Unexpected notifications: notifications for $topic were received, but expected notifications only for $topicPartitions")
+            if (topic != observedTopic) {
+                logger.warn(
+                    "Unexpected notifications: notifications for $topic were received, " +
+                        "but expected notifications only for $observedTopic"
+                )
             } else {
                 partitions.remove(partition)
             }
         }
 
         if (partitions.isEmpty()) {
+            logger.warn("No partitions assigned to $observedTopic.")
             dominoTile.updateState(DominoTileState.StoppedDueToBadConfig)
         }
         callCallbacks()
@@ -39,8 +43,11 @@ class InboundAssignmentListener(
 
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
         topicPartitions.forEach { (topic, partition) ->
-            if (topic != partitionsTopic) {
-                logger.warn("Unexpected topic: $topic assigned, expected $topicPartitions")
+            if (topic != observedTopic) {
+                logger.warn(
+                    "Unexpected notifications: notifications for $topic were received," +
+                        " but expected notifications only for $observedTopic"
+                )
             } else {
                 partitions.add(partition)
             }
@@ -57,7 +64,9 @@ class InboundAssignmentListener(
 
     fun registerCallbackForTopic(callback: (partitions: Set<Int>) -> Unit) {
         callbacks.add(callback)
-        callCallbacks()
+        if (dominoTile.isRunning) {
+            callback.invoke(partitions)
+        }
     }
 
     private fun callCallbacks() {

@@ -35,7 +35,7 @@ class SimpleDominoTile(
     }
     override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
-            "$componentName-tile",
+            componentName,
             instancesIndex.compute(this::class.java.simpleName) { _, last ->
                 if (last == null) {
                     1
