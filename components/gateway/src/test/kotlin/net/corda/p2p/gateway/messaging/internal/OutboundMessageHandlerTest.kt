@@ -350,8 +350,8 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        val record1Future = handler.onNext(Record("", "", message))
-        assertThrows<ExecutionException> { record1Future.get() }
+        val recordFuture = handler.onNext(Record("", "", message))
+        assertThrows<ExecutionException> { recordFuture.get() }
 
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
