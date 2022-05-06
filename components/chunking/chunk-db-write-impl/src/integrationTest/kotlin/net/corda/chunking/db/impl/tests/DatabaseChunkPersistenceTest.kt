@@ -149,7 +149,7 @@ internal class DatabaseChunkPersistenceTest {
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(mockCpkContent.length)
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize).apply {
+        val writer = ChunkWriterFactory.create(chunkSize, false).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...

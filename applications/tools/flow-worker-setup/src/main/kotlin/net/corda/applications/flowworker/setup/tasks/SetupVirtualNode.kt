@@ -61,7 +61,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         cpiList.flatMap { it.cpks }.map { cpk ->
             val cpkChecksum = cpk.metadata.hash
-            val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+            val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE, false)
             chunkWriter.onChunk { chunk ->
                 val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
                 context.publish(Record(Schemas.VirtualNode.CPK_FILE_TOPIC, cpkChunkId, chunk))

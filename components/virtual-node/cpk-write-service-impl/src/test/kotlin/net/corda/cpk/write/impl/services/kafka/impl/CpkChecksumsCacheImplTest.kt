@@ -41,7 +41,8 @@ class CpkChecksumsCacheImplTest {
                     if (zeroChunk)
                         ByteBuffer.wrap(byteArrayOf())
                     else
-                        ByteBuffer.wrap(byteArrayOf(0x01, 0x02))
+                        ByteBuffer.wrap(byteArrayOf(0x01, 0x02)),
+                    false
                 )
             )
     }

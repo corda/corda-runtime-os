@@ -60,7 +60,7 @@ internal class ChunkEntityTest {
     fun `can write an entity`() {
         val requestId = randomString()
         val data = randomString().toByteArray()
-        val entity = ChunkEntity(requestId, null, null, 0, 0, data)
+        val entity = ChunkEntity(requestId, null, null, 0, 0, data, false)
 
         entityManagerFactory.createEntityManager().transaction { it.persist(entity) }
     }
@@ -69,7 +69,7 @@ internal class ChunkEntityTest {
     fun `can read an entity`() {
         val requestId = randomString()
         val data = "truffle shuffle".toByteArray()
-        val entity = ChunkEntity(requestId, null, null, 0, 0, data)
+        val entity = ChunkEntity(requestId, null, null, 0, 0, data, false)
 
         entityManagerFactory.createEntityManager().transaction { it.persist(entity) }
 
@@ -86,7 +86,7 @@ internal class ChunkEntityTest {
     fun `columns are equal`() {
         val requestId = randomString()
         val data = "truffle shuffle".toByteArray()
-        val entity = ChunkEntity(requestId, null, null, 0, 0, data)
+        val entity = ChunkEntity(requestId, null, null, 0, 0, data, false)
 
         entityManagerFactory.createEntityManager().transaction {
 

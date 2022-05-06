@@ -47,13 +47,13 @@ class ChunkReadingTest {
         var actualFileName: String? = null
         var actualPath: Path? = null
         val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempBinaryPath, _ ->
+            onComplete { originalFileName, tempBinaryPath, _, _ ->
                 actualFileName = originalFileName
                 actualPath = tempBinaryPath
             }
         }
 
-        val writer = ChunkWriterFactory.create(1 * MB).apply {
+        val writer = ChunkWriterFactory.create(1 * MB, false).apply {
             onChunk(reader::read)
         }
 
@@ -62,7 +62,7 @@ class ChunkReadingTest {
         writer.write(ourFileName, Files.newInputStream(path))
 
         assertThat(ourFileName).isEqualTo(actualFileName.toString())
-        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath))
+        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath!!))
     }
 
     @Test
@@ -71,12 +71,12 @@ class ChunkReadingTest {
 
         var readCompleted = false
         val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _ -> readCompleted = true }
+            onComplete { _, _, _, _ -> readCompleted = true }
         }
 
         val chunkCount = 5
 
-        val writer = ChunkWriterImpl(32).apply {
+        val writer = ChunkWriterImpl(32, false).apply {
             // guaranteed to be in order in this test
             onChunk(chunks::add)
         }
@@ -98,7 +98,7 @@ class ChunkReadingTest {
     @Test
     fun `can read out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(32).apply {
+        val writer = ChunkWriterImpl(32, false).apply {
             onChunk(chunks::add)
         }
 
@@ -106,7 +106,7 @@ class ChunkReadingTest {
         var actualPath: Path? = null
         var readCompleted = false
         val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempBinaryPath, _ ->
+            onComplete { originalFileName, tempBinaryPath, _, _ ->
                 actualFileName = originalFileName
                 actualPath = tempBinaryPath
                 readCompleted = true
@@ -135,21 +135,21 @@ class ChunkReadingTest {
         assertThat(readCompleted).isTrue
         // "cast away" the underlying filesystem (otherwise we get jimfs vs unix paths)
         assertThat(ourFileName.toString()).isEqualTo(actualFileName.toString())
-        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath))
+        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath!!))
     }
 
     @Test
     fun `can read overlapping files with out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
         val chunkSize = 32 //bytes
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val writer = ChunkWriterImpl(chunkSize, false).apply {
             onChunk(chunks::add)
         }
 
         var completionCount = 0
 
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _ -> completionCount++ }
+            onComplete { _, _, _, _ -> completionCount++ }
         }
 
         val fileCount = 5
@@ -198,7 +198,7 @@ class ChunkReadingTest {
             .isNotEqualTo(loremIpsum.length)
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val writer = ChunkWriterImpl(chunkSize, false).apply {
             onChunk(chunks::add)
         }
 
@@ -208,7 +208,7 @@ class ChunkReadingTest {
         lateinit var actualPath: Path
         lateinit var actualFileName: String
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempPathOfBinary, _ ->
+            onComplete { originalFileName, tempPathOfBinary, _, _ ->
                 actualPath = tempPathOfBinary
                 actualFileName = originalFileName
             }
@@ -241,7 +241,7 @@ class ChunkReadingTest {
         val ourFileName = randomFileName()
         val chunks = mutableListOf<Chunk>()
         val chunkSize = 32 //bytes
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val writer = ChunkWriterImpl(chunkSize, false).apply {
             onChunk(chunks::add)
         }
         writer.write(ourFileName, Files.newInputStream(path))

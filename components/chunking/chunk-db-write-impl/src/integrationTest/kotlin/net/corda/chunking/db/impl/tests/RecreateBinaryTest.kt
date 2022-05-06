@@ -83,7 +83,7 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize).apply {
+        val writer = ChunkWriterFactory.create(chunkSize, false).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
@@ -130,7 +130,7 @@ class RecreateBinaryTest {
         val destDir = fs.getPath("destDir").apply { Files.createDirectories(this) }
 
         val chunkReader = ChunkReaderFactory.create(destDir).apply {
-            this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash ->
+            this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash, _: Boolean ->
                 actualFileName = originalFileName
                 tempPath = tempPathOfBinary
             }

@@ -21,6 +21,7 @@ object Helpers {
                     chunkingChecksum.toAvro(),
                     cpkChunkPartNumber,
                     0,
-                    ByteBuffer.wrap(bytes)
+                    ByteBuffer.wrap(bytes),
+                    false
                 )
 }

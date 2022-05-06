@@ -44,7 +44,7 @@ class ChunkWritingTest {
 
     @Test
     fun `simple chunking`() {
-        val chunkWriter = ChunkWriterFactory.create(1 * MB)
+        val chunkWriter = ChunkWriterFactory.create(1 * MB, false)
         var chunkWrittenCount = 0
         chunkWriter.onChunk { chunkWrittenCount++ }
 
@@ -57,7 +57,7 @@ class ChunkWritingTest {
 
     @Test
     fun `last chunk is zero size`() {
-        val chunkWriter = ChunkWriterFactory.create(1 * MB)
+        val chunkWriter = ChunkWriterFactory.create(1 * MB, false)
         var lastChunkSize = 0
         chunkWriter.onChunk { lastChunkSize = it.data.limit() }
 
@@ -71,8 +71,8 @@ class ChunkWritingTest {
     @Test
     fun `chunk file name is set correctly`() {
         val fileName = randomFileName()
-        val writer = ChunkWriterFactory.create(1 * MB).apply {
-            onChunk { assertThat(it.fileName).isEqualTo(fileName.toString()) }
+        val writer = ChunkWriterFactory.create(1 * MB, false).apply {
+            onChunk { assertThat(it.fileName).isEqualTo(fileName) }
         }
 
         val path = createFile((32 * KB).toLong())
@@ -82,7 +82,7 @@ class ChunkWritingTest {
     @Test
     fun `multiple chunks are written`() {
         var count = 0
-        val writer = ChunkWriterImpl(32 * KB).apply {
+        val writer = ChunkWriterImpl(32 * KB, false).apply {
             onChunk { count++ }
         }
 
@@ -98,7 +98,7 @@ class ChunkWritingTest {
     fun `ensure chunks are trimmed to minimum size`() {
         val chunkSize = 32 * KB
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(chunkSize).apply {
+        val writer = ChunkWriterImpl(chunkSize, false).apply {
             onChunk { chunks.add(it) }
         }
 

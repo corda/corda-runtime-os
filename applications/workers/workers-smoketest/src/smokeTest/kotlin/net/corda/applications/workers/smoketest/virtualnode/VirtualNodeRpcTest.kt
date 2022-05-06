@@ -259,10 +259,10 @@ class VirtualNodeRpcTest {
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             // BUG:  returning "OK" feels 'weakly' typed
-            val json = assertWithRetry {
+            assertWithRetry {
                 command { cpiStatus(requestId) }
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }.toJson()
+            }
         }
     }
 }

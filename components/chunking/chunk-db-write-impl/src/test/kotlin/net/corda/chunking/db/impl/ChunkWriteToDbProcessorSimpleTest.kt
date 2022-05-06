@@ -36,7 +36,8 @@ class ChunkWriteToDbProcessorSimpleTest {
             SecureHash("foo", ByteArray(12)).toAvro(),
             0,
             0,
-            ByteBuffer.wrap("12345678".toByteArray())
+            ByteBuffer.wrap("12345678".toByteArray()),
+            false
         )
         processor.onNext(listOf(Record(topic, requestId, chunk)))
 
@@ -60,7 +61,8 @@ class ChunkWriteToDbProcessorSimpleTest {
             SecureHash("foo", ByteArray(12)).toAvro(),
             0,
             0,
-            ByteBuffer.wrap("12345678".toByteArray())
+            ByteBuffer.wrap("12345678".toByteArray()),
+            false
         )
 
         processor.onNext(listOf(Record(topic, requestId, chunk)))

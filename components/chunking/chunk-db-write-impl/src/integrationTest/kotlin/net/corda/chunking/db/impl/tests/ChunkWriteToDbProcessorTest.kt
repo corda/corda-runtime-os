@@ -11,10 +11,8 @@ import net.corda.schema.Schemas
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -49,14 +47,16 @@ internal class ChunkWriteToDbProcessorTest {
 
     @Test
     fun `processor calls through to persist method`() {
-        val chunk = Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256)))
+        val chunk = Chunk(randomString(), randomString(), null, 0, 0,
+            ByteBuffer.wrap(ByteArray(256)), false)
         processRequest(processor, chunk)
         verify(persistence).persistChunk(chunk)
     }
 
     @Test
     fun `processor calls through to publisher`() {
-        processRequest(processor, Chunk(randomString(), randomString(), null, 0, 0, ByteBuffer.wrap(ByteArray(256))))
+        processRequest(processor, Chunk(randomString(), randomString(), null, 0, 0,
+            ByteBuffer.wrap(ByteArray(256)), false))
         verify(persistence).persistChunk(any())
         verify(publisher).initialStatus(any())
     }
