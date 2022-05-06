@@ -18,9 +18,7 @@ class StubPubSubProcessor(
             throw exception
         }
         return if (futureException != null) {
-            val future = CompletableFuture<Unit>()
-            future.completeExceptionally(futureException)
-            future
+            CompletableFuture.failedFuture(futureException)
         } else {
             CompletableFuture.completedFuture(Unit)
         }

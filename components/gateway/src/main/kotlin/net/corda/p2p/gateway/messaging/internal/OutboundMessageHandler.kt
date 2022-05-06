@@ -7,7 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableScheduledExecutorService
+import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -85,11 +85,9 @@ internal class OutboundMessageHandler(
     )
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val future = CompletableFuture<Unit>()
         retryThreadPool = retryThreadPoolFactory()
-        resources.keep(AutoClosableScheduledExecutorService(retryThreadPool))
-        future.complete(Unit)
-        return future
+        resources.keep(AutoClosableExecutorService(retryThreadPool))
+        return CompletableFuture.completedFuture(Unit)
     }
 
     @Volatile

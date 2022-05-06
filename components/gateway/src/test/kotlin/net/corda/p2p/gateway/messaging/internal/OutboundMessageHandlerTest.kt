@@ -11,7 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableScheduledExecutorService
+import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -103,14 +103,16 @@ class OutboundMessageHandlerTest {
     }
 
     private var handlerStarted = true
-    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
+    private val resourcesHolder = mock<ResourcesHolder>()
+    private lateinit var future: CompletableFuture<Unit>
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doAnswer { handlerStarted }
         if (context.arguments()[2] != null) {
             @Suppress("UNCHECKED_CAST")
-            createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+            val createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+            future = createResources(resourcesHolder)
         }
     }
     private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
@@ -136,16 +138,16 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
-        val resourcesHolder = mock<ResourcesHolder>()
-        val future = createResources!!(resourcesHolder)
-        verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
-        assertThat(future.isDone).isTrue
-        assertThat(future.isCompletedExceptionally).isFalse
+        verify(resourcesHolder).keep(isA<AutoClosableExecutorService>())
     }
 
     @Test
-    fun `onNext will write message to the client and return empty list`() {
-        createResources!!(mock())
+    fun `on createResource the ReplayScheduler completes the future`() {
+        assertThat(future).isCompletedWithValue(Unit)
+    }
+
+    @Test
+    fun `onNext will write message to the client and return completed future`() {
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -162,16 +164,22 @@ class OutboundMessageHandlerTest {
         val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
-        handler.onNext(Record("", "", message))
-        handler.onNext(Record("", "", null))
+        val future = handler.onNext(Record("", "", message))
 
         assertThat(sentMessages).hasSize(1)
         assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
+        assertThat(future).isCompleted
+    }
+
+    @Test
+    fun `onNext will complete future if record value is null`() {
+        val future = handler.onNext(Record("", "", null))
+        assertThat(sentMessages).hasSize(0)
+        assertThat(future).isCompleted
     }
 
     @Test
     fun `onNext will throw an exception if the handler is not ready`() {
-        createResources!!(mock())
         handlerStarted = false
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
@@ -196,7 +204,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA5`() {
-        createResources!!(mock())
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -232,7 +239,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA4`() {
-        createResources!!(mock())
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -268,7 +274,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will not send anything for invalid arguments`() {
-        createResources!!(mock())
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -294,7 +299,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will get the trust store from the trust store map`() {
-        createResources!!(mock())
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -321,7 +325,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when message times out, it is retried once`() {
-        createResources!!(mock())
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
@@ -348,9 +351,7 @@ class OutboundMessageHandlerTest {
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
         val record1Future = handler.onNext(Record("", "", message))
-        val record2Future = handler.onNext(Record("", "", null))
         assertThrows<ExecutionException> { record1Future.get() }
-        record2Future.get()
 
         mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay)
         assertThat(sentMessages).hasSize(2)
@@ -364,7 +365,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when message fails, it is retried once`() {
-        createResources!!(mock())
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
@@ -406,7 +406,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when 5xx error code is received, it is retried once`() {
-        createResources!!(mock())
         connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
@@ -448,7 +447,6 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when 4xx error code is received, it is not retried`() {
-        createResources!!(mock())
         val retryDelay = 10.millis
         connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = retryDelay)
         val client = mock<HttpClient> {
