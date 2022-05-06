@@ -51,7 +51,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
     // But building a cpb for use in a test is ok.
-    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"

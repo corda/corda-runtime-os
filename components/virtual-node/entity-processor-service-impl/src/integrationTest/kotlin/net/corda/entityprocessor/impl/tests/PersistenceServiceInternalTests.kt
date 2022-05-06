@@ -51,7 +51,9 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.io.FileOutputStream
 import java.nio.ByteBuffer
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import java.time.LocalDate
@@ -416,5 +418,53 @@ class PersistenceServiceInternalTests {
         val flowKey = FlowKey(UUID.randomUUID().toString(), holdingId.toAvro())
         logger.info("Entity Request - flow: $flowKey, entity: $entity")
         return EntityRequest(Instant.now(), flowKey, entity)
+    }
+
+    @Test
+    fun `create avro messages for E2E testing`() {
+        val ctx = createDbTestContext()
+
+        // saving binary for E2E testing
+        // dog
+        val dogId = UUID.randomUUID()
+        val dog = ctx.sandbox.createDogInstance(dogId, "Pluto", Instant.now(), "me")
+        FileOutputStream("/tmp/avro/pluto-dog.amqp.bin").use {
+            it.channel.write(
+                ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(dog).bytes))
+        }
+
+        // cat and owner
+        val cat = ctx.sandbox.createCatInstance(
+            UUID.randomUUID(),
+            "Garfield",
+            "ginger",
+            UUID.randomUUID(),
+            "Jim Davies",
+            Calendar.getInstance().get(Calendar.YEAR) - 1976
+        )
+        FileOutputStream("/tmp/avro/garfield-cat-plus-owner.amqp.bin").use {
+            it.channel.write(
+                ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(cat).bytes))
+        }
+
+        // find dog
+//        val serializedDogId = ctx.sandbox.getSerializer().serialize(dogId)
+//        FileOutputStream("/tmp/avro/find-dog.avro.bin").use {
+//            it.channel.write(
+//                FindEntity(DOG_CLASS_NAME, ByteBuffer.wrap(serializedDogId.bytes)).toByteBuffer())
+//        }
+
+        // update dog
+        val bellaTheDog = ctx.sandbox.createDogInstance(dogId, "Bella", Instant.now(), "me")
+        FileOutputStream("/tmp/avro/bello-dog.amqp.bin").use {
+            it.channel.write(
+                ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(bellaTheDog).bytes))
+        }
+
+        // delete dog
+//        FileOutputStream("/tmp/avro/update-dog.avro.bin").use {
+//            it.channel.write(
+//                DeleteEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(bellaTheDog).bytes)).toByteBuffer())
+//        }
     }
 }

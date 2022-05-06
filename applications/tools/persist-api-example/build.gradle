@@ -1,0 +1,78 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+// This is a temporary project to show the DB Worker side of the Flow Persistence API
+//   We should remove this when not needed anymore, but ideally we should have a way
+//   to run these type of "E2E" tests that don't need the entire stack.
+description 'Flow Persistence API use example'
+
+sourceSets {
+    dbProcessorTest {
+        java {
+            srcDirs += [ 'src/dbProcessorTest/java' ]
+        }
+        kotlin {
+            srcDirs += [ 'src/dbProcessorTest/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/dbProcessorTest/resources' ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+kotlin {
+    target {
+        java
+        compilations.dbProcessorTest {
+            associateWith compilations.main
+            associateWith compilations.test
+
+            configurations {
+                dbProcessorTestApi.extendsFrom testApi
+                dbProcessorTestImplementation.extendsFrom testImplementation
+                dbProcessorTestRuntimeOnly.extendsFrom testRuntimeOnly
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'org.slf4j:slf4j-api'
+    implementation project(":libs:db:db-admin-impl")
+    implementation project(":libs:db:db-core")
+    implementation project(":libs:virtual-node:virtual-node-info")
+
+    implementation project(':testing:bundles:testing-cats')
+    implementation project(':testing:bundles:testing-dogs')
+
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+    implementation project(":libs:schema-registry:schema-registry-impl")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+tasks.register('dbProcessorTest', Test) {
+    description = "Runs DB Processor tests against Kafka."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["dbProcessorTest"].output.classesDirs
+    classpath = project.sourceSets["dbProcessorTest"].runtimeClasspath
+
+    systemProperty "kafkaBrokerAddress",
+            project.getProperties().getOrDefault("kafkaBrokerAddress","prereqs-kafka.corda:9092")
+    systemProperty "x500",
+            project.getProperties().getOrDefault("x500","CN=Alice, OU=Application, O=R3, L=London, C=GB")
+    systemProperty "groupId",
+            project.getProperties().getOrDefault("groupId","placeholder1")
+}
+

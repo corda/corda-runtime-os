@@ -73,6 +73,7 @@ include 'applications:tools:flow-worker-setup'
 include 'applications:tools:kafka-setup'
 include 'applications:tools:mgm-test:group-policy-uploader'
 include 'applications:tools:mgm-test:memberlist-viewer'
+include 'applications:tools:persist-api-example' // TO BE REMOVED
 include 'applications:tools:p2p-test:app-simulator'
 include 'applications:tools:p2p-test:p2p-setup'
 include 'applications:tools:p2p-test:p2p-layer-deployment'

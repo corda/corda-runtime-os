@@ -14,7 +14,7 @@ import java.net.URI
 import java.time.Duration
 
 // The CPI we're using in this test
-const val CALCULATOR_CPI = "/META-INF/calculator.cpb"
+const val CALCULATOR_CPI = "/META-INF/extendable-cpb.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
@@ -53,7 +53,7 @@ class VirtualNodeRpcTest {
     private val username = "admin"
     private val password = "admin"
 
-    private val groupId = "placeholder"
+    private val groupId = "placeholder1"
 
     /**
      * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.
@@ -171,7 +171,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(clusterUri, username, password)
             val cpis = cpiList().toJson()["cpis"]
-            val json = cpis.toList().first { it["id"]["cpiName"].textValue() == "calculator" }
+            val json = cpis.toList().first()
             val hash = json["fileChecksum"].textValue().toShortHash()
 
             val vNodeJson = assertWithRetry {

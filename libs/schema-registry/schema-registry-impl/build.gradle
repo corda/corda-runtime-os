@@ -20,7 +20,7 @@ dependencies {
     }
 
     implementation "net.corda:corda-avro-schema"
-    implementation project(":libs:schema-registry:schema-registry")
+    api project(":libs:schema-registry:schema-registry")
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }
