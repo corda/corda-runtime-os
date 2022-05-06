@@ -31,6 +31,7 @@ data class ChunkEntity(
     @Column(name = "force_upload", nullable = false)
     var forceUpload: Boolean
 ) {
+    @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

@@ -81,7 +81,7 @@ internal class ValidationFunctions(
      *
      * @throws ValidationException if there is an error
      */
-    @Suppress("ThrowsCount")
+    @Suppress("ThrowsCount", "ComplexMethod")
     fun persistToDatabase(
         chunkPersistence: ChunkPersistence,
         cpi: CPI,
