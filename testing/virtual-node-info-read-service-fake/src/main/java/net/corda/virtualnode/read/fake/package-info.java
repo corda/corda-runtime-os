@@ -1,4 +1,4 @@
 @Export
-package net.corda.sandbox.fakes;
+package net.corda.virtualnode.read.fake;
 
 import org.osgi.annotation.bundle.Export;

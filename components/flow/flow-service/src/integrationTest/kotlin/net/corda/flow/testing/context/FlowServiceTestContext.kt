@@ -29,7 +29,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.ManifestCordappInfo
-import net.corda.sandbox.fakes.VirtualNodeInfoReadServiceFake
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -37,6 +36,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate

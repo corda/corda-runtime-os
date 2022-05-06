@@ -1,4 +1,4 @@
-package net.corda.sandbox.fakes
+package net.corda.virtualnode.read.fake
 
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
