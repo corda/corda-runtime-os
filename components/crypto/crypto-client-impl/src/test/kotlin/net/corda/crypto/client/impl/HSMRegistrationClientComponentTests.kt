@@ -4,8 +4,12 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
+import net.corda.data.KeyValuePair
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
@@ -19,6 +23,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -43,7 +48,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-/*
 class HSMRegistrationClientComponentTests {
     private lateinit var knownTenantId: String
     private lateinit var sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
@@ -117,37 +121,27 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val response = HSMInfo(
-            "id",
-            Instant.now(),
-            2,
-            "label",
-            "description",
-            "serviceName",
-            "byoTenantId",
-            listOf(
-                CryptoConsts.HsmCategories.LEDGER,
-                CryptoConsts.HsmCategories.TLS
-            ),
-            1,
-            5000,
-            listOf(
-                "scheme1",
-                "scheme2"
-            )
-        )
+        val response = HSMInfo()
         setupCompletedResponse {
             response
         }
         val result = sender.act {
             component.assignHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
+                category = CryptoConsts.HsmCategories.LEDGER,
+                context = mapOf(
+                    PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+                )
             )
         }
         assertSame(response, result.value)
         val command = assertOperationType<AssignHSMCommand>(result)
-        assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertThat(command.context.items).hasSize(1)
+        assertThat(command.context.items).contains(KeyValuePair(
+            PREFERRED_PRIVATE_KEY_POLICY_KEY,
+            PREFERRED_PRIVATE_KEY_POLICY_NONE
+        ))
         assertRequestContext(result)
     }
 
@@ -157,39 +151,19 @@ class HSMRegistrationClientComponentTests {
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val response = HSMInfo(
-            "id",
-            Instant.now(),
-            2,
-            "label",
-            "description",
-            "serviceName",
-            "byoTenantId",
-            listOf(
-                CryptoConsts.HsmCategories.LEDGER,
-                CryptoConsts.HsmCategories.TLS
-            ),
-            1,
-            5000,
-            listOf(
-                "scheme1",
-                "scheme2"
-            )
-        )
+        val response = HSMInfo()
         setupCompletedResponse {
             response
         }
         val result = sender.act {
             component.assignSoftHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
-                passphrase = "PASSPHRASE1"
+                category = CryptoConsts.HsmCategories.LEDGER
             )
         }
         assertSame(response, result.value)
         val command = assertOperationType<AssignSoftHSMCommand>(result)
         assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
-        assertEquals ("PASSPHRASE1", command.passphrase)
         assertRequestContext(result)
     }
 
@@ -235,6 +209,131 @@ class HSMRegistrationClientComponentTests {
         val query = assertOperationType<AssignedHSMQuery>(result)
         assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
         assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should fail when response tenant id does not match the request`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
+            val future = CompletableFuture<HSMRegistrationResponse>()
+            future.complete(
+                HSMRegistrationResponse(
+                    CryptoResponseContext(
+                        req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        UUID.randomUUID().toString(),
+                        Instant.now(),
+                        UUID.randomUUID().toString(), //req.context.tenantId
+                        req.context.other
+                    ), HSMInfo()
+                )
+            )
+            future
+        }
+        val exception = assertThrows<CryptoServiceLibraryException> {
+            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        assertNotNull(exception.cause)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Should fail when requesting component in response does not match the request`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
+            val future = CompletableFuture<HSMRegistrationResponse>()
+            future.complete(
+                HSMRegistrationResponse(
+                    CryptoResponseContext(
+                        UUID.randomUUID().toString(), //req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        UUID.randomUUID().toString(),
+                        Instant.now(),
+                        req.context.tenantId,
+                        req.context.other
+                    ), HSMInfo()
+                )
+            )
+            future
+        }
+        val exception = assertThrows<CryptoServiceLibraryException> {
+            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        assertNotNull(exception.cause)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Should fail when response class is not expected`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, HSMRegistrationRequest::class.java)
+            val future = CompletableFuture<HSMRegistrationResponse>()
+            future.complete(
+                HSMRegistrationResponse(
+                    CryptoResponseContext(
+                        req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        UUID.randomUUID().toString(),
+                        Instant.now(),
+                        req.context.tenantId,
+                        req.context.other
+                    ), CryptoResponseContext()
+                )
+            )
+            future
+        }
+        val exception = assertThrows<CryptoServiceLibraryException> {
+            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        assertNotNull(exception.cause)
+        assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Should fail when sendRequest throws CryptoServiceLibraryException exception`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val error = CryptoServiceLibraryException("Test failure.")
+        whenever(sender.sendRequest(any())).thenThrow(error)
+        val exception = assertThrows<CryptoServiceLibraryException> {
+            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        assertSame(error, exception)
+    }
+
+    @Test
+    fun `Should fail when sendRequest throws an exception`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val error = RuntimeException("Test failure.")
+        whenever(sender.sendRequest(any())).thenThrow(error)
+        val exception = assertThrows<CryptoServiceLibraryException> {
+            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+        }
+        assertNotNull(exception.cause)
+        assertSame(error, exception.cause)
     }
 
     @Test
@@ -304,5 +403,3 @@ class HSMRegistrationClientComponentTests {
         Mockito.verify(sender, atLeast(1)).close()
     }
 }
-
- */
