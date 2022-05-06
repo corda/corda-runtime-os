@@ -14,11 +14,11 @@ object ChunkWriterFactory {
     const val SUGGESTED_CHUNK_SIZE = 512 * KB
 
     /** Note that the [chunkSize] (in bytes) *must* fit within a Kafka message */
-    fun create(chunkSize: Int): ChunkWriter {
+    fun create(chunkSize: Int, forceUpload: Boolean): ChunkWriter {
         if (chunkSize > MAX_CHUNK_SIZE) {
             throw CordaRuntimeException("Cannot write chunks larger than $MAX_CHUNK_SIZE because it will exceed the db table definition")
         }
 
-        return ChunkWriterImpl(chunkSize)
+        return ChunkWriterImpl(chunkSize, forceUpload)
     }
 }

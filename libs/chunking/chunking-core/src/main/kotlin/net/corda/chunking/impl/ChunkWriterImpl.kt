@@ -15,7 +15,7 @@ import java.util.UUID
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
-internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
+internal class ChunkWriterImpl(val chunkSize: Int, private val forceUpload: Boolean) : ChunkWriter {
     companion object {
         const val KB = 1024
         const val MB = 1024 * KB
@@ -86,6 +86,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
             it.data = ByteBuffer.wrap(ByteArray(0))
             it.offset = offset
             it.checksum = checksum.toAvro()
+            it.forceUpload = forceUpload
         }
     )
 
@@ -102,6 +103,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
             it.partNumber = chunkNumber
             it.data = byteBuffer
             it.offset = offset
+            it.forceUpload = forceUpload
         }
     )
 
