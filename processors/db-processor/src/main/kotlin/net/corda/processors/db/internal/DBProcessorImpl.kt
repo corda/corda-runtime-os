@@ -214,7 +214,7 @@ class DBProcessorImpl @Activate constructor(
                 writer = cpiInfoWriteService,
                 keyClass = CpiIdentifier::class.java,
                 valueClass = CpiMetadata::class.java,
-                reconciliationInterval = Duration.ofMillis(cpiInfoReconciliationIntervalMs)
+                reconciliationIntervalMs = cpiInfoReconciliationIntervalMs
             ).also { it.start() }
         } else {
             log.info("Updating Cpi Info ${Reconciler::class.java.name}")

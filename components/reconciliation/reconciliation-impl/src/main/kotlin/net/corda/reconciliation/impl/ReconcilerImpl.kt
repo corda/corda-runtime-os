@@ -15,7 +15,8 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
-import java.time.Duration
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 
 @Suppress("LongParameterList")
 class ReconcilerImpl<K : Any, V : Any>(
@@ -25,7 +26,7 @@ class ReconcilerImpl<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private var reconciliationInterval: Duration
+    private var reconciliationIntervalMs: Long
 ) : Reconciler {
     companion object {
         private val logger = contextLogger()
@@ -45,7 +46,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ReconcileEvent -> onReconcileEvent(event, coordinator)
+            is ReconcileEvent -> onReconcileEvent(coordinator)
             is UpdateIntervalEvent -> onUpdateIntervalEvent(event)
             is StopEvent -> onStopEvent()
         }
@@ -64,9 +65,9 @@ class ReconcilerImpl<K : Any, V : Any>(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
-            logger.debug("$name is getting UP")
+            logger.info("$name starting reconciliations")
+            setReconciliationTimerEvent(coordinator)
             coordinator.updateStatus(LifecycleStatus.UP)
-            coordinator.postEvent(ReconcileEvent(name))
         } else {
             logger.warn(
                 "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
@@ -79,7 +80,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         }
     }
 
-    private fun onReconcileEvent(reconcileEvent: ReconcileEvent, coordinator: LifecycleCoordinator) {
+    private fun onReconcileEvent(coordinator: LifecycleCoordinator) {
         logger.debug("Scheduling reconciliation")
         try {
             reconcile()
@@ -91,12 +92,17 @@ class ReconcilerImpl<K : Any, V : Any>(
             logger.warn("Reconciliation failed")
         }
 
-        coordinator.setTimer(name, reconciliationInterval.toMillis()) { reconcileEvent }
+        setReconciliationTimerEvent(coordinator)
+    }
+
+    private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
+        logger.debug { "Registering new ${ReconcileEvent::class.simpleName}" }
+        coordinator.setTimer(name, reconciliationIntervalMs) { ReconcileEvent(it) }
     }
 
     private fun onUpdateIntervalEvent(event: UpdateIntervalEvent) {
         logger.info("Updating interval of $name to ${event.intervalMs} ms")
-        reconciliationInterval = Duration.ofMillis(event.intervalMs)
+        reconciliationIntervalMs = event.intervalMs
     }
 
     private fun onStopEvent() {

@@ -13,6 +13,6 @@ interface ReconcilerFactory {
         writer: ReconcilerWriter<V>,
         keyClass: Class<K>,
         valueClass: Class<V>,
-        reconciliationInterval: Duration
+        reconciliationIntervalMs: Long
     ): Reconciler
 }
