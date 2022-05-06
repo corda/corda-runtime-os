@@ -69,7 +69,7 @@ data class CpiMetadataEntity (
     @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
     */
     @Column(name = "entity_version", nullable = false)
-    val entityVersion: Int,
+    val entityVersion: Int
 ) {
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
@@ -97,4 +97,4 @@ data class CpiMetadataEntityKey(
 // in subsequent work where we add timestamps this will also take timestamp and maybe then it is worth
 // testing the query, which should happen in this module.
 fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> =
-    createQuery("SELECT * from cpi", CpiMetadataEntity::class.java).resultStream
+    createQuery("FROM ${CpiMetadataEntity::class.simpleName}", CpiMetadataEntity::class.java).resultStream

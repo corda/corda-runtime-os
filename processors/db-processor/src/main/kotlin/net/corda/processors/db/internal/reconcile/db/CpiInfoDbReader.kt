@@ -104,8 +104,9 @@ class CpiInfoDbReader(
     // Separating actual logic from lifecycle stuff so it can be unit tested.
     @VisibleForTesting
     internal fun doGetAllVersionedRecords() =
-        entityManagerFactory!!.createEntityManager().transaction {
-            it.findAllCpiMetadata()
+        // TODO we need to close this em after the below sequence gets processed otherwise the ResultSet gets closed
+        entityManagerFactory!!.createEntityManager().run {
+            findAllCpiMetadata()
         }.asSequence().map {
             val cpiMetadata = CpiMetadata(
                 CpiIdentifier(
