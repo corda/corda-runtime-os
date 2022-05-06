@@ -13,8 +13,8 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.net.URI
 import java.time.Duration
 
-// The CPI we're using in this test
-const val CALCULATOR_CPI = "/META-INF/calculator.cpb"
+// The CPB we're using in this test
+const val CALCULATOR_CPB = "/META-INF/calculator.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
@@ -66,7 +66,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(clusterUri, username, password)
 
-            val requestId = cpiUpload(CALCULATOR_CPI, groupId).let { it.toJson()["id"].textValue() }
+            val requestId = cpiUpload(CALCULATOR_CPB, groupId).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             // BUG:  returning "OK" feels 'weakly' typed
@@ -107,7 +107,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(clusterUri, username, password)
 
-            val requestId = cpbUpload(CALCULATOR_CPI).let { it.toJson()["id"].textValue() }
+            val requestId = cpbUpload(CALCULATOR_CPB).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             val json = assertWithRetry {
@@ -125,7 +125,7 @@ class VirtualNodeRpcTest {
     fun `cannot upload same CPI`() {
         cluster {
             endpoint(clusterUri, username, password)
-            val requestId = cpiUpload(CALCULATOR_CPI, groupId).let { it.toJson()["id"].textValue() }
+            val requestId = cpiUpload(CALCULATOR_CPB, groupId).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             val json = assertWithRetry {
@@ -247,6 +247,22 @@ class VirtualNodeRpcTest {
             // Depends on the keys in the test cpi
             val resultJson = ObjectMapper().readTree(json["flowResult"].textValue())
             assertThat(resultJson["result"].intValue()).isEqualTo(a + b)
+        }
+    }
+
+    @Test
+    @Order(80)
+    fun `can force upload same CPI`() {
+        cluster {
+            endpoint(clusterUri, username, password)
+            val requestId = forceCpiUpload(CALCULATOR_CPB, groupId).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            // BUG:  returning "OK" feels 'weakly' typed
+            val json = assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+            }.toJson()
         }
     }
 }
