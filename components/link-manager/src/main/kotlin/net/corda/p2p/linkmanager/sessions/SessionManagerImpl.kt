@@ -55,7 +55,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.valid
 import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -270,7 +269,7 @@ open class SessionManagerImpl(
     }
 
     private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
-        inboundAssignmentListener.registerCallbackForTopic(Schemas.P2P.LINK_IN_TOPIC) { partitions ->
+        inboundAssignmentListener.registerCallbackForTopic { partitions ->
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
