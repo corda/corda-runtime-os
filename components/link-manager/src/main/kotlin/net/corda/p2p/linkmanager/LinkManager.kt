@@ -682,7 +682,7 @@ class LinkManager(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID),
+            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, false),
             configuration
         )
         override val dominoTile = publisher.dominoTile

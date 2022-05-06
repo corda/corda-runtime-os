@@ -35,7 +35,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             subscriptionFactory,
             messagingConfig
         )
-        publisherFactory.createPublisher(PublisherConfig("client.ID"), messagingConfig).use {
+        publisherFactory.createPublisher(PublisherConfig("client.ID", false), messagingConfig).use {
             it.publish(
                 listOf(
                     Record(

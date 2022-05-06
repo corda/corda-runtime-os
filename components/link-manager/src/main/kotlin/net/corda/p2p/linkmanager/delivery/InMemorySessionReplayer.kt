@@ -41,7 +41,7 @@ class InMemorySessionReplayer(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID),
+        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
         configuration
     )
 
