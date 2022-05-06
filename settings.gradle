@@ -35,16 +35,6 @@ pluginManagement {
                 }
             }
             gradlePluginPortal()
-            maven {
-                url "${artifactoryContextUrl}/engineering-tools-maven"
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-                }
-            }
         }
     }
     plugins {
@@ -326,9 +316,8 @@ include 'tools:plugins:secret-config'
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
-
-if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
-    includeBuild("${cordaApiLocation}") {
+if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
+    includeBuild(cordaApiLocation) {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
             substitute module('net.corda:corda-base') using project(':base')
@@ -348,8 +337,8 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
         }
     }
 }
-if ("${compositeBuild}".toBoolean() && file("${cordaCliHostLocation}").exists()) {
-    includeBuild("${cordaCliHostLocation}")
+if (compositeBuild && file(cordaCliHostLocation).exists()) {
+    includeBuild(cordaCliHostLocation)
 }
 
 gradleEnterprise {
