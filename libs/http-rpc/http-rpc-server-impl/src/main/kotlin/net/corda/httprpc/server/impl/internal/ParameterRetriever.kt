@@ -2,6 +2,8 @@ package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.plugin.json.JavalinJson
+import java.io.InputStream
+import java.lang.IllegalArgumentException
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
 import net.corda.httprpc.server.impl.apigen.processing.ParameterType
 import net.corda.httprpc.server.impl.exception.MissingParameterException
@@ -19,12 +21,17 @@ internal interface ParameterRetriever : Function<ParametersRetrieverContext, Any
 private fun String.decodeRawString(): String = URLDecoder.decode(this, "UTF-8")
 
 internal object ParameterRetrieverFactory {
-    fun create(parameter: Parameter): ParameterRetriever =
+    fun create(parameter: Parameter, multipartFileUpload: Boolean): ParameterRetriever =
         when (parameter.type) {
             ParameterType.PATH -> PathParameterRetriever(parameter)
-            ParameterType.QUERY -> if (parameter.classType == List::class.java) QueryParameterListRetriever(parameter)
-            else QueryParameterRetriever(parameter)
-            ParameterType.BODY -> BodyParameterRetriever(parameter)
+            ParameterType.QUERY -> {
+                if (parameter.classType == List::class.java) QueryParameterListRetriever(parameter)
+                else QueryParameterRetriever(parameter)
+            }
+            ParameterType.BODY -> {
+                if (multipartFileUpload) MultipartParameterRetriever(parameter)
+                else BodyParameterRetriever(parameter)
+            }
         }
 }
 
@@ -119,6 +126,54 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
                 .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to body parameter".let {
+                log.error("$it: ${e.message}")
+                throw e
+            }
+        }
+    }
+}
+
+@Suppress("TooGenericExceptionThrown")
+private class MultipartParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
+    private companion object {
+        private val log = contextLogger()
+    }
+
+    @Suppress("ComplexMethod")
+    override fun apply(ctx: ParametersRetrieverContext): Any {
+        try {
+            log.trace { "Cast \"${parameter.name}\" to body parameter." }
+
+            if (parameter.isFileUpload) {
+                val uploadedFiles = ctx.uploadedFiles(parameter.name)
+
+                if (uploadedFiles.isEmpty())
+                    throw IllegalArgumentException("Expected file with parameter name ${parameter.name} but it was not found.")
+
+                if (Collection::class.java.isAssignableFrom(parameter.classType))
+                    return uploadedFiles
+
+                if (InputStream::class.java.isAssignableFrom(parameter.classType)) {
+                    return uploadedFiles.first().content
+                }
+
+                return uploadedFiles.first()
+            }
+
+            val formParameterAsList = ctx.formParams(parameter.name)
+
+            if (!parameter.nullable && formParameterAsList.isEmpty()) {
+                throw MissingParameterException("Missing form parameter \"${parameter.name}\".")
+            }
+
+            log.trace { "Cast \"${parameter.name}\" to multipart form parameter completed." }
+
+            if (Collection::class.java.isAssignableFrom(parameter.classType)) {
+                return formParameterAsList
+            }
+            return formParameterAsList.first()
+        } catch (e: Exception) {
+            "Error during Cast \"${parameter.name}\" to multipart form parameter".let {
                 log.error("$it: ${e.message}")
                 throw e
             }

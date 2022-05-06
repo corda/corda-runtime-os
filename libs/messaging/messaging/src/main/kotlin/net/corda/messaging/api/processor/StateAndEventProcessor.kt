@@ -33,7 +33,12 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
          *
          * NOTE: The [responseEvents] can be of any type and are not required to match [K] or [E] on input.
          */
-        val responseEvents: List<Record<*, *>>
+        val responseEvents: List<Record<*, *>>,
+
+        /**
+         * Flag to indicate processing failed and the State and Event should be moved to the Dead Letter Queue
+         */
+        val markForDLQ: Boolean = false
     )
 
     /**
