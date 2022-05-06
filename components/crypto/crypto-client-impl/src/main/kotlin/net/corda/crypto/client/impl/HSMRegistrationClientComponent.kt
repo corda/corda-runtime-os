@@ -4,17 +4,13 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.data.crypto.config.HSMInfo
+import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
-import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
-import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.config.toMessagingConfig
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
@@ -52,15 +48,11 @@ class HSMRegistrationClientComponent @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(publisherFactory, event)
 
-    override fun assignHSM(tenantId: String, category: String): HSMInfo =
-        impl.registrar.assignHSM(tenantId, category)
+    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+        impl.registrar.assignHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(
-        tenantId: String,
-        category: String,
-        passphrase: String
-    ): HSMInfo =
-        impl.registrar.assignSoftHSM(tenantId, category, passphrase)
+    override fun assignSoftHSM(tenantId: String, category: String): HSMInfo =
+        impl.registrar.assignSoftHSM(tenantId, category)
 
     override fun findHSM(tenantId: String, category: String): HSMInfo? =
         impl.registrar.findHSM(tenantId, category)

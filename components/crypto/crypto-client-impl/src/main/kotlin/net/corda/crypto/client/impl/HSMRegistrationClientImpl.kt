@@ -1,7 +1,7 @@
 package net.corda.crypto.client.impl
 
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
+import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
@@ -19,7 +19,7 @@ class HSMRegistrationClientImpl(
         private val logger = contextLogger()
     }
 
-    fun assignHSM(tenantId: String, category: String): HSMInfo {
+    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         logger.info(
             "Sending {}(tenant={},category={})",
             AssignHSMCommand::class.java.simpleName,
@@ -28,7 +28,7 @@ class HSMRegistrationClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = AssignHSMCommand(category)
+            request = AssignHSMCommand(category, context.toWire())
         )
         val response = request.execute(HSMInfo::class.java)
         return response!!
@@ -36,8 +36,7 @@ class HSMRegistrationClientImpl(
 
     fun assignSoftHSM(
         tenantId: String,
-        category: String,
-        passphrase: String
+        category: String
     ): HSMInfo {
         logger.info(
             "Sending {}(tenant={},category={})",
@@ -47,7 +46,7 @@ class HSMRegistrationClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = AssignSoftHSMCommand(category, passphrase)
+            request = AssignSoftHSMCommand(category)
         )
         val response = request.execute(HSMInfo::class.java)
         return response!!

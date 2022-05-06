@@ -21,10 +21,10 @@ interface HSMConfigurationClient : Lifecycle {
     fun linkCategories(configId: String, links: List<HSMCategoryInfo>)
 
     /**
-     * Returns all configured HSMs.
+     * Returns configured HSMs.
      *
      * @param filter the optional map of the filter parameters such as
-     * category (the HSM's category which handles the keys)
+     * serviceName.
      */
     fun lookup(filter: Map<String, String>): List<HSMInfo>
 
@@ -32,5 +32,4 @@ interface HSMConfigurationClient : Lifecycle {
      * Return list of linked categories for the given HSM configuration.
      */
     fun getLinkedCategories(configId: String): List<HSMCategoryInfo>
-
 }

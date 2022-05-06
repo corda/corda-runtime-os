@@ -4,7 +4,6 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
@@ -44,6 +43,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
+/*
 class HSMRegistrationClientComponentTests {
     private lateinit var knownTenantId: String
     private lateinit var sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
@@ -304,3 +304,5 @@ class HSMRegistrationClientComponentTests {
         Mockito.verify(sender, atLeast(1)).close()
     }
 }
+
+ */

@@ -1,5 +1,6 @@
 package net.corda.crypto.client.impl
 
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -14,6 +15,7 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
@@ -101,6 +103,7 @@ class CryptoOpsClientImpl(
         tenantId: String,
         category: String,
         alias: String,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey {
         logger.info(
@@ -112,7 +115,7 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateKeyPairCommand(category, alias, null, context.toWire())
+            request = GenerateKeyPairCommand(category, alias, null, scheme, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
@@ -123,6 +126,7 @@ class CryptoOpsClientImpl(
         category: String,
         alias: String,
         externalId: String,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey {
         logger.info(
@@ -134,13 +138,17 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateKeyPairCommand(category, alias, externalId, context.toWire())
+            request = GenerateKeyPairCommand(category, alias, externalId, scheme, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
+    fun freshKey(
+        tenantId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
         logger.info(
             "Sending '{}'(tenant={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -148,13 +156,18 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(null, context.toWire())
+            request = GenerateFreshKeyRpcCommand(null, scheme, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey {
+    fun freshKey(
+        tenantId: String,
+        externalId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -163,13 +176,13 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId, context.toWire())
+            request = GenerateFreshKeyRpcCommand(externalId, scheme, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(tenantId: String, scheme: String, context: KeyValuePairList): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -177,12 +190,12 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(null, context)
+            request = GenerateFreshKeyRpcCommand(null, scheme, context)
         )
         return request.execute(CryptoPublicKey::class.java)!!
     }
 
-    fun freshKeyProxy(tenantId: String, externalId: String, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(tenantId: String, externalId: String, scheme: String, context: KeyValuePairList): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -191,7 +204,7 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId, context)
+            request = GenerateFreshKeyRpcCommand(externalId, scheme, context)
         )
         return request.execute(CryptoPublicKey::class.java)!!
     }
@@ -274,6 +287,31 @@ class CryptoOpsClientImpl(
             )
         )
         return request.execute(CryptoSignatureWithKey::class.java)!!
+    }
+
+    fun createWrappingKey(
+        configId: String,
+        failIfExists: Boolean,
+        masterKeyAlias: String,
+        context: Map<String, String>
+    ) {
+        logger.info(
+            "Sending '{}'(configId={},failIfExists={},masterKeyAlias={})",
+            GenerateWrappingKeyRpcCommand::class.java.simpleName,
+            configId,
+            failIfExists,
+            masterKeyAlias
+        )
+        val request = createRequest(
+            CryptoConsts.CLUSTER_TENANT_ID,
+            GenerateWrappingKeyRpcCommand(
+                configId,
+                masterKeyAlias,
+                failIfExists,
+                context.toWire()
+            )
+        )
+        request.execute(CryptoNoContentValue::class.java, allowNoContentValue = true)
     }
 
     fun lookup(

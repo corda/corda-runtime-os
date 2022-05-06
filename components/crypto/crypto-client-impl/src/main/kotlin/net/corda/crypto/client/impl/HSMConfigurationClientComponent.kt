@@ -5,17 +5,14 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.HSMConfigurationClient
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.data.crypto.config.HSMConfig
+import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
+import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationResponse
-import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
-import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.config.toMessagingConfig
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
@@ -53,8 +50,17 @@ class HSMConfigurationClientComponent @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(publisherFactory, event)
 
-    override fun putHSM(config: HSMConfig) =
-        impl.registrar.putHSM(config)
+    override fun putHSM(info: HSMInfo, serviceConfig: ByteArray): String =
+        impl.registrar.putHSM(info, serviceConfig)
+
+    override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) =
+        impl.registrar.linkCategories(configId, links)
+
+    override fun lookup(filter: Map<String, String>): List<HSMInfo> =
+        impl.registrar.lookup(filter)
+
+    override fun getLinkedCategories(configId: String): List<HSMCategoryInfo> =
+        impl.registrar.getLinkedCategories(configId)
 
     class InactiveImpl : Impl {
         override val registrar: HSMConfigurationClientImpl

@@ -131,11 +131,15 @@ class HSMServiceImpl(
 
     private fun ensureWrappingKey(association: HSMTenantAssociation) {
         if (association.config.info.masterKeyPolicy == MasterKeyPolicy.NEW) {
+            require(!association.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias is not specified."
+            }
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
             opsProxyClient.createWrappingKey(
                 configId = association.config.info.id,
                 failIfExists = false,
+                masterKeyAlias = association.masterKeyAlias!!,
                 context = emptyMap()
             )
         }
@@ -148,6 +152,7 @@ class HSMServiceImpl(
             opsProxyClient.createWrappingKey(
                 configId = info.id,
                 failIfExists = false,
+                masterKeyAlias = info.masterKeyAlias,
                 context = emptyMap()
             )
         }

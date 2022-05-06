@@ -16,7 +16,10 @@ interface HSMService : Lifecycle {
     fun putHSMConfig(config: HSMConfig): String
 
     /**
-     * Returns list of all configured HSMs (except Soft HSM)
+     * Returns list of all configured HSMs.
+     *
+     * @param filter the optional map of the filter parameters such as
+     * serviceName.*
      */
     fun lookup(filter: Map<String, String> = emptyMap()): List<HSMInfo>
 

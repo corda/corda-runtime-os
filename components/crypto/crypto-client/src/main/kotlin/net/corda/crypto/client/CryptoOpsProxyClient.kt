@@ -31,11 +31,12 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
      * Generates a new random [KeyPair] and adds it to the internal key storage.
      *
      * @param tenantId The tenant owning the key.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [CryptoPublicKey] containing encoded [PublicKey] of the generated [KeyPair].
      */
-    fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey
+    fun freshKeyProxy(tenantId: String, scheme: String, context: KeyValuePairList): CryptoPublicKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
@@ -43,6 +44,7 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
      *
      * @param tenantId The tenant owning the key.
      * @param externalId Some id associated with the key, the service doesn't use any semantic beyond association.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [CryptoPublicKey] containing encoded [PublicKey] of the generated [KeyPair].
@@ -50,6 +52,7 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     fun freshKeyProxy(
         tenantId: String,
         externalId: String,
+        scheme: String,
         context: KeyValuePairList
     ): CryptoPublicKey
 
@@ -82,6 +85,7 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     fun createWrappingKey(
         configId: String,
         failIfExists: Boolean,
+        masterKeyAlias: String,
         context: Map<String, String>
     )
 }

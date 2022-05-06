@@ -27,6 +27,7 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
@@ -44,6 +45,7 @@ import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
@@ -142,9 +144,9 @@ class CryptoOpsClientComponentTests {
         }
     }
 
-    private fun assertRequestContext(result: SendActResult<RpcOpsRequest, *>) {
+    private fun assertRequestContext(result: SendActResult<RpcOpsRequest, *>, tenantId: String = knownTenantId) {
         val context = result.firstRequest.context
-        kotlin.test.assertEquals(knownTenantId, context.tenantId)
+        kotlin.test.assertEquals(tenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         kotlin.test.assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items).isEmpty()
@@ -361,6 +363,39 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
+    fun `lookup should throw IllegalArgumentException when number of ids exceeds the limit`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val now = Instant.now()
+        setupCompletedResponse {
+            CryptoSigningKeys(
+                listOf(
+                    CryptoSigningKey(
+                        keyPair.public.publicKeyId(),
+                        knownTenantId,
+                        CryptoConsts.HsmCategories.LEDGER,
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyPair.public.encoded),
+                        ECDSA_SECP256R1_CODE_NAME,
+                        "master-key",
+                        1,
+                        "external-id",
+                        now
+                    )
+                )
+            )
+        }
+        val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
+            keyPair.public.publicKeyId()
+        }
+        assertThrows<IllegalArgumentException> { component.lookup(knownTenantId, ids) }
+    }
+
+    @Test
     fun `Should return empty collection when public key id is not found`() {
         component.start()
         eventually {
@@ -552,6 +587,7 @@ class CryptoOpsClientComponentTests {
                 tenantId = knownTenantId,
                 category = CryptoConsts.HsmCategories.LEDGER,
                 alias = knownAlias,
+                scheme = ECDSA_SECP256R1_CODE_NAME,
                 context = knownOperationContext
             )
         }
@@ -561,6 +597,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
         assertNull(command.externalId)
         assertEquals(knownAlias, command.alias)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -584,6 +621,7 @@ class CryptoOpsClientComponentTests {
                 category = CryptoConsts.HsmCategories.LEDGER,
                 alias = knownAlias,
                 externalId = externalId,
+                scheme = ECDSA_SECP256R1_CODE_NAME,
                 context = knownOperationContext
             )
         }
@@ -593,6 +631,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
         assertEquals(externalId, command.externalId)
         assertEquals(knownAlias, command.alias)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -610,12 +649,13 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.freshKey(knownTenantId, knownOperationContext)
+            component.freshKey(knownTenantId, ECDSA_SECP256R1_CODE_NAME, knownOperationContext)
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNull(command.externalId)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -633,12 +673,13 @@ class CryptoOpsClientComponentTests {
             CryptoPublicKey(publicKey)
         }
         val result = sender.act {
-            component.freshKeyProxy(knownTenantId, knownRawOperationContext)
+            component.freshKeyProxy(knownTenantId, ECDSA_SECP256R1_CODE_NAME, knownRawOperationContext)
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNull(command.externalId)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -657,13 +698,14 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.freshKey(knownTenantId, externalId, knownOperationContext)
+            component.freshKey(knownTenantId, externalId, ECDSA_SECP256R1_CODE_NAME, knownOperationContext)
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
         assertEquals(externalId, command.externalId)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -682,15 +724,44 @@ class CryptoOpsClientComponentTests {
             CryptoPublicKey(publicKey)
         }
         val result = sender.act {
-            component.freshKeyProxy(knownTenantId, externalId, knownRawOperationContext)
+            component.freshKeyProxy(knownTenantId, externalId, ECDSA_SECP256R1_CODE_NAME, knownRawOperationContext)
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
         assertEquals(externalId, command.externalId)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should generate wrapping key`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val configId = UUID.randomUUID().toString()
+        val masterKeyAlias = UUID.randomUUID().toString()
+        setupCompletedResponse {
+            CryptoNoContentValue()
+        }
+        val result = sender.act {
+            component.createWrappingKey(
+                configId = configId,
+                failIfExists = true,
+                masterKeyAlias = masterKeyAlias,
+                context = knownOperationContext
+            )
+        }
+        assertNotNull(result.value)
+        val command = assertOperationType<GenerateWrappingKeyRpcCommand>(result)
+        assertEquals(configId, command.configId)
+        assertEquals(masterKeyAlias, command.masterKeyAlias)
+        assertTrue(command.failIfExists)
+        assertOperationContext(command.context)
+        assertRequestContext(result, CryptoConsts.CLUSTER_TENANT_ID)
     }
 
     @Test

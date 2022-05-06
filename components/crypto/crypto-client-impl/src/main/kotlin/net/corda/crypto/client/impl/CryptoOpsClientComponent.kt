@@ -73,24 +73,35 @@ class CryptoOpsClientComponent @Activate constructor(
         tenantId: String,
         category: String,
         alias: String,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey =
-        impl.ops.generateKeyPair(tenantId, category, alias, context)
+        impl.ops.generateKeyPair(tenantId, category, alias, scheme, context)
 
     override fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
         externalId: String,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey =
-        impl.ops.generateKeyPair(tenantId, category, alias, externalId, context)
+        impl.ops.generateKeyPair(tenantId, category, alias, externalId, scheme, context)
 
-    override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey =
-        impl.ops.freshKey(tenantId, context)
+    override fun freshKey(
+        tenantId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey =
+        impl.ops.freshKey(tenantId, scheme, context)
 
-    override fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey =
-        impl.ops.freshKey(tenantId, externalId, context)
+    override fun freshKey(
+        tenantId: String,
+        externalId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey =
+        impl.ops.freshKey(tenantId, externalId, scheme, context)
 
     override fun sign(
         tenantId: String,
@@ -133,19 +144,32 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun filterMyKeysProxy(tenantId: String, candidateKeys: Iterable<ByteBuffer>): CryptoSigningKeys =
         impl.ops.filterMyKeysProxy(tenantId, candidateKeys)
 
-    override fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey =
-        impl.ops.freshKeyProxy(tenantId, context)
+    override fun freshKeyProxy(
+        tenantId: String,
+        scheme: String,
+        context: KeyValuePairList
+    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, scheme, context)
 
-    override fun freshKeyProxy(tenantId: String, externalId: String, context: KeyValuePairList): CryptoPublicKey =
-        impl.ops.freshKeyProxy(tenantId, externalId, context)
+    override fun freshKeyProxy(
+        tenantId: String,
+        externalId: String,
+        scheme: String,
+        context: KeyValuePairList
+    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, externalId, scheme, context)
 
     override fun signProxy(
         tenantId: String,
         publicKey: ByteBuffer,
         data: ByteBuffer,
         context: KeyValuePairList
-    ): CryptoSignatureWithKey =
-        impl.ops.signProxy(tenantId, publicKey, data, context)
+    ): CryptoSignatureWithKey = impl.ops.signProxy(tenantId, publicKey, data, context)
+
+    override fun createWrappingKey(
+        configId: String,
+        failIfExists: Boolean,
+        masterKeyAlias: String,
+        context: Map<String, String>
+    ) = impl.ops.createWrappingKey(configId, failIfExists, masterKeyAlias, context)
 
     internal class InactiveImpl: Impl {
         override val ops: CryptoOpsClientImpl
