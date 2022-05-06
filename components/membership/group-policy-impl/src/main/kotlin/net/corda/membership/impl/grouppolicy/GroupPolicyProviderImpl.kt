@@ -83,7 +83,8 @@ class GroupPolicyProviderImpl @Activate constructor(
                 logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        activate("All dependencies are UP.")
+                        swapImpl(ActiveImpl(virtualNodeInfoReadService, cpiInfoReader))
+                        coordinator.updateStatus(LifecycleStatus.UP, "All dependencies are UP.")
                     }
                     else -> {
                         deactivate("All dependencies are not UP.")
@@ -93,20 +94,9 @@ class GroupPolicyProviderImpl @Activate constructor(
         }
     }
 
-    private fun activate(reason: String) {
-        swapImpl(ActiveImpl(virtualNodeInfoReadService, cpiInfoReader))
-        updateStatus(LifecycleStatus.UP, reason)
-    }
-
     private fun deactivate(reason: String) {
-        updateStatus(LifecycleStatus.DOWN, reason)
+        coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         swapImpl(InactiveImpl())
-    }
-
-    private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if(coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
     }
 
     private fun swapImpl(newImpl: InnerGroupPolicyProvider) {
