@@ -61,6 +61,27 @@ class PubSubSubscriptionIntegrationTest {
         )
     }
 
+    private val cancelSubscription by lazy {
+        val config = SubscriptionConfig(groupName = group + "cancel", eventTopic = topic)
+        val processor = object : PubSubProcessor<String, Event> {
+
+            override val keyClass = String::class.java
+            override val valueClass = Event::class.java
+            override fun onNext(event: Record<String, Event>): CompletableFuture<Unit> {
+                processed.add(event)
+                waitForProcessed.get().countDown()
+                val future = CompletableFuture<Unit>()
+                future.cancel(true)
+                return future
+            }
+        }
+        subscriptionFactory.createPubSubSubscription(
+            subscriptionConfig = config,
+            processor = processor,
+            messagingConfig = SmartConfigImpl.empty()
+        )
+    }
+
     private val lastFuture = AtomicReference<CompletableFuture<Unit>>()
     private val asynchronousSubscription by lazy {
         val config = SubscriptionConfig(groupName = group + "asynchronous", eventTopic = topic)
@@ -140,7 +161,7 @@ class PubSubSubscriptionIntegrationTest {
         assertThat(processed).isEmpty()
 
         // Publish a few events
-        waitForProcessed.set(CountDownLatch(3))
+        waitForProcessed.set(CountDownLatch(6))
         publish(
             Record("another $topic", "keya", Event("five", 5)),
             Record(topic, "key5", Event("five", 5)),
@@ -152,8 +173,11 @@ class PubSubSubscriptionIntegrationTest {
         // Wait for the events
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
         assertThat(processed.map { it.key })
-            .hasSize(3)
+            .hasSize(6)
             .contains(
+                "key1",
+                "key2",
+                "key3",
                 "key4",
                 "key5",
                 "key6"

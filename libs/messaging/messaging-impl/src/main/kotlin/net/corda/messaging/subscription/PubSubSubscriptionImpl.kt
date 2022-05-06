@@ -7,7 +7,6 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -19,7 +18,6 @@ import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -170,8 +168,8 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
 
     /**
      * Poll records with the [consumer] and process them with the [processor].
-     * If an exception is thrown while polling and processing then reset the fetch position and try to poll and process again.
-     * If this continues to fail break out of the loop. This will recreate the consumer to fetch at the latest position and poll again.
+     * If an exception is thrown while polling, try to poll again. If this continues to fail break out of the loop.
+     * This will recreate the consumer to fetch at the latest position and poll again.
      * @throws CordaMessageAPIIntermittentException if the records cannot be polled at the current position or cannot be processed and max
      * retries have been exceeded.
      */
@@ -186,14 +184,12 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 attempts++
                 if (attempts <= config.processorRetries) {
                     log.warn(
-                        "PubSubConsumer from group ${config.group} failed to read and process records from topic ${config.topic}." +
-                                "Resetting to last committed offset and retrying. Attempts: $attempts."
-                    )
-                    consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
+                        "PubSubConsumer from group ${config.group} failed to read records from topic ${config.topic}." +
+                            " Attempts: $attempts.")
                 } else {
                     val message =
-                        "PubSubConsumer from group ${config.group} failed to read and process records from topic ${config.topic}." +
-                                "Max reties for poll and process exceeded. Recreating consumer and polling from latest position."
+                        "PubSubConsumer from group ${config.group} failed to read records from topic ${config.topic}." +
+                            "Max reties for poll and process exceeded. Recreating consumer."
                     log.warn(message, ex)
                     throw CordaMessageAPIIntermittentException(message, ex)
                 }
@@ -203,11 +199,23 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
 
     /**
      * Process [cordaConsumerRecords]. If a record fails to deserialize skip this record and log the error.
+     * If an exception is thrown when processing a record then this is logged, and we move on to the next record.
      */
     private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>) {
-        val futures = cordaConsumerRecords.map { processor.onNext(it.toRecord()) }
-        futures.forEach   {
-            try { it.get() } catch (_: ExecutionException) { }
+        val futures = cordaConsumerRecords.mapNotNull {
+            try {
+                processor.onNext(it.toRecord())
+            } catch (except: Exception) {
+                log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
+                null
+            }
+        }
+        futures.forEach {
+            try {
+                it.get()
+            } catch (except: Exception) {
+                log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
+            }
         }
     }
 

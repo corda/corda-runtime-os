@@ -11,9 +11,7 @@ import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -106,9 +104,23 @@ class PubSubSubscription<K : Any, V : Any>(
     internal fun processRecords(records: Collection<RecordMetadata>) {
         val futures = records.mapNotNull {
             it.castToType(processor.keyClass, processor.valueClass)
-        }.map{ processor.onNext(uncheckedCast(it)) }
+        }.mapNotNull{
+            try {
+                processor.onNext(it)
+            } catch (except: Exception) {
+                log.warn("PubSubConsumer from group ${subscriptionConfig.groupName} failed to process records " +
+                        "from topic ${subscriptionConfig.eventTopic}.", except)
+                null
+            }
+        }
+
         futures.forEach {
-            try { it.get() } catch (_: ExecutionException) { }
+            try {
+                it.get()
+            } catch (except: Exception) {
+                log.warn("PubSubConsumer from group ${subscriptionConfig.groupName} failed to process records " +
+                        "from topic ${subscriptionConfig.eventTopic}.", except)
+            }
         }
     }
 
