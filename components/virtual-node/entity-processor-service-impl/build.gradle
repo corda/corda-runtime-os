@@ -55,6 +55,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(':libs:db:db-orm-impl')
+    testImplementation project(":libs:messaging:messaging")
     testImplementation project(':testing:db-testkit')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -83,8 +84,8 @@ dependencies {
 
     // We want these not only in the `cpi` (s) above, but also available in the unit test so we can access the types
     // when setting up the serializer part of the test.
-    integrationTestImplementation project(':testing:cpbs:extendable-cpb:testing-cats-cpk')
-    integrationTestImplementation project(':testing:cpbs:extendable-cpb:testing-dogs-cpk')
+//    integrationTestImplementation project(':testing:cpbs:extendable-cpb:testing-cats-cpk')
+//    integrationTestImplementation project(':testing:cpbs:extendable-cpb:testing-dogs-cpk')
 
     // Get it compiling and running.
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')

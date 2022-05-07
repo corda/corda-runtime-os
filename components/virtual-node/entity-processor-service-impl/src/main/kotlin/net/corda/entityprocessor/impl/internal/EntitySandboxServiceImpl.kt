@@ -127,12 +127,12 @@ class EntitySandboxServiceImpl @Activate constructor (
         // of classes annotated with @Entity to the CPK manifest.  We now use them and convert to types
         // so that we can correctly construct an entity manager factory per sandbox.
 
-        // TODO:  platform entities as well?
+        // TODO - add general vault entities
         val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
             try {
                 ctx.sandboxGroup.loadClassFromMainBundles(it)
             } catch (e: SandboxException) {
-                throw e // TODO: what do we do here?
+                throw e // TODO - correct error handling
             }
         }.toSet()
 
@@ -143,7 +143,7 @@ class EntitySandboxServiceImpl @Activate constructor (
 
         logger.debug("Creating EntityManagerFactory for DB Sandbox (${virtualNode.holdingIdentity}) with " +
                 "${entitiesSet.persistenceUnitName}: " +
-                entitiesSet.classes.joinToString(",") { it.simpleName })
+                entitiesSet.classes.joinToString(",") { "${it.canonicalName}[${it.classLoader}]" })
 
         // Create the per-sandbox EMF for all the entities
         // NOTE: this is create and not getOrCreate as the dbConnectionManager does not cache vault EMFs.
