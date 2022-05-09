@@ -37,8 +37,9 @@ class InboundAssignmentListener(
         if (partitions.isEmpty()) {
             logger.warn("No partitions assigned to $observedTopic.")
             dominoTile.updateState(DominoTileState.StoppedDueToBadConfig)
+        } else {
+            callCallbacks()
         }
-        callCallbacks()
     }
 
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
