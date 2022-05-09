@@ -29,7 +29,6 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoImpl
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
-import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.staticMgm
 import net.corda.membership.registration.MemberRegistrationService
@@ -146,13 +145,14 @@ class StaticMemberRegistrationService @Activate constructor(
         val groupId = policy.groupId
 
         val staticMemberList = policy.staticMembers
-        require(staticMemberList.isNotEmpty()) { "Static member list inside the group policy file cannot be empty." }
+        validateStaticMemberList(staticMemberList)
 
-        val staticMemberInfo = staticMemberList.firstOrNull { it.name == member.x500Name }
-            ?: throw IllegalArgumentException("Our membership is not listed on the static member list or the member's " +
+        val staticMemberInfo = staticMemberList.firstOrNull {
+            MemberX500Name.parse(it.name!!) == MemberX500Name.parse(member.x500Name)
+        } ?: throw IllegalArgumentException("Our membership is not listed on the static member list or the member's " +
                     "name is not provided in the list.")
 
-        isValidStaticMemberDeclaration(staticMemberInfo)
+        validateStaticMemberDeclaration(staticMemberInfo)
         val memberName = MemberX500Name.parse(staticMemberInfo.name!!).toString()
         val memberId = HoldingIdentity(memberName, groupId).id
         val memberKey = generateOwningKey(staticMemberInfo, memberId)
@@ -192,7 +192,14 @@ class StaticMemberRegistrationService @Activate constructor(
         return members
     }
 
-    private fun isValidStaticMemberDeclaration(member: StaticMember) {
+    private fun validateStaticMemberList(members: List<StaticMember>) {
+        require(members.isNotEmpty()) { "Static member list inside the group policy file cannot be empty." }
+        members.forEach {
+            require(!it.name.isNullOrBlank()) { "Member's name is not provided in." }
+        }
+    }
+
+    private fun validateStaticMemberDeclaration(member: StaticMember) {
         require(
             member.keys.any { it.startsWith(endpointUrlIdentifier) }
         ) { "Endpoint urls are not provided." }
@@ -234,7 +241,6 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
     }
-
 
     /**
      * Mapping the keys from the json format to the keys expected in the [MemberInfo].

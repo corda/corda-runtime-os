@@ -61,10 +61,6 @@ class MemberListProcessorTest {
             PublicKeyConverter(keyEncodingService),
         )
 
-        private val signature = CryptoSignatureWithKey(
-            ByteBuffer.wrap(byteArrayOf()),
-            ByteBuffer.wrap(byteArrayOf()),
-        )
         private lateinit var alice: MemberInfo
         private lateinit var aliceIdentity: HoldingIdentity
         private lateinit var bob: MemberInfo
@@ -106,16 +102,18 @@ class MemberListProcessorTest {
             val topicData = mutableMapOf<String, PersistentMemberInfo>()
             memberInfoList.forEach { member ->
                 val holdingIdentity = HoldingIdentity(member.name.toString(), member.groupId)
-                val signedMemberInfo = SignedMemberInfo(
-                    member.memberProvidedContext.toWire(),
-                    member.mgmProvidedContext.toWire(),
-                    signature,
-                    signature
-                )
                 if (!selfOwned && holdingIdentity != aliceIdentity) {
-                    topicData[aliceIdentity.id + holdingIdentity.id] = PersistentMemberInfo(aliceIdentity.toAvro(), signedMemberInfo)
+                    topicData[aliceIdentity.id + holdingIdentity.id] = PersistentMemberInfo(
+                        aliceIdentity.toAvro(),
+                        member.memberProvidedContext.toWire(),
+                        member.mgmProvidedContext.toWire()
+                    )
                 }
-                topicData[holdingIdentity.id] = PersistentMemberInfo(holdingIdentity.toAvro(), signedMemberInfo)
+                topicData[holdingIdentity.id] = PersistentMemberInfo(
+                    holdingIdentity.toAvro(),
+                    member.memberProvidedContext.toWire(),
+                    member.mgmProvidedContext.toWire()
+                )
             }
             return topicData
         }
@@ -202,12 +200,8 @@ class MemberListProcessorTest {
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
             aliceIdentity.toAvro(),
-            SignedMemberInfo(
-                alice.memberProvidedContext.toWire(),
-                alice.mgmProvidedContext.toWire(),
-                signature,
-                signature
-            )
+            alice.memberProvidedContext.toWire(),
+            alice.mgmProvidedContext.toWire()
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
         assertEquals(
