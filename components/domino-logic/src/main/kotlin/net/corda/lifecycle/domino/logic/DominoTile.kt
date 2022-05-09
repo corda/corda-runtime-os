@@ -46,4 +46,4 @@ enum class DominoTileState {
  * Every time the state of a domino tile changes, it is responsible of sending a [CustomEvent] with the new state to any tiles that are
  * registered to follow any changes.
  */
-class StatusChangeEvent(val newState: DominoTileState)
+data class StatusChangeEvent(val newState: DominoTileState)

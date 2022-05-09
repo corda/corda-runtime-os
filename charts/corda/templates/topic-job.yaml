@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: create-topics
-          image: bitnami/kafka:2.8.1-debian-10-r99
+          image: bitnami/kafka:3.1.0-debian-10-r89
           imagePullPolicy: Always
           command:
             - /bin/sh
