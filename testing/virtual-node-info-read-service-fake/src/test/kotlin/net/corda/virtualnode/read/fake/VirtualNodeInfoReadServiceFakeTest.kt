@@ -48,7 +48,7 @@ internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
     }
 
     @Test
-    fun `add vnode`() {
+    fun `add or update vnode`() {
         val listener = VirtualNodeInfoListenerSpy()
         val service = createService(alice, callbacks = listOf(listener))
 
@@ -71,11 +71,5 @@ internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
         assertEquals(1, listener.timesCalled, "times called listener1")
         assertEquals(keys(alice), listener.keys[0], "keys removed")
         assertEquals(snapshot(bob), listener.snapshots[0], "snapshot")
-    }
-
-    @Test
-    fun `update vnode`() {
-        // How does the update should behave?
-        // Does it make sense to have it?
     }
 }
