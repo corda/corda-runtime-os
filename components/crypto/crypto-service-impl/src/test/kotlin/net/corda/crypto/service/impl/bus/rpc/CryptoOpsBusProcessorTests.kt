@@ -6,6 +6,7 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory
+import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -30,9 +31,9 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
@@ -48,7 +49,6 @@ import java.security.spec.PSSParameterSpec
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -56,85 +56,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CryptoOpsBusProcessorTests {
-    private class SigningServiceWrapper(private val impl: SigningService) : SigningService by impl {
-        companion object {
-            val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
-        }
-
-        override fun generateKeyPair(
-            tenantId: String,
-            category: String,
-            alias: String,
-            scheme: String,
-            context: Map<String, String>
-        ): PublicKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.generateKeyPair(tenantId, category, alias, scheme, context)
-        }
-
-        override fun generateKeyPair(
-            tenantId: String,
-            category: String,
-            alias: String,
-            externalId: String,
-            scheme: String,
-            context: Map<String, String>
-        ): PublicKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.generateKeyPair(tenantId, category, alias, externalId, scheme, context)
-        }
-
-        override fun freshKey(tenantId: String, scheme: String, context: Map<String, String>): PublicKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.freshKey(tenantId, scheme, context)
-        }
-
-        override fun freshKey(
-            tenantId: String,
-            externalId: String,
-            scheme: String,
-            context: Map<String, String>
-        ): PublicKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.freshKey(tenantId, externalId, scheme, context)
-        }
-
-        override fun sign(
-            tenantId: String,
-            publicKey: PublicKey,
-            data: ByteArray,
-            context: Map<String, String>
-        ): DigitalSignature.WithKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.sign(tenantId, publicKey, data, context)
-        }
-
-        override fun sign(
-            tenantId: String,
-            publicKey: PublicKey,
-            signatureSpec: SignatureSpec,
-            data: ByteArray,
-            context: Map<String, String>
-        ): DigitalSignature.WithKey {
-            if (context.containsKey("someId")) {
-                recordedContexts[context.getValue("someId")] = context
-            }
-            return impl.sign(tenantId, publicKey, signatureSpec, data, context)
-        }
-    }
-
     companion object {
-        private fun getFullCustomSignatureSpec(): SignatureSpec =
+        private fun getECDSAFullCustomSignatureSpec(): SignatureSpec =
             SignatureSpec(
                 signatureName = "NONEwithECDSA",
                 customDigestName = DigestAlgorithmName.SHA2_512
@@ -145,7 +68,7 @@ class CryptoOpsBusProcessorTests {
                 signatureName = "SHA512withECDSA"
             )
 
-        private fun getCustomSignatureSpecWithParams(): SignatureSpec =
+        private fun getRSAasCustomSignatureSpecWithParams(): SignatureSpec =
             SignatureSpec(
                 signatureName = "RSASSA-PSS",
                 params = PSSParameterSpec(
@@ -173,7 +96,7 @@ class CryptoOpsBusProcessorTests {
         signingService = factory.createSigningService()
         verifier = factory.verifier
         signingFactory = mock {
-            on { getInstance() }.thenReturn(SigningServiceWrapper(signingService))
+            on { getInstance() }.thenReturn(signingService)
         }
         processor = CryptoOpsBusProcessor(
             signingFactory
@@ -264,7 +187,7 @@ class CryptoOpsBusProcessorTests {
         // generate
         val context1 = createRequestContext()
         val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
         val future1 = CompletableFuture<RpcOpsResponse>()
@@ -275,17 +198,17 @@ class CryptoOpsBusProcessorTests {
                     CryptoConsts.Categories.LEDGER,
                     alias,
                     null,
-                    EDDSA_ED25519_CODE_NAME,
+                    ECDSA_SECP256R1_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
             future1
         )
         val result1 = future1.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(4, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(4, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
         assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
@@ -341,12 +264,13 @@ class CryptoOpsBusProcessorTests {
     @Test
     fun `Should generate key pair and be able to find and lookup and then sign custom signature params`() {
         setup()
+        val signatureSpec4 = getRSAasCustomSignatureSpecWithParams()
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
         val context1 = createRequestContext()
         val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
         val future1 = CompletableFuture<RpcOpsResponse>()
@@ -357,17 +281,17 @@ class CryptoOpsBusProcessorTests {
                     CryptoConsts.Categories.LEDGER,
                     alias,
                     null,
-                    EDDSA_ED25519_CODE_NAME,
+                    RSA_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
             future1
         )
         val result1 = future1.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(4, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(4, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
         assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
@@ -417,7 +341,6 @@ class CryptoOpsBusProcessorTests {
         assertEquals(1, key3.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         //
-        val signatureSpec4 = getCustomSignatureSpecWithParams()
         val context4 = createRequestContext()
         val future4= CompletableFuture<RpcOpsResponse>()
         val serializedParams4 = schemeMetadata.serialize(signatureSpec4.params!!)
@@ -455,7 +378,7 @@ class CryptoOpsBusProcessorTests {
         // generate
         val context1 = createRequestContext()
         val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
         val future1 = CompletableFuture<RpcOpsResponse>()
@@ -464,20 +387,20 @@ class CryptoOpsBusProcessorTests {
                 context1,
                 GenerateFreshKeyRpcCommand(
                     null,
-                    EDDSA_ED25519_CODE_NAME,
+                    ECDSA_SECP256R1_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
             future1
         )
         val result1 = future1.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(4, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(4, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
+        assertEquals(CryptoConsts.Categories.FRESH_KEYS, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -496,7 +419,7 @@ class CryptoOpsBusProcessorTests {
         // generate
         val context1 = createRequestContext()
         val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
         val externalId = UUID.randomUUID()
@@ -506,20 +429,20 @@ class CryptoOpsBusProcessorTests {
                 context1,
                 GenerateFreshKeyRpcCommand(
                     externalId.toString(),
-                    EDDSA_ED25519_CODE_NAME,
+                    ECDSA_SECP256R1_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
             future1
         )
         val result1 = future1.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(4, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(4, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
+        assertEquals(CryptoConsts.Categories.FRESH_KEYS, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -539,7 +462,7 @@ class CryptoOpsBusProcessorTests {
         // generate
         val context1 = createRequestContext()
         val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
         val future1 = CompletableFuture<RpcOpsResponse>()
@@ -550,17 +473,17 @@ class CryptoOpsBusProcessorTests {
                     CryptoConsts.Categories.LEDGER,
                     alias,
                     null,
-                    EDDSA_ED25519_CODE_NAME,
+                    ECDSA_SECP256R1_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
             future1
         )
         val result1 = future1.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(4, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(4, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
         assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
@@ -676,7 +599,7 @@ class CryptoOpsBusProcessorTests {
         // sign using public key and default scheme
         val context2 = createRequestContext()
         val operationContext = listOf(
-            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
             KeyValuePair("reason", "Hello World!")
         )
         val future2 = CompletableFuture<RpcOpsResponse>()
@@ -692,10 +615,10 @@ class CryptoOpsBusProcessorTests {
             future2
         )
         val result2 = future2.get()
-        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
         assertEquals(2, operationContext.size)
-        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertResponseContext(context2, result2.context)
         assertThat(result2.response).isInstanceOf(CryptoSignatureWithKey::class.java)
@@ -703,7 +626,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
         verifier.verify(publicKey, signature2.bytes.array(), data)
         // sign using public key and full custom scheme
-        val signatureSpec3 = getFullCustomSignatureSpec()
+        val signatureSpec3 = getECDSAFullCustomSignatureSpec()
         val context3 = createRequestContext()
         val future3 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(

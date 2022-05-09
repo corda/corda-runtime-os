@@ -20,11 +20,22 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.GeneratedKey
+import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SigningSpec
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import java.security.PublicKey
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertTrue
 
 class TestServicesFactory {
+    companion object {
+        const val CTX_TRACKING = "ctxTrackingId"
+    }
+
     val wrappingKeyAlias = "wrapping-key-alias"
+
+    val recordedCryptoContexts = ConcurrentHashMap<String, Map<String, String>>()
 
     private val emptyConfig: SmartConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
@@ -92,12 +103,15 @@ class TestServicesFactory {
         softCacheProvider.getInstance()
     }
 
-    val cryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        SoftCryptoService(
-            cache = softCache,
-            schemeMetadata = schemeMetadata,
-            digestService = digest
-        ).also { it.createWrappingKey(wrappingKeyAlias, true, emptyMap()) }
+    val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        CryptoServiceWrapper(
+            SoftCryptoService(
+                cache = softCache,
+                schemeMetadata = schemeMetadata,
+                digestService = digest
+            ).also { it.createWrappingKey(wrappingKeyAlias, true, emptyMap()) },
+            recordedCryptoContexts
+        )
     }
 
     val readService by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -173,5 +187,37 @@ class TestServicesFactory {
 
     fun getSigningCachedKey(tenantId: String, publicKey: PublicKey): SigningCachedKey? {
         return signingCache.act(tenantId) { it.find(publicKey) }
+    }
+
+    private class CryptoServiceWrapper(
+        private val impl: CryptoService,
+        private val recordedCryptoContexts: ConcurrentHashMap<String, Map<String, String>>
+    ) : CryptoService {
+        override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            impl.createWrappingKey(masterKeyAlias, failIfExists, context)
+        }
+
+        override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            return impl.generateKeyPair(spec, context)
+        }
+
+        override fun requiresWrappingKey(): Boolean =
+            impl.requiresWrappingKey()
+
+        override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
+            if (context.containsKey("ctxTrackingId")) {
+                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
+            }
+            return impl.sign(spec, data, context)
+        }
+
+        override fun supportedSchemes(): Array<SignatureScheme> =
+            impl.supportedSchemes()
     }
 }
