@@ -21,8 +21,6 @@ import java.time.Instant
  * Currently this deploys a 'fat jar' to the container and we run 'java - jar *args*' as the entry point.
  * A user may pass further custom arguments using the 'arguments' property when using this task type.
  * If a kafka file is present in the sub project directory it will be copied to container and
- * '"--kafka", "/opt/override/kafka.properties"' also passed to the 'java -Jar' entrypoint as additional arguments.
- * Future iterations will use a more modular layered approach.
  */
 abstract class DeployableContainerBuilder extends DefaultTask {
 
@@ -161,11 +159,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             logger.info("Daemon available")
             def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
             if (imageName.endsWith("-local")) {
-                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local docer Daemon")
+                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
                 builder = Jib.from(DockerDaemonImage.named(imageName))
+            } else if (imageName.contains("corda-os-cli")) {
+                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from internal remote repo")
+                builder = setCredentialsOnBaseImage(builder)
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-                builder = setCredentialsOnBaseImage(builder)
+                builder = Jib.from(baseImage)
             }
         } else {  // CI use case
             logger.info("No daemon available")
