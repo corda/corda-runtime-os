@@ -329,7 +329,7 @@ class P2PLayerEndToEndTest {
         private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
         private val configPublisher = ConfigPublisherImpl(
             CONFIG_TOPIC,
-            publisherFactory.createPublisher(PublisherConfig("config-writer"), bootstrapConfig)
+            publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         )
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val tlsTenantId by lazy {
@@ -445,7 +445,7 @@ class P2PLayerEndToEndTest {
             )
 
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host) {
-            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher"), bootstrapConfig)
+            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", false), bootstrapConfig)
             val networkMapEntries = mapOf(
                 "$x500Name-$GROUP_ID" to memberInfoEntry,
                 "${otherHost.x500Name}-$GROUP_ID" to otherHost.memberInfoEntry,
@@ -509,7 +509,7 @@ class P2PLayerEndToEndTest {
                 )
             }
             publisherFactory.createPublisher(
-                PublisherConfig("test-runner-publisher"),
+                PublisherConfig("test-runner-publisher", false),
                 bootstrapConfig
             ).use { publisher ->
                 publisher.start()
@@ -566,7 +566,7 @@ class P2PLayerEndToEndTest {
         }
 
         fun sendMessages(messagesToSend: Int, peer: Host, ttl: Long? = null) {
-            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", true), bootstrapConfig)
+            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", false), bootstrapConfig)
             val initialMessages = (1..messagesToSend).map { index ->
                 val incrementalId = index.toString()
                 val messageHeader = AuthenticatedMessageHeader(
