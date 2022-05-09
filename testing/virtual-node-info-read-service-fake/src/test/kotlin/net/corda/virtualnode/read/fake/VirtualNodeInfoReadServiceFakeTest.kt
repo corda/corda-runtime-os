@@ -1,6 +1,5 @@
 package net.corda.virtualnode.read.fake
 
-import net.corda.libs.packaging.CpiIdentifier
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.virtualnode.HoldingIdentity
@@ -12,68 +11,7 @@ import org.junit.jupiter.api.Test
 import java.io.StringReader
 import java.util.*
 
-class VirtualNodeInfoReadServiceFakeTest {
-
-    private val alice = VirtualNodeInfo(
-        HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "flow-worker-dev"),
-        CpiIdentifier("flow-worker-dev", "5.0.0.0-SNAPSHOT", null),
-        cryptoDmlConnectionId = UUID.randomUUID(),
-        vaultDmlConnectionId = UUID.randomUUID()
-    )
-
-    private val bob = VirtualNodeInfo(
-        HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "flow-worker-dev"),
-        CpiIdentifier("flow-worker-dev", "5.0.0.0-SNAPSHOT", null),
-        cryptoDmlConnectionId = UUID.randomUUID(),
-        vaultDmlConnectionId = UUID.randomUUID()
-    )
-
-    private val carol = VirtualNodeInfo(
-        HoldingIdentity("CN=Carol, O=Carol Corp, L=LDN, C=GB", "flow-worker-dev"),
-        CpiIdentifier("flow-worker-dev", "5.0.0.0-SNAPSHOT", null),
-        cryptoDmlConnectionId = UUID.randomUUID(),
-        vaultDmlConnectionId = UUID.randomUUID()
-    )
-
-    private fun createService(
-        vararg virtualNodeInfos: VirtualNodeInfo,
-        callbacks: List<VirtualNodeInfoListener> = emptyList(),
-    ): VirtualNodeInfoReadServiceFake {
-        val service = VirtualNodeInfoReadServiceFake(
-            virtualNodeInfos.associateBy { it.holdingIdentity },
-            callbacks,
-            LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-        )
-        service.start()
-        service.waitUntilRunning()
-        return service
-    }
-
-    private fun snapshot(vararg virtualNodeInfos: VirtualNodeInfo): Map<HoldingIdentity, VirtualNodeInfo> {
-        return virtualNodeInfos.associateBy { it.holdingIdentity }
-    }
-
-    private fun keys(vararg virtualNodeInfos: VirtualNodeInfo): Set<HoldingIdentity> {
-        return virtualNodeInfos.map { it.holdingIdentity }.toSet()
-    }
-
-    @Test
-    fun `parse file`() {
-        val reader = StringReader("""
-        virtualNodeInfos:
-          - cpiIdentifier:
-              name: ${alice.cpiIdentifier.name}
-              version: ${alice.cpiIdentifier.version}
-            cryptoDmlConnectionId: ${alice.cryptoDmlConnectionId}
-            holdingIdentity:
-              groupId: ${alice.holdingIdentity.groupId}
-              x500Name: ${alice.holdingIdentity.x500Name}
-            vaultDmlConnectionId: ${alice.vaultDmlConnectionId}
-        """.trimIndent())
-
-        val all = createService().apply { loadFrom(reader) }.getAll()
-        assertEquals(listOf(alice), all, "parsed virtual node infos")
-    }
+internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
 
     @Test
     fun getAll() {
@@ -168,5 +106,27 @@ class VirtualNodeInfoReadServiceFakeTest {
             _keys += changedKeys
             _snapshots += currentSnapshot
         }
+    }
+
+    private fun createService(
+        vararg virtualNodeInfos: VirtualNodeInfo,
+        callbacks: List<VirtualNodeInfoListener> = emptyList(),
+    ): VirtualNodeInfoReadServiceFake {
+        val service = VirtualNodeInfoReadServiceFake(
+            virtualNodeInfos.associateBy { it.holdingIdentity },
+            callbacks,
+            LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        )
+        service.start()
+        service.waitUntilRunning()
+        return service
+    }
+
+    private fun snapshot(vararg virtualNodeInfos: VirtualNodeInfo): Map<HoldingIdentity, VirtualNodeInfo> {
+        return virtualNodeInfos.associateBy { it.holdingIdentity }
+    }
+
+    private fun keys(vararg virtualNodeInfos: VirtualNodeInfo): Set<HoldingIdentity> {
+        return virtualNodeInfos.map { it.holdingIdentity }.toSet()
     }
 }
