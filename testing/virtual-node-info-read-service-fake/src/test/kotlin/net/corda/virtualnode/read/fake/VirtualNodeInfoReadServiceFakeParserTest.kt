@@ -6,23 +6,24 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import java.io.StringReader
 
-internal class VirtualNodeInfoReadServiceFakeParserTest : BaseTest() {
+internal class VirtualNodeInfoReadServiceFakeParserTest {
     @Test
     fun `parse yaml`() {
+        val vnode = VirtualNodeInfo.alice
         val reader = StringReader("""
         virtualNodeInfos:
           - cpiIdentifier:
-              name: ${alice.cpiIdentifier.name}
-              version: ${alice.cpiIdentifier.version}
-            cryptoDmlConnectionId: ${alice.cryptoDmlConnectionId}
+              name: ${vnode.cpiIdentifier.name}
+              version: ${vnode.cpiIdentifier.version}
+            cryptoDmlConnectionId: ${vnode.cryptoDmlConnectionId}
             holdingIdentity:
-              groupId: ${alice.holdingIdentity.groupId}
-              x500Name: ${alice.holdingIdentity.x500Name}
-            vaultDmlConnectionId: ${alice.vaultDmlConnectionId}
+              groupId: ${vnode.holdingIdentity.groupId}
+              x500Name: ${vnode.holdingIdentity.x500Name}
+            vaultDmlConnectionId: ${vnode.vaultDmlConnectionId}
         """.trimIndent())
 
         val all = VirtualNodeInfoReadServiceFakeParser.loadFrom(reader)
-        assertEquals(listOf(alice), all, "parsed virtual node infos")
+        assertEquals(listOf(vnode), all, "parsed virtual node infos")
     }
 
     @Test

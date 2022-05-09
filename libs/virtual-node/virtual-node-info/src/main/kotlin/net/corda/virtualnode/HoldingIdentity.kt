@@ -5,6 +5,10 @@ import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
 
 data class HoldingIdentity(val x500Name: String, val groupId: String) {
+
+    // Enable extensions
+    companion object
+
     /**
      * Returns the holding identity as the first 12 characters of a SHA-256 hash of the x500 name and group id.
      *

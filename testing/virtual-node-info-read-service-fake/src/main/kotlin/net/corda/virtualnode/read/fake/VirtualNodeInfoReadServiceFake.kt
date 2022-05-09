@@ -73,11 +73,10 @@ class VirtualNodeInfoReadServiceFake internal constructor(
     /**
      * Removes a [VirtualNodeInfo] and calls all registered callbacks.
      */
-    fun remove(virtualNodeInfo: VirtualNodeInfo) {
-        checkNotNull(map.remove(virtualNodeInfo.holdingIdentity)) {
-            "VirtualNodeInfo ${virtualNodeInfo.holdingIdentity} doesn't exist"
-        }
-        callbacks.forEach { it.onUpdate(setOf(virtualNodeInfo.holdingIdentity), map) }
+    fun remove(holdingIdentity: HoldingIdentity) {
+        map.remove(holdingIdentity)
+        val set = setOf(holdingIdentity)
+        callbacks.forEach { it.onUpdate(set, map) }
     }
 
     /**

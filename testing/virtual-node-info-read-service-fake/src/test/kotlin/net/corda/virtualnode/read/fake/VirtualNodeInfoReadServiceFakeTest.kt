@@ -5,7 +5,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
-internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
+internal class VirtualNodeInfoReadServiceFakeTest {
+
+    private val alice = VirtualNodeInfo.alice
+    private val bob = VirtualNodeInfo.bob
+    private val carol = VirtualNodeInfo.carol
 
     @Test
     fun getAll() {
@@ -65,7 +69,7 @@ internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
         val listener = VirtualNodeInfoListenerSpy()
         val service = createService(alice, bob, callbacks = listOf(listener))
 
-        service.remove(alice)
+        service.remove(alice.holdingIdentity)
 
         assertEquals(listOf(bob), service.getAll(), "all vnodes")
         assertEquals(1, listener.timesCalled, "times called listener1")
