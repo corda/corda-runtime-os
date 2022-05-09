@@ -61,27 +61,6 @@ class PubSubSubscriptionIntegrationTest {
         )
     }
 
-    private val cancelSubscription by lazy {
-        val config = SubscriptionConfig(groupName = group + "cancel", eventTopic = topic)
-        val processor = object : PubSubProcessor<String, Event> {
-
-            override val keyClass = String::class.java
-            override val valueClass = Event::class.java
-            override fun onNext(event: Record<String, Event>): CompletableFuture<Unit> {
-                processed.add(event)
-                waitForProcessed.get().countDown()
-                val future = CompletableFuture<Unit>()
-                future.cancel(true)
-                return future
-            }
-        }
-        subscriptionFactory.createPubSubSubscription(
-            subscriptionConfig = config,
-            processor = processor,
-            messagingConfig = SmartConfigImpl.empty()
-        )
-    }
-
     private val lastFuture = AtomicReference<CompletableFuture<Unit>>()
     private val asynchronousSubscription by lazy {
         val config = SubscriptionConfig(groupName = group + "asynchronous", eventTopic = topic)

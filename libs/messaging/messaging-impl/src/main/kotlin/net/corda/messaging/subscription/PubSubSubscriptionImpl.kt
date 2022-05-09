@@ -189,7 +189,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 } else {
                     val message =
                         "PubSubConsumer from group ${config.group} failed to read records from topic ${config.topic}." +
-                            "Max reties for poll and process exceeded. Recreating consumer."
+                            "Max retries for poll and process exceeded. Recreating consumer."
                     log.warn(message, ex)
                     throw CordaMessageAPIIntermittentException(message, ex)
                 }
