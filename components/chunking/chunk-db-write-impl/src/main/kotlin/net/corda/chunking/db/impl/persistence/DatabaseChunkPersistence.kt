@@ -194,12 +194,20 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     }
 
     private fun EntityManager.deleteCpiMetadataEntity(cpiMetadataEntity: CpiMetadataEntity) {
-        val prevEntity = merge(
-            findCpiMetadataEntity(cpiMetadataEntity.name, cpiMetadataEntity.version, cpiMetadataEntity.signerSummaryHash))
-        remove(prevEntity)
+        val prevEntity = findCpiMetadataEntityInTransaction(
+            this,
+            cpiMetadataEntity.name,
+            cpiMetadataEntity.version,
+            cpiMetadataEntity.signerSummaryHash
+        )
+        prevEntity?.let {
+            merge(it)
+            remove(it)
+        }
     }
 
-    private fun EntityManager.findCpiMetadataEntity(
+    private fun findCpiMetadataEntityInTransaction(
+        entityManager: EntityManager,
         name: String,
         version: String,
         signerSummaryHash: String
@@ -209,14 +217,13 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             version,
             signerSummaryHash
         )
-        val entity = transaction {
-            it.find(CpiMetadataEntity::class.java, primaryKey)
-        }
-        return entity
+        return entityManager.find(CpiMetadataEntity::class.java, primaryKey)
     }
 
     private fun getCpiEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
-        return entityManagerFactory.createEntityManager().findCpiMetadataEntity(name, version, signerSummaryHash)
+        return entityManagerFactory.createEntityManager().transaction {
+            findCpiMetadataEntityInTransaction(it, name, version, signerSummaryHash)
+        }
     }
 
     override fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String? {
