@@ -20,6 +20,8 @@ import java.time.Instant
  * Add custom task which will allow us to publish containerized OSGi deployable
  * Currently this deploys a 'fat jar' to the container and we run 'java - jar *args*' as the entry point.
  * A user may pass further custom arguments using the 'arguments' property when using this task type.
+ * If a kafka file is present in the sub project directory it will be copied to container and
+ * '"--kafka", "/opt/override/kafka.properties"' also passed to the 'java -Jar' entrypoint as additional arguments.
  * Future iterations will use a more modular layered approach.
  */
 abstract class DeployableContainerBuilder extends DefaultTask {
@@ -163,17 +165,12 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 builder = Jib.from(DockerDaemonImage.named(imageName))
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-                def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
-                builder = setCredentalsOnImage(baseImage, builder)
+                builder = setCredentialsOnBaseImage(builder)
             }
         } else {  // CI use case
             logger.info("No daemon available")
-            def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
-            if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
-                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
-                baseImage.addCredential(registryUsername.get(), registryPassword.get())
-            }
-            builder = Jib.from(baseImage)
+            logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
+            builder = setCredentialsOnBaseImage(builder)
         }
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())
@@ -240,7 +237,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
     }
 
-    private JibContainerBuilder setCredentalsOnImage(baseImage, JibContainerBuilder builder) {
+    /**
+     *  Set credentials on the base image we use
+     */
+    private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
+        def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
         if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
             baseImage.addCredential(registryUsername.get(), registryPassword.get())
             builder = Jib.from(baseImage)
