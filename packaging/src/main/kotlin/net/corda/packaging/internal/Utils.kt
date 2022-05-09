@@ -32,8 +32,6 @@ internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.D
     return SecureHash(algorithm.name, md.digest())
 }
 
-internal fun Iterable<SecureHash>.summaryHash() = asSequence().summaryHash()
-
 internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     var counter = 0
     return hash {

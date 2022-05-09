@@ -41,11 +41,9 @@ class CPKTests {
 
     private lateinit var testDir: Path
 
-    private lateinit var flowsCPKPath: Path
     private lateinit var workflowCPKPath: Path
     private lateinit var processedWorkflowCPKPath: Path
     private lateinit var workflowCPK: CPK
-    private lateinit var flowsCPK: CPK.Metadata
     private lateinit var cordappJarPath: Path
     private lateinit var referenceExtractionPath: Path
     private lateinit var nonJarFile: Path
@@ -58,8 +56,6 @@ class CPKTests {
     fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
 
-        flowsCPKPath = Path.of(URI(System.getProperty("net.corda.flows.cpk")))
-        flowsCPK = CPK.Metadata.from(Files.newInputStream(flowsCPKPath), flowsCPKPath.toString())
         workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
         processedWorkflowCPKPath = testDir.resolve(workflowCPKPath.fileName)
         workflowCPK = CPK.from(Files.newInputStream(workflowCPKPath), processedWorkflowCPKPath, workflowCPKPath.toString())
@@ -429,11 +425,7 @@ class CPKTests {
 
     @Test
     fun `corda-api dependencies are not included in cpk dependencies`() {
-        Assertions.assertTrue(
-            workflowCPK.metadata.dependencies.none {
-                it == flowsCPK.id
-            }
-        )
+        Assertions.assertIterableEquals(listOf("net.corda.packaging.test.contract"), workflowCPK.metadata.dependencies.map { it.name })
     }
 
     @Test
@@ -441,7 +433,7 @@ class CPKTests {
         val md = MessageDigest.getInstance(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name)
         md.update(cordaDevKey.toString().toByteArray())
         val expectedHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, md.digest())
-        Assertions.assertEquals(expectedHash, flowsCPK.id.signerSummaryHash)
+        Assertions.assertEquals(expectedHash, workflowCPK.metadata.id.signerSummaryHash)
     }
 }
 
@@ -450,6 +442,3 @@ fun Path.copyTo(target: Path, vararg options: CopyOption): Path = Files.copy(thi
 
 /** @see Files.isDirectory */
 fun Path.isDirectory(vararg options: LinkOption): Boolean = Files.isDirectory(this, *options)
-
-/** @see Files.isRegularFile */
-fun Path.isRegularFile(vararg options: LinkOption): Boolean = Files.isRegularFile(this, *options)

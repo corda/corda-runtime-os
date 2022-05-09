@@ -42,8 +42,6 @@ class CpiWithGroupPolicyTests {
     fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
 
-        flowsCPKPath = Path.of(URI(System.getProperty("net.corda.flows.cpk")))
-        flowsCPK = Files.newInputStream(flowsCPKPath).use { CPK.Metadata.from(it, flowsCPKPath.toString()) }
         testCPIPath = testDir.resolve("test.cpi")
         workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
         contractCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.contract.cpk")))

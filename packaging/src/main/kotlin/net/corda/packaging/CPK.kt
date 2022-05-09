@@ -4,7 +4,6 @@ import net.corda.packaging.internal.CPKFormatVersionImpl
 import net.corda.packaging.internal.CPKIdentifierImpl
 import net.corda.packaging.internal.CPKLoader
 import net.corda.packaging.internal.CPKManifestImpl
-import net.corda.packaging.internal.CPKDependencyResolver
 import net.corda.packaging.internal.CPKMetadataImpl
 import net.corda.packaging.internal.jarSignatureVerificationEnabledByDefault
 import net.corda.v5.crypto.SecureHash
@@ -13,7 +12,6 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.security.cert.Certificate
 import java.util.NavigableSet
-import java.util.TreeMap
 
 /** Represents a [CPK] file in the filesystem */
 interface CPK : AutoCloseable {
@@ -30,15 +28,6 @@ interface CPK : AutoCloseable {
                  cpkFileName: String? = null
         ) : CPK =
             CPKLoader.loadCPK(inputStream, cacheDir, cpkLocation, verifySignature, cpkFileName)
-
-        @JvmStatic
-        @JvmOverloads
-        fun resolveDependencies(cpks : Iterable<Metadata>,
-                                useSignatures: Boolean = jarSignatureVerificationEnabledByDefault()) : NavigableSet<Identifier> {
-            return CPKDependencyResolver.resolveDependencies(
-                cpks.map { it.id },
-                cpks.associateByTo(TreeMap(), Metadata::id,  Metadata::dependencies), useSignatures)
-        }
     }
 
     /** Uniquely identifies a CPK archive */

@@ -13,8 +13,6 @@ dependencies {
     cordaProvided project(':application')
     cordaProvided project(':ledger')
     cordaProvided project(':crypto')
-    // TODO:  using corda5 dev preview to build a cpk for the packaging unit tests, these libs aren't in corda-api yet
-    cordapp "net.corda:corda-flows:$cordaDevPreviewVersion"
 
     cordapp project(':packaging:test:contract-cpk')
 

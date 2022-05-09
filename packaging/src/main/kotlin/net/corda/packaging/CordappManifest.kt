@@ -101,16 +101,6 @@ data class CordappManifest(
         } catch (e: NumberFormatException) {
             throw CordappManifestException("Attribute $attribute is not a valid integer.", e)
         }
-
-        /**
-         * Parses an [attribute] from the [manifest] to [Int], or returns the default if the attribute is missing.
-         * Throws [CordappManifestException] if the attribute cannot be parsed.
-         */
-        private fun parseInt(manifest: Manifest, attribute: String) = try {
-            manifest[attribute]?.toInt()
-        } catch (e: NumberFormatException) {
-            throw CordappManifestException("Attribute $attribute is not a valid positive integer.", e)
-        }
     }
 
     /**
@@ -136,9 +126,3 @@ data class CordappManifest(
     val entities: Set<String> get() = parseSet(CORDAPP_ENTITIES)
 }
 
-/** Information on a contract or workflow CorDapp in a [CordappManifest]. */
-data class ManifestCordappInfo(
-        val shortName: String?,
-        val vendor: String?,
-        val versionId: Int?,
-        val licence: String?)

@@ -55,7 +55,6 @@ dependencies {
     // TODO:  This should be re-visited when more of the cordapp APIs are imported into this repo.
     workflow project('test:workflow-cpk')
     workflowLibs project(path: 'test:workflow-cpk', configuration: 'libFolderDependencies')
-    flowsCPK "net.corda:corda-flows:$cordaDevPreviewVersion:cordapp@cpk"
     contractCPK project(path: 'test:contract-cpk', configuration: 'cordaCPK')
     workflowCPK project(path: 'test:workflow-cpk', configuration: 'cordaCPK')
 }
@@ -76,7 +75,6 @@ tasks.named('test', Test) {
         systemProperties([
             'net.corda.dev.cert' : certificateProvider.get(),
             'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
-            'net.corda.flows.cpk' : configurations.flowsCPK.singleFile.toURI(),
             'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
             'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
             'net.corda.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,

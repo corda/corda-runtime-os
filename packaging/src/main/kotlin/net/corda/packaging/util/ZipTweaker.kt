@@ -1,7 +1,5 @@
 package net.corda.packaging.util
 
-import java.io.FilterInputStream
-import java.io.FilterOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
@@ -129,50 +127,4 @@ open class ZipTweaker {
             }
         }
     }
-}
-
-/**
- * [InputStream] that also writes its content to the provided [OutputStream] while reading
- */
-class TeeInputStream(inputStream : InputStream, private val destination : OutputStream): FilterInputStream(inputStream) {
-    var written = 0
-    override fun read(): Int {
-        return super.read().also {
-            if(it >= 0)  {
-                destination.write(it)
-                written++
-            }
-        }
-    }
-
-    override fun read(b: ByteArray, off: Int, len: Int): Int {
-        return super.read(b, off, len).also {
-            if(it > 0) {
-                destination.write(b, off, it)
-                written += it
-            }
-        }
-    }
-
-    override fun close() {
-        destination.close()
-        super.close()
-    }
-}
-
-/**
- * [InputStream] wrapper that prevents it from being closed, useful to pass an [InputStream] instance
- * to a method that closes the stream before it has been fully consumed
- * (and whose remaining content is still needed by the caller)
- */
-class UncloseableInputStream(source : InputStream) : FilterInputStream(source) {
-    override fun close() {}
-}
-
-/**
- * [OutputStream] wrapper that prevents it from being closed, useful to pass an [OutputStream] instance
- * to a method that closes the stream before it has been finalized by the caller
- */
-class UncloseableOutputStream(destination : OutputStream) : FilterOutputStream(destination) {
-    override fun close() { flush() }
 }
