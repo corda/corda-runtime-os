@@ -43,7 +43,7 @@ class HSMConfigurationBusServiceTests {
             factory.coordinatorFactory,
             configurationReadService,
             subscriptionFactory,
-            TestHSMService(factory.coordinatorFactory).also { it.start() }
+            TestHSMService(factory.coordinatorFactory, factory.schemeMetadata).also { it.start() }
         )
     }
 

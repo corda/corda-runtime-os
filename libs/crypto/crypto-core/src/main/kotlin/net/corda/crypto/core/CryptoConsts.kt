@@ -11,7 +11,7 @@ object CryptoConsts {
     /**
      * Constants defining HSM categories.
      */
-    object HsmCategories {
+    object Categories {
         const val FRESH_KEYS = "FRESH_KEYS"
         const val LEDGER = "LEDGER"
         const val NOTARY = "NOTARY"

@@ -2,16 +2,20 @@ package net.corda.crypto.service.impl.hsm.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.hsm.HSMCacheProvider
+import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
-import net.corda.data.crypto.wire.hsm.HSMConfig
+import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,7 +27,11 @@ class HSMServiceComponent @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMCacheProvider::class)
-    private val cacheProvider: HSMCacheProvider
+    private val cacheProvider: HSMCacheProvider,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = CryptoOpsProxyClient::class)
+    private val opsProxyClient: CryptoOpsProxyClient
 ) : AbstractConfigurableComponent<HSMServiceComponent.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMService>(),
@@ -31,7 +39,8 @@ class HSMServiceComponent @Activate constructor(
     impl = InactiveImpl(),
     dependencies = setOf(
         LifecycleCoordinatorName.forComponent<HSMCacheProvider>(),
-        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
     ),
     configKeys = setOf(
         ConfigKeys.MESSAGING_CONFIG,
@@ -44,28 +53,34 @@ class HSMServiceComponent @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, cacheProvider)
+        ActiveImpl(event, cacheProvider, schemeMetadata, opsProxyClient)
 
     override fun createInactiveImpl(): Impl =
         InactiveImpl()
 
-    override fun assignHSM(tenantId: String, category: String): HSMInfo =
-        impl.service.assignHSM(tenantId, category)
+    override fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray) =
+        impl.service.putHSMConfig(info, serviceConfig)
+
+    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+        impl.service.assignHSM(tenantId, category, context)
 
     override fun assignSoftHSM(tenantId: String, category: String): HSMInfo =
         impl.service.assignSoftHSM(tenantId, category)
 
-    override fun findAssignedHSM(tenantId: String, category: String): HSMInfo? =
+    override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) =
+        impl.service.linkCategories(configId, links)
+
+    override fun getLinkedCategories(configId: String): List<HSMCategoryInfo> =
+        impl.service.getLinkedCategories(configId)
+
+    override fun lookup(filter: Map<String, String>): List<HSMInfo> =
+        impl.service.lookup(filter)
+
+    override fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? =
         impl.service.findAssignedHSM(tenantId, category)
 
-    override fun getPrivateTenantAssociation(tenantId: String, category: String): HSMTenantAssociation =
-        impl.service.getPrivateTenantAssociation(tenantId, category)
-
-    override fun putHSMConfig(config: HSMConfig) =
-        impl.service.putHSMConfig(config)
-
-    override fun lookup(): List<HSMInfo> =
-        impl.service.lookup()
+    override fun findHSMConfig(configId: String): HSMConfig? =
+        impl.service.findHSMConfig(configId)
 
     class InactiveImpl: Impl {
         override val service: HSMServiceImpl
@@ -75,11 +90,15 @@ class HSMServiceComponent @Activate constructor(
 
     class ActiveImpl(
         event: ConfigChangedEvent,
-        cacheProvider: HSMCacheProvider
+        cacheProvider: HSMCacheProvider,
+        schemeMetadata: CipherSchemeMetadata,
+        opsProxyClient: CryptoOpsProxyClient
     ): Impl {
         override val service: HSMServiceImpl = HSMServiceImpl(
             event.config.toCryptoConfig(),
-            cacheProvider.getInstance()
+            cacheProvider.getInstance(),
+            schemeMetadata,
+            opsProxyClient
         )
 
         override fun close() = service.close()

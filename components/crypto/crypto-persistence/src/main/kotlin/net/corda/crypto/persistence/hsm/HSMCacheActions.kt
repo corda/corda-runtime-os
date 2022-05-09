@@ -35,7 +35,7 @@ interface HSMCacheActions : AutoCloseable {
     fun getLinkedCategories(configId: String): List<HSMCategoryInfo>
 
     /**
-     * Replaces or add the category links to HSM configuration.
+     * Replaces or adds the category links to HSM configuration.
      */
     fun linkCategories(configId: String, links: List<HSMCategoryInfo>)
 

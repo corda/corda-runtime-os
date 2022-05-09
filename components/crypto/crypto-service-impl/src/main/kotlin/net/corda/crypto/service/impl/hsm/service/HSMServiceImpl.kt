@@ -21,6 +21,7 @@ import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.time.Instant
@@ -38,65 +39,6 @@ class HSMServiceImpl(
     private val encryptor = config.rootEncryptor()
 
     private val softConfig = config.softPersistence()
-
-    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
-        logger.info("assignHSM(tenant={}, category={})", tenantId, category)
-        val stats = hsmCache.act {
-            it.getHSMStats(category)
-        }.filter { s ->
-            s.usages < s.capacity && (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
-        }
-        val chosen = if(context[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_ALIASED) {
-            tryChooseAliased(stats)
-        } else {
-            tryChooseAny(stats)
-        }
-        val association = hsmCache.act {
-            it.associate(tenantId = tenantId, category = category, configId = chosen.configId)
-        }
-        ensureWrappingKey(association)
-        logger.info("assignHSM(tenant={}, category={})={}", tenantId, category, association.config.info)
-        return association.config.info
-    }
-
-    private fun tryChooseAliased(stats: List<HSMStat>): HSMStat =
-        stats.filter {
-            it.privateKeyPolicy == PrivateKeyPolicy.ALIASED ||
-            it.privateKeyPolicy == PrivateKeyPolicy.BOTH
-        }.minByOrNull { s ->
-            s.usages
-        } ?: tryChooseAny(stats)
-
-    private fun tryChooseAny(stats: List<HSMStat>): HSMStat =
-        stats.minByOrNull { s ->
-            s.usages
-        } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
-
-    fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
-        logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
-        val association = hsmCache.act {
-            val hsm = it.findConfig(CryptoConsts.SOFT_HSM_CONFIG_ID)?.info
-                ?: it.addSoftConfig()
-            it.associate(tenantId = tenantId, category = category, configId = hsm.id)
-        }
-        ensureWrappingKey(association)
-        logger.info("assignSoftHSM(tenant={}, category={})={}", tenantId, category, association.config.info)
-        return association.config.info
-    }
-
-    fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
-        logger.debug("findAssignedHSM(tenant={}, category={})", tenantId, category)
-        return hsmCache.act {
-            it.findTenantAssociation(tenantId, category)
-        }
-    }
-
-    fun findHSMConfig(configId: String): HSMConfig? {
-        logger.debug("getPrivateHSMConfig(configId={})", configId)
-        return hsmCache.act {
-            it.findConfig(configId)
-        }
-    }
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
@@ -121,6 +63,64 @@ class HSMServiceImpl(
         return id
     }
 
+    fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
+        logger.info("assignHSM(tenant={}, category={})", tenantId, category)
+        val stats = hsmCache.act {
+            it.getHSMStats(category)
+        }.filter { s ->
+            s.usages < s.capacity && (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
+        }
+        val chosen = if(context[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_ALIASED) {
+            tryChooseAliased(stats)
+        } else {
+            tryChooseAny(stats)
+        }
+        val association = hsmCache.act {
+            it.associate(tenantId = tenantId, category = category, configId = chosen.configId)
+        }
+        ensureWrappingKey(association)
+        return association.config.info
+    }
+
+    fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
+        logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
+        val association = hsmCache.act {
+            val hsm = it.findConfig(CryptoConsts.SOFT_HSM_CONFIG_ID)?.info
+                ?: it.addSoftConfig()
+            it.associate(tenantId = tenantId, category = category, configId = hsm.id)
+        }
+        ensureWrappingKey(association)
+        return association.config.info
+    }
+
+    fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {
+        logger.info("linkCategories(configId={}, links=[{}])", configId, links.joinToString { it.category })
+        hsmCache.act {
+            it.linkCategories(configId, links)
+        }
+    }
+
+    fun getLinkedCategories(configId: String): List<HSMCategoryInfo> {
+        logger.debug("getLinkedCategories(configId={})", configId)
+        return hsmCache.act {
+            it.getLinkedCategories(configId)
+        }
+    }
+
+    fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
+        logger.debug("findAssignedHSM(tenant={}, category={})", tenantId, category)
+        return hsmCache.act {
+            it.findTenantAssociation(tenantId, category)
+        }
+    }
+
+    fun findHSMConfig(configId: String): HSMConfig? {
+        logger.debug("getPrivateHSMConfig(configId={})", configId)
+        return hsmCache.act {
+            it.findConfig(configId)
+        }
+    }
+
     fun lookup(filter: Map<String, String>): List<HSMInfo> {
         return hsmCache.act { it.lookup(filter) }
     }
@@ -140,7 +140,9 @@ class HSMServiceImpl(
                 configId = association.config.info.id,
                 failIfExists = false,
                 masterKeyAlias = association.masterKeyAlias!!,
-                context = emptyMap()
+                context = mapOf(
+                    CRYPTO_TENANT_ID to association.tenantId
+                )
             )
         }
     }
@@ -153,7 +155,9 @@ class HSMServiceImpl(
                 configId = info.id,
                 failIfExists = false,
                 masterKeyAlias = info.masterKeyAlias,
-                context = emptyMap()
+                context = mapOf(
+                    CRYPTO_TENANT_ID to CryptoConsts.CLUSTER_TENANT_ID
+                )
             )
         }
     }
@@ -177,10 +181,23 @@ class HSMServiceImpl(
         add(info, encryptor.encrypt(serviceConfig))
         linkCategories(
             info.id,
-            CryptoConsts.HsmCategories.all().map {
+            CryptoConsts.Categories.all().map {
                 HSMCategoryInfo(it, PrivateKeyPolicy.WRAPPED)
             }
         )
         return info
     }
+
+    private fun tryChooseAliased(stats: List<HSMStat>): HSMStat =
+        stats.filter {
+            it.privateKeyPolicy == PrivateKeyPolicy.ALIASED ||
+                    it.privateKeyPolicy == PrivateKeyPolicy.BOTH
+        }.minByOrNull { s ->
+            s.usages
+        } ?: tryChooseAny(stats)
+
+    private fun tryChooseAny(stats: List<HSMStat>): HSMStat =
+        stats.minByOrNull { s ->
+            s.usages
+        } ?: throw CryptoServiceLibraryException("There is no available HSMs.")
 }

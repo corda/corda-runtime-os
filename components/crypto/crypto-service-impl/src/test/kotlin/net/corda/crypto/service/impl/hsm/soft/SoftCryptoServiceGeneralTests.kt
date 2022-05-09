@@ -1,10 +1,13 @@
 package net.corda.crypto.service.impl.hsm.soft
 
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.signing.SigningKeyCacheActions
 import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
 import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheActions
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
@@ -120,13 +123,15 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = null,
                     signatureScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
     }
@@ -142,13 +147,15 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     signatureScheme = UNSUPPORTED_SIGNATURE_SCHEME,
                     secret = null
                 ),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
     }
@@ -164,13 +171,15 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     signatureScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
     }
@@ -189,13 +198,15 @@ class SoftCryptoServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     signatureScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
         assertSame(exception, thrown)
@@ -216,13 +227,15 @@ class SoftCryptoServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     signatureScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
         assertSame(exception, thrown.cause)
@@ -239,14 +252,15 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.sign(
                 SigningWrappedSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = null,
                     encodingVersion = 1,
                     signatureScheme = service.supportedSchemes()[0]
                 ),
                 ByteArray(2),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
             )
         }
     }
@@ -277,14 +291,15 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.sign(
                 SigningWrappedSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     encodingVersion = 1,
                     signatureScheme = service.supportedSchemes()[0]
                 ),
                 ByteArray(2),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
             )
         }
     }
@@ -303,14 +318,15 @@ class SoftCryptoServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             service.sign(
                 SigningWrappedSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     encodingVersion = 1,
                     signatureScheme = service.supportedSchemes()[0]
                 ),
                 ByteArray(2),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
             )
         }
         assertSame(exception, thrown)
@@ -331,14 +347,15 @@ class SoftCryptoServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             service.sign(
                 SigningWrappedSpec(
-                    tenantId = UUID.randomUUID().toString(),
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     encodingVersion = 1,
                     signatureScheme = service.supportedSchemes()[0]
                 ),
                 ByteArray(2),
-                emptyMap()
+                mapOf(
+                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
+                )
             )
         }
         assertSame(exception, thrown.cause)

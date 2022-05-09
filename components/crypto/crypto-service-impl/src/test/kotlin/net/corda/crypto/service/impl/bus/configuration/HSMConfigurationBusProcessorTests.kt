@@ -4,10 +4,10 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.hsm.HSMConfig
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationResponse
 import net.corda.data.crypto.wire.hsm.configuration.commands.PutHSMCommand
@@ -23,6 +23,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -68,13 +69,14 @@ class HSMConfigurationBusProcessorTests {
     fun `Should execute put HSM config request`() {
         val hsmService = mock<HSMService>()
         val processor = HSMConfigurationBusProcessor(hsmService)
-        val config = HSMConfig()
+        val info = HSMInfo()
+        val serviceConfig = "{}".toByteArray()
         val context = createRequestContext()
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
             HSMConfigurationRequest(
                 context,
-                PutHSMCommand(config)
+                PutHSMCommand(info, ByteBuffer.wrap(serviceConfig))
             ),
             future
         )
@@ -82,7 +84,7 @@ class HSMConfigurationBusProcessorTests {
         assertResponseContext(context, result.context)
         assertNotNull(result.response)
         assertThat(result.response).isInstanceOf(CryptoNoContentValue::class.java)
-        Mockito.verify(hsmService, times(1)).putHSMConfig(config)
+        Mockito.verify(hsmService, times(1)).putHSMConfig(info, serviceConfig)
     }
 
     @Test
@@ -94,7 +96,7 @@ class HSMConfigurationBusProcessorTests {
         processor.onNext(
             HSMConfigurationRequest(
                 context,
-                AssignHSMCommand(CryptoConsts.HsmCategories.LEDGER)
+                AssignHSMCommand(CryptoConsts.Categories.LEDGER, KeyValuePairList())
             ),
             future
         )
@@ -110,16 +112,17 @@ class HSMConfigurationBusProcessorTests {
     fun `Should complete future exceptionally in case of service failure`() {
         val originalException = RuntimeException()
         val hsmService = mock<HSMService> {
-            on { putHSMConfig(any()) } doThrow  originalException
+            on { putHSMConfig(any(), any()) } doThrow  originalException
         }
         val processor = HSMConfigurationBusProcessor(hsmService)
-        val config = HSMConfig()
+        val info = HSMInfo()
+        val serviceConfig = "{}".toByteArray()
         val context = createRequestContext()
         val future = CompletableFuture<HSMConfigurationResponse>()
         processor.onNext(
             HSMConfigurationRequest(
                 context,
-                PutHSMCommand(config)
+                PutHSMCommand(info, ByteBuffer.wrap(serviceConfig))
             ),
             future
         )
@@ -129,6 +132,6 @@ class HSMConfigurationBusProcessorTests {
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
         assertSame(originalException, exception.cause?.cause)
-        Mockito.verify(hsmService, times(1)).putHSMConfig(config)
+        Mockito.verify(hsmService, times(1)).putHSMConfig(info, serviceConfig)
     }
 }

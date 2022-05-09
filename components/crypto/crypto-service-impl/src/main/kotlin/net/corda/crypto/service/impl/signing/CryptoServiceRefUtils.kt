@@ -5,6 +5,8 @@ import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceRef
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -24,14 +26,15 @@ fun CryptoServiceRef.generateKeyPair(
 ): GeneratedKey =
     instance.generateKeyPair(
         KeyGenerationSpec(
-            tenantId = tenantId,
-            category = category,
             signatureScheme = scheme,
             alias = alias,
             masterKeyAlias = masterKeyAlias,
             secret = aliasSecret
         ),
-        context
+        context + mapOf(
+            CRYPTO_TENANT_ID to tenantId,
+            CRYPTO_CATEGORY to category
+        )
     )
 
 fun CryptoServiceRef.toSaveKeyContext(
@@ -40,7 +43,7 @@ fun CryptoServiceRef.toSaveKeyContext(
     scheme: SignatureScheme,
     externalId: String?
 ): SigningKeySaveContext =
-    when(key) {
+    when (key) {
         is GeneratedPublicKey -> SigningPublicKeySaveContext(
             key = key,
             alias = alias,
@@ -65,7 +68,7 @@ fun CryptoServiceRef.sign(
     data: ByteArray,
     context: Map<String, String>
 ): ByteArray {
-    val spec = if(record.keyMaterial != null) {
+    val spec = if (record.keyMaterial != null) {
         require(record.keyMaterial!!.isNotEmpty()) {
             "The key material is empty."
         }
@@ -73,7 +76,6 @@ fun CryptoServiceRef.sign(
             "The encoding version is missing."
         }
         SigningWrappedSpec(
-            tenantId = tenantId,
             keyMaterial = record.keyMaterial!!,
             masterKeyAlias = record.masterKeyAlias,
             encodingVersion = record.encodingVersion!!,
@@ -84,10 +86,13 @@ fun CryptoServiceRef.sign(
             "The hsm assigned alias is missing."
         }
         SigningAliasSpec(
-            tenantId = tenantId,
             hsmAlias = record.hsmAlias!!,
             signatureScheme = scheme
         )
     }
-    return instance.sign(spec, data, context)
+    return instance.sign(
+        spec, data, context + mapOf(
+            CRYPTO_TENANT_ID to tenantId
+        )
+    )
 }

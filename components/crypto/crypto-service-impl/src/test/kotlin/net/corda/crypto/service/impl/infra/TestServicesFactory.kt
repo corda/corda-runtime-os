@@ -1,9 +1,11 @@
 package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -17,19 +19,17 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.CryptoService
 import java.security.PublicKey
 import kotlin.test.assertTrue
 
 class TestServicesFactory {
     val wrappingKeyAlias = "wrapping-key-alias"
 
-    private val passphrase = "PASSPHRASE"
-
-    private val salt = "SALT"
-
     private val emptyConfig: SmartConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+
+    private val cryptoConfig = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase"))
 
     val schemeMetadata = CipherSchemeMetadataImpl()
 
@@ -62,7 +62,7 @@ class TestServicesFactory {
     }
 
     val registration by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TestHSMService(coordinatorFactory).also {
+        TestHSMService(coordinatorFactory, schemeMetadata).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
@@ -89,7 +89,7 @@ class TestServicesFactory {
     }
 
     private val softCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        softCacheProvider.getInstance(passphrase, salt)
+        softCacheProvider.getInstance()
     }
 
     val cryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -100,11 +100,15 @@ class TestServicesFactory {
         ).also { it.createWrappingKey(wrappingKeyAlias, true, emptyMap()) }
     }
 
+    val readService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        createConfigurationReadService()
+    }
+
     fun createCryptoServiceFactory() =
         CryptoServiceFactoryImpl(
             coordinatorFactory,
+            readService,
             registration,
-            schemeMetadata,
             listOf(
                 softCryptoKeyCacheProvider
             )
@@ -118,7 +122,8 @@ class TestServicesFactory {
     fun createConfigurationReadService(
         configUpdates: List<Pair<String, SmartConfig>> = listOf(
             ConfigKeys.BOOT_CONFIG to emptyConfig,
-            ConfigKeys.MESSAGING_CONFIG to emptyConfig
+            ConfigKeys.MESSAGING_CONFIG to emptyConfig,
+            ConfigKeys.CRYPTO_CONFIG to cryptoConfig
         )
     ) =
         TestConfigurationReadService(
@@ -132,7 +137,6 @@ class TestServicesFactory {
         }
 
     fun createSigningService(
-        signatureScheme: SignatureScheme,
         effectiveWrappingKeyAlias: String = wrappingKeyAlias
     ) =
         SigningServiceImpl(
@@ -145,12 +149,13 @@ class TestServicesFactory {
                     return CryptoServiceRef(
                         tenantId = tenantId,
                         category = category,
-                        signatureScheme = signatureScheme,
                         masterKeyAlias = effectiveWrappingKeyAlias,
                         aliasSecret = null,
                         instance = cryptoService
                     )
                 }
+
+                override fun getInstance(configId: String): CryptoService = cryptoService
 
                 override var isRunning: Boolean = false
                     private set

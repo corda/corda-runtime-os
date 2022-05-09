@@ -27,9 +27,10 @@ import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -64,12 +65,13 @@ class CryptoOpsBusProcessorTests {
             tenantId: String,
             category: String,
             alias: String,
+            scheme: String,
             context: Map<String, String>
         ): PublicKey {
             if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
-            return impl.generateKeyPair(tenantId, category, alias, context)
+            return impl.generateKeyPair(tenantId, category, alias, scheme, context)
         }
 
         override fun generateKeyPair(
@@ -77,26 +79,32 @@ class CryptoOpsBusProcessorTests {
             category: String,
             alias: String,
             externalId: String,
+            scheme: String,
             context: Map<String, String>
         ): PublicKey {
             if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
-            return impl.generateKeyPair(tenantId, category, alias, externalId, context)
+            return impl.generateKeyPair(tenantId, category, alias, externalId, scheme, context)
         }
 
-        override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
+        override fun freshKey(tenantId: String, scheme: String, context: Map<String, String>): PublicKey {
             if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
-            return impl.freshKey(tenantId, context)
+            return impl.freshKey(tenantId, scheme, context)
         }
 
-        override fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey {
+        override fun freshKey(
+            tenantId: String,
+            externalId: String,
+            scheme: String,
+            context: Map<String, String>
+        ): PublicKey {
             if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
-            return impl.freshKey(tenantId, externalId, context)
+            return impl.freshKey(tenantId, externalId, scheme, context)
         }
 
         override fun sign(
@@ -158,13 +166,11 @@ class CryptoOpsBusProcessorTests {
     private lateinit var verifier: SignatureVerificationService
     private lateinit var processor: CryptoOpsBusProcessor
 
-    private fun setup(schemeCode: String = ECDSA_SECP256R1_CODE_NAME) {
+    private fun setup() {
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
         schemeMetadata = factory.schemeMetadata
-        signingService = factory.createSigningService(
-            schemeMetadata.findSignatureScheme(schemeCode)
-        )
+        signingService = factory.createSigningService()
         verifier = factory.verifier
         signingFactory = mock {
             on { getInstance() }.thenReturn(SigningServiceWrapper(signingService))
@@ -266,9 +272,10 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.HsmCategories.LEDGER,
+                    CryptoConsts.Categories.LEDGER,
                     alias,
                     null,
+                    EDDSA_ED25519_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -277,9 +284,11 @@ class CryptoOpsBusProcessorTests {
         val result1 = future1.get()
         val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
+        assertEquals(4, operationContext.size)
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -331,7 +340,7 @@ class CryptoOpsBusProcessorTests {
 
     @Test
     fun `Should generate key pair and be able to find and lookup and then sign custom signature params`() {
-        setup(schemeCode = RSA_CODE_NAME)
+        setup()
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -345,9 +354,10 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.HsmCategories.LEDGER,
+                    CryptoConsts.Categories.LEDGER,
                     alias,
                     null,
+                    EDDSA_ED25519_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -356,9 +366,11 @@ class CryptoOpsBusProcessorTests {
         val result1 = future1.get()
         val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
+        assertEquals(4, operationContext.size)
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -452,6 +464,7 @@ class CryptoOpsBusProcessorTests {
                 context1,
                 GenerateFreshKeyRpcCommand(
                     null,
+                    EDDSA_ED25519_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -460,9 +473,11 @@ class CryptoOpsBusProcessorTests {
         val result1 = future1.get()
         val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
+        assertEquals(4, operationContext.size)
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -491,6 +506,7 @@ class CryptoOpsBusProcessorTests {
                 context1,
                 GenerateFreshKeyRpcCommand(
                     externalId.toString(),
+                    EDDSA_ED25519_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -499,9 +515,11 @@ class CryptoOpsBusProcessorTests {
         val result1 = future1.get()
         val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
+        assertEquals(4, operationContext.size)
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -529,9 +547,10 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateKeyPairCommand(
-                    CryptoConsts.HsmCategories.LEDGER,
+                    CryptoConsts.Categories.LEDGER,
                     alias,
                     null,
+                    EDDSA_ED25519_CODE_NAME,
                     KeyValuePairList(operationContext)
                 )
             ),
@@ -540,9 +559,11 @@ class CryptoOpsBusProcessorTests {
         val result1 = future1.get()
         val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
         assertNotNull(operationContextMap)
-        assertEquals(2, operationContext.size)
+        assertEquals(4, operationContext.size)
         assertEquals(operationContext[0].value, operationContextMap["someId"])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertEquals(CryptoConsts.Categories.LEDGER, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -583,7 +604,7 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context,
-                AssignHSMCommand(CryptoConsts.HsmCategories.LEDGER)
+                AssignHSMCommand(CryptoConsts.Categories.LEDGER, KeyValuePairList())
             ),
             future
         )
@@ -604,7 +625,7 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.HsmCategories.LEDGER
+                    CryptoConsts.Categories.LEDGER
                 )
             ),
             future
@@ -615,7 +636,7 @@ class CryptoOpsBusProcessorTests {
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
             tenantId,
-            CryptoConsts.HsmCategories.LEDGER
+            CryptoConsts.Categories.LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {
@@ -632,7 +653,7 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.HsmCategories.FRESH_KEYS
+                    CryptoConsts.Categories.FRESH_KEYS
                 )
             ),
             future
@@ -643,7 +664,7 @@ class CryptoOpsBusProcessorTests {
         val actualSchemes = result.response as CryptoSignatureSchemes
         val expectedSchemes = signingService.getSupportedSchemes(
             tenantId,
-            CryptoConsts.HsmCategories.LEDGER
+            CryptoConsts.Categories.LEDGER
         )
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {

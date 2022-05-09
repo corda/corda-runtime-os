@@ -178,7 +178,7 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.getSupportedSchemes(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.getSupportedSchemes(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(result.value)
         assertEquals(schemeMetadata.schemes.size, result.value!!.size)
@@ -186,7 +186,7 @@ class CryptoOpsClientComponentTests {
             assertTrue(result.value.contains(it.codeName))
         }
         val query = assertOperationType<SupportedSchemesRpcQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 
@@ -204,7 +204,7 @@ class CryptoOpsClientComponentTests {
                     CryptoSigningKey(
                         keyPair.public.publicKeyId(),
                         knownTenantId,
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         "alias1",
                         "hsmAlias1",
                         ByteBuffer.wrap(keyPair.public.encoded),
@@ -224,7 +224,7 @@ class CryptoOpsClientComponentTests {
                 take = 10,
                 orderBy = CryptoKeyOrderBy.ALIAS_DESC,
                 filter = mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.TLS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.TLS,
                     ALIAS_FILTER to "alias1",
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
                     MASTER_KEY_ALIAS_FILTER to "master-key",
@@ -237,7 +237,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, result.value!!.size)
         assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, result.value[0].category)
+        assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
         assertEquals("alias1", result.value[0].alias)
         assertEquals("hsmAlias1", result.value[0].hsmAlias)
         assertArrayEquals(keyPair.public.encoded, result.value[0].publicKey.array())
@@ -249,7 +249,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
         assertEquals(CryptoKeyOrderBy.ALIAS_DESC, query.orderBy)
-        assertEquals(CryptoConsts.HsmCategories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
+        assertEquals(CryptoConsts.Categories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, query.filter.items.first { it.key == SCHEME_CODE_NAME_FILTER }.value)
         assertEquals("alias1", query.filter.items.first { it.key == ALIAS_FILTER }.value)
         assertEquals("master-key", query.filter.items.first { it.key == MASTER_KEY_ALIAS_FILTER }.value)
@@ -281,7 +281,7 @@ class CryptoOpsClientComponentTests {
                 take = 10,
                 orderBy = CryptoKeyOrderBy.ALIAS_DESC,
                 filter = mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.TLS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.TLS,
                     ALIAS_FILTER to "alias1",
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
                     MASTER_KEY_ALIAS_FILTER to "master-key",
@@ -295,7 +295,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
         assertEquals(CryptoKeyOrderBy.ALIAS_DESC, query.orderBy)
-        assertEquals(CryptoConsts.HsmCategories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
+        assertEquals(CryptoConsts.Categories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, query.filter.items.first { it.key == SCHEME_CODE_NAME_FILTER }.value)
         assertEquals("alias1", query.filter.items.first { it.key == ALIAS_FILTER }.value)
         assertEquals("master-key", query.filter.items.first { it.key == MASTER_KEY_ALIAS_FILTER }.value)
@@ -324,7 +324,7 @@ class CryptoOpsClientComponentTests {
                     CryptoSigningKey(
                         keyPair.public.publicKeyId(),
                         knownTenantId,
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         "alias1",
                         "hsmAlias1",
                         ByteBuffer.wrap(keyPair.public.encoded),
@@ -348,7 +348,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, result.value!!.size)
         assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, result.value[0].category)
+        assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
         assertEquals("alias1", result.value[0].alias)
         assertEquals("hsmAlias1", result.value[0].hsmAlias)
         assertArrayEquals(keyPair.public.encoded, result.value[0].publicKey.array())
@@ -376,7 +376,7 @@ class CryptoOpsClientComponentTests {
                     CryptoSigningKey(
                         keyPair.public.publicKeyId(),
                         knownTenantId,
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         "alias1",
                         "hsmAlias1",
                         ByteBuffer.wrap(keyPair.public.encoded),
@@ -585,7 +585,7 @@ class CryptoOpsClientComponentTests {
         val result = sender.act {
             component.generateKeyPair(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = knownAlias,
                 scheme = ECDSA_SECP256R1_CODE_NAME,
                 context = knownOperationContext
@@ -594,7 +594,7 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateKeyPairCommand>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertNull(command.externalId)
         assertEquals(knownAlias, command.alias)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
@@ -618,7 +618,7 @@ class CryptoOpsClientComponentTests {
         val result = sender.act {
             component.generateKeyPair(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = knownAlias,
                 externalId = externalId,
                 scheme = ECDSA_SECP256R1_CODE_NAME,
@@ -628,7 +628,7 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateKeyPairCommand>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertEquals(externalId, command.externalId)
         assertEquals(knownAlias, command.alias)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)

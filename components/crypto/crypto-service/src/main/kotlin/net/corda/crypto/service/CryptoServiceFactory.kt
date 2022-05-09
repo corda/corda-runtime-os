@@ -12,4 +12,10 @@ interface CryptoServiceFactory : Lifecycle {
      * for specified tenant and category. Once created the information and instance are cached.
      */
     fun getInstance(tenantId: String, category: String): CryptoServiceRef
+
+    /**
+     * Returns instance of [CryptoService] for specified HSM configuration.
+     * Once created the information and instance are cached.
+     */
+    fun getInstance(configId: String): CryptoService
 }

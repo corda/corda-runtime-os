@@ -11,8 +11,8 @@ import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
@@ -69,26 +69,30 @@ open class SigningServiceImpl(
     }
 
     override fun createWrappingKey(
-        tenantId: String,
-        category: String,
+        configId: String,
         failIfExists: Boolean,
+        masterKeyAlias: String,
         context: Map<String, String>
     ) {
         logger.debug(
-            "createWrappingKey(tenant={}category={}, failIfExists=[{}])",
-            tenantId,
-            category,
-            failIfExists
+            "createWrappingKey(configId={},masterKeyAlias={},failIfExists={},onBehalf={})",
+            configId,
+            masterKeyAlias,
+            failIfExists,
+            context[CRYPTO_TENANT_ID]
         )
-        val cryptoService = getCryptoService(tenantId, category)
-        cryptoService.createWrappingKey(failIfExists)
+        cryptoServiceFactory.getInstance(configId).createWrappingKey(
+            masterKeyAlias = masterKeyAlias,
+            failIfExists = failIfExists,
+            context = context
+        )
     }
 
     override fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
-        scheme: SignatureScheme,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -96,7 +100,7 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = null,
-            scheme = scheme,
+            schemeCode = scheme,
             context = context
         )
 
@@ -105,7 +109,7 @@ open class SigningServiceImpl(
         category: String,
         alias: String,
         externalId: String,
-        scheme: SignatureScheme,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -113,36 +117,36 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = externalId,
-            scheme = scheme,
+            schemeCode = scheme,
             context = context
         )
 
     override fun freshKey(
         tenantId: String,
-        scheme: SignatureScheme,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.HsmCategories.FRESH_KEYS,
+            category = CryptoConsts.Categories.FRESH_KEYS,
             alias = null,
             externalId = null,
-            scheme = scheme,
+            schemeCode = scheme,
             context = context
         )
 
     override fun freshKey(
         tenantId: String,
         externalId: String,
-        scheme: SignatureScheme,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.HsmCategories.FRESH_KEYS,
+            category = CryptoConsts.Categories.FRESH_KEYS,
             alias = null,
             externalId = externalId,
-            scheme = scheme,
+            schemeCode = scheme,
             context = context
         )
 
@@ -168,7 +172,7 @@ open class SigningServiceImpl(
         category: String,
         alias: String?,
         externalId: String?,
-        scheme: SignatureScheme,
+        schemeCode: String,
         context: Map<String, String>
     ): PublicKey =
         try {
@@ -180,6 +184,7 @@ open class SigningServiceImpl(
                         "The key with alias $alias already exist for tenant $tenantId"
                     )
                 }
+                val scheme = schemeMetadata.findSignatureScheme(schemeCode)
                 val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
                 it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
                 generatedKey.publicKey

@@ -435,7 +435,7 @@ class PersistenceTests {
             masterKeyAlias = UUID.randomUUID().toString(),
             externalId = UUID.randomUUID().toString(),
             alias = null,
-            category = CryptoConsts.HsmCategories.FRESH_KEYS,
+            category = CryptoConsts.Categories.FRESH_KEYS,
             signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName)
         )
     }
@@ -492,7 +492,7 @@ class PersistenceTests {
             tenantId = tenantId,
             keyId = keyId,
             created = Instant.now(),
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             schemeCodeName = RSA_CODE_NAME,
             publicKey = keyPair.public.encoded,
             keyMaterial = keyPair.private.encoded,
@@ -543,14 +543,14 @@ class PersistenceTests {
             listOf(
                 HSMCategoryMapEntity(
                     id = categoryMappingId1,
-                    category = CryptoConsts.HsmCategories.LEDGER,
+                    category = CryptoConsts.Categories.LEDGER,
                     keyPolicy = PrivateKeyPolicy.WRAPPED,
                     timestamp = Instant.now(),
                     config = it
                 ),
                 HSMCategoryMapEntity(
                     id = categoryMappingId2,
-                    category = CryptoConsts.HsmCategories.TLS,
+                    category = CryptoConsts.Categories.TLS,
                     keyPolicy = PrivateKeyPolicy.WRAPPED,
                     timestamp = Instant.now(),
                     config = it
@@ -570,7 +570,7 @@ class PersistenceTests {
         }
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = categoryAssociationId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             hsm = association,
             timestamp = Instant.now()
         )
@@ -582,7 +582,7 @@ class PersistenceTests {
             assertNotNull(retrieved)
             assertNotSame(categoryAssociation, retrieved)
             assertEquals(categoryAssociationId, retrieved.id)
-            assertEquals(CryptoConsts.HsmCategories.LEDGER, retrieved.category)
+            assertEquals(CryptoConsts.Categories.LEDGER, retrieved.category)
             assertNotSame(association, retrieved.hsm)
             assertEquals(associationId, retrieved.hsm.id)
             assertEquals(tenantId, retrieved.hsm.tenantId)
@@ -602,12 +602,12 @@ class PersistenceTests {
             assertEquals(config.capacity, retrieved.hsm.config.capacity)
 
             val retrievedMapping1 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId1)
-            assertEquals(CryptoConsts.HsmCategories.LEDGER, retrievedMapping1.category)
+            assertEquals(CryptoConsts.Categories.LEDGER, retrievedMapping1.category)
             assertEquals(PrivateKeyPolicy.WRAPPED, retrievedMapping1.keyPolicy)
             assertEquals(configId, retrievedMapping1.config.id)
 
             val retrievedMapping2 = em.find(HSMCategoryMapEntity::class.java, categoryMappingId2)
-            assertEquals(CryptoConsts.HsmCategories.TLS, retrievedMapping2.category)
+            assertEquals(CryptoConsts.Categories.TLS, retrievedMapping2.category)
             assertEquals(PrivateKeyPolicy.WRAPPED, retrievedMapping2.keyPolicy)
             assertEquals(configId, retrievedMapping2.config.id)
         }
@@ -616,7 +616,7 @@ class PersistenceTests {
     @Test
     fun `Should fail to save HSMAssociationEntity with duplicate tenant and configuration`() {
         val tenantId = randomTenantId()
-        val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.HsmCategories.LEDGER, MasterKeyPolicy.NEW)
+        val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val association = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = a1.hsm.tenantId,
@@ -635,7 +635,7 @@ class PersistenceTests {
     @Test
     fun `Should fail to save HSMCategoryAssociationEntity with duplicate category and association`() {
         val tenantId = randomTenantId()
-        val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.HsmCategories.LEDGER, MasterKeyPolicy.NEW)
+        val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
             category = a1.category,
@@ -652,11 +652,11 @@ class PersistenceTests {
     @Test
     fun `findTenantAssociation should be able to find tenant HSM associations with categories`() {
         val tenantId1 = randomTenantId()
-        val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.HsmCategories.LEDGER, MasterKeyPolicy.NEW)
-        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.HsmCategories.SESSION, MasterKeyPolicy.SHARED)
+        val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
+        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION, MasterKeyPolicy.SHARED)
         val cache = createHSMCacheImpl()
-        val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.HsmCategories.LEDGER) }
-        val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.HsmCategories.SESSION) }
+        val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
+        val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.SESSION) }
         assertHSMCategoryAssociationEntity(a1, r1)
         assertHSMCategoryAssociationEntity(a2, r2)
     }
@@ -664,11 +664,11 @@ class PersistenceTests {
     @Test
     fun `findTenantAssociation should return null when parameters are not matching`() {
         val tenantId = randomTenantId()
-        createAndPersistHSMEntities(tenantId, CryptoConsts.HsmCategories.LEDGER, MasterKeyPolicy.NEW)
+        createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val cache = createHSMCacheImpl()
-        val r1 = cache.act { it.findTenantAssociation(tenantId, CryptoConsts.HsmCategories.SESSION) }
+        val r1 = cache.act { it.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION) }
         assertNull(r1)
-        val r2 = cache.act { it.findTenantAssociation(randomTenantId(), CryptoConsts.HsmCategories.LEDGER) }
+        val r2 = cache.act { it.findTenantAssociation(randomTenantId(), CryptoConsts.Categories.LEDGER) }
         assertNull(r2)
     }
 
@@ -738,11 +738,11 @@ class PersistenceTests {
             it.linkCategories(
                 configId1, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     ),
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.TLS,
+                        CryptoConsts.Categories.TLS,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
                     )
                 )
@@ -755,11 +755,11 @@ class PersistenceTests {
             it.linkCategories(
                 configId2, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     ),
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.TLS,
+                        CryptoConsts.Categories.TLS,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     )
                 )
@@ -771,24 +771,24 @@ class PersistenceTests {
         val tenantId4 = randomTenantId()
         val tenantId5 = randomTenantId()
         cache.act {
-            it.associate(tenantId1, CryptoConsts.HsmCategories.LEDGER, configId1)
-            it.associate(tenantId2, CryptoConsts.HsmCategories.LEDGER, configId2)
-            it.associate(tenantId3, CryptoConsts.HsmCategories.LEDGER, configId2)
-            it.associate(tenantId4, CryptoConsts.HsmCategories.TLS, configId2)
-            it.associate(tenantId5, CryptoConsts.HsmCategories.TLS, configId1)
+            it.associate(tenantId1, CryptoConsts.Categories.LEDGER, configId1)
+            it.associate(tenantId2, CryptoConsts.Categories.LEDGER, configId2)
+            it.associate(tenantId3, CryptoConsts.Categories.LEDGER, configId2)
+            it.associate(tenantId4, CryptoConsts.Categories.TLS, configId2)
+            it.associate(tenantId5, CryptoConsts.Categories.TLS, configId1)
         }
-        val actual1 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.SESSION) }
+        val actual1 = cache.act { it.getHSMStats(CryptoConsts.Categories.SESSION) }
         assertEquals(0, actual1.size)
-        val actual2 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.LEDGER) }
+        val actual2 = cache.act { it.getHSMStats(CryptoConsts.Categories.LEDGER) }
         assertEquals(2, actual2.size)
         assertEquals(5, actual2.first { it.configId == configId1 }.capacity)
         assertEquals(2, actual2.first { it.configId == configId1 }.usages)
         assertEquals(3, actual2.first { it.configId == configId2 }.capacity)
         assertEquals(3, actual2.first { it.configId == configId2 }.usages)
         cache.act {
-            it.associate(tenantId3, CryptoConsts.HsmCategories.TLS, configId2)
+            it.associate(tenantId3, CryptoConsts.Categories.TLS, configId2)
         }
-        val actual3 = cache.act { it.getHSMStats(CryptoConsts.HsmCategories.LEDGER) }
+        val actual3 = cache.act { it.getHSMStats(CryptoConsts.Categories.LEDGER) }
         assertEquals(2, actual3.size)
         assertEquals(5, actual3.first { it.configId == configId1 }.capacity)
         assertEquals(2, actual3.first { it.configId == configId1 }.usages)
@@ -807,11 +807,11 @@ class PersistenceTests {
             it.linkCategories(
                 configId, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     ),
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.TLS,
+                        CryptoConsts.Categories.TLS,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
                     )
                 )
@@ -822,18 +822,18 @@ class PersistenceTests {
         }
         assertEquals(2, mapping1.size)
         assertTrue(mapping1.any {
-            it.category == CryptoConsts.HsmCategories.LEDGER &&
+            it.category == CryptoConsts.Categories.LEDGER &&
                     it.keyPolicy == PrivateKeyPolicy.ALIASED
         })
         assertTrue(mapping1.any {
-            it.category == CryptoConsts.HsmCategories.TLS &&
+            it.category == CryptoConsts.Categories.TLS &&
                     it.keyPolicy == PrivateKeyPolicy.BOTH
         })
         cache.act {
             it.linkCategories(
                 configId, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.SESSION,
+                        CryptoConsts.Categories.SESSION,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.WRAPPED
                     )
                 )
@@ -844,7 +844,7 @@ class PersistenceTests {
         }
         assertEquals(1, mapping2.size)
         assertTrue(mapping2.any {
-            it.category == CryptoConsts.HsmCategories.SESSION &&
+            it.category == CryptoConsts.Categories.SESSION &&
                     it.keyPolicy == PrivateKeyPolicy.WRAPPED
         })
     }
@@ -860,11 +860,11 @@ class PersistenceTests {
             it.linkCategories(
                 configId, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     ),
                     HSMCategoryInfo(
-                        CryptoConsts.HsmCategories.TLS,
+                        CryptoConsts.Categories.TLS,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
                     )
                 )
@@ -875,11 +875,11 @@ class PersistenceTests {
         }
         assertEquals(2, links.size)
         assertTrue(links.any {
-            it.category == CryptoConsts.HsmCategories.LEDGER &&
+            it.category == CryptoConsts.Categories.LEDGER &&
                     it.keyPolicy == net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
         })
         assertTrue(links.any {
-            it.category == CryptoConsts.HsmCategories.TLS &&
+            it.category == CryptoConsts.Categories.TLS &&
                     it.keyPolicy == net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
         })
     }
@@ -996,7 +996,7 @@ class PersistenceTests {
     @Test
     fun `Should fail saving same public key`() {
         val tenantId1 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val cache = createSigningKeyCacheImpl()
         cache.act(tenantId1) { it.save(p1) }
@@ -1017,7 +1017,7 @@ class PersistenceTests {
     fun `Should save same public keys for difefrent tenants and fetch them separately`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val cache = createSigningKeyCacheImpl()
         cache.act(tenantId1) { it.save(p1) }
@@ -1050,11 +1050,11 @@ class PersistenceTests {
     fun `Should save public keys find by alias`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val cache = createSigningKeyCacheImpl()
         cache.act(tenantId1) { it.save(p1) }
         cache.act(tenantId2) { it.save(p12) }
@@ -1075,11 +1075,11 @@ class PersistenceTests {
     fun `Should save public keys and lookup keys by id`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
@@ -1114,11 +1114,11 @@ class PersistenceTests {
     fun `Should save public keys and find by public key multiple times`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
@@ -1159,11 +1159,11 @@ class PersistenceTests {
     fun `Should save public keys and key material and do various lookups for them`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)
@@ -1184,7 +1184,7 @@ class PersistenceTests {
                 take = 10,
                 SigningKeyOrderBy.ALIAS,
                 mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.LEDGER
+                    CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
                 )
             )
         }
@@ -1198,7 +1198,7 @@ class PersistenceTests {
                 take = 10,
                 SigningKeyOrderBy.ALIAS_DESC,
                 mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.LEDGER
+                    CATEGORY_FILTER to CryptoConsts.Categories.LEDGER
                 )
             )
         }
@@ -1212,7 +1212,7 @@ class PersistenceTests {
                 take = 10,
                 SigningKeyOrderBy.ALIAS_DESC,
                 mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.FRESH_KEYS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.FRESH_KEYS,
                     SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
                 )
             )
@@ -1227,7 +1227,7 @@ class PersistenceTests {
                 mapOf(
                     ALIAS_FILTER to p2.alias!!,
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.TLS
+                    CATEGORY_FILTER to CryptoConsts.Categories.TLS
                 )
             )
         }
@@ -1241,7 +1241,7 @@ class PersistenceTests {
                 mapOf(
                     MASTER_KEY_ALIAS_FILTER to w3.masterKeyAlias!!,
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.FRESH_KEYS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.FRESH_KEYS,
                     EXTERNAL_ID_FILTER to w3.externalId!!
                 )
             )
@@ -1279,11 +1279,11 @@ class PersistenceTests {
     fun `Should save public keys and key material and do paged lookups for them`() {
         val tenantId1 = randomTenantId()
         val tenantId2 = randomTenantId()
-        val p1 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p12 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
-        val p2 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.SESSION, EDDSA_ED25519_CODE_NAME)
-        val p4 = createSigningPublicKeySaveContext(CryptoConsts.HsmCategories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
+        val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w2 = createSigningWrappedKeySaveContext(ECDSA_SECP256R1_CODE_NAME)

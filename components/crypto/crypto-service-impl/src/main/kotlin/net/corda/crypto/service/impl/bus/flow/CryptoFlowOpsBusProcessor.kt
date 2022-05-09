@@ -153,12 +153,14 @@ class CryptoFlowOpsBusProcessor(
             if (request.externalId.isNullOrBlank()) {
                 client.freshKeyProxy(
                     tenantId = context.tenantId,
+                    scheme = request.schemeCodeName,
                     context = request.context
                 )
             } else {
                 client.freshKeyProxy(
                     tenantId = context.tenantId,
                     externalId = request.externalId,
+                    scheme = request.schemeCodeName,
                     context = request.context
                 )
             }

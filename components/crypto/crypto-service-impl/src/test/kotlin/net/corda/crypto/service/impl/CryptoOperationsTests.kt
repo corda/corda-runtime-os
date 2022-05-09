@@ -11,6 +11,8 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.generateKeyPair
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -75,8 +77,6 @@ class CryptoOperationsTests {
 
         private val zeroBytes = ByteArray(100)
 
-        private val EMPTY_CONTEXT = emptyMap<String, String>()
-
         private val UNSUPPORTED_SIGNATURE_SCHEME = SignatureScheme(
             codeName = "UNSUPPORTED_SIGNATURE_SCHEME",
             algorithmOIDs = listOf(
@@ -118,64 +118,73 @@ class CryptoOperationsTests {
             schemeMetadata = factory.schemeMetadata
             verifier = factory.verifier
             tenantId = UUID.randomUUID().toString()
-            category = CryptoConsts.HsmCategories.LEDGER
+            category = CryptoConsts.Categories.LEDGER
             wrappingKeyAlias = factory.wrappingKeyAlias
             cryptoService = factory.cryptoService
             softAliasedKeys = supportedSchemes().associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
-                        tenantId = tenantId,
                         signatureScheme = it,
                         alias = UUID.randomUUID().toString(),
                         masterKeyAlias = wrappingKeyAlias,
                         secret = null
                     ),
-                    EMPTY_CONTEXT
+                    mapOf(
+                        CRYPTO_TENANT_ID to tenantId,
+                        CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                    )
                 ) as GeneratedWrappedKey
             }
             softFreshKeys = supportedSchemes().associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
-                        tenantId = tenantId,
                         signatureScheme = it,
                         alias = null,
                         masterKeyAlias = wrappingKeyAlias,
                         secret = null
                     ),
-                    EMPTY_CONTEXT
+                    mapOf(
+                        CRYPTO_TENANT_ID to tenantId,
+                        CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                    )
                 ) as GeneratedWrappedKey
             }
             signingAliasedKeys = supportedSchemes().associateWith {
-                val signingService = factory.createSigningService(it)
+                val signingService = factory.createSigningService()
                 val alias = UUID.randomUUID().toString()
                 SigningAliasedKeyInfo(
                     alias = alias,
                     signingService = signingService,
                     publicKey = signingService.generateKeyPair(
                         tenantId = tenantId,
-                        category = CryptoConsts.HsmCategories.LEDGER,
-                        alias = alias
+                        category = CryptoConsts.Categories.LEDGER,
+                        alias = alias,
+                        scheme = it.codeName
                     )
                 )
             }
             signingFreshKeys = supportedSchemes().associateWith {
-                val signingService = factory.createSigningService(it)
+                val signingService = factory.createSigningService()
                 val externalId = UUID.randomUUID().toString()
                 SigningFreshKeyInfo(
                     externalId = externalId,
                     signingService = signingService,
                     publicKey = signingService.freshKey(
                         tenantId = tenantId,
-                        externalId = externalId
+                        externalId = externalId,
+                        scheme = it.codeName
                     )
                 )
             }
             signingFreshKeysWithoutExternalId = supportedSchemes().associateWith {
-                val signingService = factory.createSigningService(it)
+                val signingService = factory.createSigningService()
                 SigningFreshKeyInfo(
                     externalId = null,
                     signingService = signingService,
-                    publicKey = signingService.freshKey(tenantId = tenantId)
+                    publicKey = signingService.freshKey(
+                        tenantId = tenantId,
+                        scheme = it.codeName
+                    )
                 )
             }
             unknownKeyPairs = supportedSchemes().associateWith {
@@ -219,8 +228,8 @@ class CryptoOperationsTests {
             val generatedKeyData = factory.getSigningCachedKey(tenantId, publicKey)
             assertNotNull(generatedKeyData)
             assertEquals(tenantId, generatedKeyData.tenantId)
-            if(generatedKeyData.alias == null) {
-                assertEquals(CryptoConsts.HsmCategories.FRESH_KEYS, generatedKeyData.category)
+            if (generatedKeyData.alias == null) {
+                assertEquals(CryptoConsts.Categories.FRESH_KEYS, generatedKeyData.category)
             } else {
                 assertEquals(category, generatedKeyData.category)
             }
@@ -242,8 +251,8 @@ class CryptoOperationsTests {
         ) {
             assertEquals(alias, key.alias)
             assertNull(key.hsmAlias)
-            if(key.alias == null) {
-                assertEquals(CryptoConsts.HsmCategories.FRESH_KEYS, key.category)
+            if (key.alias == null) {
+                assertEquals(CryptoConsts.Categories.FRESH_KEYS, key.category)
             } else {
                 assertEquals(category, key.category)
             }
@@ -343,14 +352,15 @@ class CryptoOperationsTests {
             assertThrows<CryptoServiceBadRequestException> {
                 cryptoService.sign(
                     SigningWrappedSpec(
-                        tenantId = tenantId,
                         keyMaterial = key.keyMaterial,
                         masterKeyAlias = UUID.randomUUID().toString(),
                         signatureScheme = signatureScheme,
                         encodingVersion = key.encodingVersion
                     ),
                     UUID.randomUUID().toString().toByteArray(),
-                    EMPTY_CONTEXT
+                    mapOf(
+                        CRYPTO_TENANT_ID to tenantId
+                    )
                 )
             }
         }
@@ -364,48 +374,52 @@ class CryptoOperationsTests {
             val testData = UUID.randomUUID().toString().toByteArray()
             val signedData1stTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             val signedData2ndTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             assertArrayEquals(signedData1stTime, signedData2ndTime)
             val signedZeroArray1stTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 zeroBytes,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             val signedZeroArray2ndTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 zeroBytes,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             assertArrayEquals(signedZeroArray1stTime, signedZeroArray2ndTime)
             assertNotEquals(OpaqueBytes(signedData1stTime), OpaqueBytes(signedZeroArray1stTime))
@@ -426,48 +440,52 @@ class CryptoOperationsTests {
             val testData = UUID.randomUUID().toString().toByteArray()
             val signedData1stTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             val signedData2ndTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             assertNotEquals(OpaqueBytes(signedData1stTime), OpaqueBytes(signedData2ndTime))
             val signedZeroArray1stTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 zeroBytes,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             val signedZeroArray2ndTime = cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = wrappingKeyAlias,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 zeroBytes,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
             assertNotEquals(OpaqueBytes(signedZeroArray1stTime), OpaqueBytes(signedZeroArray2ndTime))
         }
@@ -494,6 +512,7 @@ class CryptoOperationsTests {
             assertEquals("EC", publicKey.algorithm)
             assertEquals(ECNamedCurveTable.getParameterSpec("secp256k1"), (publicKey as ECKey).parameters)
         }
+
         val signatureScheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256K1_CODE_NAME)
         assertPublicKey(softAliasedKeys.getValue(signatureScheme).publicKey)
         assertPublicKey(softFreshKeys.getValue(signatureScheme).publicKey)
@@ -506,6 +525,7 @@ class CryptoOperationsTests {
             assertEquals("EC", publicKey.algorithm)
             assertEquals(ECNamedCurveTable.getParameterSpec("secp256r1"), (publicKey as ECKey).parameters)
         }
+
         val signatureScheme = schemeMetadata.findSignatureScheme(ECDSA_SECP256R1_CODE_NAME)
         assertPublicKey(softAliasedKeys.getValue(signatureScheme).publicKey)
         assertPublicKey(softFreshKeys.getValue(signatureScheme).publicKey)
@@ -532,6 +552,7 @@ class CryptoOperationsTests {
             assertEquals("EC", publicKey.algorithm)
             assertEquals(ECNamedCurveTable.getParameterSpec("sm2p256v1"), (publicKey as ECKey).parameters)
         }
+
         val signatureScheme = schemeMetadata.findSignatureScheme(SM2_CODE_NAME)
         assertPublicKey(softAliasedKeys.getValue(signatureScheme).publicKey)
         assertPublicKey(softFreshKeys.getValue(signatureScheme).publicKey)
@@ -549,25 +570,29 @@ class CryptoOperationsTests {
         assertThrows<CryptoServiceBadRequestException> {
             cryptoService.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = tenantId,
                     signatureScheme = UNSUPPORTED_SIGNATURE_SCHEME,
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = wrappingKeyAlias,
                     secret = null
                 ),
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
         assertThrows<CryptoServiceBadRequestException> {
             cryptoService.generateKeyPair(
                 KeyGenerationSpec(
-                    tenantId = tenantId,
                     signatureScheme = UNSUPPORTED_SIGNATURE_SCHEME,
                     alias = null,
                     masterKeyAlias = wrappingKeyAlias,
                     secret = null
                 ),
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
             )
         }
     }
@@ -578,20 +603,27 @@ class CryptoOperationsTests {
         signatureScheme: SignatureScheme
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
-        cryptoService.createWrappingKey(anotherWrappingKey, true, EMPTY_CONTEXT)
+        cryptoService.createWrappingKey(
+            anotherWrappingKey,
+            true,
+            mapOf(
+                CRYPTO_TENANT_ID to tenantId,
+            )
+        )
         val testData = UUID.randomUUID().toString().toByteArray()
         val key = softAliasedKeys.getValue(signatureScheme)
         assertThrows<CryptoServiceException> {
             cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = anotherWrappingKey,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
         }
     }
@@ -602,20 +634,26 @@ class CryptoOperationsTests {
         signatureScheme: SignatureScheme
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
-        cryptoService.createWrappingKey(anotherWrappingKey, true, EMPTY_CONTEXT)
+        cryptoService.createWrappingKey(
+            anotherWrappingKey,
+            true, mapOf(
+                CRYPTO_TENANT_ID to tenantId
+            )
+        )
         val testData = UUID.randomUUID().toString().toByteArray()
         val key = softFreshKeys.getValue(signatureScheme)
         assertThrows<CryptoServiceException> {
             cryptoService.sign(
                 SigningWrappedSpec(
-                    tenantId = tenantId,
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = anotherWrappingKey,
                     signatureScheme = signatureScheme,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
-                EMPTY_CONTEXT
+                mapOf(
+                    CRYPTO_TENANT_ID to tenantId
+                )
             )
         }
     }

@@ -151,6 +151,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     alias = request.alias,
+                    scheme = request.schemeCodeName,
                     context = request.context.items.toMap()
                 )
             } else {
@@ -159,6 +160,7 @@ class CryptoOpsBusProcessor(
                     category = request.category,
                     alias = request.alias,
                     externalId = request.externalId,
+                    scheme = request.schemeCodeName,
                     context = request.context.items.toMap()
                 )
             }
@@ -172,14 +174,16 @@ class CryptoOpsBusProcessor(
         override fun handle(context: CryptoRequestContext, request: GenerateFreshKeyRpcCommand): Any {
             val publicKey = if (request.externalId.isNullOrBlank()) {
                 signingService.freshKey(
-                    context.tenantId,
-                    request.context.items.toMap()
+                    tenantId = context.tenantId,
+                    scheme = request.schemeCodeName,
+                    context = request.context.items.toMap()
                 )
             } else {
                 signingService.freshKey(
-                    context.tenantId,
-                    request.externalId,
-                    request.context.items.toMap()
+                    tenantId = context.tenantId,
+                    externalId = request.externalId,
+                    scheme = request.schemeCodeName,
+                    context = request.context.items.toMap()
                 )
             }
             return CryptoPublicKey(

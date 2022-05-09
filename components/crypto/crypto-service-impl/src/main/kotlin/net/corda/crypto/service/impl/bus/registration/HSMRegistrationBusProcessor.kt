@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl.bus.registration
 
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.WireProcessor
+import net.corda.crypto.service.impl.toMap
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -62,7 +63,7 @@ class HSMRegistrationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<AssignHSMCommand> {
         override fun handle(context: CryptoRequestContext, request: AssignHSMCommand): Any {
-            return hsmService.assignHSM(context.tenantId, request.category)
+            return hsmService.assignHSM(context.tenantId, request.category, request.context.items.toMap())
         }
     }
 
@@ -70,7 +71,7 @@ class HSMRegistrationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<AssignSoftHSMCommand> {
         override fun handle(context: CryptoRequestContext, request: AssignSoftHSMCommand): Any {
-            return hsmService.assignSoftHSM(context.tenantId, request.category, request.passphrase)
+            return hsmService.assignSoftHSM(context.tenantId, request.category)
         }
     }
 
@@ -78,7 +79,7 @@ class HSMRegistrationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<AssignedHSMQuery> {
         override fun handle(context: CryptoRequestContext, request: AssignedHSMQuery): Any {
-            return hsmService.findAssignedHSM(context.tenantId, request.category)
+            return hsmService.findAssignedHSM(context.tenantId, request.category)?.config?.info
                 ?: CryptoNoContentValue()
         }
     }

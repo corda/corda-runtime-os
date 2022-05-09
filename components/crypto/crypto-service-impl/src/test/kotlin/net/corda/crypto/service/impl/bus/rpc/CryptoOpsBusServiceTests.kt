@@ -38,7 +38,7 @@ class CryptoOpsBusServiceTests {
         subscriptionFactory = mock {
             on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
         }
-        configurationReadService = factory.createConfigurationReadService()
+        configurationReadService = factory.readService
         component = CryptoOpsBusServiceImpl(
             factory.coordinatorFactory,
             subscriptionFactory,

@@ -23,6 +23,7 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.DigitalSignature
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -224,9 +225,9 @@ class CryptoFlowOpsBusProcessorTests {
         var passedContext = KeyValuePairList()
         doAnswer {
             passedTenantId = it.getArgument(0)
-            passedContext = it.getArgument(1)
+            passedContext = it.getArgument(2)
             CryptoPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)))
-        }.whenever(cryptoOpsClient).freshKeyProxy(any(), any())
+        }.whenever(cryptoOpsClient).freshKeyProxy(any(), any(), any())
         val recordKey = UUID.randomUUID().toString()
         val operationContext = mapOf("key1" to "value1")
         val transformer = buildTransformer()
@@ -236,7 +237,7 @@ class CryptoFlowOpsBusProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = transformer.createFreshKey(tenantId, operationContext)
+                        value = transformer.createFreshKey(tenantId, EDDSA_ED25519_CODE_NAME, operationContext)
                     )
                 )
             )
@@ -265,9 +266,9 @@ class CryptoFlowOpsBusProcessorTests {
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedExternalId = it.getArgument(1)
-            passedContext = it.getArgument(2)
+            passedContext = it.getArgument(3)
             CryptoPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)))
-        }.whenever(cryptoOpsClient).freshKeyProxy(any(), any(), any())
+        }.whenever(cryptoOpsClient).freshKeyProxy(any(), any(), any(), any())
         val recordKey = UUID.randomUUID().toString()
         val operationContext = mapOf("key1" to "value1")
         val externalId = UUID.randomUUID().toString()
@@ -278,7 +279,12 @@ class CryptoFlowOpsBusProcessorTests {
                     Record(
                         topic = eventTopic,
                         key = recordKey,
-                        value = transformer.createFreshKey(tenantId, externalId, operationContext)
+                        value = transformer.createFreshKey(
+                            tenantId,
+                            externalId,
+                            EDDSA_ED25519_CODE_NAME,
+                            operationContext
+                        )
                     )
                 )
             )

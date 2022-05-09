@@ -128,7 +128,7 @@ class HSMRegistrationClientComponentTests {
         val result = sender.act {
             component.assignHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 context = mapOf(
                     PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
                 )
@@ -136,7 +136,7 @@ class HSMRegistrationClientComponentTests {
         }
         assertSame(response, result.value)
         val command = assertOperationType<AssignHSMCommand>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertThat(command.context.items).hasSize(1)
         assertThat(command.context.items).contains(KeyValuePair(
             PREFERRED_PRIVATE_KEY_POLICY_KEY,
@@ -158,12 +158,12 @@ class HSMRegistrationClientComponentTests {
         val result = sender.act {
             component.assignSoftHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
+                category = CryptoConsts.Categories.LEDGER
             )
         }
         assertSame(response, result.value)
         val command = assertOperationType<AssignSoftHSMCommand>(result)
-        assertEquals (CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals (CryptoConsts.Categories.LEDGER, command.category)
         assertRequestContext(result)
     }
 
@@ -180,13 +180,13 @@ class HSMRegistrationClientComponentTests {
         val result = sender.act {
             component.findHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
+                category = CryptoConsts.Categories.LEDGER
             )
         }
         assertNotNull(result.value)
         assertEquals(expectedValue, result.value)
         val query = assertOperationType<AssignedHSMQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 
@@ -202,12 +202,12 @@ class HSMRegistrationClientComponentTests {
         val result = sender.act {
             component.findHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
+                category = CryptoConsts.Categories.LEDGER
             )
         }
         assertNull(result.value)
         val query = assertOperationType<AssignedHSMQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 
@@ -237,7 +237,7 @@ class HSMRegistrationClientComponentTests {
             future
         }
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
@@ -269,7 +269,7 @@ class HSMRegistrationClientComponentTests {
             future
         }
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
@@ -301,7 +301,7 @@ class HSMRegistrationClientComponentTests {
             future
         }
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause).isInstanceOf(IllegalArgumentException::class.java)
@@ -316,7 +316,7 @@ class HSMRegistrationClientComponentTests {
         val error = CryptoServiceLibraryException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertSame(error, exception)
     }
@@ -330,7 +330,7 @@ class HSMRegistrationClientComponentTests {
         val error = RuntimeException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)
         val exception = assertThrows<CryptoServiceLibraryException> {
-            component.findHSM(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.findHSM(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(exception.cause)
         assertSame(error, exception.cause)

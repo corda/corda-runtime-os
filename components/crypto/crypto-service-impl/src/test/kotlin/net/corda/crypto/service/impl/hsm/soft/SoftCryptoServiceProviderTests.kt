@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
@@ -35,12 +34,7 @@ class SoftCryptoServiceProviderTests {
         assertFalse(component.isRunning)
         assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            )
+            component.getInstance(SoftCryptoServiceConfig())
         }
         component.start()
         eventually {
@@ -49,12 +43,7 @@ class SoftCryptoServiceProviderTests {
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(
-            component.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            )
+            component.getInstance(SoftCryptoServiceConfig())
         )
     }
 
@@ -63,12 +52,7 @@ class SoftCryptoServiceProviderTests {
         assertFalse(component.isRunning)
         assertInstanceOf(SoftCryptoServiceProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            )
+            component.getInstance(SoftCryptoServiceConfig())
         }
         component.start()
         eventually {
@@ -76,18 +60,8 @@ class SoftCryptoServiceProviderTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(SoftCryptoServiceProviderImpl.ActiveImpl::class.java, component.impl)
-        val i1 = component.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            )
-        val i2 = component.getInstance(
-            SoftCryptoServiceConfig(
-                passphrase = "PASSPHRASE",
-                salt = "SALT"
-            )
-        )
+        val i1 = component.getInstance(SoftCryptoServiceConfig())
+        val i2 = component.getInstance(SoftCryptoServiceConfig())
         assertNotNull(i1)
         assertNotNull(i2)
         assertNotSame(i1, i2)

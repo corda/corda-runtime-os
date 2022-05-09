@@ -260,12 +260,12 @@ class CryptoProcessorTests {
 
         @JvmStatic
         fun testCategories(): Stream<Arguments> = Stream.of(
-            Arguments.of(CryptoConsts.HsmCategories.LEDGER, vnodeId),
-            Arguments.of(CryptoConsts.HsmCategories.TLS, vnodeId),
-            Arguments.of(CryptoConsts.HsmCategories.SESSION, vnodeId),
-            Arguments.of(CryptoConsts.HsmCategories.LEDGER, CryptoConsts.CLUSTER_TENANT_ID),
-            Arguments.of(CryptoConsts.HsmCategories.TLS, CryptoConsts.CLUSTER_TENANT_ID),
-            Arguments.of(CryptoConsts.HsmCategories.SESSION, CryptoConsts.CLUSTER_TENANT_ID)
+            Arguments.of(CryptoConsts.Categories.LEDGER, vnodeId),
+            Arguments.of(CryptoConsts.Categories.TLS, vnodeId),
+            Arguments.of(CryptoConsts.Categories.SESSION, vnodeId),
+            Arguments.of(CryptoConsts.Categories.LEDGER, CryptoConsts.CLUSTER_TENANT_ID),
+            Arguments.of(CryptoConsts.Categories.TLS, CryptoConsts.CLUSTER_TENANT_ID),
+            Arguments.of(CryptoConsts.Categories.SESSION, CryptoConsts.CLUSTER_TENANT_ID)
         )
 
         @JvmStatic
@@ -356,7 +356,7 @@ class CryptoProcessorTests {
             tenantId,
             null,
             original,
-            CryptoConsts.HsmCategories.FRESH_KEYS,
+            CryptoConsts.Categories.FRESH_KEYS,
             externalId
         )
 
@@ -381,7 +381,7 @@ class CryptoProcessorTests {
             tenantId,
             null,
             original,
-            CryptoConsts.HsmCategories.FRESH_KEYS,
+            CryptoConsts.Categories.FRESH_KEYS,
             null
         )
 

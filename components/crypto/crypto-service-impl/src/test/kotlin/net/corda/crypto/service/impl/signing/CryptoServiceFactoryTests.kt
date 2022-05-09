@@ -27,8 +27,8 @@ class CryptoServiceFactoryTests {
         factory = TestServicesFactory()
         component = CryptoServiceFactoryImpl(
             factory.coordinatorFactory,
+            factory.readService,
             factory.registration,
-            factory.schemeMetadata,
             listOf(
                 factory.softCryptoKeyCacheProvider
             )
@@ -40,7 +40,7 @@ class CryptoServiceFactoryTests {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
@@ -49,7 +49,7 @@ class CryptoServiceFactoryTests {
         }
         assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
         assertNotNull(
-            component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         )
     }
 
@@ -58,7 +58,7 @@ class CryptoServiceFactoryTests {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
@@ -66,9 +66,9 @@ class CryptoServiceFactoryTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
-        val i1 = component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
-        val i2 = component.getInstance(UUID.randomUUID().toString(), CryptoConsts.HsmCategories.LEDGER)
-        val i3 = component.getInstance(UUID.randomUUID().toString(), CryptoConsts.HsmCategories.LEDGER)
+        val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
+        val i2 = component.getInstance(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER)
+        val i3 = component.getInstance(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER)
         assertNotNull(i1)
         assertSame(i1, i2)
         assertSame(i1, i3)
@@ -79,7 +79,7 @@ class CryptoServiceFactoryTests {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> {
-            component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
         }
         component.start()
         eventually {
@@ -87,8 +87,8 @@ class CryptoServiceFactoryTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
-        val i1 = component.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER)
-        val i2 = component.getInstance(tenantId, CryptoConsts.HsmCategories.TLS)
+        val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER)
+        val i2 = component.getInstance(tenantId, CryptoConsts.Categories.TLS)
         assertNotNull(i1)
         assertNotSame(i1, i2)
     }

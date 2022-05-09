@@ -234,7 +234,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 keyEncodingService.decodePublicKey(it.publicKey.array())
             } ?: generateKeyPair(
                 tenantId = tenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = keyAlias
             )
         }

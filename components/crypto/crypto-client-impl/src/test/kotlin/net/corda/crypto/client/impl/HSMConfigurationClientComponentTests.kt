@@ -163,8 +163,8 @@ class HSMConfigurationClientComponentTests {
         }
         val configId = UUID.randomUUID().toString()
         val links = listOf(
-            HSMCategoryInfo(CryptoConsts.HsmCategories.LEDGER, PrivateKeyPolicy.ALIASED),
-            HSMCategoryInfo(CryptoConsts.HsmCategories.TLS, PrivateKeyPolicy.WRAPPED)
+            HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
+            HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
         )
         val result = sender.act {
             component.linkCategories(configId, links)
@@ -184,8 +184,8 @@ class HSMConfigurationClientComponentTests {
         setupCompletedResponse {
             HSMCategoryInfos(
                 listOf(
-                    HSMCategoryInfo(CryptoConsts.HsmCategories.LEDGER, PrivateKeyPolicy.ALIASED),
-                    HSMCategoryInfo(CryptoConsts.HsmCategories.TLS, PrivateKeyPolicy.WRAPPED)
+                    HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
+                    HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
                 )
             )
         }
@@ -199,10 +199,10 @@ class HSMConfigurationClientComponentTests {
         assertNotNull(result.value)
         assertEquals(2, result.value.size)
         assertThat(result.value).anyMatch {
-            it.category == CryptoConsts.HsmCategories.LEDGER && it.keyPolicy == PrivateKeyPolicy.ALIASED
+            it.category == CryptoConsts.Categories.LEDGER && it.keyPolicy == PrivateKeyPolicy.ALIASED
         }
         assertThat(result.value).anyMatch {
-            it.category == CryptoConsts.HsmCategories.TLS && it.keyPolicy == PrivateKeyPolicy.WRAPPED
+            it.category == CryptoConsts.Categories.TLS && it.keyPolicy == PrivateKeyPolicy.WRAPPED
         }
     }
 

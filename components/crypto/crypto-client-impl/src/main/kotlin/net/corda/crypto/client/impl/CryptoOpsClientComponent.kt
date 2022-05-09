@@ -41,11 +41,11 @@ class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<CryptoOpsClientComponent.Impl>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-    configurationReadService,
-    InactiveImpl(),
-    setOf(
+    coordinatorFactory = coordinatorFactory,
+    myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+    configurationReadService = configurationReadService,
+    impl = InactiveImpl(),
+    dependencies = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
     )
 ), CryptoOpsClient, CryptoOpsProxyClient {

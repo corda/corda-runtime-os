@@ -65,6 +65,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     interface Impl : AutoCloseable {
         fun getInstance(tenantId: String, category: String): CryptoServiceRef
+        fun getInstance(configId: String): CryptoService
         override fun close() = Unit
     }
 
@@ -79,8 +80,14 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun getInstance(tenantId: String, category: String): CryptoServiceRef =
         impl.getInstance(tenantId, category)
 
+    override fun getInstance(configId: String): CryptoService =
+        impl.getInstance(configId)
+
     internal class InactiveImpl : Impl {
         override fun getInstance(tenantId: String, category: String) =
+            throw IllegalStateException("The component is in invalid state.")
+
+        override fun getInstance(configId: String) =
             throw IllegalStateException("The component is in invalid state.")
     }
 
@@ -103,61 +110,69 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         private val cryptoServiceProvidersMap = cryptoServiceProviders.associateBy { it.name }
 
-        private val cryptoServices = ConcurrentHashMap<String, CryptoServiceRef>()
+        private val cryptoServices = ConcurrentHashMap<String, CryptoService>()
+
+        private val cryptoRefs = ConcurrentHashMap<Pair<String, String>, CryptoServiceRef>()
 
         private val encryptor = event.config.toCryptoConfig().rootEncryptor()
 
         override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
-            val association = hsmRegistrar.getPrivateTenantAssociation(tenantId, category)
-            val info = association.config.info
-            val key = association.config.info.id
-            logger.debug(
-                "Getting the crypto service  for hsmConfigId={} (tenantId={}, category={})",
-                key, tenantId, category
+            logger.info(
+                "Getting the crypto service for tenantId={}, category={})",
+                tenantId, category
             )
-            return cryptoServices.computeIfAbsent(key) {
-                val provider = findCryptoServiceProvider(association.config.info)
+            val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+                ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
+            logger.debug(
+                "Getting the crypto service for configId={} (tenantId={}, category={})",
+                association.config.info.id, tenantId, category
+            )
+            return cryptoRefs.computeIfAbsent(tenantId to category) {
                 try {
                     CryptoServiceRef(
                         tenantId = tenantId,
                         category = category,
-                        masterKeyAlias = info.masterKeyAlias,
+                        masterKeyAlias = association.config.info.masterKeyAlias,
                         aliasSecret = association.aliasSecret,
-                        instance = createCryptoService(
-                            info,
-                            association.config.serviceConfig.array(),
-                            provider
-                        )
+                        instance = getInstance(association.config.info, association.config.serviceConfig)
                     )
                 } catch (e: Throwable) {
                     throw CryptoServiceException(
-                        "Failed to create ${CryptoService::class.java.name} for $key",
+                        "Failed to create ${CryptoService::class.java.name} for $tenantId:$category",
                         e
                     )
                 }
             }
         }
 
-        @Suppress("UNCHECKED_CAST")
-        private fun findCryptoServiceProvider(info: HSMInfo) =
-            cryptoServiceProvidersMap[info.serviceName] as? CryptoServiceProvider<Any>
-                ?: throw CryptoServiceException("Cannot find ${info.serviceName}", isRecoverable = false)
+        override fun getInstance(configId: String): CryptoService {
+            logger.info("Getting the crypto service for configId={})", configId)
+            val config = hsmRegistrar.findHSMConfig(configId)
+                ?: throw CryptoServiceException("The config=$configId is not found.")
+            return getInstance(config.info, config.serviceConfig)
+        }
 
-        private fun createCryptoService(
-            info: HSMInfo,
+        private fun getInstance(info: HSMInfo, serviceConfig: ByteArray): CryptoService =
+            cryptoServices.computeIfAbsent(info.id) {
+                val provider = findCryptoServiceProvider(info.serviceName)
+                CryptoServiceDecorator(
+                    cryptoService = provider.getInstance(deserializeServiceConfig(serviceConfig, provider)),
+                    timeout = Duration.ofMillis(info.timeoutMills),
+                    retries = info.retries
+                )
+            }
+
+        private fun deserializeServiceConfig(
             serviceConfig: ByteArray,
             provider: CryptoServiceProvider<Any>
-        ): CryptoService {
-            return CryptoServiceDecorator(
-                cryptoService = provider.getInstance(
-                    objectMapper.readValue(
-                        encryptor.decrypt(serviceConfig),
-                        provider.configType
-                    )
-                ),
-                timeout = Duration.ofMillis(info.timeoutMills),
-                retries = info.retries
-            )
-        }
+        ) = objectMapper.readValue(
+            encryptor.decrypt(serviceConfig),
+            provider.configType
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        private fun findCryptoServiceProvider(serviceName: String) =
+            cryptoServiceProvidersMap[serviceName] as? CryptoServiceProvider<Any>
+                ?: throw CryptoServiceException("Cannot find $serviceName")
     }
 }
