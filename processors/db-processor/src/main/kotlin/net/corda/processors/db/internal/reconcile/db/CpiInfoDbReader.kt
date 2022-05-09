@@ -14,7 +14,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.orm.utils.transaction
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -46,7 +45,7 @@ class CpiInfoDbReader(
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is GettingRecordsErrorEvent -> onGettingRecordsErrorEvent(event, coordinator)
+            is GetRecordsErrorEvent -> onGetRecordsErrorEvent(event, coordinator)
             is StopEvent -> onStopEvent()
         }
     }
@@ -72,8 +71,8 @@ class CpiInfoDbReader(
     }
 
     @Suppress("warnings")
-    private fun onGettingRecordsErrorEvent(event: GettingRecordsErrorEvent, coordinator: LifecycleCoordinator) {
-        logger.warn("Processing a ${GettingRecordsErrorEvent::class.java.name}")
+    private fun onGetRecordsErrorEvent(event: GetRecordsErrorEvent, coordinator: LifecycleCoordinator) {
+        logger.warn("Processing a ${GetRecordsErrorEvent::class.java.name}")
 //        when (event.exception) {
 //            // TODO based on exception determine component's next state i.e if transient exception or not -> DOWN or ERROR
 //        }
@@ -96,7 +95,7 @@ class CpiInfoDbReader(
             doGetAllVersionedRecords()
         } catch (e: Exception) {
             logger.warn("Error while retrieving records for reconciliation", e)
-            coordinator.postEvent(GettingRecordsErrorEvent(e))
+            coordinator.postEvent(GetRecordsErrorEvent(e))
             null
         }
     }
@@ -149,5 +148,5 @@ class CpiInfoDbReader(
         entityManagerFactory = null
     }
 
-    private class GettingRecordsErrorEvent(val exception: Exception) : LifecycleEvent
+    private class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
 }
