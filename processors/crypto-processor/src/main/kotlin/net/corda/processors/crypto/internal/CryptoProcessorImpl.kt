@@ -109,19 +109,11 @@ class CryptoProcessorImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
+                log.info("Bootstrapping {} connection Manager", configurationReadService::class.simpleName)
                 configurationReadService.bootstrapConfig(event.config)
 
-                val publisherConfig = PublisherConfig(CLIENT_ID)
-                val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
-                publisher.use {
-                    it.start()
-                    val record = Record(
-                        Schemas.Config.CONFIG_TOPIC,
-                        ConfigKeys.CRYPTO_CONFIG,
-                        Configuration("", "1")
-                    )
-                    publisher.publish(listOf(record)).forEach { future -> future.get() }
-                }
+                log.info("Bootstrapping {} connection Manager", dbConnectionManager::class.simpleName)
+                dbConnectionManager.bootstrap(event.config.getConfig(ConfigKeys.DB_CONFIG))
             }
             else -> {
                 log.warn("Unexpected event $event!")

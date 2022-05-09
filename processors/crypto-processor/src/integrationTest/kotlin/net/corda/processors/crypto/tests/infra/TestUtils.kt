@@ -1,6 +1,7 @@
 package net.corda.processors.crypto.tests.infra
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
@@ -66,11 +67,17 @@ fun Lifecycle.isStarted() = eventually {
     assertTrue(isRunning, "Failed waiting to start for ${this::class.java.name}")
 }
 
-fun makeBootstrapConfig(config: String) = SmartConfigFactory.create(
-    ConfigFactory.empty()
-).create(
-    ConfigFactory.parseString(config)
-)
+fun makeBootstrapConfig(config: String, extra: Map<String, SmartConfig>): SmartConfig {
+    var cfg = ConfigFactory.parseString(config)
+    extra.forEach {
+        cfg = cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped()))
+    }
+    return SmartConfigFactory.create(
+        ConfigFactory.empty()
+    ).create(
+        cfg
+    )
+}
 
 fun randomDataByteArray(): ByteArray {
     val random = Random(Instant.now().toEpochMilli())

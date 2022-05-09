@@ -45,6 +45,7 @@ import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.processors.crypto.tests.infra.stopAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
@@ -147,7 +148,6 @@ class CryptoProcessorTests {
             setupMessagingAndCryptoConfigs()
             setupDatabases()
             startDependencies()
-            dbConnectionManager.bootstrap(clusterDb.config)
             testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
             // temporary hack as the DbAdmin doesn't support HSQL
             addDbConnectionConfigs(cryptoDb, vnodeDb)
@@ -206,7 +206,13 @@ class CryptoProcessorTests {
 
         private fun startDependencies() {
             opsClient.startAndWait()
-            processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
+            processor.startAndWait(
+                makeBootstrapConfig(
+                    BOOT_CONFIGURATION, mapOf(
+                        ConfigKeys.DB_CONFIG to clusterDb.config
+                    )
+                )
+            )
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
