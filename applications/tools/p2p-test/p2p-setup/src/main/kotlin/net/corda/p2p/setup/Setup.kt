@@ -54,7 +54,7 @@ class Setup(
 
         if (records.isNotEmpty()) {
             publisherFactory.createPublisher(
-                PublisherConfig("p2p-setup"),
+                PublisherConfig("p2p-setup", false),
                 command.nodeConfiguration(),
             ).use { publisher ->
                 logger.info("Publishing ${records.size} records")

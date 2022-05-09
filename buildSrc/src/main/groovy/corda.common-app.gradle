@@ -1,13 +1,13 @@
+import aQute.bnd.gradle.Resolve
+import groovy.transform.CompileStatic
+import groovy.transform.TupleConstructor
 import java.nio.file.Files
 import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
-
-import aQute.bnd.gradle.Resolve
-import groovy.transform.CompileStatic
-import groovy.transform.TupleConstructor
 import javax.inject.Inject
 
+import static java.util.stream.Collectors.toSet
 import static org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION
 import static org.osgi.framework.Constants.EXPORT_PACKAGE
 import static CreateApplicationBundlesFile.isBundle
@@ -325,10 +325,12 @@ class OsgiRun {
 
     final List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
     final MapProperty<String, String> frameworkProperties
+    final SetProperty<String> addOpensAttribute
 
     @Inject
     OsgiRun(ObjectFactory objects) {
         frameworkProperties = objects.mapProperty(String, String).convention(new HashMap<>())
+        addOpensAttribute = objects.setProperty(String)
     }
 
     boolean agent(String className, String args) {
@@ -422,6 +424,9 @@ def appJar = tasks.register('appJar', Jar) {
         attributes 'Launcher-Agent-Class': 'net.corda.osgi.framework.JavaAgentLauncher'
         attributes 'Can-Redefine-Classes': true
         attributes 'Can-Retransform-Classes': true
+        attributes 'Add-Opens': osgiRun.addOpensAttribute.map { set ->
+            set.stream().map(String::trim).collect(toSet())
+        }.map { it.join(' ') }
     }
 
     into("META-INF/") {

@@ -35,16 +35,6 @@ pluginManagement {
                 }
             }
             gradlePluginPortal()
-            maven {
-                url "${artifactoryContextUrl}/engineering-tools-maven"
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-                }
-            }
         }
     }
     plugins {
@@ -57,12 +47,10 @@ pluginManagement {
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
-        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
-        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version gradleVersions
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
-        id "com.r3.internal.gradle.plugins.r3-docker" version internalDockerVersion
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
     }
 }
 
@@ -329,9 +317,8 @@ include 'tools:plugins:secret-config'
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
-
-if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
-    includeBuild('../corda-api') {
+if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
+    includeBuild(cordaApiLocation) {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
             substitute module('net.corda:corda-base') using project(':base')
@@ -350,6 +337,9 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
     }
+}
+if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
+    includeBuild(cordaCliHostLocation)
 }
 
 gradleEnterprise {
