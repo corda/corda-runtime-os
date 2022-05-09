@@ -357,7 +357,7 @@ internal class DatabaseChunkPersistenceTest {
         val cpks = listOf(mockCpk(checksum, "1.cpk"))
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "abcdef", false)
+        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "abcdef")
 
         val cpkDataEntity = entityManagerFactory.createEntityManager().transaction {
             it.find(CpkDataEntity::class.java, checksum.toString())
@@ -373,7 +373,7 @@ internal class DatabaseChunkPersistenceTest {
 
         val cpks = listOf(mockCpk(checksum, "1.cpk"))
         val cpi = mockCpi(cpks)
-        persistence.persistMetadataAndCpks(cpi, "someFileName.cpi", checksum, UUID.randomUUID().toString(), "abcdef", false)
+        persistence.persistMetadataAndCpks(cpi, "someFileName.cpi", checksum, UUID.randomUUID().toString(), "abcdef")
         assertThat(persistence.cpkExists(checksum)).isTrue
     }
 
@@ -388,10 +388,10 @@ internal class DatabaseChunkPersistenceTest {
 
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456", false)
+        persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
 
         assertThrows<PersistenceException> {
-            persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456", false)
+            persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
         }
     }
 }

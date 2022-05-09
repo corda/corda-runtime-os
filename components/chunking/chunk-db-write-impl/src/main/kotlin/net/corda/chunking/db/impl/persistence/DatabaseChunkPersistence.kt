@@ -13,7 +13,9 @@ import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
+import net.corda.packaging.CPK
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Files
@@ -24,6 +26,10 @@ import javax.persistence.EntityManagerFactory
  * This class provides some simple APIs to interact with the database.
  */
 class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFactory) : ChunkPersistence {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     /**
      * Persist a chunk to the database and also check whether we have all chunks,
@@ -166,43 +172,67 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String,
-        overwrite: Boolean
+        groupId: String
     ) {
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
-            if (overwrite) {
-                em.deleteCpiMetadataEntity(cpiMetadataEntity)
-            }
             em.persist(cpiMetadataEntity)
-            cpi.cpks.forEach {
-                val cpkChecksum = it.metadata.hash.toString()
-                val cpkDataEntity = CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!))
-                if (overwrite) {
-                    // em.deleteEntity(cpkDataEntity)
-                } else {
-                    em.persist(cpkDataEntity)
-                }
-                val cpkMetadataEntity = CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!)
-                if (overwrite) {
-                    // em.deleteEntity(cpkMetadataEntity)
-                } else {
-                    em.merge(cpkMetadataEntity)
-                }
-            }
+            storeCpkDataInTransaction(cpi.cpks, em, cpiMetadataEntity)
         }
     }
 
-    private fun EntityManager.deleteCpiMetadataEntity(cpiMetadataEntity: CpiMetadataEntity) {
-        val prevEntity = findCpiMetadataEntityInTransaction(
-            this,
-            cpiMetadataEntity.name,
-            cpiMetadataEntity.version,
-            cpiMetadataEntity.signerSummaryHash
-        )
-        prevEntity?.let {
-            merge(it)
-            remove(it)
+    private fun storeCpkDataInTransaction(
+        cpks: Collection<CPK>,
+        em: EntityManager,
+        cpiMetadataEntity: CpiMetadataEntity
+    ) {
+        cpks.forEach {
+            val cpkChecksum = it.metadata.hash.toString()
+            em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+            em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
+        }
+    }
+
+    override fun updateMetadataAndCpks(
+        cpi: CPI,
+        cpiFileName: String,
+        checksum: SecureHash,
+        requestId: RequestId,
+        groupId: String
+    ) {
+
+        val cpiId = cpi.metadata.id
+        entityManagerFactory.createEntityManager().transaction { em ->
+            // Perform clean-up of the old data
+            val oldCpiMetadataEntity = findCpiMetadataEntityInTransaction(em, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+            em.merge(oldCpiMetadataEntity)
+
+            val cpkMetadataList = em.createQuery(
+                "FROM ${CpkMetadataEntity::class.simpleName} WHERE " +
+                        "cpi_name = :cpi_name AND cpi_version = :cpi_version AND cpi_signer_summary_hash = :cpi_signer_summary_hash",
+                CpkMetadataEntity::class.java
+            )
+                .setParameter("cpi_name", cpiId.name)
+                .setParameter("cpi_version", cpiId.version)
+                .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHash.toString())
+                .resultList
+
+            log.info("Found ${cpkMetadataList.size} CPK meta data items")
+
+            cpkMetadataList.forEach { cpkMeta ->
+                em.createQuery("DELETE FROM ${CpkDataEntity::class.simpleName} WHERE " +
+                    "file_checksum = :file_checksum")
+                    .setParameter("file_checksum", cpkMeta.cpkFileChecksum)
+                    .executeUpdate()
+                em.remove(cpkMeta)
+            }
+
+            // Perform update
+            val newCpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
+            em.merge(newCpiMetadataEntity)
+
+            // Store CPK data
+            storeCpkDataInTransaction(cpi.cpks, em, newCpiMetadataEntity)
         }
     }
 
@@ -231,7 +261,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     }
 
     /**
-     * For a given CPI create the metadata entity required to insert into the database.
+     * For a given CPI, create the metadata entity required to insert into the database.
      *
      * @param cpi CPI object
      * @param cpiFileName original file name
