@@ -1,7 +1,7 @@
 package net.corda.virtualnode.read.fake
 
 import net.corda.virtualnode.VirtualNodeInfo
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
 import java.io.StringReader
