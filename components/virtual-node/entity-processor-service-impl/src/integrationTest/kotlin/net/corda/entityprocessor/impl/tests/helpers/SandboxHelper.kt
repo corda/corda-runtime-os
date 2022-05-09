@@ -11,7 +11,7 @@ import java.util.UUID
 
 object SandboxHelper {
     fun SandboxGroup.createDogClass(): Class<*> {
-        return this.loadClassFromMainBundles("net.corda.testing.cpks.dogs.Dog")
+        return this.loadClassFromMainBundles("net.corda.testing.bundles.dogs.Dog")
     }
 
     fun SandboxGroupContext.createDogInstance(id: UUID, name: String, date: Instant, owner: String): Any {

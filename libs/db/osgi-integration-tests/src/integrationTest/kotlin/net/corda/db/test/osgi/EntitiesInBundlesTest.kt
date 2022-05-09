@@ -21,7 +21,9 @@ import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
@@ -44,6 +46,7 @@ class EntitiesInBundlesTest {
 
         @InjectService
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
+
         @InjectService
         lateinit var lbm: LiquibaseSchemaMigrator
 
@@ -51,7 +54,7 @@ class EntitiesInBundlesTest {
 
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.testing-dogs"
+                bundle.symbolicName == "com.r3.testing.testing-dogs"
             }
             logger.info("Dog bundle $bundle".emphasise())
             bundle
@@ -59,7 +62,7 @@ class EntitiesInBundlesTest {
 
         private val catBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.testing-cats"
+                bundle.symbolicName == "com.r3.testing.testing-cats"
             }
             logger.info("Cat bundle $bundle".emphasise())
             bundle
@@ -69,12 +72,23 @@ class EntitiesInBundlesTest {
         private val ownerClass = catBundle.loadClass(OWNER_CLASS_NAME)
         private val catClass = catBundle.loadClass(CAT_CLASS_NAME)
 
-        private val dogCtor = dogClass.getDeclaredConstructor(UUID::class.java, String::class.java, LocalDate::class.java, String::class.java)
+        private val dogCtor = dogClass.getDeclaredConstructor(
+            UUID::class.java,
+            String::class.java,
+            Instant::class.java,
+            String::class.java
+        )
         private val ownerCtor = ownerClass.getDeclaredConstructor(UUID::class.java, String::class.java, Int::class.java)
-        private val catCtor = catClass.getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
+        private val catCtor =
+            catClass.getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
 
         private val dogId = UUID.randomUUID()
-        private val dog = dogCtor.newInstance(dogId, "Faraway", LocalDate.of(2020, 2, 26), "Bob")
+        private val dog = dogCtor.newInstance(
+            dogId,
+            "Faraway",
+            LocalDate.of(2020, 2, 26).atStartOfDay().toInstant(ZoneOffset.UTC),
+            "Bob"
+        )
         private val ownerId = UUID.randomUUID()
         private val owner = ownerCtor.newInstance(ownerId, "Bob", 26)
         private val catId = UUID.randomUUID()
@@ -90,10 +104,17 @@ class EntitiesInBundlesTest {
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
-                        catClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = catClass.classLoader),
+                        catClass.packageName,
+                        listOf("migration/db.changelog-master.xml"),
+                        classLoader = catClass.classLoader
+                    ),
                     ClassloaderChangeLog.ChangeLogResourceFiles(
-                        dogClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = dogClass.classLoader)
-            ))
+                        dogClass.packageName,
+                        listOf("migration/db.changelog-master.xml"),
+                        classLoader = dogClass.classLoader
+                    )
+                )
+            )
             StringWriter().use {
                 lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
                 logger.info("Schema creation SQL: $it")

@@ -58,22 +58,8 @@ class CpbEntityTests {
         assertThat(entities.isNotEmpty()).isTrue
 
         // does contain packages from cpks
-        entities.forEach {
-            assertThat(it.contains("net.corda.testing.cpks")).isTrue()
-        }
-    }
-
-    @Test
-    fun `entities in jars are not listed`() {
-        val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-        val cpks = cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata
-        val entities = cpks.flatMap { it.cordappManifest.entities }
-
-        assertThat(entities.isNotEmpty()).isTrue
-
-        // does not contain packages from the bundle jars.
-        entities.forEach {
-            assertThat(it.contains("net.corda.testing.bundles")).isFalse()
-        }
+        assertThat(entities).containsAll(
+            listOf("net.corda.testing.bundles.dogs.Dog", "net.corda.testing.bundles.cats.Cat", "net.corda.testing.bundles.cats.Owner")
+        )
     }
 }
