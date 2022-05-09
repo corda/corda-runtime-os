@@ -1,0 +1,39 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk'
+}
+
+configurations {
+    libFolderDependencies
+    implementation.extendsFrom(libFolderDependencies)
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-ledger'
+    cordaProvided 'net.corda:corda-crypto'
+
+    cordapp project(':libs:virtual-node:packaging:test:contract-cpk')
+
+    //The whole point of this is to have a jar in "lib" folder of the cpk, it can be happily swapped with anything
+    libFolderDependencies "com.typesafe:config:$typeSafeConfigVersion"
+}
+
+tasks.named('jar', Jar) {
+    osgi {
+        symbolicName = workflowSymbolicName
+    }
+}
+
+cordapp {
+    targetPlatformVersion 1000
+    minimumPlatformVersion 999 as Integer
+
+    workflow {
+        name = 'Workflow cpk to be used for uniut tests for the packaging module'
+        versionId = 1
+        licence = 'Test-Licence'
+        vendor = 'R3'
+    }
+}

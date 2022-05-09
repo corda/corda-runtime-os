@@ -25,7 +25,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema"
     implementation 'net.corda:corda-topic-schema'
-    implementation "net.corda:corda-packaging"
+    implementation project(":libs:virtual-node:packaging")
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')

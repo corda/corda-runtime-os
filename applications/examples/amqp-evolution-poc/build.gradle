@@ -23,7 +23,7 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
 
-    implementation "net.corda:corda-packaging"
+    implementation project(":libs:virtual-node:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')

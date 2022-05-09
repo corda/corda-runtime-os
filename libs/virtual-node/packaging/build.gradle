@@ -1,0 +1,85 @@
+import aQute.bnd.version.MavenVersion
+import java.security.cert.CertificateFactory
+
+plugins {
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+}
+
+description 'Corda Packaging'
+
+allprojects {
+    ext {
+        contractSymbolicName = 'net.corda.packaging.test.contract'
+        workflowSymbolicName = 'net.corda.packaging.test.workflow'
+    }
+}
+
+configurations {
+    flowsCPK {
+        canBeConsumed = false
+        transitive = false
+    }
+    contractCPK {
+        canBeConsumed = false
+    }
+    workflowCPK {
+        canBeConsumed = false
+    }
+    workflow {
+        canBeConsumed = false
+        transitive = false
+    }
+    workflowLibs {
+        canBeConsumed = false
+    }
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-base"
+    api "net.corda:corda-crypto"
+    api "net.corda:corda-cipher-suite"
+
+    testImplementation "org.osgi:osgi.core"
+
+    // TODO:  We're pulling in some code (flows) from corda5 dev preview to build test cpks for our tests.
+    // TODO:  This should be re-visited when more of the cordapp APIs are imported into this repo.
+    workflow project('test:workflow-cpk')
+    workflowLibs project(path: 'test:workflow-cpk', configuration: 'libFolderDependencies')
+    contractCPK project(path: 'test:contract-cpk', configuration: 'cordaCPK')
+    workflowCPK project(path: 'test:workflow-cpk', configuration: 'cordaCPK')
+}
+
+def certificateProvider = provider {
+    CertificateFactory cf = CertificateFactory.getInstance('X.509')
+    def cert = file('config/dev/corda_dev_cpk.cer').withInputStream {
+        cf.generateCertificate(it)
+    }
+    cert.publicKey.encoded.sha256()
+}
+
+tasks.named('test', Test) {
+    inputs.files(configurations.flowsCPK, configurations.contractCPK, configurations.workflowCPK)
+    .withPropertyName("CPK_CONFIG").withPathSensitivity(PathSensitivity.RELATIVE)
+
+    doFirst {
+        systemProperties([
+            'net.corda.dev.cert' : certificateProvider.get(),
+            'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
+            'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
+            'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
+            'net.corda.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
+            'net.corda.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion.toString(),
+            'net.corda.packaging.test.workflow.cordapp' : configurations.workflow.singleFile.toURI()
+        ])
+    }
+}

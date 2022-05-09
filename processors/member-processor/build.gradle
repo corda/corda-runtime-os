@@ -47,7 +47,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation "net.corda:corda-topic-schema"
     testImplementation "net.corda:corda-config-schema"
-    testImplementation "net.corda:corda-packaging-avro-converters"
+    testImplementation project(":libs:virtual-node:packaging-avro-converters")
     testImplementation "net.corda:corda-membership"
 
     integrationTestImplementation 'net.corda:corda-db-schema'
