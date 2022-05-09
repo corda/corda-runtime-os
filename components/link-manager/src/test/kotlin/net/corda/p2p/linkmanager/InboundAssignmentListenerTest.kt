@@ -1,108 +1,230 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
 
 class InboundAssignmentListenerTest {
 
-    companion object {
-        const val TOPIC_1 = "topic"
-        const val TOPIC_2 = "anotherTopic"
-    }
-    private val assign1 = listOf(1, 3, 5)
-    private val assign2 = listOf(2, 3, 4)
-
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
-    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
-    private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
-        @Suppress("UNCHECKED_CAST")
-        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        whenever(mock.isRunning).doReturn(true)
-        @Suppress("UNCHECKED_CAST")
-        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
-        @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
+    private val tile = mockConstruction(SimpleDominoTile::class.java) { _, _ ->
     }
+    private val listener = InboundAssignmentListener(lifecycleCoordinatorFactory, "topic")
 
     @AfterEach
     fun cleanUp() {
-        dominoTile.close()
+        tile.close()
+    }
+
+    @Nested
+    inner class OnPartitionsUnassignedTests {
+        @Test
+        fun `onPartitionsUnassigned will use only the correct topic`() {
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 5,
+                    "topic" to 6,
+                    "topic" to 7,
+                )
+            )
+            listener.onPartitionsUnassigned(
+                listOf(
+                    "topic" to 5,
+                    "anotherTopic" to 4,
+                    "topic" to 7,
+                )
+            )
+
+            assertThat(listener.getCurrentlyAssignedPartitions()).containsExactly(4, 6)
+        }
+
+        @Test
+        fun `onPartitionsUnassigned will change the status if all partitions had been unassigned`() {
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 5,
+                    "topic" to 6,
+                )
+            )
+            listener.onPartitionsUnassigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 5,
+                    "topic" to 6,
+                    "topic" to 7,
+                )
+            )
+
+            verify(tile.constructed().first()).updateState(DominoTileState.StoppedDueToBadConfig)
+        }
+
+        @Test
+        fun `onPartitionsUnassigned will not change the status if some partitions had not been unassigned`() {
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 5,
+                    "topic" to 6,
+                )
+            )
+            listener.onPartitionsUnassigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 6,
+                    "topic" to 7,
+                )
+            )
+
+            verify(tile.constructed().first(), never()).updateState(DominoTileState.StoppedDueToBadConfig)
+        }
+
+        @Test
+        fun `onPartitionsUnassigned call callback with the correct value`() {
+            whenever(tile.constructed().first().isRunning).doReturn(true)
+            var currentPartitions: Set<Int>? = null
+            listener.registerCallbackForTopic { partitions ->
+                currentPartitions = partitions
+            }
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 5,
+                    "topic" to 6,
+                )
+            )
+            listener.onPartitionsUnassigned(
+                listOf(
+                    "topic" to 5,
+                    "topic" to 7,
+                )
+            )
+
+            assertThat(currentPartitions).containsExactly(4, 6)
+        }
+    }
+    @Nested
+    inner class OnPartitionsAssignedTests {
+        @Test
+        fun `onPartitionsAssigned will use only the correct topic`() {
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "anotherTopic" to 5,
+                    "topic" to 6,
+                    "topic" to 7,
+                )
+            )
+
+            assertThat(listener.getCurrentlyAssignedPartitions()).containsExactly(4, 6, 7)
+        }
+
+        @Test
+        fun `onPartitionsAssigned will update the state if we have partitions`() {
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 6,
+                    "topic" to 7,
+                )
+            )
+
+            verify(tile.constructed().first()).updateState(DominoTileState.Started)
+        }
+
+        @Test
+        fun `onPartitionsAssigned will not update the state if we have no partitions`() {
+            listener.onPartitionsAssigned(
+                emptyList()
+            )
+
+            verify(tile.constructed().first(), never()).updateState(any())
+        }
+
+        @Test
+        fun `onPartitionsAssigned will call the callback if the tile is running`() {
+            whenever(tile.constructed().first().isRunning).doReturn(true)
+            var currentPartitions: Set<Int>? = null
+            listener.registerCallbackForTopic { partitions ->
+                currentPartitions = partitions
+            }
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 6,
+                    "topic" to 4,
+                )
+            )
+
+            assertThat(currentPartitions).containsExactly(4, 6)
+        }
+
+        @Test
+        fun `onPartitionsAssigned will not call the callback if the tile is not running`() {
+            whenever(tile.constructed().first().isRunning).doReturn(false)
+            var called = 0
+            listener.registerCallbackForTopic {
+                called ++
+            }
+            listener.onPartitionsAssigned(
+                listOf(
+                    "topic" to 4,
+                    "topic" to 6,
+                    "topic" to 4,
+                )
+            )
+
+            assertThat(called).isZero
+        }
     }
 
     @Test
-    fun `Partitions can be assigned and reassigned`() {
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(firstAssignment)
-        assertArrayEquals(assign1.toIntArray(), listener.getCurrentlyAssignedPartitions(TOPIC_1).toIntArray())
-        assertArrayEquals(assign2.toIntArray(), listener.getCurrentlyAssignedPartitions(TOPIC_2).toIntArray())
-        val unAssignTopic = 1
-        listener.onPartitionsUnassigned(listOf(TOPIC_1 to unAssignTopic))
-        assertArrayEquals((assign1 - listOf(unAssignTopic)).toIntArray(), listener.getCurrentlyAssignedPartitions(TOPIC_1).toIntArray())
+    fun `registerCallbackForTopic will call the callback if the tile is running`() {
+        whenever(tile.constructed().first().isRunning).doReturn(true)
+        listener.onPartitionsAssigned(
+            listOf(
+                "topic" to 4,
+                "topic" to 6,
+                "topic" to 4,
+            )
+        )
+
+        var called = 0
+        listener.registerCallbackForTopic {
+            called ++
+        }
+
+        assertThat(called).isOne
     }
 
     @Test
-    fun `the future completes when partitions are assigned`() {
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        val readyFuture = createResources!!(mock())
-        assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(firstAssignment)
-        val secondAssignment = assign2.map { TOPIC_1 to it } + assign1.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(secondAssignment)
-        assertThat(readyFuture.isDone).isTrue
-    }
+    fun `registerCallbackForTopic will not call the callback if the tile is not running`() {
+        whenever(tile.constructed().first().isRunning).doReturn(false)
+        listener.onPartitionsAssigned(
+            listOf(
+                "topic" to 4,
+                "topic" to 6,
+                "topic" to 4,
+            )
+        )
 
-    @Test
-    fun `the callback is called on assignment if registered before the first assignment`() {
-        val topic1CallbackArguments = mutableListOf<Set<Int>>()
-        val topic2CallbackArguments = mutableListOf<Set<Int>>()
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        listener.registerCallbackForTopic(TOPIC_1) { partitions -> topic1CallbackArguments.add(partitions) }
-        listener.registerCallbackForTopic(TOPIC_2) { partitions -> topic2CallbackArguments.add(partitions) }
-        assertThat(topic1CallbackArguments).isEmpty()
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(firstAssignment)
-        assertThat(topic1CallbackArguments.single()).containsExactlyInAnyOrderElementsOf(assign1)
-        assertThat(topic2CallbackArguments.single()).containsExactlyInAnyOrderElementsOf(assign2)
-    }
+        var called = 0
+        listener.registerCallbackForTopic {
+            called ++
+        }
 
-    @Test
-    fun `the callback is called on registration if registered after the first assignment`() {
-        val callbackArguments = mutableListOf<Set<Int>>()
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        val assign1 = listOf(1, 3, 5)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(firstAssignment)
-        listener.registerCallbackForTopic(TOPIC_1) { partitions -> callbackArguments.add(partitions) }
-        assertThat(callbackArguments.single()).containsExactlyInAnyOrderElementsOf(assign1)
-    }
-
-    @Test
-    fun `the callback is called when partitions are unassigned`() {
-        val callbackArguments = mutableListOf<Set<Int>>()
-        val listener = InboundAssignmentListener(lifecycleCoordinatorFactory)
-        assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
-        val firstAssignment = assign1.map { TOPIC_1 to it } + assign2.map { TOPIC_2 to it }
-        listener.onPartitionsAssigned(firstAssignment)
-        listener.registerCallbackForTopic(TOPIC_1) { partitions -> callbackArguments.add(partitions) }
-        val unAssignTopic = 1
-        listener.onPartitionsUnassigned(listOf(TOPIC_1 to unAssignTopic))
-        assertThat(callbackArguments.last()).containsExactlyInAnyOrderElementsOf(assign1 - listOf(unAssignTopic))
+        assertThat(called).isZero
     }
 }
