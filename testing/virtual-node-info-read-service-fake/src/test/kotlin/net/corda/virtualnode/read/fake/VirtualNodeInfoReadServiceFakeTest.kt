@@ -1,15 +1,9 @@
 package net.corda.virtualnode.read.fake
 
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoListener
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import java.io.StringReader
-import java.util.*
 
 internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
 
@@ -83,50 +77,5 @@ internal class VirtualNodeInfoReadServiceFakeTest: BaseTest() {
     fun `update vnode`() {
         // How does the update should behave?
         // Does it make sense to have it?
-    }
-
-    private class VirtualNodeInfoListenerSpy : VirtualNodeInfoListener {
-
-        private val _keys = mutableListOf<Set<HoldingIdentity>>()
-        private val _snapshots = mutableListOf<Map<HoldingIdentity, VirtualNodeInfo>>()
-
-        val keys: List<Set<HoldingIdentity>>
-            get() = _keys
-
-        val snapshots: List<Map<HoldingIdentity, VirtualNodeInfo>>
-            get() = _snapshots
-
-        val timesCalled: Int
-            get() = _keys.size
-
-        override fun onUpdate(
-            changedKeys: Set<HoldingIdentity>,
-            currentSnapshot: Map<HoldingIdentity, VirtualNodeInfo>,
-        ) {
-            _keys += changedKeys
-            _snapshots += currentSnapshot
-        }
-    }
-
-    private fun createService(
-        vararg virtualNodeInfos: VirtualNodeInfo,
-        callbacks: List<VirtualNodeInfoListener> = emptyList(),
-    ): VirtualNodeInfoReadServiceFake {
-        val service = VirtualNodeInfoReadServiceFake(
-            virtualNodeInfos.associateBy { it.holdingIdentity },
-            callbacks,
-            LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-        )
-        service.start()
-        service.waitUntilRunning()
-        return service
-    }
-
-    private fun snapshot(vararg virtualNodeInfos: VirtualNodeInfo): Map<HoldingIdentity, VirtualNodeInfo> {
-        return virtualNodeInfos.associateBy { it.holdingIdentity }
-    }
-
-    private fun keys(vararg virtualNodeInfos: VirtualNodeInfo): Set<HoldingIdentity> {
-        return virtualNodeInfos.map { it.holdingIdentity }.toSet()
     }
 }
