@@ -12,6 +12,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -34,7 +35,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertSecon
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobHoldingIdentity
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobName
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobX500Name
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.bootConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieName
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.charlieX500Name
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.getGroupPolicy
@@ -45,6 +45,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.isStarted
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromPublicKey
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishCryptoConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
@@ -54,16 +55,15 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWai
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -77,8 +77,6 @@ import java.time.Duration
 class MemberProcessorIntegrationTest {
     companion object {
         const val CLIENT_ID = "member-processor-integration-test"
-        val logger = contextLogger()
-
 
         @InjectService(timeout = 5000L)
         lateinit var groupPolicyProvider: GroupPolicyProvider
@@ -159,14 +157,21 @@ class MemberProcessorIntegrationTest {
             schemaName = "vnode_crypto_charlie"
         )
 
+        private lateinit var bootConf: SmartConfig
+
         @JvmStatic
         @BeforeAll
         fun setUp() {
             setupDatabases()
 
             // Set basic bootstrap config
-            memberProcessor.start(bootConf)
+            bootConf = makeBootstrapConfig(
+                mapOf(
+                    ConfigKeys.DB_CONFIG to clusterDb.config
+                )
+            )
             cryptoProcessor.start(bootConf)
+            memberProcessor.start(bootConf)
 
             membershipGroupReaderProvider.start()
 
@@ -190,7 +195,6 @@ class MemberProcessorIntegrationTest {
             // Wait for published content to be picked up by components.
             eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
 
-            dbConnectionManager.bootstrap(clusterDb.config)
             testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
             addDbConnectionConfigs(cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
             softCryptoServiceProvider.getInstance(
