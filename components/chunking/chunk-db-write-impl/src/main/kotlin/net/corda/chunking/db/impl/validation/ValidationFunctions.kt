@@ -100,12 +100,13 @@ internal class ValidationFunctions(
                 cpi.metadata.id.version,
                 cpi.metadata.id.signerSummaryHash?.toString() ?: "")
 
-            if (cpiExists && fileInfo.forceUpload) {
+            val overwrite = cpiExists && fileInfo.forceUpload
+            if (overwrite) {
                 log.info("Force uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
             }
 
             if (!cpiExists || fileInfo.forceUpload) {
-                chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
+                chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId, overwrite)
             } else {
                 throw ValidationException(
                     "CPI has already been inserted with cpks for " +

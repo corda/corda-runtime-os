@@ -61,13 +61,16 @@ interface ChunkPersistence {
      * @param checksum the checksum of the CPI file
      * @param requestId the request id for the CPI that is being uploaded
      * @param groupId the group id from the group policy file
+     * @param overwrite boolean flag to trigger deletion of the existing entities before persisting them
      */
+    @Suppress("LongParameterList")
     fun persistMetadataAndCpks(
         cpi: CPI,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        overwrite: Boolean
     )
 
     /** Get the group id for a given CPI */

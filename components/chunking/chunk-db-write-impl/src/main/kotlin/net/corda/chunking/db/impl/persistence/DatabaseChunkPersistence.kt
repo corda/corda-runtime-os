@@ -17,6 +17,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -165,17 +166,33 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        overwrite: Boolean
     ) {
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
+            if (overwrite) {
+                em.deleteEntity(cpiMetadataEntity)
+            }
             em.persist(cpiMetadataEntity)
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.hash.toString()
-                em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
-                em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
+                val cpkDataEntity = CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!))
+                if (overwrite) {
+                    em.deleteEntity(cpkDataEntity)
+                }
+                em.persist(cpkDataEntity)
+                val cpkMetadataEntity = CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!)
+                if (overwrite) {
+                    em.deleteEntity(cpkMetadataEntity)
+                }
+                em.merge(cpkMetadataEntity)
             }
         }
+    }
+
+    private fun EntityManager.deleteEntity(entity: Any) {
+        remove(if (contains(entity)) entity else merge(entity))
     }
 
     private fun getCpiEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
