@@ -172,39 +172,51 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
             if (overwrite) {
-                em.deleteEntity(cpiMetadataEntity)
+                em.deleteCpiMetadataEntity(cpiMetadataEntity)
             }
             em.persist(cpiMetadataEntity)
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.hash.toString()
                 val cpkDataEntity = CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!))
                 if (overwrite) {
-                    em.deleteEntity(cpkDataEntity)
+                    // em.deleteEntity(cpkDataEntity)
+                } else {
+                    em.persist(cpkDataEntity)
                 }
-                em.persist(cpkDataEntity)
                 val cpkMetadataEntity = CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!)
                 if (overwrite) {
-                    em.deleteEntity(cpkMetadataEntity)
+                    // em.deleteEntity(cpkMetadataEntity)
+                } else {
+                    em.merge(cpkMetadataEntity)
                 }
-                em.merge(cpkMetadataEntity)
             }
         }
     }
 
-    private fun EntityManager.deleteEntity(entity: Any) {
-        remove(if (contains(entity)) entity else merge(entity))
+    private fun EntityManager.deleteCpiMetadataEntity(cpiMetadataEntity: CpiMetadataEntity) {
+        val prevEntity = merge(
+            findCpiMetadataEntity(cpiMetadataEntity.name, cpiMetadataEntity.version, cpiMetadataEntity.signerSummaryHash))
+        remove(prevEntity)
     }
 
-    private fun getCpiEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
+    private fun EntityManager.findCpiMetadataEntity(
+        name: String,
+        version: String,
+        signerSummaryHash: String
+    ): CpiMetadataEntity? {
         val primaryKey = CpiMetadataEntityKey(
             name,
             version,
             signerSummaryHash
         )
-        val entity = entityManagerFactory.createEntityManager().transaction {
+        val entity = transaction {
             it.find(CpiMetadataEntity::class.java, primaryKey)
         }
         return entity
+    }
+
+    private fun getCpiEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
+        return entityManagerFactory.createEntityManager().findCpiMetadataEntity(name, version, signerSummaryHash)
     }
 
     override fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String? {
