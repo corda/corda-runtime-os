@@ -230,11 +230,19 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             log.info("Found ${cpkMetadataList.size} CPK meta data items")
 
             cpkMetadataList.forEach { cpkMeta ->
+                em.createQuery("DELETE FROM ${CpkMetadataEntity::class.simpleName}  WHERE " +
+                        "cpi_name = :cpi_name AND cpi_version = :cpi_version " +
+                        "AND cpi_signer_summary_hash = :cpi_signer_summary_hash AND cpk_file_checksum = :cpk_file_checksum")
+                    .setParameter("cpi_name", cpiId.name)
+                    .setParameter("cpi_version", cpiId.version)
+                    .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHashForDbQuery)
+                    .setParameter("cpk_file_checksum", cpkMeta.cpkFileChecksum)
+                    .executeUpdate()
+
                 em.createQuery("DELETE FROM ${CpkDataEntity::class.simpleName} WHERE " +
                     "file_checksum = :file_checksum")
                     .setParameter("file_checksum", cpkMeta.cpkFileChecksum)
                     .executeUpdate()
-                em.remove(cpkMeta)
             }
 
             // Perform update
