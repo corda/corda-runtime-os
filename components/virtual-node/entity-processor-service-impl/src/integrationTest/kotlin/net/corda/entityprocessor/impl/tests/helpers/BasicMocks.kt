@@ -15,6 +15,9 @@ object BasicMocks {
             MockitoHelper.anyObject(),
             MockitoHelper.anyObject()
         )
+
+        Mockito.doReturn(entityManager()).`when`(mockEntityManagerFactory).createEntityManager()
+
         return dbm
     }
 

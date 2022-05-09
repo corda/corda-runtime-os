@@ -44,7 +44,7 @@ class SerializationTests {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = 5000)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -54,9 +54,9 @@ class SerializationTests {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             // TODO - look at using generic fake implementations for these.
-            virtualNode = setup.fetchService(timeout = 1000)
-            cpiInfoReadService = setup.fetchService(timeout = 1000)
-            virtualNodeInfoReadService = setup.fetchService(timeout = 1000)
+            virtualNode = setup.fetchService(timeout = 5000)
+            cpiInfoReadService = setup.fetchService(timeout = 5000)
+            virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
         }
     }
 

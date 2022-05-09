@@ -35,7 +35,7 @@ class CpbEntityTests {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = 5000)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -44,8 +44,8 @@ class CpbEntityTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 1000)
-            cpiInfoReadService = setup.fetchService(timeout = 1000)
+            virtualNode = setup.fetchService(timeout = 5000)
+            cpiInfoReadService = setup.fetchService(timeout = 5000)
         }
     }
 

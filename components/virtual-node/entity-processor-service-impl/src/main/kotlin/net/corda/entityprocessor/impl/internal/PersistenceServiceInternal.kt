@@ -42,13 +42,6 @@ class PersistenceServiceInternal(private val entitySandboxService: EntitySandbox
         payload: PersistEntity
     ): SerializedBytes<Any>? {
         val entity = serializationService.deserialize(payload.entity.array(), Any::class.java)
-
-//        val bundle = FrameworkUtil.getBundle(entityManager::class.java).bundleContext.bundles.single { bundle ->
-//            bundle.symbolicName == "com.r3.testing.testing-dogs-cpk"
-//        }
-//        val dogz = bundle.loadClass("net.corda.testing.cpks.dogs.Dog")
-//        val entity2 = serializationService.deserialize(payload.entity.array(), dogz)
-//        entityManager.persist(entity2)
         entityManager.persist(entity)
         return null
     }
@@ -61,11 +54,11 @@ class PersistenceServiceInternal(private val entitySandboxService: EntitySandbox
     ): SerializedBytes<Any>? {
         val primaryKey = serializationService.deserialize(payload.primaryKey.array(), Any::class.java)
         val clazz = entitySandboxService.getClass(holdingIdentity, payload.entityClassName)
-        val bytes = entityManager.find(clazz, primaryKey)
-        return if (bytes == null) {
+        val entity = entityManager.find(clazz, primaryKey)
+        return if (entity == null) {
             null
         } else {
-            serializationService.serialize(bytes)
+            serializationService.serialize(entity)
         }
     }
 
@@ -84,7 +77,8 @@ class PersistenceServiceInternal(private val entitySandboxService: EntitySandbox
         payload: DeleteEntity
     ): SerializedBytes<Any>? {
         val entity = serializationService.deserialize(payload.entity.array(), Any::class.java)
-        entityManager.remove(entity)
+        // NOTE: JPA expects the entity to be managed before removing, hence the merge.
+        entityManager.remove(entityManager.merge(entity))
         return null
     }
 }

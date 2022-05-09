@@ -20,7 +20,6 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-//    implementation 'net.corda:corda-services'
 
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':components:configuration:configuration-read-service')
@@ -65,6 +64,7 @@ dependencies {
 
     // Integration test resources using cpis configuration
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
 
 
     integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion") {
@@ -82,11 +82,6 @@ dependencies {
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
 
-    // We want these not only in the `cpi` (s) above, but also available in the unit test so we can access the types
-    // when setting up the serializer part of the test.
-//    integrationTestImplementation project(':testing:cpbs:extendable-cpb:testing-cats-cpk')
-//    integrationTestImplementation project(':testing:cpbs:extendable-cpb:testing-dogs-cpk')
-
     // Get it compiling and running.
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
@@ -96,30 +91,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
-//    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
-//    integrationTestRuntimeOnly project(':components:chunking:chunk-read-service-impl')
-//    integrationTestRuntimeOnly project(':components:chunking:chunk-db-write-impl')
-//    integrationTestRuntimeOnly project(':components:configuration:configuration-write-service-impl')
-//    integrationTestRuntimeOnly project(':components:configuration:configuration-read-service-impl')
-//    integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
-//    integrationTestRuntimeOnly project(':components:virtual-node:sandbox-group-context-service')
-//    integrationTestRuntimeOnly project(':libs:configuration:configuration-publish-impl')
-//    integrationTestRuntimeOnly project(':libs:db:db-orm-impl')
-//    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-//    integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
-//    integrationTestRuntimeOnly project(':libs:permissions:permission-storage-reader-impl')
-//    integrationTestRuntimeOnly project(':libs:permissions:permission-storage-writer-impl')
-//    integrationTestRuntimeOnly project(':libs:permissions:permission-validation-cache-impl')
-//    integrationTestRuntimeOnly project(':libs:permissions:permission-management-cache-impl')
-//    integrationTestRuntimeOnly project(':libs:permissions:permission-storage-reader-impl')
-//    integrationTestRuntimeOnly project(':libs:permissions:permission-storage-writer-impl')
-//    integrationTestRuntimeOnly project(':libs:schema-registry:schema-registry-impl')
-//    integrationTestRuntimeOnly project(':libs:serialization:serialization-amqp')
-//
-//    integrationTestRuntimeOnly project(':libs:sandbox')
-//    integrationTestRuntimeOnly project(':libs:sandbox-hooks')
 }
-
 
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

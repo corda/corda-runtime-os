@@ -21,7 +21,12 @@
     org.slf4j.simpleLogger.showShortLogName=true,\
     org.slf4j.simpleLogger.showThreadName=false,\
     org.slf4j.simpleLogger.showDateTime=true,\
-    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
+    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z',\
+    postgresHost=${project.postgresHost},\
+    postgresPort=${project.postgresPort},\
+    postgresDb=${project.postgresDb},\
+    postgresUser=${project.postgresUser},\
+    postgresPassword=${project.postgresPassword}
 
 #  include the impl and the tests since they're bundles to be run inside an osgi framework
 -runrequires: \
