@@ -1,5 +1,6 @@
 package net.corda.configuration.rpcops.impl.tests
 
+import java.util.concurrent.CompletableFuture
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
@@ -11,8 +12,10 @@ import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
 import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
@@ -25,15 +28,16 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
 
 /** Tests of [ConfigRPCOpsImpl]. */
 class ConfigRPCOpsImplTests {
     companion object {
         private const val actor = "test_principal"
+        private const val invalidConfigError = "Invalid config"
 
         @Suppress("Unused")
         @JvmStatic
@@ -129,6 +133,20 @@ class ConfigRPCOpsImplTests {
         val (_, configRPCOps) = getConfigRPCOps(mock())
         val e = assertThrows<HttpApiException> {
             configRPCOps.updateConfig(req.copy(config = invalidConfig))
+        }
+
+        assertEquals(expectedMessage, e.message)
+        assertEquals(ResponseCode.BAD_REQUEST, e.responseCode)
+    }
+
+    @Test
+    fun `updateConfig throws if config fails validator`() {
+        val expectedMessage = "Configuration \"a=b\" could not be validated. Valid JSON or HOCON expected. " +
+                "Cause: Configuration failed to validate for key key at schema version 1.0: $invalidConfigError"
+
+        val (_, configRPCOps) = getConfigRPCOps(mock(), true)
+        val e = assertThrows<HttpApiException> {
+            configRPCOps.updateConfig(req)
         }
 
         assertEquals(expectedMessage, e.message)
@@ -244,9 +262,14 @@ class ConfigRPCOpsImplTests {
         assertTrue(configRPCOps.isRunning)
     }
 
-    /** Returns a [ConfigRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */
+    /** Returns a [ConfigRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests.
+     * @param future to return for any rpc requests
+     * @param failValidation Set to true to cause the validator to fail validation for a request
+     * @return RPCSender and ConfigRPCOpsInternal
+     * */
     private fun getConfigRPCOps(
-        future: CompletableFuture<ConfigurationManagementResponse> = successFuture
+        future: CompletableFuture<ConfigurationManagementResponse> = successFuture,
+        failValidation: Boolean = false
     ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOpsInternal> {
 
         val rpcSender = mock<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>>().apply {
@@ -257,7 +280,13 @@ class ConfigRPCOpsImplTests {
                 .thenReturn(rpcSender)
         }
         val validator = mock<ConfigurationValidator>().apply {
-            whenever(validate(any(), any(), any(), any())).thenAnswer { it.arguments[2] }
+            if (failValidation) {
+                whenever(validate(any(), any(), any(), any())).doAnswer {
+                    throw ConfigurationValidationException("key", Version(1, 0), SmartConfigImpl.empty(), setOf(invalidConfigError) )
+                }
+            } else {
+                whenever(validate(any(), any(), any(), any())).thenAnswer { it.arguments[2] }
+            }
         }
         val validatorFactory = mock<ConfigurationValidatorFactory>().apply {
             whenever(createConfigValidator()).thenReturn(validator)

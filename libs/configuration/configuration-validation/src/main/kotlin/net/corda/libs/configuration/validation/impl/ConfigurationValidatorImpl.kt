@@ -64,8 +64,9 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
     }
 
     private fun getSchema(schemaInput: InputStream, applyDefaults: Boolean): JsonSchema {
-        val schemaValidatorsConfig = SchemaValidatorsConfig()
-        schemaValidatorsConfig.applyDefaultsStrategy = ApplyDefaultsStrategy(applyDefaults, false, false)
+        val schemaValidatorsConfig = SchemaValidatorsConfig().apply {
+            applyDefaultsStrategy = ApplyDefaultsStrategy(applyDefaults, false, false)
+        }
         return schemaFactory.getSchema(schemaInput, schemaValidatorsConfig)
     }
 
