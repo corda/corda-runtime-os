@@ -139,13 +139,12 @@ internal class VirtualNodeWriterProcessor(
         try {
             return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
                 .transaction { entityManager ->
-                    val dbConnections = with(holdingIdentity) {
+                    val dbConnections =
                         VirtualNodeDbConnections(
                             putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
                             putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
                             putConnection(entityManager,vNodeDbs, CRYPTO, DML, updateActor)!!)
-                    }
                     virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
                     dbConnections
