@@ -1,6 +1,6 @@
 plugins {
     id 'biz.aQute.bnd.builder'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 description 'Corda Serialization encoding'
 

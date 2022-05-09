@@ -75,7 +75,8 @@ internal data class Parameter(
     val type: ParameterType,
     val required: Boolean,
     val nullable: Boolean,
-    val default: String?
+    val default: String?,
+    val isFileUpload: Boolean
 )
 
 internal class RouteInfo(
@@ -91,13 +92,14 @@ internal class RouteInfo(
     val parameters = mapEndpointParameters(endpoint.parameters)
     val fullPath get() = generateFullPath(resourcePath, endpoint.path)
     val method get() = endpoint.invocationMethod
+    val isMultipartFileUpload get() = endpoint.parameters.any { it.isFile }
+
     private val methodInvoker = when {
         endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
             FiniteDurableStreamsMethodInvoker(endpoint.invocationMethod)
         endpoint.invocationMethod.method.returnsDurableCursorBuilder()
                 && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
-            DurableStreamsMethodInvoker(endpoint.invocationMethod
-        )
+            DurableStreamsMethodInvoker(endpoint.invocationMethod)
         else -> DefaultMethodInvoker(endpoint.invocationMethod)
     }
 
@@ -118,7 +120,7 @@ internal class RouteInfo(
 
     private fun generateFullPath(resourcePath: String, endpointPath: String?): String {
         val combinedPath = joinResourceAndEndpointPaths("/${basePath}/v${apiVersion}/${resourcePath}", endpointPath)
-        return combinedPath.toLowerCase().also {
+        return combinedPath.lowercase().also {
             log.trace { "Full path $it generated." }
         }
     }
@@ -133,7 +135,8 @@ internal class RouteInfo(
                 ParameterType.valueOf(it.type.name),
                 it.required,
                 it.nullable,
-                it.default
+                it.default,
+                it.isFile
             ).also { result ->
                 log.trace { "Map endpoint parameter \"${it.name}\" completed. Result: \"$result\"" }
             }

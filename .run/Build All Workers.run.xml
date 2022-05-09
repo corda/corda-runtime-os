@@ -10,11 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":applications:workers:release:crypto-worker:publishOSGiImage" />
-          <option value=":applications:workers:release:db-worker:publishOSGiImage" />
-          <option value=":applications:workers:release:flow-worker:publishOSGiImage" />
-          <option value=":applications:workers:release:rpc-worker:publishOSGiImage" />
-          <option value=":applications:workers:release:member-worker:publishOSGiImage" />
+          <option value="publishOSGiImage" />
         </list>
       </option>
       <option name="vmOptions" />

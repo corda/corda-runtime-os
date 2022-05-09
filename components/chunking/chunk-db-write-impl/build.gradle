@@ -1,6 +1,6 @@
 plugins {
     id 'corda.common-library'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description 'Chunk database writer impl'
@@ -32,7 +32,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':components:chunking:chunk-db-write')
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
 

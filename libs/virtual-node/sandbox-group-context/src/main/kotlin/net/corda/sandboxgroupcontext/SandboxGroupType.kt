@@ -6,6 +6,5 @@ package net.corda.sandboxgroupcontext
 enum class SandboxGroupType {
     FLOW,
     VERIFICATION,
-    PERSISTENCE,
-    CORDA_SERVICE
+    PERSISTENCE
 }

@@ -105,7 +105,7 @@ class GatewayIntegrationTest : TestBase() {
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"), messagingConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
 
         fun stop() {
             publisher.close()

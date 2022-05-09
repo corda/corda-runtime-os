@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 description 'Corda HTTP RPC Server Impl'
@@ -22,7 +22,6 @@ dependencies {
     implementation "net.corda:corda-application"
 
     implementation project(":libs:http-rpc:http-rpc-server")
-
     implementation "net.corda:corda-crypto"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
@@ -38,6 +37,7 @@ dependencies {
             because 'sonatype-2021-4682'
         }
     }
+
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation project(":libs:http-rpc:http-rpc-common")
 
@@ -51,7 +51,7 @@ dependencies {
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 

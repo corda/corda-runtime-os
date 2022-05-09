@@ -10,6 +10,8 @@ import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
@@ -144,10 +146,15 @@ class StaticMemberRegistrationServiceTest {
     private val publishedList = mutableListOf<Record<String, PersistentMemberInfo>>()
 
     private var coordinatorIsRunning = false
+    private var coordinatorStatus = LifecycleStatus.DOWN
     private val coordinator: LifecycleCoordinator = mock {
         on { isRunning } doAnswer { coordinatorIsRunning }
         on { start() } doAnswer { coordinatorIsRunning = true }
         on { stop() } doAnswer { coordinatorIsRunning = false }
+        on { updateStatus(any(), any()) } doAnswer {
+            coordinatorStatus = it.arguments[0] as LifecycleStatus
+        }
+        on { status } doAnswer { coordinatorStatus }
     }
 
     private var registrationServiceLifecycleHandler: RegistrationServiceLifecycleHandler? = null
@@ -335,6 +342,25 @@ class StaticMemberRegistrationServiceTest {
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
                 "Registration failed. Reason: MGM's key alias is not provided."
+            ),
+            registrationResult
+        )
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when dependency component goes down`() {
+        setUpPublisher()
+        registrationService.start()
+        registrationServiceLifecycleHandler?.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN),
+            coordinator
+        )
+        val registrationResult = registrationService.register(alice)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
             ),
             registrationResult
         )

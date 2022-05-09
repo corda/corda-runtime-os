@@ -1,6 +1,7 @@
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -29,6 +30,7 @@ class SecurityManagerBreakoutTests {
         @BeforeAll
         fun setup() {
             securityManagerService.start()
+            assertNotNull(System.getSecurityManager())
             securityManagerService.denyPermissions(currentBundleLocation, setOf(AllPermission()))
         }
 

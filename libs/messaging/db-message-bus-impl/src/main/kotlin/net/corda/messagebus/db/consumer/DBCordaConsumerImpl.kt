@@ -172,6 +172,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         log.info("Closing consumer $clientId")
         consumerGroup.unsubscribe(this)
         updateTopicPartitions() // Will trigger the callback for removed topic partitions
+        dbAccess.close()
     }
 
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {

@@ -136,7 +136,7 @@ open class SessionManagerImpl(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        PublisherConfig(SESSION_MANAGER_CLIENT_ID),
+        PublisherConfig(SESSION_MANAGER_CLIENT_ID, false),
         configuration
     )
 
@@ -722,7 +722,7 @@ open class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID),
+            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, false),
             configuration
         )
 

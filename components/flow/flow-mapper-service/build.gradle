@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
 }
@@ -29,21 +29,20 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:flow-utilities")
 
-//    integrationTestImplementation project(":testing:db-message-bus-testkit")
-//
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
+
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":libs:flows:flow-mapper-impl")
-    integrationTestRuntimeOnly project(":testing:p2p:inmemory-messaging-impl")
-//    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-//    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-//    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-//    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 
 description "Flow Mapper Component"

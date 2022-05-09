@@ -10,6 +10,7 @@ import java.math.BigInteger
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.Date
+import net.corda.httprpc.HttpFileUpload
 
 internal class SchemaBooleanBuilder : SchemaBuilder {
     override val keys = listOf(Boolean::class.java, Boolean::class.javaObjectType)
@@ -97,6 +98,16 @@ internal class SchemaByteArrayBuilder : SchemaBuilder {
         SchemaModel(
             DataType.STRING,
             DataFormat.BYTE
+        )
+}
+
+internal class SchemaHttpFileUploadBuilder : SchemaBuilder {
+    override val keys = listOf(HttpFileUpload::class.java)
+
+    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel =
+        SchemaModel(
+            DataType.STRING,
+            DataFormat.BINARY
         )
 }
 

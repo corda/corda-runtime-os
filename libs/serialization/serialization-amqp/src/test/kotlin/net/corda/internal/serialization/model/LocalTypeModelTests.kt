@@ -257,7 +257,7 @@ class LocalTypeModelTests {
         TWO;
 
         override fun toString(): String {
-            return "[${name.toLowerCase()}]"
+            return "[${name.lowercase()}]"
         }
     }
 

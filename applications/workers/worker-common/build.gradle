@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
@@ -23,7 +23,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"

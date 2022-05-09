@@ -40,7 +40,7 @@ internal class TrustStoresPublisher(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME),
+        PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
         configuration,
     )
     private val subscription = subscriptionFactory.createCompactedSubscription(

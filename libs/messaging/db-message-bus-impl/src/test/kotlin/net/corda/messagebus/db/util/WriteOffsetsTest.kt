@@ -1,8 +1,11 @@
 package net.corda.messagebus.db.util
 
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.db.persistence.DBAccess
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal class WriteOffsetsTest {
 
@@ -11,14 +14,18 @@ internal class WriteOffsetsTest {
 
     @Test
     fun `returns the correct next offset`() {
-        val initialState = mutableMapOf(
-            CordaTopicPartition(topic1, 0) to 5L,
-            CordaTopicPartition(topic1, 1) to 0L,
-            CordaTopicPartition(topic1, 2) to 2L,
-            //CordaTopicPartition(topic2, 0) to 0L, // Deliberately left out
-        )
+        val dbAccess = mock<DBAccess>().apply {
+            whenever(getMaxOffsetsPerTopicPartition()).thenReturn(
+                mapOf(
+                    CordaTopicPartition(topic1, 0) to 5L,
+                    CordaTopicPartition(topic1, 1) to 0L,
+                    CordaTopicPartition(topic1, 2) to 2L,
+                    //CordaTopicPartition(topic2, 0) to 0L, // Deliberately left out
+                )
+            )
+        }
 
-        val writeOffsets = WriteOffsets(initialState)
+        val writeOffsets = WriteOffsets(dbAccess)
 
         assertThat(writeOffsets.getNextOffsetFor(CordaTopicPartition(topic1, 0))).isEqualTo(6L)
         assertThat(writeOffsets.getNextOffsetFor(CordaTopicPartition(topic1, 0))).isEqualTo(7L)

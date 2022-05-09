@@ -3,7 +3,7 @@ import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'biz.aQute.bnd.builder'
 }
 

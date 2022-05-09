@@ -1,6 +1,7 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import io.swagger.v3.oas.models.media.ArraySchema
+import java.io.InputStream
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
@@ -28,6 +29,9 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaMethod
+import net.corda.httprpc.test.TestFileUploadAPI
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 
 class ResourceToOpenApiSpecMapperTest {
 
@@ -161,7 +165,7 @@ class ResourceToOpenApiSpecMapperTest {
             }
 
 
-            assert(components.schemas.containsKey("PingPongData"))
+            assertTrue(components.schemas.containsKey("PingPongData"))
 
             assertEquals(
                 "#/components/schemas/PingRequest",
@@ -274,5 +278,116 @@ class ResourceToOpenApiSpecMapperTest {
     fun `Invalid characters should be replaced when generating method names`() {
         val path = "resource/call{pathVariable}"
         assertEquals("resource_call_pathvariable_", path.toValidMethodName())
+    }
+
+    @Test
+    fun `endpoint with multipart generates correct open api request content`() {
+        val endpoint = Endpoint(
+            method = EndpointMethod.POST,
+            title = "upload",
+            description = "",
+            path = "fileupload",
+            parameters = listOf(
+                EndpointParameter(
+                    id = "file_id",
+                    description = "The file input stream.",
+                    name = "file",
+                    required = true,
+                    classType = InputStream::class.java,
+                    parameterizedTypes = emptyList(),
+                    type = ParameterType.BODY,
+                    default = "",
+                    isFile = true
+                )
+            ),
+            responseBody = ResponseBody(
+                description = "", type = String::class.java, parameterizedTypes = emptyList()
+            ),
+            invocationMethod = InvocationMethod(method = TestFileUploadAPI::upload.javaMethod!!, instance = TestHealthCheckAPIImpl())
+        )
+        val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
+        val openApi = endpoint.toOperation("path", schemaModelProvider)
+
+        assertNotNull(openApi.requestBody)
+
+        val multipartFormData = openApi.requestBody.content["multipart/form-data"]
+        assertNotNull(multipartFormData)
+
+        assertEquals("object", multipartFormData!!.schema.type)
+        val properties = multipartFormData.schema.properties
+        assertEquals(1, properties.size)
+
+        val file = properties["file_id"]
+        assertNotNull(file)
+        assertEquals("file", file!!.name)
+        assertEquals("string", file.type)
+        assertEquals("binary", file.format)
+        assertEquals("The file input stream.", file.description)
+        assertFalse(file.nullable)
+    }
+
+    @Test
+    fun `endpoint with multiple body params including 1 input stream generates request body with multipart content`() {
+        val endpoint = Endpoint(
+            method = EndpointMethod.POST,
+            title = "Upload a file with its name",
+            description = "",
+            path = "",
+            parameters = listOf(
+                EndpointParameter(
+                    id = "filename_id",
+                    name = "filename",
+                    description = "Name of the file.",
+                    required = true,
+                    classType = String::class.java,
+                    type = ParameterType.BODY,
+                    default = "default"
+                ),
+                EndpointParameter(
+                    id = "file_id",
+                    name = "file",
+                    description = "The file input stream.",
+                    required = true,
+                    classType = InputStream::class.java,
+                    type = ParameterType.BODY,
+                    default = "",
+                    isFile = true
+                )
+            ),
+            responseBody = ResponseBody(
+                description = "", type = String::class.java, parameterizedTypes = emptyList()
+            ),
+            invocationMethod = InvocationMethod(
+                method = TestFileUploadAPI::uploadWithName.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()
+            )
+        )
+        val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
+        val openApi = endpoint.toOperation("fileupload", schemaModelProvider)
+
+        assertNotNull(openApi.requestBody)
+
+        val multipartFormData = openApi.requestBody.content["multipart/form-data"]
+        assertNotNull(multipartFormData)
+
+        assertEquals("object", multipartFormData!!.schema.type)
+        val properties = multipartFormData.schema.properties
+        assertEquals(2, properties.size)
+
+        val filename = properties["filename_id"]
+        assertNotNull(filename)
+        assertEquals("filename", filename!!.name)
+        assertEquals("string", filename.type)
+        assertEquals("Name of the file.", filename.description)
+        assertEquals("string", filename.example)
+        assertFalse(filename.nullable)
+
+        val file = properties["file_id"]
+        assertNotNull(file)
+        assertEquals("file", file!!.name)
+        assertEquals("string", file.type)
+        assertEquals("binary", file.format)
+        assertEquals("The file input stream.", file.description)
+        assertFalse(file.nullable)
     }
 }

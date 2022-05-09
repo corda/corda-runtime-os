@@ -26,7 +26,8 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZonedDateTime
 import kotlin.test.assertEquals
-
+import net.corda.httprpc.server.impl.utils.TestClientFileUpload
+import net.corda.httprpc.test.utls.ChecksumUtil
 
 class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     companion object {
@@ -45,7 +46,8 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
                     TestHealthCheckAPIImpl(),
                     TestJavaPrimitivesRPCopsImpl(),
                     CustomSerializationAPIImpl(),
-                    TestEntityRpcOpsImpl()
+                    TestEntityRpcOpsImpl(),
+                    TestFileUploadImpl()
                 ),
                 securityManager,
                 httpRpcSettings,
@@ -460,4 +462,103 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"Deleted using query: MyQuery\"", createEntityResponse.body)
     }
+
+    @Test
+    fun `test generate checksum function`() {
+        val inputStream1 = "test text".byteInputStream()
+        val inputStream2 = "test text".byteInputStream()
+
+        val checksum1 = ChecksumUtil.generateChecksum(inputStream1)
+        val checksum2 = ChecksumUtil.generateChecksum(inputStream2)
+
+        assertEquals(checksum1, checksum2)
+    }
+
+    @Test
+    fun `file upload using multi-part form request`() {
+        val text = "test text"
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(
+                path = "fileupload/upload",
+                formParameters = mapOf(
+                    "file" to TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt")
+                )
+            ),
+            userName,
+            password
+        )
+
+        val expectedChecksum = ChecksumUtil.generateChecksum(text.byteInputStream())
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"$expectedChecksum\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `file upload with name parameter using multi-part form request`() {
+        val text = "test text"
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(
+                path = "fileupload/uploadwithname",
+                formParameters = mapOf(
+                    "name" to "some-text-as-parameter",
+                    "file" to TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt")
+                )
+            ),
+            userName,
+            password
+        )
+
+        val expectedResult = "some-text-as-parameter,${ChecksumUtil.generateChecksum(text.byteInputStream())}"
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `file upload on API declaring HttpFileUpload object as parameter using multi-part form request`() {
+        val text = "test text"
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(
+                path = "fileupload/fileuploadobject",
+                formParameters = mapOf(
+                    "file" to TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt")
+                )
+            ),
+            userName,
+            password
+        )
+
+        val expectedResult = ChecksumUtil.generateChecksum(text.byteInputStream())
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `file upload on API declaring multiple HttpFileUpload objects as parameters using multi-part form request`() {
+        val text1 = "test text 1"
+        val text2 = "test text 2"
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(
+                path = "fileupload/multifileuploadobject",
+                formParameters = mapOf(
+                    "file1" to TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt"),
+                    "file2" to TestClientFileUpload(text2.byteInputStream(), "uploadedTestFile2.txt")
+                )
+            ),
+            userName,
+            password
+        )
+
+        val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + "," + ChecksumUtil.generateChecksum(text2.byteInputStream())
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+    }
+
 }

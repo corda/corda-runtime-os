@@ -33,7 +33,7 @@ internal class CordaAtomicDBProducerImplTest {
     @Test
     fun `atomic producer inserts atomic transaction record on initialization`() {
         val dbAccess: DBAccess = mock()
-        CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
+        CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
         verify(dbAccess).writeAtomicTransactionRecord()
     }
 
@@ -43,22 +43,27 @@ internal class CordaAtomicDBProducerImplTest {
         whenever(dbAccess.writeTransactionRecord(any())).thenAnswer {
             throw RollbackException("I already have this!")
         }
-        CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
+        CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
     }
 
     @Test
     fun `atomic producer sends correct entry to database and topic`() {
-        val dbAccess: DBAccess = mock()
-        whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
-        val serializer = mock<CordaAvroSerializer<Any>>()
-        whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
-        whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
+        val dbAccess = mock<DBAccess>().apply {
+            whenever(getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
+        }
+        val writeOffsets = mock<WriteOffsets>().apply {
+            whenever(getNextOffsetFor(CordaTopicPartition(topic, 0))).thenReturn(6)
+        }
+        val serializer = mock<CordaAvroSerializer<Any>>().apply {
+            whenever(serialize(eq(key))).thenReturn(serializedKey)
+            whenever(serialize(eq(value))).thenReturn(serializedValue)
+        }
         val callback: CordaProducer.Callback = mock()
 
         val producer = CordaAtomicDBProducerImpl(
             serializer,
             dbAccess,
-            WriteOffsets(mapOf(CordaTopicPartition(topic, 0) to 5))
+            writeOffsets
         )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
@@ -78,7 +83,10 @@ internal class CordaAtomicDBProducerImplTest {
 
     @Test
     fun `atomic producer sends correct entry to database when partition is specified`() {
-        val dbAccess: DBAccess = mock()
+        val dbAccess = mock<DBAccess>()
+        val writeOffsets = mock<WriteOffsets>().apply {
+            whenever(getNextOffsetFor(eq(CordaTopicPartition(topic, 0)))).thenReturn(3)
+        }
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)
         whenever(serializer.serialize(eq(value))).thenReturn(serializedValue)
@@ -87,7 +95,7 @@ internal class CordaAtomicDBProducerImplTest {
         val producer = CordaAtomicDBProducerImpl(
             serializer,
             dbAccess,
-            WriteOffsets(mapOf(CordaTopicPartition(topic, 0) to 2))
+            writeOffsets
         )
         val cordaRecord = CordaProducerRecord(topic, key, value)
 
@@ -109,7 +117,7 @@ internal class CordaAtomicDBProducerImplTest {
     fun `atomic producer does not allow transactional calls`() {
         val dbAccess: DBAccess = mock()
 
-        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, WriteOffsets(emptyMap()))
+        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.beginTransaction()
@@ -128,5 +136,13 @@ internal class CordaAtomicDBProducerImplTest {
         }
         verify(dbAccess).writeAtomicTransactionRecord()
         verifyNoMoreInteractions(dbAccess)
+    }
+
+    @Test
+    fun `producer correctly closes down dbAccess when closed`() {
+        val dbAccess: DBAccess = mock()
+        val producer = CordaAtomicDBProducerImpl(mock(), dbAccess, mock())
+        producer.close()
+        verify(dbAccess).close()
     }
 }

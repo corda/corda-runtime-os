@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
+import java.io.InputStream
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
@@ -15,6 +16,7 @@ import java.lang.reflect.Parameter
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.jvmErasure
+import net.corda.httprpc.HttpFileUpload
 
 /**
  * [ParametersTransformer] implementations are responsible for transforming values into [EndpointParameter].
@@ -113,18 +115,22 @@ internal class BodyParametersTransformer(
         }
     }
 
-    private fun transformWithAnnotation(annotation: HttpRpcRequestBodyParameter) =
-        EndpointParameter(
+    private fun transformWithAnnotation(annotation: HttpRpcRequestBodyParameter): EndpointParameter {
+        val classType = parameter.type.jvmErasure.java
+        val parameterizedTypes = parameter.getParameterizedTypes()
+        return EndpointParameter(
             id = parameter.name!!,
             name = annotation.name(parameter.name!!),
             description = annotation.description,
             required = annotation.required,
             nullable = parameter.type.isMarkedNullable,
             default = null,
-            classType = parameter.type.jvmErasure.java,
-            parameterizedTypes = parameter.getParameterizedTypes(),
-            type = ParameterType.BODY
+            classType = classType,
+            parameterizedTypes = parameterizedTypes,
+            type = ParameterType.BODY,
+            isFile = determineIfParameterIsFile(classType, parameterizedTypes)
         )
+    }
 }
 
 private class BodyParametersExplicitTransformer(private val name: String, private val type: GenericParameterizedType) :
@@ -144,8 +150,15 @@ private class BodyParametersExplicitTransformer(private val name: String, privat
                 default = null,
                 classType = type.clazz,
                 parameterizedTypes = type.nestedParameterizedTypes,
-                type = ParameterType.BODY
+                type = ParameterType.BODY,
+                isFile = determineIfParameterIsFile(type.clazz, type.nestedParameterizedTypes)
             )
         }.also { log.trace("Transform explicit body parameter \"$name\", result $it completed.") }
     }
+}
+
+private fun determineIfParameterIsFile(classType: Class<out Any>, parameterizedTypes: List<GenericParameterizedType>): Boolean {
+    return classType == InputStream::class.java ||
+            classType == HttpFileUpload::class.java ||
+            parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
 }
