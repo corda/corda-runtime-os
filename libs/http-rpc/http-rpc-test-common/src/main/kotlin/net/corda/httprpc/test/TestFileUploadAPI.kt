@@ -4,6 +4,8 @@ import java.io.InputStream
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
@@ -30,4 +32,16 @@ interface TestFileUploadAPI : RpcOps {
 
     @HttpRpcPOST(path = "multiInputStreamFileUpload")
     fun multiInputStreamFileUpload(@HttpRpcRequestBodyParameter file1: InputStream, @HttpRpcRequestBodyParameter file2: InputStream): String
+
+    @HttpRpcPOST(path = "uploadWithQueryParam")
+    fun fileUploadWithQueryParam(
+        @HttpRpcQueryParameter(required = false) tenant: String,
+        @HttpRpcRequestBodyParameter file: HttpFileUpload
+    ): String
+
+    @HttpRpcPOST(path = "uploadWithPathParam/{tenant}/")
+    fun fileUploadWithPathParam(
+        @HttpRpcPathParameter tenant: String,
+        @HttpRpcRequestBodyParameter file: HttpFileUpload
+    ): String
 }

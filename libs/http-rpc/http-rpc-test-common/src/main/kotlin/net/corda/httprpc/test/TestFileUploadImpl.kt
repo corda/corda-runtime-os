@@ -42,6 +42,14 @@ class TestFileUploadImpl : TestFileUploadAPI, PluggableRPCOps<TestFileUploadAPI>
         return ChecksumUtil.generateChecksum(file1) + "," + ChecksumUtil.generateChecksum(file2)
     }
 
+    override fun fileUploadWithQueryParam(tenant: String, file: HttpFileUpload): String {
+        return "$tenant,${ChecksumUtil.generateChecksum(file.content)}"
+    }
+
+    override fun fileUploadWithPathParam(tenant: String, file: HttpFileUpload): String {
+        return "$tenant,${ChecksumUtil.generateChecksum(file.content)}"
+    }
+
     override val targetInterface: Class<TestFileUploadAPI>
         get() = TestFileUploadAPI::class.java
 

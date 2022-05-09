@@ -439,6 +439,24 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     )
 
                     it.assertThat(
+                        fileUploadWithQueryParam(
+                            "tenant1",
+                            HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
+                        )
+                    ).isEqualTo(
+                        "\"tenant1,${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        fileUploadWithPathParam(
+                            "tenant1",
+                            HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
+                        )
+                    ).isEqualTo(
+                        "\"tenant1,${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
                         fileUpload(
                             HttpFileUpload(text.byteInputStream(), "", "", "SampleFile1.txt", 123L),
                             HttpFileUpload(text2.byteInputStream(), "", "", "SampleFile2.txt", 123L),

@@ -19,8 +19,8 @@ internal fun Method.parametersFrom(args: Array<out Any?>?, extraBodyParameters: 
     if(this.isMultipartFormRequest()) {
         return ResolvedParameters(
             null,
-            emptyMap(),
-            emptyMap(),
+            args?.let { this.pathParametersFrom(it) } ?: emptyMap(),
+            args?.let { this.queryParametersFrom(it) } ?: emptyMap(),
             args?.let { this.formParametersFrom(it) } ?: emptyMap(),
             args?.let { this.filesFrom(it) } ?: emptyMap(),
         )
