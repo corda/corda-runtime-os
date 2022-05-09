@@ -3,6 +3,7 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.packaging.CPI
 import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -98,7 +99,7 @@ internal class ValidationFunctions(
             val cpiExists = chunkPersistence.cpiExists(
                 cpi.metadata.id.name,
                 cpi.metadata.id.version,
-                cpi.metadata.id.signerSummaryHash?.toString() ?: "")
+                cpi.metadata.id.signerSummaryHashForDbQuery)
 
             if (cpiExists && fileInfo.forceUpload) {
                 log.info("Force uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
@@ -156,7 +157,7 @@ internal class ValidationFunctions(
         val groupIdInDatabase = persistence.getGroupId(
             cpi.metadata.id.name,
             cpi.metadata.id.version,
-            cpi.metadata.id.signerSummaryHash?.toString() ?: ""
+            cpi.metadata.id.signerSummaryHashForDbQuery
         )
         if (groupIdInDatabase != null) {
             throw ValidationException("CPI already uploaded with groupId = $groupIdInDatabase")

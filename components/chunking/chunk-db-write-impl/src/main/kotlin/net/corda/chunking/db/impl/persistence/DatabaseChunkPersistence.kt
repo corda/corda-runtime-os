@@ -4,6 +4,7 @@ import net.corda.chunking.Checksum
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.db.impl.AllChunksReceived
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
@@ -204,7 +205,16 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiId = cpi.metadata.id
         entityManagerFactory.createEntityManager().transaction { em ->
             // Perform clean-up of the old data
-            val oldCpiMetadataEntity = findCpiMetadataEntityInTransaction(em, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+            val oldCpiMetadataEntity = requireNotNull(
+                findCpiMetadataEntityInTransaction(
+                    em,
+                    cpiId.name,
+                    cpiId.version,
+                    cpiId.signerSummaryHashForDbQuery
+                )
+            ) {
+                "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
+            }
             em.merge(oldCpiMetadataEntity)
 
             val cpkMetadataList = em.createQuery(
@@ -214,7 +224,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             )
                 .setParameter("cpi_name", cpiId.name)
                 .setParameter("cpi_version", cpiId.version)
-                .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHash.toString())
+                .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHashForDbQuery)
                 .resultList
 
             log.info("Found ${cpkMetadataList.size} CPK meta data items")
@@ -280,7 +290,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         return CpiMetadataEntity(
             cpiMetadata.id.name,
             cpiMetadata.id.version,
-            cpiMetadata.id.signerSummaryHash?.toString() ?: "",
+            cpiMetadata.id.signerSummaryHashForDbQuery,
             cpiFileName,
             checksum.toString(),
             cpi.metadata.groupPolicy!!,
