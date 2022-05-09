@@ -337,7 +337,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
         }
     }
 }
-if (compositeBuild && file(cordaCliHostLocation).exists()) {
+if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
     includeBuild(cordaCliHostLocation)
 }
 
