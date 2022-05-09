@@ -24,6 +24,9 @@ interface TestFileUploadAPI : RpcOps {
     @HttpRpcPOST(path = "fileUploadObject")
     fun fileUpload(@HttpRpcRequestBodyParameter file: HttpFileUpload): String
 
+    @HttpRpcPOST(path = "fileUploadWithFormParam")
+    fun fileUploadWithFormParam(@HttpRpcRequestBodyParameter formParam: String, @HttpRpcRequestBodyParameter file: HttpFileUpload): String
+
     @HttpRpcPOST(path = "multiFileUploadObject")
     fun fileUpload(@HttpRpcRequestBodyParameter file1: HttpFileUpload, @HttpRpcRequestBodyParameter file2: HttpFileUpload): String
 
