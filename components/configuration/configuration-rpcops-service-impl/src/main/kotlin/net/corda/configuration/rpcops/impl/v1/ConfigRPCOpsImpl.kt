@@ -1,6 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
+import java.time.Duration
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
@@ -29,7 +30,6 @@ import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 /** An implementation of [ConfigRPCOpsInternal]. */
 @Suppress("Unused")
@@ -120,7 +120,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
      */
     private fun validateRequestedConfig(request: HTTPUpdateConfigRequest) = try {
         val config = request.config
-        val smartConfig = SmartConfigFactory.create(ConfigFactory.parseString(config)).create(ConfigFactory.parseString(config))
+        val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
         val updatedConfig = validator.validate(request.section, request.schemaVersion, smartConfig)
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
