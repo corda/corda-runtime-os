@@ -2,7 +2,7 @@ package net.corda.sandboxgroupcontext.impl
 
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.CpkIdentifier
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -63,8 +63,8 @@ class SandboxGroupContextServiceImplTest {
         )
     }
 
-    class CpkReadServiceFake(private val cpks: Set<CPK>) : CpkReadService {
-        override fun get(cpkId: CpkIdentifier): CPK? {
+    class CpkReadServiceFake(private val cpks: Set<Cpk>) : CpkReadService {
+        override fun get(cpkId: CpkIdentifier): Cpk? {
             return cpks.singleOrNull { (it.metadata.id.name == cpkId.name) && (it.metadata.id.version == cpkId.version) }
         }
 

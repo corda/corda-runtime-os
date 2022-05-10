@@ -8,7 +8,7 @@ import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
-import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
+import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPGetVirtualNodesResponse
@@ -82,7 +82,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val resp = sendRequest(rpcRequest)
 
         return if (resp.success) {
-            val cpiId = CPIIdentifier.fromAvro(resp.cpiIdentifier)
+            val cpiId = CpiIdentifier.fromAvro(resp.cpiIdentifier)
             HTTPCreateVirtualNodeResponse(
                 resp.x500Name, cpiId, resp.cpiFileChecksum, resp.mgmGroupId, resp.holdingIdentifierHash,
                 resp.vaultDdlConnectionId, resp.vaultDmlConnectionId, resp.cryptoDdlConnectionId, resp.cryptoDmlConnectionId

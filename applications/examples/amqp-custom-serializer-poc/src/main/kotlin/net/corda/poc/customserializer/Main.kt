@@ -7,7 +7,7 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -86,10 +86,10 @@ class Main @Activate constructor(
 
     private fun prepareSandbox(cpkFiles: List<Path>): SandboxAndSerializers {
         val outputStream = ByteArrayOutputStream()
-        CPI.assemble(outputStream, "cpi", "1.0", cpkFiles)
+        Cpi.assemble(outputStream, "cpi", "1.0", cpkFiles)
 
         // NOTE - re-enable with a custom implementation of CpkReadService
-        val loadCpb: CPI = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
+        val loadCpb: Cpi = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
 
         val serializers: List<String> = loadCpb.metadata.cpks.flatMap { it.cordappManifest.serializers }
         return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(loadCpb.cpks), serializers)

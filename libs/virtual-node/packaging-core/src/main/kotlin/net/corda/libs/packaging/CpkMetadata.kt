@@ -1,6 +1,6 @@
 package net.corda.libs.packaging
 
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.converters.toAvro
 import net.corda.packaging.converters.toCorda
@@ -17,7 +17,7 @@ import java.util.stream.Collectors
  * Represents a CPK file in the cluster
  *
  * @property cpkId
- * @property manifest The file name of the main bundle inside the [CPK]
+ * @property manifest The file name of the main bundle inside the [Cpk]
  * @property mainBundle
  * @property libraries
  * @property dependencies
@@ -29,18 +29,18 @@ import java.util.stream.Collectors
  */
 data class CpkMetadata(
     val cpkId: CpkIdentifier,
-    val manifest: CPK.Manifest,
+    val manifest: Cpk.Manifest,
     val mainBundle: String,
     val libraries: List<String>,
     val dependencies: List<CpkIdentifier>,
     val cordappManifest: CordappManifest,
-    val type: CPK.Type,
+    val type: Cpk.Type,
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
     val cordappCertificates: Set<Certificate>
 ) {
     companion object {
-        fun fromAvro(other: net.corda.data.packaging.CPKMetadata): CpkMetadata {
+        fun fromAvro(other: net.corda.data.packaging.CpkMetadata): CpkMetadata {
             return CpkMetadata(
                 CpkIdentifier.fromAvro(other.id),
                 other.manifest.toCorda(),
@@ -62,7 +62,7 @@ data class CpkMetadata(
         }
 
         // TODO - remove when refactoring complete
-        fun fromLegacyCpk(cpk: CPK): CpkMetadata {
+        fun fromLegacyCpk(cpk: Cpk): CpkMetadata {
             return CpkMetadata(
                 CpkIdentifier(cpk.metadata.id.name, cpk.metadata.id.version, cpk.metadata.id.signerSummaryHash),
                 cpk.metadata.manifest,
@@ -79,8 +79,8 @@ data class CpkMetadata(
         }
     }
 
-    fun toAvro(): net.corda.data.packaging.CPKMetadata {
-        return net.corda.data.packaging.CPKMetadata(
+    fun toAvro(): net.corda.data.packaging.CpkMetadata {
+        return net.corda.data.packaging.CpkMetadata(
             cpkId.toAvro(),
             manifest.toAvro(),
             mainBundle,

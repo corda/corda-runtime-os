@@ -2,7 +2,7 @@ package net.corda.testing.sandboxes.impl
 
 import net.corda.libs.packaging.CpiIdentifier
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
@@ -25,7 +25,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
 ) : VirtualNodeLoader, VirtualNodeInfoReadService {
     private val virtualNodeInfoMap = ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
     private val resourcesLookup = mutableMapOf<CpiIdentifier, String>()
-    private val cpiResources = mutableMapOf<String, CPI>()
+    private val cpiResources = mutableMapOf<String, Cpi>()
     private val logger = loggerFor<VirtualNodeLoader>()
 
     override val isRunning: Boolean

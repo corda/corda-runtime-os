@@ -6,7 +6,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.sandbox.SandboxCreationService
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.types.ByteSequence
@@ -63,9 +63,9 @@ class Main @Activate constructor(
         )
 
         val outputStream = ByteArrayOutputStream()
-        CPI.assemble(outputStream, "cpi", "1.0", listOf(cpk))
+        Cpi.assemble(outputStream, "cpi", "1.0", listOf(cpk))
 
-        val loadCpb: CPI = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
+        val loadCpb: Cpi = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
         val sandboxGroup = sandboxCreationService.createSandboxGroup(loadCpb.cpks)
 
         val factory = SerializerFactoryBuilder.build(sandboxGroup)
