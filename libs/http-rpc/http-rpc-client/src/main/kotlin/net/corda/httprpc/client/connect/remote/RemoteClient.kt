@@ -27,6 +27,7 @@ import org.apache.http.ssl.SSLContexts
 import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
 import kong.unirest.MultipartBody
+import net.corda.httprpc.client.processing.HttpRpcClientFileUpload
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -135,15 +136,19 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
 
             if(!webRequest.files.isNullOrEmpty()) {
                 webRequest.files.forEach { filesForParameter ->
-                    val formFieldName = filesForParameter.key
-                    filesForParameter.value.forEach { file ->
-                        // we can add multiple files to the same form field name
-                        requestBuilder.field(formFieldName, file.content, file.fileName)
-                    }
+                    addFilesForEachField(filesForParameter, requestBuilder)
                 }
             }
         }
         return requestBuilder
+    }
+
+    private fun addFilesForEachField(filesForParameter: Map.Entry<String, List<HttpRpcClientFileUpload>>, requestBuilder: MultipartBody) {
+        val formFieldName = filesForParameter.key
+        filesForParameter.value.forEach { file ->
+            // we can add multiple files to the same form field name
+            requestBuilder.field(formFieldName, file.content, file.fileName)
+        }
     }
 
     private fun <T> buildApplicationJsonRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {

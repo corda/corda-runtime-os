@@ -2,6 +2,7 @@ package net.corda.httprpc.client.processing
 
 import java.io.InputStream
 import java.lang.reflect.Method
+import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.net.URLEncoder
 import net.corda.httprpc.HttpFileUpload
@@ -36,18 +37,15 @@ internal fun Method.parametersFrom(args: Array<out Any?>?, extraBodyParameters: 
     )
 }
 
-internal fun Method.isMultipartFormRequest() : Boolean {
-    if(this.parameters.any { it.type == InputStream::class.java || it.type == HttpFileUpload::class.java }) return true
+internal fun Method.isMultipartFormRequest() =
+    this.parameters.any { isParameterAFile(it) || isParameterAListOfFiles(it) }
 
-    // this allows HTTP client to support collections of HttpFileUploads
-    if(this.parameters.any {
-        it.parameterizedType is ParameterizedType && Collection::class.java.isAssignableFrom(it.type)
-                && (it.parameterizedType as ParameterizedType).actualTypeArguments.size == 1
-                && (it.parameterizedType as ParameterizedType).actualTypeArguments.first() == HttpFileUpload::class.java
-    }) return true
+private fun isParameterAFile(it: Parameter) = it.type == InputStream::class.java || it.type == HttpFileUpload::class.java
 
-    return false
-}
+private fun isParameterAListOfFiles(it: Parameter) =
+    (it.parameterizedType is ParameterizedType && Collection::class.java.isAssignableFrom(it.type)
+            && (it.parameterizedType as ParameterizedType).actualTypeArguments.size == 1
+            && (it.parameterizedType as ParameterizedType).actualTypeArguments.first() == HttpFileUpload::class.java)
 
 internal fun ResolvedParameters.toWebRequest(rawPath: String) = WebRequest<Any>(
     rawPath.replacePathParameters(pathParams).replace("/+".toRegex(), "/"),

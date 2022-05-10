@@ -511,7 +511,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             password
         )
 
-        val expectedResult = "some-text-as-parameter,${ChecksumUtil.generateChecksum(text.byteInputStream())}"
+        val expectedResult = "some-text-as-parameter, ${ChecksumUtil.generateChecksum(text.byteInputStream())}"
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"$expectedResult\"", createEntityResponse.body)
@@ -555,7 +555,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             password
         )
 
-        val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + "," + ChecksumUtil.generateChecksum(text2.byteInputStream())
+        val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + ", " + ChecksumUtil.generateChecksum(text2.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals("\"$expectedResult\"", createEntityResponse.body)
