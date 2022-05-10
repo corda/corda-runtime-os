@@ -3,6 +3,7 @@ package net.corda.flow.testing.tests
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
@@ -23,9 +24,6 @@ import java.util.stream.Stream
 class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
-
-        val FLOW_STACK_ITEM = FlowStackItem("flow name", false, listOf())
-
         @JvmStatic
         fun wakeupAndSessionAck(): Stream<Arguments> {
             return Stream.of(
@@ -53,7 +51,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                     }
                 ),
                 Arguments.of(
-                    SessionData::class.simpleName,
+                    SessionClose::class.simpleName,
                     { dsl: WhenSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2) }
                 )
             )
@@ -215,31 +213,6 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             parameter(this)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                flowDidNotResume()
-                sessionAckEvents(SESSION_ID_2)
-            }
-        }
-    }
-
-    @Test
-    fun `Receiving a session close event for an unrelated session does not resume the flow and sends a session ack`() {
-        given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
-        }
-
-        `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
         }
 
         then {

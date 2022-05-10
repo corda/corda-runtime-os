@@ -55,11 +55,12 @@ This document should be maintained so that we can ensure that we have quick visi
 - Given a subFlow contains only initiated sessions when the subFlow finishes session close events are sent ✅
 - Given a subFlow contains an initiated and closed session when the subFlow finishes a single session close event is sent ✅
 - Given a subFlow contains only closed sessions when the subFlow finishes a wakeup event is scheduled ✅
-
-## SubFlowFinished - Tests below are the same as (CloseSessions) but with a different request type
-
-- Receiving a single session close event does not resume the flow and sends a session ack
-- Receiving all session close events resumes the flow and sends session acks
+- Given a subFlow contains no sessions when the subFlow finishes a wakeup event is scheduled ✅
+- Receiving an out-of-order session close events does not resume the flow and sends a session ack ✅
+- Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events ✅ (Still requires the resends to be asserted)
 - Receiving a session close event for one session and a data for another resumes the flow with an error
-- Given two sessions where one has already received a session close event receiving a session close event for the other session resumes the flow and sends a session ack
-- Given two sessions have already received their session close events when the flow calls 'close' for the sessions the flow should resume
+- Receiving a session event for an unrelated session does not resume the flow and sends a session ack ✅
+- Given two sessions receiving a single session close event does not resume the flow and sends a session ack ✅
+- Given two sessions receiving all session close events resumes the flow and sends session acks ✅
+- Given two sessions where one has already received a session close event calling 'close' and then receiving a session close event for the other session does not resume the flow and sends a session ack ✅
+- Given two sessions where one enters WAIT_FOR_FINAL_ACK after calling 'close' resumes the flow after receiving a session ack and session close ✅ (test done twice but order switched around)
