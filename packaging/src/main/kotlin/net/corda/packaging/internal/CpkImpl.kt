@@ -1,6 +1,6 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.PackagingException
 import net.corda.packaging.VersionComparator
@@ -11,32 +11,32 @@ import java.security.cert.Certificate
 import java.util.NavigableSet
 import java.util.jar.JarFile
 
-internal data class CPKIdentifierImpl(
+internal data class CpkIdentifierImpl(
     override val name: String,
     override val version: String,
-    override val signerSummaryHash: SecureHash?) : CPK.Identifier {
+    override val signerSummaryHash: SecureHash?) : Cpk.Identifier {
 
     companion object {
-        private val identifierComparator = Comparator.comparing(CPK.Identifier::name)
-            .thenComparing(CPK.Identifier::version, VersionComparator())
-            .thenComparing(CPK.Identifier::signerSummaryHash, secureHashComparator)
+        private val identifierComparator = Comparator.comparing(Cpk.Identifier::name)
+            .thenComparing(Cpk.Identifier::version, VersionComparator())
+            .thenComparing(Cpk.Identifier::signerSummaryHash, secureHashComparator)
     }
 
-    override fun compareTo(other: CPK.Identifier) = identifierComparator.compare(this, other)
+    override fun compareTo(other: Cpk.Identifier) = identifierComparator.compare(this, other)
 }
 
 @Suppress("LongParameterList")
-internal data class CPKMetadataImpl(
+internal data class CpkMetadataImpl(
     override val mainBundle: String,
-    override val manifest : CPK.Manifest,
+    override val manifest : Cpk.Manifest,
     override val libraries: List<String>,
-    override val dependencies: NavigableSet<CPK.Identifier>,
+    override val dependencies: NavigableSet<Cpk.Identifier>,
     override val cordappManifest: CordappManifest,
-    override val type: CPK.Type,
+    override val type: Cpk.Type,
     override val hash: SecureHash,
     override val cordappCertificates : Set<Certificate>
-) : CPK.Metadata {
-    override val id: CPK.Identifier = CPKIdentifierImpl(
+) : Cpk.Metadata {
+    override val id: Cpk.Identifier = CpkIdentifierImpl(
         name = cordappManifest.bundleSymbolicName,
         version = cordappManifest.bundleVersion,
         signerSummaryHash = cordappCertificates
@@ -45,12 +45,12 @@ internal data class CPKMetadataImpl(
     )
 }
 
-internal class CPKImpl(
-    override val metadata: CPK.Metadata,
+internal class CpkImpl(
+    override val metadata: Cpk.Metadata,
     private val jarFile: JarFile,
     private val cpkPath: Path,
     private val cpkFileName: String?
-) : CPK {
+) : Cpk {
     override fun getResourceAsStream(resourceName: String) = jarFile.getJarEntry(resourceName)
         ?.let(jarFile::getInputStream)
         ?: throw IOException("Unknown resource $resourceName")
@@ -64,8 +64,8 @@ internal class CPKImpl(
         get() = cpkFileName
 }
 
-internal data class CPKFormatVersionImpl(override val major: Int, override val minor: Int) : CPK.FormatVersion {
-    override fun compareTo(other: CPK.FormatVersion) = when (val majorDiff = major - other.major) {
+internal data class CpkFormatVersionImpl(override val major: Int, override val minor: Int) : Cpk.FormatVersion {
+    override fun compareTo(other: Cpk.FormatVersion) = when (val majorDiff = major - other.major) {
         0 -> minor - other.minor
         else -> majorDiff
     }
@@ -73,15 +73,15 @@ internal data class CPKFormatVersionImpl(override val major: Int, override val m
     override fun toString() = "$major.$minor"
 }
 
-internal data class CPKManifestImpl(override val cpkFormatVersion: CPK.FormatVersion) : CPK.Manifest {
+internal data class CpkManifestImpl(override val cpkFormatVersion: Cpk.FormatVersion) : Cpk.Manifest {
     companion object {
         const val CPK_FORMAT = "Corda-CPK-Format"
         const val CPK_TYPE = "Corda-CPK-Type"
 
-        fun parseFormatVersion(manifest: java.util.jar.Manifest): CPK.FormatVersion {
-            val formatEntry = manifest.mainAttributes.getValue(CPK.Manifest.CPK_FORMAT)
-                ?: throw PackagingException("CPK manifest does not specify a `${CPK.Manifest.CPK_FORMAT}` attribute.")
-            return CPK.FormatVersion.parse(formatEntry)
+        fun parseFormatVersion(manifest: java.util.jar.Manifest): Cpk.FormatVersion {
+            val formatEntry = manifest.mainAttributes.getValue(Cpk.Manifest.CPK_FORMAT)
+                ?: throw PackagingException("CPK manifest does not specify a `${Cpk.Manifest.CPK_FORMAT}` attribute.")
+            return Cpk.FormatVersion.parse(formatEntry)
         }
     }
 }

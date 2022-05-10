@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "CPKIdentifier",
+  "name": "CpkIdentifier",
   "namespace": "net.corda.data.packaging",
   "fields": [
     {

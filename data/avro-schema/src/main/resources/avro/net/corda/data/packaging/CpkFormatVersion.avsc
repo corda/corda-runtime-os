@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "CPKFormatVersion",
+  "name": "CpkFormatVersion",
   "namespace": "net.corda.data.packaging",
   "fields" : [
     {

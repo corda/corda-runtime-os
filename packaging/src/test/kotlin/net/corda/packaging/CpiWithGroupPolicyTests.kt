@@ -27,10 +27,10 @@ class CpiWithGroupPolicyTests {
     private lateinit var workflowCPKPath: Path
     private lateinit var contractCPKPath: Path
     private lateinit var testCPIPath: Path
-    private lateinit var contractCPK: CPK.Metadata
-    private lateinit var workflowCPK: CPK.Metadata
-    private lateinit var flowsCPK: CPK.Metadata
-    private lateinit var testCPI: CPI
+    private lateinit var contractCPK: Cpk.Metadata
+    private lateinit var workflowCPK: Cpk.Metadata
+    private lateinit var flowsCPK: Cpk.Metadata
+    private lateinit var testCPI: Cpi
     private val cpiName = "Test CPI"
     private val cpiVersion = "1.5"
     private lateinit var cpiHash: SecureHash
@@ -45,14 +45,14 @@ class CpiWithGroupPolicyTests {
         testCPIPath = testDir.resolve("test.cpi")
         workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
         contractCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.contract.cpk")))
-        contractCPK = Files.newInputStream(contractCPKPath).use { CPK.Metadata.from(it, contractCPKPath.toString()) }
-        workflowCPK = Files.newInputStream(workflowCPKPath).use { CPK.Metadata.from(it, workflowCPKPath.toString()) }
+        contractCPK = Files.newInputStream(contractCPKPath).use { Cpk.Metadata.from(it, contractCPKPath.toString()) }
+        workflowCPK = Files.newInputStream(workflowCPKPath).use { Cpk.Metadata.from(it, workflowCPKPath.toString()) }
         Files.newOutputStream(testCPIPath).use {
-            CPI.assemble(it, cpiName, cpiVersion, listOf(workflowCPKPath, contractCPKPath), emptyList(), groupPolicy = groupPolicy)
+            Cpi.assemble(it, cpiName, cpiVersion, listOf(workflowCPKPath, contractCPKPath), emptyList(), groupPolicy = groupPolicy)
         }
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
         testCPI = DigestInputStream(Files.newInputStream(testCPIPath), md).use { inputStream ->
-            CPI.from(inputStream, testDir.resolve("cpi_expansion_dir"))
+            Cpi.from(inputStream, testDir.resolve("cpi_expansion_dir"))
         }
         cpiHash = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest())
     }
@@ -68,8 +68,8 @@ class CpiWithGroupPolicyTests {
         Assertions.assertEquals(cpiVersion, testCPI.metadata.id.version)
         Assertions.assertEquals(cpiHash, testCPI.metadata.hash)
 
-        val expectedCPKs = sequenceOf(workflowCPK, contractCPK).toCollection(TreeSet(Comparator.comparing(CPK.Metadata::id)))
-        val actualCPKs = testCPI.cpks.asSequence().map { it.metadata }.toCollection(TreeSet(Comparator.comparing(CPK.Metadata::id)))
+        val expectedCPKs = sequenceOf(workflowCPK, contractCPK).toCollection(TreeSet(Comparator.comparing(Cpk.Metadata::id)))
+        val actualCPKs = testCPI.cpks.asSequence().map { it.metadata }.toCollection(TreeSet(Comparator.comparing(Cpk.Metadata::id)))
         Assertions.assertEquals(expectedCPKs, actualCPKs)
 
         Assertions.assertEquals(testCPI.metadata.groupPolicy, groupPolicy)

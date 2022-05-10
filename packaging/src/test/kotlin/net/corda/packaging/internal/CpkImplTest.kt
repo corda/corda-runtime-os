@@ -1,6 +1,6 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -9,15 +9,15 @@ import java.util.Collections
 import java.util.NavigableSet
 import java.util.TreeSet
 
-class CPKImplTest {
+class CpkImplTest {
     @Test
     fun `CPK identifiers without a signerSummaryHash compares correctly`() {
-        val id1 = CPK.Identifier.newInstance("a", "1.0", null)
-        val id2 = CPK.Identifier.newInstance("a", "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
-        val id3 = CPK.Identifier.newInstance("a", "2.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
-        var ids : NavigableSet<CPK.Identifier> = Collections.emptyNavigableSet()
+        val id1 = Cpk.Identifier.newInstance("a", "1.0", null)
+        val id2 = Cpk.Identifier.newInstance("a", "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
+        val id3 = Cpk.Identifier.newInstance("a", "2.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
+        var ids : NavigableSet<Cpk.Identifier> = Collections.emptyNavigableSet()
         Assertions.assertDoesNotThrow {
-             ids = TreeSet<CPK.Identifier>().apply {
+             ids = TreeSet<Cpk.Identifier>().apply {
                  add(id1)
                  add(id2)
                  add(id3)

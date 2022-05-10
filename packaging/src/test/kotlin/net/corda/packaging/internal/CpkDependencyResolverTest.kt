@@ -1,6 +1,6 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.packaging.DependencyResolutionException
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -14,24 +14,24 @@ import java.util.TreeSet
 
 private fun id(name: String,
                version : String,
-               signers : NavigableSet<SecureHash> = Collections.emptyNavigableSet()) : CPK.Identifier {
+               signers : NavigableSet<SecureHash> = Collections.emptyNavigableSet()) : Cpk.Identifier {
     val signersSummaryHash = hash { md ->
         signers.map(SecureHash::toString)
             .map(String::toByteArray)
             .forEach(md::update)
     }
-    return CPKIdentifierImpl(name, version, signersSummaryHash)
+    return CpkIdentifierImpl(name, version, signersSummaryHash)
 }
 
-private fun ids(vararg ids : CPK.Identifier) = ids.toCollection(TreeSet())
+private fun ids(vararg ids : Cpk.Identifier) = ids.toCollection(TreeSet())
 
 private fun signers(vararg publicKey : String) =
     publicKey.mapTo(TreeSet(secureHashComparator)) { SecureHash.create("SHA256:$it") } as NavigableSet<SecureHash>
 
-private fun dependencyMap(vararg pairs : Pair<CPK.Identifier, NavigableSet<CPK.Identifier>>) =
+private fun dependencyMap(vararg pairs : Pair<Cpk.Identifier, NavigableSet<Cpk.Identifier>>) =
         pairs.associateByTo(TreeMap(),
-                Pair<CPK.Identifier, NavigableSet<CPK.Identifier>>::first,
-                Pair<CPK.Identifier, NavigableSet<CPK.Identifier>>::second)
+                Pair<Cpk.Identifier, NavigableSet<Cpk.Identifier>>::first,
+                Pair<Cpk.Identifier, NavigableSet<Cpk.Identifier>>::second)
 
 private val a_10 = id("a", "1.0", signers("7599dfdec7e313b747878ab589c210d8f8f65f08bbe352de7e4400814efa1217"))
 private val b_10 = id("b", "1.0", signers("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"))
@@ -40,12 +40,12 @@ private val c_10 = id("c", "1.0", signers("e14d1f88acc76e9de04af734d1e04d016c8eb
 private val c_20 = id("c", "2.0", signers("e14d1f88acc76e9de04af734d1e04d016c8eb0223afc149da9aeb2757f1e79ce"))
 
 @Suppress("EnumNaming")
-class CPKDependencyResolverTest {
+class CpkDependencyResolverTest {
 
     enum class TestCase(
-        val roots : NavigableSet<CPK.Identifier>,
-        val availableIds : NavigableMap<CPK.Identifier, NavigableSet<CPK.Identifier>>,
-        val expectedResult : NavigableSet<CPK.Identifier>? = null,
+        val roots : NavigableSet<Cpk.Identifier>,
+        val availableIds : NavigableMap<Cpk.Identifier, NavigableSet<Cpk.Identifier>>,
+        val expectedResult : NavigableSet<Cpk.Identifier>? = null,
         val throwable : Class<out Throwable>? = null,
         val useSignature : Boolean = false
     ) {
@@ -105,11 +105,11 @@ class CPKDependencyResolverTest {
     @EnumSource(value = TestCase::class)
     fun test(case : TestCase) {
         if(case.throwable == null) {
-            val actualResult = CPKDependencyResolver.resolveDependencies(case.roots, case.availableIds, case.useSignature)
+            val actualResult = CpkDependencyResolver.resolveDependencies(case.roots, case.availableIds, case.useSignature)
             Assertions.assertEquals(case.expectedResult, actualResult)
         } else {
             Assertions.assertThrows(case.throwable) {
-                CPKDependencyResolver.resolveDependencies(case.roots, case.availableIds, case.useSignature)
+                CpkDependencyResolver.resolveDependencies(case.roots, case.availableIds, case.useSignature)
             }
         }
     }

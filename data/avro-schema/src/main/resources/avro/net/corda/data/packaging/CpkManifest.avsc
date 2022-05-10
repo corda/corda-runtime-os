@@ -1,11 +1,11 @@
 {
   "type": "record",
   "namespace": "net.corda.data.packaging",
-  "name": "CPKManifest",
+  "name": "CpkManifest",
   "fields": [
     {
       "name": "version",
-      "type": "net.corda.data.packaging.CPKFormatVersion"
+      "type": "net.corda.data.packaging.CpkFormatVersion"
     }
   ]
 }

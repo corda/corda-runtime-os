@@ -1,7 +1,7 @@
 package net.corda.packaging.converters
 
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpi
+import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.ManifestCordappInfo
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -15,15 +15,15 @@ class ConvertersTest {
 
     private val random = Random(0)
 
-    private val cpiId = CPI.Identifier.newInstance("SomeName",
+    private val cpiId = Cpi.Identifier.newInstance("SomeName",
         "1.0",
         SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
     )
-    private val cpkId = CPK.Identifier.newInstance("SomeName",
+    private val cpkId = Cpk.Identifier.newInstance("SomeName",
         "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)))
-    private val cpkType = CPK.Type.CORDA_API
-    private val cpkFormatVersion = CPK.FormatVersion.newInstance(2, 3)
-    private val cpkManifest = CPK.Manifest.newInstance(CPK.FormatVersion.newInstance(2, 3))
+    private val cpkType = Cpk.Type.CORDA_API
+    private val cpkFormatVersion = Cpk.FormatVersion.newInstance(2, 3)
+    private val cpkManifest = Cpk.Manifest.newInstance(Cpk.FormatVersion.newInstance(2, 3))
     private val manifestCordappInfo = ManifestCordappInfo("someName", "R3", 42, "some license")
     private val cordappManifest = CordappManifest(
         "net.corda.Bundle",
@@ -36,7 +36,7 @@ class ConvertersTest {
             "Corda-Flow-Classes" to "flowClass1, flowClass2"),
     )
 
-    private val cpkMetadata = CPK.Metadata.newInstance(cpkManifest,
+    private val cpkMetadata = Cpk.Metadata.newInstance(cpkManifest,
         "mainBundle.jar",
         listOf("library.jar"),
         sequenceOf(cpkId).toCollection(TreeSet()),
@@ -48,7 +48,7 @@ class ConvertersTest {
 
     private companion object {
 
-        fun assertCpkMetadataEquals(cpkMetadata1 : CPK.Metadata, cpkMetadata2 : CPK.Metadata) {
+        fun assertCpkMetadataEquals(cpkMetadata1 : Cpk.Metadata, cpkMetadata2 : Cpk.Metadata) {
             Assertions.assertEquals(cpkMetadata1.id, cpkMetadata2.id)
             Assertions.assertEquals(cpkMetadata1.mainBundle, cpkMetadata2.mainBundle)
             Assertions.assertEquals(cpkMetadata1.libraries, cpkMetadata2.libraries)
@@ -73,7 +73,7 @@ class ConvertersTest {
             }
         }
 
-        fun assertCPIMetadataEquals(cpiMetadata1: CPI.Metadata, cpiMetadata2: CPI.Metadata) {
+        fun assertCPIMetadataEquals(cpiMetadata1: Cpi.Metadata, cpiMetadata2: Cpi.Metadata) {
             Assertions.assertEquals(cpiMetadata1.id, cpiMetadata2.id)
             Assertions.assertEquals(cpiMetadata1.hash, cpiMetadata2.hash)
             Assertions.assertEquals(cpiMetadata1.cpks.size, cpiMetadata2.cpks.size)
@@ -94,7 +94,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․Identifier without signerSummaryHash round trip`() {
-        val original = CPK.Identifier.newInstance("SomeName", "1.0", null)
+        val original = Cpk.Identifier.newInstance("SomeName", "1.0", null)
         val avroObject = original.toAvro()
         val cordaObject = avroObject.toCorda()
         Assertions.assertEquals(original, cordaObject)
@@ -142,7 +142,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․Metadata round trip`() {
-        val original = CPK.Metadata.newInstance(cpkManifest,
+        val original = Cpk.Metadata.newInstance(cpkManifest,
             "mainBundle.jar",
             listOf("library.jar"),
             sequenceOf(cpkId).toCollection(TreeSet()),
@@ -166,7 +166,7 @@ class ConvertersTest {
 
     @Test
     fun `CPI․Identifier without signerSummaryHash round trip`() {
-        val original = CPI.Identifier.newInstance("SomeName",
+        val original = Cpi.Identifier.newInstance("SomeName",
             "1.0",
             null
         )
@@ -178,7 +178,7 @@ class ConvertersTest {
 
     @Test
     fun `CPI․Metadata round trip`() {
-        val original = CPI.Metadata.newInstance(
+        val original = Cpi.Metadata.newInstance(
             cpiId,
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
             listOf(cpkMetadata),

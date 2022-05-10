@@ -9,7 +9,7 @@
     },
     {
       "name": "cpiIdentifier",
-      "type": "net.corda.data.packaging.CPIIdentifier"
+      "type": "net.corda.data.packaging.CpiIdentifier"
     },
     {
       "name": "vaultDdlConnectionId",

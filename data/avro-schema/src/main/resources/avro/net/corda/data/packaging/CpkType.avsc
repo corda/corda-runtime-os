@@ -1,6 +1,6 @@
 {
   "type": "enum",
-  "name": "CPKType",
+  "name": "CpkType",
   "namespace": "net.corda.data.packaging",
   "symbols": [ "CORDA_API", "UNKNOWN" ]
 }

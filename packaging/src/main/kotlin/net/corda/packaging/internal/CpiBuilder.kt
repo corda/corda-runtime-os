@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.packaging.DependencyResolutionException
 import net.corda.packaging.SigningParameters
 import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
@@ -24,7 +24,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
-internal class CPIBuilder(
+internal class CpiBuilder(
         private val name : String,
         private val version : String,
         private val cpkFiles: Iterable<Path>,
@@ -39,31 +39,31 @@ internal class CPIBuilder(
         ConfigFactory.parseReader(it, ConfigParseOptions.defaults())
     } ?: ConfigFactory.empty()
 
-    private data class CPKData(val cpkMetadata: CPK.Metadata, val path : Path)
+    private data class CpkData(val cpkMetadata: Cpk.Metadata, val path : Path)
 
     private fun resolveDependencies(roots: Iterable<Path>, archivePaths: Iterable<Path>) : Iterable<Path> {
         val rootSet = roots.asSequence().map(Path::toRealPath).toSet()
-        val index = TreeMap<CPK.Identifier, CPKData>()
+        val index = TreeMap<Cpk.Identifier, CpkData>()
         index(roots, index)
         val rootIdentifiers = index.keys.toList()
         for (archivePath in archivePaths) {
             val cpkFiles = Files.list(archivePath).use { stream ->
                 stream.asSequence()
                     .filter { it.toRealPath() !in rootSet }
-                    .filter { it.fileName.toString().lowercase().endsWith(CPK.fileExtension) }
+                    .filter { it.fileName.toString().lowercase().endsWith(Cpk.fileExtension) }
                     .toList()
             }
             index(cpkFiles, index)
         }
         val dependencyMap = index.entries.associateByTo(TreeMap(), {it.key}, {it.value.cpkMetadata.dependencies})
-        return CPKDependencyResolver.resolveDependencies(rootIdentifiers, dependencyMap, useSignatures).map { index[it]!!.path }
+        return CpkDependencyResolver.resolveDependencies(rootIdentifiers, dependencyMap, useSignatures).map { index[it]!!.path }
     }
 
     private fun index(roots: Iterable<Path>,
-                      existingIndex : NavigableMap<CPK.Identifier, CPKData> = TreeMap()) : NavigableMap<CPK.Identifier, CPKData> {
+                      existingIndex : NavigableMap<Cpk.Identifier, CpkData> = TreeMap()) : NavigableMap<Cpk.Identifier, CpkData> {
         for(root in roots) {
-            val cpk = Files.newInputStream(root).use { CPK.Metadata.from(it, cpkLocation = root.toString(), useSignatures) }
-            val previous = existingIndex.put(cpk.id, CPKData(cpk, root))
+            val cpk = Files.newInputStream(root).use { Cpk.Metadata.from(it, cpkLocation = root.toString(), useSignatures) }
+            val previous = existingIndex.put(cpk.id, CpkData(cpk, root))
             if(previous != null) throw DependencyResolutionException(
                     "Detected two CPKs with the same identifier ${cpk.id}: '$root' and '${previous.path}'")
         }

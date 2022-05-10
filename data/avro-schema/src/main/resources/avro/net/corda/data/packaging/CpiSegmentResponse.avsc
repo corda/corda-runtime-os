@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "CPISegmentResponse",
+  "name": "CpiSegmentResponse",
   "namespace": "net.corda.data.packaging",
   "fields": [
     {

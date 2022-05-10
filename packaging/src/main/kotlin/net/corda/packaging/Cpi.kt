@@ -1,9 +1,9 @@
 package net.corda.packaging
 
-import net.corda.packaging.internal.CPIBuilder
-import net.corda.packaging.internal.CPIIdentifierImpl
-import net.corda.packaging.internal.CPILoader
-import net.corda.packaging.internal.CPIMetadataImpl
+import net.corda.packaging.internal.CpiBuilder
+import net.corda.packaging.internal.CpiIdentifierImpl
+import net.corda.packaging.internal.CpiLoader
+import net.corda.packaging.internal.CpiMetadataImpl
 import net.corda.packaging.internal.jarSignatureVerificationEnabledByDefault
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -11,36 +11,36 @@ import java.io.OutputStream
 import java.io.Reader
 import java.nio.file.Path
 
-interface CPI : AutoCloseable {
+interface Cpi : AutoCloseable {
 
     companion object {
 
         /**
          * Known file extensions for a CPI file; the only difference between CPI and CPB files is that CPB files
-         * have no [CPI.Metadata.groupPolicy]
+         * have no [Cpi.Metadata.groupPolicy]
          */
         val fileExtensions = listOf(".cpb", ".cpi")
 
         /**
-         * Parses a CPI file and stores its information in a [CPI] instance
+         * Parses a CPI file and stores its information in a [Cpi] instance
          * @param inputStream a stream with the CPI file content
          * @param expansionLocation a filesystem directory where the CPK files
          * contained in the provided CPI will be extracted
          * @param cpiLocation an optional string containing information about the cpi location that will be used
          * in exception messages to ease troubleshooting
          * @param verifySignature whether to verify CPI and CPK files signatures
-         * @return a new [CPI] instance containing information about the provided CPI
+         * @return a new [Cpi] instance containing information about the provided CPI
          */
         @JvmStatic
         @JvmOverloads
         fun from(inputStream : InputStream,
                  expansionLocation : Path,
                  cpiLocation : String? = null,
-                 verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) : CPI =
-            CPILoader.loadCPI(inputStream, expansionLocation, cpiLocation, verifySignature)
+                 verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) : Cpi =
+            CpiLoader.loadCpi(inputStream, expansionLocation, cpiLocation, verifySignature)
 
         /**
-         * Creates a new a [CPI] archive containing the CPKs specified in [cpkFiles] and dumps it to [outputStream]
+         * Creates a new a [Cpi] archive containing the CPKs specified in [cpkFiles] and dumps it to [outputStream]
          * (which is guaranteed to be closed when the method returns), this method will also attempt to resolve all
          * the included CPK dependencies and raises [DependencyResolutionException] if any dependency is not met.
          * If [useSignatures] is false, the CPK signatures won't be verified and won't be taken in consideration
@@ -58,7 +58,7 @@ interface CPI : AutoCloseable {
          * @param metadataReader an optional [Reader] providing the membership metadata file
          * @param signingParams
          * @param useSignatures whether to verify and use jar signatures on CPK file (it can affect dependency
-         * resolution as [CPK.Identifier.signerSummaryHash] won't be parsed if [useSignatures] is false)
+         * resolution as [Cpk.Identifier.signerSummaryHash] won't be parsed if [useSignatures] is false)
          */
         @JvmStatic
         @JvmOverloads
@@ -72,7 +72,7 @@ interface CPI : AutoCloseable {
                      signingParams: SigningParameters? = null,
                      useSignatures: Boolean = jarSignatureVerificationEnabledByDefault(),
                      groupPolicy: String? = null
-        ) = CPIBuilder(name, version, cpkFiles, cpkArchives, metadataReader, signingParams, useSignatures, groupPolicy).build(destination)
+        ) = CpiBuilder(name, version, cpkFiles, cpkArchives, metadataReader, signingParams, useSignatures, groupPolicy).build(destination)
     }
 
     /**
@@ -99,7 +99,7 @@ interface CPI : AutoCloseable {
             @JvmStatic
             @JvmOverloads
             fun newInstance(name : String, version : String, signerSummaryHash : SecureHash? = null): Identifier =
-                CPIIdentifierImpl(name, version, signerSummaryHash)
+                CpiIdentifierImpl(name, version, signerSummaryHash)
 
         }
     }
@@ -107,14 +107,14 @@ interface CPI : AutoCloseable {
     interface Metadata {
         val id : Identifier
         val hash : SecureHash
-        val cpks : Collection<CPK.Metadata>
+        val cpks : Collection<Cpk.Metadata>
         val groupPolicy : String?
 
         /**
-         * @return a [CPK.Metadata] instance with containing the information about a single [CPK]
-         * @throws [NoSuchElementException] if a [CPK] with the given [CPK.Identifier] doesn't exist in the [CPI]
+         * @return a [Cpk.Metadata] instance with containing the information about a single [Cpk]
+         * @throws [NoSuchElementException] if a [Cpk] with the given [Cpk.Identifier] doesn't exist in the [Cpi]
          */
-        fun cpkById(id : CPK.Identifier) : CPK.Metadata
+        fun cpkById(id : Cpk.Identifier) : Cpk.Metadata
 
         companion object {
             /**
@@ -130,16 +130,16 @@ interface CPI : AutoCloseable {
             fun from(inputStream : InputStream,
                      cpiLocation : String? = null,
                      verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) : Metadata =
-                CPILoader.loadMetadata(inputStream, cpiLocation, verifySignature)
+                CpiLoader.loadMetadata(inputStream, cpiLocation, verifySignature)
 
             @JvmStatic
-            fun newInstance(id : Identifier, hash: SecureHash, cpks: Iterable<CPK.Metadata>, groupPolicy : String?) : Metadata =
-                CPIMetadataImpl(id, hash, cpks, groupPolicy)
+            fun newInstance(id : Identifier, hash: SecureHash, cpks: Iterable<Cpk.Metadata>, groupPolicy : String?) : Metadata =
+                CpiMetadataImpl(id, hash, cpks, groupPolicy)
         }
     }
 
     val metadata : Metadata
-    val cpks : Collection<CPK>
+    val cpks : Collection<Cpk>
 
-    fun getCPKById(id : CPK.Identifier) : CPK?
+    fun getCpkById(id : Cpk.Identifier) : Cpk?
 }

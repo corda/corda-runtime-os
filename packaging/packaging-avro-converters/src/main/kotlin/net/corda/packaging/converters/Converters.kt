@@ -2,17 +2,17 @@
 package net.corda.packaging.converters
 
 import net.corda.data.crypto.SecureHash
-import net.corda.data.packaging.CPIIdentifier
-import net.corda.data.packaging.CPIMetadata
-import net.corda.data.packaging.CPKFormatVersion
-import net.corda.data.packaging.CPKIdentifier
-import net.corda.data.packaging.CPKManifest
-import net.corda.data.packaging.CPKMetadata
-import net.corda.data.packaging.CPKType
+import net.corda.data.packaging.CpiIdentifier
+import net.corda.data.packaging.CpiMetadata
+import net.corda.data.packaging.CpkFormatVersion
+import net.corda.data.packaging.CpkIdentifier
+import net.corda.data.packaging.CpkManifest
+import net.corda.data.packaging.CpkMetadata
+import net.corda.data.packaging.CpkType
 import net.corda.data.packaging.CorDappManifest
 import net.corda.data.packaging.ManifestCorDappInfo
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpi
+import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.ManifestCordappInfo
 import java.io.ByteArrayInputStream
@@ -25,17 +25,17 @@ import java.util.stream.Collector
 import java.util.stream.Collectors
 
 
-fun CPKType.toCorda() = CPK.Type.valueOf(this.toString())
-fun CPK.Type.toAvro() = CPKType.valueOf(this.toString())
+fun CpkType.toCorda() = Cpk.Type.valueOf(this.toString())
+fun Cpk.Type.toAvro() = CpkType.valueOf(this.toString())
 
-fun CPKIdentifier.toCorda() =
-    CPK.Identifier.newInstance(
+fun CpkIdentifier.toCorda() =
+    Cpk.Identifier.newInstance(
         name,
         version,
         signerSummaryHash?.let { net.corda.v5.crypto.SecureHash(it.algorithm, it.serverHash.array()) }
 )
 
-fun CPK.Identifier.toAvro() : CPKIdentifier = CPKIdentifier.newBuilder().also {
+fun Cpk.Identifier.toAvro() : CpkIdentifier = CpkIdentifier.newBuilder().also {
     it.name = name
     it.version = version
     it.signerSummaryHash = signerSummaryHash?.let{ hash ->
@@ -43,16 +43,16 @@ fun CPK.Identifier.toAvro() : CPKIdentifier = CPKIdentifier.newBuilder().also {
     }
 }.build()
 
-fun CPKFormatVersion.toCorda() = CPK.FormatVersion.newInstance(major,minor)
+fun CpkFormatVersion.toCorda() = Cpk.FormatVersion.newInstance(major,minor)
 
-fun CPK.FormatVersion.toAvro() : CPKFormatVersion = CPKFormatVersion.newBuilder().also {
+fun Cpk.FormatVersion.toAvro() : CpkFormatVersion = CpkFormatVersion.newBuilder().also {
     it.major = major
     it.minor = minor
 }.build()
 
-fun CPKManifest.toCorda() : CPK.Manifest = CPK.Manifest.newInstance(version.toCorda())
+fun CpkManifest.toCorda() : Cpk.Manifest = Cpk.Manifest.newInstance(version.toCorda())
 
-fun CPK.Manifest.toAvro() : CPKManifest = CPKManifest.newBuilder().also {
+fun Cpk.Manifest.toAvro() : CpkManifest = CpkManifest.newBuilder().also {
     it.version = cpkFormatVersion.toAvro()
 }.build()
 
@@ -85,14 +85,14 @@ fun CordappManifest.toAvro() : CorDappManifest = CorDappManifest.newBuilder().al
     it.attributes = attributes
 }.build()
 
-fun CPKMetadata.toCorda() : CPK.Metadata = CPK.Metadata.newInstance(
+fun CpkMetadata.toCorda() : Cpk.Metadata = Cpk.Metadata.newInstance(
     manifest.toCorda(),
     mainBundle,
     libraries,
-    dependencies.stream().map(CPKIdentifier::toCorda).collect(
+    dependencies.stream().map(CpkIdentifier::toCorda).collect(
         Collector.of(::TreeSet,
-            TreeSet<CPK.Identifier>::add,
-            {s1 : TreeSet<CPK.Identifier>, s2: TreeSet<CPK.Identifier> -> s1.addAll(s2); s1},
+            TreeSet<Cpk.Identifier>::add,
+            { s1 : TreeSet<Cpk.Identifier>, s2: TreeSet<Cpk.Identifier> -> s1.addAll(s2); s1},
             Collections::unmodifiableNavigableSet)),
     corDappManifest.toCorda(),
     type.toCorda(),
@@ -106,12 +106,12 @@ fun CPKMetadata.toCorda() : CPK.Metadata = CPK.Metadata.newInstance(
     }
 )
 
-fun CPK.Metadata.toAvro() : CPKMetadata = CPKMetadata.newBuilder().also {
+fun Cpk.Metadata.toAvro() : CpkMetadata = CpkMetadata.newBuilder().also {
     it.id = id.toAvro()
     it.manifest = manifest.toAvro()
     it.mainBundle = mainBundle
     it.libraries = libraries
-    it.dependencies = dependencies.map(CPK.Identifier::toAvro)
+    it.dependencies = dependencies.map(Cpk.Identifier::toAvro)
     it.corDappManifest = cordappManifest.toAvro()
     it.type = type.toAvro()
     it.hash = SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes))
@@ -121,29 +121,29 @@ fun CPK.Metadata.toAvro() : CPKMetadata = CPKMetadata.newBuilder().also {
         .collect(Collectors.toUnmodifiableList())
 }.build()
 
-fun CPIIdentifier.toCorda() = CPI.Identifier.newInstance(
+fun CpiIdentifier.toCorda() = Cpi.Identifier.newInstance(
     name,
     version,
     signerSummaryHash?.let { net.corda.v5.crypto.SecureHash(it.algorithm, it.serverHash.array()) },
 )
 
-fun CPI.Identifier.toAvro() = CPIIdentifier.newBuilder().also {
+fun Cpi.Identifier.toAvro() = CpiIdentifier.newBuilder().also {
     it.name = name
     it.version = version
     it.signerSummaryHash = signerSummaryHash?.let { hash -> SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes)) }
 }.build()
 
-fun CPIMetadata.toCorda() = CPI.Metadata.newInstance(
+fun CpiMetadata.toCorda() = Cpi.Metadata.newInstance(
     id.toCorda(),
     net.corda.v5.crypto.SecureHash(hash.algorithm, hash.serverHash.array()),
-    cpks.map(CPKMetadata::toCorda),
+    cpks.map(CpkMetadata::toCorda),
     groupPolicy
 )
 
-fun CPI.Metadata.toAvro() = CPIMetadata.newBuilder().also {
+fun Cpi.Metadata.toAvro() = CpiMetadata.newBuilder().also {
     it.id = id.toAvro()
     it.hash = SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes))
-    it.cpks = cpks.map(CPK.Metadata::toAvro)
+    it.cpks = cpks.map(Cpk.Metadata::toAvro)
     it.groupPolicy = groupPolicy
     it.version = -1 // This value is required for initialization, but isn't used by except by the DB Reconciler.
 }.build()

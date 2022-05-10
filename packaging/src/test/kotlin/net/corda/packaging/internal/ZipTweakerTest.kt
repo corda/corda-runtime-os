@@ -1,6 +1,6 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.packaging.util.ZipTweaker
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -33,7 +33,7 @@ class ZipTweakerTest {
     @Test
     @Suppress("ComplexMethod")
     fun `Ensure a jar with removed signature can be read`() {
-        CPK.from(workflowCPKPath.openStream(), testDir).use { cpk ->
+        Cpk.from(workflowCPKPath.openStream(), testDir).use { cpk ->
             val algo = "SHA-256"
             val originalEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
                 generateSequence { zipInputStream.nextEntry }.map {

@@ -24,7 +24,7 @@
       "name": "cpiIdentifier",
       "type": [
         "null",
-        "net.corda.data.packaging.CPIIdentifier"
+        "net.corda.data.packaging.CpiIdentifier"
       ]
     },
     {

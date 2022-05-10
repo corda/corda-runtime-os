@@ -1,15 +1,15 @@
 {
   "type": "record",
   "namespace": "net.corda.data.packaging",
-  "name": "CPKMetadata",
+  "name": "CpkMetadata",
   "fields": [
     {
       "name": "id",
-      "type": "net.corda.data.packaging.CPKIdentifier"
+      "type": "net.corda.data.packaging.CpkIdentifier"
     },
     {
       "name": "manifest",
-      "type": "net.corda.data.packaging.CPKManifest"
+      "type": "net.corda.data.packaging.CpkManifest"
     },
     {
       "name": "mainBundle",
@@ -21,7 +21,7 @@
     },
     {
       "name": "dependencies",
-      "type": { "type": "array", "items": "net.corda.data.packaging.CPKIdentifier" }
+      "type": { "type": "array", "items": "net.corda.data.packaging.CpkIdentifier" }
     },
     {
       "name": "corDappManifest",
@@ -29,7 +29,7 @@
     },
     {
       "name": "type",
-      "type": "net.corda.data.packaging.CPKType"
+      "type": "net.corda.data.packaging.CpkType"
     },
     {
       "name": "hash",

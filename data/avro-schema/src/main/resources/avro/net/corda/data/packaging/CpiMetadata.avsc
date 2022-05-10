@@ -1,11 +1,11 @@
 {
   "type": "record",
-  "name": "CPIMetadata",
+  "name": "CpiMetadata",
   "namespace": "net.corda.data.packaging",
   "fields": [
     {
       "name": "id",
-      "type": "net.corda.data.packaging.CPIIdentifier"
+      "type": "net.corda.data.packaging.CpiIdentifier"
     },
     {
       "name": "hash",
@@ -13,7 +13,7 @@
     },
     {
       "name": "cpks",
-      "type": { "type": "array", "items": "net.corda.data.packaging.CPKMetadata" }
+      "type": { "type": "array", "items": "net.corda.data.packaging.CpkMetadata" }
     },
     {
       "name": "groupPolicy",

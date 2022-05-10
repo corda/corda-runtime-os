@@ -1,7 +1,7 @@
 {
     "type": "record",
     "namespace": "net.corda.data.packaging",
-    "name": "CPIIdentifier",
+    "name": "CpiIdentifier",
     "fields": [
         {
             "name": "name",

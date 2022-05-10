@@ -1,7 +1,7 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpi
+import net.corda.packaging.Cpk
 import net.corda.packaging.PackagingException
 import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
 import net.corda.packaging.internal.PackagingConstants.CPI_NAME_ATTRIBUTE
@@ -18,25 +18,25 @@ import java.util.jar.JarInputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipEntry
 
-internal object CPILoader {
-    private fun isCPK(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(CPK.fileExtension)
+internal object CpiLoader {
+    private fun isCpk(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(Cpk.fileExtension)
     private fun isGroupPolicy(entry : ZipEntry) = !entry.isDirectory && entry.name.endsWith(CPI_GROUP_POLICY_ENTRY)
 
-    fun loadMetadata(inputStream : InputStream, cpiLocation : String?, verifySignature : Boolean) : CPI.Metadata {
+    fun loadMetadata(inputStream : InputStream, cpiLocation : String?, verifySignature : Boolean) : Cpi.Metadata {
         return load(inputStream, null, cpiLocation, verifySignature).metadata
     }
 
-    fun loadCPI(inputStream : InputStream, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : CPI {
+    fun loadCpi(inputStream : InputStream, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : Cpi {
         val ctx = load(inputStream, expansionLocation, cpiLocation, verifySignature)
-        return CPIImpl(ctx.metadata, ctx.cpks!!)
+        return CpiImpl(ctx.metadata, ctx.cpks!!)
     }
 
-    private class CPIContext(val metadata : CPI.Metadata, val cpks : List<CPK>?)
+    private class CpiContext(val metadata : Cpi.Metadata, val cpks : List<Cpk>?)
 
     @Suppress("NestedBlockDepth", "ComplexMethod")
-    private fun load(inputStream : InputStream, expansionLocation : Path?, cpiLocation : String?, verifySignature : Boolean) : CPIContext {
-        val cpks = mutableListOf<CPK>()
-        val cpkMetadata = mutableListOf<CPK.Metadata>()
+    private fun load(inputStream : InputStream, expansionLocation : Path?, cpiLocation : String?, verifySignature : Boolean) : CpiContext {
+        val cpks = mutableListOf<Cpk>()
+        val cpkMetadata = mutableListOf<Cpk.Metadata>()
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
         var name : String? = null
@@ -53,11 +53,11 @@ internal object CPILoader {
                 val entry = jarInputStream.nextJarEntry ?: break
                 if(verifySignature) signatureCollector.addEntry(entry)
                 when {
-                    isCPK(entry) -> {
-                        /** We need to do this as [CPK.from] closes the stream, while we still need it afterward **/
+                    isCpk(entry) -> {
+                        /** We need to do this as [Cpk.from] closes the stream, while we still need it afterward **/
                         val uncloseableInputStream = UncloseableInputStream(jarInputStream)
                         if(expansionLocation != null) {
-                            val cpk = CPK.from(
+                            val cpk = Cpk.from(
                                 uncloseableInputStream,
                                 expansionLocation,
                                 cpkLocation = cpiLocation.plus("/${entry.name}"),
@@ -67,7 +67,7 @@ internal object CPILoader {
                             cpks += cpk
                             cpkMetadata += cpk.metadata
                         } else {
-                            cpkMetadata += CPK.Metadata.from(uncloseableInputStream,
+                            cpkMetadata += Cpk.Metadata.from(uncloseableInputStream,
                                     cpkLocation = cpiLocation?.plus("/${entry.name}"),
                                     verifySignature = verifySignature)
                         }
@@ -80,8 +80,8 @@ internal object CPILoader {
             }
         }
 
-        return CPIContext(CPIMetadataImpl(
-            id = CPIIdentifierImpl(
+        return CpiContext(CpiMetadataImpl(
+            id = CpiIdentifierImpl(
                 name ?: throw PackagingException("CPI name missing from manifest"),
                 version ?: throw PackagingException("CPI version missing from manifest"),
                 signatureCollector.certificates.asSequence().certSummaryHash()),

@@ -1,6 +1,6 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -9,20 +9,20 @@ import java.util.Collections
 import java.util.NavigableSet
 import java.util.TreeSet
 
-class CPIImplTest {
+class CpiImplTest {
     @Test
     fun `CPI identifiers without a signerSummaryHash and an identity compares correctly`() {
-        val id1 = CPI.Identifier.newInstance("a", "1.0", null)
-        val id2 = CPI.Identifier.newInstance("a", "1.0",
+        val id1 = Cpi.Identifier.newInstance("a", "1.0", null)
+        val id2 = Cpi.Identifier.newInstance("a", "1.0",
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
-        val id3 = CPI.Identifier.newInstance(
+        val id3 = Cpi.Identifier.newInstance(
             "a",
             "1.0",
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)),
         )
-        var ids : NavigableSet<CPI.Identifier> = Collections.emptyNavigableSet()
+        var ids : NavigableSet<Cpi.Identifier> = Collections.emptyNavigableSet()
         Assertions.assertDoesNotThrow {
-             ids = TreeSet<CPI.Identifier>().apply {
+             ids = TreeSet<Cpi.Identifier>().apply {
                  add(id1)
                  add(id2)
                  add(id3)
