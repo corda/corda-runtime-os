@@ -2,7 +2,7 @@
 package net.corda.sandbox.internal
 
 import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
@@ -61,10 +61,10 @@ internal class SandboxServiceImpl @Activate constructor(
         publicSandboxes.add(publicSandbox)
     }
 
-    override fun createSandboxGroup(cpks: Iterable<CPK>, securityDomain: String) =
+    override fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String) =
         createSandboxes(cpks, securityDomain, startBundles = true)
 
-    override fun createSandboxGroupWithoutStarting(cpks: Iterable<CPK>, securityDomain: String) =
+    override fun createSandboxGroupWithoutStarting(cpks: Iterable<Cpk>, securityDomain: String) =
         createSandboxes(cpks, securityDomain, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
@@ -137,7 +137,7 @@ internal class SandboxServiceImpl @Activate constructor(
      * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
     private fun createSandboxes(
-        cpks: Iterable<CPK>,
+        cpks: Iterable<Cpk>,
         securityDomain: String,
         startBundles: Boolean
     ): SandboxGroup {

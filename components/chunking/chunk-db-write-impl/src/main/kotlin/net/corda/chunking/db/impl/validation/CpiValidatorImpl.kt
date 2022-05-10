@@ -7,7 +7,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
@@ -36,7 +36,7 @@ class CpiValidatorImpl(
         validationFunctions.checkSignature(fileInfo)
 
         publisher.update(requestId, "Validating CPI")
-        val cpi: CPI = validationFunctions.checkCpi(fileInfo)
+        val cpi: Cpi = validationFunctions.checkCpi(fileInfo)
 
         publisher.update(requestId, "Checking group id in CPI")
         validationFunctions.getGroupId(cpi)

@@ -3,7 +3,7 @@ package net.corda.chunking.db.impl.persistence
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.data.chunking.Chunk
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.v5.crypto.SecureHash
 
 interface ChunkPersistence {
@@ -56,14 +56,14 @@ interface ChunkPersistence {
 
     /** Persist the CPI metadata and the CPKs
      *
-     * @param cpi a [CPI] object
+     * @param cpi a [Cpi] object
      * @param cpiFileName the original CPI file name
      * @param checksum the checksum of the CPI file
      * @param requestId the request id for the CPI that is being uploaded
      * @param groupId the group id from the group policy file
      */
     fun persistMetadataAndCpks(
-        cpi: CPI,
+        cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,

@@ -27,7 +27,7 @@ import net.corda.libs.packaging.CpiMetadata
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.ManifestCordappInfo
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
@@ -115,12 +115,12 @@ class FlowServiceTestContext @Activate constructor(
 
         val cpkMeta = CpkMetadata(
             getCpkIdentifier(cpkId),
-            CPK.Manifest.newInstance(CPK.FormatVersion.newInstance(0, 0)),
+            Cpk.Manifest.newInstance(Cpk.FormatVersion.newInstance(0, 0)),
             "",
             listOf(),
             listOf(),
             cordAppManifest,
-            CPK.Type.UNKNOWN,
+            Cpk.Type.UNKNOWN,
             getSecureHash(),
             setOf()
         )

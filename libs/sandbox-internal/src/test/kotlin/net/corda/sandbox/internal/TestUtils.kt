@@ -2,7 +2,7 @@ package net.corda.sandbox.internal
 
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -46,7 +46,7 @@ fun mockBundle(
     whenever(location).thenReturn(bundleLocation)
 }
 
-/** Generates a mock [CPK]. */
+/** Generates a mock [Cpk]. */
 fun mockCpkMeta(): CpkMetadata {
     val id = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash())
     val hash = randomSecureHash()

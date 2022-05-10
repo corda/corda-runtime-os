@@ -2,8 +2,6 @@ package net.corda.cpiinfo.write.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.data.packaging.CPIIdentifier
-import net.corda.data.packaging.CPIMetadata
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,7 +12,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -24,10 +22,12 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
+import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 /**
  * CPI Info Service writer so that we can [put] and [remove]
- * [CPI.Metadata] from Kafka compacted queues
+ * [Cpi.Metadata] from Kafka compacted queues
  *
  * Complements [CpiInfoReaderComponent]
  */
@@ -62,7 +62,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     /** Synchronous publish */
     @Suppress("ForbiddenComment")
-    private fun publish(records: List<Record<CPIIdentifier, CPIMetadata>>) {
+    private fun publish(records: List<Record<CpiIdentifierAvro, CpiMetadataAvro>>) {
         if (publisher == null) {
             log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
             return

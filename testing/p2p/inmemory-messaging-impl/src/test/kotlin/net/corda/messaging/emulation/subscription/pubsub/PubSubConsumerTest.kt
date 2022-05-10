@@ -69,7 +69,7 @@ class PubSubConsumerTest {
 
     @Test
     fun `commitStrategy is correct`() {
-        assertThat(consumer.commitStrategy).isEqualTo(CommitStrategy.COMMIT_AFTER_PROCESSING)
+        assertThat(consumer.commitStrategy).isEqualTo(CommitStrategy.NO_COMMIT)
     }
 
     @Test

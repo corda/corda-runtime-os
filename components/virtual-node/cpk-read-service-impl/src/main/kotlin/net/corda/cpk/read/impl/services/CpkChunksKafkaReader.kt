@@ -8,7 +8,7 @@ import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpk
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -20,7 +20,7 @@ import java.util.SortedSet
 class CpkChunksKafkaReader(
     private val cpkPartsDir: Path,
     private val cpkChunksFileManager: CpkChunksFileManager,
-    private val onCpkAssembled: (CpkIdentifier, CPK) -> Unit
+    private val onCpkAssembled: (CpkIdentifier, Cpk) -> Unit
 ) : CompactedProcessor<CpkChunkId, Chunk> {
     companion object {
         val logger = contextLogger()
@@ -83,7 +83,7 @@ class CpkChunksKafkaReader(
         val cpkPath = cpkChunksFileManager.assembleCpk(cpkChecksum, chunks)
         cpkPath?.let {
             val cpk = Files.newInputStream(it).use { inStream ->
-                CPK.from(inStream, cpkPartsDir)
+                Cpk.from(inStream, cpkPartsDir)
             }
             onCpkAssembled(CpkIdentifier.fromLegacy(cpk.metadata.id), cpk)
         } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")

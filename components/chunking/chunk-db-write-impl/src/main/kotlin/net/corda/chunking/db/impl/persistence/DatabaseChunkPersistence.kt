@@ -13,8 +13,7 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.orm.utils.transaction
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpi
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -169,7 +168,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         getCpiEntity(cpiName, cpiVersion, signerSummaryHash) != null
 
     override fun persistMetadataAndCpks(
-        cpi: CPI,
+        cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
@@ -295,7 +294,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      * @param requestId the requestId originating from the chunk upload
      */
     private fun createCpiMetadataEntity(
-        cpi: CPI,
+        cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
