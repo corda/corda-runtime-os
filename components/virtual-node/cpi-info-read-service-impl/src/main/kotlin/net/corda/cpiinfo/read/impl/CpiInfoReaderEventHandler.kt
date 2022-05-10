@@ -49,8 +49,6 @@ class CpiInfoReaderEventHandler(
     private fun onConfig(coordinator: LifecycleCoordinator, config: SmartConfig) {
         log.debug { "Cpi Info Read Service (re)subscribing" }
 
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-
         cpiInfoProcessor.clear()
         subscription?.close()
         subscription = subscriptionFactory.createCompactedSubscription(
@@ -59,6 +57,8 @@ class CpiInfoReaderEventHandler(
             config
         )
         subscription?.start()
+
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override fun close() {

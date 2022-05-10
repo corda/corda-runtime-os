@@ -1,6 +1,6 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.entityprocessor.EntityProcessor
+import net.corda.entityprocessor.FlowPersistenceProcessor
 import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxService
@@ -27,7 +27,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
         internal const val GROUP_NAME = "virtual.node.entity.processor"
     }
 
-    override fun create(config: SmartConfig): EntityProcessor {
+    override fun create(config: SmartConfig): FlowPersistenceProcessor {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
         val processor = EntityMessageProcessor(entitySandboxService)
 
@@ -38,6 +38,6 @@ class EntityProcessorFactoryImpl @Activate constructor(
             null
         )
 
-        return EntityProcessorImpl(subscription)
+        return FlowPersistenceProcessorImpl(subscription)
     }
 }

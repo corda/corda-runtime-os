@@ -33,8 +33,8 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  *    // resumes...
  * */
 class PersistenceServiceInternal(private val entitySandboxService: EntitySandboxService) {
-    // TODO - these want to also handle exceptions and/or possible return EntityResponse here instead of bytes.
-
+    // TODO - these want to also handle exceptions and/or possible return EntityResponse
+    //   here instead of bytes (CORE-4783)
 
     fun persist(
         serializationService: SerializationService,

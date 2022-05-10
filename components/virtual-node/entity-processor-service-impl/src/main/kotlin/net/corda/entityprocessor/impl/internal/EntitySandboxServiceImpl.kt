@@ -83,11 +83,16 @@ class EntitySandboxServiceImpl @Activate constructor (
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
     override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
+        // TODO - error handling (CORE-4783)
         val virtualNode = virtualNodeInfoService.get(holdingIdentity)
             ?: throw CordaRuntimeException("Could not get virtual node for $holdingIdentity")
 
         val cpks = cpiInfoService.get(virtualNode.cpiIdentifier)?.cpksMetadata
             ?: throw CordaRuntimeException("Could not get list of CPKs for ${virtualNode.cpiIdentifier}")
+
+        val cpkIds = cpks.map { it.cpkId }.toSet()
+        if(!sandboxService.hasCpks(cpkIds))
+            throw CordaRuntimeException("CPKs not available (yet): $cpkIds")
 
         return sandboxService.getOrCreate(getVirtualNodeContext(virtualNode, cpks)) { _, ctx ->
             initializeSandbox(

@@ -64,7 +64,7 @@ class VirtualNodeInfoReaderEventHandler(
     /** Resubscribe with the given config */
     private fun onConfig(coordinator: LifecycleCoordinator, config: SmartConfig) {
         log.debug { "Virtual Node Info Service (re)subscribing" }
-        coordinator.updateStatus(LifecycleStatus.DOWN)
+
         virtualNodeInfoProcessor.clear()
         subscription?.close()
         subscription = subscriptionFactory.createCompactedSubscription(
@@ -73,6 +73,7 @@ class VirtualNodeInfoReaderEventHandler(
             config
         )
         subscription?.start()
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override fun close() {

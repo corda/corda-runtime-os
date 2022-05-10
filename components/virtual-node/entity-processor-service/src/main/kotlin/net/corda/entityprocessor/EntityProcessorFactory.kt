@@ -8,5 +8,6 @@ interface EntityProcessorFactory {
      *
      * This should be called from/wired into the db-processor start up.
      */
-    fun create(config: SmartConfig): EntityProcessor
+    fun create(config: SmartConfig): FlowPersistenceProcessor
 }
+

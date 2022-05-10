@@ -6,13 +6,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
-import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
-import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.db.schema.DbSchema
+import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
@@ -32,7 +28,6 @@ import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
-import net.corda.processors.db.DBProcessorException
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
@@ -41,8 +36,6 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.sql.SQLException
-import javax.sql.DataSource
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
@@ -63,17 +56,14 @@ class DBProcessorImpl @Activate constructor(
     private val permissionStorageWriterService: PermissionStorageWriterService,
     @Reference(service = VirtualNodeWriteService::class)
     private val virtualNodeWriteService: VirtualNodeWriteService,
-    // TODO - remove this when DB migration is not needed anymore in this processor.
-    @Reference(service = LiquibaseSchemaMigrator::class)
-    private val schemaMigrator: LiquibaseSchemaMigrator,
-    @Reference(service = DbAdmin::class)
-    private val dbAdmin: DbAdmin,
     @Reference(service = ChunkReadService::class)
     private val chunkReadService: ChunkReadService,
     @Reference(service = CpkWriteService::class)
     private val cpkWriteService: CpkWriteService,
     @Reference(service = CpkReadService::class)
     private val cpkReadService: CpkReadService,
+    @Reference(service = FlowPersistenceService::class)
+    private val flowPersistenceService: FlowPersistenceService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -101,7 +91,8 @@ class DBProcessorImpl @Activate constructor(
         ::virtualNodeWriteService,
         ::chunkReadService,
         ::cpkWriteService,
-        ::cpkReadService
+        ::cpkReadService,
+        ::flowPersistenceService
     )
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
@@ -160,29 +151,6 @@ class DBProcessorImpl @Activate constructor(
             else -> {
                 log.error("Unexpected event $event!")
             }
-        }
-    }
-
-    /**
-     * Uses the [dataSource] to apply the Liquibase schema migrations for each of the entities.
-     *
-     * @throws DBProcessorException If the cluster database cannot be connected to.
-     */
-    private fun migrateDatabase(dataSource: DataSource, dbChangeFiles: List<String>, controlTableSchema: String? = null) {
-        val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-            ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
-        }
-        val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
-
-        try {
-            dataSource.connection.use { connection ->
-                if(null == controlTableSchema)
-                    schemaMigrator.updateDb(connection, dbChange)
-                else
-                    schemaMigrator.updateDb(connection, dbChange, controlTableSchema)
-            }
-        } catch (e: SQLException) {
-            throw DBProcessorException("Could not connect to cluster database.", e)
         }
     }
 }
