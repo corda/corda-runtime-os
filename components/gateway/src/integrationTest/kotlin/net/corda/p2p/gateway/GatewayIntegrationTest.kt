@@ -3,12 +3,7 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.crypto.test.certificates.generation.CertificateAuthority
-import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
-import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
-import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
-import net.corda.crypto.test.certificates.generation.toKeystore
-import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.crypto.test.certificates.generation.*
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -26,27 +21,12 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.GatewayTruststore
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutHeader
-import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.NetworkType
-import net.corda.p2p.SessionPartitions
+import net.corda.p2p.*
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.gateway.messaging.ConnectionConfiguration
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.RevocationConfig
-import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.p2p.gateway.messaging.http.DestinationInfo
-import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
-import net.corda.p2p.gateway.messaging.http.HttpRequest
-import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
-import net.corda.p2p.gateway.messaging.http.ListenerWithServer
+import net.corda.p2p.gateway.messaging.*
+import net.corda.p2p.gateway.messaging.http.*
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
@@ -62,17 +42,13 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.fail
+import org.junit.jupiter.api.*
 import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
+import java.net.http.HttpClient.newBuilder
+import java.net.http.HttpResponse.BodyHandlers as BodyHandlers
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.cert.X509Certificate
@@ -86,6 +62,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
+
+
+
 
 class GatewayIntegrationTest : TestBase() {
     companion object {
@@ -160,6 +139,57 @@ class GatewayIntegrationTest : TestBase() {
 
     @Nested
     inner class ClientToGatewayTests {
+        @Test
+        @Timeout(30)
+        fun `draft`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val port = getOpenPort()
+            val serverAddress = URI.create("http://www.alice.net:$port")
+            val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
+            val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serverAddress.host,
+                        serverAddress.port,
+                        aliceSslConfig
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+            ).use {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
+                it.startAndWaitForStarted()
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
+                HttpClient(
+                    serverInfo,
+                    bobSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
+                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                    assertThat(httpResponse.payload).isNotNull
+                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                    assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+                }
+            }
+
+            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
+            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
+            assertThat(publishedRecords)
+                .hasSize(1).allSatisfy {
+                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
+                        assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                            assertThat(it).isEqualTo(linkInMessage.payload)
+                        }
+                    }
+                }
+        }
         @Test
         @Timeout(30)
         fun `http client to gateway`() {
@@ -886,4 +916,51 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
     }
+
+    @Test
+    fun ensureThatUserAPICallReturnStatusCode200() {
+        val client: java.net.http.HttpClient = newBuilder().build()
+        val request: java.net.http.HttpRequest =
+            java.net.http.HttpRequest.newBuilder().uri(URI.create("https://www.r3.com")).build()
+        val response: java.net.http.HttpResponse<String> = client.send(request, BodyHandlers.ofString())
+        assertThat(response.statusCode()).isEqualTo(200)
+    }
+
+/*    @Test
+    fun ensureThatUserAPICallReturnStatusCode200() {
+        val client = HttpClient.newHttpClient()
+        val request = HttpRequest.newBuilder(URI.create("https://api.github.com/users/vogella")).build()
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        assertThat(response.statusCode()).isEqualTo(200)
+    }*/
+
+    /*@Test
+    @DisplayName("Ensures that the content type starts with application/json")
+    @Throws(
+        Exception::class
+    )
+    fun ensureThatJsonIsReturnedAsContentType() {
+        val client: java.net.http.HttpClient = java.net.http.HttpClient.newBuilder().build()
+        val request: java.net.http.HttpRequest =
+            java.net.http.HttpRequest.newBuilder().uri(URI.create("https://api.github.com/users/vogella")).build()
+        val response: java.net.http.HttpResponse<String> = client.send(request, BodyHandlers.ofString())
+        val firstValue: Optional<String> = response.headers().firstValue("Content-Type")
+        val string = firstValue.get()
+        assertThat(string).startsWith("application/json")
+    }
+
+    @Test
+    @DisplayName("Ensure that the JSON for the user vogella contains a reference to the Twitter user")
+    @Throws(
+        Exception::class
+    )
+    fun ensureJsonContainsTwitterHandler() {
+        val client: java.net.http.HttpClient = java.net.http.HttpClient.newBuilder().build()
+        val request: java.net.http.HttpRequest =
+            java.net.http.HttpRequest.newBuilder().uri(URI.create("https://api.github.com/users/vogella")).build()
+        val response: java.net.http.HttpResponse<String> = client.send(request, BodyHandlers.ofString())
+        val body: String = response.body()
+        println(body)
+        assertThat(body).contains("twitter_username\":\"vogella\"")
+    }*/
 }
