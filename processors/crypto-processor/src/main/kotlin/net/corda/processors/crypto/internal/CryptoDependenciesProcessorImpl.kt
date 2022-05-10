@@ -68,10 +68,10 @@ class CryptoDependenciesProcessorImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
-                log.info("Bootstrapping {} connection Manager", configurationReadService::class.simpleName)
+                log.info("Bootstrapping {}", configurationReadService::class.simpleName)
                 configurationReadService.bootstrapConfig(event.config)
 
-                log.info("Bootstrapping {} connection Manager", dbConnectionManager::class.simpleName)
+                log.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(event.config.getConfig(ConfigKeys.DB_CONFIG))
             }
             else -> {
