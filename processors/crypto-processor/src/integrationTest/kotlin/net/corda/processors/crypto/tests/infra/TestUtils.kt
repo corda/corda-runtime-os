@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
+import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
@@ -53,6 +54,13 @@ fun Lifecycle.startAndWait() {
 }
 
 fun CryptoProcessor.startAndWait(bootConfig: SmartConfig) {
+    start(bootConfig)
+    eventually {
+        assertTrue(isRunning, "Failed waiting to start for ${this::class.java.name}")
+    }
+}
+
+fun CryptoDependenciesProcessor.startAndWait(bootConfig: SmartConfig) {
     start(bootConfig)
     eventually {
         assertTrue(isRunning, "Failed waiting to start for ${this::class.java.name}")

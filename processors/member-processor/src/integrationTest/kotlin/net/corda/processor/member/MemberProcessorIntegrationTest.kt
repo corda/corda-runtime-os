@@ -53,6 +53,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
+import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.ConfigKeys
@@ -101,6 +102,9 @@ class MemberProcessorIntegrationTest {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
+
+        @InjectService(timeout = 5000L)
+        lateinit var cryptoDependenciesProcessor: CryptoDependenciesProcessor
 
         @InjectService(timeout = 5000)
         lateinit var dbConnectionManager: DbConnectionManager
@@ -170,6 +174,7 @@ class MemberProcessorIntegrationTest {
                     ConfigKeys.DB_CONFIG to clusterDb.config
                 )
             )
+            cryptoDependenciesProcessor.start(bootConf)
             cryptoProcessor.start(bootConf)
             memberProcessor.start(bootConf)
 
