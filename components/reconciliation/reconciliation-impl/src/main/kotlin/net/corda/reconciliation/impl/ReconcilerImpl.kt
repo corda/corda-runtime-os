@@ -49,7 +49,7 @@ class ReconcilerImpl<K : Any, V : Any>(
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ReconcileEvent -> onReconcileEvent(coordinator)
             is UpdateIntervalEvent -> onUpdateIntervalEvent(event)
-            is StopEvent -> onStopEvent()
+            is StopEvent -> onStopEvent(coordinator)
         }
     }
 
@@ -87,14 +87,12 @@ class ReconcilerImpl<K : Any, V : Any>(
             reconcile()
             setReconciliationTimerEvent(coordinator)
         } catch (e: Exception) {
-            // TODO
-            logger.warn("Reconciliation failed", e)
+            // An error here could be a transient or not exception. We should transition to `DOWN` and wait
+            // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
+            logger.warn("Reconciliation failed. Will not schedule any further reconciliations", e)
+            coordinator.updateStatus(LifecycleStatus.DOWN)
+            closeResources()
         }
-    }
-
-    private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
-        logger.debug { "Registering new ${ReconcileEvent::class.simpleName}" }
-        coordinator.setTimer(name, reconciliationIntervalMs) { ReconcileEvent(it) }
     }
 
     private fun onUpdateIntervalEvent(event: UpdateIntervalEvent) {
@@ -102,7 +100,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         reconciliationIntervalMs = event.intervalMs
     }
 
-    private fun onStopEvent() {
+    private fun onStopEvent(coordinator: LifecycleCoordinator) {
         coordinator.cancelTimer(name)
         closeResources()
     }
@@ -119,7 +117,6 @@ class ReconcilerImpl<K : Any, V : Any>(
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key } ?: run {
                 // Error occurred in kafka getAllVersionedRecords, we need to return and wait on failure to surface
                 // by upcoming RegistrationStatusChangeEvent
-                logger.warn("Error occurred while retrieving kafka records. Aborting reconciliation.")
                 throw ReconciliationException("Error occurred while retrieving kafka records")
             }
 
@@ -131,7 +128,6 @@ class ReconcilerImpl<K : Any, V : Any>(
         } ?: run {
             // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
             // by upcoming RegistrationStatusChangeEvent
-            logger.warn("Error occurred while retrieving db records. Aborting reconciliation.")
             throw ReconciliationException("Error occurred while retrieving db records")
         }
 
@@ -140,6 +136,11 @@ class ReconcilerImpl<K : Any, V : Any>(
                 writer.put(dbRecord.value)
             }
         }
+    }
+
+    private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
+        logger.debug { "Registering new ${ReconcileEvent::class.simpleName}" }
+        coordinator.setTimer(name, reconciliationIntervalMs) { ReconcileEvent(it) }
     }
 
     override fun updateInterval(intervalMs: Long) {
