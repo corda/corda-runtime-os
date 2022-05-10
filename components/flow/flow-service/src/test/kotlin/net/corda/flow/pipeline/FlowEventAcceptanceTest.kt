@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.acceptance.dsl.filterOutputFlowTopicEventPayloads
 import net.corda.flow.acceptance.dsl.flowEventDSL
