@@ -15,8 +15,8 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
@@ -29,12 +29,10 @@ class ReconcilerImpl<K : Any, V : Any>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private var reconciliationIntervalMs: Long
 ) : Reconciler {
-    companion object {
-        private val logger = contextLogger()
-    }
-
     @VisibleForTesting
     internal val name = "${ReconcilerImpl::class.java.name}<${keyClass.name}, ${valueClass.name}>"
+
+    private val logger = LoggerFactory.getLogger(name) // Including the generic arguments to differentiate between `ReconcilerImpl` classes
 
     // For now we assume 1 ReconcilerImpl<a_key, a_value> per worker.
     private val coordinator = coordinatorFactory.createCoordinator(LifecycleCoordinatorName(name), ::processEvent)
@@ -66,13 +64,13 @@ class ReconcilerImpl<K : Any, V : Any>(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
-            logger.info("$name starting reconciliations")
+            logger.info("Starting reconciliations")
             setReconciliationTimerEvent(coordinator)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             logger.warn(
                 "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
-                        " $name switching to ${event.status}"
+                        " Switching to ${event.status}"
             )
             // TODO Revise below actions in case of an error from sub services (DOWN vs ERROR)
             coordinator.updateStatus(event.status)
@@ -82,12 +80,12 @@ class ReconcilerImpl<K : Any, V : Any>(
     }
 
     private fun onReconcileEvent(coordinator: LifecycleCoordinator) {
-        logger.info("$name - Initiating reconciliation")
+        logger.info("Initiating reconciliation")
         try {
             val startTime = System.currentTimeMillis()
             reconcile()
             val endTime = System.currentTimeMillis()
-            logger.info("$name - Reconciliation completed in ${endTime - startTime} ms")
+            logger.info("Reconciliation completed in ${endTime - startTime} ms")
             setReconciliationTimerEvent(coordinator)
         } catch (e: Exception) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
@@ -99,7 +97,7 @@ class ReconcilerImpl<K : Any, V : Any>(
     }
 
     private fun onUpdateIntervalEvent(event: UpdateIntervalEvent) {
-        logger.info("Updating interval of $name to ${event.intervalMs} ms")
+        logger.info("Updating interval to ${event.intervalMs} ms")
         reconciliationIntervalMs = event.intervalMs
     }
 
@@ -108,6 +106,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         closeResources()
     }
 
+    // TODO must add to the below debug logging reporting to be reconciled records potentially more
     // Failure at some point during reconciliation could inform us where it stopped so that next reconciliation can take it
     // from there, or perhaps that could be done under timestamps optimization and then we update max timestamp reconciled.
     /**
@@ -156,18 +155,18 @@ class ReconcilerImpl<K : Any, V : Any>(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("$name starting")
+        logger.info("Starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("$name stopping")
+        logger.info("Stopping")
         coordinator.stop()
         closeResources()
     }
 
     override fun close() {
-        logger.info("$name closing")
+        logger.info("Closing")
         coordinator.close()
         closeResources()
     }
