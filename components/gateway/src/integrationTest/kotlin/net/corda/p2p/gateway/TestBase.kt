@@ -155,7 +155,7 @@ open class TestBase {
                 .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
                 .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig(configPublisherClientId), messagingConfig).use { publisher ->
+                .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig).use { publisher ->
                 val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
@@ -171,7 +171,7 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig(configPublisherClientId), messagingConfig)
+                .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
                 .use { publisher ->
                     val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                     configurationPublisher.updateConfiguration(

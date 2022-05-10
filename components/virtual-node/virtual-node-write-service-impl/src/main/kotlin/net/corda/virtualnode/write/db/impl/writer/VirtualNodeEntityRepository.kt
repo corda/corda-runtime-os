@@ -6,6 +6,8 @@ import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
 import net.corda.packaging.CPI
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import javax.persistence.EntityManager
@@ -13,6 +15,10 @@ import javax.persistence.EntityManagerFactory
 
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(private val entityManagerFactory: EntityManagerFactory) {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     /** Reads CPI metadata from the database. */
     internal fun getCPIMetadata(cpiFileChecksum: String): CPIMetadata? {
@@ -94,9 +100,13 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @param cpiId CPI identifier
      */
     internal fun putVirtualNode(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
-        val signerSummaryHash = if (cpiId.signerSummaryHash != null)  cpiId.signerSummaryHash.toString() else ""
+        val signerSummaryHash = cpiId.signerSummaryHash?.toString() ?: ""
         val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash)
-        entityManager.find(VirtualNodeEntity::class.java, key) ?:
-        entityManager.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash))
+        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, key)
+        if (foundVNode == null) {
+            entityManager.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash))
+        } else {
+            log.debug { "vNode for key already exists: $key" }
+        }
     }
 }

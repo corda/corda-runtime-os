@@ -20,6 +20,18 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "app.kubernetes.io/component"
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: {{ include "corda.workerName" . }}
         image: {{ include "corda.workerImage" . }}
@@ -58,6 +70,7 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if not .Values.workers.db.debug.enabled }}
         livenessProbe:
           httpGet:
             path: /isHealthy
@@ -70,6 +83,7 @@ spec:
             port: health
           periodSeconds: 10
           failureThreshold: 5
+        {{- end }}
       nodeSelector:
         kubernetes.io/os: linux
         kubernetes.io/arch: amd64

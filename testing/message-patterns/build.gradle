@@ -6,7 +6,7 @@ import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 plugins {
     id 'corda.common-library'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description 'Messaging Patterns Test'

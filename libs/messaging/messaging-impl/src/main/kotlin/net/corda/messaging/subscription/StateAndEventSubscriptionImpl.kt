@@ -268,7 +268,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
 
-        if (thisEventUpdates == null) {
+        if (thisEventUpdates == null || thisEventUpdates.markForDLQ) {
             log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
             outputRecords.add(generateDeadLetterRecord(event, state))
             outputRecords.add(Record(stateTopic, key, null))

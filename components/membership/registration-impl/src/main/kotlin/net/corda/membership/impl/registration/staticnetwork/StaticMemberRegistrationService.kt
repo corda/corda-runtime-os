@@ -1,17 +1,19 @@
 package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
+import net.corda.layeredpropertymap.toWire
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.GroupPolicy
-import net.corda.layeredpropertymap.toWire
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MGMContextImpl
@@ -27,23 +29,23 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoImpl
 import net.corda.membership.impl.buildMerkleTree
-import net.corda.membership.registration.MemberRegistrationService
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
-import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.KEY_ALIAS
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.staticMembers
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.staticMgm
+import net.corda.membership.registration.MemberRegistrationService
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
+import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.calculateHash
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -82,8 +84,6 @@ class StaticMemberRegistrationService @Activate constructor(
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
     }
-
-    private val topic = Schemas.Membership.MEMBER_LIST_TOPIC
 
     // Handler for lifecycle events
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
@@ -136,11 +136,11 @@ class StaticMemberRegistrationService @Activate constructor(
      * Parses the static member list template as SignedMemberInfo objects and creates the records for the
      * kafka publisher.
      */
-    private fun parseMemberTemplate(member: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
+    private fun parseMemberTemplate(registeringMember: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
         val members = mutableListOf<Record<String, PersistentMemberInfo>>()
 
         val policy = try {
-            groupPolicyProvider.getGroupPolicy(member)
+            groupPolicyProvider.getGroupPolicy(registeringMember)
         } catch (e: BadGroupPolicyException) {
             logger.error("Creating empty member list since group policy file could not be found for holding identity.")
             return emptyList()
@@ -156,10 +156,10 @@ class StaticMemberRegistrationService @Activate constructor(
             isValidStaticMemberDeclaration(processedMembers, staticMember)
             val memberName = MemberX500Name.parse(staticMember.name!!).toString()
             val memberId = HoldingIdentity(memberName, groupId).id
-            val memberKey = generateOwningKey(staticMember, memberId)
+            val memberKey = getIdentityKey(staticMember, memberId)
             val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
-            val mgmKey = parseMgmTemplate(memberId, policy)
-            val memberInfo =  MemberInfoImpl(
+            val mgmKey = getMgmIdentityKey(memberId, policy)
+            val memberInfo = MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                     sortedMapOf(
                         PARTY_NAME to memberName,
@@ -183,9 +183,9 @@ class StaticMemberRegistrationService @Activate constructor(
             val signedMemberInfo = signMemberInfo(memberId, memberInfo, memberKey, mgmKey)
             members.add(
                 Record(
-                    topic,
-                    member.id + "-" + memberId,
-                    PersistentMemberInfo(member.toAvro(), signedMemberInfo)
+                    MEMBER_LIST_TOPIC,
+                    registeringMember.id + "-" + memberId,
+                    PersistentMemberInfo(registeringMember.toAvro(), signedMemberInfo)
                 )
             )
             processedMembers.add(memberName)
@@ -210,7 +210,7 @@ class StaticMemberRegistrationService @Activate constructor(
     /**
      * If the keyAlias is not defined in the static template, we are going to use the id of the HoldingIdentity as default.
      */
-    private fun generateOwningKey(
+    private fun getIdentityKey(
         member: StaticMember,
         memberId: String
     ): PublicKey {
@@ -218,17 +218,13 @@ class StaticMemberRegistrationService @Activate constructor(
         if (keyAlias.isNullOrBlank()) {
             keyAlias = memberId
         }
-        return cryptoOpsClient.generateKeyPair(
-            tenantId = memberId,
-            category = CryptoConsts.HsmCategories.LEDGER,
-            alias = keyAlias
-        )
+        return getOrGenerateKeyPair(memberId, keyAlias)
     }
 
     /**
      * Generates the MGM's key used for signing the MemberInfo from the static template.
      */
-    private fun parseMgmTemplate(
+    private fun getMgmIdentityKey(
         memberId: String,
         policy: GroupPolicy
     ): PublicKey {
@@ -238,12 +234,29 @@ class StaticMemberRegistrationService @Activate constructor(
         val keyAlias: String? = staticMgm[KEY_ALIAS]
         require(!keyAlias.isNullOrBlank()) { "MGM's key alias is not provided." }
 
-        return cryptoOpsClient.generateKeyPair(
-            tenantId = memberId,
-            category = CryptoConsts.HsmCategories.LEDGER,
-            alias = keyAlias
-        )
+        return getOrGenerateKeyPair(memberId, keyAlias)
     }
+
+    private fun getOrGenerateKeyPair(tenantId: String, keyAlias: String): PublicKey {
+        return with(cryptoOpsClient) {
+            lookup(
+                tenantId = tenantId,
+                skip = 0,
+                take = 10,
+                orderBy = CryptoKeyOrderBy.NONE,
+                filter = mapOf(
+                    ALIAS_FILTER to keyAlias,
+                )
+            ).firstOrNull()?.let {
+                keyEncodingService.decodePublicKey(it.publicKey.array())
+            } ?: generateKeyPair(
+                tenantId = tenantId,
+                category = CryptoConsts.HsmCategories.LEDGER,
+                alias = keyAlias
+            )
+        }
+    }
+
 
     /**
      * Mapping the keys from the json format to the keys expected in the [MemberInfo].
