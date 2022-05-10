@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.WhenSetup
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -313,11 +312,11 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
     /**
      * Given two sessions where:
-     * 
+     *
      * - `SESSION_ID_1` has already received a session close event.
      * - `close` is called.
      * - `SESSION_ID_2` receives a session close event.
-     * 
+     *
      * The flow does not resume and sends `SESSION_ID_2` a session ack.
      */
     @Test
@@ -486,7 +485,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-               sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
+                sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
             }
 
             expectOutputForFlow(FLOW_ID1) {
