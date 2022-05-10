@@ -204,7 +204,6 @@ workers:
       # -- the traffic policy for the RPC worker service
       externalTrafficPolicy: ""
       # -- the LoadBalancer source ranges to limit access to the RPC worker service
-
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
       annotations: {}
