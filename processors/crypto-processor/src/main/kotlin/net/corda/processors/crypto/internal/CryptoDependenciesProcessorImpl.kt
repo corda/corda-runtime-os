@@ -34,7 +34,7 @@ class CryptoDependenciesProcessorImpl @Activate constructor(
         val log = contextLogger()
     }
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoDependenciesProcessor>(::eventHandler)
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
