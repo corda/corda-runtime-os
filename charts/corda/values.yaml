@@ -199,7 +199,7 @@ workers:
       limits: {}
     # RPC worker service configuration
     service:
-      # Service type
+      # -- the type for the RPC worker service
       type: ClusterIP
       # traffic policy
       externalTrafficPolicy: ""
