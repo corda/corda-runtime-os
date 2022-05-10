@@ -14,6 +14,7 @@ import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import kotlin.streams.asSequence
@@ -84,15 +85,11 @@ class ReconcilerImpl<K : Any, V : Any>(
         logger.debug("Scheduling reconciliation")
         try {
             reconcile()
-            // TODO should we be adding reconcile to return a boolean and say true if run successfully to the end
-            //  else false if silently failed at a getAllVersionedRecords and do something about it here?. Unless leaving
-            //  it as is and relying on subsequent erroneous RegistrationStatusChangeEvent is enough.
+            setReconciliationTimerEvent(coordinator)
         } catch (e: Exception) {
             // TODO
-            logger.warn("Reconciliation failed")
+            logger.warn("Reconciliation failed", e)
         }
-
-        setReconciliationTimerEvent(coordinator)
     }
 
     private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
@@ -113,6 +110,9 @@ class ReconcilerImpl<K : Any, V : Any>(
     // TODO revise check for running state of sub services
     // Perhaps failure at some point during reconciliation could inform us where it stopped so that next reconciliation can take it
     // from there, or perhaps that could be done under timestamps optimization and then we update max timestamp reconciled.
+    /**
+     * @throws [ReconciliationException] if an error occurs at kafka or db [ReconcilerReader.getAllVersionedRecords].
+     */
     @VisibleForTesting
     internal fun reconcile() {
         val kafkaRecords =
@@ -120,7 +120,7 @@ class ReconcilerImpl<K : Any, V : Any>(
                 // Error occurred in kafka getAllVersionedRecords, we need to return and wait on failure to surface
                 // by upcoming RegistrationStatusChangeEvent
                 logger.warn("Error occurred while retrieving kafka records. Aborting reconciliation.")
-                return
+                throw ReconciliationException("Error occurred while retrieving kafka records")
             }
 
         val toBeReconciledDbRecords = dbReader.getAllVersionedRecords()?.filter { dbRecord ->
@@ -132,7 +132,7 @@ class ReconcilerImpl<K : Any, V : Any>(
             // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
             // by upcoming RegistrationStatusChangeEvent
             logger.warn("Error occurred while retrieving db records. Aborting reconciliation.")
-            return
+            throw ReconciliationException("Error occurred while retrieving db records")
         }
 
         toBeReconciledDbRecords.use {
@@ -174,4 +174,6 @@ class ReconcilerImpl<K : Any, V : Any>(
     private data class ReconcileEvent(override val key: String) : TimerEvent
 
     private data class UpdateIntervalEvent(val intervalMs: Long): LifecycleEvent
+
+    private class ReconciliationException(message: String) : CordaRuntimeException(message)
 }
