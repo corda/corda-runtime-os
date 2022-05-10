@@ -381,8 +381,8 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 .password(requireNotNull(userAlice.password)),
         )
 
-        val text = "some test for test"
-        val text2 = "some other test for test with multi files"
+        val text = "some text for test"
+        val text2 = "some other text for test with multi files"
 
         client.use {
             val connection = client.start()
@@ -398,13 +398,13 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     it.assertThat(
                         uploadWithName("someName", text.byteInputStream())
                     ).isEqualTo(
-                        "\"someName,${generateChecksum(text.byteInputStream())}\""
+                        "\"someName, ${generateChecksum(text.byteInputStream())}\""
                     )
 
                     it.assertThat(
-                        multiInputStreamFileUpload(text.byteInputStream(),text2.byteInputStream())
+                        multiInputStreamFileUpload(text.byteInputStream(), text2.byteInputStream())
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())},${generateChecksum(text2.byteInputStream())}\""
+                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
                     )
                 }
             }
@@ -424,8 +424,8 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 .password(requireNotNull(userAlice.password)),
         )
 
-        val text = "some test for test"
-        val text2 = "some other test for test with multi files"
+        val text = "some text for test"
+        val text2 = "some other text for test with multi files"
 
         client.use {
             val connection = client.start()
@@ -444,7 +444,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
                         )
                     ).isEqualTo(
-                        "\"tenant1,${generateChecksum(text.byteInputStream())}\""
+                        "\"tenant1, ${generateChecksum(text.byteInputStream())}\""
                     )
 
                     it.assertThat(
@@ -453,7 +453,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
                         )
                     ).isEqualTo(
-                        "\"tenant1,${generateChecksum(text.byteInputStream())}\""
+                        "\"tenant1, ${generateChecksum(text.byteInputStream())}\""
                     )
 
                     it.assertThat(
@@ -462,7 +462,19 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text2.byteInputStream(), "", "", "SampleFile2.txt", 123L),
                         )
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())},${generateChecksum(text2.byteInputStream())}\""
+                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                    )
+
+                    // test client ability to send list of files
+                    it.assertThat(
+                        fileUploadObjectList(
+                            listOf(
+                                HttpFileUpload(text.byteInputStream(), "", "", "SampleFile1.txt", 123L),
+                                HttpFileUpload(text2.byteInputStream(), "", "", "SampleFile2.txt", 123L)
+                            )
+                        )
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
                     )
                 }
             }

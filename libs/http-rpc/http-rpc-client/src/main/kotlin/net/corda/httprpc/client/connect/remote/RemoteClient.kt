@@ -134,8 +134,12 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             }
 
             if(!webRequest.files.isNullOrEmpty()) {
-                webRequest.files.forEach {
-                    requestBuilder.field(it.key, it.value.content, it.value.fileName)
+                webRequest.files.forEach { filesForParameter ->
+                    val formFieldName = filesForParameter.key
+                    filesForParameter.value.forEach { file ->
+                        // we can add multiple files to the same form field name
+                        requestBuilder.field(formFieldName, file.content, file.fileName)
+                    }
                 }
             }
         }

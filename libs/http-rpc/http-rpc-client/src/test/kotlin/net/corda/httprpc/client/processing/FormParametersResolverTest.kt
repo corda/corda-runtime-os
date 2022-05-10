@@ -19,7 +19,7 @@ class FormParametersResolverTest {
     @Test
     fun `test form parameters from multipart file upload method with a HttpFileUpload and form param`() {
         val stream = "def".byteInputStream()
-        val file = HttpFileUpload(stream, "123", "xml", "filename.xml", 123L)
+        val file = HttpFileUpload(stream, "filename.xml")
         val result = TestFileUploadAPI::fileUploadWithFormParam.javaMethod!!.formParametersFrom(arrayOf("abc", file))
 
         assertNotNull(result["formParam"])
