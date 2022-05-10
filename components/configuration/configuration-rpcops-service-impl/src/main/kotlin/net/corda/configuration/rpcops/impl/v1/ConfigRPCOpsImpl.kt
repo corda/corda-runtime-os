@@ -89,7 +89,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
             )
         }
         val response = sendRequest(rpcRequest)
-        rpcRequest.updateActor
 
         return if (response.success) {
             HTTPUpdateConfigResponse(
