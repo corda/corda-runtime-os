@@ -123,23 +123,21 @@ class ReconcilerImpl<K : Any, V : Any>(
                 return
             }
 
-        val dbRecordsStream = dbReader.getAllVersionedRecords() ?: run {
+        val toBeReconciledDbRecords = dbReader.getAllVersionedRecords()?.filter { dbRecord ->
+            kafkaRecords[dbRecord.key]?.let { kafkaRecord ->
+                dbRecord.version > kafkaRecord.version // reconcile db update
+                // || dbRecord.isDeleted == true // reconcile db delete
+            } ?: true // reconcile db insert
+        } ?: run {
             // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
             // by upcoming RegistrationStatusChangeEvent
             logger.warn("Error occurred while retrieving db records. Aborting reconciliation.")
             return
         }
 
-        dbRecordsStream.use { dbRecords ->
-            val toBeReconciledDbRecords = dbRecords.filter { dbRecord ->
-                kafkaRecords[dbRecord.key]?.let { kafkaRecord ->
-                    dbRecord.version > kafkaRecord.version // reconcile db update
-                    // || dbRecord.isDeleted == true // reconcile db delete
-                } ?: true // reconcile db insert
-            }
-
-            toBeReconciledDbRecords.forEach {
-                writer.put(it.value)
+        toBeReconciledDbRecords.use {
+            it.forEach { dbRecord ->
+                writer.put(dbRecord.value)
             }
         }
     }
