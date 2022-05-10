@@ -60,14 +60,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         @JvmStatic
-        fun flowIORequestsExcludingReceiveAndClose(): Stream<Arguments> {
+        fun flowIORequestsExcludingReceiveAndCloseAndSubFlowFinished(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(FlowIORequest.ForceCheckpoint::class.simpleName, FlowIORequest.ForceCheckpoint),
                 Arguments.of(FlowIORequest.InitialCheckpoint::class.simpleName, FlowIORequest.InitialCheckpoint),
                 Arguments.of(FlowIORequest.InitiateFlow::class.simpleName, FlowIORequest.InitiateFlow(BOB_X500_NAME, SESSION_ID_1)),
                 Arguments.of(FlowIORequest.Send::class.simpleName, FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))),
-                Arguments.of(FlowIORequest.SubFlowFinished::class.simpleName, FlowIORequest.SubFlowFinished(FLOW_STACK_ITEM)),
-//                Arguments.of(FlowIORequest.SubFlowFailed::class.simpleName, FlowIORequest.SubFlowFailed(RuntimeException(), FLOW_STACK_ITEM)),
             )
         }
     }
@@ -578,7 +576,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @ParameterizedTest(name = "Given a flow suspended with {0} receiving a session close event does not resume the flow and sends a session ack")
-    @MethodSource("flowIORequestsExcludingReceiveAndClose")
+    @MethodSource("flowIORequestsExcludingReceiveAndCloseAndSubFlowFinished")
     fun `Given a non-close request type receiving a session close event does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
         request: FlowIORequest<*>

@@ -52,9 +52,9 @@ This document should be maintained so that we can ensure that we have quick visi
 
 ## SubFlow session closing
 
-- Given a subFlow contains only initiated sessions when the subFlow finishes session closes are sent
-- Given a subFlow contains an initiated and closed session when the subFlow finishes a single session close is sent
-- Given a subFlow contains only closed sessions when the subFlow finishes a wakeup event is scheduled to resume the flow
+- Given a subFlow contains only initiated sessions when the subFlow finishes session close events are sent ✅
+- Given a subFlow contains an initiated and closed session when the subFlow finishes a single session close event is sent ✅
+- Given a subFlow contains only closed sessions when the subFlow finishes a wakeup event is scheduled ✅
 
 ## SubFlowFinished - Tests below are the same as (CloseSessions) but with a different request type
 

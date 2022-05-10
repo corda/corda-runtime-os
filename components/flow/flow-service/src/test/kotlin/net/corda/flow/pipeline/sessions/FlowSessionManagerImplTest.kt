@@ -423,4 +423,15 @@ class FlowSessionManagerImplTest {
             )
         )
     }
+
+    @Test
+    fun `doAllSessionsHaveStatus returns true there are no sessions`() {
+        assertTrue(
+            flowSessionManager.doAllSessionsHaveStatus(
+                checkpoint,
+                emptyList(),
+                SessionStateType.CLOSED
+            )
+        )
+    }
 }

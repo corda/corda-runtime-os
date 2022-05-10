@@ -29,23 +29,4 @@ class FlowEventAcceptanceTest {
             assertTrue(outputPayloads.single() is Wakeup)
         }
     }
-
-    @Test
-    fun `finishing a subFlow suspends the flow and schedules a wakeup event`() {
-        flowEventDSL {
-
-            startedFlowFiber {
-                queueSuspension(FlowIORequest.SubFlowFinished(FlowStackItem()))
-            }
-
-            inputLastOutputEvent()
-
-            val response = processOne()
-            val outputPayloads = response.filterOutputFlowTopicEventPayloads()
-
-            assertEquals(net.corda.data.flow.state.waiting.Wakeup(), response.updatedState?.flowState?.waitingFor?.value)
-            assertEquals(1, outputPayloads.size)
-            assertTrue(outputPayloads.single() is Wakeup)
-        }
-    }
 }

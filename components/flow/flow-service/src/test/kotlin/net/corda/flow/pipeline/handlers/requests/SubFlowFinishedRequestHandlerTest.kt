@@ -45,20 +45,6 @@ class SubFlowFinishedRequestHandlerTest {
     }
 
     @Test
-    fun `post processing publishes wakeup event`() {
-        val eventRecord = Record("", "", FlowEvent())
-
-        whenever(
-            testContext
-                .flowRecordFactory
-                .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
-        ).thenReturn(eventRecord)
-
-        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-        assertThat(outputContext.outputRecords).containsOnly(eventRecord)
-    }
-
-    @Test
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) when the flow is an initiating flow and has sessions to close`() {
         whenever(
             flowSessionManager.doAllSessionsHaveStatus(
@@ -114,7 +100,7 @@ class SubFlowFinishedRequestHandlerTest {
     }
 
     @Test
-    fun `Returns an updated WaitingFor of Wakeup when the flow is an initiating flow and has already closed sessions`() {
+    fun `Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow is an initiating flow and has already closed sessions`() {
         whenever(
             flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
@@ -129,12 +115,12 @@ class SubFlowFinishedRequestHandlerTest {
                 FlowStackItem.newBuilder()
                     .setFlowName(FLOW_NAME)
                     .setIsInitiatingFlow(true)
-                    .setSessionIds(emptyList())
+                    .setSessionIds(sessions)
                     .build()
             )
         )
 
-        assertEquals(net.corda.data.flow.state.waiting.Wakeup(), result.value)
+        assertEquals(SessionConfirmation(sessions, SessionConfirmationType.CLOSE), result.value)
     }
 
     @Test

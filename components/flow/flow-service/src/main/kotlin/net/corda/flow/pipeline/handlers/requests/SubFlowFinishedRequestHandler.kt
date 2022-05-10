@@ -26,8 +26,8 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     override val type = FlowIORequest.SubFlowFinished::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFinished): WaitingFor {
-        return if (subFlowHasSessionsToClose(context.checkpoint, request)) {
-            return WaitingFor(SessionConfirmation(request.flowStackItem.sessionIds, SessionConfirmationType.CLOSE))
+        return if (doesSubFlowHaveSessions(request)) {
+            WaitingFor(SessionConfirmation(request.flowStackItem.sessionIds, SessionConfirmationType.CLOSE))
         } else {
             WaitingFor(Wakeup())
         }
@@ -39,20 +39,24 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        return if (subFlowHasSessionsToClose(checkpoint, request)) {
+        val doesSubFlowHaveSessions = doesSubFlowHaveSessions(request)
+
+        if (doesSubFlowHaveSessions) {
             flowSessionManager.sendCloseMessages(checkpoint, request.flowStackItem.sessionIds, Instant.now())
                 .map { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
-            context
-        } else {
+        }
+
+        val shouldWakeup = !doesSubFlowHaveSessions || allSessionsAreClosed(checkpoint, request)
+
+        if (shouldWakeup){
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, net.corda.data.flow.event.Wakeup())
             return context.copy(outputRecords = context.outputRecords + record)
         }
+        return context
     }
 
-    private fun subFlowHasSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): Boolean {
-        return request.flowStackItem.isInitiatingFlow
-                && request.flowStackItem.sessionIds.isNotEmpty()
-                && !allSessionsAreClosed(checkpoint, request)
+    private fun doesSubFlowHaveSessions(request: FlowIORequest.SubFlowFinished): Boolean {
+        return request.flowStackItem.isInitiatingFlow && request.flowStackItem.sessionIds.isNotEmpty()
     }
 
     private fun allSessionsAreClosed(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): Boolean {

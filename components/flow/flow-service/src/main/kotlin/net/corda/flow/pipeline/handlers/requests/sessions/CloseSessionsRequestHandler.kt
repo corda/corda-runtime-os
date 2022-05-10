@@ -32,9 +32,8 @@ class CloseSessionsRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->
-            checkpoint.putSessionState(updatedSessionState)
-        }
+        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now())
+            .map { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
 
         val haveSessionsAlreadyBeenClosed = flowSessionManager.doAllSessionsHaveStatus(
             checkpoint,
