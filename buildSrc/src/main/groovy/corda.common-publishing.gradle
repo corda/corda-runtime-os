@@ -26,4 +26,8 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
             }
         }
     }
+
+    tasks.register('install') {
+        dependsOn 'publishToMavenLocal'
+    }
 }
