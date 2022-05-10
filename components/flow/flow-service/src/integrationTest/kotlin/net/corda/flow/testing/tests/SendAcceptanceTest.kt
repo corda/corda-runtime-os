@@ -20,7 +20,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Send) Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event`() {
+    fun `Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -51,7 +51,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Send) Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
+    fun `Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -100,7 +100,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Send) Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
+    fun `Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)

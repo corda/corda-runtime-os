@@ -112,7 +112,6 @@ class OutputAssertionsImpl(
     ): List<SessionEvent> {
         assertNotNull(testRun.response, "Test run response value")
         val eventRecords = getMatchedFlowMapperEventRecords(testRun.response!!)
-        assertTrue(eventRecords.any(), "Expected at least one event record")
 
         val sessionEvents =
             getMatchedSessionEvents(
@@ -120,8 +119,6 @@ class OutputAssertionsImpl(
                 initiatedIdentity ?: sessionInitiatedIdentity!!,
                 eventRecords
             )
-
-        assertTrue(sessionEvents.any(), "Expected at least one session event record when expecting ${T::class.simpleName} events")
 
         val filteredEvents = sessionEvents.filter { it.payload is T }
         val filteredSessionIds = filteredEvents.map { it.sessionId }

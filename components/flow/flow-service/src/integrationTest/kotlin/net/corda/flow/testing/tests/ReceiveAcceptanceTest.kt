@@ -72,7 +72,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Receive) Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
+    fun `Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -116,9 +116,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @ParameterizedTest(name = "(Receive) Receiving a {0} event does not resume the flow and resends any unacknowledged events")
+    @ParameterizedTest(name = "Receiving a {0} event does not resume the flow and resends any unacknowledged events")
     @MethodSource("wakeupAndSessionAck")
-    fun `(Receive) Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
+    fun `Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (WhenSetup) -> Unit
     ) {
@@ -153,9 +153,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @ParameterizedTest(name = "(Receive) Receiving a {0} event for an unrelated session does not resume the flow and sends a session ack")
+    @ParameterizedTest(name = "Receiving a {0} event for an unrelated session does not resume the flow and sends a session ack")
     @MethodSource("unrelatedSessionEvents")
-    fun `(Receive) Receiving a session event for an unrelated session does not resume the flow and sends a session ack`(
+    fun `Receiving a session event for an unrelated session does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (WhenSetup) -> Unit
     ) {
@@ -191,7 +191,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Receive) Given two sessions receiving a single session data event does not resume the flow and sends a session ack`() {
+    fun `Given two sessions receiving a single session data event does not resume the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -212,7 +212,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         then {
@@ -224,7 +224,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Receive) Given two sessions receiving all session data events resumes the flow and sends session acks`() {
+    fun `Given two sessions receiving all session data events resumes the flow and sends session acks`() {
         given {
             // Background setup
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
@@ -252,10 +252,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             // Alice sends the data for session 1
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
 
             // Alice sends the data for session 2
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -275,7 +275,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Receive) Given two sessions have already received their session data events when the flow calls 'receive' for both sessions at once the flow should schedule a wakeup event`() {
+    fun `Given two sessions where one has already received a session close event calling 'receive' and then receiving a session data event for the other session resumes the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -294,9 +294,48 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
+                sessionAckEvents(SESSION_ID_2)
+            }
+        }
+    }
+
+    @Test
+    fun `Given two sessions have already received their session data events when the flow calls 'receive' for both sessions at once the flow should schedule a wakeup event`() {
+        given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
+            cpkMetadata(CPI1, CPK1)
+            sandboxCpk(CPK1)
+            membershipGroupFor(ALICE_HOLDING_IDENTITY)
+
+            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
+            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
@@ -312,7 +351,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(Receive) Given two sessions have already received their session data events when the flow calls 'receive' for each session individually the flow should schedule a wakeup event`() {
+    fun `Given two sessions have already received their session data events when the flow calls 'receive' for each session individually the flow should schedule a wakeup event`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -331,9 +370,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
@@ -356,9 +395,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @ParameterizedTest(name = "(Any-non-receive-request-type) Given a flow suspended with {0} receiving a session data event does not resume the flow and sends a session ack")
+    @ParameterizedTest(name = "Given a flow suspended with {0} receiving a session data event does not resume the flow and sends a session ack")
     @MethodSource("flowIORequestsExcludingReceiveAndClose")
-    fun `(Any-non-receive-request-type) Receiving a session data event does not resume the flow and sends a session ack`(
+    fun `Given a non-receive request type receiving a session data event does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
         request: FlowIORequest<*>
     ) {
@@ -387,7 +426,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         then {

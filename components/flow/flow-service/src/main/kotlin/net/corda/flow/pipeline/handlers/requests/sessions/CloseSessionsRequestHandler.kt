@@ -24,7 +24,7 @@ class CloseSessionsRequestHandler @Activate constructor(
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
 
     private companion object {
-        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED)
     }
 
     override val type = FlowIORequest.CloseSessions::class.java

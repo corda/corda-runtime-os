@@ -73,7 +73,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Calling 'close' on initiated sessions sends session close events`() {
+    fun `Calling 'close' on initiated sessions sends session close events`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -103,7 +103,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Calling 'close' on an initiated and closed session sends a session close event to the initiated session`() {
+    fun `Calling 'close' on an initiated and closed session sends a session close event to the initiated session`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -136,7 +136,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Receiving an out-of-order session close events does not resume the flow and sends a session ack`() {
+    fun `Receiving an out-of-order session close events does not resume the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -180,9 +180,9 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @ParameterizedTest(name = "(CloseSessions) Receiving a {0} event does not resume the flow and resends any unacknowledged events")
+    @ParameterizedTest(name = "Receiving a {0} event does not resume the flow and resends any unacknowledged events")
     @MethodSource("wakeupAndSessionAck")
-    fun `(CloseSessions) Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
+    fun `Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (WhenSetup) -> Unit
     ) {
@@ -217,9 +217,9 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @ParameterizedTest(name = "(CloseSessions) Receiving a {0} event for an unrelated session does not resume the flow and sends a session ack")
+    @ParameterizedTest(name = "Receiving a {0} event for an unrelated session does not resume the flow and sends a session ack")
     @MethodSource("unrelatedSessionEvents")
-    fun `(CloseSessions) Receiving a session event for an unrelated session does not resume the flow and sends a session ack`(
+    fun `Receiving a session event for an unrelated session does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (WhenSetup) -> Unit
     ) {
@@ -255,7 +255,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Receiving a session close event for an unrelated session does not resume the flow and sends a session ack`() {
+    fun `Receiving a session close event for an unrelated session does not resume the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -288,7 +288,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Given two sessions receiving a single session close event does not resume the flow and sends a session ack`() {
+    fun `Given two sessions receiving a single session close event does not resume the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -321,7 +321,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Given two sessions receiving all session close events resumes the flow and sends session acks`() {
+    fun `Given two sessions receiving all session close events resumes the flow and sends session acks`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -361,8 +361,17 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    /**
+     * Given two sessions where:
+     * 
+     * - `SESSION_ID_1` has already received a session close event.
+     * - `close` is called.
+     * - `SESSION_ID_2` receives a session close event.
+     * 
+     * The flow does not resume and sends `SESSION_ID_2` a session ack.
+     */
     @Test
-    fun `(CloseSessions) Given two sessions where one has already received a session close event calling close and then receiving a session close event for the other session resumes the flow and sends a session ack`() {
+    fun `Given two sessions where one has already received a session close event calling close and then receiving a session close event for the other session does not resume the flow and sends a session ack`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -389,12 +398,130 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                sessionAckEvents(SESSION_ID_2)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(Unit)
+                sessionAckEvents()
+            }
+        }
+    }
+
+    /**
+     * Given two sessions where:
+     *
+     * - `SESSION_ID_1` has already received a session close event.
+     * - `close` is called.
+     * - `SESSION_ID_2` receives a session close event.
+     * - `SESSION_ID_1` receives a session ack.
+     *
+     * The flow will resume.
+     */
+    @Test
+    fun `Given two sessions where one enters WAIT_FOR_FINAL_ACK after calling 'close' resumes the flow after receiving events - 1`() {
+        given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
+            cpkMetadata(CPI1, CPK1)
+            sandboxCpk(CPK1)
+            membershipGroupFor(ALICE_HOLDING_IDENTITY)
+
+            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
+            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                sessionAckEvents(SESSION_ID_2)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(Unit)
+                sessionAckEvents()
+            }
+        }
+    }
+
+    /**
+     * Given two sessions where:
+     *
+     * - `SESSION_ID_1` has already received a session close event.
+     * - `close` is called.
+     * - `SESSION_ID_1` receives a session ack.
+     * - `SESSION_ID_2` receives a session close event.
+     *
+     * The flow will resume.
+     */
+    @Test
+    fun `Given two sessions where one enters WAIT_FOR_FINAL_ACK after calling 'close' resumes the flow after receiving events - 2`() {
+        given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
+            cpkMetadata(CPI1, CPK1)
+            sandboxCpk(CPK1)
+            membershipGroupFor(ALICE_HOLDING_IDENTITY)
+
+            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
+            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                sessionAckEvents()
             }
 
             expectOutputForFlow(FLOW_ID1) {
@@ -405,7 +532,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Given two sessions have already received their session close events when the flow calls 'close' for both sessions at once the flow should schedule a wakeup event`() {
+    fun `Given two sessions have already received their session close events when the flow calls 'close' for both sessions at once the flow resumes after receiving session acks from each`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -432,18 +559,30 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         `when` {
             wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+               sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(Unit)
             }
         }
     }
 
-    @Disabled
     @Test
-    fun `(CloseSessions) Given two sessions have already received their session close events when the flow calls 'close' for each session individually the flow should schedule a wakeup event`() {
+    fun `Given two sessions have already received their session close events when the flow calls 'close' for each session individually the flow resumes after receiving session acks respectively`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -462,34 +601,86 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
             wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
 
-            wakeupEventReceived(FLOW_ID1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_2)))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                sessionCloseEvents(SESSION_ID_1)
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
-                wakeUpEvent()
+                sessionCloseEvents(SESSION_ID_2)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(Unit)
             }
         }
     }
 
-    @ParameterizedTest(name = "(Any-non-close-request-type) Given a flow suspended with {0} receiving a session close event does not resume the flow and sends a session ack")
+    @Test
+    fun `Given two closed sessions when the flow calls 'close' for both sessions a wakeup event is scheduled and no session close events are sent`() {
+        given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
+            cpkMetadata(CPI1, CPK1)
+            sandboxCpk(CPK1)
+            membershipGroupFor(ALICE_HOLDING_IDENTITY)
+
+            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
+            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+        }
+
+        `when` {
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
+
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionCloseEvents()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(Unit)
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "Given a flow suspended with {0} receiving a session close event does not resume the flow and sends a session ack")
     @MethodSource("flowIORequestsExcludingReceiveAndClose")
-    fun `(Any-non-close-request-type) Receiving a session close event does not resume the flow and sends a session ack`(
+    fun `Given a non-close request type receiving a session close event does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
         request: FlowIORequest<*>
     ) {
@@ -530,7 +721,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(CloseSessions) Given a flow resumes after receiving session data events calling 'close' on the sessions sends session close events and no session ack for the session that resumed the flow`() {
+    fun `Given a flow resumes after receiving session data events calling 'close' on the sessions sends session close events and no session ack for the session that resumed the flow`() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
