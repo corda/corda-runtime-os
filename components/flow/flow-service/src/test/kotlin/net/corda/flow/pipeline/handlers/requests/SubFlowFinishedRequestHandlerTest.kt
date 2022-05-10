@@ -4,6 +4,7 @@ import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.RequestHandlerTestContext
@@ -33,11 +34,11 @@ class SubFlowFinishedRequestHandlerTest {
     private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
     private val flowStackItem = FlowStackItem()
     private val ioRequest = FlowIORequest.SubFlowFinished(flowStackItem)
-    private val record = Record("","", FlowEvent())
+    private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
     private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
-    
+
     @BeforeEach
     fun setup() {
         whenever(flowSessionManager.sendCloseMessages(any(), eq(sessions), any())).thenReturn(listOf(sessionState1, sessionState2))
@@ -45,20 +46,27 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `post processing publishes wakeup event`() {
-        val eventRecord = Record("","", FlowEvent())
+        val eventRecord = Record("", "", FlowEvent())
 
-        whenever(testContext
-            .flowRecordFactory
-            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
+        whenever(
+            testContext
+                .flowRecordFactory
+                .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         ).thenReturn(eventRecord)
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
         assertThat(outputContext.outputRecords).containsOnly(eventRecord)
     }
-    
+
     @Test
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) when the flow is an initiating flow and has sessions to close`() {
-        whenever(flowSessionManager.areAllSessionsInStatuses(eq(testContext.flowCheckpoint), eq(sessions), any())).thenReturn(false)
+        whenever(
+            flowSessionManager.doAllSessionsHaveStatus(
+                testContext.flowCheckpoint,
+                sessions,
+                SessionStateType.CLOSED
+            )
+        ).thenReturn(false)
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(
@@ -107,7 +115,13 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Returns an updated WaitingFor of Wakeup when the flow is an initiating flow and has already closed sessions`() {
-        whenever(flowSessionManager.areAllSessionsInStatuses(eq(testContext.flowCheckpoint), eq(sessions), any())).thenReturn(true)
+        whenever(
+            flowSessionManager.doAllSessionsHaveStatus(
+                testContext.flowCheckpoint,
+                sessions,
+                SessionStateType.CLOSED
+            )
+        ).thenReturn(true)
 
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
@@ -125,7 +139,13 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Sends session close messages and does not create a Wakeup record when the flow is an initiating flow and has sessions to close`() {
-        whenever(flowSessionManager.areAllSessionsInStatuses(eq(testContext.flowCheckpoint), eq(sessions), any())).thenReturn(false)
+        whenever(
+            flowSessionManager.doAllSessionsHaveStatus(
+                testContext.flowCheckpoint,
+                sessions,
+                SessionStateType.CLOSED
+            )
+        ).thenReturn(false)
 
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
@@ -147,9 +167,10 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is not an initiating flow`() {
-        whenever(testContext
-            .flowRecordFactory
-            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        whenever(
+            testContext
+                .flowRecordFactory
+                .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         ).thenReturn(record)
 
         val outputContext = handler.postProcess(
@@ -172,9 +193,10 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is an initiating flow and has no sessions to close`() {
-        whenever(testContext
-            .flowRecordFactory
-            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
+        whenever(
+            testContext
+                .flowRecordFactory
+                .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         ).thenReturn(record)
 
         val outputContext = handler.postProcess(
@@ -197,11 +219,18 @@ class SubFlowFinishedRequestHandlerTest {
 
     @Test
     fun `Does not send session close messages and creates a Wakeup record when the flow is an initiating flow and has already closed sessions`() {
-        whenever(flowSessionManager.areAllSessionsInStatuses(eq(testContext.flowCheckpoint), eq(sessions), any())).thenReturn(true)
+        whenever(
+            flowSessionManager.doAllSessionsHaveStatus(
+                testContext.flowCheckpoint,
+                sessions,
+                SessionStateType.CLOSED
+            )
+        ).thenReturn(true)
 
-        whenever(testContext
-            .flowRecordFactory
-            .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>() )
+        whenever(
+            testContext
+                .flowRecordFactory
+                .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         ).thenReturn(record)
 
         val outputContext = handler.postProcess(

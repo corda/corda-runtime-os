@@ -23,10 +23,6 @@ class CloseSessionsRequestHandler @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
 
-    private companion object {
-        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED)
-    }
-
     override val type = FlowIORequest.CloseSessions::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): WaitingFor {
@@ -40,10 +36,10 @@ class CloseSessionsRequestHandler @Activate constructor(
             checkpoint.putSessionState(updatedSessionState)
         }
 
-        val haveSessionsAlreadyBeenClosed = flowSessionManager.areAllSessionsInStatuses(
+        val haveSessionsAlreadyBeenClosed = flowSessionManager.doAllSessionsHaveStatus(
             checkpoint,
             request.sessions.toList(),
-            CLOSED_STATUSES
+            SessionStateType.CLOSED
         )
 
         return if (haveSessionsAlreadyBeenClosed) {

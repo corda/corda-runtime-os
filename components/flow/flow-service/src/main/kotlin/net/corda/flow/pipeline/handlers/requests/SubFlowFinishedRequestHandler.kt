@@ -23,10 +23,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.SubFlowFinished> {
 
-    private companion object {
-        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
-    }
-
     override val type = FlowIORequest.SubFlowFinished::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFinished): WaitingFor {
@@ -60,10 +56,10 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     }
 
     private fun allSessionsAreClosed(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): Boolean {
-        return flowSessionManager.areAllSessionsInStatuses(
+        return flowSessionManager.doAllSessionsHaveStatus(
             checkpoint,
             request.flowStackItem.sessionIds,
-            CLOSED_STATUSES
+            SessionStateType.CLOSED
         )
     }
 }

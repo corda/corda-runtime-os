@@ -58,10 +58,10 @@ class CloseSessionsRequestHandlerTest {
     @Test
     fun `Sends close events and updates the checkpoint with session state when sessions are not in closed statuses`() {
         whenever(
-            testContext.flowSessionManager.areAllSessionsInStatuses(
+            testContext.flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
                 sessions,
-                listOf(SessionStateType.CLOSED)
+                SessionStateType.CLOSED
             )
         ).thenReturn(false)
 
@@ -76,10 +76,10 @@ class CloseSessionsRequestHandlerTest {
     @Test
     fun `Creates Wakeup record when all the sessions are closed`() {
         whenever(
-            testContext.flowSessionManager.areAllSessionsInStatuses(
+            testContext.flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
                 sessions,
-                listOf(SessionStateType.CLOSED)
+                SessionStateType.CLOSED
             )
         ).thenReturn(true)
 
