@@ -2,6 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -17,8 +18,8 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         val DATA_MESSAGE_4 = byteArrayOf(4)
     }
 
-    @Test
-    fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
+    @BeforeEach
+    fun beforeEach() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -27,7 +28,12 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+        }
+    }
 
+    @Test
+    fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
+        given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -50,14 +56,6 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `(SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 

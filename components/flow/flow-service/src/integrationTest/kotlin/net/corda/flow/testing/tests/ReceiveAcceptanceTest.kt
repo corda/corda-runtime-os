@@ -7,6 +7,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.WhenSetup
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -71,8 +72,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-    @Test
-    fun `Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
+    @BeforeEach
+    fun beforeEach() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -81,7 +82,12 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+        }
+    }
 
+    @Test
+    fun `Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
+        given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -123,14 +129,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         parameter: (WhenSetup) -> Unit
     ) {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -160,14 +158,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         parameter: (WhenSetup) -> Unit
     ) {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -193,14 +183,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a single session data event does not resume the flow and sends a session ack`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -226,42 +208,24 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving all session data events resumes the flow and sends session acks`() {
         given {
-            // Background setup
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            // Bob will be initiating sessions with Alice
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
-            // Bob starts a flow an initiates a session with Alice
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-            // Alice acknowledges the session and Bob creates a second session
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
 
-            // Alice acknowledges the second session and Bob requests to receive data for both
-            // sessions
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
-            // Alice sends the data for session 1
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
 
-            // Alice sends the data for session 2
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
-            // As Bob has requested receive for both sessions we expect Bob to acknowledge the
-            // receipt of the data for session 1 but not wake up the flow until all data is received.
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
                 sessionAckEvents(SESSION_ID_1)
@@ -277,14 +241,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions where one has already received a session close event calling 'receive' and then receiving a session data event for the other session resumes the flow and sends a session ack`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -316,14 +272,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions have already received their session data events when the flow calls 'receive' for both sessions at once the flow should schedule a wakeup event`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -353,14 +301,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions have already received their session data events when the flow calls 'receive' for each session individually the flow should schedule a wakeup event`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -402,14 +342,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         request: FlowIORequest<*>
     ) {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             if (request !is FlowIORequest.InitiateFlow) {
                 startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                     .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))

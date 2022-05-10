@@ -2,6 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -19,8 +20,8 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         val DATA_MESSAGE_6 = byteArrayOf(6)
     }
 
-    @Test
-    fun `Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event`() {
+    @BeforeEach
+    fun beforeEach() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
             cpkMetadata(CPI1, CPK1)
@@ -29,7 +30,12 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+        }
+    }
 
+    @Test
+    fun `Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event`() {
+        given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -53,14 +59,6 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
@@ -102,14 +100,6 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
-            virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            cpkMetadata(CPI1, CPK1)
-            sandboxCpk(CPK1)
-            membershipGroupFor(ALICE_HOLDING_IDENTITY)
-
-            sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
-            sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
