@@ -5,7 +5,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.reconciliation.VersionedRecord
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
@@ -41,9 +40,8 @@ class FakeCpiInfoReadService : CpiInfoReadService {
         TODO("Not yet implemented")
     }
 
-    override fun getAllVersionedRecords(): Sequence<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
+    override fun getAllVersionedRecords() =
         TODO("Not yet implemented")
-    }
 
     override val lifecycleCoordinatorName: LifecycleCoordinatorName
         get() = TODO("Not yet implemented")

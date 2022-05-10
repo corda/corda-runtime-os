@@ -17,6 +17,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.util.stream.Stream
 
 /**
  * CPI Info Service Component which implements [CpiInfoReadService]
@@ -87,14 +88,16 @@ class CpiInfoReadServiceImpl @Activate constructor(
 
     override fun getAll(): List<CpiMetadata> = cpiInfoProcessor.getAll()
 
-    override fun getAllVersionedRecords() =
-        getAll().asSequence().map {
-            VersionedRecord(
-                it.version,
-                it.cpiId,
-                it
-            )
-        }
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
+        getAll()
+            .stream()
+            .map {
+                VersionedRecord(
+                    it.version,
+                    it.cpiId,
+                    it
+                )
+            }
 
     override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)
 

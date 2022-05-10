@@ -1,6 +1,7 @@
 package net.corda.reconciliation
 
 import net.corda.lifecycle.LifecycleCoordinatorName
+import java.util.stream.Stream
 
 /**
  * Reads [VersionedRecord]s from the db and Kafka to be compared in the reconciliation process.
@@ -21,7 +22,7 @@ interface ReconcilerReader<K : Any, V : Any> {
      * Subsequently, the calling service, that should be following [ReconcilerReader], will as well get
      * notified of the [ReconcilerReader]'s changed status by a RegistrationStatusChangeEvent.
      */
-    fun getAllVersionedRecords(): Sequence<VersionedRecord<K, V>>?
+    fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>?
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 }

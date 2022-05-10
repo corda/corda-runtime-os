@@ -19,6 +19,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 import kotlin.streams.asSequence
 
@@ -90,7 +91,7 @@ class CpiInfoDbReader(
      * event should be scheduled notifying the service about the error. Then the calling service which should
      * be following this service will get notified of this service's stop event as well.
      */
-    override fun getAllVersionedRecords(): Sequence<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
         return try {
             doGetAllVersionedRecords()
         } catch (e: Exception) {
@@ -103,29 +104,31 @@ class CpiInfoDbReader(
     // Separating actual logic from lifecycle stuff so it can be unit tested.
     @VisibleForTesting
     internal fun doGetAllVersionedRecords() =
-        // TODO we need to close this em after the below sequence gets processed otherwise the ResultSet gets closed
         entityManagerFactory!!.createEntityManager().run {
-            findAllCpiMetadata()
-        }.asSequence().map {
-            val cpiMetadata = CpiMetadata(
-                CpiIdentifier(
-                    it.name,
-                    it.version,
-                    SecureHash.create(it.signerSummaryHash)
-                ),
-                SecureHash.create(it.fileChecksum),
-                // The below empty list needs to be populated once we store [CpkMetadata] properties in database
-                // (https://r3-cev.atlassian.net/browse/CORE-4658), it will now wipe out values on Kafka.
-                listOf(),
-                it.groupPolicy,
-                it.entityVersion
-            )
+            findAllCpiMetadata().onClose {
+                // closing em after the stream gets used outside the scope of this method
+                close()
+            }.map {
+                val cpiMetadata = CpiMetadata(
+                    CpiIdentifier(
+                        it.name,
+                        it.version,
+                        SecureHash.create(it.signerSummaryHash)
+                    ),
+                    SecureHash.create(it.fileChecksum),
+                    // The below empty list needs to be populated once we store [CpkMetadata] properties in database
+                    // (https://r3-cev.atlassian.net/browse/CORE-4658), it will now wipe out values on Kafka.
+                    listOf(),
+                    it.groupPolicy,
+                    it.entityVersion
+                )
 
-            VersionedRecord(
-                cpiMetadata.version,
-                cpiMetadata.cpiId,
-                cpiMetadata
-            )
+                VersionedRecord(
+                    cpiMetadata.version,
+                    cpiMetadata.cpiId,
+                    cpiMetadata
+                )
+            }
         }
 
     override val isRunning: Boolean

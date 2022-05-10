@@ -16,7 +16,7 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
+import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
 class ReconcilerImpl<K : Any, V : Any>(
@@ -116,27 +116,31 @@ class ReconcilerImpl<K : Any, V : Any>(
     @VisibleForTesting
     internal fun reconcile() {
         val kafkaRecords =
-            kafkaReader.getAllVersionedRecords()?.associateBy { it.key } ?: run {
+            kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key } ?: run {
                 // Error occurred in kafka getAllVersionedRecords, we need to return and wait on failure to surface
                 // by upcoming RegistrationStatusChangeEvent
                 logger.warn("Error occurred while retrieving kafka records. Aborting reconciliation.")
                 return
             }
 
-        val toBeReconciledDbRecords = dbReader.getAllVersionedRecords()?.filter { dbRecord ->
-            kafkaRecords[dbRecord.key]?.let { kafkaRecord ->
-                dbRecord.version > kafkaRecord.version // reconcile db update
-                // || dbRecord.isDeleted == true // reconcile db delete
-            } ?: true // reconcile db insert
-        } ?: run {
+        val dbRecordsStream = dbReader.getAllVersionedRecords() ?: run {
             // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
             // by upcoming RegistrationStatusChangeEvent
             logger.warn("Error occurred while retrieving db records. Aborting reconciliation.")
             return
         }
 
-        toBeReconciledDbRecords.forEach {
-            writer.put(it.value)
+        dbRecordsStream.use { dbRecords ->
+            val toBeReconciledDbRecords = dbRecords.filter { dbRecord ->
+                kafkaRecords[dbRecord.key]?.let { kafkaRecord ->
+                    dbRecord.version > kafkaRecord.version // reconcile db update
+                    // || dbRecord.isDeleted == true // reconcile db delete
+                } ?: true // reconcile db insert
+            }
+
+            toBeReconciledDbRecords.forEach {
+                writer.put(it.value)
+            }
         }
     }
 
