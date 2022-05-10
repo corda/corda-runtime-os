@@ -5,8 +5,19 @@ metadata:
   name: {{ include "corda.workerName" . }}
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
+  {{- if .Values.workers.rpc.service.annotations }}
+  annotations: 
+  {{- range $key, $value := .Values.workers.rpc.service.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end}}
 spec:
-  type: ClusterIP
+  type: {{ .Values.workers.rpc.service.type }}
+  {{- if .Values.workers.rpc.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .Values.workers.rpc.service.externalTrafficPolicy }}
+  {{- else if .Values.workers.rpc.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges: {{ .Values.workers.rpc.service.loadBalancerSourceRanges }}
+  {{- end }}
   selector:
     {{- include "corda.workerSelectorLabels" . | nindent 4 }}
   ports:
