@@ -20,7 +20,6 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -251,13 +250,11 @@ class CryptoProcessorTests {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
             databaseInstaller.setupClusterDatabase(
                 clusterDb,
-                "config",
-                ConfigurationEntities.classes
+                "config"
             ).close()
             databaseInstaller.setupDatabase(
                 cryptoDb,
-                "crypto",
-                CryptoEntities.classes
+                "crypto"
             ).close()
             databaseInstaller.setupDatabase(
                 vnodeDb,

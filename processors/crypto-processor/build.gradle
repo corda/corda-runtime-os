@@ -28,6 +28,7 @@ dependencies {
     implementation project(':components:crypto:crypto-service')
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:configuration:configuration-datamodel")
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')
@@ -38,7 +39,6 @@ dependencies {
     implementation project(":libs:messaging:messaging")
 
     integrationTestImplementation project(":libs:configuration:configuration-core")
-    integrationTestImplementation project(":libs:configuration:configuration-datamodel")
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
