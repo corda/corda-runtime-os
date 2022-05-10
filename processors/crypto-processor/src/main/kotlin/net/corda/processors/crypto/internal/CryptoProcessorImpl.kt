@@ -9,6 +9,7 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -49,7 +50,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = HSMRegistration::class)
     private val hsmRegistration: HSMRegistration,
     @Reference(service = JpaEntitiesRegistry::class)
-    private val entitiesRegistry: JpaEntitiesRegistry
+    private val entitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager
 ) : CryptoProcessor {
     private companion object {
         val log = contextLogger()
@@ -71,7 +74,8 @@ class CryptoProcessorImpl @Activate constructor(
         ::cryptoFlowOpsService,
         ::softCryptoServiceProviders,
         ::cryptoServiceFactory,
-        ::hsmRegistration
+        ::hsmRegistration,
+        ::dbConnectionManager
     )
 
     override val isRunning: Boolean

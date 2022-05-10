@@ -8,8 +8,6 @@ import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
 import java.net.URI
 import javax.net.ssl.SSLContext
-import kong.unirest.HttpRequestWithBody
-import kong.unirest.MultipartBody
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  : HttpsClient {
     init {
