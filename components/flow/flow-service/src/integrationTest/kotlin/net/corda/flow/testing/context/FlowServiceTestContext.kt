@@ -83,6 +83,7 @@ class FlowServiceTestContext @Activate constructor(
 
     fun start() {
         virtualNodeInfoReadService.start()
+        virtualNodeInfoReadService.waitUntilRunning()
     }
 
     override val initiatedIdentityMemberName: MemberX500Name
