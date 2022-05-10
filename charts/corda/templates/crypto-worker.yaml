@@ -41,8 +41,28 @@ spec:
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
         {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
+          - name: DATABASE_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "corda.clusterDbSecretName" . }}
+                key: password
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                key: salt
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                key: passphrase
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
+          - -spassphrase=$(PASSPHRASE)
+          - -ssalt=$(SALT)
+          - -ddatabase.user={{ .Values.db.cluster.user }}
+          - -ddatabase.pass=$(DATABASE_PASS)
+          - -ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" .Values.db.cluster.host }}:{{ .Values.db.cluster.port }}/{{ .Values.db.cluster.database }}
         ports:
         {{- if .Values.workers.crypto.debug.enabled }}
           - name: debug
