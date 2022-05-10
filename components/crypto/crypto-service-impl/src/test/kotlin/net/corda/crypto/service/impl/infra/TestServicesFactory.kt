@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
+import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
@@ -9,6 +10,8 @@ import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
+import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
 import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
@@ -24,6 +27,7 @@ import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import org.mockito.kotlin.mock
 import java.security.PublicKey
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertTrue
@@ -72,8 +76,26 @@ class TestServicesFactory {
         }
     }
 
-    val registration by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TestHSMService(coordinatorFactory, schemeMetadata).also {
+    val hsmService: TestHSMService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        class ProxyClient(private val impl: CryptoOpsProxyClient = mock()) : CryptoOpsProxyClient by impl {
+            override fun createWrappingKey(
+                configId: String,
+                failIfExists: Boolean,
+                masterKeyAlias: String,
+                context: Map<String, String>
+            ) {
+                cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
+            }
+        }
+        TestHSMService(
+            coordinatorFactory,
+            HSMServiceImpl(
+                cryptoConfig,
+                TestHSMCache(),
+                schemeMetadata,
+                ProxyClient()
+            )
+        ).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
@@ -122,7 +144,7 @@ class TestServicesFactory {
         CryptoServiceFactoryImpl(
             coordinatorFactory,
             readService,
-            registration,
+            hsmService,
             listOf(
                 softCryptoKeyCacheProvider
             )

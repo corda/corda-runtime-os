@@ -1,7 +1,6 @@
 package net.corda.crypto.service.impl.bus.registration
 
 import net.corda.crypto.service.impl.infra.TestConfigurationReadService
-import net.corda.crypto.service.impl.infra.TestHSMService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
@@ -43,7 +42,7 @@ class HSMRegistrationBusServiceTests {
             factory.coordinatorFactory,
             configurationReadService,
             subscriptionFactory,
-            TestHSMService(factory.coordinatorFactory, factory.schemeMetadata).also { it.start() }
+            factory.hsmService
         )
     }
 

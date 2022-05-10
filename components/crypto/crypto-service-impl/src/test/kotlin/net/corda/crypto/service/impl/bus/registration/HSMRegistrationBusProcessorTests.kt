@@ -78,7 +78,7 @@ class HSMRegistrationBusProcessorTests {
     }
 
     @Test
-    fun `Should execute assign HSM request`() {
+    fun `Should handle AssignHSMCommand`() {
         val info = HSMInfo()
         val hsmService = mock<HSMService> {
             on { assignHSM(any(), any(), any()) } doReturn info
@@ -102,6 +102,7 @@ class HSMRegistrationBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
+        assertThat(result.response).isInstanceOf(HSMInfo::class.java)
         assertSame(info, result.response)
         Mockito.verify(hsmService, times(1)).assignHSM(
             eq(tenantId),
@@ -113,7 +114,7 @@ class HSMRegistrationBusProcessorTests {
     }
 
     @Test
-    fun `Should execute assign Soft HSM request`() {
+    fun `Should execute handle AssignSoftHSMCommand`() {
         val info = HSMInfo()
         val hsmService = mock<HSMService> {
             on { assignSoftHSM(any(), any()) } doReturn info
@@ -130,12 +131,13 @@ class HSMRegistrationBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
+        assertThat(result.response).isInstanceOf(HSMInfo::class.java)
         assertSame(info, result.response)
         Mockito.verify(hsmService, times(1)).assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER)
     }
 
     @Test
-    fun `Should execute find assigned HSM request`() {
+    fun `Should handle AssignedHSMQuery`() {
         val association =  HSMTenantAssociation(
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
@@ -161,12 +163,13 @@ class HSMRegistrationBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertSame(association, result.response)
+        assertThat(result.response).isInstanceOf(HSMInfo::class.java)
+        assertSame(association.config.info, result.response)
         Mockito.verify(hsmService, times(1)).findAssignedHSM(tenantId, CryptoConsts.Categories.LEDGER)
     }
 
     @Test
-    fun `Should return no content response when assigned HSM is not found`() {
+    fun `Should return no content response when handling AssignedMSMQQuery for unassigned category`() {
         val hsmService = mock<HSMService>()
         val processor = HSMRegistrationBusProcessor(hsmService)
         val context = createRequestContext()
