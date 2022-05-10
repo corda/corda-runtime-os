@@ -51,6 +51,10 @@ class TestFileUploadImpl : TestFileUploadAPI, PluggableRPCOps<TestFileUploadAPI>
         return "$tenant, ${ChecksumUtil.generateChecksum(file.content)}"
     }
 
+    override fun fileUploadWithNameInAnnotation(file: HttpFileUpload): String {
+        return ChecksumUtil.generateChecksum(file.content)
+    }
+
     override val targetInterface: Class<TestFileUploadAPI>
         get() = TestFileUploadAPI::class.java
 

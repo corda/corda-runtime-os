@@ -20,7 +20,7 @@ internal data class WebResponse<T>(val body: T?, val headers: Map<String, String
 internal fun Method.parametersFrom(args: Array<out Any?>?, extraBodyParameters: Map<String, Any?> = emptyMap()): ResolvedParameters {
     if(this.isMultipartFormRequest()) {
         return ResolvedParameters(
-            null,
+            null, // multipart form requests have all fields as form / query / path parameters or file uploads.
             args?.let { this.pathParametersFrom(it) } ?: emptyMap(),
             args?.let { this.queryParametersFrom(it) } ?: emptyMap(),
             args?.let { this.formParametersFrom(it) } ?: emptyMap(),
@@ -40,9 +40,10 @@ internal fun Method.parametersFrom(args: Array<out Any?>?, extraBodyParameters: 
 internal fun Method.isMultipartFormRequest() =
     this.parameters.any { isParameterAFile(it) || isParameterAListOfFiles(it) }
 
-private fun isParameterAFile(it: Parameter) = it.type == InputStream::class.java || it.type == HttpFileUpload::class.java
+private fun isParameterAFile(it: Parameter) =
+    it.type == InputStream::class.java || it.type == HttpFileUpload::class.java
 
-private fun isParameterAListOfFiles(it: Parameter) =
+internal fun isParameterAListOfFiles(it: Parameter) =
     (it.parameterizedType is ParameterizedType && Collection::class.java.isAssignableFrom(it.type)
             && (it.parameterizedType as ParameterizedType).actualTypeArguments.size == 1
             && (it.parameterizedType as ParameterizedType).actualTypeArguments.first() == HttpFileUpload::class.java)

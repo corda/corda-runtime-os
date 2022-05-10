@@ -47,4 +47,9 @@ interface TestFileUploadAPI : RpcOps {
         @HttpRpcPathParameter tenant: String,
         @HttpRpcRequestBodyParameter file: HttpFileUpload
     ): String
+
+    @HttpRpcPOST(path = "uploadWithNameInAnnotation")
+    fun fileUploadWithNameInAnnotation(
+        @HttpRpcRequestBodyParameter(name = "differentName") file: HttpFileUpload
+    ): String
 }

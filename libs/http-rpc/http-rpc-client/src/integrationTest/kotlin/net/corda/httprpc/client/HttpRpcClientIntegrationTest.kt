@@ -476,6 +476,14 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     ).isEqualTo(
                         "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
                     )
+
+                    it.assertThat(
+                        fileUploadWithNameInAnnotation(
+                            HttpFileUpload(text.byteInputStream(), "SampleFile.txt")
+                        )
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}\""
+                    )
                 }
             }
         }
