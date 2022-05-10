@@ -203,7 +203,7 @@ workers:
       type: ClusterIP
       # -- the traffic policy for the RPC worker service
       externalTrafficPolicy: ""
-      # LoadBalencer source ranges to limit access
+      # the LoadBalancer source ranges to limit access to the RPC worker service
       loadBalancerSourceRanges: []
       # annotations for service
       annotations: {}
