@@ -21,17 +21,11 @@ import java.time.Instant
  * Currently this deploys a 'fat jar' to the container and we run 'java - jar *args*' as the entry point.
  * A user may pass further custom arguments using the 'arguments' property when using this task type.
  * If a kafka file is present in the sub project directory it will be copied to container and
- * '"--kafka", "/opt/override/kafka.properties"' also passed to the 'java -Jar' entrypoint as additional arguments.
- * Future iterations will use a more modular layered approach.
  */
 abstract class DeployableContainerBuilder extends DefaultTask {
 
     private static final String CONTAINER_LOCATION = "/opt/override/"
-    private static final String KAFKA_PROPERTIES = "kafka.properties"
-    private static final String KAFKA_FILE_LOCATION = CONTAINER_LOCATION + KAFKA_PROPERTIES
     private final String projectName = project.name
-    private final String projectDir = project.projectDir
-    private final String buildDir = project.buildDir
     private final String version = project.version
     private String targetRepo
     private def gitTask
@@ -148,7 +142,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
 
         if (!(new File(containerizationDir.toString())).exists()) {
-            logger.lifecycle("Created containerization dir")
+            logger.info("Created containerization dir")
             Files.createDirectories(containerizationDir)
         }
 
@@ -161,38 +155,32 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         JibContainerBuilder builder = null
 
-        if (useDaemon.get()) { // local use case
-            logger.lifecycle("Daemon available")
+        if (useDaemon.get()) {
+            logger.info("Daemon available")
             def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
-            //  coerce jib to get locally built images from the docker daemon Without this it trys to `docker inspect` remote images in another thread but cant catch exception
-            builder = imageName.endsWith("-local") ? Jib.from(DockerDaemonImage.named(imageName)) : Jib.from(imageName)
-        } else {  // CI use case
-            logger.lifecycle("No daemon available")
-            def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
-            if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
-                logger.lifecycle("Add credential to image")
-                baseImage.addCredential(registryUsername.get(), registryPassword.get())
+            if (imageName.endsWith("-local")) {
+                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
+                builder = Jib.from(DockerDaemonImage.named(imageName))
+            } else if (imageName.contains("corda-os-cli")) {
+                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from internal remote repo")
+                builder = setCredentialsOnBaseImage(builder)
+            } else {
+                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
+                    builder = Jib.from(imageName)
             }
-            builder = Jib.from(baseImage)
+        } else {  // CI use case
+            logger.info("No daemon available")
+            logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
+            builder = setCredentialsOnBaseImage(builder)
         }
         // If there is no tag for the image - we can't use RegistryImage.named
         builder.setCreationTime(Instant.now())
-               .addLayer(
+                .addLayer(
                         containerizationDir.toFile().listFiles().collect { it.toPath() },
                         AbsoluteUnixPath.get(CONTAINER_LOCATION + subDir.get())
                 )
-
-        File projectKafkaFile = new File("${projectDir}/$KAFKA_PROPERTIES")
         List<String> javaArgs = new ArrayList<String>(arguments.get())
-
         javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
-
-        // copy kafka file to container if file exists and pass as java arguments
-        if (new File("${projectDir}/" + KAFKA_PROPERTIES).exists()) {
-            logger.quiet("Kafka file found copying ${projectDir}$KAFKA_PROPERTIES to " + CONTAINER_LOCATION + " inside container")
-            builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
-            javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
-        }
 
         if (setEntry.get()) {
             def entryName = overrideEntryName.get().empty ? projectName : overrideEntryName.get()
@@ -206,7 +194,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
         if (!environment.get().empty) {
             environment.get().each {String key, String value ->
-                logger.lifecycle("Adding Env var $key with value $value")
+                logger.info("Adding Env var $key with value $value")
                 builder.addEnvironmentVariable(key, value)
             }
         }
@@ -248,6 +236,18 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             tagContainer(builder, "latest-local")
             gitAndVersionTag(builder, gitRevision)
         }
+    }
+
+    /**
+     *  Set credentials on the base image we use
+     */
+    private JibContainerBuilder setCredentialsOnBaseImage(JibContainerBuilder builder) {
+        def baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
+        if ((registryUsername.get() != null && !registryUsername.get().isEmpty()) && baseImageName.get().contains("software.r3.com")) {
+            baseImage.addCredential(registryUsername.get(), registryPassword.get())
+            builder = Jib.from(baseImage)
+        }
+        builder
     }
 
     private void gitAndVersionTag(JibContainerBuilder builder, String gitRevision) {
