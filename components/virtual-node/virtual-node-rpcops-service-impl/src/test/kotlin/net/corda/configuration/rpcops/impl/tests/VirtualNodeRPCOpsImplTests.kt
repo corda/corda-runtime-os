@@ -10,7 +10,7 @@ import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.ResponseCode.INTERNAL_SERVER_ERROR
 import net.corda.httprpc.ResponseCode.INVALID_INPUT_DATA
 import net.corda.httprpc.exception.HttpApiException
-import net.corda.libs.virtualnode.endpoints.v1.types.CPIIdentifier
+import net.corda.libs.virtualnode.endpoints.v1.types.CpiIdentifier
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HTTPCreateVirtualNodeResponse
 import net.corda.messaging.api.publisher.RPCSender
@@ -32,7 +32,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.data.packaging.CPIIdentifier as CPIIdAvro
+import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
 
 /** Tests of [VirtualNodeRPCOpsImpl]. */
 class VirtualNodeRPCOpsImplTests {
@@ -51,8 +51,8 @@ class VirtualNodeRPCOpsImplTests {
     }
 
     private val holdingIdHash = "holdingIdHash"
-    private val cpiIdAvro = CPIIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
-    private val cpiId = CPIIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
+    private val cpiIdAvro = CpiIdAvro("cpiName", "1.0.0", SecureHash("SHA-256", ByteBuffer.wrap("a".toByteArray())))
+    private val cpiId = CpiIdentifier(cpiIdAvro.name, cpiIdAvro.version, cpiIdAvro.signerSummaryHash.toString())
     private val holdingId = HoldingIdentity("o=test,l=test,c=GB", "mgmGroupId")
     private val vaultDdlConnectionId = null
     private val vaultDmlConnectionId = UUID.randomUUID().toString()

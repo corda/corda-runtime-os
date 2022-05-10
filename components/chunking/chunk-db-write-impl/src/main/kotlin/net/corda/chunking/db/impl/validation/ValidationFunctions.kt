@@ -3,7 +3,7 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -49,10 +49,10 @@ class ValidationFunctions(
     }
 
     /** Loads, parses, and expands CPI, into cpks and metadata */
-    fun checkCpi(cpiFile: FileInfo): CPI {
-        val cpi: CPI =
+    fun checkCpi(cpiFile: FileInfo): Cpi {
+        val cpi: Cpi =
             try {
-                Files.newInputStream(cpiFile.path).use { CPI.from(it, cpiPartsDir) }
+                Files.newInputStream(cpiFile.path).use { Cpi.from(it, cpiPartsDir) }
             } catch (ex: Exception) {
                 when (ex) {
                     is PackagingException -> {
@@ -74,7 +74,7 @@ class ValidationFunctions(
     @Suppress("ThrowsCount")
     fun persistToDatabase(
         chunkPersistence: ChunkPersistence,
-        cpi: CPI,
+        cpi: Cpi,
         fileInfo: FileInfo,
         requestId: RequestId
     ) {
@@ -110,12 +110,12 @@ class ValidationFunctions(
 
 
     /**
-     * Get groupId from group policy JSON on the [CPI] object.
+     * Get groupId from group policy JSON on the [Cpi] object.
      *
      * @throws CordaRuntimeException if there is no group policy json.
      * @return `groupId`
      */
-    fun getGroupId(cpi: CPI): String {
+    fun getGroupId(cpi: Cpi): String {
         if (cpi.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file")
         return GroupPolicyParser.groupId(cpi.metadata.groupPolicy!!)
     }
@@ -139,7 +139,7 @@ class ValidationFunctions(
         return true
     }
 
-    fun checkGroupIdDoesNotExistForThisCpi(persistence: ChunkPersistence, cpi: CPI) {
+    fun checkGroupIdDoesNotExistForThisCpi(persistence: ChunkPersistence, cpi: Cpi) {
         val groupIdInDatabase = persistence.getGroupId(
             cpi.metadata.id.name,
             cpi.metadata.id.version,

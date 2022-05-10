@@ -1,8 +1,6 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.cpiinfo.read.CpiInfoListener
-import net.corda.data.packaging.CPIIdentifier
-import net.corda.data.packaging.CPIMetadata
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -13,6 +11,8 @@ import net.corda.v5.base.util.trace
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
+import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 /**
  * CPI Info message processor.
@@ -21,7 +21,7 @@ import kotlin.concurrent.withLock
  */
 class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private val onErrorCallback: () -> Unit) :
     AutoCloseable,
-    CompactedProcessor<CPIIdentifier, CPIMetadata> {
+    CompactedProcessor<CpiIdAvro, CpiMetadataAvro> {
 
     companion object {
         private val log = contextLogger()
@@ -39,11 +39,11 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
 
     private val listeners = Collections.synchronizedMap(mutableMapOf<ListenerSubscription, CpiInfoListener>())
 
-    override val keyClass: Class<CPIIdentifier>
-        get() = CPIIdentifier::class.java
+    override val keyClass: Class<CpiIdAvro>
+        get() = CpiIdAvro::class.java
 
-    override val valueClass: Class<CPIMetadata>
-        get() = CPIMetadata::class.java
+    override val valueClass: Class<CpiMetadataAvro>
+        get() = CpiMetadataAvro::class.java
 
     fun clear() {
         snapshotReceived = false
@@ -55,7 +55,7 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
 
     override fun close() = listeners.clear()
 
-    override fun onSnapshot(currentData: Map<CPIIdentifier, CPIMetadata>) {
+    override fun onSnapshot(currentData: Map<CpiIdAvro, CpiMetadataAvro>) {
         log.trace { "Cpi Info Processor received snapshot" }
 
         try {
@@ -80,9 +80,9 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
     }
 
     override fun onNext(
-        newRecord: Record<CPIIdentifier, CPIMetadata>,
-        oldValue: CPIMetadata?,
-        currentData: Map<CPIIdentifier, CPIMetadata>
+        newRecord: Record<CpiIdAvro, CpiMetadataAvro>,
+        oldValue: CpiMetadataAvro?,
+        currentData: Map<CpiIdAvro, CpiMetadataAvro>
     ) {
         if (newRecord.value != null) {
             try {

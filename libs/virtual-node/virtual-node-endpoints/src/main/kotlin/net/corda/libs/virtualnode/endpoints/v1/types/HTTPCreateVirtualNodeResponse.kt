@@ -17,7 +17,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  */
 data class HTTPCreateVirtualNodeResponse(
     val x500Name: String,
-    val cpiId: CPIIdentifier,
+    val cpiId: CpiIdentifier,
     val cpiFileChecksum: String?,
     val mgmGroupId: String,
     val holdingIdHash: String,

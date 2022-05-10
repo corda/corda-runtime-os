@@ -1,6 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 
 /** The metadata associated with a CPI file. */
-internal data class CPIMetadata(val id: CPI.Identifier, val fileChecksum: String, val mgmGroupId: String)
+internal data class CPIMetadata(val id: Cpi.Identifier, val fileChecksum: String, val mgmGroupId: String)
