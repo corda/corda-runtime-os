@@ -203,20 +203,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
 
         val cpiId = cpi.metadata.id
+        // Delete CPK metadata and CPK data in separate transaction
         entityManagerFactory.createEntityManager().transaction { em ->
-            // Perform clean-up of the old data
-            val oldCpiMetadataEntity = requireNotNull(
-                findCpiMetadataEntityInTransaction(
-                    em,
-                    cpiId.name,
-                    cpiId.version,
-                    cpiId.signerSummaryHashForDbQuery
-                )
-            ) {
-                "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
-            }
-            em.merge(oldCpiMetadataEntity)
-
             val cpkMetadataList = em.createQuery(
                 "FROM ${CpkMetadataEntity::class.simpleName} WHERE " +
                         "cpi_name = :cpi_name AND cpi_version = :cpi_version AND cpi_signer_summary_hash = :cpi_signer_summary_hash",
@@ -230,20 +218,40 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             log.info("Found ${cpkMetadataList.size} CPK meta data items")
 
             cpkMetadataList.forEach { cpkMeta ->
-                em.createQuery("DELETE FROM ${CpkMetadataEntity::class.simpleName}  WHERE " +
-                        "cpi_name = :cpi_name AND cpi_version = :cpi_version " +
-                        "AND cpi_signer_summary_hash = :cpi_signer_summary_hash AND cpk_file_checksum = :cpk_file_checksum")
+                em.createQuery(
+                    "DELETE FROM ${CpkMetadataEntity::class.simpleName}  WHERE " +
+                            "cpi_name = :cpi_name AND cpi_version = :cpi_version " +
+                            "AND cpi_signer_summary_hash = :cpi_signer_summary_hash AND cpk_file_checksum = :cpk_file_checksum"
+                )
                     .setParameter("cpi_name", cpiId.name)
                     .setParameter("cpi_version", cpiId.version)
                     .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHashForDbQuery)
                     .setParameter("cpk_file_checksum", cpkMeta.cpkFileChecksum)
                     .executeUpdate()
 
-                em.createQuery("DELETE FROM ${CpkDataEntity::class.simpleName} WHERE " +
-                    "file_checksum = :file_checksum")
+                em.createQuery(
+                    "DELETE FROM ${CpkDataEntity::class.simpleName} WHERE " +
+                            "file_checksum = :file_checksum"
+                )
                     .setParameter("file_checksum", cpkMeta.cpkFileChecksum)
                     .executeUpdate()
             }
+        }
+
+        // Perform update of CPI and store CPK along with its metadata
+        entityManagerFactory.createEntityManager().transaction { em ->
+            // We cannot delete old representation of CPI as there is FK constraint from `vnode_instance`
+            val oldCpiMetadataEntity = requireNotNull(
+                findCpiMetadataEntityInTransaction(
+                    em,
+                    cpiId.name,
+                    cpiId.version,
+                    cpiId.signerSummaryHashForDbQuery
+                )
+            ) {
+                "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
+            }
+            em.merge(oldCpiMetadataEntity)
 
             // Perform update
             val newCpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
