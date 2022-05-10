@@ -1,10 +1,10 @@
 package net.corda.chunking.db.impl.persistence
 
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 
 object PersistenceUtils {
 
-    val CPI.Identifier.signerSummaryHashForDbQuery: String
+    val Cpi.Identifier.signerSummaryHashForDbQuery: String
         get() {
             return signerSummaryHash?.toString() ?: ""
         }

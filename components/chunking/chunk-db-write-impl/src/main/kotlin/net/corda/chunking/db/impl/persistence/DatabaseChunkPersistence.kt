@@ -14,6 +14,7 @@ import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.orm.utils.transaction
 import net.corda.packaging.Cpi
+import net.corda.packaging.Cpk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -182,7 +183,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     }
 
     private fun storeCpkDataInTransaction(
-        cpks: Collection<CPK>,
+        cpks: Collection<Cpk>,
         em: EntityManager,
         cpiMetadataEntity: CpiMetadataEntity
     ) {
@@ -194,7 +195,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     }
 
     override fun updateMetadataAndCpks(
-        cpi: CPI,
+        cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,

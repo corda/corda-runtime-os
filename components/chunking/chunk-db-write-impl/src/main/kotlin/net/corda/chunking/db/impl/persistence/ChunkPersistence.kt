@@ -73,14 +73,14 @@ interface ChunkPersistence {
     /**
      * When CPI has previously been saved, delete all the stale data and update in place.
      *
-     * @param cpi a [CPI] object
+     * @param cpi a [Cpi] object
      * @param cpiFileName the original CPI file name
      * @param checksum the checksum of the CPI file
      * @param requestId the request id for the CPI that is being uploaded
      * @param groupId the group id from the group policy file
      */
     fun updateMetadataAndCpks(
-        cpi: CPI,
+        cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
