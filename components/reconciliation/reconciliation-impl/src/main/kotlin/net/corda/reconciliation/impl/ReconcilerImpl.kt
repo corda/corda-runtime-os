@@ -82,9 +82,12 @@ class ReconcilerImpl<K : Any, V : Any>(
     }
 
     private fun onReconcileEvent(coordinator: LifecycleCoordinator) {
-        logger.debug("Scheduling reconciliation")
+        logger.info("$name - Initiating reconciliation")
         try {
+            val startTime = System.currentTimeMillis()
             reconcile()
+            val endTime = System.currentTimeMillis()
+            logger.info("$name - Reconciliation completed in ${endTime - startTime} ms")
             setReconciliationTimerEvent(coordinator)
         } catch (e: Exception) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
@@ -105,8 +108,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         closeResources()
     }
 
-    // TODO revise check for running state of sub services
-    // Perhaps failure at some point during reconciliation could inform us where it stopped so that next reconciliation can take it
+    // Failure at some point during reconciliation could inform us where it stopped so that next reconciliation can take it
     // from there, or perhaps that could be done under timestamps optimization and then we update max timestamp reconciled.
     /**
      * @throws [ReconciliationException] if an error occurs at kafka or db [ReconcilerReader.getAllVersionedRecords].
@@ -122,9 +124,8 @@ class ReconcilerImpl<K : Any, V : Any>(
 
         val toBeReconciledDbRecords = dbReader.getAllVersionedRecords()?.filter { dbRecord ->
             kafkaRecords[dbRecord.key]?.let { kafkaRecord ->
-                dbRecord.version > kafkaRecord.version // reconcile db update
-                // || dbRecord.isDeleted == true // reconcile db delete
-            } ?: true // reconcile db insert
+                dbRecord.version > kafkaRecord.version || dbRecord.isDeleted // reconcile db updates and db deletes
+            } ?: !dbRecord.isDeleted // reconcile db insert (i.e. db column cpi.is_deleted == false)
         } ?: run {
             // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
             // by upcoming RegistrationStatusChangeEvent
@@ -133,7 +134,11 @@ class ReconcilerImpl<K : Any, V : Any>(
 
         toBeReconciledDbRecords.use {
             it.forEach { dbRecord ->
-                writer.put(dbRecord.value)
+                if (dbRecord.isDeleted) {
+                    writer.remove(dbRecord.value)
+                } else {
+                    writer.put(dbRecord.value)
+                }
             }
         }
     }

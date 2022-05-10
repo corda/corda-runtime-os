@@ -7,6 +7,7 @@ package net.corda.reconciliation
  */
 data class VersionedRecord<K, V>(
     val version: Int,
+    val isDeleted: Boolean,
     val key: K,
-    val value: V
+    val value: V,
 )

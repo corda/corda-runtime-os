@@ -11,9 +11,14 @@ import net.corda.lifecycle.LifecycleCoordinatorName
  */
 interface ReconcilerWriter<V : Any> {
     /**
-     * Publishes a record to Kafka (output of the reconciliation process).
+     * Publishes a record to Kafka.
      */
-    fun put(toBePublished: V)
+    fun put(record: V)
+
+    /**
+     * Removes a record from Kafka.
+     */
+    fun remove(record: V)
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 }

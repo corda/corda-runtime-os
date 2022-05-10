@@ -17,5 +17,6 @@ interface CpiInfoWriteService : ReconcilerWriter<CpiMetadata>, Lifecycle {
     override fun put(cpiMetadata: CpiMetadata)
 
     /** Remove [CpiMetadata] some implementation (e.g. a Kafka component) */
-    fun remove(cpiMetadata: CpiMetadata)
+    @Suppress("parameter_name_changed_on_override")
+    override fun remove(cpiMetadata: CpiMetadata)
 }

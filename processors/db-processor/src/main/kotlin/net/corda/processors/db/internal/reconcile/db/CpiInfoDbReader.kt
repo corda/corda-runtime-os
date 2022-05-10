@@ -108,25 +108,26 @@ class CpiInfoDbReader(
             findAllCpiMetadata().onClose {
                 // closing em after the stream gets used outside the scope of this method
                 close()
-            }.map {
+            }.map { entity ->
                 val cpiMetadata = CpiMetadata(
                     CpiIdentifier(
-                        it.name,
-                        it.version,
-                        SecureHash.create(it.signerSummaryHash)
+                        entity.name,
+                        entity.version,
+                        SecureHash.create(entity.signerSummaryHash)
                     ),
-                    SecureHash.create(it.fileChecksum),
+                    SecureHash.create(entity.fileChecksum),
                     // The below empty list needs to be populated once we store [CpkMetadata] properties in database
                     // (https://r3-cev.atlassian.net/browse/CORE-4658), it will now wipe out values on Kafka.
                     listOf(),
-                    it.groupPolicy,
-                    it.entityVersion
+                    entity.groupPolicy,
+                    entity.entityVersion
                 )
 
                 VersionedRecord(
-                    cpiMetadata.version,
-                    cpiMetadata.cpiId,
-                    cpiMetadata
+                    version = cpiMetadata.version,
+                    isDeleted = entity.isDeleted,
+                    key = cpiMetadata.cpiId,
+                    value = cpiMetadata
                 )
             }
         }

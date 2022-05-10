@@ -218,7 +218,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             cpi.metadata.groupPolicy!!,
             groupId,
             requestId,
-            -1
+            -1,
+            false
         )
     }
 }

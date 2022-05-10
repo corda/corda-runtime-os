@@ -34,7 +34,7 @@ import javax.persistence.Table
 @Table(name = "cpi", schema = DbSchema.CONFIG)
 @IdClass(CpiMetadataEntityKey::class)
 @Suppress("LongParameterList")
-data class CpiMetadataEntity (
+data class CpiMetadataEntity(
     @Id
     @Column(name = "name", nullable = false)
     val name: String,
@@ -69,12 +69,15 @@ data class CpiMetadataEntity (
     @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
     */
     @Column(name = "entity_version", nullable = false)
-    val entityVersion: Int
+    val entityVersion: Int,
+    @Column(name = "is_deleted", nullable = false)
+    val isDeleted: Boolean
 ) {
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
             "", "", "", "", "",
-            "", "", "", -1)
+            "", "", "", -1, false
+        )
     }
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")

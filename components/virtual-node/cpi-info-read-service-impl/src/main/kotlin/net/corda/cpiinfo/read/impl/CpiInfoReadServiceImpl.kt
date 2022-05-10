@@ -93,9 +93,10 @@ class CpiInfoReadServiceImpl @Activate constructor(
             .stream()
             .map {
                 VersionedRecord(
-                    it.version,
-                    it.cpiId,
-                    it
+                    version = it.version,
+                    isDeleted = false,
+                    key = it.cpiId,
+                    value = it
                 )
             }
 
