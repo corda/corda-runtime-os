@@ -13,10 +13,7 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
                     afterEvaluate {
                         artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
                         groupId group.toString()
-                        from components.findByName('kotlin') ?: components.java
-                    }
-                    pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
-                        artifact tasks.named('cpk', Jar)
+                        from components.findByName('cordapp') ?: components.findByName('kotlin') ?: components.java
                     }
                     if (project.hasProperty("sourceJar")) {
                         maven.artifact(tasks.getByName("sourcesJar"))
