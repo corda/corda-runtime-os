@@ -1,6 +1,7 @@
 package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.persistence.SigningKeyCacheProvider
 import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -57,6 +58,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val softCryptoServiceProviders: SoftCryptoServiceProvider,
     @Reference(service = CryptoFlowOpsService::class)
     private val cryptoFlowOpsService: CryptoFlowOpsService,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = CryptoServiceFactory::class)
     private val cryptoServiceFactory: CryptoServiceFactory,
     @Reference(service = HSMRegistration::class)
@@ -88,6 +91,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsService,
+        ::cryptoOpsClient,
         ::softCryptoServiceProviders,
         ::cryptoServiceFactory,
         ::hsmRegistration,
