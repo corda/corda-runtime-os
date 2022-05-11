@@ -59,13 +59,14 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Clock
 import java.util.*
 
 @Suppress("LongParameterList")
@@ -93,7 +94,7 @@ class LinkManager(
         ),
     linkManagerCryptoProcessor: CryptoProcessor =
         StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration),
-    private val clock: Clock = Clock.systemUTC()
+    private val clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
     companion object {

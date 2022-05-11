@@ -1,11 +1,12 @@
 package net.corda.test.util
 
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.TestClock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.any
 import org.mockito.Mockito.anyBoolean
 import org.mockito.Mockito.anyLong
 import org.mockito.Mockito.mock
-import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ScheduledExecutorService
@@ -33,11 +34,8 @@ class MockTimeFacilitiesProvider(initialTime: Instant = Instant.ofEpochSecond(0)
         }
         return mockFuture
     }
-    private var now = initialTime
 
-    val mockClock: Clock = mock(Clock::class.java).also {
-        `when`(it.instant()).thenAnswer { now }
-    }
+    val clock: TestClock = TestClock(initialTime)
 
     val mockScheduledExecutor: ScheduledExecutorService = mock(ScheduledExecutorService::class.java).also {
         `when`(it.schedule(any(), anyLong(), any())).thenAnswer { invocation ->
@@ -45,7 +43,7 @@ class MockTimeFacilitiesProvider(initialTime: Instant = Instant.ofEpochSecond(0)
             val task = invocation.arguments[0] as Runnable
             val delay = invocation.arguments[1] as Long
             val timeUnit = invocation.arguments[2] as TimeUnit
-            val timeToExecute = now.plus(delay, timeUnit.toChronoUnit())
+            val timeToExecute = clock.instant().plus(delay, timeUnit.toChronoUnit())
             val timeAndTask = timeToExecute to task
             scheduledTasks.add(timeAndTask)
 
@@ -63,12 +61,12 @@ class MockTimeFacilitiesProvider(initialTime: Instant = Instant.ofEpochSecond(0)
      * scheduled to be executed before the current time.
      */
     fun advanceTime(duration: Duration) {
-        now = now.plusMillis(duration.toMillis())
+        clock.setTime(clock.instant().plusMillis(duration.toMillis()))
         val iterator = scheduledTasks.iterator()
         val tasksToExecute = mutableListOf<Pair<Instant, Runnable>>()
         while (iterator.hasNext()) {
             val (time, task) = iterator.next()
-            if (time.isBefore(now) || time == now) {
+            if (time.isBefore(clock.instant()) || time == clock.instant()) {
                 tasksToExecute.add(time to task)
                 iterator.remove()
             }
