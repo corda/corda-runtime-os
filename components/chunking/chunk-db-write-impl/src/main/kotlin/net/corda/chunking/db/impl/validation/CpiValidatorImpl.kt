@@ -11,6 +11,7 @@ import net.corda.packaging.Cpi
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Path
+import java.time.Instant
 
 class CpiValidatorImpl(
     private val publisher: StatusPublisher,
@@ -54,7 +55,8 @@ class CpiValidatorImpl(
             CpiIdentifier.fromLegacy(cpi.metadata.id),
             fileInfo.checksum,
             cpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
-            cpi.metadata.groupPolicy
+            cpi.metadata.groupPolicy,
+            Instant.now()
         )
         cpiInfoWriteService.put(cpiMetadata)
 

@@ -40,7 +40,8 @@ data class CpkMetadata(
     val type: Cpk.Type,
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
-    val cordappCertificates: Set<Certificate>
+    val cordappCertificates: Set<Certificate>,
+    val timestamp: Instant
 ) {
     companion object {
         fun fromAvro(other: AvroCpkMetadata): CpkMetadata {
@@ -59,8 +60,8 @@ data class CpkMetadata(
                         ByteArrayInputStream(it.array())
                             .use(crtFactory::generateCertificate)
                     }.collect(Collectors.toUnmodifiableSet())
-
-                }
+                },
+                other.timestamp
             )
         }
 
@@ -77,7 +78,8 @@ data class CpkMetadata(
                 cpk.metadata.cordappManifest,
                 cpk.metadata.type,
                 cpk.metadata.hash,
-                cpk.metadata.cordappCertificates
+                cpk.metadata.cordappCertificates,
+                Instant.now()
             )
         }
     }
@@ -97,7 +99,7 @@ data class CpkMetadata(
                 .map(ByteBuffer::wrap)
                 .collect(
                     Collectors.toUnmodifiableList()),
-            Instant.now()
+            timestamp
         )
     }
 }

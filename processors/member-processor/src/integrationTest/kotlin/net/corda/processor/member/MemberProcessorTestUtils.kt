@@ -37,6 +37,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.lang.IllegalStateException
+import java.time.Instant
 import java.util.UUID
 
 class MemberProcessorTestUtils {
@@ -231,7 +232,8 @@ class MemberProcessorTestUtils {
             cpiIdentifier,
             SecureHash.create("SHA-256:0000000000000000"),
             emptyList(),
-            groupPolicy
+            groupPolicy,
+            Instant.now()
         )
 
         fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService, holdingIdentity: HoldingIdentity) =

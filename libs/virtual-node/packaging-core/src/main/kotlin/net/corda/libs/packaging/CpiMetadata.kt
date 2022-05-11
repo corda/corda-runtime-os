@@ -10,13 +10,15 @@ data class CpiMetadata(
     val cpiId: CpiIdentifier,
     val fileChecksum: SecureHash,
     val cpksMetadata: Collection<CpkMetadata>,
-    val groupPolicy: String?) {
+    val groupPolicy: String?,
+    val timestamp: Instant) {
     companion object {
         fun fromAvro(other: AvroCpiMetadata) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),
             SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
             other.cpks.map{ CpkMetadata.fromAvro(it) },
-            other.groupPolicy
+            other.groupPolicy,
+            other.timestamp
         )
 
         // TODO - remove
@@ -25,7 +27,8 @@ data class CpiMetadata(
                 CpiIdentifier.fromLegacy(legacyCpi.metadata.id),
                 legacyCpi.metadata.hash,
                 legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
-                legacyCpi.metadata.groupPolicy
+                legacyCpi.metadata.groupPolicy,
+                Instant.now()
             )
         }
     }
@@ -37,7 +40,7 @@ data class CpiMetadata(
             cpksMetadata.map { it.toAvro() },
             groupPolicy,
             -1,
-            Instant.now()
+            timestamp
         )
     }
 }

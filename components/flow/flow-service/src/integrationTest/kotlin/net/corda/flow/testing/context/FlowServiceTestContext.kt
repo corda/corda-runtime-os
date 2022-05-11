@@ -123,14 +123,16 @@ class FlowServiceTestContext @Activate constructor(
             cordAppManifest,
             Cpk.Type.UNKNOWN,
             getSecureHash(),
-            setOf()
+            setOf(),
+            Instant.now()
         )
 
         val cpiMeta = CpiMetadata(
             getCpiIdentifier(cpiId),
             getSecureHash(),
             listOf(cpkMeta),
-            ""
+            "",
+            Instant.now()
         )
 
         cpiInfoReadService.add(cpiMeta)
