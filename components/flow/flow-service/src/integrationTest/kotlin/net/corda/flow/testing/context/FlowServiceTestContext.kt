@@ -10,6 +10,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
@@ -175,10 +176,9 @@ class FlowServiceTestContext @Activate constructor(
     override fun sessionAckEventReceived(
         flowId: String,
         sessionId: String,
-        sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
-        receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -186,7 +186,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionAck(),
-            sequenceNum,
+            sequenceNum = null,
             receivedSequenceNum,
         )
     }
@@ -196,9 +196,9 @@ class FlowServiceTestContext @Activate constructor(
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
+        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?,
-        receivedSequenceNum: Int?
+        initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -206,6 +206,25 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionData(ByteBuffer.wrap(data)),
+            sequenceNum,
+            receivedSequenceNum,
+        )
+    }
+
+    override fun sessionCloseEventReceived(
+        flowId: String,
+        sessionId: String,
+        sequenceNum: Int,
+        receivedSequenceNum: Int,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            initiatingIdentity,
+            initiatedIdentity,
+            SessionClose(),
             sequenceNum,
             receivedSequenceNum,
         )
@@ -268,7 +287,7 @@ class FlowServiceTestContext @Activate constructor(
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
-        sequenceNum: Int,
+        sequenceNum: Int?,
         receivedSequenceNum: Int?
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
@@ -276,7 +295,7 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             sequenceNum,
             payload,
-            receivedSequenceNum ?: sequenceNum,
+            receivedSequenceNum ?: sequenceNum ?: 0,
             listOf(0),
             Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,

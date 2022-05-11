@@ -383,81 +383,54 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `areAllSessionsInStatuses returns true if all sessions are contained in the passed in statuses`() {
+    fun `doAllSessionsHaveStatus returns true if all sessions have the passed in status`() {
+        sessionState.status = SessionStateType.CLOSED
+        anotherSessionState.status = SessionStateType.CLOSED
+
+        assertTrue(
+            flowSessionManager.doAllSessionsHaveStatus(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                SessionStateType.CLOSED
+            )
+        )
+    }
+
+    @Test
+    fun `doAllSessionsHaveStatus returns false if any session does not have the passed in status`() {
         sessionState.status = SessionStateType.CLOSED
         anotherSessionState.status = SessionStateType.CONFIRMED
 
-        assertTrue(
-            flowSessionManager.areAllSessionsInStatuses(
-                checkpoint,
-                listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                listOf(SessionStateType.CLOSED, SessionStateType.CONFIRMED)
-            )
-        )
-    }
-
-    @Test
-    fun `areAllSessionsInStatuses returns false if any sessions are not contained in the passed in statuses`() {
-        sessionState.status = SessionStateType.CLOSED
-        anotherSessionState.status = SessionStateType.CREATED
-
         assertFalse(
-            flowSessionManager.areAllSessionsInStatuses(
+            flowSessionManager.doAllSessionsHaveStatus(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                listOf(SessionStateType.CLOSED, SessionStateType.CONFIRMED)
+                SessionStateType.CLOSED
             )
         )
     }
 
     @Test
-    fun `areAllSessionsInStatuses returns false if no sessions are contained in the passed in statuses`() {
-        sessionState.status = SessionStateType.WAIT_FOR_FINAL_ACK
-        anotherSessionState.status = SessionStateType.CREATED
-
-        assertFalse(
-            flowSessionManager.areAllSessionsInStatuses(
-                checkpoint,
-                listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                listOf(SessionStateType.CLOSED, SessionStateType.CONFIRMED)
-            )
-        )
-    }
-
-    @Test
-    fun `areAllSessionsInStatuses returns true if there are no sessions in the checkpoint`() {
-        whenever(checkpoint.getSessionState(any())).thenReturn(null)
-
-        assertTrue(
-            flowSessionManager.areAllSessionsInStatuses(
-                checkpoint,
-                listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                listOf(SessionStateType.CLOSED, SessionStateType.CONFIRMED)
-            )
-        )
-    }
-
-    @Test
-    fun `areAllSessionsInStatuses returns true if there are no sessions passed in`() {
-        sessionState.status = SessionStateType.CLOSED
+    fun `doAllSessionsHaveStatus returns false if all sessions do not have the passed in status`() {
+        sessionState.status = SessionStateType.CLOSING
         anotherSessionState.status = SessionStateType.CONFIRMED
 
+        assertFalse(
+            flowSessionManager.doAllSessionsHaveStatus(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                SessionStateType.CLOSED
+            )
+        )
+    }
+
+    @Test
+    fun `doAllSessionsHaveStatus returns true there are no sessions`() {
         assertTrue(
-            flowSessionManager.areAllSessionsInStatuses(
+            flowSessionManager.doAllSessionsHaveStatus(
                 checkpoint,
                 emptyList(),
-                listOf(SessionStateType.CLOSED, SessionStateType.CONFIRMED)
-            )
-        )
-    }
-
-    @Test
-    fun `areAllSessionsInStatuses returns false if there are no statuses passed in`() {
-        assertFalse(
-            flowSessionManager.areAllSessionsInStatuses(
-                checkpoint,
-                listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                emptyList()
+                SessionStateType.CLOSED
             )
         )
     }

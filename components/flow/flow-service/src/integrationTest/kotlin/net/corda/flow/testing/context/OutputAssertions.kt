@@ -1,18 +1,31 @@
 package net.corda.flow.testing.context
 
 import net.corda.data.flow.output.FlowStates
+import net.corda.data.identity.HoldingIdentity
 
 interface OutputAssertions {
-    fun sessionAckEvent(
-        flowId: String,
-        sessionId: String,
-        initiatingIdentity: net.corda.data.identity.HoldingIdentity? = null,
-        initiatedIdentity: net.corda.data.identity.HoldingIdentity? = null
+
+    fun sessionAckEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
+    fun sessionDataEvents(
+        vararg sessionToPayload: Pair<String, ByteArray>,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
+    fun sessionCloseEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
     )
 
     fun flowDidNotResume()
 
-    fun flowResumedWithSessionData(vararg sessionData: Pair<String, ByteArray>)
+    fun <T> flowResumedWith(value: T)
 
     fun wakeUpEvent()
 
