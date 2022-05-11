@@ -26,11 +26,7 @@ data class VirtualNodeInfo(
     /** Crypto DML DB connection ID */
     val cryptoDmlConnectionId: UUID,
     /** HSM connection ID */
-    val hsmConnectionId: UUID? = null) {
-
-    // Enable extensions
-    companion object
-}
+    val hsmConnectionId: UUID? = null)
 
 
 fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
