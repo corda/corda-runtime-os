@@ -12,6 +12,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -48,7 +49,8 @@ class CryptoWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(DB_CONFIG, params.databaseParams)
-        val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig))
+        val cryptoConfig = PathAndConfig(CRYPTO_CONFIG, params.cryptoParams)
+        val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig, cryptoConfig))
 
         dependenciesProcessor.start(config)
         processor.start(config)
@@ -69,4 +71,7 @@ private class CryptoWorkerParams {
 
     @CommandLine.Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
+
+    @CommandLine.Option(names = ["-d", "--cryptoParams"], description = ["Crypto parameters for the worker."])
+    var cryptoParams = emptyMap<String, String>()
 }

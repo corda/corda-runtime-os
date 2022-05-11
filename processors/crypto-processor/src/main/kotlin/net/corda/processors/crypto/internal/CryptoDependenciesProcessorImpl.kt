@@ -55,18 +55,18 @@ class CryptoDependenciesProcessorImpl @Activate constructor(
         get() = lifecycleCoordinator.isRunning
 
     override fun start(bootConfig: SmartConfig) {
-        log.info("Crypto processor starting.")
+        log.info("Crypto dependencies processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        log.info("Crypto processor stopping.")
+        log.info("Crypto dependencies processor stopping.")
         lifecycleCoordinator.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Crypto processor received event $event." }
+        log.info("Crypto dependencies processor received event {}.", event)
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
@@ -75,14 +75,14 @@ class CryptoDependenciesProcessorImpl @Activate constructor(
                 dependentComponents.stopAll()
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("Crypto processor is ${event.status}")
+                log.info("Crypto dependencies processor is ${event.status}")
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
-                log.info("Bootstrapping {}", configurationReadService::class.simpleName)
+                log.info("Crypto dependencies processor bootstrapping {}", configurationReadService::class.simpleName)
                 configurationReadService.bootstrapConfig(event.config)
 
-                log.info("Bootstrapping {}", dbConnectionManager::class.simpleName)
+                log.info("Crypto dependencies processor bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(event.config.getConfig(ConfigKeys.DB_CONFIG))
             }
             else -> {

@@ -93,7 +93,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Crypto processor received event $event." }
+        log.info("Crypto processor received event {}.", event)
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
@@ -106,6 +106,7 @@ class CryptoProcessorImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
+                // intentional to avoid warning bellow
             }
             else -> {
                 log.warn("Unexpected event $event!")
