@@ -65,6 +65,7 @@ abstract class AbstractComponent<IMPL: AutoCloseable>(
         logger.info("Activating")
         impl.close()
         impl = createActiveImpl()
+        logger.info("Activated, setting the status of {} UP", this::class.simpleName)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
