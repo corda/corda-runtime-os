@@ -67,6 +67,7 @@ class KafkaConfigUploader @Activate constructor(
             }
 
             kafkaConnectionProperties[KAFKA_BOOTSTRAP_SERVER] = getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)
+            kafkaConnectionProperties[TOPIC_PREFIX] = getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)
 
             val topicTemplate = parameters.topicTemplate
             if (topicTemplate != null) {
