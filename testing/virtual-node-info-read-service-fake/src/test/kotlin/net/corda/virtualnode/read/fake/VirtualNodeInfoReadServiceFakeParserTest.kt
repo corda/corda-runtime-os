@@ -9,7 +9,11 @@ import java.io.StringReader
 internal class VirtualNodeInfoReadServiceFakeParserTest {
     @Test
     fun `parse yaml`() {
-        val vnode = VirtualNodeInfo.alice
+        val vnode = TestCatalogue.VirtualNode.create(
+            TestCatalogue.Identity.alice("group-id"),
+            TestCatalogue.CpiId.version5Snapshot("cpi1")
+        )
+
         val reader = StringReader("""
         virtualNodeInfos:
           - cpiIdentifier:

@@ -7,9 +7,20 @@ import org.junit.jupiter.api.Test
 
 internal class VirtualNodeInfoReadServiceFakeTest {
 
-    private val alice = VirtualNodeInfo.alice
-    private val bob = VirtualNodeInfo.bob
-    private val carol = VirtualNodeInfo.carol
+    private val alice = TestCatalogue.VirtualNode.create(
+        TestCatalogue.Identity.alice("group-id"),
+        TestCatalogue.CpiId.version5Snapshot("cpi1")
+    )
+
+    private val bob = TestCatalogue.VirtualNode.create(
+        TestCatalogue.Identity.bob("group-id"),
+        TestCatalogue.CpiId.version5Snapshot("cpi1")
+    )
+
+    private val carol = TestCatalogue.VirtualNode.create(
+        TestCatalogue.Identity.carol("group-id"),
+        TestCatalogue.CpiId.version5Snapshot("cpi1")
+    )
 
     @Test
     fun getAll() {
