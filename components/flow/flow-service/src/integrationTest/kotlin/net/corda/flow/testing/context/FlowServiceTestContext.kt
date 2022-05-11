@@ -20,7 +20,6 @@ import net.corda.flow.testing.fakes.FakeCpiInfoReadService
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
-import net.corda.flow.testing.fakes.FakeVirtualNodeInfoReadService
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CpiIdentifier
@@ -38,6 +37,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
@@ -50,8 +50,8 @@ import java.util.*
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
-    @Reference(service = FakeVirtualNodeInfoReadService::class)
-    val virtualNodeInfoReadService: FakeVirtualNodeInfoReadService,
+    @Reference(service = VirtualNodeInfoReadServiceFake::class)
+    val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
     @Reference(service = FakeCpiInfoReadService::class)
     val cpiInfoReadService: FakeCpiInfoReadService,
     @Reference(service = FakeSandboxGroupContextComponent::class)
@@ -82,14 +82,18 @@ class FlowServiceTestContext @Activate constructor(
             .create(testConfig)
     )
 
+    fun start() {
+        virtualNodeInfoReadService.start()
+        virtualNodeInfoReadService.waitUntilRunning()
+    }
+
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
     override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
         val emptyUUID = UUID(0, 0)
 
-        virtualNodeInfoReadService.addVirtualNodeInfo(
-            holdingId.toCorda(),
+        virtualNodeInfoReadService.addOrUpdate(
             VirtualNodeInfo(
                 holdingId.toCorda(),
                 getCpiIdentifier(cpiId),

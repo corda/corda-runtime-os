@@ -1,0 +1,23 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Virtual Node Info Service Fake Implementation"
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation "net.corda:corda-base"
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(':libs:lifecycle:lifecycle')
+
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:registry")
+}

@@ -12,6 +12,7 @@ abstract class FlowServiceTestBase {
     @BeforeEach
     fun setup() {
         testContext.resetTestContext()
+        testContext.start()
     }
 
     protected fun given(givenSetup: GivenSetup.() -> Unit){
