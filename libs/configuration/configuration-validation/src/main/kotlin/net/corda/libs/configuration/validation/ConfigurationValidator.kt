@@ -23,10 +23,14 @@ interface ConfigurationValidator {
      * @param key The top-level configuration key this data represents
      * @param version The schema version this data should be validated against
      * @param config The configuration data to validate
+     * @param applyDefaults Insert defaults into the config for fields which are not set. If a value is explicitly set to null in the
+     * config defaults are not applied.
      *
      * @throws ConfigurationValidationException If the configuration fails to validate
      * @throws ConfigurationSchemaFetchException If some or all of the requested schema does not exist. This is most
      *                                           likely to happen due to an incorrect version being provided
+     * @return The config returned as a SmartConfig. If [applyDefaults] is set to true, the returned config will have any empty fields set
+     * to the defaults defined in the schema for this config [key]
      */
-    fun validate(key: String, version: Version, config: SmartConfig)
+    fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean = false) : SmartConfig
 }

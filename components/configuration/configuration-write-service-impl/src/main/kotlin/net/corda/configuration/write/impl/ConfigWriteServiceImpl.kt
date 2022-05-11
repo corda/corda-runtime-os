@@ -4,6 +4,7 @@ import net.corda.configuration.write.ConfigWriteService
 import net.corda.configuration.write.impl.writer.ConfigWriterFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -25,7 +26,9 @@ internal class ConfigWriteServiceImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
     @Reference(service = DbConnectionManager::class)
-    dbConnectionManager: DbConnectionManager
+    dbConnectionManager: DbConnectionManager,
+    @Reference(service = ConfigurationValidatorFactory::class)
+    configurationValidatorFactory: ConfigurationValidatorFactory
 ) : ConfigWriteService {
 
     companion object {
@@ -33,7 +36,8 @@ internal class ConfigWriteServiceImpl @Activate constructor(
     }
 
     private val coordinator = let {
-        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, publisherFactory, dbConnectionManager)
+        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, publisherFactory, configurationValidatorFactory,
+            dbConnectionManager)
         val eventHandler = ConfigWriteEventHandler(configWriterFactory)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
