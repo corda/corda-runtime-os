@@ -63,7 +63,7 @@ class DatabaseInstaller(
     fun setupClusterDatabase(
         db: TestDbInfo,
         resourceSubPath: String,
-        entities: Set<Class<*>>
+        entities: Set<Class<*>> = emptySet()
     ): EntityManagerFactory = setupDatabase(db.emConfig, resourceSubPath, db.name, entities)
 
     /**
@@ -79,7 +79,7 @@ class DatabaseInstaller(
     fun setupDatabase(
         db: TestDbInfo,
         resourceSubPath: String,
-        entities: Set<Class<*>>
+        entities: Set<Class<*>> = emptySet()
     ): EntityManagerFactory = setupDatabase(db.emConfig, resourceSubPath, db.name, entities, db.schemaName)
 
     /**
@@ -99,7 +99,7 @@ class DatabaseInstaller(
         cfg: EntityManagerConfiguration,
         resourceSubPath: String,
         persistenceUnitName: String,
-        entities: Set<Class<*>>,
+        entities: Set<Class<*>> = emptySet(),
         schemaName: String? = null
     ): EntityManagerFactory {
         val schemaClass = DbSchema::class.java
@@ -135,7 +135,9 @@ class DatabaseInstaller(
             entities.toList(),
             cfg
         )
-        entitiesRegistry.register(persistenceUnitName, entities)
+        if(entities.isNotEmpty()) {
+            entitiesRegistry.register(persistenceUnitName, entities)
+        }
         return emf
     }
 }

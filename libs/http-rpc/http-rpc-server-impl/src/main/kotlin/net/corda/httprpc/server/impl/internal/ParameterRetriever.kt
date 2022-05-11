@@ -148,7 +148,7 @@ private class MultipartParameterRetriever(private val parameter: Parameter) : Pa
                 val uploadedFiles = ctx.uploadedFiles(parameter.name)
 
                 if (uploadedFiles.isEmpty())
-                    throw IllegalArgumentException("Expected file with parameter name ${parameter.name} but it was not found.")
+                    throw IllegalArgumentException("Expected file with parameter name \"${parameter.name}\" but it was not found.")
 
                 if (Collection::class.java.isAssignableFrom(parameter.classType))
                     return uploadedFiles

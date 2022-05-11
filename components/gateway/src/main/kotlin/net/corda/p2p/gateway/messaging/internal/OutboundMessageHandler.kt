@@ -7,9 +7,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -25,16 +26,15 @@ import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 /**
- * This is an implementation of an [EventLogProcessor] used to consume messages from a P2P message subscription. The received
- * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
+ * This is an implementation of an [PubSubProcessor] used to consume messages from a P2P message subscription. The received
+ * events are processed and fed into the HTTP pipeline.
  */
 @Suppress("LongParameterList")
 internal class OutboundMessageHandler(
@@ -42,11 +42,13 @@ internal class OutboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    private val retryThreadPool: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
-) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
+    private val retryThreadPoolFactory: () -> ScheduledExecutorService
+        = { Executors.newSingleThreadScheduledExecutor() },
+) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
+
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
-        const val MAX_RETRIES = 1
+        private const val MAX_RETRIES = 1
     }
 
     private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
@@ -62,11 +64,10 @@ internal class OutboundMessageHandler(
         nodeConfiguration
     )
 
-    private val outboundSubscription = subscriptionFactory.createEventLogSubscription(
+    private val outboundSubscription = subscriptionFactory.createPubSubSubscription(
         SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC),
         this,
         nodeConfiguration,
-        null
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
@@ -79,74 +80,60 @@ internal class OutboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
-        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile)
+        managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
+        createResources = ::createResources
     )
 
-    override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        dominoTile.withLifecycleLock {
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        retryThreadPool = retryThreadPoolFactory()
+        resources.keep(AutoClosableExecutorService(retryThreadPool))
+        return CompletableFuture.completedFuture(Unit)
+    }
+
+    @Volatile
+    private lateinit var retryThreadPool: ScheduledExecutorService
+
+    override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }
 
-            val pendingRequests = events.mapNotNull { evt ->
-                evt.value?.let { peerMessage ->
-                    try {
-                        val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
+            val peerMessage = event.value
+            return@withLifecycleLock if (peerMessage != null) {
+                try {
+                    val trustStore = trustStoresMap.getTrustStore(peerMessage.header.destinationIdentity.groupId)
 
-                        val sni = SniCalculator.calculateSni(
-                            peerMessage.header.destinationIdentity.x500Name,
-                            peerMessage.header.destinationNetworkType,
-                            peerMessage.header.address
-                        )
-                        val messageId = UUID.randomUUID().toString()
-                        val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
-                        val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
-                            X500Name(peerMessage.header.destinationIdentity.x500Name)
-                        } else {
-                            null
-                        }
-                        val destinationInfo = DestinationInfo(
-                            URI.create(peerMessage.header.address),
-                            sni,
-                            expectedX500Name,
-                            trustStore,
-                        )
-                        val responseFuture = sendMessage(destinationInfo, gatewayMessage)
-                        PendingRequest(gatewayMessage, destinationInfo, responseFuture)
-                    } catch (e: IllegalArgumentException) {
-                        logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
+                    val sni = SniCalculator.calculateSni(
+                        peerMessage.header.destinationIdentity.x500Name,
+                        peerMessage.header.destinationNetworkType,
+                        peerMessage.header.address
+                    )
+                    val messageId = UUID.randomUUID().toString()
+                    val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
+                    val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
+                        X500Name(peerMessage.header.destinationIdentity.x500Name)
+                    } else {
                         null
                     }
+                    val destinationInfo = DestinationInfo(
+                        URI.create(peerMessage.header.address),
+                        sni,
+                        expectedX500Name,
+                        trustStore,
+                    )
+                    val responseFuture = sendMessage(destinationInfo, gatewayMessage)
+                        .orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                    responseFuture.whenCompleteAsync({ response, error ->
+                        handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
+                    }, retryThreadPool).thenApply { Unit }
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
+                    CompletableFuture.completedFuture(Unit)
                 }
-            }
-
-            waitUntilComplete(pendingRequests)
-            pendingRequests.forEach { pendingMessage ->
-                val (response, error) = getResponseOrError(pendingMessage)
-                handleResponse(pendingMessage, response, error, MAX_RETRIES)
-            }
-        }
-        return emptyList()
-    }
-
-    @Suppress("SpreadOperator")
-    private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
-        try {
-            CompletableFuture.allOf(*pendingRequests.map { it.future }.toTypedArray())
-                .get(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        } catch (e: Exception) {
-            // Do nothing - results/errors will be processed individually.
-        }
-    }
-
-    private fun getResponseOrError(pendingRequest: PendingRequest): Pair<HttpResponse?, Throwable?> {
-        return try {
-            val response = pendingRequest.future.get(0, TimeUnit.MILLISECONDS)
-            response to null
-        } catch (error: Exception) {
-            when {
-                error is ExecutionException && error.cause != null -> null to error.cause
-                else -> null to error
+            } else {
+                logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
+                CompletableFuture.completedFuture(Unit)
             }
         }
     }

@@ -29,7 +29,6 @@ class SubFlowFailedRequestHandler : FlowRequestHandler<FlowIORequest.SubFlowFail
          *  TODOs: Once the session management logic is implemented, we need to add logic here
          * to access the flow stack item to determine if any session clean up is required.
          */
-        context.checkpoint.markDeleted()
         return context
     }
 }

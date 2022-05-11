@@ -55,7 +55,7 @@ class CpiUploadRPCOpsImplTest {
 
         whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent))).thenReturn(cpiUploadRequestId)
 
-        val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, "file", ".cpi", DUMMY_FILE_NAME, 12L))
+        val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)
         assertEquals(cpiUploadRequestId.requestId, httpResponse.id)
     }

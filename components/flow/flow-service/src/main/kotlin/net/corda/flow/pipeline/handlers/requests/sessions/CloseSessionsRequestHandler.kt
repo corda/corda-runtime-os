@@ -23,10 +23,6 @@ class CloseSessionsRequestHandler @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
 
-    private companion object {
-        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
-    }
-
     override val type = FlowIORequest.CloseSessions::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): WaitingFor {
@@ -36,19 +32,19 @@ class CloseSessionsRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        val haveSessionsAlreadyBeenClosed = flowSessionManager.areAllSessionsInStatuses(
+        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now())
+            .map { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
+
+        val haveSessionsAlreadyBeenClosed = flowSessionManager.doAllSessionsHaveStatus(
             checkpoint,
             request.sessions.toList(),
-            CLOSED_STATUSES
+            SessionStateType.CLOSED
         )
 
         return if (haveSessionsAlreadyBeenClosed) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {
-            flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now()).map { updatedSessionState ->
-                checkpoint.putSessionState(updatedSessionState)
-            }
             context
         }
     }

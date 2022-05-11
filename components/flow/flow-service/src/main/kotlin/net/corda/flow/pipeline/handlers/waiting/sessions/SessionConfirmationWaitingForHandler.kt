@@ -22,10 +22,6 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     private val flowSessionManager: FlowSessionManager
 ) : FlowWaitingForHandler<SessionConfirmation> {
 
-    private companion object {
-        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED)
-    }
-
     override val type = SessionConfirmation::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionConfirmation): FlowContinuation {
@@ -41,7 +37,7 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
                 }
             }
             SessionConfirmationType.CLOSE -> {
-                if (flowSessionManager.areAllSessionsInStatuses(checkpoint, waitingFor.sessionIds, CLOSED_STATUSES)) {
+                if (flowSessionManager.doAllSessionsHaveStatus(checkpoint, waitingFor.sessionIds, SessionStateType.CLOSED)) {
                     val receivedEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
                     if (receivedEvents.any { (_, event) -> event.payload !is SessionClose }) {
                         FlowContinuation.Error(CordaRuntimeException("Unexpected data message when session is closing"))

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -59,10 +58,10 @@ class CloseSessionsRequestHandlerTest {
     @Test
     fun `Sends close events and updates the checkpoint with session state when sessions are not in closed statuses`() {
         whenever(
-            testContext.flowSessionManager.areAllSessionsInStatuses(
+            testContext.flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
                 sessions,
-                listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+                SessionStateType.CLOSED
             )
         ).thenReturn(false)
 
@@ -75,24 +74,17 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
-    fun `Creates Wakeup record and does not send close events or update the checkpoint when all sessions are closed`() {
+    fun `Creates Wakeup record when all the sessions are closed`() {
         whenever(
-            testContext.flowSessionManager.areAllSessionsInStatuses(
+            testContext.flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
                 sessions,
-                listOf(SessionStateType.CLOSED, SessionStateType.WAIT_FOR_FINAL_ACK)
+                SessionStateType.CLOSED
             )
         ).thenReturn(true)
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        verify(testContext.flowSessionManager, never()).sendCloseMessages(
-            eq(testContext.flowCheckpoint),
-            eq(sessions),
-            any()
-        )
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 }

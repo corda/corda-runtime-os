@@ -1,8 +1,10 @@
 package net.corda.processor.member
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
@@ -16,8 +18,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
@@ -41,15 +41,22 @@ import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {
-        val bootConf =
-            SmartConfigFactory.create(ConfigFactory.empty()).create(
-                ConfigFactory.parseString(
-                    """
-                       |$INSTANCE_ID=1
-                       |$BUS_TYPE = INMEMORY
-                   """.trimMargin()
-                )
+        private const val CRYPTO_BOOT_CONFIGURATION = """
+        instance.id=1
+        bus.busType = INMEMORY
+    """
+
+        fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
+            var cfg = ConfigFactory.parseString(CRYPTO_BOOT_CONFIGURATION)
+            extra.forEach {
+                cfg = cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped()))
+            }
+            return SmartConfigFactory.create(
+                ConfigFactory.empty()
+            ).create(
+                cfg
             )
+        }
 
         val cryptoConf = ""
 

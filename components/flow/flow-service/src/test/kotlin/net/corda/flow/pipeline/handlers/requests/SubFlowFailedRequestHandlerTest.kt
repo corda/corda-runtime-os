@@ -5,7 +5,6 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.verify
 
 class SubFlowFailedRequestHandlerTest {
 
@@ -19,12 +18,6 @@ class SubFlowFailedRequestHandlerTest {
     fun `Updates the waiting for to nothing`() {
         val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
         assertThat(waitingFor.value).isNull()
-    }
-
-    @Test
-    fun `post processing marks context as deleted`() {
-        handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.flowCheckpoint).markDeleted()
     }
 }
 
