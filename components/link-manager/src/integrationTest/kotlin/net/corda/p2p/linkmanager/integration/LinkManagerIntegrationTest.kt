@@ -2,13 +2,12 @@ package net.corda.p2p.linkmanager.integration
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.config.Configuration
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.publish.CordaConfigurationKey
-import net.corda.libs.configuration.publish.CordaConfigurationVersion
-import net.corda.libs.configuration.publish.factory.ConfigPublisherFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
@@ -18,13 +17,17 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -54,9 +57,6 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var lifecycleCoordinatorFactory : LifecycleCoordinatorFactory
-
-        @InjectService(timeout = 4000)
-        lateinit var configPublisherFactory: ConfigPublisherFactory
     }
 
     private val replayPeriod = 2000
@@ -78,6 +78,14 @@ class LinkManagerIntegrationTest {
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         )
 
+    private fun Publisher.publishLinkManagerConfig(config: Config) {
+        this.publish(listOf(Record(
+            Schemas.Config.CONFIG_TOPIC,
+            "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
+            Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+        ))).forEach { it.getOrThrow() }
+    }
+
     @BeforeEach
     fun setup() {
         configReadService.start()
@@ -95,10 +103,7 @@ class LinkManagerIntegrationTest {
             assertThat(configReadService.isRunning).isTrue
         }
 
-        val configPublisher = configPublisherFactory.createPublisher(
-            Schemas.Config.CONFIG_TOPIC,
-            bootstrapConfig
-        )
+        val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
 
         val linkManager = LinkManager(
             subscriptionFactory,
@@ -113,41 +118,20 @@ class LinkManagerIntegrationTest {
 
             logger.info("Publishing valid configuration")
             val validConfig = createLinkManagerConfiguration(replayPeriod)
-            configPublisher.updateConfiguration(
-                CordaConfigurationKey(
-                    "p2p-e2e-test-runner",
-                    CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
-                    CordaConfigurationVersion(LinkManagerConfiguration.COMPONENT_NAME, 0, 1)
-                ),
-                validConfig
-            )
+            configPublisher.publishLinkManagerConfig(validConfig)
             eventually {
                 assertThat(linkManager.isRunning).isTrue
             }
 
             logger.info("Publishing invalid configuration")
             val invalidConfig = createLinkManagerConfiguration(-1)
-            configPublisher.updateConfiguration(
-                CordaConfigurationKey(
-                    "p2p-e2e-test-runner",
-                    CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
-                    CordaConfigurationVersion(LinkManagerConfiguration.COMPONENT_NAME, 0, 1)
-                ),
-                invalidConfig
-            )
+            configPublisher.publishLinkManagerConfig(invalidConfig)
             eventually {
                 assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
             }
 
             logger.info("Publishing valid configuration again")
-            configPublisher.updateConfiguration(
-                CordaConfigurationKey(
-                    "p2p-e2e-test-runner",
-                    CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
-                    CordaConfigurationVersion(LinkManagerConfiguration.COMPONENT_NAME, 0, 1)
-                ),
-                validConfig
-            )
+            configPublisher.publishLinkManagerConfig(validConfig)
             eventually {
                 assertThat(linkManager.isRunning).isTrue
             }

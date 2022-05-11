@@ -2,14 +2,13 @@ package net.corda.p2p
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.data.config.Configuration
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.publish.CordaConfigurationKey
-import net.corda.libs.configuration.publish.CordaConfigurationVersion
-import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
@@ -20,6 +19,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
@@ -56,6 +56,7 @@ import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
@@ -324,13 +325,10 @@ class P2PLayerEndToEndTest {
             .genKeyPair()
         private val topicService = TopicServiceImpl()
         private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-        val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+        private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+        private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
-        private val configPublisher = ConfigPublisherImpl(
-            CONFIG_TOPIC,
-            publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
-        )
+        private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val tlsTenantId by lazy {
             GROUP_ID
@@ -347,7 +345,7 @@ class P2PLayerEndToEndTest {
                 .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
                 .withValue(LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(), replayConfig.root())
         }
-        val replayConfig by lazy {
+        private val replayConfig by lazy {
             ConfigFactory.empty()
                 .withValue(REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
         }
@@ -381,31 +379,19 @@ class P2PLayerEndToEndTest {
                 bootstrapConfig,
             )
 
-        private fun publishGatewayConfig() {
-            configPublisher.updateConfiguration(
-                CordaConfigurationKey(
-                    "p2p-e2e-test-runner",
-                    CordaConfigurationVersion("p2p", 0, 1),
-                    CordaConfigurationVersion("gateway", 0, 1)
-                ),
-                gatewayConfig
-            )
-        }
-
-        private fun publishLinkManagerConfig() {
-            configPublisher.updateConfiguration(
-                CordaConfigurationKey(
-                    "p2p-e2e-test-runner",
-                    CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
-                    CordaConfigurationVersion(LinkManagerConfiguration.COMPONENT_NAME, 0, 1)
-                ),
-                linkManagerConfig
-            )
+        private fun Publisher.publishConfig(key: String, config: Config) {
+            this.publish(listOf(Record(
+                CONFIG_TOPIC,
+                key,
+                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+            ))).forEach { it.getOrThrow() }
         }
 
         private fun publishConfig() {
-            publishGatewayConfig()
-            publishLinkManagerConfig()
+            val gatewayConfigKey = "p2p.gateway"
+            configPublisher.publishConfig(gatewayConfigKey, gatewayConfig)
+            val linkManagerConfigKey = "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}"
+            configPublisher.publishConfig(linkManagerConfigKey, linkManagerConfig)
         }
 
         private val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
