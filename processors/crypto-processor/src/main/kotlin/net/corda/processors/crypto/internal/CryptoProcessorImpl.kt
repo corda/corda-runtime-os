@@ -9,6 +9,7 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
+import net.corda.data.config.Configuration
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -20,8 +21,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,6 +38,8 @@ import org.osgi.service.component.annotations.Reference
 class CryptoProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = SoftCryptoKeyCacheProvider::class)
     private val softCryptoKeyCacheProvider: SoftCryptoKeyCacheProvider,
     @Reference(service = SigningKeyCacheProvider::class)
@@ -54,6 +62,7 @@ class CryptoProcessorImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager
 ) : CryptoProcessor {
     private companion object {
+        const val CRYPTO_PROCESSOR_CLIENT_ID = "crypto.processor"
         val log = contextLogger()
     }
 
@@ -105,7 +114,14 @@ class CryptoProcessorImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
-                // intentional to avoid warning bellow
+                val publisherConfig = PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID)
+                val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
+                publisher.start()
+                publisher.use {
+                    val configValue = "{}"
+                    val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1"))
+                    publisher.publish(listOf(record)).forEach { future -> future.get() }
+                }
             }
             else -> {
                 log.warn("Unexpected event $event!")
