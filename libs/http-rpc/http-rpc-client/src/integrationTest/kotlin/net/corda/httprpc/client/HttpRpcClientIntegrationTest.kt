@@ -488,4 +488,27 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
             }
         }
     }
+
+    @Test
+    @Timeout(100)
+    fun `name in annotation method call`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                // Extra set of quotes will be fixed by https://r3-cev.atlassian.net/browse/CORE-4248
+                assertThat(stringMethodWithNameInAnnotation("foo")).isEqualTo("\"Completed foo\"")
+            }
+        }
+    }
 }
