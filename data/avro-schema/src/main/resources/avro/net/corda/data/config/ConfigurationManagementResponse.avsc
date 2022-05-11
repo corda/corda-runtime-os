@@ -28,8 +28,8 @@
     },
     {
       "name": "schemaVersion",
-      "type": "int",
-      "doc": "The current configuration's schema version for the given section."
+      "type": "net.corda.data.config.ConfigurationSchemaVersion",
+      "doc": "Schema version of the current configuration."
     },
     {
       "name": "version",

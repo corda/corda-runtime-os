@@ -68,12 +68,14 @@
       ]
     },
     "subscription": {
-      "description": "Configuration options for subscriptions that processs messages on the bus.",
-      "$ref": "subscription.json"
+      "description": "Configuration options for subscriptions that process messages on the bus.",
+      "$ref": "subscription.json",
+      "default": {}
     },
     "publisher": {
       "description": "Settings for publishers that write messages to the underlying bus",
-      "$ref": "publisher.json"
+      "$ref": "publisher.json",
+      "default": {}
     }
   },
   "additionalProperties": false

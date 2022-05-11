@@ -21,7 +21,10 @@
             <column name="config" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="schema_version" type="INT">
+            <column name="schema_version_major" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schema_version_minor" type="INT">
                 <constraints nullable="false"/>
             </column>
             <column name="update_ts" type="DATETIME">

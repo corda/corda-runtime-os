@@ -60,12 +60,12 @@ object MessagingConfig {
      */
     object Subscription {
         const val SUBSCRIPTION = "subscription"
-        const val POLL_TIMEOUT = "$SUBSCRIPTION.poll.timeout"
-        const val THREAD_STOP_TIMEOUT = "$SUBSCRIPTION.thread.stop.timeout"
-        const val PROCESSOR_RETRIES = "$SUBSCRIPTION.processor.retries"
-        const val SUBSCRIBE_RETRIES = "$SUBSCRIPTION.subscribe.retries"
-        const val COMMIT_RETRIES = "$SUBSCRIPTION.commit.retries"
-        const val PROCESSOR_TIMEOUT = "$SUBSCRIPTION.processor.timeout"
+        const val POLL_TIMEOUT = "$SUBSCRIPTION.pollTimeout"
+        const val THREAD_STOP_TIMEOUT = "$SUBSCRIPTION.threadStopTimeout"
+        const val PROCESSOR_RETRIES = "$SUBSCRIPTION.processorRetries"
+        const val SUBSCRIBE_RETRIES = "$SUBSCRIPTION.subscribeRetries"
+        const val COMMIT_RETRIES = "$SUBSCRIPTION.commitRetries"
+        const val PROCESSOR_TIMEOUT = "$SUBSCRIPTION.processorTimeout"
     }
 
     /**
@@ -73,7 +73,7 @@ object MessagingConfig {
      */
     object Publisher {
         const val PUBLISHER = "publisher"
-        const val CLOSE_TIMEOUT = "$PUBLISHER.close.timeout"
+        const val CLOSE_TIMEOUT = "$PUBLISHER.closeTimeout"
         const val TRANSACTIONAL = "$PUBLISHER.transactional"
     }
 }

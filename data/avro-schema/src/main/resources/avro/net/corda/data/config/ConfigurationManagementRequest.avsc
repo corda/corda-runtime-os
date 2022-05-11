@@ -15,7 +15,7 @@
     },
     {
       "name": "schemaVersion",
-      "type": "int",
+      "type": "net.corda.data.config.ConfigurationSchemaVersion",
       "doc": "Schema version of the updated configuration."
     },
     {
