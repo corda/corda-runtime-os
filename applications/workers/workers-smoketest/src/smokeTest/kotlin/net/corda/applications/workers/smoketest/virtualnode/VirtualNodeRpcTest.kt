@@ -288,7 +288,8 @@ class VirtualNodeRpcTest {
 
             // Check that timestamp for CPK been updated
             // Cannot use `assertWithRetry` as there is a strict type `Instant`
-            eventually {
+            // Allow ample time for CPI upload to be propagated through the system
+            eventually(Duration.ofSeconds(20)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
