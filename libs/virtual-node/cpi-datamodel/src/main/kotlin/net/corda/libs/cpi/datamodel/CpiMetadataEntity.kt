@@ -13,9 +13,7 @@ import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.OneToMany
 import javax.persistence.Table
-
-// This is not yet used
-// private const val CPI_REVERSION_GENERATOR = "cpi_reversion_generator"
+import javax.persistence.Version
 
 /**
  * Cpi entity
@@ -29,6 +27,7 @@ import javax.persistence.Table
  * @property groupId MGM Group ID
  * @property fileUploadRequestId optional request ID for the file upload
  * @property entityVersion Entity version number
+ * @property isDeleted Flag used for soft db deletes
  */
 @Entity
 @Table(name = "cpi", schema = DbSchema.CONFIG)
@@ -54,29 +53,18 @@ data class CpiMetadataEntity(
     val groupId: String,
     @Column(name = "file_upload_request_id", nullable = false)
     val fileUploadRequestId: String,
-    /* This is not yet used
-    import net.corda.db.schema.DbSchema.CPI_REVISION_SEQUENCE
-    import net.corda.db.schema.DbSchema.CPI_REVISION_SEQUENCE_ALLOC_SIZE
-    import javax.persistence.GeneratedValue
-    import javax.persistence.GenerationType.SEQUENCE
-    import javax.persistence.SequenceGenerator
-
-    @SequenceGenerator(
-        name = CPI_REVERSION_GENERATOR,
-        sequenceName = CPI_REVISION_SEQUENCE,
-        allocationSize = CPI_REVISION_SEQUENCE_ALLOC_SIZE
-    )
-    @GeneratedValue(strategy = SEQUENCE, generator = CPI_REVERSION_GENERATOR)
-    */
-    @Column(name = "entity_version", nullable = false)
-    val entityVersion: Int,
     @Column(name = "is_deleted", nullable = false)
     val isDeleted: Boolean
 ) {
+
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    val entityVersion: Int = -1
+
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
             "", "", "", "", "",
-            "", "", "", -1, false
+            "", "", "",false
         )
     }
 

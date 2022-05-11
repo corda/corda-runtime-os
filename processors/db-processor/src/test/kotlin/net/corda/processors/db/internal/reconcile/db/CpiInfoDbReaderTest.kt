@@ -13,6 +13,7 @@ import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
+import kotlin.streams.toList
 
 class CpiInfoDbReaderTest {
     lateinit var cpiInfoDbReader: CpiInfoDbReader
@@ -35,7 +36,7 @@ class CpiInfoDbReaderTest {
             "", "",
             DUMMY_HASH, "",
             DUMMY_HASH, "", "", "",
-            -1
+            false
         )
 
     @Test
