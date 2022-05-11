@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
@@ -10,7 +11,6 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.linkmanager.GroupPolicyListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -40,8 +40,8 @@ class InMemorySessionReplayerTest {
 
     companion object {
         private const val GROUP_ID = "myGroup"
-        private val US = LinkManagerInternalTypes.HoldingIdentity("Us",GROUP_ID)
-        private val COUNTER_PARTY = LinkManagerInternalTypes.HoldingIdentity("CounterParty", GROUP_ID)
+        private val US = HoldingIdentity("Us",GROUP_ID)
+        private val COUNTER_PARTY = HoldingIdentity("CounterParty", GROUP_ID)
         private val SESSION_COUNTERPARTIES = SessionManager.SessionCounterparties(US, COUNTER_PARTY)
         private const val MAX_MESSAGE_SIZE = 100000
         lateinit var loggingInterceptor: LoggingInterceptor

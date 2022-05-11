@@ -18,7 +18,6 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
@@ -34,7 +33,7 @@ import java.time.Clock
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
-class DeliveryTracker(
+internal class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
@@ -193,8 +192,8 @@ class DeliveryTracker(
             private fun sessionCounterpartiesFromState(state: AuthenticatedMessageDeliveryState): SessionManager.SessionCounterparties {
                 val header = state.message.message.header
                 return SessionManager.SessionCounterparties(
-                    header.source.toHoldingIdentity(),
-                    header.destination.toHoldingIdentity()
+                    header.source,
+                    header.destination
                 )
             }
         }

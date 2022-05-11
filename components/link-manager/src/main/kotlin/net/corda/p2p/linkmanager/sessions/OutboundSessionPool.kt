@@ -13,7 +13,7 @@ import kotlin.random.Random
  * are favoured over sessions with a larger weight.
  * [genRandomNumber] - Generates a random Long in the interval 0 (inclusive) to until (exclusive).
  */
-class OutboundSessionPool(
+internal class OutboundSessionPool(
     private val calculateWeightForSession: (sessionId: String) -> Long?,
     private val genRandomNumber: (until: Long) -> Long = { until -> Random.nextLong(until) }
 ) {
