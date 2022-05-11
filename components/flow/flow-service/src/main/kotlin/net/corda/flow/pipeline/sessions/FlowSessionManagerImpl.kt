@@ -140,15 +140,15 @@ class FlowSessionManagerImpl @Activate constructor(
         return getReceivedEvents(checkpoint, sessionIds).size == sessionIds.size
     }
 
-    override fun areAllSessionsInStatuses(
+    override fun doAllSessionsHaveStatus(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
-        statuses: List<SessionStateType>
+        status: SessionStateType
     ): Boolean {
         return sessionIds
             .mapNotNull { sessionId -> checkpoint.getSessionState(sessionId) }
             .map { sessionState -> sessionState.status }
-            .all { status -> status in statuses }
+            .all { sessionStatus -> sessionStatus == status }
     }
 
     private fun getInitiatingAndInitiatedParties(

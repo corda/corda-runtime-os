@@ -93,11 +93,11 @@ interface FlowSessionManager {
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionIds The session ids to check the status of.
-     * @param statuses The acceptable statuses the sessions can be in.
+     * @param status The acceptable status the sessions can have.
      *
-     * @return `true`, if all sessions have a status contained in [statuses], `false` otherwise.
+     * @return `true`, if all sessions have status [status], `false` otherwise.
      *
      * @throws FlowProcessingException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun areAllSessionsInStatuses(checkpoint: FlowCheckpoint, sessionIds: List<String>, statuses: List<SessionStateType>): Boolean
+    fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
 }
