@@ -582,4 +582,18 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         assertEquals("\"$expectedResult\"", createEntityResponse.body)
     }
 
+    @Test
+    fun `POST call using name in annotation`() {
+
+        val fullUrl = "health/stringmethodwithnameinannotation"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl,
+                """{"correctName": "foo"}"""
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(""""Completed foo"""", helloResponse.body)
+    }
 }
