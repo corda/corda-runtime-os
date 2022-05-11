@@ -3,13 +3,12 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Lifecycle implementation"
+description "Test Lifecycle Coordinator implementation"
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:lifecycle:registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.google.guava:guava:$guavaVersion"
@@ -18,6 +17,4 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(":testing:test-utilities")
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

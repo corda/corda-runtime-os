@@ -5,21 +5,22 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.StateAndEventSubscription
-import java.util.concurrent.CountDownLatch
 
-class StateAndEventSubscriptionStub(private val startLatch: CountDownLatch, private val stopLatch: CountDownLatch) :
+class StateAndEventSubscriptionStub :
     StateAndEventSubscription<FlowKey,
             Checkpoint,
             FlowEvent> {
+
+    private var _isRunning = false
     override val isRunning: Boolean
-        get() = true
+        get() = _isRunning
 
     override fun start() {
-        startLatch.countDown()
+        _isRunning = true
     }
 
     override fun stop() {
-        stopLatch.countDown()
+        _isRunning = false
     }
 
     override val subscriptionName: LifecycleCoordinatorName

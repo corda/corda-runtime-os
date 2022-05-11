@@ -10,32 +10,25 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import java.util.*
 
 
 /**
- * A manager of lifecycle events for a single component.
+ * A test version of the manager of lifecycle events for a single component.
  *
  * This class implements the coordinator API, which can be used to model component lifecycle as a queue of events to be
  * handled. The main responsibility of this class is to receive API calls and schedule the processing of lifecycle
  * events.
  *
- * Events are scheduled to be processed on a thread pool. This class ensures that only one call to process is scheduled
- * at once.
+ * Rather than a production version, in the test manager all events are synchronously processed in a single thread.
  *
  * @param name The name of the component for this lifecycle coordinator.
- * @param batchSize max number of events processed in a single [processEvents] call.
- * @param initialRegistry The registry this coordinator has been registered with. Used to update status for monitoring purposes
  * @param userEventHandler The user event handler for lifecycle events.
  */
 class TestLifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
-    private val batchSize: Int,
-    initialRegistry: Map<LifecycleCoordinatorName, LifecycleCoordinator>,
     private val userEventHandler: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
@@ -47,13 +40,9 @@ class TestLifecycleCoordinatorImpl(
         internal const val ERRORED_REASON = "An unhandled error was encountered by the component"
     }
 
-    private val eventQueue: Queue<LifecycleEvent> = LinkedList()
-
-    private val followedCoordinators: MutableSet<LifecycleCoordinator> = mutableSetOf()
+    val registrations: MutableSet<TestRegistration> = mutableSetOf()
 
     private var _status: LifecycleStatus = LifecycleStatus.DOWN
-
-    private val registry: MutableMap<LifecycleCoordinatorName, LifecycleCoordinator> = initialRegistry.toMutableMap()
 
     override val status: LifecycleStatus
         get() = _status
@@ -69,7 +58,7 @@ class TestLifecycleCoordinatorImpl(
         if (isClosed) {
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
         }
-        eventQueue.add(event)
+        processEvent(event)
     }
 
     /**
@@ -100,6 +89,10 @@ class TestLifecycleCoordinatorImpl(
         TODO("Custom Events not currently supported for testing.")
     }
 
+    private fun addNewRegistration(coordinators: Set<LifecycleCoordinatorName>): TestRegistration {
+        return TestRegistration(coordinators, this).also { registrations.add(it) }
+    }
+
     /**
      * See [LifecycleCoordinator].
      */
@@ -107,23 +100,14 @@ class TestLifecycleCoordinatorImpl(
         if (coordinators.contains(this)) {
             throw LifecycleException("Attempt was made to register coordinator $name on itself")
         }
-        followedCoordinators.addAll(coordinators)
-        return object : RegistrationHandle {
-            override fun close() {
-            }
-        }
+        return followStatusChangesByName(coordinators.map { it.name }.toSet())
     }
 
     /**
      * See [LifecycleCoordinator].
      */
     override fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle {
-        val coordinators = try {
-            coordinatorNames.map { registry[it]!! }.toSet()
-        } catch (e: LifecycleRegistryException) {
-            throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)
-        }
-        return followStatusChanges(coordinators)
+        return addNewRegistration(coordinatorNames)
     }
 
     /**
@@ -147,9 +131,6 @@ class TestLifecycleCoordinatorImpl(
 
     /**
      * Stop this coordinator.
-     *
-     * Note that this does not immediately stop, instead a graceful shutdown is attempted where any outstanding events
-     * are delivered to the user code.
      */
     override fun stop() {
         processStopEvent(StopEvent())
@@ -158,28 +139,13 @@ class TestLifecycleCoordinatorImpl(
     override fun close() {
         stop()
         processClose()
-        _isClosed = true
     }
 
-    /**
-     * Signals the test processor to execute the next [batchSize]
-     */
-    fun nextBatch(batchSize: Int = 1) {
-        val batch = mutableListOf<LifecycleEvent>()
-        for (i in 0 until batchSize) {
-            val event = eventQueue.poll() ?: break
-            batch.add(event)
-        }
-        processEvents(batch)
-    }
-
-    private fun processEvents(events: List<LifecycleEvent>) {
-        return events.forEach { event ->
-            if (isRunning) {
-                runUserEventHandler(event)
-            } else {
-                logger.info("$name Lifecycle: Did not process lifecycle event $event as coordinator is shutdown")
-            }
+    private fun processEvent(event: LifecycleEvent) {
+        return if (isRunning) {
+            runUserEventHandler(event)
+        } else {
+            logger.info("$name Lifecycle: Did not process lifecycle event $event as coordinator is shutdown")
         }
     }
 
@@ -216,6 +182,7 @@ class TestLifecycleCoordinatorImpl(
 
     private fun processClose() {
         _isRunning = false
-        followedCoordinators.clear()
+        _isClosed = true
+        registrations.clear()
     }
 }
