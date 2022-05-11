@@ -52,12 +52,12 @@ class LinkManager(
         const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
         const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
 
-        fun generateKey(): String {
+        internal fun generateKey(): String {
             return UUID.randomUUID().toString()
         }
     }
 
-    private var inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory, LINK_IN_TOPIC)
+    private val inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory, LINK_IN_TOPIC)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
