@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -18,6 +19,8 @@ class CpiInfoMapTest {
     private lateinit var map: CpiInfoMap
 
     private val secureHash = SecureHash("algorithm", "1234".toByteArray())
+
+    private val currentTimestamp = Instant.now()
 
     @BeforeEach
     fun beforeEach() {
@@ -29,24 +32,24 @@ class CpiInfoMapTest {
         val identifier = Cpi.Identifier.newInstance("ghi", "hjk", secureHash)
         val metadata = Cpi.Metadata.newInstance(identifier, secureHash, emptyList(), "")
 
-        map.put(identifier.toAvro(), metadata.toAvro())
+        map.put(identifier.toAvro(), metadata.toAvro(currentTimestamp))
 
-        assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro())
+        assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro(currentTimestamp))
     }
 
     @Test
     fun `put two CpiInfo`() {
         val identifier = Cpi.Identifier.newInstance("ghi", "hjk", secureHash)
         val metadata = Cpi.Metadata.newInstance(identifier, secureHash, emptyList(), "")
-        map.put(identifier.toAvro(), metadata.toAvro())
+        map.put(identifier.toAvro(), metadata.toAvro(currentTimestamp))
 
 
         val otherIdentifier = Cpi.Identifier.newInstance("abc", "def", secureHash)
         val otherMetadata = Cpi.Metadata.newInstance(otherIdentifier, secureHash, emptyList(), "")
-        map.put(otherIdentifier.toAvro(), otherMetadata.toAvro())
+        map.put(otherIdentifier.toAvro(), otherMetadata.toAvro(currentTimestamp))
 
-        assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro())
-        assertThat(map.get(otherIdentifier.toAvro())).isEqualTo(otherMetadata.toAvro())
+        assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro(currentTimestamp))
+        assertThat(map.get(otherIdentifier.toAvro())).isEqualTo(otherMetadata.toAvro(currentTimestamp))
     }
 
     /**
@@ -58,7 +61,7 @@ class CpiInfoMapTest {
         val differentIdentifier = Cpi.Identifier.newInstance("abc", "def", secureHash)
         val metadata = Cpi.Metadata.newInstance(differentIdentifier, secureHash, emptyList(), "")
         assertThrows<IllegalArgumentException> {
-            map.put(identifier.toAvro(), metadata.toAvro())
+            map.put(identifier.toAvro(), metadata.toAvro(currentTimestamp))
         }
     }
 
@@ -66,12 +69,12 @@ class CpiInfoMapTest {
     fun `put one and remove one CpiInfo`() {
         val identifier = Cpi.Identifier.newInstance("ghi", "hjk", secureHash)
         val metadata = Cpi.Metadata.newInstance(identifier, secureHash, emptyList(), "")
-        map.put(identifier.toAvro(), metadata.toAvro())
+        map.put(identifier.toAvro(), metadata.toAvro(currentTimestamp))
 
-        assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro())
+        assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro(currentTimestamp))
 
         val actualCpiInfo = map.remove(identifier.toAvro())
-        assertThat(actualCpiInfo).isEqualTo(metadata.toAvro())
+        assertThat(actualCpiInfo).isEqualTo(metadata.toAvro(currentTimestamp))
 
         val cpiInfoAgain = map.remove(identifier.toAvro())
         assertThat(cpiInfoAgain).isNull()
@@ -81,22 +84,22 @@ class CpiInfoMapTest {
     fun `test get all CpiInfo`() {
         val identifier = Cpi.Identifier.newInstance("ghi", "hjk", secureHash)
         val metadata = Cpi.Metadata.newInstance(identifier, secureHash, emptyList(), "")
-        map.put(identifier.toAvro(), metadata.toAvro())
+        map.put(identifier.toAvro(), metadata.toAvro(currentTimestamp))
 
         var all = map.getAll()
         assertThat(all).isNotNull
         assertThat(all.size).isEqualTo(1)
-        assertThat(map.getAll()[0]).isEqualTo(metadata.toAvro())
+        assertThat(map.getAll()[0]).isEqualTo(metadata.toAvro(currentTimestamp))
 
         val otherIdentifier = Cpi.Identifier.newInstance("abc", "def", secureHash)
         val otherMetadata = Cpi.Metadata.newInstance(otherIdentifier, secureHash, emptyList(), "")
-        map.put(otherIdentifier.toAvro(), otherMetadata.toAvro())
+        map.put(otherIdentifier.toAvro(), otherMetadata.toAvro(currentTimestamp))
 
         all = map.getAll()
         assertThat(all).isNotNull
         assertThat(all.size).isEqualTo(2)
-        assertThat(map.getAll()).contains(metadata.toAvro())
-        assertThat(map.getAll()).contains(otherMetadata.toAvro())
+        assertThat(map.getAll()).contains(metadata.toAvro(currentTimestamp))
+        assertThat(map.getAll()).contains(otherMetadata.toAvro(currentTimestamp))
     }
 
     @Test
@@ -111,7 +114,7 @@ class CpiInfoMapTest {
 
             val key = identifier.toAvro()
             keys.add(key)
-            map.put(key, metadata.toAvro())
+            map.put(key, metadata.toAvro(currentTimestamp))
         }
 
         // Check that we've added them
@@ -124,9 +127,9 @@ class CpiInfoMapTest {
         // GET THE ENTIRE CONTENT OF THE MAP AS CORDA TYPES AND CHECK THAT TOO.
         val allCpiInfos = map.getAllAsCordaObjects()
 
-        allCpiInfos.forEach { (k, v) ->
+        allCpiInfos.forEach { (k: Cpi.Identifier, v: Cpi.Metadata) ->
             assertThat(map.get(k.toAvro())).isNotNull
-            assertThat(map.get(k.toAvro())).isEqualTo(v.toAvro())
+            assertThat(map.get(k.toAvro())).isEqualTo(v.toAvro(currentTimestamp))
         }
 
         // Remove them
