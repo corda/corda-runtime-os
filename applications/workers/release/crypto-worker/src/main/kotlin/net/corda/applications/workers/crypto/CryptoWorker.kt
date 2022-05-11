@@ -72,6 +72,6 @@ private class CryptoWorkerParams {
     @CommandLine.Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @CommandLine.Option(names = ["-c", "--cryptoParams"], description = ["Crypto parameters for the worker."])
+    @CommandLine.Option(names = ["--cryptoParams"], description = ["Crypto parameters for the worker."])
     var cryptoParams = emptyMap<String, String>()
 }
