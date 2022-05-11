@@ -1,5 +1,7 @@
 package net.corda.libs.packaging
 
+import net.corda.data.packaging.CpkMetadata as AvroCpkMetadata
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.converters.toAvro
@@ -9,6 +11,7 @@ import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.time.Instant
 import java.util.stream.Collectors
 
 // TODO - clean up CPI/CPK in net.corda.packaging
@@ -40,7 +43,7 @@ data class CpkMetadata(
     val cordappCertificates: Set<Certificate>
 ) {
     companion object {
-        fun fromAvro(other: net.corda.data.packaging.CpkMetadata): CpkMetadata {
+        fun fromAvro(other: AvroCpkMetadata): CpkMetadata {
             return CpkMetadata(
                 CpkIdentifier.fromAvro(other.id),
                 other.manifest.toCorda(),
@@ -79,8 +82,8 @@ data class CpkMetadata(
         }
     }
 
-    fun toAvro(): net.corda.data.packaging.CpkMetadata {
-        return net.corda.data.packaging.CpkMetadata(
+    fun toAvro(): AvroCpkMetadata {
+        return AvroCpkMetadata(
             cpkId.toAvro(),
             manifest.toAvro(),
             mainBundle,
@@ -88,12 +91,13 @@ data class CpkMetadata(
             dependencies.map { it.toAvro() },
             cordappManifest.toAvro(),
             type.toAvro(),
-            net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
+            AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cordappCertificates.stream()
                 .map(Certificate::getEncoded)
                 .map(ByteBuffer::wrap)
                 .collect(
-                    Collectors.toUnmodifiableList())
+                    Collectors.toUnmodifiableList()),
+            Instant.now()
         )
     }
 }
