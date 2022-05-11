@@ -130,7 +130,7 @@ class SandboxServiceImplTests {
     fun `a sandbox correctly indicates which CPK it is created from`() {
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single()
-        assertEquals(CpkMetadata.fromLegacyCpk(cpkOne), sandbox.cpkMetadata)
+        assertEquals(CpkMetadata.fromLegacyCpk(cpkOne, sandbox.cpkMetadata.timestamp), sandbox.cpkMetadata)
     }
 
     @Test

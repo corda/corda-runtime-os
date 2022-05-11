@@ -22,13 +22,13 @@ data class CpiMetadata(
         )
 
         // TODO - remove
-        fun fromLegacy(legacyCpi: Cpi): CpiMetadata {
+        fun fromLegacy(legacyCpi: Cpi, timestamp: Instant = Instant.now()): CpiMetadata {
             return CpiMetadata(
                 CpiIdentifier.fromLegacy(legacyCpi.metadata.id),
                 legacyCpi.metadata.hash,
-                legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
+                legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it, timestamp) },
                 legacyCpi.metadata.groupPolicy,
-                Instant.now()
+                timestamp
             )
         }
     }

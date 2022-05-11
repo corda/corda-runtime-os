@@ -66,7 +66,7 @@ data class CpkMetadata(
         }
 
         // TODO - remove when refactoring complete
-        fun fromLegacyCpk(cpk: Cpk): CpkMetadata {
+        fun fromLegacyCpk(cpk: Cpk, timestamp: Instant = Instant.now()): CpkMetadata {
             return CpkMetadata(
                 CpkIdentifier(cpk.metadata.id.name, cpk.metadata.id.version, cpk.metadata.id.signerSummaryHash),
                 cpk.metadata.manifest,
@@ -79,7 +79,7 @@ data class CpkMetadata(
                 cpk.metadata.type,
                 cpk.metadata.hash,
                 cpk.metadata.cordappCertificates,
-                Instant.now()
+                timestamp
             )
         }
     }
