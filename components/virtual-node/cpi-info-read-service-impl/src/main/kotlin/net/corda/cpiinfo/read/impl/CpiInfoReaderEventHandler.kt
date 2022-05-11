@@ -1,8 +1,8 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.packaging.CPIIdentifier
-import net.corda.data.packaging.CPIMetadata
+import net.corda.data.packaging.CpiIdentifier
+import net.corda.data.packaging.CpiMetadata
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -40,7 +40,7 @@ class CpiInfoReaderEventHandler(
     private val messagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, configChangedEventCallback, this::onConfig)
 
-    private var subscription: CompactedSubscription<CPIIdentifier, CPIMetadata>? = null
+    private var subscription: CompactedSubscription<CpiIdentifier, CpiMetadata>? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) =
         messagingConfigEventHandler.processEvent(event, coordinator)

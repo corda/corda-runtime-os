@@ -29,7 +29,6 @@ import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -51,13 +50,11 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
-        executor: ExecutorService?,
         messagingConfig: SmartConfig
     ): Subscription<K, V> {
         return PubSubSubscription(
             subscriptionConfig,
             processor,
-            executor,
             topicService,
             lifecycleCoordinatorFactory,
             clientIdCounter.getAndIncrement().toString()

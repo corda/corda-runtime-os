@@ -17,8 +17,8 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.packaging.Cpi
+import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -159,28 +159,28 @@ internal class DatabaseChunkPersistenceTest {
         return chunks
     }
 
-    private fun mockCpk(hash: SecureHash, name: String) = mock<CPK>().also { cpk ->
-        val metadata = mock<CPK.Metadata>().also { whenever(it.hash).thenReturn(hash) }
+    private fun mockCpk(hash: SecureHash, name: String) = mock<Cpk>().also { cpk ->
+        val metadata = mock<Cpk.Metadata>().also { whenever(it.hash).thenReturn(hash) }
         whenever(cpk.path).thenReturn(mockCpkContent.writeToPath())
         whenever(cpk.originalFileName).thenReturn(name)
         whenever(cpk.metadata).thenReturn(metadata)
     }
 
-    private fun mockCpi(cpks: Collection<CPK>): CPI {
+    private fun mockCpi(cpks: Collection<Cpk>): Cpi {
         // We need a random name here as the database primary key is (name, version, signerSummaryHash)
         // and we'd end up trying to insert the same mock cpi.
-        val id = mock<CPI.Identifier>().also {
+        val id = mock<Cpi.Identifier>().also {
             whenever(it.name).thenReturn("test " + UUID.randomUUID().toString())
             whenever(it.version).thenReturn("1.0")
             whenever(it.signerSummaryHash).thenReturn(SecureHash("SHA-256", ByteArray(12)))
         }
 
-        val metadata = mock<CPI.Metadata>().also {
+        val metadata = mock<Cpi.Metadata>().also {
             whenever(it.id).thenReturn(id)
             whenever(it.groupPolicy).thenReturn("{}")
         }
 
-        val cpi = mock<CPI>().also {
+        val cpi = mock<Cpi>().also {
             whenever(it.cpks).thenReturn(cpks)
             whenever(it.metadata).thenReturn(metadata)
         }

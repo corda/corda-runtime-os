@@ -2,7 +2,7 @@ package net.corda.cpiinfo.read
 
 import net.corda.cpiinfo.read.impl.CpiInfoReaderProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPI
+import net.corda.packaging.Cpi
 import net.corda.packaging.converters.toAvro
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -26,9 +26,9 @@ class CpiInfoProcessorTest {
         processor = CpiInfoReaderProcessor({ /* don't care about the callback */ }, { /* don't care about callback */ })
     }
 
-    private fun sendOnNextRandomMessage(processor: CpiInfoReaderProcessor): CPI.Identifier {
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+    private fun sendOnNextRandomMessage(processor: CpiInfoReaderProcessor): Cpi.Identifier {
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
         processor.onNext(Record("", cpiMetadata.id.toAvro(), cpiMetadata.toAvro()), null, emptyMap())
         return cpiIdentifier
     }
@@ -37,8 +37,8 @@ class CpiInfoProcessorTest {
     fun `register client listener callback before onSnapshot is called`() {
         processor.registerCallback(listener)
 
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro()))
 
         assertTrue(listener.update)
@@ -48,8 +48,8 @@ class CpiInfoProcessorTest {
 
     @Test
     fun `register client listener callback after onSnapshot is called`() {
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro()))
 
@@ -67,8 +67,8 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
 
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         listener.update = false
         processor.onNext(Record("", cpiIdentifier.toAvro(), cpiMetadata.toAvro()), null, emptyMap())
@@ -98,8 +98,8 @@ class CpiInfoProcessorTest {
     fun `unregister client listener callback`() {
         val closeable = processor.registerCallback(listener)
 
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro()))
         assertTrue(listener.update)
@@ -130,8 +130,8 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
 
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
 
         listener.update = false
@@ -155,8 +155,8 @@ class CpiInfoProcessorTest {
     @Test
     fun `client listeners are unregistered when service closes`() {
         processor.registerCallback(listener)
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro()))
 
@@ -189,8 +189,8 @@ class CpiInfoProcessorTest {
 
         // Send message
         listener.update = false
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onNext(Record("", cpiIdentifier.toAvro(), cpiMetadata.toAvro()), null, emptyMap())
 
@@ -213,8 +213,8 @@ class CpiInfoProcessorTest {
     @Test
     fun `clear message processor`() {
         val processor = CpiInfoReaderProcessor({ /* don't care about callback */ }, { /* don't care about callback */ })
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.registerCallback(listener)
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro()))
@@ -231,8 +231,8 @@ class CpiInfoProcessorTest {
     fun `internal onSnapshot callback is called`() {
         var onSnapshot = false
         val processor = CpiInfoReaderProcessor({ onSnapshot = true }, { /* don't care about callback */ })
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.registerCallback(listener)
 
@@ -245,9 +245,9 @@ class CpiInfoProcessorTest {
     fun `internal onError callback is called`() {
         var onError = false
         val processor = CpiInfoReaderProcessor({ /* don't care */ }, { onError = true })
-        val cpiIdentifier = CPI.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiIdentifierOther = CPI.Identifier.newInstance("def", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = CPI.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiIdentifierOther = Cpi.Identifier.newInstance("def", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.registerCallback(listener)
 

@@ -23,10 +23,13 @@ import java.io.InputStream
  * fun fileUploadUsingInputStream(@HttpRpcRequestBodyParameter file: InputStream): String
  * ```
  */
-data class HttpFileUpload(
+class HttpFileUpload(
     val content: InputStream,
-    val contentType: String,
-    val extension: String,
+    val contentType: String?,
+    val extension: String?,
     val fileName: String,
-    val size: Long
-)
+    val size: Long?
+) {
+    constructor(content: InputStream, fileName: String) : this(content, null, null, fileName, null)
+    constructor(content: InputStream, contentType: String, fileName: String) : this(content, contentType, null, fileName, null)
+}
