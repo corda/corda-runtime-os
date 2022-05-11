@@ -10,7 +10,6 @@ import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
@@ -27,8 +26,6 @@ import picocli.CommandLine.Mixin
 class CryptoWorker @Activate constructor(
     @Reference(service = CryptoProcessor::class)
     private val processor: CryptoProcessor,
-    @Reference(service = CryptoDependenciesProcessor::class)
-    private val dependenciesProcessor: CryptoDependenciesProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -52,14 +49,12 @@ class CryptoWorker @Activate constructor(
         val cryptoConfig = PathAndConfig(CRYPTO_CONFIG, params.cryptoParams)
         val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig, cryptoConfig))
 
-        dependenciesProcessor.start(config)
         processor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Crypto worker stopping.")
         processor.stop()
-        dependenciesProcessor.stop()
         healthMonitor.stop()
     }
 }
