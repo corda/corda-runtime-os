@@ -1,7 +1,7 @@
 package net.corda.test.util
 
+import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.TestClock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.any
 import org.mockito.Mockito.anyBoolean

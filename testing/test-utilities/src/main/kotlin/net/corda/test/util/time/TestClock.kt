@@ -1,5 +1,6 @@
-package net.corda.utilities.time
+package net.corda.test.util.time
 
+import net.corda.utilities.time.Clock
 import java.time.Instant
 
 class TestClock(initialTime: Instant): Clock {
