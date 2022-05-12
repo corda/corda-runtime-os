@@ -593,8 +593,8 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             POST,
             WebRequest<Any>(
                 path = "fileupload/uploadwithnameinannotation",
-                formParameters = mapOf(
-                    "differentName" to TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt")
+                files = mapOf(
+                    "differentName" to listOf(TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt"))
                 )
             ),
             userName,
