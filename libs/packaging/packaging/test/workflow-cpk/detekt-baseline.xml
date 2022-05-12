@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>EmptyFunctionBlock:Workflow.kt$PackagingTestFlow${}</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.test.workflow.Workflow.kt:19</ID>
+    <ID>UnusedPrivateMember:Workflow.kt$PackagingTestFlowResponder$private val otherSide : FlowSession</ID>
+  </CurrentIssues>
+</SmellBaseline>
