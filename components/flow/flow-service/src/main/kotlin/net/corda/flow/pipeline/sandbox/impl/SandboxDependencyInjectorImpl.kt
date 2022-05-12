@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.utilities.security.doWithPrivileges
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -44,13 +45,15 @@ class SandboxDependencyInjectorImpl(
             )
         }
 
-        requiredFields.forEach { field ->
-            field.isAccessible = true
-            if (field.get(flow) == null) {
-                field.set(
-                    flow,
-                    serviceTypeMap[field.type]
-                )
+        doWithPrivileges {
+            requiredFields.forEach { field ->
+                field.isAccessible = true
+                if (field.get(flow) == null) {
+                    field.set(
+                        flow,
+                        serviceTypeMap[field.type]
+                    )
+                }
             }
         }
     }
@@ -69,10 +72,12 @@ class SandboxDependencyInjectorImpl(
     }
 
     private fun Class<*>.getFieldsForInjection(annotationType: Class<out Annotation>): Collection<Field> {
-        return getSuperClassesFor(this).flatMap { it.declaredFields.toSet() }
-            .filter { field ->
-                field.isAnnotationPresent(annotationType)
-            }
+        return doWithPrivileges {
+            getSuperClassesFor(this).flatMap { it.declaredFields.toSet() }
+                .filter { field ->
+                    field.isAnnotationPresent(annotationType)
+                }
+        }
     }
 
     private fun getSuperClassesFor(clazz: Class<*>): List<Class<*>> {
