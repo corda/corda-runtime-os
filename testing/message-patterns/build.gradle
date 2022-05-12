@@ -136,7 +136,7 @@ tasks.register('dbIntegrationTest', TestOSGi) {
 
 // Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
 // Test task this ensures test results are captured
-tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
+def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
     dialect = GENERIC
     reports.from(fileTree("$testResultsDir/dbIntegrationTest").matching {
         include '**/TEST-*.xml'
@@ -146,8 +146,8 @@ tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
 tasks.named('integrationTest') {
     // By default this is expected to run against the in-memory db, effectively
     // running an in-mem version of the message pattern tests
+    finalizedBy importTask
     dependsOn dbIntegrationTest
-    finalizedBy importOSGiJunitXml
 
     enabled = false
 }
