@@ -179,6 +179,7 @@ internal class HttpRpcGatewayEventHandler(
 
     private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {
         return if (!hasPath(RPC_AZUREAD_CLIENT_ID) || !hasPath(RPC_AZUREAD_TENANT_ID)) {
+            log.info("AzureAD connection is not configured.")
             null
         } else {
             val clientId = getString(RPC_AZUREAD_CLIENT_ID)
