@@ -1,5 +1,6 @@
 package net.corda.flow.testing.fakes
 
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -17,8 +18,7 @@ class FakeFlowFactory: FlowFactory {
     }
 
     override fun createInitiatedFlow(
-        flowClassName: String,
-        flowSession: FlowSession,
+        flowStartContext: FlowStartContext,
         sandboxGroupContext: SandboxGroupContext
     ): Flow<*> {
         return FakeFlow()

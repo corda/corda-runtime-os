@@ -12,10 +12,18 @@ class StartFlowEventHandler : FlowEventHandler<StartFlow> {
     override val type = StartFlow::class.java
 
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
+
+        // When in a retry we don't need to init the checkpoint.
+        if (context.checkpoint.inRetryState) {
+            return context
+        }
+
         context.checkpoint.initFromNew(
             context.inputEvent.flowId,
             context.inputEventPayload.startContext,
-            WaitingFor(WaitingForStartFlow))
+            WaitingFor(WaitingForStartFlow)
+        )
+
         return context
     }
 }

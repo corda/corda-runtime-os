@@ -1,14 +1,19 @@
 package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.flow.fiber.FlowIORequest
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
-import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * [FlowEventPipeline] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
  */
 interface FlowEventPipeline {
+
+    /**
+     * The current pipeline processing context
+     */
+    val context: FlowEventContext<Any>
 
     /**
      * Performs flow event pre-processing on the pipeline.
@@ -51,11 +56,4 @@ interface FlowEventPipeline {
      * @return The updated pipeline instance.
      */
     fun globalPostProcessing(): FlowEventPipeline
-
-    /**
-     * Extracts the pipelines [Checkpoint] and output events and returns them.
-     *
-     * @return A [StateAndEventProcessor.Response] containing the updated [Checkpoint] and events to send to the message bus.
-     */
-    fun toStateAndEventResponse(): StateAndEventProcessor.Response<Checkpoint>
 }
