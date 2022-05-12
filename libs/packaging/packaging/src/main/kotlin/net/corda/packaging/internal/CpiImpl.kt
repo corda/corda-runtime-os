@@ -8,7 +8,7 @@ import java.util.Collections
 import java.util.NavigableMap
 import java.util.TreeMap
 
-data class CpiIdentifierImpl(
+internal data class CpiIdentifierImpl(
     override val name: String,
     override val version: String,
     override val signerSummaryHash: SecureHash?

@@ -8,7 +8,7 @@ import java.io.InputStream
  * to a method that closes the stream before it has been fully consumed
  * (and whose remaining content is still needed by the caller)
  */
-class UncloseableInputStream(source : InputStream) : FilterInputStream(source) {
+internal class UncloseableInputStream(source : InputStream) : FilterInputStream(source) {
     override fun close() {}
 }
 

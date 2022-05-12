@@ -7,7 +7,7 @@ import java.io.OutputStream
 /**
  * [InputStream] that also writes its content to the provided [OutputStream] while reading
  */
-class TeeInputStream(inputStream : InputStream, private val destination : OutputStream): FilterInputStream(inputStream) {
+internal class TeeInputStream(inputStream : InputStream, private val destination : OutputStream): FilterInputStream(inputStream) {
     var written = 0
     override fun read(): Int {
         return super.read().also {
