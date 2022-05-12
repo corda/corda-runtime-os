@@ -1,52 +1,90 @@
 package net.corda.uniqueness.checker.impl
 
+import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.uniqueness.*
+import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.uniqueness.UniquenessAssertions.assertInputStateConflictResponse
+import net.corda.uniqueness.UniquenessAssertions.assertReferenceStateConflictResponse
+import net.corda.uniqueness.UniquenessAssertions.assertStandardSuccessResponse
+import net.corda.uniqueness.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
+import net.corda.uniqueness.UniquenessAssertions.assertUniqueCommitTimestamps
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.v5.crypto.SecureHash
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.containsInAnyOrder
-import org.hamcrest.Matchers.hasSize
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
-import java.security.MessageDigest
-import java.time.Clock
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.*
 import java.util.*
 
+/**
+ * Tests for uniqueness checker implementations. Currently, this is hard-coded to use the in-memory
+ * uniqueness checker. At some point in future this will be enhanced to support different
+ * implementations.
+ */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplTests {
 
-    /*
-     * Specific clock values are important to our testing in some cases, so we use a custom clock
-     * which starts at a known point in time (baseTime) and will increment its current time
-     * (currentTime) by one second on each call. The currentTime variable can also be manipulated
-     * by tests directly to change this between calls (e.g. to manipulate time window behavior)
-     */
     private val baseTime = Instant.EPOCH
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
-    private lateinit var currentTime: Instant
 
-    private val testClock = mock<Clock>().apply {
-        whenever(instant()).doAnswer {
-            currentTime = currentTime.plusSeconds(1); currentTime }
-    }
+    private lateinit var timeFacilitiesProvider: MockTimeFacilitiesProvider
 
     private lateinit var uniquenessChecker: UniquenessChecker
 
+    private fun currentTime() : Instant = timeFacilitiesProvider.getCurrentTime()
+
+    private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
+    : UniquenessCheckRequest.Builder =
+        UniquenessCheckRequest.newBuilder(UniquenessCheckRequest(
+            txId.toString(),
+            emptyList(),
+            emptyList(),
+            0,
+            null,
+            defaultTimeWindowUpperBound))
+
+    private fun processRequests(vararg requests: UniquenessCheckRequest) =
+        uniquenessChecker.processRequests(requests.asList())
+
+    private fun generateUnspentStates(numOutputStates: Int) : List<String> {
+        val issueTxId = randomSecureHash()
+        val unspentStateRefs = LinkedList<String>()
+
+        repeat(numOutputStates) {
+            unspentStateRefs.push("${issueTxId}:${it}")
+        }
+
+        processRequests(
+            newRequestBuilder(issueTxId)
+                .setNumOutputStates(numOutputStates)
+                .build()
+        ).let { responses ->
+            assertAll(
+                { assertThat(responses).hasSize(1) },
+                { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+            )
+        }
+
+        return unspentStateRefs
+    }
+
     @BeforeEach
     fun init() {
-        currentTime = baseTime
-        uniquenessChecker = InMemoryUniquenessCheckerImpl(mock(), testClock)
+        /*
+         * Specific clock values are important to our testing in some cases, so we use a mock time
+         * facilities service  which provides a clock starting at a known point in time (baseTime)
+         * and will increment its current time by one second on each call. The current time can also
+         * be  manipulated by tests directly via [MockTimeFacilities.advanceTime] to change this
+         * between calls (e.g. to manipulate time window behavior)
+         */
+        timeFacilitiesProvider = MockTimeFacilitiesProvider(baseTime, Duration.ofSeconds(1))
+        uniquenessChecker = InMemoryUniquenessCheckerImpl(mock(), timeFacilitiesProvider.mockClock)
     }
 
     @Nested
@@ -54,11 +92,13 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Single tx and single state spend is successful`() {
             processRequests(
-                newRequest().withInputStates(generateUnspentStates(1))
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
         }
@@ -67,27 +107,31 @@ class UniquenessCheckerImplTests {
         fun `Single tx and multiple state spends is successful`() {
 
             processRequests(
-                newRequest().withInputStates(generateUnspentStates(7))
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(7))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
         }
 
         @Test
         fun `Single tx and single input state spend retried in same batch is successful`() {
-            val request = newRequest().withInputStates(generateUnspentStates(1))
+            val request = newRequestBuilder()
+                .setInputStates(generateUnspentStates(1))
+                .build()
 
             processRequests(
                 request,
                 request
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
@@ -96,15 +140,18 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Single tx and single input state spend retried in different batch is successful`() {
-            val request = newRequest().withInputStates(generateUnspentStates(1))
+            val request = newRequestBuilder()
+                .setInputStates(generateUnspentStates(1))
+                .build()
+
             var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(
                 request
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
                 initialResponse = responses[0]
             }
@@ -113,8 +160,8 @@ class UniquenessCheckerImplTests {
                 request
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -123,17 +170,19 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Multiple txs spending single different input states in same batch is successful`() {
-            val requests = List(5) { newRequest()
-                .withInputStates(generateUnspentStates(1)) }
+            val requests = List(5) {
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .build() }
 
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(5)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
-                    { assertStandardSuccessResponse(responses[2]) },
-                    { assertStandardSuccessResponse(responses[3]) },
-                    { assertStandardSuccessResponse(responses[4]) },
+                    { assertThat(responses).hasSize(5) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[2], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[3], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[4], timeFacilitiesProvider) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
                     { assertIterableEquals(requests.map { it.txId }, responses.map{ it.txId }) },
@@ -144,15 +193,17 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Multiple txs spending single different input states in different batches is successful`() {
-            val requests = List(5) { newRequest()
-                .withInputStates(generateUnspentStates(1)) }
+            val requests = List(5) { newRequestBuilder()
+                .setInputStates(generateUnspentStates(1))
+                .build() }
+
             val allResponses = LinkedList<UniquenessCheckResponse>()
 
             repeat(5) { count ->
                 processRequests(requests[count]).also { responses ->
                     assertAll(
-                        { assertThat(responses, hasSize(1)) },
-                        { assertStandardSuccessResponse(responses[0]) },
+                        { assertThat(responses).hasSize(1) },
+                        { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                         { assertEquals(requests[count].txId, responses[0].txId) },
                      )
                 }.also { responses ->
@@ -166,17 +217,23 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Multiple txs spending multiple different input states in same batch is successful`() {
             val requests = listOf(
-                newRequest().withInputStates(generateUnspentStates(7)),
-                newRequest().withInputStates(generateUnspentStates(3)),
-                newRequest().withInputStates(generateUnspentStates(1))
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(7))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(3))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .build()
             )
 
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(3)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
-                    { assertStandardSuccessResponse(responses[2]) },
+                    { assertThat(responses).hasSize(3) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[2], timeFacilitiesProvider) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
                     { assertIterableEquals(requests.map { it.txId }, responses.map{ it.txId }) },
@@ -188,9 +245,15 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Multiple txs spending multiple different input states in different batches is successful`() {
             val requests = listOf(
-                newRequest().withInputStates(generateUnspentStates(7)),
-                newRequest().withInputStates(generateUnspentStates(3)),
-                newRequest().withInputStates(generateUnspentStates(1))
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(7))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(3))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .build()
             )
 
             val allResponses = LinkedList<UniquenessCheckResponse>()
@@ -198,8 +261,8 @@ class UniquenessCheckerImplTests {
             repeat(3) { count ->
                 processRequests(requests[count]).also { responses ->
                     assertAll(
-                        { assertThat(responses, hasSize(1)) },
-                        { assertStandardSuccessResponse(responses[0]) },
+                        { assertThat(responses).hasSize(1) },
+                        { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                         { assertEquals(requests[count].txId, responses[0].txId) },
                     )
                 }.also { responses ->
@@ -216,12 +279,16 @@ class UniquenessCheckerImplTests {
             val sharedState = generateUnspentStates(1)
 
             processRequests(
-                newRequest().withInputStates(sharedState),
-                newRequest().withInputStates(sharedState)
+                newRequestBuilder()
+                    .setInputStates(sharedState)
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(sharedState)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     { assertInputStateConflictResponse(responses[1], listOf(sharedState.single()))}
                 )
             }
@@ -232,19 +299,23 @@ class UniquenessCheckerImplTests {
             val sharedState = generateUnspentStates(1)
 
             processRequests(
-                newRequest().withInputStates(sharedState)
+                newRequestBuilder()
+                    .setInputStates(sharedState)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
             processRequests(
-                newRequest().withInputStates(sharedState)
+                newRequestBuilder()
+                    .setInputStates(sharedState)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertInputStateConflictResponse(responses[0], listOf(sharedState.single()))}
                 )
             }
@@ -255,24 +326,27 @@ class UniquenessCheckerImplTests {
             val sharedState = List(3) { generateUnspentStates(1).single() }
 
             processRequests(
-                newRequest().withInputStates(listOf(
-                    sharedState[0],
-                    sharedState[1],
-                    generateUnspentStates(1).single()
-                )),
-                newRequest().withInputStates(listOf(
-                    sharedState[0],
-                    sharedState[2]
-                )),
-                newRequest().withInputStates(listOf(
-                    sharedState[2],
-                    sharedState[1],
-                    sharedState[0]
-                ))
+                newRequestBuilder()
+                    .setInputStates(listOf(
+                        sharedState[0],
+                        sharedState[1],
+                        generateUnspentStates(1).single()))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf(
+                        sharedState[0],
+                        sharedState[2]))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf(
+                        sharedState[2],
+                        sharedState[1],
+                        sharedState[0]))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(3)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(3) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     { assertInputStateConflictResponse(responses[1], listOf(sharedState[0]))},
                     { assertInputStateConflictResponse(responses[2],
                         listOf(sharedState[0], sharedState[1]))}
@@ -285,39 +359,42 @@ class UniquenessCheckerImplTests {
             val sharedState = List(3) { generateUnspentStates(1).single() }
 
             processRequests(
-                newRequest().withInputStates(listOf(
-                    sharedState[0],
-                    sharedState[1],
-                    generateUnspentStates(1).single()
-                ))
+                newRequestBuilder()
+                    .setInputStates(listOf(
+                        sharedState[0],
+                        sharedState[1],
+                        generateUnspentStates(1).single()))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
             processRequests(
-                newRequest().withInputStates(listOf(
-                    sharedState[0],
-                    sharedState[2]
-                ))
+                newRequestBuilder()
+                    .setInputStates(listOf(
+                        sharedState[0],
+                        sharedState[2]))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertInputStateConflictResponse(responses[0], listOf(sharedState[0]))}
                 )
             }
 
             processRequests(
-                newRequest().withInputStates(listOf(
-                    sharedState[2],
-                    sharedState[1],
-                    sharedState[0]
-                ))
+                newRequestBuilder()
+                    .setInputStates(listOf(
+                        sharedState[2],
+                        sharedState[1],
+                        sharedState[0]))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertInputStateConflictResponse(responses[0],
                         listOf(sharedState[0], sharedState[1]))}
                 )
@@ -330,27 +407,31 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Single tx, no input states, single ref state is successful`() {
             processRequests(
-                newRequest().withReferenceStates(generateUnspentStates(1))
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(1))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
         }
 
         @Test
         fun `Single tx, no input states, single ref state retried in same batch is successful`() {
-            val request = newRequest().withReferenceStates(generateUnspentStates(1))
+            val request = newRequestBuilder()
+                .setReferenceStates(generateUnspentStates(1))
+                .build()
 
             processRequests(
                 request,
                 request
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
@@ -360,14 +441,16 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Single tx, no input states, single ref state retried in different batch is successful`() {
-            val request = newRequest().withReferenceStates(generateUnspentStates(1))
+            val request = newRequestBuilder()
+                .setReferenceStates(generateUnspentStates(1))
+                .build()
 
             var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
 
                 initialResponse = responses[0]
@@ -375,8 +458,8 @@ class UniquenessCheckerImplTests {
 
             processRequests(request).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -388,13 +471,17 @@ class UniquenessCheckerImplTests {
             val sharedState = generateUnspentStates(1)
 
             processRequests(
-                newRequest().withReferenceStates(sharedState),
-                newRequest().withReferenceStates(sharedState)
+                newRequestBuilder()
+                    .setReferenceStates(sharedState)
+                    .build(),
+                newRequestBuilder()
+                    .setReferenceStates(sharedState)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -407,22 +494,26 @@ class UniquenessCheckerImplTests {
             val allResponses = LinkedList<UniquenessCheckResponse>()
 
             processRequests(
-                newRequest().withReferenceStates(sharedState)
+                newRequestBuilder()
+                    .setReferenceStates(sharedState)
+                    .build()
             ).also { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
             }
 
             processRequests(
-                newRequest().withReferenceStates(sharedState)
+                newRequestBuilder()
+                    .setReferenceStates(sharedState)
+                    .build()
             ).also { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -434,15 +525,21 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Multiple txs, no input states, multiple distinct ref states in same batch is successful`() {
             processRequests(
-                newRequest().withReferenceStates(generateUnspentStates(3)),
-                newRequest().withReferenceStates(generateUnspentStates(1)),
-                newRequest().withReferenceStates(generateUnspentStates(6))
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(3))
+                    .build(),
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(1))
+                    .build(),
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(6))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(3)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
-                    { assertStandardSuccessResponse(responses[2]) },
+                    { assertThat(responses).hasSize(3) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[2], timeFacilitiesProvider) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -453,11 +550,13 @@ class UniquenessCheckerImplTests {
             val allResponses = LinkedList<UniquenessCheckResponse>()
 
             processRequests(
-                newRequest().withReferenceStates(generateUnspentStates(3))
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(3))
+                    .build()
             ).also { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -465,11 +564,13 @@ class UniquenessCheckerImplTests {
 
 
             processRequests(
-                newRequest().withReferenceStates(generateUnspentStates(1))
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(1))
+                    .build()
             ).also { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -477,11 +578,13 @@ class UniquenessCheckerImplTests {
 
 
             processRequests(
-                 newRequest().withReferenceStates(generateUnspentStates(6)),
+                newRequestBuilder()
+                    .setReferenceStates(generateUnspentStates(6))
+                    .build()
             ).also { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -493,13 +596,14 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Single tx with single input state, single ref state is successful`() {
             processRequests(
-                newRequest()
-                    .withInputStates(generateUnspentStates(1))
-                    .withReferenceStates(generateUnspentStates(1))
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .setReferenceStates(generateUnspentStates(1))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
         }
@@ -509,13 +613,14 @@ class UniquenessCheckerImplTests {
             val state = generateUnspentStates(1)
 
             processRequests(
-                newRequest()
-                    .withInputStates(state)
-                    .withReferenceStates(state)
+                newRequestBuilder()
+                    .setInputStates(state)
+                    .setReferenceStates(state)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
         }
@@ -525,21 +630,24 @@ class UniquenessCheckerImplTests {
             val spentState = generateUnspentStates(1)
 
             processRequests(
-                newRequest().withInputStates(spentState)
+                newRequestBuilder()
+                    .setInputStates(spentState)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
             processRequests(
-                newRequest()
-                    .withInputStates(generateUnspentStates(1))
-                    .withReferenceStates(spentState)
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .setReferenceStates(spentState)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertReferenceStateConflictResponse(responses[0], spentState) }
                 )
             }
@@ -548,32 +656,35 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Single tx with single ref state replayed after ref state spent is successful`() {
             val state1 = generateUnspentStates(1)
-            val replayableRequest = newRequest().withReferenceStates(state1)
+            val replayableRequest = newRequestBuilder()
+                .setReferenceStates(state1)
+                .build()
 
             var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
                 initialResponse = responses[0]
             }
 
             processRequests(
-                newRequest()
-                    .withInputStates(state1)
+                newRequestBuilder()
+                    .setInputStates(state1)
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -585,16 +696,18 @@ class UniquenessCheckerImplTests {
             val states = List(2) { generateUnspentStates(1) }
 
             processRequests(
-                newRequest()
-                    .withInputStates(states[0])
-                    .withReferenceStates(states[1]),
-                newRequest()
-                    .withInputStates(states[1])
-                    .withReferenceStates(states[0])
+                newRequestBuilder()
+                    .setInputStates(states[0])
+                    .setReferenceStates(states[1])
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(states[1])
+                    .setReferenceStates(states[0])
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     { assertReferenceStateConflictResponse(responses[1], states[0])}
                 )
             }
@@ -605,23 +718,25 @@ class UniquenessCheckerImplTests {
             val states = List(2) { generateUnspentStates(1) }
 
             processRequests(
-                newRequest()
-                    .withInputStates(states[0])
-                    .withReferenceStates(states[1])
+                newRequestBuilder()
+                    .setInputStates(states[0])
+                    .setReferenceStates(states[1])
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
             processRequests(
-                newRequest()
-                    .withInputStates(states[1])
-                    .withReferenceStates(states[0])
+                newRequestBuilder()
+                    .setInputStates(states[1])
+                    .setReferenceStates(states[0])
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertReferenceStateConflictResponse(responses[0], states[0])}
                 )
             }
@@ -632,39 +747,43 @@ class UniquenessCheckerImplTests {
     inner class TimeWindows {
         @Test
         fun `Tx processed within time window bounds is successful`() {
-            processRequests(newRequest()
-                .withTimeWindowLowerBound(currentTime.minusSeconds(10))
-                .withTimeWindowUpperBound(currentTime.plusSeconds(10))
+            processRequests(
+                newRequestBuilder()
+                    .setTimeWindowLowerBound(currentTime().minusSeconds(10))
+                    .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                    .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
         }
 
         @Test
         fun `Tx processed within time window bounds and retried outside of bounds is successful`() {
-            val request = newRequest()
-                .withTimeWindowLowerBound(currentTime.minusSeconds(10))
-                .withTimeWindowUpperBound(currentTime.plusSeconds(10))
+            val request = newRequestBuilder()
+                .setTimeWindowLowerBound(currentTime().minusSeconds(10))
+                .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                .build()
+
             var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
                 initialResponse = responses[0]
             }
 
             // Move clock past window
-            currentTime = currentTime.plusSeconds(100)
+            timeFacilitiesProvider.advanceTime(Duration.ofSeconds(100))
 
             processRequests(request).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -673,40 +792,51 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Tx processed before time window lower bound fails`() {
-            val lowerBound = currentTime.plusSeconds(10)
+            val lowerBound = currentTime().plusSeconds(10)
 
-            processRequests(newRequest().withTimeWindowLowerBound(lowerBound)).let { responses ->
+            processRequests(newRequestBuilder()
+                .setTimeWindowLowerBound(lowerBound)
+                .build()
+            ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertTimeWindowOutOfBoundsResponse(
-                        responses[0], expectedLowerBound = lowerBound) }
+                        responses[0],
+                        expectedLowerBound = lowerBound,
+                        expectedUpperBound = defaultTimeWindowUpperBound) }
                 )
             }
         }
 
         @Test
         fun `Tx processed before time window lower bound and retried after lower bound fails`() {
-            val lowerBound = currentTime.plusSeconds(10)
-            val request = newRequest().withTimeWindowLowerBound(lowerBound)
+            val lowerBound = currentTime().plusSeconds(10)
+            val request = newRequestBuilder()
+                .setTimeWindowLowerBound(lowerBound)
+                .build()
             var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertTimeWindowOutOfBoundsResponse(
-                        responses[0], expectedLowerBound = lowerBound) }
+                        responses[0],
+                        expectedLowerBound = lowerBound,
+                        expectedUpperBound = defaultTimeWindowUpperBound) }
                 )
                 initialResponse = responses[0]
             }
 
             // Tick up clock and retry
-            currentTime = currentTime.plusSeconds(100)
+            timeFacilitiesProvider.advanceTime(Duration.ofSeconds(100))
 
             processRequests(request).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertTimeWindowOutOfBoundsResponse(
-                        responses[0], expectedLowerBound = lowerBound) },
+                        responses[0],
+                        expectedLowerBound = lowerBound,
+                        expectedUpperBound = defaultTimeWindowUpperBound) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -716,11 +846,14 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Tx processed after time window upper bound fails`() {
-            val upperBound = currentTime.minusSeconds(10)
+            val upperBound = currentTime().minusSeconds(10)
 
-            processRequests(newRequest().withTimeWindowUpperBound(upperBound)).let { responses ->
+            processRequests(newRequestBuilder()
+                .setTimeWindowUpperBound(upperBound)
+                .build()
+            ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertTimeWindowOutOfBoundsResponse(
                         responses[0], expectedUpperBound = upperBound) }
                 )
@@ -743,21 +876,24 @@ class UniquenessCheckerImplTests {
             // Initial tx to spend an input and reference state
             val states = List(2) { generateUnspentStates(1).single() }
 
-            processRequests(newRequest().withInputStates(states))
-                .let { responses ->
+            processRequests( newRequestBuilder()
+                .setInputStates(states)
+                .build()
+            ).let { responses ->
                     assertAll(
-                        { assertThat(responses, hasSize(1)) },
-                        { assertStandardSuccessResponse(responses[0]) }
+                        { assertThat(responses).hasSize(1) },
+                        { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
-            processRequests(newRequest()
-                .withInputStates(listOf(states[0]))
-                .withReferenceStates(listOf(states[1]))
-                .withTimeWindowLowerBound(currentTime.plusSeconds(10))
+            processRequests(newRequestBuilder()
+                .setInputStates(listOf(states[0]))
+                .setReferenceStates(listOf(states[1]))
+                .setTimeWindowLowerBound(currentTime().plusSeconds(10))
+                .build()
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertInputStateConflictResponse(responses[0], listOf(states[0])) }
                 )
             }
@@ -768,20 +904,24 @@ class UniquenessCheckerImplTests {
             // Initial tx to spend a reference state
             val state = generateUnspentStates(1)
 
-            processRequests(newRequest().withInputStates(state)).let { responses ->
+            processRequests(newRequestBuilder()
+                .setInputStates(state)
+                .build()
+            ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
-                    { assertStandardSuccessResponse(responses[0]) }
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
                 )
             }
 
-            processRequests(newRequest()
-                .withInputStates(generateUnspentStates(1))
-                .withReferenceStates(state)
-                .withTimeWindowLowerBound(currentTime.plusSeconds(10))
-            ).let { responses ->
+             processRequests(newRequestBuilder()
+                .setInputStates(generateUnspentStates(1))
+                .setReferenceStates(state)
+                .setTimeWindowLowerBound(currentTime().plusSeconds(10))
+                .build()
+                    ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(1)) },
+                    { assertThat(responses).hasSize(1) },
                     { assertReferenceStateConflictResponse(responses[0], state) }
                 )
             }
@@ -792,32 +932,38 @@ class UniquenessCheckerImplTests {
             val priorSpentStates = List(2) { generateUnspentStates(1).single() }
 
             uniquenessChecker.processRequests(
-                priorSpentStates.map { newRequest().withInputStates(listOf(it)) }).let { responses ->
+                priorSpentStates.map { newRequestBuilder()
+                    .setInputStates(listOf(it))
+                    .build()}
+            ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
-                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
 
-            val retryableSuccessfulRequest = newRequest()
-                .withInputStates(generateUnspentStates(100))
-                .withReferenceStates(generateUnspentStates(20))
-                .withTimeWindowLowerBound(currentTime)
-                .withTimeWindowUpperBound(currentTime.plusSeconds(100))
-            val retryableFailedRequest = newRequest()
-                .withInputStates(generateUnspentStates(1))
-                .withReferenceStates(
+            val retryableSuccessfulRequest = newRequestBuilder()
+                .setInputStates(generateUnspentStates(100))
+                .setReferenceStates(generateUnspentStates(20))
+                .setTimeWindowLowerBound(currentTime())
+                .setTimeWindowUpperBound(currentTime().plusSeconds(100))
+                .build()
+
+            val retryableFailedRequest = newRequestBuilder()
+                .setInputStates(generateUnspentStates(1))
+                .setReferenceStates(
                     generateUnspentStates(10) + priorSpentStates[0])
+                .build()
 
             var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponse? = null
             var initialRetryableFailedRequestResponse: UniquenessCheckResponse? = null
 
             processRequests(retryableSuccessfulRequest, retryableFailedRequest).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(2)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     { assertReferenceStateConflictResponse(
                         responses[1], listOf(priorSpentStates[0])) }
                 )
@@ -827,44 +973,50 @@ class UniquenessCheckerImplTests {
 
             val doubleSpendAttemptStates = generateUnspentStates(3)
 
-            val timeWindowUpperBound = currentTime.plusSeconds(1)
+            val timeWindowUpperBound = currentTime().plusSeconds(1)
 
             processRequests(
-                newRequest()
-                    .withInputStates(listOf(
+                newRequestBuilder()
+                    .setInputStates(listOf(
                         generateUnspentStates(1).single(),
                         doubleSpendAttemptStates[0],
                         doubleSpendAttemptStates[1],
                         doubleSpendAttemptStates[2]
                     ))
-                    .withTimeWindowLowerBound(currentTime),
-                newRequest()
-                    .withInputStates(listOf(
+                    .setTimeWindowLowerBound(currentTime())
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf(
                         generateUnspentStates(1).single(),
                         doubleSpendAttemptStates[0],
                         doubleSpendAttemptStates[1]
                     ))
-                    .withReferenceStates(
-                        listOf(doubleSpendAttemptStates[2])),
-                newRequest()
-                    .withReferenceStates(
-                        listOf(doubleSpendAttemptStates[2])),
-                newRequest()
-                    .withInputStates(
+                    .setReferenceStates(
+                        listOf(doubleSpendAttemptStates[2]))
+                    .build(),
+                newRequestBuilder()
+                    .setReferenceStates(
+                        listOf(doubleSpendAttemptStates[2]))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(
                         generateUnspentStates(10) +
                         priorSpentStates[0] +
-                        priorSpentStates[1]
-                    ),
+                        priorSpentStates[1])
+                    .build(),
                 retryableFailedRequest,
                 retryableSuccessfulRequest,
-                newRequest().withTimeWindowUpperBound(timeWindowUpperBound),
-                *Array(3) { newRequest()
-                    .withInputStates(generateUnspentStates(3))
-                    .withReferenceStates(generateUnspentStates(4)) }
+                newRequestBuilder()
+                    .setTimeWindowUpperBound(timeWindowUpperBound)
+                    .build(),
+                *Array(3) { newRequestBuilder()
+                    .setInputStates(generateUnspentStates(3))
+                    .setReferenceStates(generateUnspentStates(4))
+                    .build()}
             ).let { responses ->
                 assertAll(
-                    { assertThat(responses, hasSize(10)) },
-                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertThat(responses).hasSize(10) },
+                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
                     { assertInputStateConflictResponse(responses[1],
                         listOf(doubleSpendAttemptStates[0], doubleSpendAttemptStates[1])) },
                     { assertReferenceStateConflictResponse(responses[2],
@@ -875,9 +1027,9 @@ class UniquenessCheckerImplTests {
                     { assertEquals(initialRetryableSuccessfulRequestResponse, responses[5]) },
                     { assertTimeWindowOutOfBoundsResponse(
                         responses[6], expectedUpperBound = timeWindowUpperBound) },
-                    { assertStandardSuccessResponse(responses[7]) },
-                    { assertStandardSuccessResponse(responses[8]) },
-                    { assertStandardSuccessResponse(responses[9]) },
+                    { assertStandardSuccessResponse(responses[7], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[8], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[9], timeFacilitiesProvider) },
                     { assertUniqueCommitTimestamps(responses.filter {
                         it.result is UniquenessCheckResultSuccess
                     }) }
@@ -885,105 +1037,4 @@ class UniquenessCheckerImplTests {
             }
         }
     }
-
-    private fun processRequests(vararg requests: UniquenessCheckRequest) =
-        uniquenessChecker.processRequests(requests.asList())
-
-    private fun generateUnspentStates(numOutputStates: Int) : List<String> {
-        val issueTxId = randomSecureHash()
-        val unspentStateRefs = LinkedList<String>()
-
-        repeat(numOutputStates) {
-            unspentStateRefs.push("${issueTxId}:${it}")
-        }
-
-        processRequests(
-            newRequest(issueTxId).withNumOutputStates(numOutputStates)
-        ).let { responses ->
-            assertAll(
-                { assertThat(responses, hasSize(1)) },
-                { assertStandardSuccessResponse(responses[0]) }
-            )
-        }
-
-        return unspentStateRefs
-    }
-
-    private fun newRequest(txId: SecureHash = randomSecureHash()) = UniquenessCheckRequest(
-        txId.toString(),
-        emptyList(),
-        emptyList(),
-        0,
-        null,
-        defaultTimeWindowUpperBound)
-
-    private fun UniquenessCheckRequest.withInputStates(inputStates: List<String>) =
-        UniquenessCheckRequest.newBuilder(this).setInputStates(inputStates).build()
-
-    private fun UniquenessCheckRequest.withReferenceStates(referenceStates: List<String>) =
-        UniquenessCheckRequest.newBuilder(this).setReferenceStates(referenceStates).build()
-
-    private fun UniquenessCheckRequest.withNumOutputStates(number: Int) =
-        UniquenessCheckRequest.newBuilder(this).setNumOutputStates(number).build()
-
-    private fun UniquenessCheckRequest.withTimeWindowLowerBound(time: Instant) =
-        UniquenessCheckRequest.newBuilder(this).setTimeWindowLowerBound(time).build()
-
-    private fun UniquenessCheckRequest.withTimeWindowUpperBound(time: Instant) =
-        UniquenessCheckRequest.newBuilder(this).setTimeWindowUpperBound(time).build()
-
-    // TODO: Copied from sandbox internal, should move to common test utils?
-    private fun randomSecureHash(): SecureHash {
-        val allowedChars = '0'..'9'
-        val randomBytes = (1..16).map { allowedChars.random() }.joinToString("").toByteArray()
-        val digest = MessageDigest.getInstance("SHA-256")
-        return SecureHash(digest.algorithm, digest.digest(randomBytes))
-    }
-
-    private fun<T> UniquenessCheckResponse.getResultOfType(expectedType: Class<T>) : T {
-        assertInstanceOf(expectedType, this.result)
-        @Suppress("UNCHECKED_CAST")
-        return this.result as T
-    }
-
-    private fun assertStandardSuccessResponse(response: UniquenessCheckResponse) =
-        response.getResultOfType(UniquenessCheckResultSuccess::class.java).run {
-            assert(isWithinClockTimeRange(commitTimestamp))
-        }
-
-    private fun assertInputStateConflictResponse(
-        response: UniquenessCheckResponse,
-        expectedConflictingStates: List<String>) {
-        response.getResultOfType(UniquenessCheckResultInputStateConflict::class.java).run {
-            assertThat(conflictingStates, containsInAnyOrder(*expectedConflictingStates.toTypedArray()))
-        }
-    }
-
-    private fun assertReferenceStateConflictResponse(
-        response: UniquenessCheckResponse,
-        expectedConflictingStates: List<String>) {
-        response.getResultOfType(UniquenessCheckResultReferenceStateConflict::class.java).run {
-            assertThat(conflictingStates, containsInAnyOrder(*expectedConflictingStates.toTypedArray()))
-        }
-    }
-
-    private fun assertTimeWindowOutOfBoundsResponse(
-        response: UniquenessCheckResponse,
-        expectedLowerBound: Instant? = null,
-        expectedUpperBound: Instant? = defaultTimeWindowUpperBound) {
-        response.getResultOfType(UniquenessCheckResultTimeWindowOutOfBounds::class.java).run {
-            assertAll(
-                { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
-                { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
-            )
-        }
-    }
-
-    private fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponse>) {
-        assertEquals(responses.size, responses.distinctBy {
-            (it.result as UniquenessCheckResultSuccess).commitTimestamp }.size)
-    }
-
-    private fun isWithinClockTimeRange(time: Instant) =
-        !time.isBefore(baseTime) && !time.isAfter(currentTime)
 }

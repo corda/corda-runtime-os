@@ -13,6 +13,12 @@ import org.slf4j.Logger
 import java.time.Clock
 import java.time.Instant
 
+/**
+ * An in-memory implementation of the uniqueness checker component, which does not persist any data,
+ * and therefore loses any history of previous requests when a class instance is destroyed.
+ *
+ * Intended for testing purposes only - DO NOT USE ON A REAL SYSTEM
+ */
 @Component(service = [UniquenessChecker::class])
 class InMemoryUniquenessCheckerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -49,6 +55,7 @@ class InMemoryUniquenessCheckerImpl(
         lifecycleCoordinator.stop()
     }
 
+    @Synchronized
     override fun processRequests(
         requests: List<UniquenessCheckRequest>
     ) : List<UniquenessCheckResponse> {
@@ -115,11 +122,11 @@ class InMemoryUniquenessCheckerImpl(
                                 request.timeWindowUpperBound)
                         )
                     } else {
-                        // Unspent states
+                        // Write unspent states
                         repeat(request.numOutputStates) {
                             stateCache["${request.txId}:${it}"] = null
                         }
-                        // Spent states - overwrites any earlier entries for unspent states
+                        // Write spent states - overwrites any earlier entries for unspent states
                         stateCache.putAll(request.inputStates.associateWith { request.txId })
                         UniquenessCheckResponse(
                             request.txId,
