@@ -11,6 +11,7 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SECRETS_PASSPHRASE
 import net.corda.schema.configuration.ConfigKeys.SECRETS_SALT
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class CryptoWorkerTests {
@@ -48,6 +49,10 @@ class CryptoWorkerTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
+
+        assertTrue(config.hasPath("dir"))
+        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("topic"))
     }
 
     @Test
@@ -90,5 +95,9 @@ class CryptoWorkerTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
+
+        assertTrue(config.hasPath("dir"))
+        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("topic"))
     }
 }
