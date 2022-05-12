@@ -2,9 +2,9 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ChainWrapping:net.corda.packaging.internal.CpkLoader.kt:179</ID>
-    <ID>ChainWrapping:net.corda.packaging.internal.CpkLoader.kt:186</ID>
-    <ID>ChainWrapping:net.corda.packaging.internal.CpkLoader.kt:483</ID>
+    <ID>ChainWrapping:net.corda.packaging.internal.CpkLoader.kt:177</ID>
+    <ID>ChainWrapping:net.corda.packaging.internal.CpkLoader.kt:184</ID>
+    <ID>ChainWrapping:net.corda.packaging.internal.CpkLoader.kt:481</ID>
     <ID>CommentSpacing:net.corda.packaging.VersionComparator.kt:155</ID>
     <ID>CommentSpacing:net.corda.packaging.VersionComparator.kt:239</ID>
     <ID>CommentSpacing:net.corda.packaging.internal.CpkDependencyResolver.kt:25</ID>
@@ -12,14 +12,14 @@
     <ID>FinalNewline:net.corda.packaging.CordappManifestTests.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.Exceptions.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.ManifestCordappInfo.kt:1</ID>
-    <ID>FinalNewline:net.corda.packaging.SigningParameters.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.internal.CpiImplTest.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.internal.CpkDependencyResolver.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.internal.CpkImplTest.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.internal.SignatureCollector.kt:1</ID>
+    <ID>FinalNewline:net.corda.packaging.internal.TeeInputStream.kt:1</ID>
     <ID>FinalNewline:net.corda.packaging.internal.Utils.kt:1</ID>
-    <ID>FinalNewline:net.corda.packaging.util.TeeInputStream.kt:1</ID>
-    <ID>FinalNewline:net.corda.packaging.util.ZipTweaker.kt:1</ID>
+    <ID>FinalNewline:net.corda.packaging.internal.ZipTweaker.kt:1</ID>
+    <ID>ImportOrdering:net.corda.packaging.CPKTests.kt:3</ID>
     <ID>ImportOrdering:net.corda.packaging.internal.CpkImpl.kt:3</ID>
     <ID>ImportOrdering:net.corda.packaging.internal.CpkLoader.kt:3</ID>
     <ID>Indentation:net.corda.packaging.CordappManifest.kt:10</ID>
@@ -60,9 +60,9 @@
     <ID>Indentation:net.corda.packaging.CordappManifestTests.kt:33</ID>
     <ID>Indentation:net.corda.packaging.CordappManifestTests.kt:34</ID>
     <ID>Indentation:net.corda.packaging.CordappManifestTests.kt:35</ID>
+    <ID>Indentation:net.corda.packaging.Cpi.kt:129</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:130</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:131</ID>
-    <ID>Indentation:net.corda.packaging.Cpi.kt:132</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:36</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:37</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:38</ID>
@@ -75,7 +75,6 @@
     <ID>Indentation:net.corda.packaging.Cpi.kt:71</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:72</ID>
     <ID>Indentation:net.corda.packaging.Cpi.kt:73</ID>
-    <ID>Indentation:net.corda.packaging.Cpi.kt:74</ID>
     <ID>Indentation:net.corda.packaging.Cpk.kt:159</ID>
     <ID>Indentation:net.corda.packaging.Cpk.kt:160</ID>
     <ID>Indentation:net.corda.packaging.Cpk.kt:161</ID>
@@ -96,14 +95,6 @@
     <ID>Indentation:net.corda.packaging.ManifestCordappInfo.kt:6</ID>
     <ID>Indentation:net.corda.packaging.ManifestCordappInfo.kt:7</ID>
     <ID>Indentation:net.corda.packaging.ManifestCordappInfo.kt:8</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:20</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:21</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:22</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:32</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:34</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:37</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:38</ID>
-    <ID>Indentation:net.corda.packaging.SigningParameters.kt:39</ID>
     <ID>Indentation:net.corda.packaging.TestUtils.kt:16</ID>
     <ID>Indentation:net.corda.packaging.TestUtils.kt:18</ID>
     <ID>Indentation:net.corda.packaging.TestUtils.kt:26</ID>
@@ -138,17 +129,16 @@
     <ID>Indentation:net.corda.packaging.TestUtils.kt:56</ID>
     <ID>Indentation:net.corda.packaging.TestUtils.kt:58</ID>
     <ID>Indentation:net.corda.packaging.TestUtils.kt:59</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:25</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:26</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:27</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:28</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:29</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:30</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:31</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:32</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:33</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:34</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:35</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:62</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:63</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:68</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:58</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:59</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiBuilder.kt:64</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiImpl.kt:30</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiImpl.kt:51</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiImplTest.kt:16</ID>
@@ -157,12 +147,12 @@
     <ID>Indentation:net.corda.packaging.internal.CpiImplTest.kt:26</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiImplTest.kt:27</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiImplTest.kt:28</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:69</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:70</ID>
     <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:71</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:72</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:83</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:87</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:91</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:82</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:86</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpiLoader.kt:90</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkDependencyResolver.kt:14</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkDependencyResolver.kt:15</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkDependencyResolver.kt:16</ID>
@@ -198,33 +188,33 @@
     <ID>Indentation:net.corda.packaging.internal.CpkImplTest.kt:21</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkImplTest.kt:22</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkImplTest.kt:23</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:140</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:138</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:177</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:178</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:179</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:180</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:181</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:186</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:184</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:185</ID>
     <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:187</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:189</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:406</ID>
-    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:477</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:404</ID>
+    <ID>Indentation:net.corda.packaging.internal.CpkLoader.kt:475</ID>
     <ID>Indentation:net.corda.packaging.internal.SignatureCollector.kt:31</ID>
     <ID>Indentation:net.corda.packaging.internal.SignatureCollector.kt:55</ID>
     <ID>Indentation:net.corda.packaging.internal.Utils.kt:11</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:23</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:24</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:25</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:26</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:50</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:51</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:52</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:67</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:68</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:69</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:79</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:80</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:81</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:82</ID>
-    <ID>Indentation:net.corda.packaging.util.ZipTweaker.kt:83</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:23</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:24</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:25</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:26</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:50</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:51</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:52</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:67</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:68</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:69</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:79</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:80</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:81</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:82</ID>
+    <ID>Indentation:net.corda.packaging.internal.ZipTweaker.kt:83</ID>
     <ID>LongMethod:CpkLoader.kt$CpkLoader$ @Suppress("ThrowsCount", "TooGenericExceptionCaught", "ComplexMethod") private fun readDependencies( jarName: String, dependenciesFileContent: InputStream, fileLocationAppender: (String) -&gt; String ): NavigableSet&lt;Cpk.Identifier&gt;</ID>
     <ID>MaxLineLength:CPKTests.kt$CPKTests$ | &lt;signer algorithm=</ID>
     <ID>MaxLineLength:CPKTests.kt$CPKTests$Assertions.assertIterableEquals(listOf("net.corda.packaging.test.contract"), workflowCPK.metadata.dependencies.map { it.name })</ID>
@@ -269,8 +259,7 @@
     <ID>MaxLineLength:CpkLoader.kt$CpkLoader$fun</ID>
     <ID>MaxLineLength:SignatureCollector.kt$SignatureCollector$*</ID>
     <ID>MaxLineLength:SignatureCollector.kt$SignatureCollector.Companion$*</ID>
-    <ID>MaxLineLength:SigningParameters.kt$SigningParameters.Companion$?:</ID>
-    <ID>MaxLineLength:TeeInputStream.kt$TeeInputStream$class</ID>
+    <ID>MaxLineLength:TeeInputStream.kt$TeeInputStream$internal</ID>
     <ID>MaxLineLength:Utils.kt$internal fun jarSignatureVerificationEnabledByDefault()</ID>
     <ID>MaxLineLength:Utils.kt$internal inline</ID>
     <ID>MaxLineLength:VersionComparatorTests.kt$VersionComparatorTests$Assertions.assertEquals(expectedOutcome, cmp(version1, version2), "when checking with \"$version1\", \"$version2\"")</ID>
@@ -290,20 +279,19 @@
     <ID>MaximumLineLength:net.corda.packaging.CordappManifest.kt:50</ID>
     <ID>MaximumLineLength:net.corda.packaging.CordappManifest.kt:65</ID>
     <ID>MaximumLineLength:net.corda.packaging.CordappManifestTests.kt:65</ID>
-    <ID>MaximumLineLength:net.corda.packaging.Cpi.kt:136</ID>
-    <ID>MaximumLineLength:net.corda.packaging.Cpi.kt:75</ID>
+    <ID>MaximumLineLength:net.corda.packaging.Cpi.kt:135</ID>
+    <ID>MaximumLineLength:net.corda.packaging.Cpi.kt:74</ID>
     <ID>MaximumLineLength:net.corda.packaging.CpiTests.kt:71</ID>
     <ID>MaximumLineLength:net.corda.packaging.CpiTests.kt:72</ID>
     <ID>MaximumLineLength:net.corda.packaging.CpiWithGroupPolicyTests.kt:51</ID>
     <ID>MaximumLineLength:net.corda.packaging.CpiWithGroupPolicyTests.kt:71</ID>
     <ID>MaximumLineLength:net.corda.packaging.CpiWithGroupPolicyTests.kt:72</ID>
-    <ID>MaximumLineLength:net.corda.packaging.SigningParameters.kt:32</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:55</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:59</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:63</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:65</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:99</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpiLoader.kt:29</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpiLoader.kt:37</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:61</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpiBuilder.kt:95</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpiLoader.kt:28</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpiLoader.kt:36</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.CpkDependencyResolver.kt:28</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.CpkDependencyResolver.kt:37</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.CpkDependencyResolver.kt:42</ID>
@@ -312,23 +300,23 @@
     <ID>MaximumLineLength:net.corda.packaging.internal.CpkDependencyResolverTest.kt:108</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.CpkImplTest.kt:16</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.CpkImplTest.kt:17</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:347</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:392</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:397</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:415</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:452</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:458</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:464</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:500</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:345</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:390</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:395</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:413</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:450</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:456</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:462</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.CpkLoader.kt:498</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.TeeInputStream.kt:10</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.Utils.kt:29</ID>
     <ID>MaximumLineLength:net.corda.packaging.internal.Utils.kt:49</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweakerTest.kt:38</ID>
-    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweakerTest.kt:63</ID>
-    <ID>MaximumLineLength:net.corda.packaging.util.TeeInputStream.kt:10</ID>
-    <ID>MaximumLineLength:net.corda.packaging.util.ZipTweaker.kt:114</ID>
-    <ID>MaximumLineLength:net.corda.packaging.util.ZipTweaker.kt:115</ID>
-    <ID>MaximumLineLength:net.corda.packaging.util.ZipTweaker.kt:35</ID>
-    <ID>MaximumLineLength:net.corda.packaging.util.ZipTweaker.kt:97</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweaker.kt:114</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweaker.kt:115</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweaker.kt:35</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweaker.kt:97</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweakerTest.kt:37</ID>
+    <ID>MaximumLineLength:net.corda.packaging.internal.ZipTweakerTest.kt:62</ID>
     <ID>MaximumLineLength:net.corda.packaging.versioning.VersionComparatorTests.kt:111</ID>
     <ID>MaximumLineLength:net.corda.packaging.versioning.VersionComparatorTests.kt:112</ID>
     <ID>MaximumLineLength:net.corda.packaging.versioning.VersionComparatorTests.kt:142</ID>
@@ -342,18 +330,17 @@
     <ID>NewLineAtEndOfFile:Exceptions.kt$net.corda.packaging.Exceptions.kt</ID>
     <ID>NewLineAtEndOfFile:ManifestCordappInfo.kt$net.corda.packaging.ManifestCordappInfo.kt</ID>
     <ID>NewLineAtEndOfFile:SignatureCollector.kt$net.corda.packaging.internal.SignatureCollector.kt</ID>
-    <ID>NewLineAtEndOfFile:SigningParameters.kt$net.corda.packaging.SigningParameters.kt</ID>
-    <ID>NewLineAtEndOfFile:TeeInputStream.kt$net.corda.packaging.util.TeeInputStream.kt</ID>
+    <ID>NewLineAtEndOfFile:TeeInputStream.kt$net.corda.packaging.internal.TeeInputStream.kt</ID>
     <ID>NewLineAtEndOfFile:Utils.kt$net.corda.packaging.internal.Utils.kt</ID>
-    <ID>NewLineAtEndOfFile:ZipTweaker.kt$net.corda.packaging.util.ZipTweaker.kt</ID>
-    <ID>NoBlankLineBeforeRbrace:net.corda.packaging.Cpi.kt:103</ID>
+    <ID>NewLineAtEndOfFile:ZipTweaker.kt$net.corda.packaging.internal.ZipTweaker.kt</ID>
+    <ID>NoBlankLineBeforeRbrace:net.corda.packaging.Cpi.kt:102</ID>
     <ID>NoBlankLineBeforeRbrace:net.corda.packaging.versioning.VersionPartsTests.kt:96</ID>
     <ID>NoConsecutiveBlankLines:net.corda.packaging.CordappManifest.kt:129</ID>
-    <ID>NoConsecutiveBlankLines:net.corda.packaging.internal.CpkLoader.kt:72</ID>
-    <ID>NoConsecutiveBlankLines:net.corda.packaging.util.UncloseableInputStream.kt:15</ID>
+    <ID>NoConsecutiveBlankLines:net.corda.packaging.internal.CpkLoader.kt:70</ID>
+    <ID>NoConsecutiveBlankLines:net.corda.packaging.internal.UncloseableInputStream.kt:15</ID>
     <ID>NoConsecutiveBlankLines:net.corda.packaging.versioning.VersionPartsTests.kt:97</ID>
+    <ID>NoMultipleSpaces:net.corda.packaging.internal.TeeInputStream.kt:14</ID>
     <ID>NoMultipleSpaces:net.corda.packaging.tests.legacy.DigestAlgorithmFactoryImpl.kt:34</ID>
-    <ID>NoMultipleSpaces:net.corda.packaging.util.TeeInputStream.kt:14</ID>
     <ID>ParameterListWrapping:net.corda.packaging.CordappManifest.kt:10</ID>
     <ID>ParameterListWrapping:net.corda.packaging.CordappManifest.kt:11</ID>
     <ID>ParameterListWrapping:net.corda.packaging.CordappManifest.kt:12</ID>
@@ -361,9 +348,9 @@
     <ID>ParameterListWrapping:net.corda.packaging.CordappManifest.kt:14</ID>
     <ID>ParameterListWrapping:net.corda.packaging.CordappManifest.kt:15</ID>
     <ID>ParameterListWrapping:net.corda.packaging.CordappManifest.kt:16</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:129</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:130</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:131</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:132</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:36</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:37</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:38</ID>
@@ -376,7 +363,6 @@
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:71</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:72</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:73</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.Cpi.kt:74</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpk.kt:159</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpk.kt:160</ID>
     <ID>ParameterListWrapping:net.corda.packaging.Cpk.kt:161</ID>
@@ -397,9 +383,6 @@
     <ID>ParameterListWrapping:net.corda.packaging.ManifestCordappInfo.kt:6</ID>
     <ID>ParameterListWrapping:net.corda.packaging.ManifestCordappInfo.kt:7</ID>
     <ID>ParameterListWrapping:net.corda.packaging.ManifestCordappInfo.kt:8</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.SigningParameters.kt:20</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.SigningParameters.kt:21</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.SigningParameters.kt:22</ID>
     <ID>ParameterListWrapping:net.corda.packaging.TestUtils.kt:26</ID>
     <ID>ParameterListWrapping:net.corda.packaging.TestUtils.kt:27</ID>
     <ID>ParameterListWrapping:net.corda.packaging.TestUtils.kt:28</ID>
@@ -414,18 +397,17 @@
     <ID>ParameterListWrapping:net.corda.packaging.TestUtils.kt:37</ID>
     <ID>ParameterListWrapping:net.corda.packaging.TestUtils.kt:38</ID>
     <ID>ParameterListWrapping:net.corda.packaging.TestUtils.kt:39</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:25</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:26</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:27</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:28</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:29</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:30</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:31</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:32</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:33</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:34</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:35</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:62</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:63</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:58</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiBuilder.kt:59</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpiImpl.kt:30</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiLoader.kt:37</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpiLoader.kt:36</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpkDependencyResolver.kt:14</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpkDependencyResolver.kt:15</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpkDependencyResolver.kt:16</ID>
@@ -433,41 +415,41 @@
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpkDependencyResolverTest.kt:16</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpkDependencyResolverTest.kt:17</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.CpkImpl.kt:17</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.internal.CpkLoader.kt:347</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.CpkLoader.kt:345</ID>
     <ID>ParameterListWrapping:net.corda.packaging.internal.Utils.kt:29</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:114</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:23</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:24</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:25</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:26</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:50</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:51</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:52</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:67</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:68</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:69</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:79</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:80</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:81</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:82</ID>
-    <ID>ParameterListWrapping:net.corda.packaging.util.ZipTweaker.kt:83</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:114</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:23</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:24</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:25</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:26</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:50</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:51</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:52</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:67</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:68</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:69</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:79</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:80</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:81</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:82</ID>
+    <ID>ParameterListWrapping:net.corda.packaging.internal.ZipTweaker.kt:83</ID>
     <ID>RethrowCaughtException:CpkLoader.kt$CpkLoader$throw e</ID>
     <ID>ReturnCount:VersionComparator.kt$VersionComparator.Companion$ @Suppress("ComplexMethod") private fun comparePartOfVersionString(part1: String, part2: String): Int</ID>
     <ID>ReturnCount:VersionComparator.kt$VersionComparator.Companion$@JvmStatic fun cmp(v1: String?, v2: String?): Int</ID>
     <ID>ReturnCount:VersionComparator.kt$VersionComparator.Companion$private fun complexComparison(v1: String, v2: String): Int</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:101</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:100</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:107</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:108</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:109</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:110</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:111</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:117</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:116</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:129</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:130</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:131</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:132</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:136</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:135</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:140</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:141</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:142</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:144</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:143</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:36</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:37</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:38</ID>
@@ -475,9 +457,9 @@
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:66</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:67</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:68</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:85</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:90</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:96</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:84</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:89</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.Cpi.kt:95</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpk.kt:101</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpk.kt:117</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpk.kt:131</ID>
@@ -513,27 +495,27 @@
     <ID>SpacingAroundColon:net.corda.packaging.Cpk.kt:53</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpk.kt:64</ID>
     <ID>SpacingAroundColon:net.corda.packaging.Cpk.kt:76</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:28</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:29</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:25</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:26</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:30</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:34</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:38</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:42</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:44</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:63</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:40</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiBuilder.kt:59</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiImpl.kt:28</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiImpl.kt:31</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiImpl.kt:46</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiImpl.kt:48</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiImplTest.kt:23</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:21</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:22</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:23</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:25</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:29</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:34</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:37</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:24</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:28</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:33</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:36</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:41</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:42</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:43</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:46</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.CpiLoader.kt:45</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpkDependencyResolver.kt:16</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpkDependencyResolverTest.kt:106</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.CpkDependencyResolverTest.kt:16</ID>
@@ -554,46 +536,46 @@
     <ID>SpacingAroundColon:net.corda.packaging.internal.SignatureCollector.kt:35</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.SignatureCollector.kt:37</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.SignatureCollector.kt:40</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.TeeInputStream.kt:10</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.UncloseableInputStream.kt:11</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.Utils.kt:16</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.Utils.kt:29</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.Utils.kt:35</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.Utils.kt:46</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweaker.kt:109</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweaker.kt:23</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweaker.kt:24</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweaker.kt:26</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweaker.kt:29</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweakerTest.kt:23</ID>
     <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweakerTest.kt:24</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweakerTest.kt:25</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweakerTest.kt:28</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.TeeInputStream.kt:10</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.UncloseableInputStream.kt:11</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.ZipTweaker.kt:109</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.ZipTweaker.kt:23</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.ZipTweaker.kt:24</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.ZipTweaker.kt:26</ID>
-    <ID>SpacingAroundColon:net.corda.packaging.util.ZipTweaker.kt:29</ID>
+    <ID>SpacingAroundColon:net.corda.packaging.internal.ZipTweakerTest.kt:27</ID>
     <ID>SpacingAroundCurly:net.corda.packaging.Cpk.kt:67</ID>
-    <ID>SpacingAroundCurly:net.corda.packaging.internal.CpiBuilder.kt:58</ID>
-    <ID>SpacingAroundCurly:net.corda.packaging.internal.CpiLoader.kt:91</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiBuilder.kt:64</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiBuilder.kt:67</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiLoader.kt:52</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiLoader.kt:54</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiLoader.kt:59</ID>
+    <ID>SpacingAroundCurly:net.corda.packaging.internal.CpiBuilder.kt:54</ID>
+    <ID>SpacingAroundCurly:net.corda.packaging.internal.CpiLoader.kt:90</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiBuilder.kt:60</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiBuilder.kt:63</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiLoader.kt:51</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiLoader.kt:53</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpiLoader.kt:58</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpkDependencyResolver.kt:41</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.internal.CpkDependencyResolverTest.kt:107</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.internal.SignatureCollector.kt:41</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweakerTest.kt:57</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.TeeInputStream.kt:14</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.TeeInputStream.kt:23</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweaker.kt:115</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweaker.kt:121</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweaker.kt:33</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweaker.kt:35</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweaker.kt:37</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweaker.kt:39</ID>
+    <ID>SpacingAroundKeyword:net.corda.packaging.internal.ZipTweakerTest.kt:56</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.tests.legacy.DigestAlgorithmFactoryImpl.kt:29</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.tests.legacy.DigestAlgorithmFactoryImpl.kt:31</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.tests.legacy.DigestServiceImpl.kt:23</ID>
     <ID>SpacingAroundKeyword:net.corda.packaging.tests.legacy.DigestServiceImpl.kt:25</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.TeeInputStream.kt:14</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.TeeInputStream.kt:23</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.ZipTweaker.kt:115</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.ZipTweaker.kt:121</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.ZipTweaker.kt:33</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.ZipTweaker.kt:35</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.ZipTweaker.kt:37</ID>
-    <ID>SpacingAroundKeyword:net.corda.packaging.util.ZipTweaker.kt:39</ID>
     <ID>SpacingAroundOperators:net.corda.packaging.internal.CpkDependencyResolverTest.kt:104</ID>
-    <ID>SpacingAroundParens:net.corda.packaging.internal.CpiLoader.kt:91</ID>
+    <ID>SpacingAroundParens:net.corda.packaging.internal.CpiLoader.kt:90</ID>
     <ID>SwallowedException:DigestAlgorithmFactoryImpl.kt$DigestAlgorithmFactoryImpl.MessageDigestFactory$e: NoSuchAlgorithmException</ID>
     <ID>SwallowedException:VersionComparatorFuzzerTests.kt$VersionComparatorFuzzerTests$e: Exception</ID>
     <ID>TooManyFunctions:CpkLoader.kt$CpkLoader$CpkLoader</ID>
