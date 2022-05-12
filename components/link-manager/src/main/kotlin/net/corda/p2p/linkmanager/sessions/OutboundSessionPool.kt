@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
@@ -17,11 +16,6 @@ internal class OutboundSessionPool(
     private val calculateWeightForSession: (sessionId: String) -> Long?,
     private val genRandomNumber: (until: Long) -> Long = { until -> Random.nextLong(until) }
 ) {
-
-    companion object {
-        val logger = contextLogger()
-    }
-
     private val outboundSessions = ConcurrentHashMap<SessionManager.SessionCounterparties, ConcurrentHashMap<String, SessionType>>()
     private val counterpartiesForSessionId = ConcurrentHashMap<String, SessionManager.SessionCounterparties>()
 

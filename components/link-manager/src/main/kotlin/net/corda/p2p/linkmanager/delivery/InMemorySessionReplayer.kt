@@ -32,7 +32,7 @@ internal class InMemorySessionReplayer(
 ): LifecycleWithDominoTile {
 
     companion object {
-        const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
+        private const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
     }
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)

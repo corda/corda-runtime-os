@@ -5,179 +5,69 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
-import net.corda.p2p.linkmanager.delivery.DeliveryTracker
-import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
-import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
-import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 
 @Suppress("LongParameterList")
 class LinkManager(
     @Reference(service = SubscriptionFactory::class)
-    subscriptionFactory: SubscriptionFactory,
+    internal val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    publisherFactory: PublisherFactory,
+    internal val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    internal val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    configurationReaderService: ConfigurationReadService,
-    configuration: SmartConfig,
-    groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
+    internal val configurationReaderService: ConfigurationReadService,
+    internal val configuration: SmartConfig,
+    internal val groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
         lifecycleCoordinatorFactory, subscriptionFactory, configuration
     ),
-    members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
+    internal val members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
         lifecycleCoordinatorFactory, subscriptionFactory, configuration
     ),
-    linkManagerHostingMap: LinkManagerHostingMap =
+    internal val linkManagerHostingMap: LinkManagerHostingMap =
         StubLinkManagerHostingMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             configuration,
         ),
-    linkManagerCryptoProcessor: CryptoProcessor =
+    internal val linkManagerCryptoProcessor: CryptoProcessor =
         StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration),
-    clock: Clock = UTCClock()
+    internal val clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
     companion object {
-        const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
-        const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
-        const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
+        internal const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
+        internal const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
+        internal const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
 
         internal fun generateKey(): String {
             return UUID.randomUUID().toString()
         }
     }
 
-    private val inboundAssignmentListener = InboundAssignmentListener(lifecycleCoordinatorFactory, LINK_IN_TOPIC)
-
-    private val messagesPendingSession = PendingSessionMessageQueuesImpl(
-        publisherFactory,
-        lifecycleCoordinatorFactory,
-        configuration
-    )
-
-    private val sessionManager = SessionManagerImpl(
-        groups,
-        members,
-        linkManagerCryptoProcessor,
-        messagesPendingSession,
-        publisherFactory,
-        configurationReaderService,
-        lifecycleCoordinatorFactory,
-        configuration,
-        inboundAssignmentListener,
-        linkManagerHostingMap,
-        clock = clock
-    )
-
-    private val outboundMessageProcessor = OutboundMessageProcessor(
-        sessionManager,
-        linkManagerHostingMap,
-        groups,
-        members,
-        inboundAssignmentListener,
-        messagesPendingSession,
-        clock
-    )
-
-    private val trustStoresPublisher = TrustStoresPublisher(
-        subscriptionFactory,
-        publisherFactory,
-        lifecycleCoordinatorFactory,
-        configuration,
-    ).also {
-        groups.registerListener(it)
-    }
-
-    private val tlsCertificatesPublisher = TlsCertificatesPublisher(
-        subscriptionFactory,
-        publisherFactory,
-        lifecycleCoordinatorFactory,
-        configuration,
-    ).also {
-        linkManagerHostingMap.registerListener(it)
-    }
-
-    private val deliveryTracker = DeliveryTracker(
-        lifecycleCoordinatorFactory,
-        configurationReaderService,
-        publisherFactory,
-        configuration,
-        subscriptionFactory,
-        groups,
-        members,
-        linkManagerCryptoProcessor,
-        sessionManager,
-        clock = clock
-    ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
-
-    private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC),
-        InboundMessageProcessor(
-            sessionManager,
-            groups,
-            members,
-            inboundAssignmentListener,
-            clock
-        ),
-        configuration,
-        partitionAssignmentListener = inboundAssignmentListener
-    )
-
-    private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC),
-        outboundMessageProcessor,
-        configuration,
-        partitionAssignmentListener = null
-    )
-
-    private val commonChildren = setOf(
-        groups.dominoTile,
-        members.dominoTile,
-        linkManagerCryptoProcessor.dominoTile,
-        linkManagerHostingMap.dominoTile
-    )
-    private val inboundSubscriptionTile = SubscriptionDominoTile(
-        lifecycleCoordinatorFactory,
-        inboundMessageSubscription,
-        dependentChildren = commonChildren,
-        managedChildren = setOf(inboundAssignmentListener.dominoTile)
-    )
-    private val outboundSubscriptionTile = SubscriptionDominoTile(
-        lifecycleCoordinatorFactory,
-        outboundMessageSubscription,
-        dependentChildren = commonChildren + setOf(
-            messagesPendingSession.dominoTile,
-            inboundAssignmentListener.dominoTile
-        ),
-        managedChildren = setOf(messagesPendingSession.dominoTile)
-    )
+    internal val commonTile = CommonTile(this)
+    private val outboundTile = OutboundTile(this)
+    private val inboundTile = InboundTile(this)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(
-            inboundSubscriptionTile,
-            outboundSubscriptionTile,
-            deliveryTracker.dominoTile,
+            commonTile.dominoTile,
+            outboundTile.dominoTile,
+            inboundTile.dominoTile,
         ),
         managedChildren = setOf(
-            inboundSubscriptionTile,
-            outboundSubscriptionTile,
-            deliveryTracker.dominoTile,
-            sessionManager.dominoTile,
-            trustStoresPublisher.dominoTile,
-            tlsCertificatesPublisher.dominoTile,
-        ) + commonChildren
+            commonTile.dominoTile,
+            outboundTile.dominoTile,
+            inboundTile.dominoTile,
+        )
     )
 }
