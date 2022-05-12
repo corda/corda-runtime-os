@@ -71,6 +71,9 @@ interface TestHealthCheckAPI : RpcOps {
     @HttpRpcPOST(path = "parseuuid/{uuid}", description = "https://r3-cev.atlassian.net/browse/CORE-2404 coverage")
     fun parseUuid(@HttpRpcPathParameter uuid: String): UUID
 
+    @HttpRpcPOST(path = "stringMethodWithNameInAnnotation")
+    fun stringMethodWithNameInAnnotation(@HttpRpcRequestBodyParameter(name = "correctName") incorrectName: String): String
+
     data class TimeCallDto(val time: ZonedDateTime)
 
     data class DateCallDto(val date: Date)

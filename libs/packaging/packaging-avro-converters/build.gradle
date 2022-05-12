@@ -1,0 +1,14 @@
+plugins {
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+}
+
+description "Packaging avro converters"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:packaging:packaging")
+    implementation "net.corda:corda-avro-schema"
+}

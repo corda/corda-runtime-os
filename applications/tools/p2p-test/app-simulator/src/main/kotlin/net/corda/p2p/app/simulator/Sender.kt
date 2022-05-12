@@ -17,10 +17,10 @@ import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.nio.ByteBuffer
-import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.*

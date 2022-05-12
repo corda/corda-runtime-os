@@ -98,7 +98,7 @@ internal fun EndpointParameter.toOpenApiParameter(schemaModelProvider: SchemaMod
 private fun List<EndpointParameter>.toProperties(schemaModelProvider: SchemaModelProvider): Map<String, Schema<Any>> {
     log.trace { "Map \"${this.size}\" EndpointParameters to Schema properties." }
     return this.associateBy(
-        { it.id },
+        { endpointParam -> endpointParam.name.takeIf { it.isNotBlank() } ?: endpointParam.id },
         {
             SchemaModelToOpenApiSchemaConverter.convert(
                 schemaModelProvider.toSchemaModel(it)
