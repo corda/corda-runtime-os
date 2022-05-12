@@ -46,6 +46,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:utilities")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"

@@ -220,7 +220,7 @@ class SessionManagerTest {
         mock(),
         linkManagerHostingMap,
         protocolFactory,
-        mockTimeFacilitiesProvider.mockClock,
+        mockTimeFacilitiesProvider.clock,
         sessionReplayer,
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
@@ -1036,7 +1036,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1086,7 +1086,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1157,7 +1157,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1217,7 +1217,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1276,7 +1276,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1342,7 +1342,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1409,7 +1409,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
