@@ -10,7 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    api "net.corda:corda-packaging"
+    api project(":libs:packaging:packaging")
 
     api project(':libs:virtual-node:virtual-node-info')
     api project(':libs:serialization:serialization-checkpoint-api')
