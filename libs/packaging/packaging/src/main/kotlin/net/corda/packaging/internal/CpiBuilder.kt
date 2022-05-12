@@ -8,7 +8,6 @@ import net.corda.packaging.Cpk
 import net.corda.packaging.DependencyResolutionException
 import net.corda.packaging.SigningParameters
 import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.packaging.util.ZipTweaker
 import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.io.Reader

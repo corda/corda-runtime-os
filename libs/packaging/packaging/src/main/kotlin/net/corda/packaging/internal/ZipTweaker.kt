@@ -1,4 +1,4 @@
-package net.corda.packaging.util
+package net.corda.packaging.internal
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -14,7 +14,7 @@ import java.util.zip.ZipOutputStream
  * Helper class to ease the creation of a copy of zip archive,
  * editing some of its [ZipEntry]
  */
-open class ZipTweaker {
+internal open class ZipTweaker {
 
     protected enum class AfterTweakAction {
         WRITE_ORIGINAL_ENTRY, DO_NOTHING
