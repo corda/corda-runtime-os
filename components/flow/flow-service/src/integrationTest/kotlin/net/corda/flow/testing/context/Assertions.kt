@@ -109,7 +109,7 @@ class OutputAssertionsImpl(
 
             assertThat(retry.retryCount).isEqualTo(expectedCount)
 
-            /** Hack: we can't assert the event the second time around as it's a wakeup event (initially)
+            /** we can't assert the event the second time around as it's a wakeup event (initially)
              * so the testRun.event, which records the event we send into the system, will not match
              * the retry.failedEvent as internally the pipeline switches from the wakeup to the event that needs
              * to be retried.
