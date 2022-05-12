@@ -11,7 +11,7 @@ def cordaGradlePluginsVersion = constants.getProperty('cordaGradlePluginsVersion
 def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
 def jibCoreVersion = constants.getProperty('jibCoreVersion')
 def internalPublishVersion = constants.getProperty('internalPublishVersion')
-def internalPublishVersion = constants.getProperty('gradleEnterpriseVersion')
+def gradleEnterpriseVersion = constants.getProperty('gradleEnterpriseVersion')
 
 dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
