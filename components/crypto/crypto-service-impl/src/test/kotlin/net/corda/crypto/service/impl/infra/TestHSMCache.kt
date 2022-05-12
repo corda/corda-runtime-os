@@ -17,6 +17,7 @@ import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.v5.base.util.toHex
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
@@ -38,7 +39,7 @@ class TestHSMCache : HSMCache {
 
     private class Actions(
         private val cache: TestHSMCache
-    ): HSMCacheActions {
+    ) : HSMCacheActions {
         companion object {
             private val secureRandom = SecureRandom()
         }
@@ -57,12 +58,12 @@ class TestHSMCache : HSMCache {
         }
 
         override fun lookup(filter: Map<String, String>): List<HSMInfo> = cache.lock.withLock {
-            if(filter.any {
+            if (filter.any {
                     it.key == PREFERRED_PRIVATE_KEY_POLICY_KEY &&
-                    it.value == PREFERRED_PRIVATE_KEY_POLICY_ALIASED
-            }) {
+                            it.value == PREFERRED_PRIVATE_KEY_POLICY_ALIASED
+                }) {
                 cache.configs.filter { c ->
-                    cache.categoryMap.any { it.keyPolicy == PrivateKeyPolicy.ALIASED && it.config.id  == c.id}
+                    cache.categoryMap.any { it.keyPolicy == PrivateKeyPolicy.ALIASED && it.config.id == c.id }
                 }
             } else {
                 cache.configs
@@ -92,22 +93,26 @@ class TestHSMCache : HSMCache {
         }
 
         override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) = cache.lock.withLock {
-            val config = cache.configs.first { it.id == configId }
-            cache.categoryMap.removeIf { it.config.id == configId  }
-            links.forEach {
-                val entry = HSMCategoryMapEntity(
-                    id = UUID.randomUUID().toString(),
-                    category = it.category,
-                    keyPolicy = PrivateKeyPolicy.valueOf(it.keyPolicy.name),
-                    timestamp = Instant.now(),
-                    config = config
-                )
-                cache.categoryMap.add(entry)
+            try {
+                val config = cache.configs.first { it.id == configId }
+                cache.categoryMap.removeIf { it.config.id == configId }
+                links.forEach {
+                    val entry = HSMCategoryMapEntity(
+                        id = UUID.randomUUID().toString(),
+                        category = it.category,
+                        keyPolicy = PrivateKeyPolicy.valueOf(it.keyPolicy.name),
+                        timestamp = Instant.now(),
+                        config = config
+                    )
+                    cache.categoryMap.add(entry)
+                }
+            } catch (e: Throwable) {
+                throw CryptoServiceLibraryException(e.message ?: "Error", e)
             }
         }
 
         override fun add(info: HSMInfo, serviceConfig: ByteArray): String = cache.lock.withLock {
-            if(cache.configs.any { it.id == info.id }) {
+            if (cache.configs.any { it.id == info.id }) {
                 throw RollbackException()
             }
             val config = info.toHSMConfigEntity(serviceConfig)
@@ -171,7 +176,7 @@ class TestHSMCache : HSMCache {
         )
 
         private fun HSMInfo.toHSMConfigEntity(serviceConfig: ByteArray) = HSMConfigEntity(
-            id = if(id.isNullOrBlank()) UUID.randomUUID().toString() else id,
+            id = if (id.isNullOrBlank()) UUID.randomUUID().toString() else id,
             timestamp = Instant.now(),
             workerLabel = workerLabel,
             description = description,
@@ -184,6 +189,7 @@ class TestHSMCache : HSMCache {
             capacity = capacity,
             serviceConfig = serviceConfig
         )
+
         private fun HSMConfigEntity.toHSMInfo() = HSMInfo(
             id,
             timestamp,

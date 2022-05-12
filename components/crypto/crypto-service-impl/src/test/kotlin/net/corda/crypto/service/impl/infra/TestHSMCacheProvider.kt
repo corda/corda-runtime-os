@@ -26,5 +26,5 @@ class TestHSMCacheProvider(
         coordinator.stop()
     }
 
-    override fun getInstance(): HSMCache = mock()
+    override fun getInstance(): HSMCache = TestHSMCache()
 }

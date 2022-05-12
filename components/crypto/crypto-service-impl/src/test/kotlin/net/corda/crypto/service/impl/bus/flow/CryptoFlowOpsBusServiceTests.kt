@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.bus.flow
 
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.service.impl.infra.TestServicesFactory
@@ -33,7 +32,6 @@ class CryptoFlowOpsBusServiceTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var subscription: Subscription<String, FlowOpsRequest>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var configurationReadService: ConfigurationReadService
     private lateinit var clientCoordinator: LifecycleCoordinator
     private lateinit var client: CryptoOpsProxyClient
     private lateinit var component: CryptoFlowOpsBusServiceImpl
@@ -47,7 +45,6 @@ class CryptoFlowOpsBusServiceTests {
                 createDurableSubscription<String, FlowOpsRequest>(any(), any(), any(), anyOrNull())
             } doReturn subscription
         }
-        configurationReadService = factory.createConfigurationReadService()
         clientCoordinator = factory.coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
         ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
@@ -65,7 +62,7 @@ class CryptoFlowOpsBusServiceTests {
             factory.coordinatorFactory,
             subscriptionFactory,
             client,
-            configurationReadService
+            factory.readService
         )
     }
 

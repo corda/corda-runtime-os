@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.bus.registration
 
-import net.corda.crypto.service.impl.infra.TestConfigurationReadService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
@@ -27,7 +26,6 @@ class HSMRegistrationBusServiceTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var subscription: RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var component: HSMRegistrationBusServiceImpl
 
     @BeforeEach
@@ -37,10 +35,9 @@ class HSMRegistrationBusServiceTests {
         subscriptionFactory = mock {
             on { createRPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any(), any()) } doReturn subscription
         }
-        configurationReadService = factory.createConfigurationReadService()
         component = HSMRegistrationBusServiceImpl(
             factory.coordinatorFactory,
-            configurationReadService,
+            factory.readService,
             subscriptionFactory,
             factory.hsmService
         )
@@ -99,12 +96,12 @@ class HSMRegistrationBusServiceTests {
         }
         assertInstanceOf(HSMRegistrationBusServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.readService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(HSMRegistrationBusServiceImpl.InactiveImpl::class.java, component.impl)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        factory.readService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

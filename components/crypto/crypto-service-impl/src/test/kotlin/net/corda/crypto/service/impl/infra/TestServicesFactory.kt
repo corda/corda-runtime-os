@@ -1,17 +1,15 @@
 package net.corda.crypto.service.impl.infra
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
-import net.corda.crypto.persistence.hsm.HSMCacheProvider
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
-import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
 import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
@@ -20,19 +18,18 @@ import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import org.mockito.kotlin.mock
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertTrue
@@ -49,21 +46,22 @@ class TestServicesFactory {
     private val emptyConfig: SmartConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    private val cryptoConfig = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase"))
+    private val cryptoConfig: SmartConfig =
+        createDefaultCryptoConfig(KeyCredentials("salt", "passphrase"))
 
-    val schemeMetadata = CipherSchemeMetadataImpl()
+    val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    val digest by lazy {
+    val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
     }
 
-    val verifier by lazy {
+    val verifier: SignatureVerificationService by lazy {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
-    val signingCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val signingCacheProvider: TestSigningKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestSigningKeyCacheProvider(coordinatorFactory).also {
             it.start()
             eventually {
@@ -72,7 +70,7 @@ class TestServicesFactory {
         }
     }
 
-    val softCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val softCacheProvider: TestSoftCryptoKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestSoftCryptoKeyCacheProvider(coordinatorFactory).also {
             it.start()
             eventually {
@@ -98,7 +96,7 @@ class TestServicesFactory {
         }
     }
 
-    val opsProxyClient: CryptoOpsProxyClient by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val opsProxyClient: TestCryptoOpsProxyClient by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestCryptoOpsProxyClient(this).also {
             it.start()
             eventually {
@@ -107,7 +105,7 @@ class TestServicesFactory {
         }
     }
 
-    val hsmCacheProvider: HSMCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val hsmCacheProvider: TestHSMCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TestHSMCacheProvider(this).also {
             it.start()
             eventually {
@@ -116,7 +114,7 @@ class TestServicesFactory {
         }
     }
 
-    val softCryptoKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val softCryptoKeyCacheProvider: SoftCryptoServiceProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         SoftCryptoServiceProviderImpl(
             coordinatorFactory,
             schemeMetadata,
@@ -130,12 +128,16 @@ class TestServicesFactory {
         }
     }
 
-    private val signingCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        signingCacheProvider.getInstance()
+    val hsmCache: TestHSMCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        hsmCacheProvider.getInstance() as TestHSMCache
     }
 
-    private val softCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        softCacheProvider.getInstance()
+    private val signingCache: TestSigningKeyCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        signingCacheProvider.getInstance() as TestSigningKeyCache
+    }
+
+    val softCache: TestSoftCryptoKeyCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        softCacheProvider.getInstance() as TestSoftCryptoKeyCache
     }
 
     val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -149,7 +151,7 @@ class TestServicesFactory {
         )
     }
 
-    val readService by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val readService: TestConfigurationReadService by lazy(LazyThreadSafetyMode.PUBLICATION) {
         createConfigurationReadService()
     }
 
@@ -168,13 +170,13 @@ class TestServicesFactory {
             }
         }
 
-    fun createConfigurationReadService(
+    private fun createConfigurationReadService(
         configUpdates: List<Pair<String, SmartConfig>> = listOf(
             ConfigKeys.BOOT_CONFIG to emptyConfig,
             ConfigKeys.MESSAGING_CONFIG to emptyConfig,
             ConfigKeys.CRYPTO_CONFIG to cryptoConfig
         )
-    ) =
+    ): TestConfigurationReadService =
         TestConfigurationReadService(
             coordinatorFactory,
             configUpdates

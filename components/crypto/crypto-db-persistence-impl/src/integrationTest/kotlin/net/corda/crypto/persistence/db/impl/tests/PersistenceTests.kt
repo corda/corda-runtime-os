@@ -60,6 +60,7 @@ import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -882,6 +883,27 @@ class PersistenceTests {
             it.category == CryptoConsts.Categories.TLS &&
                     it.keyPolicy == net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
         })
+    }
+
+    @Test
+    fun `linkCategories should throw CryptoServiceLibraryException if config does not exist`() {
+        val cache = createHSMCacheImpl()
+        cache.act {
+            assertThrows(CryptoServiceLibraryException::class.java) {
+                it.linkCategories(
+                    UUID.randomUUID().toString(), listOf(
+                        HSMCategoryInfo(
+                            CryptoConsts.Categories.LEDGER,
+                            net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
+                        ),
+                        HSMCategoryInfo(
+                            CryptoConsts.Categories.TLS,
+                            net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
+                        )
+                    )
+                )
+            }
+        }
     }
 
     @Test

@@ -42,11 +42,7 @@ class HSMServiceImpl(
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
-        if(info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
-            require(!info.masterKeyAlias.isNullOrBlank()) {
-                "The master key alias must be specified for '${info.masterKeyPolicy}' master key policy."
-            }
-        }
+        validatePutHSMConfig(info)
         val id = hsmCache.act {
             if(info.id.isNullOrBlank()) {
                 it.add(info, encryptor.encrypt(serviceConfig))
@@ -95,6 +91,7 @@ class HSMServiceImpl(
 
     fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {
         logger.info("linkCategories(configId={}, links=[{}])", configId, links.joinToString { it.category })
+        validateLinkCategories(links)
         hsmCache.act {
             it.linkCategories(configId, links)
         }
@@ -129,6 +126,25 @@ class HSMServiceImpl(
         hsmCache.close()
     }
 
+    private fun validatePutHSMConfig(info: HSMInfo) {
+        if(info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
+            require(!info.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias must be specified for '${info.masterKeyPolicy}' master key policy."
+            }
+        } else {
+            require(info.masterKeyAlias.isNullOrBlank()) {
+                "The master key alias must not be specified for '${info.masterKeyPolicy}' master key policy."
+            }
+        }
+    }
+
+    private fun validateLinkCategories(links: List<HSMCategoryInfo>) {
+        links.forEach {
+            require(it.category.isNotBlank()) {
+                "The category must be specified."
+            }
+        }
+    }
     private fun ensureWrappingKey(association: HSMTenantAssociation) {
         if (association.config.info.masterKeyPolicy == MasterKeyPolicy.NEW) {
             require(!association.masterKeyAlias.isNullOrBlank()) {

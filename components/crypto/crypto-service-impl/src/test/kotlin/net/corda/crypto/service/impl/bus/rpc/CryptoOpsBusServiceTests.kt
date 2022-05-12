@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.bus.rpc
 
-import net.corda.crypto.service.impl.infra.TestConfigurationReadService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.signing.SigningServiceFactoryImpl
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -28,7 +27,6 @@ class CryptoOpsBusServiceTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var subscription: RPCSubscription<RpcOpsRequest, RpcOpsResponse>
     private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var component: CryptoOpsBusServiceImpl
 
     @BeforeEach
@@ -38,7 +36,6 @@ class CryptoOpsBusServiceTests {
         subscriptionFactory = mock {
             on { createRPCSubscription<RpcOpsRequest, RpcOpsResponse>(any(), any(), any()) } doReturn subscription
         }
-        configurationReadService = factory.readService
         component = CryptoOpsBusServiceImpl(
             factory.coordinatorFactory,
             subscriptionFactory,
@@ -53,7 +50,7 @@ class CryptoOpsBusServiceTests {
                     assertTrue(it.isRunning)
                 }
             },
-            configurationReadService
+            factory.readService
         )
     }
 
@@ -110,12 +107,12 @@ class CryptoOpsBusServiceTests {
         }
         assertInstanceOf(CryptoOpsBusServiceImpl.ActiveImpl::class.java, component.impl)
         assertSame(subscription, component.impl.subscription)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.readService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(CryptoOpsBusServiceImpl.InactiveImpl::class.java, component.impl)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        factory.readService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }

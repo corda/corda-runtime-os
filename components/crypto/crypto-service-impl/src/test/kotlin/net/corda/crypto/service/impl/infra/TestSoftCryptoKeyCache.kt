@@ -39,7 +39,7 @@ class TestSoftCryptoKeyCacheProvider(
 }
 
 class TestSoftCryptoKeyCache : SoftCryptoKeyCache {
-    private val keys = ConcurrentHashMap<String, WrappingKey>()
+    val keys = ConcurrentHashMap<String, WrappingKey>()
     override fun act(): SoftCryptoKeyCacheActions = TestSoftCryptoKeyCacheActions(keys)
     override fun close() = Unit
 }

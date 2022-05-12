@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.hsm.service
 
-import net.corda.crypto.service.impl.infra.TestConfigurationReadService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
@@ -15,16 +14,14 @@ import kotlin.test.assertTrue
 
 class HSMServiceComponentTests {
     private lateinit var factory: TestServicesFactory
-    private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var component: HSMServiceComponent
 
     @BeforeEach
     fun setup() {
         factory = TestServicesFactory()
-        configurationReadService = factory.createConfigurationReadService()
         component = HSMServiceComponent(
             factory.coordinatorFactory,
-            configurationReadService,
+            factory.readService,
             factory.hsmCacheProvider,
             factory.schemeMetadata,
             factory.opsProxyClient
@@ -61,12 +58,12 @@ class HSMServiceComponentTests {
         }
         assertInstanceOf(HSMServiceComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.service)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.DOWN)
+        factory.readService.coordinator.updateStatus(LifecycleStatus.DOWN)
         eventually {
             assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(HSMServiceComponent.InactiveImpl::class.java, component.impl)
-        configurationReadService.coordinator.updateStatus(LifecycleStatus.UP)
+        factory.readService.coordinator.updateStatus(LifecycleStatus.UP)
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
