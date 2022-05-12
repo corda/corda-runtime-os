@@ -2,8 +2,8 @@ package net.corda.libs.packaging
 
 import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
-import net.corda.packaging.converters.toAvro
-import net.corda.packaging.converters.toCorda
+import net.corda.libs.packaging.converters.toAvro
+import net.corda.libs.packaging.converters.toCorda
 import net.corda.v5.crypto.SecureHash
 import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer

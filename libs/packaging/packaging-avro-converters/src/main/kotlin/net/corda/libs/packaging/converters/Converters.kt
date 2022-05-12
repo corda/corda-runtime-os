@@ -1,5 +1,5 @@
 @file:Suppress("TooManyFunctions")
-package net.corda.packaging.converters
+package net.corda.libs.packaging.converters
 
 import net.corda.data.crypto.SecureHash
 import net.corda.data.packaging.CpiIdentifier

@@ -1,4 +1,4 @@
 @Export
-package net.corda.packaging.converters;
+package net.corda.libs.packaging.converters;
 
 import org.osgi.annotation.bundle.Export;

@@ -1,4 +1,4 @@
-package net.corda.packaging.converters
+package net.corda.libs.packaging.converters
 
 import net.corda.packaging.Cpi
 import net.corda.packaging.Cpk

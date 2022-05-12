@@ -3,7 +3,7 @@ package net.corda.cpiinfo.read.impl
 import net.corda.data.packaging.CpiIdentifier
 import net.corda.data.packaging.CpiMetadata
 import net.corda.packaging.Cpi
-import net.corda.packaging.converters.toCorda
+import net.corda.libs.packaging.converters.toCorda
 import java.util.Collections
 
 /**
