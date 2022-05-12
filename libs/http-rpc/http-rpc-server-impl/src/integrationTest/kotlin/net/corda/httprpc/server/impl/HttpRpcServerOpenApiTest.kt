@@ -127,6 +127,17 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             val deleteParams = delete.parameters
             assertEquals("query", deleteParams[0].name)
         }
+
+        with(openAPI.paths["/health/stringmethodwithnameinannotation"]) {
+            assertNotNull(this)
+            val content = post.requestBody.content["application/json"]
+            assertNotNull(content)
+            val properties = content.schema.properties
+            assertEquals(1, properties.size)
+            val field = properties["correctName"]
+            assertNotNull(field)
+            assertEquals("string", field.type)
+        }
     }
 
     @Test
@@ -279,6 +290,19 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(1, multipartFormData.schema.properties.size)
             val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type)
+            assertEquals("binary", file.format)
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/uploadwithnameinannotation"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val file = multipartFormData.schema.properties["differentName"]
             assertNotNull(file)
             assertEquals("string", file.type)
             assertEquals("binary", file.format)
