@@ -1,5 +1,6 @@
 package net.corda.lifecycle.test.impl
 
+import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -150,7 +151,29 @@ class TestLifecycleCoordinatorImpl(
     }
 
     private fun runUserEventHandler(event: LifecycleEvent) {
-        userEventHandler.processEvent(event, this)
+        try {
+            userEventHandler.processEvent(event, this)
+        } catch (e: Throwable) {
+            val errorEvent = ErrorEvent(e)
+            logger.info(
+                "$name Lifecycle: An error occurred during the processing of event $event by a lifecycle " +
+                        "coordinator: ${e.message}. Triggering user event handling.",
+                e
+            )
+            try {
+                userEventHandler.processEvent(errorEvent, this)
+            } catch (e: Throwable) {
+                errorEvent.isHandled = false
+            }
+            if (!errorEvent.isHandled) {
+                logger.error(
+                    "$name Lifecycle: An unhandled error was encountered while processing $event in a lifecycle " +
+                            "coordinator: ${e.message}. This coordinator will now shut down.",
+                    e
+                )
+            }
+            errorEvent.isHandled
+        }
     }
 
     private fun processStartEvent() {

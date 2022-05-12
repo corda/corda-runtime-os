@@ -11,10 +11,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "com.google.guava:guava:$guavaVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
-
-    testImplementation project(":testing:test-utilities")
 }

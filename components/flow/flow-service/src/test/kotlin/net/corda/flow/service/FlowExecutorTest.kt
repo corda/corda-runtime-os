@@ -12,7 +12,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
-import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -54,7 +53,7 @@ class FlowExecutorTest {
 
     @Test
     fun testFlowExecutor() {
-        val messageSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent> = StateAndEventSubscriptionStub()
+        val messageSubscription  = StateAndEventSubscriptionStub()
 
         doReturn(messageSubscription).whenever(subscriptionFactory).createStateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>(
             any(),
@@ -66,9 +65,9 @@ class FlowExecutorTest {
         val flowExecutor = FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowEventProcessorFactory)
 
         flowExecutor.start()
-        assertTrue(flowExecutor.isRunning)
+        assertTrue(messageSubscription.isStarted)
         flowExecutor.stop()
-        assertFalse(flowExecutor.isRunning)
+        assertFalse(messageSubscription.isStarted)
 
         verify(subscriptionFactory, times(1)).createStateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>(
             any(),

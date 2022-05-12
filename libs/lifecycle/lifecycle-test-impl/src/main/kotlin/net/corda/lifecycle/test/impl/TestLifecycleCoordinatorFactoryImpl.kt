@@ -7,19 +7,15 @@ import net.corda.lifecycle.LifecycleEventHandler
 
 class TestLifecycleCoordinatorFactoryImpl : LifecycleCoordinatorFactory {
 
-    private var _lifecycleCoordinator: TestLifecycleCoordinatorImpl? = null
-    val lifecycleCoordinator: TestLifecycleCoordinatorImpl
-        get() = _lifecycleCoordinator!!
+    val coordinators = mutableMapOf<LifecycleCoordinatorName, TestLifecycleCoordinatorImpl>()
 
     override fun createCoordinator(
         name: LifecycleCoordinatorName,
         batchSize: Int,
         handler: LifecycleEventHandler
     ): LifecycleCoordinator {
-        _lifecycleCoordinator = TestLifecycleCoordinatorImpl(
-            name,
-            handler
-        )
-        return lifecycleCoordinator
+        return coordinators.compute(name) { _, _ ->
+            TestLifecycleCoordinatorImpl(name, handler)
+        } as LifecycleCoordinator
     }
 }

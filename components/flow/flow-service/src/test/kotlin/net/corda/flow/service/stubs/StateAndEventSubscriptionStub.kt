@@ -11,16 +11,17 @@ class StateAndEventSubscriptionStub :
             Checkpoint,
             FlowEvent> {
 
-    private var _isRunning = false
+    var isStarted = false
+
     override val isRunning: Boolean
-        get() = _isRunning
+        get() = true
 
     override fun start() {
-        _isRunning = true
+        isStarted = true
     }
 
     override fun stop() {
-        _isRunning = false
+        isStarted = false
     }
 
     override val subscriptionName: LifecycleCoordinatorName
