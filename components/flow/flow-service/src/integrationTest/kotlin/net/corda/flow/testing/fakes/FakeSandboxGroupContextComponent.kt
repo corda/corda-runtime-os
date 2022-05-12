@@ -1,8 +1,8 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
+import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE
+import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.CHECKPOINT_SERIALIZER
+import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.DEPENDENCY_INJECTOR
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata

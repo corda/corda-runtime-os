@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.sandbox.impl
 
+import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
@@ -60,11 +61,11 @@ class FlowProtocolStore(
                 return responder
             }
         }
-        throw IllegalArgumentException("No responder is configured for any of the received protocols: $receivedProtocols")
+        throw FlowProcessingException("No responder is configured for any of the received protocols: $receivedProtocols")
     }
 
     fun protocolsForInitiator(initiator: String): List<FlowProtocol> {
         return initiatorToProtocol[initiator]
-            ?: throw IllegalArgumentException("No protocols were found for initiating flow $initiator")
+            ?: throw FlowProcessingException("No protocols were found for initiating flow $initiator")
     }
 }

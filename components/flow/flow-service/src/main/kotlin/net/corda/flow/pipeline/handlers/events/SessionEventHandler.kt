@@ -7,11 +7,10 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
+import net.corda.flow.pipeline.sandbox.impl.FlowProtocolStore
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
@@ -71,11 +70,9 @@ class SessionEventHandler @Activate constructor(
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
-        val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(initiatingIdentity.toCorda())
-        val initiatedFlow = initiatingToInitiatedFlows[sessionInit.cpiId to sessionInit.flowName]
-                ?: throw FlowProcessingException(
-                    "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
-                )
+        val protocols = sessionInit.versions.map { FlowProtocol(sessionInit.protocol, it) }
+        val protocolStore = flowSandboxService.get(initiatedIdentity.toCorda()).protocolStore
+        val initiatedFlow = protocolStore.responderForProtocol(protocols)
         val startContext = FlowStartContext.newBuilder()
             .setStatusKey(FlowKey(sessionId, initiatedIdentity))
             .setInitiatorType(FlowInitiatorType.P2P)
@@ -90,8 +87,7 @@ class SessionEventHandler @Activate constructor(
         context.checkpoint.initFromNew(sessionInit.flowId, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
     }
 
-    private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
-        return flowSandboxService.get(initiatedIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
-            ?: throw FlowProcessingException("Sandbox for identity: $initiatedIdentity has not been initialised correctly")
+    private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): FlowProtocolStore {
+        return flowSandboxService.get(initiatedIdentity).protocolStore
     }
 }

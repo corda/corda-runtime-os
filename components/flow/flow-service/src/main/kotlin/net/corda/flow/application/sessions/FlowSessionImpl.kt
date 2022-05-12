@@ -3,8 +3,6 @@ package net.corda.flow.application.sessions
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
-import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -115,8 +113,7 @@ class FlowSessionImpl(
 
     private fun getSerializationService(): SerializationService {
         return fiber.getExecutionContext().run {
-            sandboxGroupContext.getObjectByKey(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE)
-                ?: throw CordaRuntimeException("P2P serialization service not found within the sandbox for identity: $holdingIdentity")
+            sandboxGroupContext.amqpSerializer
         }
     }
 

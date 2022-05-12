@@ -11,16 +11,12 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.factory.FlowFactory
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
@@ -106,14 +102,16 @@ class FlowRunnerImpl @Activate constructor(
     ): Future<FlowIORequest<*>> {
         val checkpoint = context.checkpoint
 
-        log.info("start new initiated flow flowClassName: ${sessionInit.flowName}")
+        log.info("start new initiated flow for protocol name: ${sessionInit.protocol}")
 
         val sandbox = getSandbox(checkpoint)
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
 
+        val protocols = sessionInit.versions.map { FlowProtocol(sessionInit.protocol, it) }
         val initiatedFlowClassName =
-            getInitiatingToInitiatedFlowsFromSandbox(sessionEvent.initiatedIdentity.toCorda())[sessionInit.cpiId to sessionInit.flowName]
-                ?: throw FlowProcessingException("No initiated flow that can be started from ${sessionInit.flowName}")
+            flowSandboxService.get(sessionEvent.initiatedIdentity.toCorda()).protocolStore.responderForProtocol(
+                protocols
+            )
 
         val flowSession = flowSessionFactory.create(
             sessionEvent.sessionId,
@@ -134,16 +132,16 @@ class FlowRunnerImpl @Activate constructor(
     }
 
     private fun createFiberExecutionContext(
-        sandboxGroupContext: SandboxGroupContext,
+        sandboxGroupContext: FlowSandboxGroupContext,
         checkpoint: FlowCheckpoint
     ): FlowFiberExecutionContext {
         return FlowFiberExecutionContext(
-            sandboxGroupContext.getDependencyInjector(),
+            sandboxGroupContext.dependencyInjector,
             checkpoint,
-            sandboxGroupContext.getCheckpointSerializer(),
+            sandboxGroupContext.checkpointSerializer,
             sandboxGroupContext,
             checkpoint.holdingIdentity,
-            membershipGroupReaderProvider.getGroupReader( checkpoint.holdingIdentity.toCorda())
+            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity.toCorda())
         )
     }
 
@@ -159,24 +157,12 @@ class FlowRunnerImpl @Activate constructor(
         return flowFiber.resume(fiberContext, flowContinuation, scheduler)
     }
 
-    private fun getSandbox(checkpoint: FlowCheckpoint): SandboxGroupContext {
-        return flowSandboxService.get(HoldingIdentity(checkpoint.holdingIdentity.x500Name, checkpoint.holdingIdentity.groupId))
-    }
-
-    private fun SandboxGroupContext.getCheckpointSerializer(): CheckpointSerializer {
-        return checkNotNull(get(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, CheckpointSerializer::class.java)) {
-            "Failed to find the CheckpointSerializer in the Sandbox. key='${FlowSandboxContextTypes.CHECKPOINT_SERIALIZER}'"
-        }
-    }
-
-    private fun SandboxGroupContext.getDependencyInjector(): SandboxDependencyInjector {
-        return checkNotNull(get(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, SandboxDependencyInjector::class.java)) {
-            "Failed to find the SandboxDependencyInjector in the Sandbox. key='${FlowSandboxContextTypes.CHECKPOINT_SERIALIZER}'"
-        }
-    }
-
-    private fun getInitiatingToInitiatedFlowsFromSandbox(holdingIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
-        return flowSandboxService.get(holdingIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
-            ?: throw FlowProcessingException("Sandbox for identity: $holdingIdentity has not been initialised correctly")
+    private fun getSandbox(checkpoint: FlowCheckpoint): FlowSandboxGroupContext {
+        return flowSandboxService.get(
+            HoldingIdentity(
+                checkpoint.holdingIdentity.x500Name,
+                checkpoint.holdingIdentity.groupId
+            )
+        )
     }
 }

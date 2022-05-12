@@ -5,7 +5,7 @@ import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
 import net.corda.flow.fiber.FlowFiberService;
 import net.corda.flow.fiber.FlowIORequest;
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes;
+import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.membership.read.MembershipGroupReader;
@@ -54,7 +54,7 @@ public class FlowSessionImplJavaTest {
         received.put("session id", new byte[]{ 1, 2, 3 });
         when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
         when(serializationService.deserialize(any(byte[].class), any())).thenReturn(1);
-        when(sandboxGroupContext.get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService.class))
+        when(sandboxGroupContext.get(FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService.class))
                 .thenReturn(serializationService);
         when(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext);
         when(flowFiber.suspend(any(FlowIORequest.SendAndReceive.class))).thenReturn(received);

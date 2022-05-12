@@ -4,7 +4,7 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
+import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,7 +36,7 @@ class FlowSessionFactoryImplTest {
     @Suppress("Unused")
     @BeforeEach
     fun setup(){
-        whenever(sandboxGroupContext.get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
+        whenever(sandboxGroupContext.get(FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
             .thenReturn(serializationService)
     }
 

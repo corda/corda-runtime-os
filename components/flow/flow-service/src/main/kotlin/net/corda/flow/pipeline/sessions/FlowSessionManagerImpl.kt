@@ -35,9 +35,6 @@ class FlowSessionManagerImpl @Activate constructor(
         headers: FlowSessionHeaders,
         instant: Instant
     ): SessionState {
-        // Put in a default value of whatever the first returned protocol version is. In future sends, this will be
-        // populated with the actual version in use.
-        val protocolVersion = flowProtocols.first().version
         val protocolName = flowProtocols.first().protocol
         val protocolVersions = flowProtocols.map { it.version }
         val payload = SessionInit.newBuilder()

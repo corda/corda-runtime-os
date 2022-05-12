@@ -1,9 +1,9 @@
 package net.corda.flow.pipeline.sandbox
 
-import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContext
 import net.corda.virtualnode.HoldingIdentity
 
 interface FlowSandboxService {
 
-    fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext
+    fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext
 }

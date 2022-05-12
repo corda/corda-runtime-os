@@ -16,7 +16,7 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
+import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
@@ -90,7 +90,7 @@ class SessionEventHandlerTest {
 
         whenever(flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
 
-        whenever(sandboxGroupContext.get(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS, Map::class.java))
+        whenever(sandboxGroupContext.get(FlowSandboxSerializerTypes.INITIATING_TO_INITIATED_FLOWS, Map::class.java))
             .thenReturn(mapOf(Pair(CPI_ID, INITIATING_FLOW_NAME) to INITIATED_FLOW_NAME))
     }
 
@@ -142,7 +142,7 @@ class SessionEventHandlerTest {
     fun `Receiving a session init payload throws an exception if there is no matching initiated flow`() {
         val sessionEvent = createSessionInit()
 
-        whenever(sandboxGroupContext.get(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS, Map::class.java))
+        whenever(sandboxGroupContext.get(FlowSandboxSerializerTypes.INITIATING_TO_INITIATED_FLOWS, Map::class.java))
             .thenReturn(emptyMap<String, String>())
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
