@@ -134,6 +134,15 @@ tasks.register('dbIntegrationTest', TestOSGi) {
     bndrun = dbResolve.flatMap { it.outputBndrun }
 }
 
+// Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
+// Test task this ensures test results are captured
+tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
+    dialect = GENERIC
+    reports.from(fileTree("$testResultsDir/dbIntegrationTest").matching {
+        include '**/TEST-*.xml'
+    })
+}
+
 tasks.named('integrationTest') {
     // By default this is expected to run against the in-memory db, effectively
     // running an in-mem version of the message pattern tests
@@ -143,14 +152,6 @@ tasks.named('integrationTest') {
     enabled = false
 }
 
-// Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
-// Test task this ensures test results are captured
-tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
-    dialect = GENERIC
-    reports.from(fileTree("$testResultsDir/dbIntegrationTest").matching {
-        include '**/TEST-*.xml'
-    })
-}
 
 artifacts {
     archives testingBundle
