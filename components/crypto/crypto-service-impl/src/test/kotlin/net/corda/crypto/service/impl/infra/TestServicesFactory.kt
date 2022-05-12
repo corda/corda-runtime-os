@@ -7,6 +7,7 @@ import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
 import net.corda.crypto.impl.components.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
+import net.corda.crypto.persistence.hsm.HSMCacheProvider
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -18,6 +19,10 @@ import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
@@ -77,25 +82,33 @@ class TestServicesFactory {
     }
 
     val hsmService: TestHSMService by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        class ProxyClient(private val impl: CryptoOpsProxyClient = mock()) : CryptoOpsProxyClient by impl {
-            override fun createWrappingKey(
-                configId: String,
-                failIfExists: Boolean,
-                masterKeyAlias: String,
-                context: Map<String, String>
-            ) {
-                cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
-            }
-        }
         TestHSMService(
             coordinatorFactory,
             HSMServiceImpl(
                 cryptoConfig,
                 TestHSMCache(),
                 schemeMetadata,
-                ProxyClient()
+                opsProxyClient
             )
         ).also {
+            it.start()
+            eventually {
+                assertTrue(it.isRunning)
+            }
+        }
+    }
+
+    val opsProxyClient: CryptoOpsProxyClient by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TestCryptoOpsProxyClient(this).also {
+            it.start()
+            eventually {
+                assertTrue(it.isRunning)
+            }
+        }
+    }
+
+    val hsmCacheProvider: HSMCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TestHSMCacheProvider(this).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
