@@ -16,6 +16,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -94,12 +95,45 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun flowStatus(state: FlowStates, result: String?, error: Exception?) {
+    override fun noFlowEvents() {
+        asserts.add { testRun ->
+            val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
+            assertEquals(0, eventRecords.size, "Matched FlowEvents")
+        }
+    }
+
+    override fun checkpointHasRetry(expectedCount: Int) {
+        asserts.add { testRun ->
+            assertThat(testRun.response?.updatedState?.retryState).isNotNull
+            val retry = testRun.response!!.updatedState!!.retryState
+
+            assertThat(retry.retryCount).isEqualTo(expectedCount)
+
+            /** we can't assert the event the second time around as it's a wakeup event (initially)
+             * so the testRun.event, which records the event we send into the system, will not match
+             * the retry.failedEvent as internally the pipeline switches from the wakeup to the event that needs
+             * to be retried.
+             */
+            if (retry.retryCount == 1) {
+                assertThat(retry.failedEvent).isEqualTo(testRun.event.value)
+            }
+        }
+    }
+
+    override fun checkpointDoesNotHaveRetry() {
+        asserts.add { testRun ->
+            assertThat(testRun.response?.updatedState?.retryState).isNull()
+        }
+    }
+
+    override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response)
             assertTrue(
-                testRun.response!!.responseEvents.any { matchStatusRecord(flowId, state, result, error, it) },
-                "Expected Flow Status: ${state}, result = ${result ?: "NA"} error = ${error?.message ?: "NA"}"
+                testRun.response!!.responseEvents.any {
+                    matchStatusRecord(flowId, state, result, errorType, errorMessage, it)
+                },
+                "Expected Flow Status: ${state}, result = ${result ?: "NA"} error = ${errorMessage ?: "NA"}"
             )
         }
     }
@@ -136,7 +170,8 @@ class OutputAssertionsImpl(
         flowId: String,
         state: FlowStates,
         result: String?,
-        error: Exception?,
+        errorType: String?,
+        errorMessage: String?,
         record: Record<*, *>
     ): Boolean {
         if (record.value !is FlowStatus) {
@@ -147,12 +182,19 @@ class OutputAssertionsImpl(
         return flowId == payload.flowId
                 && payload.flowStatus == state
                 && payload.result == result
-                && payload.error?.errorMessage == error?.message
+                && payload.error?.errorType == errorType
+                && payload.error?.errorMessage == errorMessage
     }
 
     override fun nullStateRecord() {
         asserts.add {
             assertNull(it.response?.updatedState, "Expected to receive NULL for output state")
+        }
+    }
+
+    override fun markedForDlq() {
+        asserts.add {
+            assertThat(it.response?.markForDLQ).isTrue
         }
     }
 

@@ -1,8 +1,26 @@
 package net.corda.flow.testing.context
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.v5.base.types.MemberX500Name
 
-interface WhenSetup {
+interface StepSetup {
+
+    val initiatedIdentityMemberName: MemberX500Name
+
+    fun virtualNode(cpiId: String, holdingId: HoldingIdentity)
+
+    fun cpkMetadata(cpiId: String, cpkId: String)
+
+    fun sandboxCpk(cpkId: String)
+
+    fun membershipGroupFor(owningMember: HoldingIdentity)
+
+    fun sessionInitiatingIdentity(initiatingIdentity: HoldingIdentity)
+
+    fun sessionInitiatedIdentity(initiatedIdentity: HoldingIdentity)
+
+    fun flowConfiguration(key:String, value:Any)
+
     fun startFlowEventReceived(
         flowId: String,
         requestId: String,

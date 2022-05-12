@@ -29,7 +29,15 @@ interface OutputAssertions {
 
     fun wakeUpEvent()
 
-    fun flowStatus(state: FlowStates, result: String? = null, error: Exception? = null)
+    fun noFlowEvents()
+
+    fun checkpointHasRetry(expectedCount: Int)
+
+    fun checkpointDoesNotHaveRetry()
+
+    fun flowStatus(state: FlowStates, result: String? = null, errorType: String? = null, errorMessage:String? = null)
 
     fun nullStateRecord()
+
+    fun markedForDlq()
 }
