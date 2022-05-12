@@ -189,7 +189,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
         cpks.forEach {
             val cpkChecksum = it.metadata.hash.toString()
+            // NB: We might already have an identical CPK data stored, hence using `merge` rather than persist
             em.merge(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+            // Also performing upsert on CPK metadata as it may already be stored in the DB
             em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
         }
     }
@@ -204,9 +206,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiId = cpi.metadata.id
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
 
-        // Delete CPK metadata in separate transaction
-        val cpkDataList: List<CpkDataEntity> = entityManagerFactory.createEntityManager().transaction { em ->
-            val cpkMetadataList = em.createQuery(
+        // Delete CPK metadata in separate transaction, to be reviewed
+        entityManagerFactory.createEntityManager().transaction { em ->
+            val cpkMetadataStream = em.createQuery(
                 "FROM ${CpkMetadataEntity::class.simpleName} WHERE " +
                         "cpi_name = :cpi_name AND cpi_version = :cpi_version AND cpi_signer_summary_hash = :cpi_signer_summary_hash",
                 CpkMetadataEntity::class.java
@@ -214,33 +216,12 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 .setParameter("cpi_name", cpiId.name)
                 .setParameter("cpi_version", cpiId.version)
                 .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHashForDbQuery)
-                .resultList
+                .resultStream
 
-            log.info("Found ${cpkMetadataList.size} CPK meta data items")
-
-            cpkMetadataList.flatMap { cpkMeta ->
+            cpkMetadataStream.forEach { cpkMeta ->
+                // To be reviewed after more changes merged and we will be able to update the version and timestamp
+                // on CPK metadata
                 em.remove(em.merge(cpkMeta))
-
-                val cpkDataList = em.createQuery(
-                    "FROM ${CpkDataEntity::class.simpleName} WHERE " +
-                            "file_checksum = :file_checksum",
-                    CpkDataEntity::class.java
-                )
-                    .setParameter("file_checksum", cpkMeta.cpkFileChecksum)
-                    .resultList
-                log.info("Found ${cpkDataList.size} CPK data items")
-                cpkDataList
-            }
-        }
-
-        // Delete each piece of CPK data in separate transactions, as it may fail if CPK is referenced by more than one CPI
-        cpkDataList.forEach { cpkData ->
-            try {
-                entityManagerFactory.createEntityManager().transaction { em ->
-                    em.remove(em.merge(cpkData))
-                }
-            } catch (ex: Exception) {
-                log.warn("Failed for delete CPK data: ${cpkData.fileChecksum}", ex)
             }
         }
 
