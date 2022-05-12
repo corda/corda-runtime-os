@@ -24,8 +24,6 @@ import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -199,21 +197,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     private fun MutableSandboxGroupContext.putInitiatingToInitiatedFlowsMap(cpiMetadata: CpiMetadata) {
-        val initiatingToInitiatedFlows = mutableMapOf<Pair<String, String>, String>()
+        val flowProtocolStore = FlowProtocolStore.build(sandboxGroup, cpiMetadata)
 
-        // Current implementation is each flow to initiated flow pair is unique per CPI
-        for (cpkMetadata in cpiMetadata.cpksMetadata) {
-            for (flow in cpkMetadata.cordappManifest.flows) {
-                val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
-                if (flowClass.isAnnotationPresent(InitiatedBy::class.java)) {
-                    val initiatingFlow = flowClass.getAnnotation(InitiatedBy::class.java).value.java.name
-                    val key = cpiMetadata.cpiId.name to initiatingFlow
-                    check(key !in initiatingToInitiatedFlows) { "Flow $flow has been found in multiple CPKs but should be unique" }
-                    initiatingToInitiatedFlows[key] = flow
-                }
-            }
-        }
-
-        putObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS, initiatingToInitiatedFlows)
+        putObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS, flowProtocolStore)
     }
 }

@@ -9,7 +9,9 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.layeredpropertymap.toWire
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -29,12 +31,18 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
+        flowProtocols: List<FlowProtocol>,
+        headers: FlowSessionHeaders,
         instant: Instant
     ): SessionState {
+        // Put in a default value of whatever the first returned protocol version is. In future sends, this will be
+        // populated with the actual version in use.
+        val protocolVersion = flowProtocols.first().version
+        val protocolName = flowProtocols.first().protocol
+        val protocolVersions = flowProtocols.map { it.version }
         val payload = SessionInit.newBuilder()
-            // TODO Throw an error if a non initiating flow is trying to create this session (shouldn't really get here for real, but for
-            //  this class, it's not valid)
-            .setFlowName(checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty"))
+            .setProtocol(protocolName)
+            .setVersions(protocolVersions)
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
@@ -49,6 +57,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), "flow-worker-dev"))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
+            .setHeaders(headers.toWire())
             .setPayload(payload)
             .build()
 
@@ -63,6 +72,7 @@ class FlowSessionManagerImpl @Activate constructor(
     override fun sendDataMessages(
         checkpoint: FlowCheckpoint,
         sessionToPayload: Map<String, ByteArray>,
+        headers: FlowSessionHeaders,
         instant: Instant
     ): List<SessionState> {
         return sessionToPayload.map { (sessionId, payload) ->
@@ -83,6 +93,7 @@ class FlowSessionManagerImpl @Activate constructor(
                     .setSequenceNum(null)
                     .setReceivedSequenceNum(0)
                     .setOutOfOrderSequenceNums(listOf(0))
+                    .setHeaders(headers.toWire())
                     .setPayload(SessionData(ByteBuffer.wrap(payload)))
                     .build(),
                 instant = instant
@@ -93,6 +104,7 @@ class FlowSessionManagerImpl @Activate constructor(
     override fun sendCloseMessages(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
+        headers: FlowSessionHeaders,
         instant: Instant
     ): List<SessionState> {
         return sessionIds.map { sessionId ->
@@ -113,6 +125,7 @@ class FlowSessionManagerImpl @Activate constructor(
                     .setSequenceNum(null)
                     .setReceivedSequenceNum(0)
                     .setOutOfOrderSequenceNums(listOf(0))
+                    .setHeaders(headers.toWire())
                     .setPayload(SessionClose())
                     .build(),
                 instant = instant

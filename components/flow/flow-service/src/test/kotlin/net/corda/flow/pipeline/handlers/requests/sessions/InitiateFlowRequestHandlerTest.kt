@@ -6,6 +6,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,6 +32,7 @@ class InitiateFlowRequestHandlerTest {
                 eq(testContext.flowCheckpoint),
                 eq(sessionId1),
                 eq(ALICE_X500_NAME),
+                eq(listOf(FlowProtocol("foo", 1))),
                 any()
             )
         ).thenReturn(sessionState1)
