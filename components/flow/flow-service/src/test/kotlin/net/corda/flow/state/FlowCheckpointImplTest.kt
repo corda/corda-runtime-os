@@ -259,6 +259,7 @@ class FlowCheckpointImplTest {
         val checkpoint = Checkpoint().apply {
             flowState = StateMachineState()
             flowStartContext = FlowStartContext()
+            maxFlowSleepDuration = 60000
         }
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 

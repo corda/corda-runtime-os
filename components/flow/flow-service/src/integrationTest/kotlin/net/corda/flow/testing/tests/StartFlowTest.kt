@@ -17,7 +17,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 class StartFlowTest : FlowServiceTestBase() {
 
     @Test
-    @Disabled
     fun `RPC Start Flow - Flow starts and updates stats to running`() {
 
         given {
@@ -59,7 +58,6 @@ class StartFlowTest : FlowServiceTestBase() {
      */
 
     @Test
-    @Disabled
     fun `RPC Start Flow - Retry scenario 1 - Fail then succeeds`() {
         given {
             cpkMetadata(CPI1, CPK1)

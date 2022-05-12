@@ -6,7 +6,6 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -20,7 +19,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -33,7 +31,7 @@ class FlowEventPipelineFactoryImplTest {
     private val flowRunner = mock<FlowRunner>()
     private val config = mock<SmartConfig>()
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().apply {
-        whenever(this.create(checkpoint, mock())).thenReturn(flowCheckpoint)
+        whenever(this.create(checkpoint, config)).thenReturn(flowCheckpoint)
     }
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
 
@@ -60,9 +58,8 @@ class FlowEventPipelineFactoryImplTest {
 
     @Test
     fun `Creates a FlowEventPipeline instance`() {
-        val config = mock<SmartConfig>()
         val expected = FlowEventPipelineImpl(
-            mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowEventHandler),
+            mapOf(Wakeup::class.java to flowEventHandler),
             mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowWaitingForHandler),
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
@@ -71,24 +68,5 @@ class FlowEventPipelineFactoryImplTest {
         )
 
         assertEquals(expected, factory.create(checkpoint, flowEvent, config))
-    }
-
-    @Test
-    fun `Throws a FlowProcessingException if there is no matching event handler`() {
-        val factory = getFlowEventPipelineFactory(emptyList())
-        assertThrows<FlowProcessingException> {
-            factory.create(Checkpoint(), flowEvent, config)
-        }
-    }
-
-    private fun getFlowEventPipelineFactory(flowEventHandlerList: List<FlowEventHandler<out Any>>): FlowEventPipelineFactory {
-        return FlowEventPipelineFactoryImpl(
-            flowRunner,
-            flowGlobalPostProcessor,
-            flowCheckpointFactory,
-            flowEventHandlerList,
-            listOf(flowWaitingForHandler),
-            listOf(flowRequestHandler)
-        )
     }
 }
