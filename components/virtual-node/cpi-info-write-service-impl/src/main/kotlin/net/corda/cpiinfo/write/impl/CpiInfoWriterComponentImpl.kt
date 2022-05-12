@@ -27,7 +27,7 @@ import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 /**
  * CPI Info Service writer so that we can [put] and [remove]
- * [Cpi.Metadata] from Kafka compacted queues
+ * [CpiMetadata] from Kafka compacted queues
  *
  * Complements [CpiInfoReaderComponent]
  */
