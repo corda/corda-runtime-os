@@ -17,11 +17,11 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Clock
 
 @Suppress("LongParameterList")
 internal class OutboundMessageProcessor(

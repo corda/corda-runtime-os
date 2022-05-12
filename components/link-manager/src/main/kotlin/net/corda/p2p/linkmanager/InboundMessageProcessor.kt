@@ -28,9 +28,9 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.schema.Schemas
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Clock
 
 internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,

@@ -9,6 +9,8 @@ import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
@@ -16,7 +18,6 @@ import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import org.osgi.service.component.annotations.Reference
-import java.time.Clock
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -44,7 +45,7 @@ class LinkManager(
         ),
     linkManagerCryptoProcessor: CryptoProcessor =
         StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration),
-    clock: Clock = Clock.systemUTC()
+    clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
     companion object {

@@ -56,11 +56,11 @@ import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessorException
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
-import java.time.Clock
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture

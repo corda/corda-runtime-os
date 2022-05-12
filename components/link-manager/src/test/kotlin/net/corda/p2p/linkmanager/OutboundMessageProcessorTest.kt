@@ -65,7 +65,7 @@ class OutboundMessageProcessorTest {
         membersAndGroups.first,
         assignedListener,
         messagesPendingSession,
-        mockTimeFacilitiesProvider.mockClock
+        mockTimeFacilitiesProvider.clock,
     )
 
     @Test

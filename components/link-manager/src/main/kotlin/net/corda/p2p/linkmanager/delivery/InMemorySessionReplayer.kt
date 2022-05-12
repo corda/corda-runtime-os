@@ -16,9 +16,9 @@ import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Clock
 
 @Suppress("LongParameterList")
 internal class InMemorySessionReplayer(

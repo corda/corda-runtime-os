@@ -79,7 +79,7 @@ class InboundMessageProcessorTest {
         membersAndGroups.second,
         membersAndGroups.first,
         assignedListener,
-        mockTimeFacilitiesProvider.mockClock
+        mockTimeFacilitiesProvider.clock
     )
 
     @Test
