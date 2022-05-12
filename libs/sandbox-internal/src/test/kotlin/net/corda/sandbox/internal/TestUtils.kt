@@ -46,7 +46,7 @@ fun mockBundle(
     whenever(location).thenReturn(bundleLocation)
 }
 
-/** Generates a mock [Cpk]. */
+/** Generates a mock CpkMetadata. */
 fun mockCpkMeta(): CpkMetadata {
     val id = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash())
     val hash = randomSecureHash()
