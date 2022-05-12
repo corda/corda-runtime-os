@@ -105,6 +105,7 @@ internal class ValidationFunctions(
                 log.info("Force uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
                 chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else if (!cpiExists) {
+                log.info("Uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
                 chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else {
                 throw ValidationException(

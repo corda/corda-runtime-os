@@ -17,7 +17,6 @@ import net.corda.packaging.Cpi
 import net.corda.packaging.Cpk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Files
@@ -167,7 +166,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     }
 
     override fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
-        getCpiEntity(cpiName, cpiVersion, signerSummaryHash) != null
+        getCpiMetadataEntity(cpiName, cpiVersion, signerSummaryHash) != null
 
     override fun persistMetadataAndCpks(
         cpi: Cpi,
@@ -179,11 +178,11 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadataEntity)
-            storeCpkDataInTransaction(cpi.cpks, em, cpiMetadataEntity)
+            storeCpkContentInTransaction(cpi.cpks, em, cpiMetadataEntity)
         }
     }
 
-    private fun storeCpkDataInTransaction(
+    private fun storeCpkContentInTransaction(
         cpks: Collection<Cpk>,
         em: EntityManager,
         cpiMetadataEntity: CpiMetadataEntity
@@ -219,18 +218,19 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             log.info("Found ${cpkMetadataList.size} CPK meta data items")
 
-            uncheckedCast(cpkMetadataList.flatMap { cpkMeta ->
+            cpkMetadataList.flatMap { cpkMeta ->
                 em.remove(em.merge(cpkMeta))
 
                 val cpkDataList = em.createQuery(
                     "FROM ${CpkDataEntity::class.simpleName} WHERE " +
-                            "file_checksum = :file_checksum"
+                            "file_checksum = :file_checksum",
+                    CpkDataEntity::class.java
                 )
                     .setParameter("file_checksum", cpkMeta.cpkFileChecksum)
                     .resultList
                 log.info("Found ${cpkDataList.size} CPK data items")
                 cpkDataList
-            })
+            }
         }
 
         // Delete each piece of CPK data in separate transactions, as it may fail if CPK is referenced by more than one CPI
@@ -264,7 +264,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             em.merge(newCpiMetadataEntity)
 
             // Store CPK data
-            storeCpkDataInTransaction(cpi.cpks, em, newCpiMetadataEntity)
+            storeCpkContentInTransaction(cpi.cpks, em, newCpiMetadataEntity)
         }
     }
 
@@ -282,14 +282,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         return entityManager.find(CpiMetadataEntity::class.java, primaryKey)
     }
 
-    private fun getCpiEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
+    private fun getCpiMetadataEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {
         return entityManagerFactory.createEntityManager().transaction {
             findCpiMetadataEntityInTransaction(it, name, version, signerSummaryHash)
         }
     }
 
     override fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String? {
-        return getCpiEntity(cpiName, cpiVersion, signerSummaryHash)?.groupId
+        return getCpiMetadataEntity(cpiName, cpiVersion, signerSummaryHash)?.groupId
     }
 
     /**
