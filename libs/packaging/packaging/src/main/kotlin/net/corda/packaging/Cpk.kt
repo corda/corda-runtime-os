@@ -13,7 +13,7 @@ import java.nio.file.Path
 import java.security.cert.Certificate
 import java.util.NavigableSet
 
-/** Represents a [Cpk] file in the filesystem */
+/** Represents a Cpk file in the filesystem */
 interface Cpk : AutoCloseable {
 
     companion object {
@@ -33,17 +33,17 @@ interface Cpk : AutoCloseable {
     /** Uniquely identifies a CPK archive */
     interface Identifier : Comparable<Identifier> {
         /**
-         * The Bundle-SymbolicName of the main bundle inside the [Cpk]
+         * The Bundle-SymbolicName of the main bundle inside the Cpk
          */
         val name : String
 
         /**
-         * The Bundle-Version of the main bundle inside the [Cpk]
+         * The Bundle-Version of the main bundle inside the Cpk
          */
         val version : String
 
         /**
-         * The hash of concatenation of the sorted hashes of the public keys of the signers of the [Cpk],
+         * The hash of concatenation of the sorted hashes of the public keys of the signers of the Cpk,
          * null if the CPK isn't signed
          */
         val signerSummaryHash : SecureHash?
@@ -56,8 +56,8 @@ interface Cpk : AutoCloseable {
     }
 
     /**
-     * [Type] is used to distinguish between different types of [Cpk],
-     * its main purpose is currently to distinguish between [Cpk]s that are part
+     * [Type] is used to distinguish between different types of Cpk,
+     * its main purpose is currently to distinguish between Cpks that are part
      * of the Corda runtime itself (and don't need to be resolved during dependency resolution)
      * and those that are not
      */
@@ -133,16 +133,16 @@ interface Cpk : AutoCloseable {
     }
 
     /**
-     * Contains the data associated to a [Cpk] file
+     * Contains the data associated to a Cpk file
      */
     interface Metadata {
         /**
-         * The [Identifier] of the [Cpk] archive
+         * The [Identifier] of the Cpk archive
          */
         val id : Identifier
 
         /**
-         * The file name of the main bundle inside the [Cpk]
+         * The file name of the main bundle inside the Cpk
          */
         val manifest : Manifest
         val mainBundle : String
@@ -185,7 +185,7 @@ interface Cpk : AutoCloseable {
     }
 
     /**
-     * Stores the metadata associated with this [Cpk] file
+     * Stores the metadata associated with this Cpk file
      */
     val metadata : Metadata
 
@@ -200,10 +200,10 @@ interface Cpk : AutoCloseable {
     val originalFileName : String? get() = null
 
     /**
-     * Returns an [InputStream] with the content of the associated resource inside the [Cpk] archive
+     * Returns an [InputStream] with the content of the associated resource inside the Cpk archive
      * with the provided [resourceName] or null if a resource with that name doesn't exist.
      *
-     * @param resourceName the name of the [Cpk] resource to be opened
+     * @param resourceName the name of the Cpk resource to be opened
      * @return an [InputStream] reading from the named resource
      * @throws [IOException] if a resource with the provided name is not found
      */
