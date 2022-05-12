@@ -3,12 +3,11 @@ package net.corda.processors.crypto.tests
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -50,6 +49,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
@@ -95,7 +95,7 @@ class CryptoProcessorTests {
         lateinit var cryptoProcessor: CryptoProcessor
 
         @InjectService(timeout = 5000L)
-        lateinit var opsClient: CryptoOpsClient
+        lateinit var opsClient: CryptoOpsClient // no need to start as it's started by the crypto processor
 
         @InjectService(timeout = 5000L)
         lateinit var verifier: SignatureVerificationService
@@ -112,11 +112,11 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
-        @InjectService(timeout = 5000)
-        lateinit var lbm: LiquibaseSchemaMigrator
+        @InjectService(timeout = 5000L)
+        lateinit var hsmRegistrationClient: HSMRegistrationClient
 
         @InjectService(timeout = 5000)
-        lateinit var softCryptoServiceProvider: SoftCryptoServiceProvider
+        lateinit var lbm: LiquibaseSchemaMigrator
 
         private lateinit var publisher: Publisher
 
@@ -148,15 +148,11 @@ class CryptoProcessorTests {
             setupDatabases()
             startDependencies()
             testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
-            // temporary hack as the DbAdmin doesn't support HSQL
             addDbConnectionConfigs(cryptoDb, vnodeDb)
-            // temporary hack to create wrapping key
-            softCryptoServiceProvider.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            ).createWrappingKey("wrapping-key", false, emptyMap())
+            CryptoConsts.Categories.all().forEach {
+                hsmRegistrationClient.assignSoftHSM(CryptoConsts.CLUSTER_TENANT_ID, it)
+                hsmRegistrationClient.assignSoftHSM(vnodeId, it)
+            }
         }
 
         @JvmStatic
@@ -167,9 +163,6 @@ class CryptoProcessorTests {
             }
             if (::flowOpsResponses.isInitialized) {
                 flowOpsResponses.close()
-            }
-            if (::opsClient.isInitialized) {
-                opsClient.stopAndWait()
             }
         }
 
@@ -209,15 +202,15 @@ class CryptoProcessorTests {
                     ConfigKeys.DB_CONFIG to clusterDb.config
                 )
             )
-            opsClient.startAndWait()
+            hsmRegistrationClient.startAndWait()
             cryptoProcessor.startAndWait(boostrapConfig)
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
                 lifecycleRegistry,
                 setOf(
-                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-                    LifecycleCoordinatorName.forComponent<CryptoProcessor>()
+                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
                 )
             ).also { it.startAndWait() }
         }
@@ -325,7 +318,8 @@ class CryptoProcessorTests {
         val original = opsClient.generateKeyPair(
             tenantId = tenantId,
             category = category,
-            alias = alias
+            alias = alias,
+            scheme = EDDSA_ED25519_CODE_NAME
         )
 
         `Should find existing public key by its id`(tenantId, alias, original, category, null)
@@ -349,6 +343,7 @@ class CryptoProcessorTests {
         val original = opsClient.freshKey(
             tenantId = tenantId,
             externalId = externalId,
+            scheme = EDDSA_ED25519_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
@@ -374,6 +369,7 @@ class CryptoProcessorTests {
     ) {
         val original = opsClient.freshKey(
             tenantId = tenantId,
+            scheme = EDDSA_ED25519_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
@@ -399,7 +395,8 @@ class CryptoProcessorTests {
     ) {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
-            tenantId = tenantId
+            tenantId = tenantId,
+            scheme = EDDSA_ED25519_CODE_NAME
         )
         publisher.publish(
             listOf(
@@ -429,6 +426,7 @@ class CryptoProcessorTests {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId,
+            scheme = EDDSA_ED25519_CODE_NAME,
             externalId = externalId
         )
         publisher.publish(

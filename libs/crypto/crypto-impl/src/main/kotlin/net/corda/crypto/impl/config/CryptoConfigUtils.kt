@@ -80,6 +80,50 @@ fun createDefaultCryptoConfig(
     throw CryptoConfigurationException("Failed to create default crypto config", e)
 }
 
+fun SmartConfig.addDefaultCryptoConfig(
+    fallbackCryptoRootKey: KeyCredentials,
+    fallbackSoftKey: KeyCredentials
+): SmartConfig {
+    val cryptoLibrary = if(hasPath(CRYPTO_CONFIG)) {
+        getConfig(CRYPTO_CONFIG)
+    } else {
+        null
+    }
+    val cryptoRootKeyPassphrase = if(cryptoLibrary?.hasPath(ROOT_KEY_PASSPHRASE) == true) {
+        cryptoLibrary.getString(ROOT_KEY_PASSPHRASE)
+    } else {
+        fallbackCryptoRootKey.passphrase
+    }
+    val cryptoRootKeySalt = if(cryptoLibrary?.hasPath(ROOT_KEY_SALT) == true) {
+        cryptoLibrary.getString(ROOT_KEY_SALT)
+    } else {
+        fallbackCryptoRootKey.salt
+    }
+    val softPersistenceConfig = if(cryptoLibrary?.hasPath(SOFT_PERSISTENCE_OBJ) == true) {
+        cryptoLibrary.getConfig(SOFT_PERSISTENCE_OBJ)
+    } else {
+        null
+    }
+    val softKeyPassphrase = if(softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::passphrase.name) == true) {
+        softPersistenceConfig.getString(CryptoSoftPersistenceConfig::passphrase.name)
+    } else {
+        fallbackSoftKey.passphrase
+    }
+    val softKeySoft = if(softPersistenceConfig?.hasPath(CryptoSoftPersistenceConfig::salt.name) == true) {
+        softPersistenceConfig.getString(CryptoSoftPersistenceConfig::salt.name)
+    } else {
+        fallbackSoftKey.salt
+    }
+    val cryptoRootKey = KeyCredentials(cryptoRootKeyPassphrase, cryptoRootKeySalt)
+    val softKey = KeyCredentials(softKeyPassphrase, softKeySoft)
+    return withValue(
+        CRYPTO_CONFIG,
+        ConfigValueFactory.fromMap(
+            factory.createDefaultCryptoConfig(cryptoRootKey, softKey).root().unwrapped()
+        )
+    )
+}
+
 fun SmartConfigFactory.createDefaultCryptoConfig(
     cryptoRootKey: KeyCredentials,
     softKey: KeyCredentials
