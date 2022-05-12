@@ -24,7 +24,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
 
-    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':libs:packaging:packaging-core')
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')
