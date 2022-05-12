@@ -10,6 +10,6 @@ dependencies {
 
     compileOnly 'org.osgi:osgi.annotation'
 
-    api project(":libs:virtual-node:packaging")
+    api project(":libs:packaging:packaging")
     api project(":libs:lifecycle:lifecycle")
 }

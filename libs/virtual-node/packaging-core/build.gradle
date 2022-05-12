@@ -10,8 +10,8 @@ dependencies {
 
     api platform("net.corda:corda-api:$cordaApiVersion")
     api "net.corda:corda-avro-schema"
-    api project(":libs:virtual-node:packaging")
-    api project(":libs:virtual-node:packaging-avro-converters")
+    api project(":libs:packaging:packaging")
+    api project(":libs:packaging:packaging-avro-converters")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

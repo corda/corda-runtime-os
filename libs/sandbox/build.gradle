@@ -11,7 +11,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     api platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    api project(":libs:virtual-node:packaging")
+    api project(":libs:packaging:packaging")
     api 'net.corda:corda-serialization'
 
     api project(":libs:virtual-node:packaging-core")

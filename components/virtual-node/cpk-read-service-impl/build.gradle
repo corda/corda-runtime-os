@@ -10,12 +10,12 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:virtual-node:packaging")
+    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation project(":libs:virtual-node:packaging-avro-converters")
+    implementation project(":libs:packaging:packaging-avro-converters")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:chunking:chunking-core")

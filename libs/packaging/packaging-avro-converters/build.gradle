@@ -9,6 +9,6 @@ description "Packaging avro converters"
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:virtual-node:packaging")
+    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-avro-schema"
 }

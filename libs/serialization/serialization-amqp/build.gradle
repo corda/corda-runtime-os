@@ -25,7 +25,7 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
 
-    implementation project(":libs:virtual-node:packaging")
+    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
