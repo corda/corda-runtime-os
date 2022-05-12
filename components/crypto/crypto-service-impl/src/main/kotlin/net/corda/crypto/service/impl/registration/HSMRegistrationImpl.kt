@@ -9,9 +9,10 @@ import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.config.TenantHSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.createCoordinator
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
@@ -32,11 +33,16 @@ class HSMRegistrationImpl @Activate constructor(
 ) : HSMRegistration {
     companion object {
         private val serializer = ObjectMapper()
+        private val  logger = contextLogger()
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName.forComponent<HSMRegistration>()
-    ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
+    private val coordinator = coordinatorFactory.createCoordinator<HSMRegistration> { e, c ->
+        logger.info("HSMRegistration received event {}.", e)
+        if(e is StartEvent) {
+            logger.info("Setting the status UP")
+            c.updateStatus(LifecycleStatus.UP)
+        }
+    }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
