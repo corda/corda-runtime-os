@@ -19,6 +19,7 @@ import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.time.Instant
 import java.util.Collections
 import java.util.TreeSet
 import java.util.stream.Collector
@@ -106,7 +107,7 @@ fun CpkMetadata.toCorda() : Cpk.Metadata = Cpk.Metadata.newInstance(
     }
 )
 
-fun Cpk.Metadata.toAvro() : CpkMetadata = CpkMetadata.newBuilder().also {
+fun Cpk.Metadata.toAvro(timestamp: Instant = Instant.now()): CpkMetadata = CpkMetadata.newBuilder().also {
     it.id = id.toAvro()
     it.manifest = manifest.toAvro()
     it.mainBundle = mainBundle
@@ -119,6 +120,7 @@ fun Cpk.Metadata.toAvro() : CpkMetadata = CpkMetadata.newBuilder().also {
         .map(Certificate::getEncoded)
         .map(ByteBuffer::wrap)
         .collect(Collectors.toUnmodifiableList())
+    it.timestamp = timestamp
 }.build()
 
 fun CpiIdentifier.toCorda() = Cpi.Identifier.newInstance(
@@ -127,7 +129,7 @@ fun CpiIdentifier.toCorda() = Cpi.Identifier.newInstance(
     signerSummaryHash?.let { net.corda.v5.crypto.SecureHash(it.algorithm, it.serverHash.array()) },
 )
 
-fun Cpi.Identifier.toAvro() = CpiIdentifier.newBuilder().also {
+fun Cpi.Identifier.toAvro(): CpiIdentifier = CpiIdentifier.newBuilder().also {
     it.name = name
     it.version = version
     it.signerSummaryHash = signerSummaryHash?.let { hash -> SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes)) }
@@ -140,10 +142,11 @@ fun CpiMetadata.toCorda() = Cpi.Metadata.newInstance(
     groupPolicy
 )
 
-fun Cpi.Metadata.toAvro() = CpiMetadata.newBuilder().also {
+fun Cpi.Metadata.toAvro(timestamp: Instant = Instant.now()): CpiMetadata = CpiMetadata.newBuilder().also {
     it.id = id.toAvro()
     it.hash = SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes))
-    it.cpks = cpks.map(Cpk.Metadata::toAvro)
+    it.cpks = cpks.map { cpk -> cpk.toAvro(timestamp) }
     it.groupPolicy = groupPolicy
     it.version = -1 // This value is required for initialization, but isn't used by except by the DB Reconciler.
+    it.timestamp = timestamp
 }.build()
