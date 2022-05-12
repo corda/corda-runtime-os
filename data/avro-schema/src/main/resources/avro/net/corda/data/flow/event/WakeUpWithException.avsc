@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "WakeUpWithException",
+  "namespace": "net.corda.data.flow.event",
+  "doc": "The WakeUpWithException event is used to report an exception back to user code",
+  "fields": [
+    {
+      "name": "error",
+      "type": "net.corda.data.ExceptionEnvelope",
+      "doc": "The error to be thrown back to the user code"
+    }
+  ]
+}

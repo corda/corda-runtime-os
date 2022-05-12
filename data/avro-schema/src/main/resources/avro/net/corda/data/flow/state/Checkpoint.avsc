@@ -39,6 +39,17 @@
         "items": "net.corda.data.flow.FlowStackItem"
       },
       "doc": "Used to track calls to sub-flows and their relationship to sessions."
+    },
+    {
+      "name": "retryState",
+      "type": ["null", "net.corda.data.flow.state.RetryState"],
+      "default": null,
+      "doc": "Optional retry information for a failed flow event. Setting this field marks the flow as retrying."
+    },
+    {
+      "name": "maxFlowSleepDuration",
+      "type": "int",
+      "doc": "The maximum time a flow can sleep, before a Wakeup event is generated (milliseconds)"
     }
   ]
 }

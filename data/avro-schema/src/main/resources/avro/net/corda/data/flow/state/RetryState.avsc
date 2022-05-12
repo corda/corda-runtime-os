@@ -1,0 +1,39 @@
+{
+  "type": "record",
+  "name": "RetryState",
+  "namespace": "net.corda.data.flow.state",
+  "doc": "The Retry State records the need to retry a failed event on the flow Checkpoint",
+  "fields": [
+    {
+      "name": "retryCount",
+      "type": "int",
+      "doc": "The current retry count, set to 0 for the initial failure"
+    },
+    {
+      "name": "failedEvent",
+      "type": "net.corda.data.flow.event.FlowEvent",
+      "doc": "Copy of the event that caused the failure"
+    },
+    {
+      "name": "error",
+      "type": "net.corda.data.ExceptionEnvelope",
+      "doc": "The original error that caused the retry"
+    },
+    {
+      "name": "firstFailureTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The timestamp of when the first exception occurred that triggered a retry"
+    },
+    {
+      "name": "lastFailureTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The timestamp of when the last exception occurred that triggered a retry (this will be the same as firstRetryTimestamp for a first time failure"
+    }
+  ]
+}
