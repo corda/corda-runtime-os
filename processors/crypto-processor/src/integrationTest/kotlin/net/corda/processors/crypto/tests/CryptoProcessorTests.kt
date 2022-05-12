@@ -30,7 +30,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.crypto.tests.infra.BOOT_CONFIGURATION
 import net.corda.processors.crypto.tests.infra.CRYPTO_CONFIGURATION_VALUE
@@ -94,9 +93,6 @@ class CryptoProcessorTests {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
-
-        @InjectService(timeout = 5000L)
-        lateinit var cryptoDependenciesProcessor: CryptoDependenciesProcessor
 
         @InjectService(timeout = 5000L)
         lateinit var opsClient: CryptoOpsClient
@@ -214,7 +210,6 @@ class CryptoProcessorTests {
                 )
             )
             opsClient.startAndWait()
-            cryptoDependenciesProcessor.startAndWait(boostrapConfig)
             cryptoProcessor.startAndWait(boostrapConfig)
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
