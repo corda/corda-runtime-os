@@ -251,7 +251,6 @@ if (JavaVersion.current() != javaVersion) {
 logger.quiet("SDK version: {}", JavaVersion.current())
 logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
 
-def cordaVersion = "$cordaProductVersion.$cordaRuntimeRevision"
 if (System.getenv("RELEASE_VERSION")?.trim()) {
     version = System.getenv("RELEASE_VERSION")
 } else {
@@ -261,11 +260,10 @@ if (System.getenv("RELEASE_VERSION")?.trim()) {
     } else if (System.getenv('VERSION_SUFFIX')) {
         versionSuffix = System.getenv('VERSION_SUFFIX')
     }
-    version = "$cordaVersion$versionSuffix"
+    version = "$cordaProductVersion.$cordaRuntimeRevision$versionSuffix"
 }
 logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
-logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
 if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
     logger.quiet( "Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
