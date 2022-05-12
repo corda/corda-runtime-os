@@ -42,7 +42,7 @@ interface HSMService : Lifecycle {
      * @param filter the optional map of the filter parameters such as
      * serviceName.*
      */
-    fun lookup(filter: Map<String, String> = emptyMap()): List<HSMInfo>
+    fun lookup(filter: Map<String, String>): List<HSMInfo>
 
     /**
      * Returns information about assigned HSM.

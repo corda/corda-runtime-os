@@ -44,11 +44,13 @@ import kotlin.test.assertTrue
 
 class HSMConfigurationBusProcessorTests {
     companion object {
-        private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
+        private fun createRequestContext(
+            tenantId: String = CryptoConsts.CLUSTER_TENANT_ID
+        ): CryptoRequestContext = CryptoRequestContext(
             "test-component",
             Instant.now(),
             UUID.randomUUID().toString(),
-            CryptoConsts.CLUSTER_TENANT_ID,
+            tenantId,
             KeyValuePairList(
                 listOf(
                     KeyValuePair("key1", "value1"),
@@ -103,6 +105,29 @@ class HSMConfigurationBusProcessorTests {
     }
 
     @Test
+    @Suppress("MaxLineLength")
+    fun `LinkHSMCategoriesCommand should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+        val hsmService = mock<HSMService>()
+        val processor = HSMConfigurationBusProcessor(hsmService)
+        val context = createRequestContext(UUID.randomUUID().toString())
+        val future = CompletableFuture<HSMConfigurationResponse>()
+        processor.onNext(
+            HSMConfigurationRequest(
+                context,
+                LinkHSMCategoriesCommand(UUID.randomUUID().toString(), listOf(
+                    HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.WRAPPED),
+                    HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.ALIASED)
+                ))
+            ),
+            future
+        )
+        val e = assertThrows<ExecutionException> {
+            future.get()
+        }
+        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
+    }
+
+    @Test
     fun `Should handle PutHSMCommand`() {
         val expectedConfigId = UUID.randomUUID().toString()
         val hsmService = mock<HSMService> {
@@ -126,6 +151,28 @@ class HSMConfigurationBusProcessorTests {
         assertThat(result.response).isInstanceOf(CryptoStringResult::class.java)
         assertEquals(expectedConfigId, (result.response as CryptoStringResult).value)
         Mockito.verify(hsmService, times(1)).putHSMConfig(info, serviceConfig)
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `PutHSMCommand should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+        val hsmService = mock<HSMService>()
+        val processor = HSMConfigurationBusProcessor(hsmService)
+        val info = HSMInfo()
+        val serviceConfig = "{}".toByteArray()
+        val context = createRequestContext(UUID.randomUUID().toString())
+        val future = CompletableFuture<HSMConfigurationResponse>()
+        processor.onNext(
+            HSMConfigurationRequest(
+                context,
+                PutHSMCommand(info, ByteBuffer.wrap(serviceConfig))
+            ),
+            future
+        )
+        val e = assertThrows<ExecutionException> {
+            future.get()
+        }
+        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
     }
 
     @Test
@@ -154,6 +201,26 @@ class HSMConfigurationBusProcessorTests {
         assertThat(result.response).isInstanceOf(HSMCategoryInfos::class.java)
         assertSame(links, (result.response as HSMCategoryInfos).links)
         Mockito.verify(hsmService, times(1)).getLinkedCategories(configId)
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `HSMLinkedCategoriesQuery should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+        val hsmService = mock<HSMService>()
+        val processor = HSMConfigurationBusProcessor(hsmService)
+        val context = createRequestContext(UUID.randomUUID().toString())
+        val future = CompletableFuture<HSMConfigurationResponse>()
+        processor.onNext(
+            HSMConfigurationRequest(
+                context,
+                HSMLinkedCategoriesQuery(UUID.randomUUID().toString())
+            ),
+            future
+        )
+        val e = assertThrows<ExecutionException> {
+            future.get()
+        }
+        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
     }
 
     @Test
@@ -191,6 +258,32 @@ class HSMConfigurationBusProcessorTests {
                 size == 1 && this["key1"] == "value1"
             }
         )
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `HSMQuery should throw CryptoServiceLibraryException wrapped in ExecutionException when tenant is not cluster`() {
+        val hsmService = mock<HSMService>()
+        val processor = HSMConfigurationBusProcessor(hsmService)
+        val context = createRequestContext(UUID.randomUUID().toString())
+        val future = CompletableFuture<HSMConfigurationResponse>()
+        processor.onNext(
+            HSMConfigurationRequest(
+                context,
+                HSMQuery(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair("key1", "value1")
+                        )
+                    )
+                )
+            ),
+            future
+        )
+        val e = assertThrows<ExecutionException> {
+            future.get()
+        }
+        assertThat(e.cause).isInstanceOf(CryptoServiceLibraryException::class.java)
     }
 
     @Test

@@ -16,6 +16,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_HSM_ASSOCIATION_TABLE)
+@Suppress("LongParameterList")
 class HSMAssociationEntity(
     /**
      * The association id.

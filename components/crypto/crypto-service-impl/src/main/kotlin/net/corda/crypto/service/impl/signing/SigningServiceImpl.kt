@@ -167,6 +167,7 @@ open class SigningServiceImpl(
     ): DigitalSignature.WithKey =
         doSign(tenantId, publicKey, signatureSpec, data, context)
 
+    @Suppress("LongParameterList")
     private fun doGenerateKeyPair(
         tenantId: String,
         category: String,

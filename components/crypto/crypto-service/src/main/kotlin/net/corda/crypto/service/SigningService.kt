@@ -128,6 +128,7 @@ interface SigningService {
      *
      * @return The public part of the pair.
      */
+    @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
         category: String,

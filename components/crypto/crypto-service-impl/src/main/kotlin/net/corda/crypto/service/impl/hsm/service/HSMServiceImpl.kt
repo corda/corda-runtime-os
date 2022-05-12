@@ -26,6 +26,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.time.Instant
 
+@Suppress("TooManyFunctions")
 class HSMServiceImpl(
     config: SmartConfig,
     private val hsmCache: HSMCache,

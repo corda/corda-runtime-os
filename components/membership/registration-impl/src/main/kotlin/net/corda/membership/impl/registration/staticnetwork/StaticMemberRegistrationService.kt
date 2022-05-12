@@ -37,6 +37,7 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
@@ -235,7 +236,8 @@ class StaticMemberRegistrationService @Activate constructor(
             } ?: generateKeyPair(
                 tenantId = tenantId,
                 category = CryptoConsts.Categories.LEDGER,
-                alias = keyAlias
+                alias = keyAlias,
+                scheme = ECDSA_SECP256R1_CODE_NAME // @Charlie - you will have to have a way of specifying that now
             )
         }
     }

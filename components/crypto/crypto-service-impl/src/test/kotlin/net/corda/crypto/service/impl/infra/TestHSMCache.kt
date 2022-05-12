@@ -71,14 +71,23 @@ class TestHSMCache : HSMCache {
         }
 
         override fun getHSMStats(category: String): List<HSMStat> = cache.lock.withLock {
-            // completely fake output
-            cache.configs.filter { it.id != CryptoConsts.SOFT_HSM_CONFIG_ID }.map {
+            cache.configs.filter {
+                it.id != CryptoConsts.SOFT_HSM_CONFIG_ID && cache.categoryMap.any { a ->
+                    a.config.id == it.id && a.category == category
+                }
+            }.map {
                 HSMStat(
                     configId = it.id,
-                    usages = 1,
-                    privateKeyPolicy = net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.WRAPPED,
-                    serviceName = "some", // pretend that is not a SOFT HSM
-                    capacity = 100
+                    usages = cache.categoryAssociations.count { a ->
+                        a.hsm.config.id == it.id
+                    },
+                    privateKeyPolicy = net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.valueOf(
+                        cache.categoryMap.first { a ->
+                            a.config.id == it.id && a.category == category
+                        }.keyPolicy.name
+                    ),
+                    serviceName = it.serviceName,
+                    capacity = it.capacity
                 )
             }
         }

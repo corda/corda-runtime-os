@@ -25,6 +25,7 @@ import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
 import kotlin.reflect.KProperty
 
+@Suppress("TooManyFunctions")
 class HSMCacheActionsImpl(
     private val entityManager: EntityManager
 ) : HSMCacheActions {

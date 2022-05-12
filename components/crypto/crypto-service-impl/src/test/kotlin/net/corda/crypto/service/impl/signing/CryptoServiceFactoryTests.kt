@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
@@ -9,10 +10,13 @@ import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.test.util.eventually
+import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceProvider
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -31,6 +35,17 @@ class CryptoServiceFactoryTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var component: CryptoServiceFactoryImpl
 
+    private class CustomCryptoServiceProvider() : CryptoServiceProvider<SoftCryptoServiceConfig> {
+        companion object {
+            const val NAME = "\"custom-hsm\""
+        }
+        override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
+
+        override val name: String = NAME
+
+        override fun getInstance(config: SoftCryptoServiceConfig): CryptoService = mock()
+    }
+
     @BeforeEach
     fun setup() {
         tenantId = UUID.randomUUID().toString()
@@ -42,8 +57,9 @@ class CryptoServiceFactoryTests {
             factory.coordinatorFactory,
             factory.readService,
             factory.hsmService,
-            listOf(
-                factory.softCryptoKeyCacheProvider
+            listOf<CryptoServiceProvider<*>>(
+                factory.softCryptoKeyCacheProvider,
+                CustomCryptoServiceProvider()
             )
         )
         factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER)
@@ -61,14 +77,14 @@ class CryptoServiceFactoryTests {
                 0,
                 5000,
                 SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
-                CryptoConsts.SOFT_HSM_SERVICE_NAME,
-                -1
+                CustomCryptoServiceProvider.NAME,
+                500
             ),
             "{}".toByteArray()
         )
         factory.hsmService.linkCategories(customHSMConfigId, listOf(HSMCategoryInfo(
             CryptoConsts.Categories.JWT_KEY,
-            PrivateKeyPolicy.WRAPPED
+            PrivateKeyPolicy.ALIASED
         )))
         factory.hsmService.assignHSM(tenantId4, CryptoConsts.Categories.JWT_KEY, emptyMap())
     }

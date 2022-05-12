@@ -1,6 +1,8 @@
 package net.corda.crypto.service.impl.hsm.service
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
+import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_CONFIG_ID
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.Encryptor
@@ -20,7 +22,7 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Instant
@@ -31,54 +33,51 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class HSMServiceTests {
-    companion object {
-        private lateinit var factory: TestServicesFactory
-        private lateinit var config: SmartConfig
-        private lateinit var encryptor: Encryptor
-        private lateinit var service: HSMServiceImpl
+    private lateinit var factory: TestServicesFactory
+    private lateinit var config: SmartConfig
+    private lateinit var encryptor: Encryptor
+    private lateinit var service: HSMServiceImpl
 
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            factory = TestServicesFactory()
-            config = createDefaultCryptoConfig(KeyCredentials("passphrase", "salt"))
-            encryptor = config.rootEncryptor()
-            service = HSMServiceImpl(
-                config = config,
-                hsmCache = factory.hsmCache,
-                schemeMetadata = factory.schemeMetadata,
-                opsProxyClient = factory.opsProxyClient
-            )
-        }
+    @BeforeEach
+    fun setup() {
+        factory = TestServicesFactory()
+        config = createDefaultCryptoConfig(KeyCredentials("passphrase", "salt"))
+        encryptor = config.rootEncryptor()
+        service = HSMServiceImpl(
+            config = config,
+            hsmCache = factory.hsmCache,
+            schemeMetadata = factory.schemeMetadata,
+            opsProxyClient = factory.opsProxyClient
+        )
+    }
 
-        private fun assert(
-            expectedConfigId: String,
-            expected: HSMInfo,
-            expectedServiceConfig: ByteArray,
-            actual: HSMConfig?,
-        ) {
-            assertNotNull(actual)
-            assert(expectedConfigId, expected, actual.info)
-            assertArrayEquals(expectedServiceConfig, encryptor.decrypt(actual.serviceConfig))
-        }
+    private fun assert(
+        expectedConfigId: String,
+        expected: HSMInfo,
+        expectedServiceConfig: ByteArray,
+        actual: HSMConfig?,
+    ) {
+        assertNotNull(actual)
+        assert(expectedConfigId, expected, actual.info)
+        assertArrayEquals(expectedServiceConfig, encryptor.decrypt(actual.serviceConfig))
+    }
 
-        private fun assert(
-            expectedConfigId: String,
-            expected: HSMInfo,
-            actual: HSMInfo,
-        ) {
-            assertEquals(expectedConfigId, actual.id)
-            assertEquals(expected.masterKeyAlias, actual.masterKeyAlias)
-            assertEquals(expected.masterKeyPolicy, actual.masterKeyPolicy)
-            assertEquals(expected.description, actual.description)
-            assertEquals(expected.serviceName, actual.serviceName)
-            assertEquals(expected.capacity, actual.capacity)
-            assertEquals(expected.retries, actual.retries)
-            assertEquals(expected.timeoutMills, actual.timeoutMills)
-            assertEquals(expected.workerLabel, actual.workerLabel)
-            assertEquals(expected.supportedSchemes.size, actual.supportedSchemes.size)
-            assertTrue(expected.supportedSchemes.all { actual.supportedSchemes.contains(it) })
-        }
+    private fun assert(
+        expectedConfigId: String,
+        expected: HSMInfo,
+        actual: HSMInfo,
+    ) {
+        assertEquals(expectedConfigId, actual.id)
+        assertEquals(expected.masterKeyAlias, actual.masterKeyAlias)
+        assertEquals(expected.masterKeyPolicy, actual.masterKeyPolicy)
+        assertEquals(expected.description, actual.description)
+        assertEquals(expected.serviceName, actual.serviceName)
+        assertEquals(expected.capacity, actual.capacity)
+        assertEquals(expected.retries, actual.retries)
+        assertEquals(expected.timeoutMills, actual.timeoutMills)
+        assertEquals(expected.workerLabel, actual.workerLabel)
+        assertEquals(expected.supportedSchemes.size, actual.supportedSchemes.size)
+        assertTrue(expected.supportedSchemes.all { actual.supportedSchemes.contains(it) })
     }
 
     @Test
@@ -277,10 +276,12 @@ class HSMServiceTests {
         assertThat(configId).isNotBlank
         val added = service.findHSMConfig(configId)
         assert(configId, info, serviceConfig, added)
-        service.linkCategories(configId, listOf(
-            HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
-            HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
-        ))
+        service.linkCategories(
+            configId, listOf(
+                HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
+                HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
+            )
+        )
         val links = service.getLinkedCategories(configId)
         assertThat(links).hasSize(2)
         assertTrue(
@@ -311,10 +312,12 @@ class HSMServiceTests {
         assertThat(configId).isNotBlank
         val added = service.findHSMConfig(configId)
         assert(configId, info, serviceConfig, added)
-        service.linkCategories(configId, listOf(
-            HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
-            HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
-        ))
+        service.linkCategories(
+            configId, listOf(
+                HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
+                HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
+            )
+        )
         val links = service.getLinkedCategories(configId)
         assertThat(links).hasSize(2)
         assertTrue(
@@ -323,9 +326,11 @@ class HSMServiceTests {
         assertTrue(
             links.any { it.category == CryptoConsts.Categories.TLS && it.keyPolicy == PrivateKeyPolicy.WRAPPED }
         )
-        service.linkCategories(configId, listOf(
-            HSMCategoryInfo(CryptoConsts.Categories.JWT_KEY, PrivateKeyPolicy.BOTH)
-        ))
+        service.linkCategories(
+            configId, listOf(
+                HSMCategoryInfo(CryptoConsts.Categories.JWT_KEY, PrivateKeyPolicy.BOTH)
+            )
+        )
         val updatedLinks = service.getLinkedCategories(configId)
         assertThat(updatedLinks).hasSize(1)
         assertTrue(
@@ -352,26 +357,30 @@ class HSMServiceTests {
         val serviceConfig = "{}".toByteArray()
         val configId = service.putHSMConfig(info, serviceConfig)
         assertThrows<IllegalArgumentException> {
-            service.linkCategories(configId, listOf(
-                HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
-                HSMCategoryInfo("", PrivateKeyPolicy.WRAPPED)
-            ))
+            service.linkCategories(
+                configId, listOf(
+                    HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
+                    HSMCategoryInfo("", PrivateKeyPolicy.WRAPPED)
+                )
+            )
         }
     }
 
     @Test
     fun `linkCategories should throw CryptoServiceLibraryException when HSM config does not exist`() {
         assertThrows<CryptoServiceLibraryException> {
-            service.linkCategories(UUID.randomUUID().toString(), listOf(
-                HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
-                HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
-            ))
+            service.linkCategories(
+                UUID.randomUUID().toString(), listOf(
+                    HSMCategoryInfo(CryptoConsts.Categories.LEDGER, PrivateKeyPolicy.ALIASED),
+                    HSMCategoryInfo(CryptoConsts.Categories.TLS, PrivateKeyPolicy.WRAPPED)
+                )
+            )
         }
     }
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should assign SOFT HSM together with master key alias and create HSM when id does not exists and then retrieves assignment`() {
+    fun `Should assign SOFT HSM with new master key alias and create HSM when id does not exists and then retrieves assignment`() {
         val softConfig = config.softPersistence()
         val tenantId1 = UUID.randomUUID().toString()
         val hsm1 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
@@ -407,7 +416,7 @@ class HSMServiceTests {
             association2.masterKeyAlias,
             "The master key alias must stay the same for the same tenant, even if categories are different"
         )
-        assertThat(factory.softCache.keys).containsKey(association1.masterKeyAlias)
+        assertThat(factory.softCache.keys).containsKey(association2.masterKeyAlias)
         assert(SOFT_HSM_CONFIG_ID, hsm1, "{}".toByteArray(), association2.config)
 
         val tenantId2 = UUID.randomUUID().toString()
@@ -424,8 +433,131 @@ class HSMServiceTests {
             association3.masterKeyAlias,
             "The master key alias must be different for the different tenants"
         )
-        assertThat(factory.softCache.keys).containsKey(association1.masterKeyAlias)
+        assertThat(factory.softCache.keys).containsKey(association3.masterKeyAlias)
         assert(SOFT_HSM_CONFIG_ID, hsm1, "{}".toByteArray(), association3.config)
 
+    }
+
+    @Test
+    fun `Should assign HSM with new master key alias and then retrieves assignment`() {
+        val info = HSMInfo(
+            "",
+            Instant.now(),
+            UUID.randomUUID().toString(),
+            "Some HSM configuration",
+            MasterKeyPolicy.NEW,
+            null,
+            7,
+            57,
+            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            UUID.randomUUID().toString(),
+            42
+        )
+        val serviceConfig = "{}".toByteArray()
+        val configId = service.putHSMConfig(info, serviceConfig)
+        service.linkCategories(
+            configId,
+            CryptoConsts.Categories.all().map {
+                HSMCategoryInfo(it, PrivateKeyPolicy.ALIASED)
+            }
+        )
+        val tenantId1 = UUID.randomUUID().toString()
+        val hsm1 = service.assignHSM(
+            tenantId1, CryptoConsts.Categories.LEDGER, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+            )
+        )
+        assert(configId, info, hsm1)
+        val association1 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
+        assertNotNull(association1)
+        assertEquals(tenantId1, association1.tenantId)
+        assertEquals(CryptoConsts.Categories.LEDGER, association1.category)
+        assertNotNull(association1.aliasSecret)
+        assertNotNull(association1.masterKeyAlias)
+        assertThat(factory.softCache.keys).containsKey(association1.masterKeyAlias)
+        assert(configId, hsm1, "{}".toByteArray(), association1.config)
+        val hsm2 = service.assignHSM(
+            tenantId1, CryptoConsts.Categories.TLS, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+            )
+        )
+        assert(configId, hsm1, hsm2)
+        val association2 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
+        assertNotNull(association2)
+        assertEquals(tenantId1, association2.tenantId)
+        assertEquals(CryptoConsts.Categories.TLS, association2.category)
+        assertNotNull(association2.aliasSecret)
+        assertNotNull(association2.masterKeyAlias)
+        assertEquals(
+            association1.masterKeyAlias,
+            association2.masterKeyAlias,
+            "The master key alias must stay the same for the same tenant, even if categories are different"
+        )
+        assertThat(factory.softCache.keys).containsKey(association2.masterKeyAlias)
+        assert(configId, hsm1, "{}".toByteArray(), association2.config)
+        val tenantId2 = UUID.randomUUID().toString()
+        val hsm3 = service.assignHSM(
+            tenantId2, CryptoConsts.Categories.TLS, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+            )
+        )
+        assert(configId, hsm1, hsm3)
+        val association3 = service.findAssignedHSM(tenantId2, CryptoConsts.Categories.TLS)
+        assertNotNull(association3)
+        assertEquals(tenantId2, association3.tenantId)
+        assertEquals(CryptoConsts.Categories.TLS, association3.category)
+        assertNotNull(association3.aliasSecret)
+        assertNotNull(association3.masterKeyAlias)
+        assertNotEquals(
+            association1.masterKeyAlias,
+            association3.masterKeyAlias,
+            "The master key alias must be different for the different tenants"
+        )
+        assertThat(factory.softCache.keys).containsKey(association3.masterKeyAlias)
+        assert(configId, hsm1, "{}".toByteArray(), association3.config)
+
+        // next one to the one which has less associated tenants
+
+        val info2 = HSMInfo(
+            "",
+            Instant.now(),
+            UUID.randomUUID().toString(),
+            "Some HSM configuration",
+            MasterKeyPolicy.NEW,
+            null,
+            7,
+            57,
+            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            UUID.randomUUID().toString(),
+            42
+        )
+        val serviceConfig2 = "{}".toByteArray()
+        val configId2 = service.putHSMConfig(info2, serviceConfig2)
+        service.linkCategories(
+            configId2,
+            CryptoConsts.Categories.all().map {
+                HSMCategoryInfo(it, PrivateKeyPolicy.ALIASED)
+            }
+        )
+        val tenantId3 = UUID.randomUUID().toString()
+        val hsm4 = service.assignHSM(
+            tenantId3, CryptoConsts.Categories.TLS, mapOf(
+                PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
+            )
+        )
+        assert(configId2, info2, hsm4)
+        val association4 = service.findAssignedHSM(tenantId3, CryptoConsts.Categories.TLS)
+        assertNotNull(association4)
+        assertEquals(tenantId3, association4.tenantId)
+        assertEquals(CryptoConsts.Categories.TLS, association4.category)
+        assertNotNull(association4.aliasSecret)
+        assertNotNull(association4.masterKeyAlias)
+        assertNotEquals(
+            association1.masterKeyAlias,
+            association4.masterKeyAlias,
+            "The master key alias must be different for the different tenants"
+        )
+        assertThat(factory.softCache.keys).containsKey(association4.masterKeyAlias)
+        assert(configId2, info2, "{}".toByteArray(), association4.config)
     }
 }

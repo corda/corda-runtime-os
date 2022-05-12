@@ -14,11 +14,12 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [HSMRegistrationBusService::class])
-class HSMRegistrationBusServiceImpl(
+class HSMRegistrationBusServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)

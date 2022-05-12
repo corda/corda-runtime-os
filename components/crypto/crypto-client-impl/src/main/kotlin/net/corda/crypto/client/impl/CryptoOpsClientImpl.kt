@@ -121,6 +121,7 @@ class CryptoOpsClientImpl(
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
+    @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
         category: String,

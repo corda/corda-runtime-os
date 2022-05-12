@@ -19,6 +19,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_HSM_CONFIG_TABLE)
+@Suppress("LongParameterList")
 class HSMConfigEntity(
     /**
      * The configuration id.

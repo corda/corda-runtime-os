@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 val emptyKeyValuePairList = KeyValuePairList(emptyList())
 

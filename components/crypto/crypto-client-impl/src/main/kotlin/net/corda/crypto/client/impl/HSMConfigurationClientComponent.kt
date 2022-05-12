@@ -3,7 +3,6 @@ package net.corda.crypto.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.HSMConfigurationClient
-import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -20,7 +19,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [HSMRegistrationClient::class])
+@Component(service = [HSMConfigurationClient::class])
 class HSMConfigurationClientComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
