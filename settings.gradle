@@ -233,6 +233,11 @@ include 'libs:permissions:permission-storage-reader-impl'
 include 'libs:permissions:permission-storage-writer'
 include 'libs:permissions:permission-storage-writer-impl'
 include 'libs:p2p-crypto'
+include 'libs:packaging:packaging'
+include 'libs:packaging:packaging-avro-converters'
+include 'libs:packaging:packaging-core'
+include 'libs:packaging:packaging:test:contract-cpk'
+include 'libs:packaging:packaging:test:workflow-cpk'
 include 'libs:permissions:permission-datamodel'
 include 'libs:permissions:permission-validation'
 include 'libs:permissions:permission-validation-impl'
@@ -271,7 +276,6 @@ include 'libs:virtual-node:cpi-datamodel'
 include 'libs:virtual-node:cpi-upload-endpoints'
 include 'libs:virtual-node:cpi-upload-manager'
 include 'libs:virtual-node:cpi-upload-manager-impl'
-include 'libs:virtual-node:packaging-core'
 include 'libs:virtual-node:sandbox-group-context'
 include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
@@ -331,8 +335,6 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-packaging') using project(':packaging')
-            substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
