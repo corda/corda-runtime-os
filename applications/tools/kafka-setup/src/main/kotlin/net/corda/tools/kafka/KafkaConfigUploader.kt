@@ -19,7 +19,6 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -86,14 +85,14 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     private fun publishConfig(configurationFile: File, kafkaConnectionProperties: Properties) {
-        val publisher = publisherFactory.createPublisher(
-            PublisherConfig(CONFIGURATION_WRITER_CLIENT_ID, false),
-            getBootstrapConfig(kafkaConnectionProperties)
-        )
-
         val records = recordsForConfig(configurationFile.readText())
         logger.info("Writing config to topic")
-        if (records.isNotEmpty()) publisher.publish(records).forEach { it.getOrThrow() }
+        publisherFactory.createPublisher(
+            PublisherConfig(CONFIGURATION_WRITER_CLIENT_ID, false),
+            getBootstrapConfig(kafkaConnectionProperties)
+        ).use { publisher ->
+            if (records.isNotEmpty()) publisher.publish(records).forEach { it.get() }
+        }
         logger.info("Write complete")
         consoleLogger.info("Write of config to topic completed")
     }

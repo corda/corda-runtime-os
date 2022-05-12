@@ -27,7 +27,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -83,7 +82,7 @@ class LinkManagerIntegrationTest {
             Schemas.Config.CONFIG_TOPIC,
             "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
             Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
-        ))).forEach { it.getOrThrow() }
+        ))).forEach { it.get() }
     }
 
     @BeforeEach

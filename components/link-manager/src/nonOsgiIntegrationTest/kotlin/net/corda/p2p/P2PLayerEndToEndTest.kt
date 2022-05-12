@@ -56,7 +56,6 @@ import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
@@ -384,7 +383,7 @@ class P2PLayerEndToEndTest {
                 CONFIG_TOPIC,
                 key,
                 Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
-            ))).forEach { it.getOrThrow() }
+            ))).forEach { it.get() }
         }
 
         private fun publishConfig() {

@@ -148,7 +148,7 @@ open class TestBase {
                 CONFIG_TOPIC,
                 "p2p.gateway",
                 Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
-            ))).forEach { it.getOrThrow() }
+            ))).forEach { it.get() }
         }
 
         fun publishConfig(configuration: GatewayConfiguration) {
