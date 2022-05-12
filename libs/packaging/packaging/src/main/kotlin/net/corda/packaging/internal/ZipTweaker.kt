@@ -1,4 +1,4 @@
-package net.corda.packaging.util
+package net.corda.packaging.internal
 
 import java.io.InputStream
 import java.io.OutputStream

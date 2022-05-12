@@ -6,7 +6,6 @@ import net.corda.packaging.PackagingException
 import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
 import net.corda.packaging.internal.PackagingConstants.CPI_NAME_ATTRIBUTE
 import net.corda.packaging.internal.PackagingConstants.CPI_VERSION_ATTRIBUTE
-import net.corda.packaging.util.UncloseableInputStream
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream

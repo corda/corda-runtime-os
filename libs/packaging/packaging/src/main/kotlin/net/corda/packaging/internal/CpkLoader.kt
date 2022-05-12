@@ -12,8 +12,6 @@ import net.corda.packaging.internal.PackagingConstants.CPK_DEPENDENCIES_FILE_ENT
 import net.corda.packaging.internal.PackagingConstants.CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY
 import net.corda.packaging.internal.PackagingConstants.CPK_LIB_FOLDER
 import net.corda.packaging.internal.PackagingConstants.JAR_FILE_EXTENSION
-import net.corda.packaging.util.TeeInputStream
-import net.corda.packaging.util.UncloseableInputStream
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
