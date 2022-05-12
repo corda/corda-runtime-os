@@ -6,9 +6,7 @@ import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.packaging.Cpk
 import net.corda.packaging.DependencyResolutionException
-import net.corda.packaging.SigningParameters
 import net.corda.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.nio.file.Files
@@ -29,7 +27,6 @@ internal class CpiBuilder(
         private val cpkFiles: Iterable<Path>,
         private val cpkArchives: Iterable<Path>,
         metadataReader: Reader? = null,
-        private val signingParams: SigningParameters?,
         private val useSignatures : Boolean,
         private val groupPolicy: String?
 ) {
@@ -101,17 +98,6 @@ internal class CpiBuilder(
     }
 
     fun build(output: OutputStream) {
-        if (signingParams == null) {
-            writeArchive(output)
-        } else {
-            Files.createTempFile(null, null).also { tempFile ->
-                try {
-                    writeArchive(BufferedOutputStream(Files.newOutputStream(tempFile)))
-                    SigningParameters.sign(tempFile.toFile(), output, signingParams)
-                } finally {
-                    Files.delete(tempFile)
-                }
-            }
-        }
+        writeArchive(output)
     }
 }

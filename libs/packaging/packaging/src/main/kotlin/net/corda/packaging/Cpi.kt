@@ -69,10 +69,9 @@ interface Cpi : AutoCloseable {
                      cpkFiles: Iterable<Path>,
                      cpkArchives: Iterable<Path> = emptyList(),
                      metadataReader: Reader? = null,
-                     signingParams: SigningParameters? = null,
                      useSignatures: Boolean = jarSignatureVerificationEnabledByDefault(),
                      groupPolicy: String? = null
-        ) = CpiBuilder(name, version, cpkFiles, cpkArchives, metadataReader, signingParams, useSignatures, groupPolicy).build(destination)
+        ) = CpiBuilder(name, version, cpkFiles, cpkArchives, metadataReader, useSignatures, groupPolicy).build(destination)
     }
 
     /**
