@@ -29,6 +29,12 @@ class FlowEventProcessorImpl(
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 
+    init{
+        // This works for now, but we should consider introducing a provider we could then inject it into
+        // the classes that need it rather than passing it through all the layers.
+        flowEventExceptionProcessor.configure(config)
+    }
+
     override fun onNext(
         state: Checkpoint?,
         event: Record<String, FlowEvent>
@@ -42,10 +48,10 @@ class FlowEventProcessorImpl(
 
         log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
 
-        val finalFlowContext = try {
+        return try {
             val pipeline = flowEventPipelineFactory.create(state, flowEvent, config)
 
-            pipeline
+            flowEventContextConverter.convert(pipeline
                 .eventPreProcessing()
                 .runOrContinue()
                 .setCheckpointSuspendedOn()
@@ -53,6 +59,7 @@ class FlowEventProcessorImpl(
                 .requestPostProcessing()
                 .globalPostProcessing()
                 .context
+            )
 
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e)
@@ -63,8 +70,6 @@ class FlowEventProcessorImpl(
         } catch (e: Exception) {
             flowEventExceptionProcessor.process(e)
         }
-
-        return flowEventContextConverter.convert(finalFlowContext)
     }
 }
 

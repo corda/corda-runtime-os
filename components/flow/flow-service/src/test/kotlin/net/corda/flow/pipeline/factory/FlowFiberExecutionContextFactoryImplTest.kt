@@ -43,9 +43,18 @@ class FlowFiberExecutionContextFactoryImplTest {
         whenever(context.checkpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY)
         whenever(flowSandboxService.get(BOB_X500_HOLDING_IDENTITY.toCorda())).thenReturn(sandboxGroupContext)
-        whenever(membershipGroupReaderProvider.getGroupReader(BOB_X500_HOLDING_IDENTITY.toCorda())).thenReturn(membershipGroupReader)
-        whenever(sandboxGroupContext.get(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, SandboxDependencyInjector::class.java)).thenReturn(sandboxDependencyInjector)
-        whenever(sandboxGroupContext.get(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, CheckpointSerializer::class.java)).thenReturn(checkpointSerializer)
+        whenever(membershipGroupReaderProvider.getGroupReader(
+            BOB_X500_HOLDING_IDENTITY.toCorda()
+        )).thenReturn(membershipGroupReader)
+        whenever(sandboxGroupContext.get(
+            FlowSandboxContextTypes.DEPENDENCY_INJECTOR,
+            SandboxDependencyInjector::class.java)
+        ).thenReturn(sandboxDependencyInjector)
+
+        whenever(sandboxGroupContext.get(
+            FlowSandboxContextTypes.CHECKPOINT_SERIALIZER,
+            CheckpointSerializer::class.java)
+        ).thenReturn(checkpointSerializer)
 
         val result = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
 

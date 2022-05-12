@@ -49,6 +49,4 @@ interface StepSetup {
     ): FlowIoRequestSetup
 
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
-
-    fun replayEventFromRetry(): FlowIoRequestSetup
 }

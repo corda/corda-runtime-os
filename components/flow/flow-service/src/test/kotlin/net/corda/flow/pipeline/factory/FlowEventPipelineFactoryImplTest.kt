@@ -33,7 +33,7 @@ class FlowEventPipelineFactoryImplTest {
     private val flowRunner = mock<FlowRunner>()
     private val config = mock<SmartConfig>()
     private val flowCheckpointFactory = mock<FlowCheckpointFactory>().apply {
-        whenever(this.create(checkpoint)).thenReturn(flowCheckpoint)
+        whenever(this.create(checkpoint, mock())).thenReturn(flowCheckpoint)
     }
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>()
 
@@ -62,7 +62,7 @@ class FlowEventPipelineFactoryImplTest {
     fun `Creates a FlowEventPipeline instance`() {
         val config = mock<SmartConfig>()
         val expected = FlowEventPipelineImpl(
-            flowEventHandler,
+            mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowEventHandler),
             mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowWaitingForHandler),
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,

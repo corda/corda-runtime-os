@@ -93,8 +93,6 @@ class FlowRunnerImpl @Activate constructor(
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
-        val flowFiber = flowFiberFactory.createFlowFiber(fiberContext)
-
-        return flowFiber.resume(fiberContext, flowContinuation, flowFiberFactory.currentScheduler)
+        return flowFiberFactory.createAndResumeFlowFiber(fiberContext,flowContinuation)
     }
 }

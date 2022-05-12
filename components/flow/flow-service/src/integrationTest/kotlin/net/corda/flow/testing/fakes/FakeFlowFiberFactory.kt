@@ -7,7 +7,6 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.v5.application.flows.Flow
-import org.mockito.kotlin.mock
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.*
@@ -24,11 +23,11 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         return fiber
     }
 
-    override val currentScheduler: FiberScheduler
-        get() = mock()
-
-    override fun createFlowFiber(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiber<*> {
-        return fiber
+    override fun createAndResumeFlowFiber(
+        flowFiberExecutionContext: FlowFiberExecutionContext,
+        suspensionOutcome: FlowContinuation
+    ): Future<FlowIORequest<*>> {
+        return fiber.resume(suspensionOutcome)
     }
 
     class FakeFiber<R>(
@@ -59,6 +58,12 @@ class FakeFlowFiberFactory : FlowFiberFactory {
             flowFiberExecutionContext: FlowFiberExecutionContext,
             suspensionOutcome: FlowContinuation,
             scheduler: FiberScheduler
+        ): Future<FlowIORequest<*>> {
+            TODO("Not yet implemented")
+        }
+
+        fun resume(
+            suspensionOutcome: FlowContinuation
         ): Future<FlowIORequest<*>> {
             flowContinuation = suspensionOutcome
             return getCompletedFuture()

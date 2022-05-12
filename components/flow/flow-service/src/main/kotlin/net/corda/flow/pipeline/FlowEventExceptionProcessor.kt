@@ -1,10 +1,12 @@
 package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import java.util.concurrent.CancellationException
 
 /**
@@ -27,7 +29,7 @@ interface FlowEventExceptionProcessor {
      * @return the updated [FlowEventContext]
      * @throws [CancellationException] if the event should be moved to the DLQ
      */
-    fun process(exception: Exception): FlowEventContext<Any>
+    fun process(exception: Exception): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes an [FlowTransientException] and updates the [FlowEventContext]
@@ -37,7 +39,7 @@ interface FlowEventExceptionProcessor {
      * @return the updated [FlowEventContext]
      * @throws [CancellationException] if the event should be moved to the DLQ
      */
-    fun process(exception: FlowTransientException): FlowEventContext<Any>
+    fun process(exception: FlowTransientException): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes an [FlowFatalException] and updates the [FlowEventContext]
@@ -47,7 +49,7 @@ interface FlowEventExceptionProcessor {
      * @return the updated [FlowEventContext]
      * @throws [CancellationException] if the event should be moved to the DLQ
      */
-    fun process(exception: FlowFatalException): FlowEventContext<Any>
+    fun process(exception: FlowFatalException): StateAndEventProcessor.Response<Checkpoint>
 
     /**
      * Processes an [FlowEventException] and updates the [FlowEventContext]
@@ -57,5 +59,5 @@ interface FlowEventExceptionProcessor {
      * @return the updated [FlowEventContext]
      * @throws [CancellationException] if the event should be moved to the DLQ
      */
-    fun process(exception: FlowEventException): FlowEventContext<Any>
+    fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint>
 }

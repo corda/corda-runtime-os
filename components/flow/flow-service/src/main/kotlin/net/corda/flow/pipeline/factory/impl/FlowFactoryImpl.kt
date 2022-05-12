@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.factory.impl
 
-import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
-import co.paralleluniverse.fibers.FiberExecutorScheduler
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
@@ -13,9 +11,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ExecutorService
 
 @Component(service = [FlowFactory::class])
 @Suppress("Unused")

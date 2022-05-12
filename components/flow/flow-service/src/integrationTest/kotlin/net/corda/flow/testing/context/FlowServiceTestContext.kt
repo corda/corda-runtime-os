@@ -1,7 +1,6 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -68,11 +67,12 @@ class FlowServiceTestContext @Activate constructor(
         val log = contextLogger()
     }
 
-    private val testConfig = mutableMapOf<String,Any>(
+    private val testConfig = mutableMapOf<String, Any>(
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
-        FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 16
+        FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
+        FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000
     )
 
     private val testRuns = mutableListOf<TestRun>()
@@ -220,12 +220,6 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, Wakeup()))
     }
 
-    override fun replayEventFromRetry(): FlowIoRequestSetup {
-        val checkpoint = checkNotNull(lastPublishedState){"No checkpoint to replay from"}
-        val retry = checkNotNull(checkpoint.retryState){"checkpoint does not contain a replay state"}
-        return addTestRun(getEventRecord(checkpoint.flowId, retry.failedEvent.payload))
-    }
-
     override fun expectOutputForFlow(flowId: String, outputAssertions: OutputAssertions.() -> Unit) {
         val assertionsCapture = OutputAssertionsImpl(flowId, sessionInitiatingIdentity, sessionInitiatedIdentity)
         assertions.add(assertionsCapture)
@@ -302,7 +296,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, sessionEvent))
     }
 
-    private fun getFlowEventProcessor(): FlowEventProcessor{
+    private fun getFlowEventProcessor(): FlowEventProcessor {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
             SmartConfigFactory

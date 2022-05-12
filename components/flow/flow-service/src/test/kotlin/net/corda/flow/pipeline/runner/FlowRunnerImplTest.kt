@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.runner
 
-import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
@@ -127,13 +126,9 @@ class FlowRunnerImplTest {
     @Test
     fun `other event types resume existing flow`() {
         val flowContinuation = FlowContinuation.Run()
-        val scheduler = mock<FiberScheduler>()
         val context = buildFlowEventContext<Any>(flowCheckpoint, Wakeup())
 
-        whenever(flowFiberFactory.createFlowFiber(flowFiberExecutionContext)).thenReturn(fiber)
-        whenever(flowFiberFactory.currentScheduler).thenReturn(scheduler)
-        whenever(fiber.resume(eq(flowFiberExecutionContext),eq(flowContinuation), eq(scheduler))).thenReturn(fiberResult)
-        whenever(fiber.resume(any(),any(), any())).thenReturn(fiberResult)
+        whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext,flowContinuation)).thenReturn(fiberResult)
 
         val result = flowRunner.runFlow(context, flowContinuation)
 

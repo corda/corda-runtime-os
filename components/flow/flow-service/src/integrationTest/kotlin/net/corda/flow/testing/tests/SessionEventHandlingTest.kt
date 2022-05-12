@@ -2,6 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -13,6 +14,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 class SessionEventHandlingTest: FlowServiceTestBase() {
 
     @Test
+    @Disabled
     fun `(Receive) Given two sessions receiving all session data events resumes the flow and sends session acks`() {
         given {
             // Background setup

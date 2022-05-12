@@ -1,9 +1,11 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.flow.state.waiting.Wakeup
+import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
@@ -14,8 +16,6 @@ import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -32,21 +33,32 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.Future
 import java.util.stream.Stream
+import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
 
-    private val waitingForWakeup = WaitingFor(Wakeup())
-    private val avroCheckpoint  = Checkpoint()
+    private val wakeUpEvent = Wakeup()
+    private val waitingForWakeup = WaitingFor(WakeUpWaitingFor())
+    private val retryStartFlow = StartFlow()
+
+    private val retryEvent = FlowEvent().apply {
+        flowId = FLOW_ID_1
+        payload = retryStartFlow
+    }
 
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(waitingFor).thenReturn(waitingForWakeup)
-        whenever(toAvro()).thenReturn(avroCheckpoint)
+        whenever(inRetryState).thenReturn(false)
     }
 
-    private val inputContext = buildFlowEventContext<Any>(checkpoint, "Original")
-    private val outputContext = buildFlowEventContext<Any>(checkpoint, "Updated")
+    private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
+    private val outputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
 
-    private val flowEventHandler = mock<FlowEventHandler<Any>>().apply {
+    private val wakeUpFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
+        whenever(preProcess(inputContext)).thenReturn(outputContext)
+    }
+
+    private val startFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
         whenever(preProcess(inputContext)).thenReturn(outputContext)
     }
 
@@ -70,8 +82,8 @@ class FlowEventPipelineImplTest {
     }
 
     private val pipeline = FlowEventPipelineImpl(
-        flowEventHandler,
-        mapOf(Wakeup::class.java to flowWaitingForHandler),
+        mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
+        mapOf(WakeUpWaitingFor()::class.java to flowWaitingForHandler),
         mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
         flowRunner,
         flowGlobalPostProcessor,
@@ -89,9 +101,20 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `eventPreProcessing calls the FlowEventHandler`() {
+    fun `eventPreProcessing with no retry calls the event handler`() {
         assertEquals(outputContext, pipeline.eventPreProcessing().context)
-        verify(flowEventHandler).preProcess(inputContext)
+        verify(wakeUpFlowEventHandler).preProcess(inputContext)
+    }
+
+    @Test
+    fun `eventPreProcessing wakeup with retry uses retry event handler`() {
+        val retryHandlerOutputContext = buildFlowEventContext<Any>(checkpoint, retryEvent)
+        whenever(checkpoint.inRetryState).thenReturn(true)
+        whenever(checkpoint.retryEvent).thenReturn(retryEvent)
+        whenever(startFlowEventHandler.preProcess(any())).thenReturn(retryHandlerOutputContext)
+
+        assertEquals(retryHandlerOutputContext, pipeline.eventPreProcessing().context)
+        verify(startFlowEventHandler).preProcess(argThat { this.inputEvent == retryEvent && this.inputEventPayload == retryEvent.payload })
     }
 
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
@@ -107,7 +130,7 @@ class FlowEventPipelineImplTest {
         val state = pipeline.runOrContinue()
 
         verify(flowRunner).runFlow(pipeline.context, outcome)
-        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
+        verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
         verify(checkpoint).serializedFiber = expectedFiber
         assertThat(state.output).isSameAs(flowResult)
     }
@@ -136,7 +159,7 @@ class FlowEventPipelineImplTest {
         whenever(runFlowCompletion.get()).thenReturn(FlowIORequest.FlowFinished(""))
         pipeline.runOrContinue()
         verify(flowRunner).runFlow(any(), any())
-        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
+        verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
     }
 
     @Test
@@ -144,7 +167,7 @@ class FlowEventPipelineImplTest {
         whenever(flowWaitingForHandler.runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Continue)
         assertEquals(pipeline, pipeline.runOrContinue())
         verify(flowRunner, never()).runFlow(any(), any())
-        verify(flowWaitingForHandler).runOrContinue(inputContext, Wakeup())
+        verify(flowWaitingForHandler).runOrContinue(inputContext, WakeUpWaitingFor())
     }
 
     @Test
@@ -193,52 +216,5 @@ class FlowEventPipelineImplTest {
         val pipeline = this.pipeline.copy(output = null)
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
         verify(flowGlobalPostProcessor).postProcess(inputContext)
-    }
-
-    @Test
-    fun `toStateAndEventResponse converts the context values into a response`() {
-        val avroCheckpoint  = Checkpoint()
-
-        val records = listOf(
-            Record("topic", "key 1", "value 1"),
-            Record("topic", "key 2", "value 2")
-        )
-        val pipeline = this.pipeline.copy(
-            context = inputContext.copy(
-                outputRecords = records
-            )
-        )
-        whenever(checkpoint.toAvro()).thenReturn(avroCheckpoint)
-
-        assertEquals(
-            StateAndEventProcessor.Response(avroCheckpoint, records),
-            pipeline.toStateAndEventResponse()
-        )
-    }
-
-    @Test
-    fun `toStateAndEventResponse returns no events if the context contained no output records`() {
-        val pipeline = this.pipeline.copy(
-            context = inputContext.copy(
-                outputRecords = emptyList()
-            )
-        )
-        assertEquals(
-            StateAndEventProcessor.Response(avroCheckpoint, emptyList()),
-            pipeline.toStateAndEventResponse()
-        )
-    }
-
-    @Test
-    fun `toStateAndEventResponse returns a null checkpoint if the context's checkpoint was null`() {
-        val pipeline = this.pipeline.copy(
-            context = inputContext.copy(
-                outputRecords = emptyList()
-            )
-        )
-
-        whenever(checkpoint.toAvro()).thenReturn(null)
-
-        assertEquals(StateAndEventProcessor.Response(null, emptyList()), pipeline.toStateAndEventResponse())
     }
 }

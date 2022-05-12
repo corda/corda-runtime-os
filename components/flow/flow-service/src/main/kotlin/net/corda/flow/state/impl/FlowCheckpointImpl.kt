@@ -14,6 +14,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
 import net.corda.flow.state.FlowStack
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import java.lang.Exception
@@ -22,6 +24,7 @@ import java.time.Instant
 
 class FlowCheckpointImpl(
     private var nullableCheckpoint: Checkpoint?,
+    private val config: SmartConfig,
     private val instantProvider: () -> Instant
 ) : FlowCheckpoint {
     init {
@@ -97,6 +100,11 @@ class FlowCheckpointImpl(
     override val inRetryState: Boolean
         get() = doesExist && checkpoint.retryState != null
 
+    override val retryEvent: FlowEvent
+        get() = checkNotNull(checkpoint.retryState)
+        { "Attempt to access null retry state while. inRetryState must be tested before accessing retry fields" }
+            .failedEvent
+
     override fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor) {
         if (nullableCheckpoint != null) {
             val key = flowStartContext.statusKey
@@ -120,6 +128,7 @@ class FlowCheckpointImpl(
             .setFlowState(state)
             .setSessions(mutableListOf())
             .setFlowStackItems(mutableListOf())
+            .setMaxFlowSleepDuration(config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION))
             .build()
 
         validateAndAddSessions()

@@ -40,6 +40,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val inRetryState: Boolean
 
+    val retryEvent: FlowEvent
+
     fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor)
 
     fun getSessionState(sessionId: String): SessionState?

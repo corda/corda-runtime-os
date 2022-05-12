@@ -10,6 +10,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import org.mockito.kotlin.mock
 
+@Suppress("LongParameterList")
 fun <T> buildFlowEventContext(
     checkpoint: FlowCheckpoint,
     inputEventPayload: T,
@@ -29,6 +30,7 @@ fun <T> buildFlowEventContext(
     )
 }
 
+@Suppress("LongParameterList")
 fun <T> buildFlowEventContext(
     inputEventPayload: T,
     config: SmartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty()),
