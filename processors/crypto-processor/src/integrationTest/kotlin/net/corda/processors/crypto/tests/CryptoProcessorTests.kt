@@ -144,9 +144,7 @@ class CryptoProcessorTests {
         @BeforeAll
         fun setup() {
             setupPrerequisites()
-            val configEmf = setupDatabases()
-            addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
-            configEmf.close()
+            setupDatabases()
             startDependencies()
             assignHSMs()
         }
@@ -178,7 +176,7 @@ class CryptoProcessorTests {
             )
         }
 
-        private fun setupDatabases(): EntityManagerFactory {
+        private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
             val configEmf = databaseInstaller.setupClusterDatabase(
                 clusterDb,
@@ -194,7 +192,8 @@ class CryptoProcessorTests {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
-            return configEmf
+            addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
+            configEmf.close()
         }
 
         private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo) {
@@ -219,7 +218,7 @@ class CryptoProcessorTests {
             hsmRegistrationClient.startAndWait()
             cryptoProcessor.startAndWait(boostrapConfig)
             val tracker = DependenciesTracker(
-                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>("2"),
+                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
                 lifecycleRegistry,
                 setOf(
