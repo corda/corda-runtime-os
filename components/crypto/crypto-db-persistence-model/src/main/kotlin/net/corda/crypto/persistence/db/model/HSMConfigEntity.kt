@@ -91,7 +91,6 @@ class HSMConfigEntity(
      * The data in the public API will be passed as a plain string and then encrypted. The API will never provide
      * that information back.
      */
-    @Lob
     @Column(name = "service_config", nullable = false, columnDefinition="BLOB")
     var serviceConfig: ByteArray,
 

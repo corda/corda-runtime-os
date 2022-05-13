@@ -7,7 +7,6 @@ import javax.persistence.Entity
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.JoinColumn
-import javax.persistence.Lob
 import javax.persistence.ManyToOne
 import javax.persistence.Table
 
@@ -52,7 +51,6 @@ class HSMAssociationEntity(
      * the field is provided only in order to prevent tenants to guess each other aliases,
      * it's encrypted using system key.
      */
-    @Lob
     @Column(name = "alias_secret", nullable = true, updatable = false, columnDefinition="BLOB")
     var aliasSecret: ByteArray?
 )

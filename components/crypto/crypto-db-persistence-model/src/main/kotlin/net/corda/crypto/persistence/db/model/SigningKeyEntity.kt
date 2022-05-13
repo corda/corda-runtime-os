@@ -8,7 +8,6 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
-import javax.persistence.Lob
 import javax.persistence.Table
 
 /**
@@ -59,14 +58,12 @@ class SigningKeyEntity(
     /**
      * The public key of the pair.
      */
-    @Lob
     @Column(name = "public_key", nullable = false, updatable = false, columnDefinition="BLOB")
     var publicKey: ByteArray,
 
     /**
      * If the private key was wrapped that array will contain the encrypted private key.
      */
-    @Lob
     @Column(name = "key_material", nullable = true, updatable = false, columnDefinition="BLOB")
     var keyMaterial: ByteArray?,
 

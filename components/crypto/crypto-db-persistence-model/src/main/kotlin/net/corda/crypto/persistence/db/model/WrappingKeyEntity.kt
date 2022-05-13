@@ -5,7 +5,6 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.Lob
 import javax.persistence.Table
 
 /**
@@ -45,7 +44,6 @@ class WrappingKeyEntity(
     /**
      * Key material for the wrapping key. It's encrypted by by another key which is obtained through the configuration.
      */
-    @Lob
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition="BLOB")
     var keyMaterial: ByteArray
 )
