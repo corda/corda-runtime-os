@@ -121,10 +121,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 "Getting the crypto service for tenantId={}, category={})",
                 tenantId, category
             )
-            val association = hsmRegistrar.findAssignedHSM(tenantId, category)
-                ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
             return cryptoRefs.computeIfAbsent(tenantId to category) {
                 try {
+                    val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+                        ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
                     logger.info(
                         "Creating {}: id={} configId={} (tenantId={}, category={})",
                         CryptoServiceRef::class.simpleName,
