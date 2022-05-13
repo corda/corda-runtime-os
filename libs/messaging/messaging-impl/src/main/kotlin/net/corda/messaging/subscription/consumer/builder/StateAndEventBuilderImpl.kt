@@ -5,7 +5,6 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
@@ -14,7 +13,8 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventConsumerImpl
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
-import net.corda.messaging.subscription.consumer.listener.StateAndEventRebalanceListener
+import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
+import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListenerImpl
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -48,7 +48,7 @@ internal class StateAndEventBuilderImpl @Activate constructor(
         stateAndEventListener: StateAndEventListener<K, S>?,
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
-    ): Pair<StateAndEventConsumer<K, S, E>, CordaConsumerRebalanceListener> {
+    ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
         val stateConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_STATE)
         val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.messageBusConfig, kClazz, sClazz, onStateError)
         val eventConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_EVENT)
@@ -68,7 +68,7 @@ internal class StateAndEventBuilderImpl @Activate constructor(
 
         val stateAndEventConsumer =
             StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
-        val rebalanceListener = StateAndEventRebalanceListener(
+        val rebalanceListener = StateAndEventConsumerRebalanceListenerImpl(
             config,
             mapFactory,
             stateAndEventConsumer,
