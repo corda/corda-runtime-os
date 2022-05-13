@@ -81,8 +81,13 @@ abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
 
     private fun activateImpl(event: ConfigChangedEvent) {
         logger.info("Activating")
-        impl.close()
-        impl = createActiveImpl(event)
+        try {
+            impl.close()
+            impl = createActiveImpl(event)
+        } catch (e: Throwable) {
+            logger.error("Failed activate...", e)
+            throw e
+        }
         logger.info("Activated, setting the status of {} UP", this::class.simpleName)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
