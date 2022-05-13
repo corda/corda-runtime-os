@@ -102,7 +102,7 @@ class GenericsTests {
         val factory = testDefaultFactoryNoEvolution()
         val factory2 = testDefaultFactoryNoEvolution()
 
-        val bytes = SerializationOutput(factory).serializeAndReturnSchema(Wrapper(1, G1("hi"), G2("poop"))).apply { printSchema() }
+        val bytes = SerializationOutput(factory).serializeAndReturnSchema(Wrapper(1, G1("hi"), G2("bye"))).apply { printSchema() }
         printSeparator()
         DeserializationInput(factory2).deserialize(bytes.obj)
     }
