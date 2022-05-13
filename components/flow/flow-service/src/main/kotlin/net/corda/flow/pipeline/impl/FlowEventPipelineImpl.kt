@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
-import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
