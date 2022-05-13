@@ -60,9 +60,9 @@ internal class InboundMessageProcessor(
                     payload.header.sessionId,
                     AvroSealedClasses.DataMessage.AuthenticatedAndEncrypted(payload)
                 )
-                is ResponderHelloMessage, is ResponderHandshakeMessage,
-                is InitiatorHandshakeMessage, is InitiatorHelloMessage
-                -> processSessionMessage(message)
+                is ResponderHelloMessage, is ResponderHandshakeMessage, is InitiatorHandshakeMessage, is InitiatorHelloMessage -> {
+                    processSessionMessage(message)
+                }
                 is UnauthenticatedMessage -> {
                     listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), payload))
                 }

@@ -9,6 +9,9 @@ import net.corda.schema.Schemas
 class OutboundTile(
     linkManager: LinkManager,
 ) : LifecycleWithDominoTile {
+    companion object {
+        private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
+    }
     private val outboundMessageProcessor = OutboundMessageProcessor(
         linkManager.commonTile.sessionManager,
         linkManager.linkManagerHostingMap,
@@ -32,7 +35,7 @@ class OutboundTile(
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
     private val outboundMessageSubscription = linkManager.subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(LinkManager.OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC),
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC),
         outboundMessageProcessor,
         linkManager.configuration,
         partitionAssignmentListener = null

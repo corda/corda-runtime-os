@@ -43,10 +43,6 @@ class LinkManager(
 ) : LifecycleWithDominoTile {
 
     companion object {
-        internal const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
-        internal const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
-        internal const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
-
         internal fun generateKey(): String {
             return UUID.randomUUID().toString()
         }

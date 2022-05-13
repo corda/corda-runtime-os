@@ -25,6 +25,7 @@ internal class PendingSessionMessageQueuesImpl(
 
     companion object {
         private val logger = contextLogger()
+        private const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
     }
 
     private val queuedMessagesPendingSession =
@@ -32,7 +33,7 @@ internal class PendingSessionMessageQueuesImpl(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        PublisherConfig(LinkManager.LINK_MANAGER_PUBLISHER_CLIENT_ID, false),
+        PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, false),
         configuration
     )
     override val dominoTile = publisher.dominoTile

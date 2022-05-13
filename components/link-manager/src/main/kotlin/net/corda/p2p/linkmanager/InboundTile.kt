@@ -8,8 +8,11 @@ import net.corda.schema.Schemas
 internal class InboundTile(
     linkManager: LinkManager,
 ) : LifecycleWithDominoTile {
+    companion object {
+        private const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
+    }
     private val inboundMessageSubscription = linkManager.subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(LinkManager.INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
         InboundMessageProcessor(
             linkManager.commonTile.sessionManager,
             linkManager.groups,
