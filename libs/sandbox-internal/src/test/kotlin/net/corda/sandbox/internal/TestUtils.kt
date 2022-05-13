@@ -2,7 +2,6 @@ package net.corda.sandbox.internal
 
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
