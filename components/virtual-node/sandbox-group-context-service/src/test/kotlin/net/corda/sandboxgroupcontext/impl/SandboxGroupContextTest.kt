@@ -5,7 +5,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextImpl
@@ -31,6 +30,8 @@ interface Animal {
 class Cat(override val name: String, private val noise: String) : Animal {
     override fun noise() = noise
 }
+
+inline fun <reified T : Any> SandboxGroupContext.getUniqueObject() = this.get(T::class.java.name, T::class.java)
 
 class SandboxGroupContextTest {
     private val holdingIdentity = HoldingIdentity("foo", "bar")

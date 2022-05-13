@@ -16,14 +16,14 @@ This will create an executable JAR in `applications/tools/kafka-setup/build/bin`
 ### Creating topics
 To run the tool to create Kafka topics, use:
 ```
-java -jar applications/tools/kafka-setup/build/bin/corda-kafka-setup*.jar -Dbootstrap.servers=broker1:9093 --topic topics.conf
+java -Dbootstrap.servers=broker1:9093 -jar applications/tools/kafka-setup/build/bin/corda-kafka-setup*.jar --topic topics.conf
 ```
 
 The `topics.conf` file must contain the definition for the topics you wish to create in the following form (in [HOCON](https://github.com/lightbend/config/blob/main/HOCON.md) format):
 ```text
 topics = [
     {
-        topicName = "config.topic"
+        topicName = "demo.config.topic"
         numPartitions = 1
         replicationFactor = 3
         config {
@@ -35,9 +35,9 @@ topics = [
 The `config` section can contain any configuration for topics in the notation specified by [Kafka](https://kafka.apache.org/documentation/#topicconfigs).
 
 ### Publishing configuration
-To run the tool to publish configuration (in the topic `config.topic`), use:
+To run the tool to publish configuration (in the topic `demo.config.topic`), use:
 ```bash
-java -jar applications/tools/kafka-setup/build/bin/corda-kafka-setup*.jar -Dbootstrap.servers=broker1:9093 -config config.conf
+java -Dtopic.prefix=demo. -Dbootstrap.servers=broker1:9093 -jar applications/tools/kafka-setup/build/bin/corda-kafka-setup*.jar -config config.conf
 ```
 
 The `config.conf` file must contain the definition for the configuration in the following form:
@@ -84,8 +84,9 @@ producer {
 
 ### Specifying Kafka connection details via a file
 
-Instead of specifying the Kafka connection details via the `-Dbootstrap.servers` property, you can specify a file via the command line parameter `--kafka`.
-This file must contain the connection details for Kafka as a comma-separated list of addresses of the Kafka brokers in the following form:
+Instead of specifying the Kafka connection details and topic prefix (via the `-Dbootstrap.servers` and `topic.prefix` properties respectively) you can specify a file via the command line parameter `--kafka`.
+This file must contain the connection details for Kafka as a comma-separated list of addresses of the Kafka brokers, as well as the topic prefix:
 ```properties 
 bootstrap.servers=broker1:9093
+topic.prefix=demo
 ```

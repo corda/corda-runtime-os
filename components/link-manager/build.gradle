@@ -60,22 +60,18 @@ dependencies {
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     integrationTestImplementation project(":components:gateway")
-    integrationTestImplementation project(":libs:configuration:configuration-publish")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     nonOsgiIntegrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     nonOsgiIntegrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     nonOsgiIntegrationTestImplementation project(":components:gateway")
-    nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-publish")
     nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
     nonOsgiIntegrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     nonOsgiIntegrationTestImplementation project(":libs:lifecycle:registry")
     nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-core")
-    nonOsgiIntegrationTestImplementation project(":libs:configuration:configuration-publish-impl")
     nonOsgiIntegrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(":libs:configuration:configuration-publish-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")

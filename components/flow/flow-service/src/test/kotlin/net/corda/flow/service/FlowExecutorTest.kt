@@ -11,14 +11,13 @@ import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -28,8 +27,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class FlowExecutorTest {
 
@@ -37,7 +34,7 @@ class FlowExecutorTest {
         private const val GROUP_NAME_KEY = "manager.consumer.group"
     }
 
-    private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+    private val coordinatorFactory: LifecycleCoordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
     private val config: Map<String, SmartConfig> = mapOf(
         MESSAGING_CONFIG to SmartConfigFactory.create(ConfigFactory.empty()).create(
             ConfigFactory.empty().withValue(
@@ -56,10 +53,7 @@ class FlowExecutorTest {
 
     @Test
     fun testFlowExecutor() {
-        val startLatch = CountDownLatch(1)
-        val stopLatch = CountDownLatch(1)
-        val messageSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent> =
-            StateAndEventSubscriptionStub(startLatch, stopLatch)
+        val messageSubscription  = StateAndEventSubscriptionStub()
 
         doReturn(messageSubscription).whenever(subscriptionFactory).createStateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>(
             any(),
@@ -71,9 +65,9 @@ class FlowExecutorTest {
         val flowExecutor = FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowEventProcessorFactory)
 
         flowExecutor.start()
-        assertTrue(startLatch.await(5, TimeUnit.SECONDS))
+        assertTrue(messageSubscription.isStarted)
         flowExecutor.stop()
-        assertTrue(stopLatch.await(5, TimeUnit.SECONDS))
+        assertFalse(messageSubscription.isStarted)
 
         verify(subscriptionFactory, times(1)).createStateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>(
             any(),

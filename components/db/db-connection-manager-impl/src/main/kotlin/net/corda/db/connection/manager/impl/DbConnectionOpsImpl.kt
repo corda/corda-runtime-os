@@ -74,6 +74,18 @@ class DbConnectionOpsImpl(
         )
     }
 
+    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
+            EntityManagerFactory {
+        logger.info("Loading DB connection details for $connectionId")
+        val dataSource = dbConnectionsRepository.create(connectionId) ?:
+        throw DBConfigurationException("Details for $connectionId cannot be found")
+        return entityManagerFactoryFactory.create(
+            connectionId.toString(),
+            entitiesSet.classes.toList(),
+            DbEntityManagerConfiguration(dataSource),
+        )
+    }
+
     private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,

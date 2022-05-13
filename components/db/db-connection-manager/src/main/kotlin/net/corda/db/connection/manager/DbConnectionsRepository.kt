@@ -54,6 +54,15 @@ interface DbConnectionsRepository {
     fun create(name: String, privilege: DbPrivilege): CloseableDataSource?
 
     /**
+     * Creates [CloseableDataSource] for given [connectionId].
+     *
+     * @param connectionId
+     * @return The [DataSource] or null if the connection cannot be found.
+     * @throws [DBConfigurationException] if the cluster DB cannot be connected to.
+     */
+    fun create(connectionId: UUID): CloseableDataSource?
+
+    /**
      * Creates [CloseableDataSource] for given configuration.
      *
      * @param config DB config

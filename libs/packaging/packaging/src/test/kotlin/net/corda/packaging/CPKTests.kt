@@ -3,8 +3,8 @@ package net.corda.packaging
 import net.corda.packaging.internal.PackagingConstants
 import net.corda.packaging.internal.hash
 import net.corda.packaging.internal.summaryHash
-import net.corda.packaging.util.UncloseableInputStream
-import net.corda.packaging.util.ZipTweaker
+import net.corda.packaging.internal.UncloseableInputStream
+import net.corda.packaging.internal.ZipTweaker
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterAll
