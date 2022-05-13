@@ -11,7 +11,7 @@ import java.util.jar.JarEntry
  * after having consumed their entry content from the source [java.util.jar.JarInputStream], then [certificates] property
  * will contain the public keys of the jar's signers.
  */
-class SignatureCollector {
+internal class SignatureCollector {
 
     companion object {
         /**
