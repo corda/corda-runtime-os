@@ -103,7 +103,7 @@ tasks.register("copyScripts", Copy){
     mustRunAfter cleanDir
     description 'Copy corda-cli scripts to a location in build dir and update to use correct version'
 
-    from 'script' 
+    from 'templateScripts'
     into 'build/generatedScripts' 
     filter {
             String line -> line.replaceAll("corda-cli-.(.)*.jar", "corda-cli-${version}.jar")

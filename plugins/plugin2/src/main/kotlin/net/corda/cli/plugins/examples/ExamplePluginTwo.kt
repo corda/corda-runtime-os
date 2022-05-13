@@ -23,5 +23,5 @@ class ExamplePluginTwo(wrapper: PluginWrapper) : Plugin(wrapper) {
         subcommands = [SubCommandOne::class],
         description = ["Example Plugin two using class based subcommands"]
     )
-    class ExamplePluginTwoEntry : CordaCliPlugin {}
+    class ExamplePluginTwoEntry : CordaCliPlugin
 }
