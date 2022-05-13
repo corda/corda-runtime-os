@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Reference
 class UniquenessProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-     @Reference(service = UniquenessChecker::class)
+    @Reference(service = UniquenessChecker::class)
     private val uniquenessChecker: UniquenessChecker
 ) : UniquenessProcessor {
 

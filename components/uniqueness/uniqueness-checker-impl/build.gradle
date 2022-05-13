@@ -15,6 +15,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":components:uniqueness:uniqueness-checker")
+    implementation project(":libs:utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

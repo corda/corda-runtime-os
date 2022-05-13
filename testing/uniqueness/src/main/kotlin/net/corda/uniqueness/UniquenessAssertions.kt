@@ -1,7 +1,7 @@
 package net.corda.uniqueness
 
 import net.corda.data.uniqueness.*
-import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
 import java.time.Instant
@@ -11,17 +11,17 @@ import java.time.Instant
  */
 object UniquenessAssertions {
     /**
-     * Checks for a valid, standard success response. If a time facility provider is specified,
-     * will additionally check the commit timestamp is valid with respect to the provider.
+     * Checks for a valid, standard success response. If a clock is specified, will additionally
+     * check the commit timestamp is valid with respect to the provider.
      */
     fun assertStandardSuccessResponse(response: UniquenessCheckResponse,
-                                      timeFacilitiesProvider: MockTimeFacilitiesProvider? = null
+                                      clock: AutoTickTestClock? = null
     ) =
         getResultOfType(response, UniquenessCheckResultSuccess::class.java).run {
             assertThat(commitTimestamp).isAfter(Instant.MIN)
-            if ( timeFacilitiesProvider != null) {
+            if ( clock != null) {
                 assertThat(commitTimestamp)
-                    .isBeforeOrEqualTo(timeFacilitiesProvider.getCurrentTime())
+                    .isBeforeOrEqualTo(clock.peekTime())
             }
         }
 

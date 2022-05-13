@@ -2,7 +2,7 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.uniqueness.*
-import net.corda.test.util.MockTimeFacilitiesProvider
+import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.UniquenessAssertions.assertReferenceStateConflictResponse
 import net.corda.uniqueness.UniquenessAssertions.assertStandardSuccessResponse
@@ -29,30 +29,34 @@ import java.util.*
 class UniquenessCheckerImplTests {
 
     private val baseTime = Instant.EPOCH
+
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
-    private lateinit var timeFacilitiesProvider: MockTimeFacilitiesProvider
+    private lateinit var testClock: AutoTickTestClock
 
     private lateinit var uniquenessChecker: UniquenessChecker
 
-    private fun currentTime() : Instant = timeFacilitiesProvider.getCurrentTime()
+    private fun currentTime(): Instant = testClock.peekTime()
 
     private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
     : UniquenessCheckRequest.Builder =
-        UniquenessCheckRequest.newBuilder(UniquenessCheckRequest(
-            txId.toString(),
-            emptyList(),
-            emptyList(),
-            0,
-            null,
-            defaultTimeWindowUpperBound))
+        UniquenessCheckRequest.newBuilder(
+            UniquenessCheckRequest(
+                txId.toString(),
+                emptyList(),
+                emptyList(),
+                0,
+                null,
+                defaultTimeWindowUpperBound
+            )
+        )
 
     private fun processRequests(vararg requests: UniquenessCheckRequest) =
         uniquenessChecker.processRequests(requests.asList())
 
-    private fun generateUnspentStates(numOutputStates: Int) : List<String> {
+    private fun generateUnspentStates(numOutputStates: Int): List<String> {
         val issueTxId = randomSecureHash()
         val unspentStateRefs = LinkedList<String>()
 
@@ -67,7 +71,7 @@ class UniquenessCheckerImplTests {
         ).let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
-                { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                { assertStandardSuccessResponse(responses[0], testClock) }
             )
         }
 
@@ -83,8 +87,8 @@ class UniquenessCheckerImplTests {
          * be  manipulated by tests directly via [MockTimeFacilities.advanceTime] to change this
          * between calls (e.g. to manipulate time window behavior)
          */
-        timeFacilitiesProvider = MockTimeFacilitiesProvider(baseTime, Duration.ofSeconds(1))
-        uniquenessChecker = InMemoryUniquenessCheckerImpl(mock(), timeFacilitiesProvider.mockClock)
+        testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
+        uniquenessChecker = InMemoryUniquenessCheckerImpl(mock(), testClock)
     }
 
     @Nested
@@ -98,7 +102,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -113,7 +117,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -130,8 +134,8 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
@@ -151,7 +155,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
                 initialResponse = responses[0]
             }
@@ -161,7 +165,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -173,19 +177,20 @@ class UniquenessCheckerImplTests {
             val requests = List(5) {
                 newRequestBuilder()
                     .setInputStates(generateUnspentStates(1))
-                    .build() }
+                    .build()
+            }
 
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(5) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[2], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[3], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[4], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[2], testClock) },
+                    { assertStandardSuccessResponse(responses[3], testClock) },
+                    { assertStandardSuccessResponse(responses[4], testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(requests.map { it.txId }, responses.map{ it.txId }) },
+                    { assertIterableEquals(requests.map { it.txId }, responses.map { it.txId }) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -193,9 +198,11 @@ class UniquenessCheckerImplTests {
 
         @Test
         fun `Multiple txs spending single different input states in different batches is successful`() {
-            val requests = List(5) { newRequestBuilder()
-                .setInputStates(generateUnspentStates(1))
-                .build() }
+            val requests = List(5) {
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .build()
+            }
 
             val allResponses = LinkedList<UniquenessCheckResponse>()
 
@@ -203,9 +210,9 @@ class UniquenessCheckerImplTests {
                 processRequests(requests[count]).also { responses ->
                     assertAll(
                         { assertThat(responses).hasSize(1) },
-                        { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                        { assertStandardSuccessResponse(responses[0], testClock) },
                         { assertEquals(requests[count].txId, responses[0].txId) },
-                     )
+                    )
                 }.also { responses ->
                     allResponses.add(responses[0])
                 }
@@ -231,12 +238,12 @@ class UniquenessCheckerImplTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[2], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[2], testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(requests.map { it.txId }, responses.map{ it.txId }) },
+                    { assertIterableEquals(requests.map { it.txId }, responses.map { it.txId }) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -262,7 +269,7 @@ class UniquenessCheckerImplTests {
                 processRequests(requests[count]).also { responses ->
                     assertAll(
                         { assertThat(responses).hasSize(1) },
-                        { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                        { assertStandardSuccessResponse(responses[0], testClock) },
                         { assertEquals(requests[count].txId, responses[0].txId) },
                     )
                 }.also { responses ->
@@ -288,8 +295,8 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertInputStateConflictResponse(responses[1], listOf(sharedState.single()))}
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertInputStateConflictResponse(responses[1], listOf(sharedState.single())) }
                 )
             }
         }
@@ -305,7 +312,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -316,7 +323,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertInputStateConflictResponse(responses[0], listOf(sharedState.single()))}
+                    { assertInputStateConflictResponse(responses[0], listOf(sharedState.single())) }
                 )
             }
         }
@@ -327,29 +334,42 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        sharedState[0],
-                        sharedState[1],
-                        generateUnspentStates(1).single()))
+                    .setInputStates(
+                        listOf(
+                            sharedState[0],
+                            sharedState[1],
+                            generateUnspentStates(1).single()
+                        )
+                    )
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        sharedState[0],
-                        sharedState[2]))
+                    .setInputStates(
+                        listOf(
+                            sharedState[0],
+                            sharedState[2]
+                        )
+                    )
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        sharedState[2],
-                        sharedState[1],
-                        sharedState[0]))
+                    .setInputStates(
+                        listOf(
+                            sharedState[2],
+                            sharedState[1],
+                            sharedState[0]
+                        )
+                    )
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertInputStateConflictResponse(responses[1], listOf(sharedState[0]))},
-                    { assertInputStateConflictResponse(responses[2],
-                        listOf(sharedState[0], sharedState[1]))}
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertInputStateConflictResponse(responses[1], listOf(sharedState[0])) },
+                    {
+                        assertInputStateConflictResponse(
+                            responses[2],
+                            listOf(sharedState[0], sharedState[1])
+                        )
+                    }
                 )
             }
         }
@@ -360,43 +380,56 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        sharedState[0],
-                        sharedState[1],
-                        generateUnspentStates(1).single()))
+                    .setInputStates(
+                        listOf(
+                            sharedState[0],
+                            sharedState[1],
+                            generateUnspentStates(1).single()
+                        )
+                    )
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        sharedState[0],
-                        sharedState[2]))
+                    .setInputStates(
+                        listOf(
+                            sharedState[0],
+                            sharedState[2]
+                        )
+                    )
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertInputStateConflictResponse(responses[0], listOf(sharedState[0]))}
+                    { assertInputStateConflictResponse(responses[0], listOf(sharedState[0])) }
                 )
             }
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        sharedState[2],
-                        sharedState[1],
-                        sharedState[0]))
+                    .setInputStates(
+                        listOf(
+                            sharedState[2],
+                            sharedState[1],
+                            sharedState[0]
+                        )
+                    )
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertInputStateConflictResponse(responses[0],
-                        listOf(sharedState[0], sharedState[1]))}
+                    {
+                        assertInputStateConflictResponse(
+                            responses[0],
+                            listOf(sharedState[0], sharedState[1])
+                        )
+                    }
                 )
             }
         }
@@ -413,7 +446,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -430,14 +463,13 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
             }
         }
-
 
         @Test
         fun `Single tx, no input states, single ref state retried in different batch is successful`() {
@@ -450,7 +482,7 @@ class UniquenessCheckerImplTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
 
                 initialResponse = responses[0]
@@ -459,7 +491,7 @@ class UniquenessCheckerImplTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -480,8 +512,8 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -500,7 +532,7 @@ class UniquenessCheckerImplTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -513,7 +545,7 @@ class UniquenessCheckerImplTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -537,9 +569,9 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[2], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[2], testClock) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -556,12 +588,11 @@ class UniquenessCheckerImplTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
             }
-
 
             processRequests(
                 newRequestBuilder()
@@ -570,12 +601,11 @@ class UniquenessCheckerImplTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
             }
-
 
             processRequests(
                 newRequestBuilder()
@@ -584,7 +614,7 @@ class UniquenessCheckerImplTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -603,7 +633,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -620,7 +650,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -636,7 +666,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -665,7 +695,7 @@ class UniquenessCheckerImplTests {
             processRequests(replayableRequest).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
                 initialResponse = responses[0]
             }
@@ -677,14 +707,14 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -707,8 +737,8 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertReferenceStateConflictResponse(responses[1], states[0])}
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertReferenceStateConflictResponse(responses[1], states[0]) }
                 )
             }
         }
@@ -725,7 +755,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -737,7 +767,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertReferenceStateConflictResponse(responses[0], states[0])}
+                    { assertReferenceStateConflictResponse(responses[0], states[0]) }
                 )
             }
         }
@@ -755,7 +785,7 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -772,18 +802,18 @@ class UniquenessCheckerImplTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
                 initialResponse = responses[0]
             }
 
             // Move clock past window
-            timeFacilitiesProvider.advanceTime(Duration.ofSeconds(100))
+            testClock.setTime(testClock.peekTime() + Duration.ofSeconds(100))
 
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -794,16 +824,20 @@ class UniquenessCheckerImplTests {
         fun `Tx processed before time window lower bound fails`() {
             val lowerBound = currentTime().plusSeconds(10)
 
-            processRequests(newRequestBuilder()
-                .setTimeWindowLowerBound(lowerBound)
-                .build()
+            processRequests(
+                newRequestBuilder()
+                    .setTimeWindowLowerBound(lowerBound)
+                    .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertTimeWindowOutOfBoundsResponse(
-                        responses[0],
-                        expectedLowerBound = lowerBound,
-                        expectedUpperBound = defaultTimeWindowUpperBound) }
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[0],
+                            expectedLowerBound = lowerBound,
+                            expectedUpperBound = defaultTimeWindowUpperBound
+                        )
+                    }
                 )
             }
         }
@@ -819,24 +853,30 @@ class UniquenessCheckerImplTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertTimeWindowOutOfBoundsResponse(
-                        responses[0],
-                        expectedLowerBound = lowerBound,
-                        expectedUpperBound = defaultTimeWindowUpperBound) }
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[0],
+                            expectedLowerBound = lowerBound,
+                            expectedUpperBound = defaultTimeWindowUpperBound
+                        )
+                    }
                 )
                 initialResponse = responses[0]
             }
 
             // Tick up clock and retry
-            timeFacilitiesProvider.advanceTime(Duration.ofSeconds(100))
+            testClock.setTime(testClock.peekTime() + Duration.ofSeconds(100))
 
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertTimeWindowOutOfBoundsResponse(
-                        responses[0],
-                        expectedLowerBound = lowerBound,
-                        expectedUpperBound = defaultTimeWindowUpperBound) },
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[0],
+                            expectedLowerBound = lowerBound,
+                            expectedUpperBound = defaultTimeWindowUpperBound
+                        )
+                    },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -848,14 +888,18 @@ class UniquenessCheckerImplTests {
         fun `Tx processed after time window upper bound fails`() {
             val upperBound = currentTime().minusSeconds(10)
 
-            processRequests(newRequestBuilder()
-                .setTimeWindowUpperBound(upperBound)
-                .build()
+            processRequests(
+                newRequestBuilder()
+                    .setTimeWindowUpperBound(upperBound)
+                    .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertTimeWindowOutOfBoundsResponse(
-                        responses[0], expectedUpperBound = upperBound) }
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[0], expectedUpperBound = upperBound
+                        )
+                    }
                 )
             }
         }
@@ -876,21 +920,23 @@ class UniquenessCheckerImplTests {
             // Initial tx to spend an input and reference state
             val states = List(2) { generateUnspentStates(1).single() }
 
-            processRequests( newRequestBuilder()
-                .setInputStates(states)
-                .build()
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(states)
+                    .build()
             ).let { responses ->
-                    assertAll(
-                        { assertThat(responses).hasSize(1) },
-                        { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
-            processRequests(newRequestBuilder()
-                .setInputStates(listOf(states[0]))
-                .setReferenceStates(listOf(states[1]))
-                .setTimeWindowLowerBound(currentTime().plusSeconds(10))
-                .build()
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(listOf(states[0]))
+                    .setReferenceStates(listOf(states[1]))
+                    .setTimeWindowLowerBound(currentTime().plusSeconds(10))
+                    .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
@@ -904,22 +950,24 @@ class UniquenessCheckerImplTests {
             // Initial tx to spend a reference state
             val state = generateUnspentStates(1)
 
-            processRequests(newRequestBuilder()
-                .setInputStates(state)
-                .build()
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(state)
+                    .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
-             processRequests(newRequestBuilder()
-                .setInputStates(generateUnspentStates(1))
-                .setReferenceStates(state)
-                .setTimeWindowLowerBound(currentTime().plusSeconds(10))
-                .build()
-                    ).let { responses ->
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(generateUnspentStates(1))
+                    .setReferenceStates(state)
+                    .setTimeWindowLowerBound(currentTime().plusSeconds(10))
+                    .build()
+            ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     { assertReferenceStateConflictResponse(responses[0], state) }
@@ -932,14 +980,16 @@ class UniquenessCheckerImplTests {
             val priorSpentStates = List(2) { generateUnspentStates(1).single() }
 
             uniquenessChecker.processRequests(
-                priorSpentStates.map { newRequestBuilder()
-                    .setInputStates(listOf(it))
-                    .build()}
+                priorSpentStates.map {
+                    newRequestBuilder()
+                        .setInputStates(listOf(it))
+                        .build()
+                }
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[1], timeFacilitiesProvider) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     { assertUniqueCommitTimestamps(responses) }
                 )
             }
@@ -954,7 +1004,8 @@ class UniquenessCheckerImplTests {
             val retryableFailedRequest = newRequestBuilder()
                 .setInputStates(generateUnspentStates(1))
                 .setReferenceStates(
-                    generateUnspentStates(10) + priorSpentStates[0])
+                    generateUnspentStates(10) + priorSpentStates[0]
+                )
                 .build()
 
             var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponse? = null
@@ -963,9 +1014,12 @@ class UniquenessCheckerImplTests {
             processRequests(retryableSuccessfulRequest, retryableFailedRequest).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertReferenceStateConflictResponse(
-                        responses[1], listOf(priorSpentStates[0])) }
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    {
+                        assertReferenceStateConflictResponse(
+                            responses[1], listOf(priorSpentStates[0])
+                        )
+                    }
                 )
                 initialRetryableSuccessfulRequestResponse = responses[0]
                 initialRetryableFailedRequestResponse = responses[1]
@@ -977,62 +1031,88 @@ class UniquenessCheckerImplTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        generateUnspentStates(1).single(),
-                        doubleSpendAttemptStates[0],
-                        doubleSpendAttemptStates[1],
-                        doubleSpendAttemptStates[2]
-                    ))
+                    .setInputStates(
+                        listOf(
+                            generateUnspentStates(1).single(),
+                            doubleSpendAttemptStates[0],
+                            doubleSpendAttemptStates[1],
+                            doubleSpendAttemptStates[2]
+                        )
+                    )
                     .setTimeWindowLowerBound(currentTime())
                     .build(),
                 newRequestBuilder()
-                    .setInputStates(listOf(
-                        generateUnspentStates(1).single(),
-                        doubleSpendAttemptStates[0],
-                        doubleSpendAttemptStates[1]
-                    ))
+                    .setInputStates(
+                        listOf(
+                            generateUnspentStates(1).single(),
+                            doubleSpendAttemptStates[0],
+                            doubleSpendAttemptStates[1]
+                        )
+                    )
                     .setReferenceStates(
-                        listOf(doubleSpendAttemptStates[2]))
+                        listOf(doubleSpendAttemptStates[2])
+                    )
                     .build(),
                 newRequestBuilder()
                     .setReferenceStates(
-                        listOf(doubleSpendAttemptStates[2]))
+                        listOf(doubleSpendAttemptStates[2])
+                    )
                     .build(),
                 newRequestBuilder()
                     .setInputStates(
                         generateUnspentStates(10) +
-                        priorSpentStates[0] +
-                        priorSpentStates[1])
+                                priorSpentStates[0] +
+                                priorSpentStates[1]
+                    )
                     .build(),
                 retryableFailedRequest,
                 retryableSuccessfulRequest,
                 newRequestBuilder()
                     .setTimeWindowUpperBound(timeWindowUpperBound)
                     .build(),
-                *Array(3) { newRequestBuilder()
-                    .setInputStates(generateUnspentStates(3))
-                    .setReferenceStates(generateUnspentStates(4))
-                    .build()}
+                *Array(3) {
+                    newRequestBuilder()
+                        .setInputStates(generateUnspentStates(3))
+                        .setReferenceStates(generateUnspentStates(4))
+                        .build()
+                }
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(10) },
-                    { assertStandardSuccessResponse(responses[0], timeFacilitiesProvider) },
-                    { assertInputStateConflictResponse(responses[1],
-                        listOf(doubleSpendAttemptStates[0], doubleSpendAttemptStates[1])) },
-                    { assertReferenceStateConflictResponse(responses[2],
-                        listOf(doubleSpendAttemptStates[2])) },
-                    { assertInputStateConflictResponse(responses[3],
-                        listOf(priorSpentStates[0], priorSpentStates[1])) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    {
+                        assertInputStateConflictResponse(
+                            responses[1],
+                            listOf(doubleSpendAttemptStates[0], doubleSpendAttemptStates[1])
+                        )
+                    },
+                    {
+                        assertReferenceStateConflictResponse(
+                            responses[2],
+                            listOf(doubleSpendAttemptStates[2])
+                        )
+                    },
+                    {
+                        assertInputStateConflictResponse(
+                            responses[3],
+                            listOf(priorSpentStates[0], priorSpentStates[1])
+                        )
+                    },
                     { assertEquals(initialRetryableFailedRequestResponse, responses[4]) },
                     { assertEquals(initialRetryableSuccessfulRequestResponse, responses[5]) },
-                    { assertTimeWindowOutOfBoundsResponse(
-                        responses[6], expectedUpperBound = timeWindowUpperBound) },
-                    { assertStandardSuccessResponse(responses[7], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[8], timeFacilitiesProvider) },
-                    { assertStandardSuccessResponse(responses[9], timeFacilitiesProvider) },
-                    { assertUniqueCommitTimestamps(responses.filter {
-                        it.result is UniquenessCheckResultSuccess
-                    }) }
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[6], expectedUpperBound = timeWindowUpperBound
+                        )
+                    },
+                    { assertStandardSuccessResponse(responses[7], testClock) },
+                    { assertStandardSuccessResponse(responses[8], testClock) },
+                    { assertStandardSuccessResponse(responses[9], testClock) },
+                    {
+                        assertUniqueCommitTimestamps(responses.filter {
+                            it.result is UniquenessCheckResultSuccess
+                        })
+                    }
                 )
             }
         }

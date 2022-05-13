@@ -3,9 +3,9 @@ package net.corda.test.util.time
 import net.corda.utilities.time.Clock
 import java.time.Instant
 
-class TestClock(initialTime: Instant): Clock {
+open class TestClock(initialTime: Instant): Clock {
 
-    private var now = initialTime
+    protected var now = initialTime
 
     override fun instant(): Instant {
         return now
@@ -14,5 +14,4 @@ class TestClock(initialTime: Instant): Clock {
     fun setTime(instant: Instant) {
         now = instant
     }
-
 }

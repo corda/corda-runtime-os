@@ -16,6 +16,7 @@ dependencies {
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     implementation "org.assertj:assertj-core:$assertjVersion"
 
+    implementation project(":libs:utilities")
     implementation project(":testing:crypto-testkit")
     implementation project(":testing:test-utilities")
 }

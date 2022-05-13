@@ -5,12 +5,13 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Clock
 import java.time.Instant
 
 /**
@@ -25,22 +26,23 @@ class InMemoryUniquenessCheckerImpl(
     private val clock: Clock
 ) : UniquenessChecker {
 
-    @Activate constructor(
+    @Activate
+    constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory
-    ) : this(coordinatorFactory, Clock.systemUTC())
+    ) : this(coordinatorFactory, UTCClock())
 
     companion object {
         private val log: Logger = contextLogger()
     }
 
     private val responseCache = HashMap<String, UniquenessCheckResponse>()
+
     // Value of state cache is populated with the consuming tx id when spent, null if unspent
     private val stateCache = HashMap<String, String?>()
 
     private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
-        .createCoordinator<UniquenessChecker> {
-                event, _ -> log.info("Uniqueness checker received event $event") }
+        .createCoordinator<UniquenessChecker> { event, _ -> log.info("Uniqueness checker received event $event") }
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -58,7 +60,7 @@ class InMemoryUniquenessCheckerImpl(
     @Synchronized
     override fun processRequests(
         requests: List<UniquenessCheckRequest>
-    ) : List<UniquenessCheckResponse> {
+    ): List<UniquenessCheckResponse> {
         return requests.map { request ->
             responseCache[request.txId] ?: run {
                 val (knownInputStates, unknownInputStates) =
@@ -72,40 +74,36 @@ class InMemoryUniquenessCheckerImpl(
                 val timeWindowEvaluationTime = clock.instant()
 
                 val response =
-                    if ( request.numOutputStates < 0 ) {
+                    if (request.numOutputStates < 0) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultMalformedRequest(
                                 "Number of output states cannot be less than 0."
                             )
                         )
-                    }
-                    else if ( request.timeWindowUpperBound == null ) {
+                    } else if (request.timeWindowUpperBound == null) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultMalformedRequest(
                                 "Time window upper bound is mandatory."
                             )
                         )
-                    }
-                    else if ( unknownInputStates.isNotEmpty() ) {
+                    } else if (unknownInputStates.isNotEmpty()) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultInputStateUnknown(unknownInputStates)
                         )
-                    }
-                    else if ( unknownReferenceStates.isNotEmpty() ) {
+                    } else if (unknownReferenceStates.isNotEmpty()) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultReferenceStateUnknown(unknownReferenceStates)
                         )
-                    }
-                    else if ( inputStateConflicts.isNotEmpty() ) {
+                    } else if (inputStateConflicts.isNotEmpty()) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultInputStateConflict(inputStateConflicts)
                         )
-                    } else if ( referenceStateConflicts.isNotEmpty() ) {
+                    } else if (referenceStateConflicts.isNotEmpty()) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultReferenceStateConflict(referenceStateConflicts)
@@ -113,13 +111,16 @@ class InMemoryUniquenessCheckerImpl(
                     } else if (!validateTimeWindow(
                             timeWindowEvaluationTime,
                             request.timeWindowLowerBound,
-                            request.timeWindowUpperBound) ) {
+                            request.timeWindowUpperBound
+                        )
+                    ) {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultTimeWindowOutOfBounds(
                                 timeWindowEvaluationTime,
                                 request.timeWindowLowerBound,
-                                request.timeWindowUpperBound)
+                                request.timeWindowUpperBound
+                            )
                         )
                     } else {
                         // Write unspent states
@@ -130,7 +131,8 @@ class InMemoryUniquenessCheckerImpl(
                         stateCache.putAll(request.inputStates.associateWith { request.txId })
                         UniquenessCheckResponse(
                             request.txId,
-                            UniquenessCheckResultSuccess(clock.instant()))
+                            UniquenessCheckResultSuccess(clock.instant())
+                        )
                     }
 
                 responseCache[request.txId] = response
@@ -139,10 +141,12 @@ class InMemoryUniquenessCheckerImpl(
         }
     }
 
-    private fun validateTimeWindow(currentTime: Instant,
-                                   timeWindowLowerBound: Instant?,
-                                   timeWindowUpperBound: Instant): Boolean {
-        return ( (timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
-                 timeWindowUpperBound.isAfter(currentTime))
+    private fun validateTimeWindow(
+        currentTime: Instant,
+        timeWindowLowerBound: Instant?,
+        timeWindowUpperBound: Instant
+    ): Boolean {
+        return ((timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
+                timeWindowUpperBound.isAfter(currentTime))
     }
 }

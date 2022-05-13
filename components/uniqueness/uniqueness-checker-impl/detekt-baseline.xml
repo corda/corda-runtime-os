@@ -2,11 +2,23 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ComplexMethod:InMemoryUniquenessCheckerImpl.kt$InMemoryUniquenessCheckerImpl$@Synchronized override fun processRequests( requests: List&lt;UniquenessCheckRequest&gt; ) : List&lt;UniquenessCheckResponse&gt;</ID>
-    <ID>SpreadOperator:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests.Miscellaneous$( newRequestBuilder() .setInputStates(listOf( generateUnspentStates(1).single(), doubleSpendAttemptStates[0], doubleSpendAttemptStates[1], doubleSpendAttemptStates[2] )) .setTimeWindowLowerBound(currentTime()) .build(), newRequestBuilder() .setInputStates(listOf( generateUnspentStates(1).single(), doubleSpendAttemptStates[0], doubleSpendAttemptStates[1] )) .setReferenceStates( listOf(doubleSpendAttemptStates[2])) .build(), newRequestBuilder() .setReferenceStates( listOf(doubleSpendAttemptStates[2])) .build(), newRequestBuilder() .setInputStates( generateUnspentStates(10) + priorSpentStates[0] + priorSpentStates[1]) .build(), retryableFailedRequest, retryableSuccessfulRequest, newRequestBuilder() .setTimeWindowUpperBound(timeWindowUpperBound) .build(), *Array(3) { newRequestBuilder() .setInputStates(generateUnspentStates(3)) .setReferenceStates(generateUnspentStates(4)) .build()} )</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:149</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:150</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1064</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1065</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1112</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1114</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:44</ID>
+    <ID>LongMethod:InMemoryUniquenessCheckerImpl.kt$InMemoryUniquenessCheckerImpl$@Synchronized override fun processRequests( requests: List&lt;UniquenessCheckRequest&gt; ): List&lt;UniquenessCheckResponse&gt;</ID>
+    <ID>LongMethod:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests.Miscellaneous$@Test fun `Complex test scenario with multiple successes and failures in one batch`()</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:3</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:14</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:20</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:21</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:4</ID>
+    <ID>SpacingAroundColon:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:43</ID>
+    <ID>StringTemplate:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:128</ID>
+    <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:64</ID>
     <ID>WildcardImport:InMemoryUniquenessCheckerImpl.kt$import net.corda.data.uniqueness.*</ID>
-    <ID>WildcardImport:UniquenessCheckerImplTests.kt$import java.time.*</ID>
-    <ID>WildcardImport:UniquenessCheckerImplTests.kt$import net.corda.data.uniqueness.*</ID>
-    <ID>WildcardImport:UniquenessCheckerImplTests.kt$import org.junit.jupiter.api.Assertions.*</ID>
   </CurrentIssues>
 </SmellBaseline>
