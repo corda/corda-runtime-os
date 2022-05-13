@@ -760,6 +760,9 @@ class PersistenceTests {
 
     @Test
     fun `Should link categories to HSM and then assiciate and getHSMStats`() {
+        val fakeLedgeCategory = "LED-${UUID.randomUUID().toString().toByteArray().toHex().take(12)}"
+        val fakeTLSCategory = "TLS-${UUID.randomUUID().toString().toByteArray().toHex().take(12)}"
+        val fakeSessionCategory = "SES-${UUID.randomUUID().toString().toByteArray().toHex().take(12)}"
         val cache = createHSMCacheImpl()
         val configId1 = UUID.randomUUID().toString()
         val configId2 = UUID.randomUUID().toString()
@@ -773,11 +776,11 @@ class PersistenceTests {
             it.linkCategories(
                 configId1, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.Categories.LEDGER,
+                        fakeLedgeCategory,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     ),
                     HSMCategoryInfo(
-                        CryptoConsts.Categories.TLS,
+                        fakeTLSCategory,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.BOTH
                     )
                 )
@@ -790,11 +793,11 @@ class PersistenceTests {
             it.linkCategories(
                 configId2, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.Categories.LEDGER,
+                        fakeLedgeCategory,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     ),
                     HSMCategoryInfo(
-                        CryptoConsts.Categories.TLS,
+                        fakeTLSCategory,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.ALIASED
                     )
                 )
@@ -806,15 +809,15 @@ class PersistenceTests {
         val tenantId4 = randomTenantId()
         val tenantId5 = randomTenantId()
         cache.act {
-            it.associate(tenantId1, CryptoConsts.Categories.LEDGER, configId1)
-            it.associate(tenantId2, CryptoConsts.Categories.LEDGER, configId2)
-            it.associate(tenantId3, CryptoConsts.Categories.LEDGER, configId2)
-            it.associate(tenantId4, CryptoConsts.Categories.TLS, configId2)
-            it.associate(tenantId5, CryptoConsts.Categories.TLS, configId1)
+            it.associate(tenantId1, fakeLedgeCategory, configId1)
+            it.associate(tenantId2, fakeLedgeCategory, configId2)
+            it.associate(tenantId3, fakeLedgeCategory, configId2)
+            it.associate(tenantId4, fakeTLSCategory, configId2)
+            it.associate(tenantId5, fakeTLSCategory, configId1)
         }
-        val actual1 = cache.act { it.getHSMStats(CryptoConsts.Categories.SESSION) }
+        val actual1 = cache.act { it.getHSMStats(fakeSessionCategory) }
         assertEquals(0, actual1.size)
-        val actual2 = cache.act { it.getHSMStats(CryptoConsts.Categories.LEDGER) }
+        val actual2 = cache.act { it.getHSMStats(fakeLedgeCategory) }
         assertEquals(2, actual2.size)
         assertEquals(5, actual2.first { it.configId == configId1 }.capacity)
         assertEquals(2, actual2.first { it.configId == configId1 }.usages)
@@ -823,7 +826,7 @@ class PersistenceTests {
         cache.act {
             it.associate(tenantId3, CryptoConsts.Categories.TLS, configId2)
         }
-        val actual3 = cache.act { it.getHSMStats(CryptoConsts.Categories.LEDGER) }
+        val actual3 = cache.act { it.getHSMStats(fakeLedgeCategory) }
         assertEquals(2, actual3.size)
         assertEquals(5, actual3.first { it.configId == configId1 }.capacity)
         assertEquals(2, actual3.first { it.configId == configId1 }.usages)
