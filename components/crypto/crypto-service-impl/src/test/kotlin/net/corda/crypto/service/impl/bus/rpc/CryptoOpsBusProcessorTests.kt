@@ -9,6 +9,7 @@ import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -22,6 +23,7 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
@@ -452,6 +454,42 @@ class CryptoOpsBusProcessorTests {
         assertEquals(externalId, UUID.fromString(info.externalId))
         // signing
         testSigningByPublicKeyLookup(publicKey, data)
+    }
+
+    @Test
+    fun `Should generate wrapping key`() {
+        setup()
+        val context1 = createRequestContext()
+        val operationContext = listOf(
+            KeyValuePair(CTX_TRACKING, UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!"),
+            KeyValuePair(CRYPTO_TENANT_ID, tenantId)
+        )
+        val configId = UUID.randomUUID().toString()
+        val masterKeyAlias = UUID.randomUUID().toString()
+        val future1 = CompletableFuture<RpcOpsResponse>()
+        processor.onNext(
+            RpcOpsRequest(
+                context1,
+                GenerateWrappingKeyRpcCommand(
+                    configId,
+                    masterKeyAlias,
+                    true,
+                    KeyValuePairList(operationContext)
+                )
+            ),
+            future1
+        )
+        val result1 = future1.get()
+        val operationContextMap = factory.recordedCryptoContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(3, operationContextMap.size)
+        assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
+        assertResponseContext(context1, result1.context)
+        assertThat(result1.response).isInstanceOf(CryptoNoContentValue::class.java)
+        assertThat(factory.softCache.keys).containsKey(masterKeyAlias)
     }
 
     @Test
