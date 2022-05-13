@@ -148,7 +148,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                             makeSecret(softKey.passphrase).root().unwrapped()
                         ),
                         CryptoSoftPersistenceConfig::retries.name to "0",
-                        CryptoSoftPersistenceConfig::timeoutMills.name to "5000"
+                        CryptoSoftPersistenceConfig::timeoutMills.name to "10000"
                     )
                 )
             )
