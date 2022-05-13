@@ -9,8 +9,13 @@ import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkCordappManifestEntity
 import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.cpi.datamodel.CpkDependencyEntity
+import net.corda.libs.cpi.datamodel.CpkFormatVersion
+import net.corda.libs.cpi.datamodel.CpkManifest
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.ManifestCorDappInfo
 import net.corda.orm.utils.transaction
 import net.corda.libs.packaging.Cpi
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -171,7 +176,60 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.hash.toString()
                 em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
-                em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
+
+                val cpkMetadataEntity = CpkMetadataEntity(
+                    cpiMetadataEntity,
+                    cpkChecksum,
+                    it.originalFileName!!,
+                    it.metadata.id.name,
+                    it.metadata.id.version,
+                    it.metadata.id.signerSummaryHash.toString(),
+                    CpkManifest(
+                        CpkFormatVersion(
+                            it.metadata.manifest.cpkFormatVersion.major,
+                            it.metadata.manifest.cpkFormatVersion.minor
+                        )
+                    ),
+                    it.metadata.mainBundle,
+                    it.metadata.type.name,
+                    it.metadata.libraries
+                )
+                em.merge(cpkMetadataEntity)
+
+                it.metadata.dependencies.forEach { cpkIdentifier ->
+                    em.merge(
+                        CpkDependencyEntity(
+                            cpkMetadataEntity,
+                            cpkIdentifier.name,
+                            cpkIdentifier.version,
+                            cpkIdentifier.signerSummaryHash.toString()
+                        )
+                    )
+                }
+
+                it.metadata.cordappManifest.run {
+                    em.persist(
+                        CpkCordappManifestEntity(
+                            cpkMetadataEntity,
+                            this.bundleSymbolicName,
+                            this.bundleVersion,
+                            this.minPlatformVersion,
+                            this.targetPlatformVersion,
+                            ManifestCorDappInfo(
+                                this.contractInfo.shortName,
+                                this.contractInfo.vendor,
+                                this.contractInfo.versionId,
+                                this.contractInfo.licence
+                            ),
+                            ManifestCorDappInfo(
+                                this.workflowInfo.shortName,
+                                this.workflowInfo.vendor,
+                                this.workflowInfo.versionId,
+                                this.workflowInfo.licence
+                            )
+                        )
+                    )
+                }
             }
         }
     }

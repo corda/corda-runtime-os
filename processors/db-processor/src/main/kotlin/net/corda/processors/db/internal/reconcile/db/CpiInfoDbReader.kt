@@ -4,6 +4,8 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.findAllCpiMetadata
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.CpkMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +16,9 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.packaging.CordappManifest
+import net.corda.packaging.Cpk
+import net.corda.packaging.ManifestCordappInfo
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -108,24 +113,75 @@ class CpiInfoDbReader(
             findAllCpiMetadata().onClose {
                 // closing em after the stream gets used outside the scope of this method
                 close()
-            }.map { entity ->
+            }.map { cpiMetadataEntity ->
                 val cpiMetadata = CpiMetadata(
                     CpiIdentifier(
-                        entity.name,
-                        entity.version,
-                        SecureHash.create(entity.signerSummaryHash)
+                        cpiMetadataEntity.name,
+                        cpiMetadataEntity.version,
+                        SecureHash.create(cpiMetadataEntity.signerSummaryHash)
                     ),
-                    SecureHash.create(entity.fileChecksum),
-                    // The below empty list needs to be populated once we store [CpkMetadata] properties in database
-                    // (https://r3-cev.atlassian.net/browse/CORE-4658), it will now wipe out values on Kafka.
-                    listOf(),
-                    entity.groupPolicy,
-                    entity.entityVersion
+                    SecureHash.create(cpiMetadataEntity.fileChecksum),
+                    mutableListOf<CpkMetadata>().also { cpkMetadataList ->
+                        cpiMetadataEntity.cpks.forEach { cpkMetadataEntity ->
+                            cpkMetadataList.add(
+                                CpkMetadata(
+                                    cpkId = CpkIdentifier(
+                                        cpkMetadataEntity.mainBundleName,
+                                        cpkMetadataEntity.mainBundleVersion,
+                                        cpkMetadataEntity.signerSummaryHash?.let { SecureHash.create(it) }
+                                    ),
+                                    manifest = Cpk.Manifest.newInstance(
+                                        Cpk.FormatVersion.newInstance(
+                                            cpkMetadataEntity.cpkManifest.cpkFormatVersion.major,
+                                            cpkMetadataEntity.cpkManifest.cpkFormatVersion.minor
+                                        )
+                                    ),
+                                    mainBundle = cpkMetadataEntity.cpkMainBundle,
+                                    libraries = cpkMetadataEntity.cpkLibraries,
+                                    dependencies = mutableListOf<CpkIdentifier>().also { cpkDependenciesList ->
+                                        cpkMetadataEntity.cpkDependencies.forEach { cpkDependencyEntity ->
+                                            cpkDependenciesList.add(
+                                                CpkIdentifier(
+                                                    cpkDependencyEntity.mainBundleName,
+                                                    cpkDependencyEntity.mainBundleVersion,
+                                                    cpkDependencyEntity.signerSummaryHash?.let { SecureHash.create(it) }
+                                                )
+                                            )
+                                        }
+                                    },
+                                    cordappManifest = CordappManifest(
+                                        bundleSymbolicName = cpkMetadataEntity.cpkCordappManifest!!.bundleSymbolicName,
+                                        bundleVersion = cpkMetadataEntity.cpkCordappManifest!!.bundleVersion,
+                                        minPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.minPlatformVersion,
+                                        targetPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.targetPlatformVersion,
+                                        contractInfo = ManifestCordappInfo(
+                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.shortName,
+                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.vendor,
+                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.versionId,
+                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.license
+                                        ),
+                                        workflowInfo = ManifestCordappInfo(
+                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.shortName,
+                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.vendor,
+                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.versionId,
+                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.license
+                                        ),
+                                        emptyMap() // TODO
+                                    ),
+                                    type = Cpk.Type.parse(cpkMetadataEntity.cpkType ?: ""), // TODO revise null case
+                                    fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
+                                    cordappCertificates = emptySet() // TODO
+                                )
+                            )
+                        }
+                    },
+                    cpiMetadataEntity.groupPolicy,
+                    cpiMetadataEntity.entityVersion
                 )
 
                 VersionedRecord(
                     version = cpiMetadata.version,
-                    isDeleted = entity.isDeleted,
+                    isDeleted = cpiMetadataEntity.isDeleted,
                     key = cpiMetadata.cpiId,
                     value = cpiMetadata
                 )
