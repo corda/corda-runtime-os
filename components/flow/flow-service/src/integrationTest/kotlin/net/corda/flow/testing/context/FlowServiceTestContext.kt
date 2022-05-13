@@ -1,6 +1,7 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
+import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -16,7 +17,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
-import net.corda.flow.testing.fakes.FakeCpiInfoReadService
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
@@ -26,9 +26,10 @@ import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.Cpk
 import net.corda.packaging.CordappManifest
+import net.corda.packaging.Cpk
 import net.corda.packaging.ManifestCordappInfo
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
@@ -52,8 +53,8 @@ import java.util.*
 class FlowServiceTestContext @Activate constructor(
     @Reference(service = VirtualNodeInfoReadServiceFake::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
-    @Reference(service = FakeCpiInfoReadService::class)
-    val cpiInfoReadService: FakeCpiInfoReadService,
+    @Reference(service = CpiInfoReadServiceFake::class)
+    val cpiInfoReadService: CpiInfoReadServiceFake,
     @Reference(service = FakeSandboxGroupContextComponent::class)
     val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
     @Reference(service = FakeMembershipGroupReaderProvider::class)
@@ -85,7 +86,18 @@ class FlowServiceTestContext @Activate constructor(
 
     fun start() {
         virtualNodeInfoReadService.start()
+        cpiInfoReadService.start()
+
         virtualNodeInfoReadService.waitUntilRunning()
+        cpiInfoReadService.waitUntilRunning()
+    }
+
+    private fun Lifecycle.waitUntilRunning() {
+        repeat(10) {
+            if (isRunning) return
+            Thread.sleep(100)
+        }
+        check(false) { "Timeout waiting for ${this::class.simpleName} to start" }
     }
 
     override val initiatedIdentityMemberName: MemberX500Name
@@ -138,7 +150,7 @@ class FlowServiceTestContext @Activate constructor(
             ""
         )
 
-        cpiInfoReadService.add(cpiMeta)
+        cpiInfoReadService.addOrUpdate(cpiMeta)
     }
 
     override fun sandboxCpk(cpkId: String) {
