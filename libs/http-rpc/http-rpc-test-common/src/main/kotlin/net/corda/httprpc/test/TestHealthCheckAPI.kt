@@ -74,6 +74,14 @@ interface TestHealthCheckAPI : RpcOps {
     @HttpRpcPOST(path = "stringMethodWithNameInAnnotation")
     fun stringMethodWithNameInAnnotation(@HttpRpcRequestBodyParameter(name = "correctName") incorrectName: String): String
 
+    data class SomeTestNullableType(val number: Int, val str: String)
+
+    @HttpRpcPOST(path = "apiReturningNullObject")
+    fun apiReturningNullObject(): SomeTestNullableType?
+
+    @HttpRpcPOST(path = "apiReturningNullString")
+    fun apiReturningNullString(): String?
+
     data class TimeCallDto(val time: ZonedDateTime)
 
     data class DateCallDto(val date: Date)

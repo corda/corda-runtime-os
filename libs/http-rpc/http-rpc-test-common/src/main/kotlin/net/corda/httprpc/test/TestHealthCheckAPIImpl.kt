@@ -67,6 +67,14 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
 
     override fun stringMethodWithNameInAnnotation(incorrectName: String): String = "Completed $incorrectName"
 
+    override fun apiReturningNullObject(): TestHealthCheckAPI.SomeTestNullableType? {
+        return null
+    }
+
+    override fun apiReturningNullString(): String? {
+        return null
+    }
+
     override fun echoQuery(requestString: String): String {
         return requestString
     }
