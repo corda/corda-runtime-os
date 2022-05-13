@@ -25,7 +25,7 @@ internal class PendingSessionMessageQueuesImpl(
 
     companion object {
         private val logger = contextLogger()
-        private const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
+        private const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "pending_session_messages_publisher"
     }
 
     private val queuedMessagesPendingSession =
