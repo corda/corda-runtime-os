@@ -50,7 +50,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     override fun cpi(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
         logger.info("Uploading CPI: ${upload.fileName}")
         requireRunning()
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content, false)
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
         return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId)
     }
 

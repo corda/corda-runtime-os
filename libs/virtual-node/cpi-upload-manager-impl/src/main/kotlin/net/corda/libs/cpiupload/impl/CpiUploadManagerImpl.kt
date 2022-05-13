@@ -29,8 +29,8 @@ class CpiUploadManagerImpl(
     private val statusProcessor: UploadStatusProcessor
 ) : CpiUploadManager {
 
-    override fun uploadCpi(cpiFileName: String, cpiContent: InputStream, forceUpload: Boolean): Request {
-        val chunkWriter = ChunkWriterFactory.create(ChunkWriterFactory.SUGGESTED_CHUNK_SIZE, forceUpload).apply {
+    override fun uploadCpi(cpiFileName: String, cpiContent: InputStream, properties: Map<String, String?>?): Request {
+        val chunkWriter = ChunkWriterFactory.create(ChunkWriterFactory.SUGGESTED_CHUNK_SIZE, properties).apply {
             onChunk {
                 val futures = publisher.publish(listOf(Record(uploadTopic, it.requestId, it)))
                 futures.forEach { f -> f.get() }

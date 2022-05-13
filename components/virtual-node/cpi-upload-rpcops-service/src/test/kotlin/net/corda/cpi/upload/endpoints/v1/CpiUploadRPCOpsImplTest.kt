@@ -53,7 +53,7 @@ class CpiUploadRPCOpsImplTest {
         val cpiUploadRequestId = ChunkWriter.Request(UUID.randomUUID().toString(),
             SecureHash.create("FOO:123456789012"))
 
-        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), any())).thenReturn(cpiUploadRequestId)
+        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent))).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)

@@ -1,6 +1,7 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
+import net.corda.data.chunking.PropertyKeys
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
@@ -51,7 +52,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.UploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")
         requireRunning()
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content, true)
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content,
+            mapOf(PropertyKeys.FORCE_UPLOAD to true.toString()))
         return CpiUploadRPCOps.UploadResponse(cpiUploadRequestId.requestId)
     }
 }
