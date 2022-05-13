@@ -7,7 +7,7 @@ import net.corda.packaging.converters.toCorda
 import java.util.Collections
 
 /**
- * Map of [Cpi.Identifier] to [Cpi.Metadata] AVRO data objects
+ * Map of [CpiIdentifier] to [CpiMetadata] AVRO data objects
  *
  * We use the [toCorda()] methods to convert the Avro objects to Corda ones.
  */
@@ -28,12 +28,12 @@ internal class CpiInfoMap {
     fun putAll(incoming: Map<CpiIdentifier, CpiMetadata>) =
         incoming.forEach { (key, value) -> put(key, value) }
 
-    /** Put [Cpi.Metadata] into internal maps. */
+    /** Put [CpiMetadata] into internal maps. */
     private fun putValue(key: CpiIdentifier, value: CpiMetadata) {
         metadataById[key] = value
     }
 
-    /** Putting a null value removes the [Cpi.Metadata] from the maps. */
+    /** Putting a null value removes the [CpiMetadata] from the maps. */
     fun put(key: CpiIdentifier, value: CpiMetadata?) {
         if (value != null) {
             if (key != value.id) {
@@ -46,17 +46,17 @@ internal class CpiInfoMap {
     }
 
     /**
-     * Get all [Cpi.Metadata]
+     * Get all [CpiMetadata]
      */
     fun getAll(): List<CpiMetadata> = metadataById.values.toList()
 
     /**
-     * Get a [Cpi.Metadata] by [Cpi.Identifier]
+     * Get a [CpiMetadata] by [CpiIdentifier]
      */
     fun get(id: CpiIdentifier): CpiMetadata? = metadataById[id]
 
     /**
-     * Remove the [Cpi.Metadata] from this collection and return it.
+     * Remove the [CpiMetadata] from this collection and return it.
      */
     fun remove(key: CpiIdentifier): CpiMetadata? = metadataById.remove(key)
 }

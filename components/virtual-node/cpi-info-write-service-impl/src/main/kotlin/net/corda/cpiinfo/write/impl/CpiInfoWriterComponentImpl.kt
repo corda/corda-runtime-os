@@ -12,7 +12,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.Cpi
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -27,7 +26,7 @@ import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 /**
  * CPI Info Service writer so that we can [put] and [remove]
- * [Cpi.Metadata] from Kafka compacted queues
+ * [CpiMetadata] from Kafka compacted queues
  *
  * Complements [CpiInfoReaderComponent]
  */

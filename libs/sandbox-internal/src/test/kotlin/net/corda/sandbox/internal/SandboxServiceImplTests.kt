@@ -481,7 +481,7 @@ class SandboxServiceImplTests {
     }
 }
 
-/** For testing, associates a [Cpk] with its bundles, the classes within those, and its CPK dependencies. */
+/** For testing, associates a Cpk with its bundles, the classes within those, and its CPK dependencies. */
 private data class CpkAndContents(
     val mainBundleClass: Class<*>,
     val libraryClass: Class<*>,
@@ -492,7 +492,7 @@ private data class CpkAndContents(
     val bundleNames = setOf(mainBundleName, libraryBundleName)
     val cpk = createDummyCpk(cpkDependencies)
 
-    /** Creates a dummy [Cpk]. */
+    /** Creates a dummy Cpk. */
     private fun createDummyCpk(cpkDependencies: NavigableSet<Cpk.Identifier>) = object : Cpk {
         override val metadata = object : Cpk.Metadata {
             override val id = Cpk.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())
