@@ -116,10 +116,12 @@ fun SmartConfig.addDefaultCryptoConfig(
     }
     val cryptoRootKey = KeyCredentials(cryptoRootKeyPassphrase, cryptoRootKeySalt)
     val softKey = KeyCredentials(softKeyPassphrase, softKeySoft)
-    return withValue(
-        CRYPTO_CONFIG,
-        ConfigValueFactory.fromMap(
-            factory.createDefaultCryptoConfig(cryptoRootKey, softKey).root().unwrapped()
+    return withFallback(
+        withValue(
+            CRYPTO_CONFIG,
+            ConfigValueFactory.fromMap(
+                factory.createDefaultCryptoConfig(cryptoRootKey, softKey).root().unwrapped()
+            )
         )
     )
 }

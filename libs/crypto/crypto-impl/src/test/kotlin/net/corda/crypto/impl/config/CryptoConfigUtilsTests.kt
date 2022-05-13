@@ -12,6 +12,7 @@ import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -250,5 +251,215 @@ class CryptoConfigUtilsTests {
         assertThrows<CryptoConfigurationException> {
             config.maximumSize
         }
+    }
+
+    @Test
+    fun `Should add default crypto config with fallback credentials`() {
+        val config = configFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "instance" to 123,
+                    "corda.cryptoLibrary" to emptyMap<String, Any>()
+                )
+            )
+        ).addDefaultCryptoConfig(
+            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        )
+        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val encryptorFromConfig = cryptoConfig.rootEncryptor()
+        val testEncryptor = AesEncryptor(
+            AesKey.derive(
+                passphrase = "root-passphrase",
+                salt = "root-salt"
+            )
+        )
+        assertEquals(testEncryptor, encryptorFromConfig)
+        val sofPersistence = cryptoConfig.softPersistence()
+        assertEquals(240, sofPersistence.expireAfterAccessMins)
+        assertEquals(1000, sofPersistence.maximumSize)
+        assertEquals("soft-salt", sofPersistence.salt)
+        assertEquals("soft-passphrase", sofPersistence.passphrase)
+        assertEquals(0, sofPersistence.retries)
+        assertEquals(5000, sofPersistence.timeoutMills)
+        val signingPersistence = cryptoConfig.signingPersistence()
+        assertEquals(90, signingPersistence.expireAfterAccessMins)
+        assertEquals(20, signingPersistence.maximumSize)
+        val hsmPersistence = cryptoConfig.hsmPersistence()
+        assertEquals(240, hsmPersistence.expireAfterAccessMins)
+        assertEquals(1000, hsmPersistence.maximumSize)
+        assertTrue(config.hasPath("instance"))
+    }
+
+    @Test
+    fun `Should add default crypto config with provided credentials`() {
+        val config = configFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "instance" to 123,
+                    "corda.cryptoLibrary" to mapOf(
+                        "rootKey.passphrase" to "p1",
+                        "rootKey.salt" to "s1",
+                        "softPersistence.passphrase" to "p2",
+                        "softPersistence.salt" to "s2"
+                    )
+                )
+            )
+        ).addDefaultCryptoConfig(
+            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        )
+        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val encryptorFromConfig = cryptoConfig.rootEncryptor()
+        val testEncryptor = AesEncryptor(
+            AesKey.derive(
+                passphrase = "p1",
+                salt = "s1"
+            )
+        )
+        assertEquals(testEncryptor, encryptorFromConfig)
+        val sofPersistence = cryptoConfig.softPersistence()
+        assertEquals(240, sofPersistence.expireAfterAccessMins)
+        assertEquals(1000, sofPersistence.maximumSize)
+        assertEquals("s2", sofPersistence.salt)
+        assertEquals("p2", sofPersistence.passphrase)
+        assertEquals(0, sofPersistence.retries)
+        assertEquals(5000, sofPersistence.timeoutMills)
+        val signingPersistence = cryptoConfig.signingPersistence()
+        assertEquals(90, signingPersistence.expireAfterAccessMins)
+        assertEquals(20, signingPersistence.maximumSize)
+        val hsmPersistence = cryptoConfig.hsmPersistence()
+        assertEquals(240, hsmPersistence.expireAfterAccessMins)
+        assertEquals(1000, hsmPersistence.maximumSize)
+        assertTrue(config.hasPath("instance"))
+    }
+
+    @Test
+    fun `Should add default crypto config with provided salt only`() {
+        val config = configFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "instance" to 123,
+                    "corda.cryptoLibrary" to mapOf(
+                        "rootKey.salt" to "s1",
+                        "softPersistence.salt" to "s2"
+                    )
+                )
+            )
+        ).addDefaultCryptoConfig(
+            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        )
+        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val encryptorFromConfig = cryptoConfig.rootEncryptor()
+        val testEncryptor = AesEncryptor(
+            AesKey.derive(
+                passphrase = "root-passphrase",
+                salt = "s1"
+            )
+        )
+        assertEquals(testEncryptor, encryptorFromConfig)
+        val sofPersistence = cryptoConfig.softPersistence()
+        assertEquals(240, sofPersistence.expireAfterAccessMins)
+        assertEquals(1000, sofPersistence.maximumSize)
+        assertEquals("s2", sofPersistence.salt)
+        assertEquals("soft-passphrase", sofPersistence.passphrase)
+        assertEquals(0, sofPersistence.retries)
+        assertEquals(5000, sofPersistence.timeoutMills)
+        val signingPersistence = cryptoConfig.signingPersistence()
+        assertEquals(90, signingPersistence.expireAfterAccessMins)
+        assertEquals(20, signingPersistence.maximumSize)
+        val hsmPersistence = cryptoConfig.hsmPersistence()
+        assertEquals(240, hsmPersistence.expireAfterAccessMins)
+        assertEquals(1000, hsmPersistence.maximumSize)
+        assertTrue(config.hasPath("instance"))
+    }
+
+    @Test
+    fun `Should add default crypto config with provided passphrase only`() {
+        val config = configFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "instance" to 123,
+                    "corda.cryptoLibrary" to mapOf(
+                        "rootKey.passphrase" to "p1",
+                        "softPersistence.passphrase" to "p2"
+                    )
+                )
+            )
+        ).addDefaultCryptoConfig(
+            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        )
+        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val encryptorFromConfig = cryptoConfig.rootEncryptor()
+        val testEncryptor = AesEncryptor(
+            AesKey.derive(
+                passphrase = "p1",
+                salt = "root-salt"
+            )
+        )
+        assertEquals(testEncryptor, encryptorFromConfig)
+        val sofPersistence = cryptoConfig.softPersistence()
+        assertEquals(240, sofPersistence.expireAfterAccessMins)
+        assertEquals(1000, sofPersistence.maximumSize)
+        assertEquals("soft-salt", sofPersistence.salt)
+        assertEquals("p2", sofPersistence.passphrase)
+        assertEquals(0, sofPersistence.retries)
+        assertEquals(5000, sofPersistence.timeoutMills)
+        val signingPersistence = cryptoConfig.signingPersistence()
+        assertEquals(90, signingPersistence.expireAfterAccessMins)
+        assertEquals(20, signingPersistence.maximumSize)
+        val hsmPersistence = cryptoConfig.hsmPersistence()
+        assertEquals(240, hsmPersistence.expireAfterAccessMins)
+        assertEquals(1000, hsmPersistence.maximumSize)
+        assertTrue(config.hasPath("instance"))
+    }
+
+    @Test
+    fun `Should add default crypto config with preserving provided data`() {
+        val config = configFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "instance" to 123,
+                    "corda.cryptoLibrary" to mapOf(
+                        "rootKey.passphrase" to "p1",
+                        "rootKey.salt" to "s1",
+                        "softPersistence.passphrase" to "p2",
+                        "softPersistence.salt" to "s2",
+                        "softPersistence.maximumSize" to "77",
+                        "signingPersistence.expireAfterAccessMins" to "42",
+                        "hsmPersistence.expireAfterAccessMins" to "11",
+                        "hsmPersistence.maximumSize" to 222
+                    )
+                )
+            )
+        ).addDefaultCryptoConfig(
+            fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+            fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+        )
+        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val encryptorFromConfig = cryptoConfig.rootEncryptor()
+        val testEncryptor = AesEncryptor(
+            AesKey.derive(
+                passphrase = "p1",
+                salt = "s1"
+            )
+        )
+        assertEquals(testEncryptor, encryptorFromConfig)
+        val sofPersistence = cryptoConfig.softPersistence()
+        assertEquals(240, sofPersistence.expireAfterAccessMins)
+        assertEquals(77, sofPersistence.maximumSize)
+        assertEquals("s2", sofPersistence.salt)
+        assertEquals("p2", sofPersistence.passphrase)
+        assertEquals(0, sofPersistence.retries)
+        assertEquals(5000, sofPersistence.timeoutMills)
+        val signingPersistence = cryptoConfig.signingPersistence()
+        assertEquals(42, signingPersistence.expireAfterAccessMins)
+        assertEquals(20, signingPersistence.maximumSize)
+        val hsmPersistence = cryptoConfig.hsmPersistence()
+        assertEquals(11, hsmPersistence.expireAfterAccessMins)
+        assertEquals(222, hsmPersistence.maximumSize)
+        assertTrue(config.hasPath("instance"))
     }
 }
