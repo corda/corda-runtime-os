@@ -31,7 +31,7 @@ data class ChunkEntity(
     var offset: Long,
     @Column(name = "data", nullable = true)
     var data: ByteArray?,
-    @OneToMany(mappedBy = "requestId", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "chunk", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var chunkProperties: MutableSet<ChunkPropertyEntity> = mutableSetOf()
 ) {
     @Suppress("ComplexMethod")

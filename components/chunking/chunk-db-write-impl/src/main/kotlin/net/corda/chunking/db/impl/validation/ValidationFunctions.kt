@@ -35,15 +35,15 @@ internal class ValidationFunctions(
         var fileName: String? = null
         lateinit var tempPath: Path
         lateinit var checksum: SecureHash
-        var forceUploadLocal: Boolean = false
+        var localProperties: Map<String, String?>? = null
 
         // Set up chunk reader.  If onComplete is never called, we've failed.
         val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
-            onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, forceUpload: Boolean ->
+            onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
                 fileName = originalFileName
                 tempPath = tempPathOfBinary
                 checksum = fileChecksum
-                forceUploadLocal = forceUpload
+                localProperties = properties
             }
         }
 
@@ -55,7 +55,7 @@ internal class ValidationFunctions(
                 throw ValidationException("Did not combine all chunks to produce file for $requestId")
             }
 
-            FileInfo(this, tempPath, checksum, forceUploadLocal)
+            FileInfo(this, tempPath, checksum, localProperties)
         }
     }
 

@@ -5,6 +5,7 @@ import net.corda.chunking.ChunksCombined
 import net.corda.chunking.Checksum
 import net.corda.chunking.RequestId
 import net.corda.chunking.toCorda
+import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -20,6 +21,10 @@ import java.nio.file.StandardOpenOption
 internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
     companion object {
         val log = contextLogger()
+
+        private fun KeyValuePairList.fromAvro(): Map<String, String?> {
+            return items.associate { it.key to it.value }
+        }
     }
 
     // Could replace the set with just a chunk count, but a set at least tells us which chunk(s) are
@@ -70,7 +75,7 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
                 throw IllegalArgumentException("Checksums do not match, one or more of the chunks may be corrupt")
             }
 
-            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum, chunk.forceUpload)
+            chunksCombinedCallback!!.onChunksCombined(chunk.fileName, path, actualChecksum, chunk.properties?.fromAvro())
 
             // Since all the chunks been received and consumer notified, it is safe to get rid of entry in a map.
             chunksSoFar.remove(chunk.requestId)

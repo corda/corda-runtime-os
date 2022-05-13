@@ -3,10 +3,13 @@ package net.corda.chunking.db.impl.persistence
 import net.corda.chunking.Checksum
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
+import net.corda.chunking.datamodel.ChunkPropertyEntity
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
@@ -20,6 +23,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 import java.nio.file.Files
+import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -30,6 +34,22 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
     private companion object {
         val log = contextLogger()
+
+        private fun Chunk.toDboProperties(chunkEntity: ChunkEntity): MutableSet<ChunkPropertyEntity> {
+            return properties?.items?.map {
+                ChunkPropertyEntity(Instant.now(), requestId, chunkEntity, it.key, it.value)
+            }?.toMutableSet() ?: mutableSetOf()
+        }
+
+        private fun ChunkEntity.toAvroChunkProperties(): KeyValuePairList? {
+            return if (chunkProperties.isEmpty()) {
+                null
+            } else {
+                KeyValuePairList.newBuilder().setItems(
+                    chunkProperties.map { KeyValuePair(it.key, it.value) }.toList()
+                ).build()
+            }
+        }
     }
 
     /**
@@ -46,7 +66,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val data = if (chunk.data.array().isEmpty()) null else chunk.data.array()
         val cordaSecureHash = chunk.checksum?.toCorda()
         var status = AllChunksReceived.NO
-        entityManagerFactory.createEntityManager().transaction {
+        entityManagerFactory.createEntityManager().transaction { em ->
             // Persist this chunk.
             val entity = ChunkEntity(
                 chunk.requestId,
@@ -55,13 +75,17 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 chunk.partNumber,
                 chunk.offset,
                 data,
-                chunk.forceUpload
-            )
-            it.persist(entity)
+                mutableSetOf()
+            ).also {
+                it.chunkProperties = chunk.toDboProperties(it)
+            }
+
+            // Merge because same chunk property may already exist
+            em.merge(entity)
 
             // At this point we have at least one chunk.
             val table = ChunkEntity::class.simpleName
-            val chunkCountIfComplete = it.createQuery(
+            val chunkCountIfComplete = em.createQuery(
                 """
                 SELECT 'hasAllChunks' FROM $table c1
                 INNER JOIN $table c2 ON c1.requestId = c2.requestId AND c2.data IS NULL
@@ -146,7 +170,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 val checksum = if (entity.checksum != null) SecureHash.create(entity.checksum!!).toAvro() else null
                 val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
                 val chunk = Chunk(requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,
-                    entity.forceUpload)
+                    entity.toAvroChunkProperties())
                 onChunk(chunk)
             }
         }
