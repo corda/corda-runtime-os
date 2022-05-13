@@ -1,6 +1,6 @@
 package net.corda.virtualnode.read.fake
 
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import java.util.*

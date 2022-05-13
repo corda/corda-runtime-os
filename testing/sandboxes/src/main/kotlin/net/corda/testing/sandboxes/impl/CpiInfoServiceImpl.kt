@@ -2,8 +2,8 @@ package net.corda.testing.sandboxes.impl
 
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate

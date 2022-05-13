@@ -4,9 +4,9 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.libs.packaging.Cpi
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.Cpi
 import net.corda.sandbox.SandboxCreationService
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.types.ByteSequence

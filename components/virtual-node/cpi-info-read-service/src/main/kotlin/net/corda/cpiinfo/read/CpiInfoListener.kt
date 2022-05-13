@@ -1,6 +1,6 @@
 package net.corda.cpiinfo.read
 
-import net.corda.packaging.Cpi
+import net.corda.libs.packaging.Cpi
 
 /**
  * Functional interface that notifies us of any changes to a [Cpi.Identifier] and its [Cpi.Metadata]

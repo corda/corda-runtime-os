@@ -1,6 +1,6 @@
 package net.corda.cpk.readwrite
 
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.Cpk
 import java.nio.file.Path
 
 /** Resolve the full path to the CPK in the given `baseDir` */

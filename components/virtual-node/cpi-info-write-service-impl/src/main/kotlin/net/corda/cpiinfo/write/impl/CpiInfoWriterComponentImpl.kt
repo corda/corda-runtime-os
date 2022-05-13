@@ -3,7 +3,7 @@ package net.corda.cpiinfo.write.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus

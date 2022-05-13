@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal
 
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.ClassTagV1.EVOLVABLE_IDENTIFIER
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH

@@ -4,8 +4,8 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.AMQP_P2P_SERIALIZ
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
