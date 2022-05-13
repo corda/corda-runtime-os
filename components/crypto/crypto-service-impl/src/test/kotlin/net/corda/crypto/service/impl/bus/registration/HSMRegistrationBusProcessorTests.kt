@@ -139,6 +139,7 @@ class HSMRegistrationBusProcessorTests {
     @Test
     fun `Should handle AssignedHSMQuery`() {
         val association =  HSMTenantAssociation(
+            id = UUID.randomUUID().toString(),
             tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = null,

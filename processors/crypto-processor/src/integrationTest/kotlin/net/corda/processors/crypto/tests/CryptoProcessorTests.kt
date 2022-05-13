@@ -1,7 +1,6 @@
 package net.corda.processors.crypto.tests
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -11,14 +10,14 @@ import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.config.Configuration
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -29,32 +28,28 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.infra.BOOT_CONFIGURATION
-import net.corda.processors.crypto.tests.infra.CRYPTO_CONFIGURATION_VALUE
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
-import net.corda.processors.crypto.tests.infra.MESSAGING_CONFIGURATION_VALUE
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
-import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
+import net.corda.processors.crypto.tests.infra.DependenciesTracker
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
+import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
+import net.corda.processors.crypto.tests.infra.randomTenantId
 import net.corda.processors.crypto.tests.infra.startAndWait
-import net.corda.processors.crypto.tests.infra.stopAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.MessagingConfig
-import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.publicKeyId
-import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -71,8 +66,10 @@ import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
+import java.time.Instant
 import java.util.*
 import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -95,16 +92,13 @@ class CryptoProcessorTests {
         lateinit var cryptoProcessor: CryptoProcessor
 
         @InjectService(timeout = 5000L)
-        lateinit var opsClient: CryptoOpsClient // no need to start as it's started by the crypto processor
+        lateinit var opsClient: CryptoOpsClient
 
         @InjectService(timeout = 5000L)
         lateinit var verifier: SignatureVerificationService
 
         @InjectService(timeout = 5000L)
         lateinit var keyEncodingService: KeyEncodingService
-
-        @InjectService(timeout = 5000)
-        lateinit var dbConnectionManager: DbConnectionManager
 
         @InjectService(timeout = 5000)
         lateinit var entitiesRegistry: JpaEntitiesRegistry
@@ -124,9 +118,7 @@ class CryptoProcessorTests {
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
-        private lateinit var testDependencies: TestDependenciesTracker
-
-        private val vnodeId: String = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
+        private val vnodeId: String = randomTenantId()
 
         private val clusterDb = TestDbInfo.createConfig()
 
@@ -140,106 +132,59 @@ class CryptoProcessorTests {
             schemaName = "vnode_crypto"
         )
 
+        private val boostrapConfig = makeBootstrapConfig(
+            mapOf(
+                ConfigKeys.DB_CONFIG to clusterDb.config
+            )
+        )
+
+        private val messagingConfig = makeMessagingConfig(boostrapConfig)
+
         @JvmStatic
         @BeforeAll
         fun setup() {
             setupPrerequisites()
-            setupMessagingAndCryptoConfigs()
-            setupDatabases()
+            val configEmf = setupDatabases()
+            addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
+            configEmf.close()
             startDependencies()
-            testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
-            addDbConnectionConfigs(cryptoDb, vnodeDb)
-            CryptoConsts.Categories.all().forEach {
-                hsmRegistrationClient.assignSoftHSM(CryptoConsts.CLUSTER_TENANT_ID, it)
-                hsmRegistrationClient.assignSoftHSM(vnodeId, it)
-            }
+            assignHSMs()
         }
 
         @JvmStatic
         @AfterAll
         fun cleanup() {
-            if (::testDependencies.isInitialized) {
-                testDependencies.stopAndWait()
-            }
             if (::flowOpsResponses.isInitialized) {
                 flowOpsResponses.close()
             }
         }
 
         private fun setupPrerequisites() {
-            flowOpsResponses = FlowOpsResponses(subscriptionFactory)
+            flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
             transformer = CryptoFlowOpsTransformer(
                 requestingComponent = "test",
                 responseTopic = RESPONSE_TOPIC,
                 keyEncodingService = keyEncodingService
             )
-            publisher = publisherFactory.createPublisher(
-                PublisherConfig(CLIENT_ID),
-                SmartConfigFactory.create(ConfigFactory.empty())
-                    .create(
-                        ConfigFactory.empty()
-                            .withValue(MessagingConfig.Boot.INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-                            .withValue(MessagingConfig.Bus.BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+            publisher.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        MESSAGING_CONFIG,
+                        Configuration(messagingConfig.root().render(), "1")
                     )
+                )
             )
         }
 
-        private fun addDbConnectionConfigs(vararg dbs: TestDbInfo) {
-            dbs.forEach { db ->
-                dbConnectionManager.putConnection(
-                    name = db.name,
-                    privilege = DbPrivilege.DML,
-                    config = db.config,
-                    description = null,
-                    updateActor = "sa"
-                )
-            }
-        }
-
-        private fun startDependencies() {
-            val boostrapConfig = makeBootstrapConfig(
-                BOOT_CONFIGURATION, mapOf(
-                    ConfigKeys.DB_CONFIG to clusterDb.config
-                )
-            )
-            hsmRegistrationClient.startAndWait()
-            cryptoProcessor.startAndWait(boostrapConfig)
-            testDependencies = TestDependenciesTracker(
-                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
-                coordinatorFactory,
-                lifecycleRegistry,
-                setOf(
-                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
-                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
-                )
-            ).also { it.startAndWait() }
-        }
-
-        private fun setupMessagingAndCryptoConfigs() {
-            with(publisher) {
-                publish(
-                    listOf(
-                        Record(
-                            CONFIG_TOPIC,
-                            MESSAGING_CONFIG,
-                            Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
-                        ),
-                        Record(
-                            CONFIG_TOPIC,
-                            CRYPTO_CONFIG,
-                            Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
-                        )
-                    )
-                )
-            }
-        }
-
-        private fun setupDatabases() {
+        private fun setupDatabases(): EntityManagerFactory {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            databaseInstaller.setupClusterDatabase(
+            val configEmf = databaseInstaller.setupClusterDatabase(
                 clusterDb,
-                "config"
-            ).close()
+                "config",
+                ConfigurationEntities.classes
+            )
             databaseInstaller.setupDatabase(
                 cryptoDb,
                 "crypto"
@@ -249,6 +194,48 @@ class CryptoProcessorTests {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
+            return configEmf
+        }
+
+        private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo) {
+            dbs.forEach { db ->
+                val configAsString = db.config.root().render(ConfigRenderOptions.concise())
+                configEmf.transaction {
+                    val record = DbConnectionConfig(
+                        UUID.randomUUID(),
+                        db.name,
+                        DbPrivilege.DML,
+                        Instant.now(),
+                        "sa",
+                        "Test ${db.name}",
+                        configAsString
+                    )
+                    it.persist(record)
+                }
+            }
+        }
+
+        private fun startDependencies() {
+            hsmRegistrationClient.startAndWait()
+            cryptoProcessor.startAndWait(boostrapConfig)
+            val tracker = DependenciesTracker(
+                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>("2"),
+                coordinatorFactory,
+                lifecycleRegistry,
+                setOf(
+                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
+                )
+            ).also { it.startAndWait() }
+            tracker.waitUntilAllUp(Duration.ofSeconds(60))
+            tracker.stop()
+        }
+
+        private fun assignHSMs() {
+            CryptoConsts.Categories.all().forEach {
+                // cluster is assigned in the crypto processor
+                hsmRegistrationClient.assignSoftHSM(vnodeId, it)
+            }
         }
 
         @JvmStatic
@@ -319,7 +306,7 @@ class CryptoProcessorTests {
             tenantId = tenantId,
             category = category,
             alias = alias,
-            scheme = EDDSA_ED25519_CODE_NAME
+            scheme = ECDSA_SECP256R1_CODE_NAME
         )
 
         `Should find existing public key by its id`(tenantId, alias, original, category, null)
@@ -343,7 +330,7 @@ class CryptoProcessorTests {
         val original = opsClient.freshKey(
             tenantId = tenantId,
             externalId = externalId,
-            scheme = EDDSA_ED25519_CODE_NAME,
+            scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
@@ -369,7 +356,7 @@ class CryptoProcessorTests {
     ) {
         val original = opsClient.freshKey(
             tenantId = tenantId,
-            scheme = EDDSA_ED25519_CODE_NAME,
+            scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
@@ -396,7 +383,7 @@ class CryptoProcessorTests {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId,
-            scheme = EDDSA_ED25519_CODE_NAME
+            scheme = RSA_CODE_NAME
         )
         publisher.publish(
             listOf(
@@ -426,7 +413,7 @@ class CryptoProcessorTests {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId,
-            scheme = EDDSA_ED25519_CODE_NAME,
+            scheme = RSA_CODE_NAME,
             externalId = externalId
         )
         publisher.publish(

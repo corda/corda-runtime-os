@@ -2,7 +2,11 @@ package net.corda.processors.crypto.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.crypto.persistence.hsm.HSMCacheProvider
 import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
 import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
 import net.corda.crypto.service.CryptoFlowOpsBusService
@@ -22,6 +26,7 @@ import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -71,6 +76,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmConfiguration: HSMConfigurationBusService,
     @Reference(service = HSMRegistrationBusService::class)
     private val hsmRegistration: HSMRegistrationBusService,
+    @Reference(service = HSMCacheProvider::class)
+    private val hsmCacheProvider: HSMCacheProvider,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -78,7 +85,7 @@ class CryptoProcessorImpl @Activate constructor(
 ) : CryptoProcessor {
     private companion object {
         const val CRYPTO_PROCESSOR_CLIENT_ID = "crypto.processor"
-        val log = contextLogger()
+        val logger = contextLogger()
     }
 
     init {
@@ -103,6 +110,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmService,
         ::hsmConfiguration,
         ::hsmRegistration,
+        ::hsmCacheProvider,
         ::dbConnectionManager
     )
 
@@ -110,18 +118,18 @@ class CryptoProcessorImpl @Activate constructor(
         get() = lifecycleCoordinator.isRunning
 
     override fun start(bootConfig: SmartConfig) {
-        log.info("Crypto processor starting.")
+        logger.info("Crypto processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        log.info("Crypto processor stopping.")
+        logger.info("Crypto processor stopping.")
         lifecycleCoordinator.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Crypto processor received event $event." }
+        logger.debug { "Crypto processor received event $event." }
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
@@ -130,27 +138,48 @@ class CryptoProcessorImpl @Activate constructor(
                 dependentComponents.stopAll()
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("Crypto processor is ${event.status}")
+                logger.info("Crypto processor is ${event.status}")
+                if(event.status == LifecycleStatus.UP) {
+                    temporaryAssociateClusterWithSoftHSM()
+                }
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
-                log.info("Crypto  processor bootstrapping {}", configurationReadService::class.simpleName)
+                logger.info("Crypto  processor bootstrapping {}", configurationReadService::class.simpleName)
                 configurationReadService.bootstrapConfig(event.config)
 
-                log.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
+                logger.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))
 
-                val publisherConfig = PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID)
-                val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
-                publisher.start()
-                publisher.use {
-                    val configValue = "{}"
-                    val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1"))
-                    publisher.publish(listOf(record)).forEach { future -> future.get() }
-                }
+                publishCryptoBootstrapConfig(event)
             }
             else -> {
-                log.warn("Unexpected event $event!")
+                logger.warn("Unexpected event $event!")
+            }
+        }
+    }
+
+    private fun publishCryptoBootstrapConfig(event: BootConfigEvent) {
+        publisherFactory.createPublisher(PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID), event.config).use {
+            it.start()
+            val configValue = if(event.config.hasPath(CRYPTO_CONFIG))  {
+                event.config.getConfig(CRYPTO_CONFIG)
+            } else {
+                event.config.factory.createDefaultCryptoConfig(
+                    cryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+                    softKey = KeyCredentials("soft-passphrase", "soft-salt")
+                )
+            }.root().render()
+            logger.info("Crypto Worker config\n: {}", configValue)
+            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1"))
+            it.publish(listOf(record)).forEach { future -> future.get() }
+        }
+    }
+
+    private fun temporaryAssociateClusterWithSoftHSM() {
+        CryptoConsts.Categories.all().forEach {
+            if(hsmService.findAssignedHSM(CryptoConsts.CLUSTER_TENANT_ID, it) == null) {
+                hsmService.assignSoftHSM(CryptoConsts.CLUSTER_TENANT_ID, it)
             }
         }
     }

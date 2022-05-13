@@ -6,6 +6,7 @@ import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.WireProcessor
 import net.corda.crypto.service.impl.toMap
 import net.corda.crypto.service.impl.toSignatureSpec
+import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -17,6 +18,7 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
@@ -38,6 +40,7 @@ class CryptoOpsBusProcessor(
         private val handlers = mapOf<Class<*>, Class<out Handler<out Any>>>(
             GenerateFreshKeyRpcCommand::class.java to GenerateFreshKeyRpcCommandHandler::class.java,
             GenerateKeyPairCommand::class.java to GenerateKeyPairCommandHandler::class.java,
+            GenerateWrappingKeyRpcCommand::class.java to GenerateWrappingKeyRpcCommandHandler::class.java,
             SignWithSpecRpcCommand::class.java to SignWithSpecRpcCommandHandler::class.java,
             ByIdsRpcQuery::class.java to ByIdsRpcQueryHandler::class.java,
             KeysRpcQuery::class.java to KeysRpcQueryHandler::class.java,
@@ -189,6 +192,20 @@ class CryptoOpsBusProcessor(
             return CryptoPublicKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(publicKey))
             )
+        }
+    }
+
+    private class GenerateWrappingKeyRpcCommandHandler(
+        private val signingService: SigningService
+    ) : Handler<GenerateWrappingKeyRpcCommand> {
+        override fun handle(context: CryptoRequestContext, request: GenerateWrappingKeyRpcCommand): Any {
+            signingService.createWrappingKey(
+                configId = request.configId,
+                failIfExists = request.failIfExists,
+                masterKeyAlias = request.masterKeyAlias,
+                context = request.context.items.toMap()
+            )
+            return CryptoNoContentValue()
         }
     }
 

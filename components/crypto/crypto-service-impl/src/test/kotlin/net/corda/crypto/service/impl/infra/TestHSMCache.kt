@@ -214,6 +214,7 @@ class TestHSMCache : HSMCache {
         )
 
         private fun HSMCategoryAssociationEntity.toHSMTenantAssociation() = HSMTenantAssociation(
+            id = id,
             tenantId = hsm.tenantId,
             category = category,
             masterKeyAlias = hsm.masterKeyAlias,
