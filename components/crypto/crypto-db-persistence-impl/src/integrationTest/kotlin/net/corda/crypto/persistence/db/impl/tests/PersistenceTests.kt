@@ -312,8 +312,9 @@ class PersistenceTests {
         assertEquals(expected.externalId, actual.externalId)
         assertNull(actual.encodingVersion)
         val now = Instant.now()
-        assertTrue(actual.created >= now.minusSeconds(60))
-        assertTrue(actual.created <= now.minusSeconds(-1))
+        assertTrue(actual.timestamp >= now.minusSeconds(60))
+        assertTrue(actual.timestamp <= now.minusSeconds(-1))
+        assertEquals(expected.associationId, actual.associationId)
     }
 
     private fun assertSigningCachedKey(
@@ -334,8 +335,9 @@ class PersistenceTests {
         assertEquals(expected.externalId, actual.externalId)
         assertEquals(expected.key.encodingVersion, actual.encodingVersion)
         val now = Instant.now()
-        assertTrue(actual.created >= now.minusSeconds(60))
-        assertTrue(actual.created <= now.minusSeconds(-1))
+        assertTrue(actual.timestamp >= now.minusSeconds(60))
+        assertTrue(actual.timestamp <= now.minusSeconds(-1))
+        assertEquals(expected.associationId, actual.associationId)
     }
 
     private fun getHSMCategoryMapEntities(
@@ -437,7 +439,8 @@ class PersistenceTests {
             externalId = UUID.randomUUID().toString(),
             alias = null,
             category = CryptoConsts.Categories.FRESH_KEYS,
-            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName)
+            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
+            associationId = UUID.randomUUID().toString()
         )
     }
 
@@ -454,7 +457,8 @@ class PersistenceTests {
             alias = UUID.randomUUID().toString(),
             category = category,
             signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
-            externalId = UUID.randomUUID().toString()
+            externalId = UUID.randomUUID().toString(),
+            associationId = UUID.randomUUID().toString()
         )
     }
 
@@ -492,7 +496,7 @@ class PersistenceTests {
         val entity = SigningKeyEntity(
             tenantId = tenantId,
             keyId = keyId,
-            created = Instant.now(),
+            timestamp = Instant.now(),
             category = CryptoConsts.Categories.LEDGER,
             schemeCodeName = RSA_CODE_NAME,
             publicKey = keyPair.public.encoded,
@@ -502,6 +506,7 @@ class PersistenceTests {
             alias = UUID.randomUUID().toString(),
             hsmAlias = UUID.randomUUID().toString(),
             externalId = UUID.randomUUID().toString(),
+            associationId = UUID.randomUUID().toString()
         )
         cryptoEmf.transaction { em ->
             em.persist(entity)
@@ -517,8 +522,8 @@ class PersistenceTests {
             assertEquals(entity.tenantId, retrieved.tenantId)
             assertEquals(entity.keyId, retrieved.keyId)
             assertEquals(
-                entity.created.epochSecond,
-                retrieved.created.epochSecond
+                entity.timestamp.epochSecond,
+                retrieved.timestamp.epochSecond
             )
             assertEquals(entity.category, retrieved.category)
             assertEquals(entity.schemeCodeName, retrieved.schemeCodeName)
@@ -529,6 +534,7 @@ class PersistenceTests {
             assertEquals(entity.alias, retrieved.alias)
             assertEquals(entity.hsmAlias, retrieved.hsmAlias)
             assertEquals(entity.externalId, retrieved.externalId)
+            assertEquals(entity.associationId, retrieved.associationId)
         }
     }
 
@@ -670,6 +676,29 @@ class PersistenceTests {
         val r1 = cache.act { it.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION) }
         assertNull(r1)
         val r2 = cache.act { it.findTenantAssociation(randomTenantId(), CryptoConsts.Categories.LEDGER) }
+        assertNull(r2)
+    }
+
+    @Test
+    fun `findTenantAssociation should be able to find tenant HSM associations by its id`() {
+        val tenantId1 = randomTenantId()
+        val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
+        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION, MasterKeyPolicy.SHARED)
+        val cache = createHSMCacheImpl()
+        val r1 = cache.act { it.findTenantAssociation(a1.id) }
+        val r2 = cache.act { it.findTenantAssociation(a2.id) }
+        assertHSMCategoryAssociationEntity(a1, r1)
+        assertHSMCategoryAssociationEntity(a2, r2)
+    }
+
+    @Test
+    fun `findTenantAssociation should return null when ids are not matching`() {
+        val tenantId = randomTenantId()
+        createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
+        val cache = createHSMCacheImpl()
+        val r1 = cache.act { it.findTenantAssociation(UUID.randomUUID().toString()) }
+        assertNull(r1)
+        val r2 = cache.act { it.findTenantAssociation(UUID.randomUUID().toString()) }
         assertNull(r2)
     }
 

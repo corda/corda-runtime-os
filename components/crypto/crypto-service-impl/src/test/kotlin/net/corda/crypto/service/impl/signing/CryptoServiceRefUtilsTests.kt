@@ -45,6 +45,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { supportedSchemes() } doReturn expectedResult
             }
@@ -68,6 +69,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { generateKeyPair(any(), any()) } doReturn expectedResult
             }
@@ -107,6 +109,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -123,7 +126,8 @@ class CryptoServiceRefUtilsTests {
             masterKeyAlias = ref.masterKeyAlias,
             externalId = null,
             encodingVersion = 11,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now()
         )
         val result = ref.sign(record, scheme, data, context)
         assertSame(expectedResult, result)
@@ -155,6 +159,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -171,7 +176,8 @@ class CryptoServiceRefUtilsTests {
             masterKeyAlias = ref.masterKeyAlias,
             externalId = null,
             encodingVersion = 11,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now()
         )
         assertThrows<IllegalArgumentException> {
             ref.sign(record, scheme, data, context)
@@ -189,6 +195,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -205,7 +212,8 @@ class CryptoServiceRefUtilsTests {
             masterKeyAlias = ref.masterKeyAlias,
             externalId = null,
             encodingVersion = null,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now()
         )
         assertThrows<IllegalArgumentException> {
             ref.sign(record, scheme, data, context)
@@ -225,6 +233,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -241,7 +250,8 @@ class CryptoServiceRefUtilsTests {
             masterKeyAlias = null,
             externalId = null,
             encodingVersion = null,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now()
         )
         val result = ref.sign(record, scheme, data, context)
         assertSame(expectedResult, result)
@@ -271,6 +281,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -287,7 +298,8 @@ class CryptoServiceRefUtilsTests {
             masterKeyAlias = null,
             externalId = null,
             encodingVersion = null,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now()
         )
         assertThrows<IllegalArgumentException> {
             ref.sign(record, scheme, data, context)
@@ -302,6 +314,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedPublicKey(
@@ -316,6 +329,7 @@ class CryptoServiceRefUtilsTests {
         assertEquals(alias, result.alias)
         assertEquals(scheme, result.signatureScheme)
         assertEquals(ref.category, result.category)
+        assertEquals(ref.associationId, result.associationId)
     }
 
     @Test
@@ -326,6 +340,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedWrappedKey(
@@ -343,6 +358,7 @@ class CryptoServiceRefUtilsTests {
         assertEquals(scheme, result.signatureScheme)
         assertEquals(ref.category, result.category)
         assertEquals(ref.masterKeyAlias, result.masterKeyAlias)
+        assertEquals(ref.associationId, result.associationId)
         assertEquals(externalId, result.externalId)
     }
 
@@ -354,6 +370,7 @@ class CryptoServiceRefUtilsTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = mock<GeneratedKey>()

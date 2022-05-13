@@ -17,7 +17,7 @@ import javax.persistence.Table
  * As the crypto manages keys on behalf of members and cluster itself the tenant is defined as either
  * a member id (derived from the VNODE id of that member) or word  'cluster' for the keys belonging to the cluster.
  *
- * The records are immutable.
+ * The only fields whcih are allowed to be changed are:
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_SIGNING_KEY_TABLE)
@@ -41,8 +41,8 @@ class SigningKeyEntity(
     /**
      * When the key was generated.
      */
-    @Column(name = "created", nullable = false, updatable = false)
-    var created: Instant,
+    @Column(name = "timestamp", nullable = false, updatable = false)
+    var timestamp: Instant,
 
     /**
      * HSM category where the private key of the pair was generated.
@@ -99,7 +99,10 @@ class SigningKeyEntity(
      * Some external id associated with the key pair by the tenant.
      */
     @Column(name = "external_id", nullable = true, updatable = false, length = 64)
-    var externalId: String?
+    var externalId: String?,
+
+    @Column(name = "association_id", nullable = false, updatable = true, length = 36)
+    var associationId: String
 )
 
 @Embeddable

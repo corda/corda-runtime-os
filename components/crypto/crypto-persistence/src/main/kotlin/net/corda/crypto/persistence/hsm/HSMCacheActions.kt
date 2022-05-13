@@ -14,9 +14,14 @@ interface HSMCacheActions : AutoCloseable {
     fun findConfig(configId: String): HSMConfig?
 
     /**
-     * Finds a tenant association with an HSm for the given category.
+     * Finds a tenant association with an HSM for the given category.
      */
     fun findTenantAssociation(tenantId: String, category: String): HSMTenantAssociation?
+
+    /**
+     * Finds a tenant association with an HSM by the given id.
+     */
+    fun findTenantAssociation(associationId: String): HSMTenantAssociation?
 
     /**
      * Returns all configured HSMs.

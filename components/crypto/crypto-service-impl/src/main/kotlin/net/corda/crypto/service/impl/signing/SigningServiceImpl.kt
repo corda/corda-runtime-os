@@ -5,7 +5,6 @@ import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyCache
 import net.corda.crypto.persistence.signing.SigningKeyCacheActions
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
-import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
@@ -34,7 +33,7 @@ open class SigningServiceImpl(
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug("getSupportedSchemes(tenant={}, category={})", tenantId, category)
-        return getCryptoService(tenantId, category).getSupportedSchemes()
+        return cryptoServiceFactory.getInstance(tenantId = tenantId, category = category).getSupportedSchemes()
     }
 
     override fun lookup(
@@ -178,7 +177,7 @@ open class SigningServiceImpl(
     ): PublicKey =
         try {
             logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-            val cryptoService = getCryptoService(tenantId, category)
+            val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
             cache.act(tenantId) {
                 if (alias != null && it.find(alias) != null) {
                     throw CryptoServiceBadRequestException(
@@ -213,7 +212,11 @@ open class SigningServiceImpl(
                 if (signatureSpec != null) {
                     signatureScheme = signatureScheme.copy(signatureSpec = signatureSpec)
                 }
-                val cryptoService = getCryptoService(tenantId, record.second.category)
+                val cryptoService = cryptoServiceFactory.getInstance(
+                    tenantId = tenantId,
+                    category = record.second.category,
+                    associationId = record.second.associationId
+                )
                 val signedBytes = cryptoService.sign(record.second, signatureScheme, data, context)
                 DigitalSignature.WithKey(record.first, signedBytes)
             }
@@ -249,9 +252,6 @@ open class SigningServiceImpl(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
 
-    private fun getCryptoService(tenantId: String, category: String): CryptoServiceRef =
-        cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
-
     private fun KeyOrderBy.toSigningKeyOrderBy(): SigningKeyOrderBy =
         SigningKeyOrderBy.valueOf(name)
 
@@ -267,6 +267,6 @@ open class SigningServiceImpl(
             masterKeyAlias = masterKeyAlias,
             externalId = externalId,
             encodingVersion = encodingVersion,
-            created = created
+            created = timestamp
         )
 }

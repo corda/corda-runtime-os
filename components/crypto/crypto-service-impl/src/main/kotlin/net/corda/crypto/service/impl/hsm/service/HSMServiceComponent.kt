@@ -79,6 +79,9 @@ class HSMServiceComponent @Activate constructor(
     override fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? =
         impl.service.findAssignedHSM(tenantId, category)
 
+    override fun findAssociation(associationId: String): HSMTenantAssociation? =
+        impl.service.findAssociation(associationId)
+
     override fun findHSMConfig(configId: String): HSMConfig? =
         impl.service.findHSMConfig(configId)
 

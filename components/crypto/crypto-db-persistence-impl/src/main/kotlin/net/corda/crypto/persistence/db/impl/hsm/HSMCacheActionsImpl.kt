@@ -55,6 +55,9 @@ class HSMCacheActionsImpl(
         }
     }
 
+    override fun findTenantAssociation(associationId: String): HSMTenantAssociation? =
+        entityManager.find(HSMCategoryAssociationEntity::class.java, associationId)?.toHSMTenantAssociation()
+
     override fun lookup(filter: Map<String, String>): List<HSMInfo> {
         val builder = LookupBuilder(entityManager)
         builder.equal(HSMConfigEntity::serviceName, filter[CryptoConsts.HSMFilters.SERVICE_NAME_FILTER])

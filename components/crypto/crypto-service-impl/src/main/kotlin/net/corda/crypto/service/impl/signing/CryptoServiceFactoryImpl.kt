@@ -12,6 +12,7 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.toCryptoConfig
+import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.LifecycleNameProvider
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -66,6 +67,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
     interface Impl : AutoCloseable {
         fun getInstance(tenantId: String, category: String): CryptoServiceRef
         fun getInstance(configId: String): CryptoService
+        fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef
         override fun close() = Unit
     }
 
@@ -83,11 +85,17 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun getInstance(configId: String): CryptoService =
         impl.getInstance(configId)
 
+    override fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef =
+        impl.getInstance(tenantId, category, associationId)
+
     internal class InactiveImpl : Impl {
         override fun getInstance(tenantId: String, category: String) =
             throw IllegalStateException("The component is in invalid state.")
 
         override fun getInstance(configId: String) =
+            throw IllegalStateException("The component is in invalid state.")
+
+        override fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef =
             throw IllegalStateException("The component is in invalid state.")
     }
 
@@ -112,12 +120,14 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         private val cryptoServices = ConcurrentHashMap<String, CryptoService>()
 
+        private val cryptoAssociations = ConcurrentHashMap<String, CryptoServiceRef>()
+
         private val cryptoRefs = ConcurrentHashMap<Pair<String, String>, CryptoServiceRef>()
 
         private val encryptor = event.config.toCryptoConfig().rootEncryptor()
 
         override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.info(
+            logger.debug(
                 "Getting the crypto service for tenantId={}, category={})",
                 tenantId, category
             )
@@ -125,21 +135,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 try {
                     val association = hsmRegistrar.findAssignedHSM(tenantId, category)
                         ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
-                    logger.info(
-                        "Creating {}: id={} configId={} (tenantId={}, category={})",
-                        CryptoServiceRef::class.simpleName,
-                        association.id,
-                        association.config.info.id,
-                        association.tenantId,
-                        association.category
-                    )
-                    CryptoServiceRef(
-                        tenantId = tenantId,
-                        category = category,
-                        masterKeyAlias = association.masterKeyAlias,
-                        aliasSecret = association.aliasSecret,
-                        instance = getInstance(association.config.info, association.config.serviceConfig)
-                    )
+                    createCryptoServiceRef(association)
                 } catch (e: Throwable) {
                     throw CryptoServiceException(
                         "Failed to create ${CryptoService::class.java.name} for $tenantId:$category",
@@ -149,8 +145,34 @@ class CryptoServiceFactoryImpl @Activate constructor(
             }
         }
 
+        override fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef {
+            logger.debug(
+                "Getting the crypto service for tenantId={}, category={}, associationId={})",
+                tenantId, category, associationId
+            )
+            return cryptoAssociations.computeIfAbsent(associationId) {
+                try {
+                    val association = hsmRegistrar.findAssignedHSM(tenantId, category)
+                        ?: throw CryptoServiceException("The tenant=$tenantId is not configured for category=$category")
+                    require(association.tenantId == tenantId && association.category == category) {
+                        "The association $associationId is not for tenant=$tenantId and category=$category"
+                    }
+                    createCryptoServiceRef(association)
+                } catch (e: Throwable) {
+                    throw CryptoServiceException(
+                        "Failed to create ${CryptoService::class.java.name} for $tenantId:$category",
+                        e
+                    )
+                }
+            }.also {
+                require(it.tenantId == tenantId && it.category == category) {
+                    "The association $associationId is not for tenant=$tenantId and category=$category"
+                }
+            }
+        }
+
         override fun getInstance(configId: String): CryptoService {
-            logger.info("Getting the crypto service for configId={})", configId)
+            logger.debug("Getting the crypto service for configId={})", configId)
             val config = hsmRegistrar.findHSMConfig(configId)
                 ?: throw CryptoServiceException("The config=$configId is not found.")
             return getInstance(config.info, config.serviceConfig)
@@ -178,5 +200,24 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private fun findCryptoServiceProvider(serviceName: String) =
             cryptoServiceProvidersMap[serviceName] as? CryptoServiceProvider<Any>
                 ?: throw CryptoServiceException("Cannot find $serviceName")
+
+        private fun createCryptoServiceRef(association: HSMTenantAssociation): CryptoServiceRef {
+            logger.info(
+                "Creating {}: id={} configId={} (tenantId={}, category={})",
+                CryptoServiceRef::class.simpleName,
+                association.id,
+                association.config.info.id,
+                association.tenantId,
+                association.category
+            )
+            return CryptoServiceRef(
+                tenantId = association.tenantId,
+                category = association.category,
+                masterKeyAlias = association.masterKeyAlias,
+                aliasSecret = association.aliasSecret,
+                associationId = association.id,
+                instance = getInstance(association.config.info, association.config.serviceConfig)
+            )
+        }
     }
 }

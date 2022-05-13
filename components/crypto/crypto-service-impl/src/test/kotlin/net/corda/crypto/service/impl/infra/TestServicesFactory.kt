@@ -31,6 +31,7 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertTrue
 
@@ -202,11 +203,31 @@ class TestServicesFactory {
                         category = category,
                         masterKeyAlias = effectiveWrappingKeyAlias,
                         aliasSecret = null,
-                        instance = cryptoService
+                        instance = cryptoService,
+                        associationId = UUID.randomUUID().toString()
                     )
                 }
 
-                override fun getInstance(configId: String): CryptoService = cryptoService
+                override fun getInstance(configId: String): CryptoService {
+                    check(isRunning) {
+                        "The provider is in invalid state."
+                    }
+                    return cryptoService
+                }
+
+                override fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef {
+                    check(isRunning) {
+                        "The provider is in invalid state."
+                    }
+                    return CryptoServiceRef(
+                        tenantId = tenantId,
+                        category = category,
+                        masterKeyAlias = effectiveWrappingKeyAlias,
+                        aliasSecret = null,
+                        instance = cryptoService,
+                        associationId = associationId
+                    )
+                }
 
                 override var isRunning: Boolean = false
                     private set

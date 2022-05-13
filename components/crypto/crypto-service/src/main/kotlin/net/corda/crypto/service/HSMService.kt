@@ -45,9 +45,14 @@ interface HSMService : Lifecycle {
     fun lookup(filter: Map<String, String>): List<HSMInfo>
 
     /**
-     * Returns information about assigned HSM.
+     * Returns information about assigned HSM by tenant and category.
      */
     fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation?
+
+    /**
+     * Returns information about assigned HSM by association id.
+     */
+    fun findAssociation(associationId: String): HSMTenantAssociation?
 
     /**
      * Returns information about an HSM. It's used by the CryptoService factory.

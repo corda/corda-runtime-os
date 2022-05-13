@@ -85,7 +85,8 @@ class TestSigningKeyCacheActions(
                     masterKeyAlias = null,
                     externalId = null,
                     encodingVersion = null,
-                    created = now
+                    timestamp = now,
+                    associationId = context.associationId
                 )
             }
             is SigningWrappedKeySaveContext -> {
@@ -102,7 +103,8 @@ class TestSigningKeyCacheActions(
                     masterKeyAlias = context.masterKeyAlias,
                     externalId = context.externalId,
                     encodingVersion = context.key.encodingVersion,
-                    created = now
+                    timestamp = now,
+                    associationId = context.associationId
                 )
             }
             else -> throw  IllegalArgumentException("Unknown type ${context::class.java.name}")
@@ -135,20 +137,20 @@ class TestSigningKeyCacheActions(
                 false
             } else if(map.masterKeyAlias != null && it.masterKeyAlias != map.masterKeyAlias) {
                 false
-            } else if(map.createdAfter != null && it.created < map.createdAfter) {
+            } else if(map.createdAfter != null && it.timestamp < map.createdAfter) {
                 false
-            } else !(map.createdBefore != null && it.created > map.createdBefore)
+            } else !(map.createdBefore != null && it.timestamp > map.createdBefore)
         }
         return when(orderBy) {
             SigningKeyOrderBy.NONE -> filtered
             SigningKeyOrderBy.ID -> filtered.sortedBy { it.id }
-            SigningKeyOrderBy.CREATED -> filtered.sortedBy { it.created }
+            SigningKeyOrderBy.TIMESTAMP -> filtered.sortedBy { it.timestamp }
             SigningKeyOrderBy.CATEGORY -> filtered.sortedBy { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME -> filtered.sortedBy { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS -> filtered.sortedBy { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS -> filtered.sortedBy { it.masterKeyAlias }
             SigningKeyOrderBy.EXTERNAL_ID -> filtered.sortedBy { it.externalId }
-            SigningKeyOrderBy.CREATED_DESC -> filtered.sortedByDescending { it.created }
+            SigningKeyOrderBy.TIMESTAMP_DESC -> filtered.sortedByDescending { it.timestamp }
             SigningKeyOrderBy.CATEGORY_DESC -> filtered.sortedByDescending { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> filtered.sortedByDescending { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }

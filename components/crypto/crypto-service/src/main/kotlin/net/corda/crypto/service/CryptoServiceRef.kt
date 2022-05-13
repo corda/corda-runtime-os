@@ -11,5 +11,6 @@ class CryptoServiceRef(
     val category: String,
     val masterKeyAlias: String?,
     val aliasSecret: ByteArray?,
+    val associationId: String,
     val instance: CryptoService
 )

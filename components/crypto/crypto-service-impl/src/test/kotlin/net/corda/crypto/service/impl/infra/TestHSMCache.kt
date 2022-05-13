@@ -57,6 +57,12 @@ class TestHSMCache : HSMCache {
             }?.toHSMTenantAssociation()
         }
 
+        override fun findTenantAssociation(associationId: String): HSMTenantAssociation? = cache.lock.withLock {
+            cache.categoryAssociations.firstOrNull {
+                it.id == associationId
+            }?.toHSMTenantAssociation()
+        }
+
         override fun lookup(filter: Map<String, String>): List<HSMInfo> = cache.lock.withLock {
             if (filter.any {
                     it.key == PREFERRED_PRIVATE_KEY_POLICY_KEY &&

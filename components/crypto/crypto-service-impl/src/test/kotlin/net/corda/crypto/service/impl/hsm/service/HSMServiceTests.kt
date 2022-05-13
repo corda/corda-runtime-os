@@ -11,6 +11,7 @@ import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.hsm.HSMConfig
+import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
@@ -78,6 +79,21 @@ class HSMServiceTests {
         assertEquals(expected.workerLabel, actual.workerLabel)
         assertEquals(expected.supportedSchemes.size, actual.supportedSchemes.size)
         assertTrue(expected.supportedSchemes.all { actual.supportedSchemes.contains(it) })
+    }
+
+    private fun assert(
+        expectedConfigId: String,
+        expectedTenantId: String,
+        expectedHSM: HSMInfo,
+        actual: HSMTenantAssociation?
+    ) {
+        assertNotNull(actual)
+        assertEquals(expectedTenantId, actual.tenantId)
+        assertEquals(CryptoConsts.Categories.LEDGER, actual.category)
+        assertNotNull(actual.aliasSecret)
+        assertNotNull(actual.masterKeyAlias)
+        assertThat(factory.softCache.keys).containsKey(actual.masterKeyAlias)
+        assert(expectedConfigId, expectedHSM, "{}".toByteArray(), actual.config)
     }
 
     @Test
@@ -395,14 +411,11 @@ class HSMServiceTests {
         assertEquals(supportedSchemes.size, hsm1.supportedSchemes.size)
         assertTrue(supportedSchemes.all { hsm1.supportedSchemes.contains(it) })
         val association1 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertNotNull(association1)
-        assertEquals(tenantId1, association1.tenantId)
-        assertEquals(CryptoConsts.Categories.LEDGER, association1.category)
-        assertNotNull(association1.aliasSecret)
-        assertNotNull(association1.masterKeyAlias)
-        assertThat(factory.softCache.keys).containsKey(association1.masterKeyAlias)
-        assert(SOFT_HSM_CONFIG_ID, hsm1, "{}".toByteArray(), association1.config)
-
+        assert(SOFT_HSM_CONFIG_ID, tenantId1, hsm1, association1)
+        val association11 = service.findAssociation(association1!!.id)
+        assert(SOFT_HSM_CONFIG_ID, tenantId1, hsm1, association11)
+        val association111 = service.findAssociation(UUID.randomUUID().toString())
+        assertNull(association111)
         val hsm2 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
         assert(SOFT_HSM_CONFIG_ID, hsm1, hsm2)
         val association2 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
@@ -469,13 +482,7 @@ class HSMServiceTests {
         )
         assert(configId, info, hsm1)
         val association1 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
-        assertNotNull(association1)
-        assertEquals(tenantId1, association1.tenantId)
-        assertEquals(CryptoConsts.Categories.LEDGER, association1.category)
-        assertNotNull(association1.aliasSecret)
-        assertNotNull(association1.masterKeyAlias)
-        assertThat(factory.softCache.keys).containsKey(association1.masterKeyAlias)
-        assert(configId, hsm1, "{}".toByteArray(), association1.config)
+        assert(configId, tenantId1, hsm1,  association1)
         val hsm2 = service.assignHSM(
             tenantId1, CryptoConsts.Categories.TLS, mapOf(
                 PREFERRED_PRIVATE_KEY_POLICY_KEY to PREFERRED_PRIVATE_KEY_POLICY_NONE
@@ -489,7 +496,7 @@ class HSMServiceTests {
         assertNotNull(association2.aliasSecret)
         assertNotNull(association2.masterKeyAlias)
         assertEquals(
-            association1.masterKeyAlias,
+            association1!!.masterKeyAlias,
             association2.masterKeyAlias,
             "The master key alias must stay the same for the same tenant, even if categories are different"
         )

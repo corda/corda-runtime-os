@@ -52,7 +52,7 @@ class SigningKeyCacheActionsImpl(
                 SigningKeyEntity(
                     tenantId = tenantId,
                     keyId = publicKeyIdFromBytes(publicKeyBytes),
-                    created = Instant.now(),
+                    timestamp = Instant.now(),
                     category = context.category,
                     schemeCodeName = context.signatureScheme.codeName,
                     publicKey = publicKeyBytes,
@@ -61,7 +61,8 @@ class SigningKeyCacheActionsImpl(
                     masterKeyAlias = null,
                     alias = context.alias,
                     hsmAlias = context.key.hsmAlias,
-                    externalId = context.externalId
+                    externalId = context.externalId,
+                    associationId = context.associationId
                 )
             }
             is SigningWrappedKeySaveContext -> {
@@ -69,7 +70,7 @@ class SigningKeyCacheActionsImpl(
                 SigningKeyEntity(
                     tenantId = tenantId,
                     keyId = publicKeyIdFromBytes(publicKeyBytes),
-                    created = Instant.now(),
+                    timestamp = Instant.now(),
                     category = context.category,
                     schemeCodeName = context.signatureScheme.codeName,
                     publicKey = publicKeyBytes,
@@ -78,7 +79,8 @@ class SigningKeyCacheActionsImpl(
                     masterKeyAlias = context.masterKeyAlias,
                     alias = context.alias,
                     hsmAlias = null,
-                    externalId = context.externalId
+                    externalId = context.externalId,
+                    associationId = context.associationId
                 )
             }
             else -> throw IllegalArgumentException("Unknown context type: ${context::class.java.name}")
@@ -123,8 +125,8 @@ class SigningKeyCacheActionsImpl(
         builder.equal(SigningKeyEntity::alias, map.alias)
         builder.equal(SigningKeyEntity::masterKeyAlias, map.masterKeyAlias)
         builder.equal(SigningKeyEntity::externalId, map.externalId)
-        builder.greaterThanOrEqualTo(SigningKeyEntity::created, map.createdAfter)
-        builder.lessThanOrEqualTo(SigningKeyEntity::created, map.createdBefore)
+        builder.greaterThanOrEqualTo(SigningKeyEntity::timestamp, map.createdAfter)
+        builder.lessThanOrEqualTo(SigningKeyEntity::timestamp, map.createdBefore)
         return builder.build(skip, take, orderBy).resultList.map {
             it.toSigningCachedKey()
         }
@@ -182,7 +184,8 @@ class SigningKeyCacheActionsImpl(
             masterKeyAlias = masterKeyAlias,
             externalId = externalId,
             encodingVersion = encodingVersion,
-            created = created
+            timestamp = timestamp,
+            associationId = associationId
         )
 
     private class LookupBuilder(
@@ -221,13 +224,13 @@ class SigningKeyCacheActionsImpl(
             when (orderBy) {
                 SigningKeyOrderBy.NONE -> Unit
                 SigningKeyOrderBy.ID -> ascOrderBy(SigningKeyEntity::keyId)
-                SigningKeyOrderBy.CREATED -> ascOrderBy(SigningKeyEntity::created)
+                SigningKeyOrderBy.TIMESTAMP -> ascOrderBy(SigningKeyEntity::timestamp)
                 SigningKeyOrderBy.CATEGORY -> ascOrderBy(SigningKeyEntity::category)
                 SigningKeyOrderBy.SCHEME_CODE_NAME -> ascOrderBy(SigningKeyEntity::schemeCodeName)
                 SigningKeyOrderBy.ALIAS -> ascOrderBy(SigningKeyEntity::alias)
                 SigningKeyOrderBy.MASTER_KEY_ALIAS -> ascOrderBy(SigningKeyEntity::masterKeyAlias)
                 SigningKeyOrderBy.EXTERNAL_ID -> ascOrderBy(SigningKeyEntity::externalId)
-                SigningKeyOrderBy.CREATED_DESC -> descOrderBy(SigningKeyEntity::created)
+                SigningKeyOrderBy.TIMESTAMP_DESC -> descOrderBy(SigningKeyEntity::timestamp)
                 SigningKeyOrderBy.CATEGORY_DESC -> descOrderBy(SigningKeyEntity::category)
                 SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> descOrderBy(SigningKeyEntity::schemeCodeName)
                 SigningKeyOrderBy.ALIAS_DESC -> descOrderBy(SigningKeyEntity::alias)

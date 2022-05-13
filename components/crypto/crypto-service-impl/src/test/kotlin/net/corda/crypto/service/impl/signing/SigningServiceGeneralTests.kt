@@ -239,7 +239,8 @@ class SigningServiceGeneralTests {
             externalId = null,
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
             encodingVersion = 1,
-            created = Instant.now()
+            associationId = UUID.randomUUID().toString(),
+            timestamp = Instant.now()
         )
         val actions = mock<SigningKeyCacheActions> {
             on { find(any<String>()) } doReturn existingKey
@@ -531,6 +532,7 @@ class SigningServiceGeneralTests {
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { generateKeyPair(any(), any()) } doReturn generatedKey
             }
@@ -565,6 +567,7 @@ class SigningServiceGeneralTests {
                         alias == expectedAlias &&
                         externalId == null &&
                         signatureScheme == scheme &&
+                        associationId == ref.associationId &&
                         category == ref.category
             }
         )
@@ -575,6 +578,7 @@ class SigningServiceGeneralTests {
                         alias == expectedAlias &&
                         externalId == expectedExternalId &&
                         signatureScheme == scheme &&
+                        associationId == ref.associationId &&
                         category == ref.category
             }
         )

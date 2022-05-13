@@ -138,6 +138,56 @@ class CryptoServiceFactoryTests {
 
     @Test
     @Suppress("MaxLineLength")
+    fun `getInstance(tenant,category, associationId) should fail when category or tenant are not matching`() {
+        assertFalse(component.isRunning)
+        val associationId = UUID.randomUUID().toString()
+        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        assertThrows<IllegalArgumentException> {
+            component.getInstance(tenantId, CryptoConsts.Categories.TLS, associationId)
+        }
+        assertThrows<IllegalArgumentException> {
+            component.getInstance(tenantId2, CryptoConsts.Categories.LEDGER, associationId)
+        }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `getInstance(tenant,category, associationId) should return same instance when params are resolved to same HSM config id`() {
+        assertFalse(component.isRunning)
+        val associationId = UUID.randomUUID().toString()
+        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        val i2 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, associationId)
+        assertNotNull(i1)
+        assertNotNull(i2)
+        assertEquals(tenantId, i1.tenantId)
+        assertEquals(CryptoConsts.Categories.LEDGER, i1.category)
+        assertEquals(tenantId, i2.tenantId)
+        assertEquals(CryptoConsts.Categories.LEDGER, i2.category)
+        assertSame(i1.instance, i2.instance)
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
     fun `getInstance(tenant,category) should return different instance when params are not resolved to same HSM config id`() {
         assertFalse(component.isRunning)
         assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
@@ -179,6 +229,31 @@ class CryptoServiceFactoryTests {
         assertNotNull(i1)
         assertNotNull(i2)
         assertNotSame(i1, i2)
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `getInstance(tenant,category,associationId) should return different instance when params are not resolved to same HSM config id`() {
+        assertFalse(component.isRunning)
+        assertInstanceOf(CryptoServiceFactoryImpl.InactiveImpl::class.java, component.impl)
+        assertThrows<IllegalStateException> {
+            component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
+        }
+        component.start()
+        eventually {
+            assertTrue(component.isRunning)
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        assertInstanceOf(CryptoServiceFactoryImpl.ActiveImpl::class.java, component.impl)
+        val i1 = component.getInstance(tenantId, CryptoConsts.Categories.LEDGER, UUID.randomUUID().toString())
+        val i2 = component.getInstance(tenantId4, CryptoConsts.Categories.JWT_KEY, UUID.randomUUID().toString())
+        assertNotNull(i1)
+        assertNotNull(i2)
+        assertEquals(tenantId, i1.tenantId)
+        assertEquals(CryptoConsts.Categories.LEDGER, i1.category)
+        assertEquals(tenantId4, i2.tenantId)
+        assertEquals(CryptoConsts.Categories.JWT_KEY, i2.category)
+        assertNotSame(i1.instance, i2.instance)
     }
 
     @Test

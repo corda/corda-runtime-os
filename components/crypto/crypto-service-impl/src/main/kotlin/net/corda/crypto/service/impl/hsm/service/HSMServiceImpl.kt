@@ -112,6 +112,13 @@ class HSMServiceImpl(
         }
     }
 
+    fun findAssociation(associationId: String): HSMTenantAssociation? {
+        logger.debug("findAssociation(associationId={})", associationId)
+        return hsmCache.act {
+            it.findTenantAssociation(associationId)
+        }
+    }
+
     fun findHSMConfig(configId: String): HSMConfig? {
         logger.debug("getPrivateHSMConfig(configId={})", configId)
         return hsmCache.act {

@@ -49,6 +49,7 @@ fun CryptoServiceRef.toSaveKeyContext(
             alias = alias,
             signatureScheme = scheme,
             category = category,
+            associationId = associationId,
             externalId = externalId,
         )
         is GeneratedWrappedKey -> SigningWrappedKeySaveContext(
@@ -57,7 +58,8 @@ fun CryptoServiceRef.toSaveKeyContext(
             externalId = externalId,
             alias = alias,
             signatureScheme = scheme,
-            category = category
+            category = category,
+            associationId = associationId,
         )
         else -> throw CryptoServiceException("Unknown key generation response: ${key::class.java.name}")
     }

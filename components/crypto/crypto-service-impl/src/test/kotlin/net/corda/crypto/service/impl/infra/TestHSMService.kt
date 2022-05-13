@@ -72,6 +72,13 @@ class TestHSMService(
         return impl.findAssignedHSM(tenantId, category)
     }
 
+    override fun findAssociation(associationId: String): HSMTenantAssociation? {
+        check(isRunning) {
+            "The component is in invalid state."
+        }
+        return impl.findAssociation(associationId)
+    }
+
     override fun findHSMConfig(configId: String): HSMConfig? {
         check(isRunning) {
             "The component is in invalid state."
