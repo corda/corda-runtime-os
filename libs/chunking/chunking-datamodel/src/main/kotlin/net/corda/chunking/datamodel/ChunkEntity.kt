@@ -64,6 +64,7 @@ data class ChunkEntity(
     }
 
     override fun toString(): String {
-        return this::class.simpleName + "(requestId = $requestId , fileName = $fileName , partNumber = $partNumber , chunkProperties = $chunkProperties )"
+        return this::class.simpleName + "(requestId = $requestId , fileName = $fileName , " +
+                "partNumber = $partNumber , chunkProperties = $chunkProperties )"
     }
 }
