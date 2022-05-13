@@ -83,7 +83,7 @@ class InboundMessageProcessorTest {
     )
 
     @Test
-    fun `ignores messages with values`() {
+    fun `ignores messages with null values`() {
         val records = processor.onNext(
             listOf(
                 EventLogRecord(LINK_IN_TOPIC, "key", null, 0, 0),
@@ -173,7 +173,7 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `AuthenticatedDataMessage with Outbound session will acknowledge the ack request`() {
+        fun `AuthenticatedDataMessage with Outbound session will process the message ack`() {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
@@ -210,7 +210,7 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `AuthenticatedDataMessage with Outbound session will acknowledge HeartbeatMessageAck`() {
+        fun `AuthenticatedDataMessage with Outbound session will process HeartbeatMessageAck`() {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
@@ -240,7 +240,7 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `AuthenticatedDataMessage with Outbound session will not acknowledge null message`() {
+        fun `AuthenticatedDataMessage with Outbound session will not process invalid message`() {
             val session = mock<AuthenticatedSession>()
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Outbound(
@@ -302,7 +302,7 @@ class InboundMessageProcessorTest {
     @Nested
     inner class AuthenticatedEncryptedDataMessageTests {
         @Test
-        fun `onNext with Inbound session will produce a message on the P2P_IN_TOPIC and LINK_OUT_TOPIC topics`() {
+        fun `receiving data message with Inbound session will produce a message on the P2P_IN_TOPIC and LINK_OUT_TOPIC topics`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
                     remoteIdentity,
@@ -370,7 +370,7 @@ class InboundMessageProcessorTest {
             verify(sessionManager).inboundSessionEstablished(anyOrNull())
         }
         @Test
-        fun `AuthenticatedEncryptedDataMessageTests with different source will not produce records`() {
+        fun `when the message's source identity does not match the one of the session the message is discarded`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
                     remoteIdentity,
@@ -421,7 +421,7 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `AuthenticatedEncryptedDataMessageTests with Inbound session and heart beat will produce link out message`() {
+        fun `receiving a heatbeat message with Inbound session will produce link out ack message`() {
             val heartbeatMessage = HeartbeatMessage()
             val messageAndPayload = DataMessagePayload(heartbeatMessage)
             val encryptionResult = mock<EncryptionResult> {
