@@ -178,7 +178,7 @@ class EntitySandboxServiceImpl @Activate constructor (
         // used to serialize the data.  The "internalCustomSerializers" MUST be the same otherwise
         // we might struggle to deserialize some entities.
         val factory = SerializerFactoryBuilder.build(ctx.sandboxGroup)
-        registerCustomSerializers(factory)  // TODO - <<<<<<<<<<  this doesn't want to be here, but makes tests pass.
+        registerCustomSerializers(factory)
         internalCustomSerializers.forEach { factory.register(it, factory) }
 
         val cpkSerializers = cpks.flatMap { it.cordappManifest.serializers }.toSet()
