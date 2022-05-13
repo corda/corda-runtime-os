@@ -75,6 +75,10 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
         return null
     }
 
+    override fun apiReturningObjectWithNullableStringInside(): TestHealthCheckAPI.ObjectWithNullableString {
+        return TestHealthCheckAPI.ObjectWithNullableString(null)
+    }
+
     override fun echoQuery(requestString: String): String {
         return requestString
     }
