@@ -37,7 +37,7 @@ class ChunkWriteToDbProcessorSimpleTest {
             0,
             0,
             ByteBuffer.wrap("12345678".toByteArray()),
-            false
+            null
         )
         processor.onNext(listOf(Record(topic, requestId, chunk)))
 
@@ -62,7 +62,7 @@ class ChunkWriteToDbProcessorSimpleTest {
             0,
             0,
             ByteBuffer.wrap("12345678".toByteArray()),
-            false
+            null
         )
 
         processor.onNext(listOf(Record(topic, requestId, chunk)))
