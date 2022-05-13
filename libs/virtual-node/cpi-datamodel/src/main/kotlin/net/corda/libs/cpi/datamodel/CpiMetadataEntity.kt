@@ -56,17 +56,16 @@ data class CpiMetadataEntity(
     @Column(name = "is_deleted", nullable = false)
     val isDeleted: Boolean
 ) {
-
-    @Version
-    @Column(name = "entity_version", nullable = false)
-    val entityVersion: Int = -1
-
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
             "", "", "", "", "",
             "", "", "",false
         )
     }
+
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    val entityVersion: Int = -1
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")
     val cpks: Set<CpkMetadataEntity> = emptySet()
