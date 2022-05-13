@@ -4,7 +4,7 @@ package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.osgi.framework.Bundle

@@ -1,8 +1,8 @@
 package net.corda.testing.sandboxes.impl
 
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.core.CpiIdentifier
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.packaging.Cpi
+import net.corda.libs.packaging.Cpi
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor

@@ -2,8 +2,8 @@ package net.corda.cpiinfo.read
 
 import net.corda.cpiinfo.read.impl.CpiInfoReaderProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.Cpi
-import net.corda.packaging.converters.toAvro
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.converters.toAvro
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals

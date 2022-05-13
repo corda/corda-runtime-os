@@ -1,8 +1,8 @@
 package net.corda.sandboxgroupcontext.impl
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.Cpk
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext

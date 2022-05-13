@@ -5,10 +5,10 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiMetadata
 import net.corda.libs.cpiupload.endpoints.v1.CpkIdentifier
 import net.corda.libs.cpiupload.endpoints.v1.CpkMetadata
 
-internal fun net.corda.libs.packaging.CpiIdentifier.toEndpointType() =
+internal fun net.corda.libs.packaging.core.CpiIdentifier.toEndpointType() =
     CpiIdentifier(this.name, this.version, this.signerSummaryHash.toString())
 
-internal fun net.corda.libs.packaging.CpiMetadata.toEndpointType() =
+internal fun net.corda.libs.packaging.core.CpiMetadata.toEndpointType() =
     CpiMetadata(
         this.cpiId.toEndpointType(),
         this.fileChecksum.toHexString(),
@@ -17,10 +17,10 @@ internal fun net.corda.libs.packaging.CpiMetadata.toEndpointType() =
         this.timestamp
     )
 
-internal fun net.corda.libs.packaging.CpkIdentifier.toEndpointType() =
+internal fun net.corda.libs.packaging.core.CpkIdentifier.toEndpointType() =
     CpkIdentifier(this.name, this.version, this.signerSummaryHash.toString())
 
-internal fun net.corda.libs.packaging.CpkMetadata.toEndpointType() =
+internal fun net.corda.libs.packaging.core.CpkMetadata.toEndpointType() =
     CpkMetadata(
         this.cpkId.toEndpointType(),
         this.mainBundle,

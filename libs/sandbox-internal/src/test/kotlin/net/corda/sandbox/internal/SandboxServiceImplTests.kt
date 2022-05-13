@@ -1,8 +1,8 @@
 package net.corda.sandbox.internal
 
-import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.Cpk
-import net.corda.packaging.CordappManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CordappManifest
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl

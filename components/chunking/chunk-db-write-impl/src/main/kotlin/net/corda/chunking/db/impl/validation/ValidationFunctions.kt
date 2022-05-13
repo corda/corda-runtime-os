@@ -4,8 +4,8 @@ import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
-import net.corda.packaging.Cpi
-import net.corda.packaging.PackagingException
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash

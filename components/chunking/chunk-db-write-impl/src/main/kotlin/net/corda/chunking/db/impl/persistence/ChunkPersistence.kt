@@ -3,7 +3,7 @@ package net.corda.chunking.db.impl.persistence
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.data.chunking.Chunk
-import net.corda.packaging.Cpi
+import net.corda.libs.packaging.Cpi
 import net.corda.v5.crypto.SecureHash
 
 interface ChunkPersistence {
