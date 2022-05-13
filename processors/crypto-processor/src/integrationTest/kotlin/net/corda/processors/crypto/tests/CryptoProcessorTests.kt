@@ -201,7 +201,7 @@ class CryptoProcessorTests {
                 val configAsString = db.config.root().render(ConfigRenderOptions.concise())
                 configEmf.transaction {
                     val existing = it.createQuery("""
-                        SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege)
+                        SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
                     """.trimIndent())
                         .setParameter("name", db.name)
                         .setParameter("privilege", DbPrivilege.DML)
