@@ -90,6 +90,18 @@ class DbConnectionsRepositoryImpl(
         }
     }
 
+    override fun create(connectionId: UUID): CloseableDataSource? {
+        logger.debug("Fetching DB connection for $connectionId")
+        entityManagerFactory.createEntityManager().use {
+            val dbConfig = it.find(DbConnectionConfig::class.java, connectionId)  ?:
+            return null
+
+            val config = ConfigFactory.parseString(dbConfig.config)
+            logger.debug("Creating DB (${dbConfig.description}) from config: $config")
+            return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
+        }
+    }
+
     override fun create(config: SmartConfig): CloseableDataSource {
         logger.debug("Creating CloseableDataSource from config: $config")
         return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))

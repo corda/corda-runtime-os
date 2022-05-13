@@ -120,4 +120,16 @@ interface DbConnectionOps {
     @Suppress("LongParameterList")
     fun getOrCreateEntityManagerFactory(name: String, privilege: DbPrivilege, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory
+
+    /**
+     * Create ean [EntityManagerFactory] for a given connection ID.
+     *
+     * A new EMF should be create and impelemenations of this class should not cache it.
+     *
+     * @param connectionId
+     * @param entitiesSet Set of all entities managed by [javax.persistence.EntityManager]s created by the
+     *                  [EntityManagerFactory] returned
+     * @return
+     */
+    fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }

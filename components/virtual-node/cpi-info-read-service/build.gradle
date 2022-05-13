@@ -23,7 +23,6 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:virtual-node:virtual-node-common")
 
@@ -32,11 +31,4 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-info")
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
-
-    testImplementation project(":libs:lifecycle:lifecycle-impl")
-    testImplementation project(":libs:lifecycle:registry")
-
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
