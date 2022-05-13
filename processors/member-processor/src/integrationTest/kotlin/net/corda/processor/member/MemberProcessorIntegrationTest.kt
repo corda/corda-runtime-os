@@ -243,16 +243,24 @@ class MemberProcessorIntegrationTest {
             dbs.forEach { db ->
                 val configAsString = db.config.root().render(ConfigRenderOptions.concise())
                 configEmf.transaction {
-                    val record = DbConnectionConfig(
-                        UUID.randomUUID(),
-                        db.name,
-                        DbPrivilege.DML,
-                        Instant.now(),
-                        "sa",
-                        "Test ${db.name}",
-                        configAsString
-                    )
-                    it.persist(record)
+                    val existing = it.createQuery("""
+                        SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege)
+                    """.trimIndent())
+                        .setParameter("name", db.name)
+                        .setParameter("privilege", DbPrivilege.DML)
+                        .resultList
+                    if(existing.isEmpty()) {
+                        val record = DbConnectionConfig(
+                            UUID.randomUUID(),
+                            db.name,
+                            DbPrivilege.DML,
+                            Instant.now(),
+                            "sa",
+                            "Test ${db.name}",
+                            configAsString
+                        )
+                        it.persist(record)
+                    }
                 }
             }
         }
