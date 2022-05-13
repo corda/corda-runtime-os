@@ -171,8 +171,8 @@ class TestLifecycleCoordinatorImpl(
                             "coordinator: ${e.message}. This coordinator will now shut down.",
                     e
                 )
+                stop()
             }
-            errorEvent.isHandled
         }
     }
 
