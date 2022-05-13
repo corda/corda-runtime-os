@@ -408,6 +408,11 @@ class PersistenceTests {
                 } else {
                     throw IllegalArgumentException()
                 }
+
+            override fun createEntityManagerFactory(
+                connectionId: UUID,
+                entitiesSet: JpaEntitiesSet
+            ): EntityManagerFactory = throw NotImplementedError()
         },
         jpaEntitiesRegistry = object : JpaEntitiesRegistry {
             override val all: Set<JpaEntitiesSet> get() = throw NotImplementedError()
