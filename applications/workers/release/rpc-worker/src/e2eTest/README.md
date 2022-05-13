@@ -6,7 +6,7 @@ satisfied like:
 - DB Worker along with correctly setup Database;
 - Anything else RPC Worker might need.
 
-One way to set all those dependencies up is by using Docker Compose script, as described [here](../../../deploy/README.md).
+One way to set all those dependencies up is by using local setup with K8s, as described [here](https://github.com/corda/corda-runtime-os/wiki/Local-development-with-Kubernetes).
 
 Then these tests communicate using HTTP protocol using published OpenAPI to trigger some actions and assert side effects
 by observing them through HTTP endpoints.
