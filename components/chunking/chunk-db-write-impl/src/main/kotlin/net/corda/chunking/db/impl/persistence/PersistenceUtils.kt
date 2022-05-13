@@ -1,6 +1,6 @@
 package net.corda.chunking.db.impl.persistence
 
-import net.corda.packaging.Cpi
+import net.corda.libs.packaging.Cpi
 
 object PersistenceUtils {
 

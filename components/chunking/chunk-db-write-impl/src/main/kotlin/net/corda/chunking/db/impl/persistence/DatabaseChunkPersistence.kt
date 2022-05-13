@@ -17,7 +17,7 @@ import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.orm.utils.transaction
 import net.corda.libs.packaging.Cpi
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.Cpk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
