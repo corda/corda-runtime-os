@@ -1,7 +1,7 @@
 package net.corda.kryoserialization
 
-import net.corda.packaging.Cpi
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.testing.sandboxes.CpiLoader

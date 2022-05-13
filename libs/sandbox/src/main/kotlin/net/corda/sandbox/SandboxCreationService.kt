@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.Cpk
 import org.osgi.framework.Bundle
 
 /**
