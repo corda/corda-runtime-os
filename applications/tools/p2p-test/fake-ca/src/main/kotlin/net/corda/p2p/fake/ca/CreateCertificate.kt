@@ -2,11 +2,15 @@ package net.corda.p2p.fake.ca
 
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.fake.ca.Ca.Companion.CA_NAME
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import picocli.CommandLine.ParentCommand
 import java.io.File
+import java.security.PublicKey
 
 @Command(
     name = "create-certificate",
@@ -26,9 +30,15 @@ class CreateCertificate : Runnable {
 
     @Option(
         names = ["-n", "--name"],
-        description = ["The filename of the certificate (defaults to the first host name)"]
+        description = ["The filename of the certificate (defaults to the first host name)."]
     )
     private var name: String? = null
+
+    @Option(
+        names = ["-p", "--public-key"],
+        description = ["The filename of the public key. If unset a new key pair is generated."]
+    )
+    private var publicKeyFile: String? = null
 
     @ParentCommand
     private lateinit var ca: Ca
@@ -45,17 +55,38 @@ class CreateCertificate : Runnable {
             it.mkdirs()
         }
 
-        val keysAndCertificate = ca.authority.generateKeyAndCertificate(dnsNames)
+        val certificate = if (publicKeyFile == null) {
+            val keysAndCertificate = ca.authority.generateKeyAndCertificate(dnsNames)
+            File(dir, "keys.pem").also {
+                it.writeText(keysAndCertificate.privateKey.toPem())
+                println("Wrote keys to $it")
+            }
+            keysAndCertificate.certificate
+        } else {
+            ca.authority.generateCertificate(dnsNames, readPemPublicKey(File(publicKeyFile)))
+        }
+
         // Save the authority because the serial number had changed.
         ca.authority.save()
 
         File(dir, "certificate.pem").also {
-            it.writeText(keysAndCertificate.certificatePem())
+            it.writeText(certificate.toPem())
             println("Wrote certificate to $it")
         }
-        File(dir, "keys.pem").also {
-            it.writeText(keysAndCertificate.privateKey.toPem())
-            println("Wrote keys to $it")
-        }
+    }
+
+    private fun readPemPublicKey(keyFile: File): PublicKey {
+        return PEMParser(keyFile.reader()).use { parser ->
+            generateSequence {
+                parser.readObject()
+            }.map {
+                if (it is SubjectPublicKeyInfo) {
+                    JcaPEMKeyConverter().getPublicKey(it)
+                } else {
+                    null
+                }
+            }.filterNotNull()
+                .firstOrNull()
+        } ?: throw FakeCaException("Invalid public key file")
     }
 }
