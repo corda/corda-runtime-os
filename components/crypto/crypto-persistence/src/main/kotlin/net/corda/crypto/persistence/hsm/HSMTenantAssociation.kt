@@ -1,5 +1,6 @@
 package net.corda.crypto.persistence.hsm
 
+@Suppress("LongParameterList")
 class HSMTenantAssociation(
     val id: String,
     val tenantId: String,

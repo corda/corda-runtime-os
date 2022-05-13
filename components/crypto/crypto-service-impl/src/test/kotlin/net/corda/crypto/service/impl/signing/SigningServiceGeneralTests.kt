@@ -514,6 +514,7 @@ class SigningServiceGeneralTests {
     }
 
     @Test
+    @Suppress("ComplexMethod")
     fun `Should save generated key with alias`() {
         val generatedKey = GeneratedPublicKey(
             publicKey = mock(),

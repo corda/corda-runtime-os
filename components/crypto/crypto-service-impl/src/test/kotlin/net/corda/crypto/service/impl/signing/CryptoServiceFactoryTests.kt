@@ -35,7 +35,7 @@ class CryptoServiceFactoryTests {
     private lateinit var factory: TestServicesFactory
     private lateinit var component: CryptoServiceFactoryImpl
 
-    private class CustomCryptoServiceProvider() : CryptoServiceProvider<SoftCryptoServiceConfig> {
+    private class CustomCryptoServiceProvider : CryptoServiceProvider<SoftCryptoServiceConfig> {
         companion object {
             const val NAME = "\"custom-hsm\""
         }
