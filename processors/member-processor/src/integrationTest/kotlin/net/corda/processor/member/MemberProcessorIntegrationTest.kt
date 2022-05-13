@@ -268,9 +268,15 @@ class MemberProcessorIntegrationTest {
         private fun assignHSMs() {
             CryptoConsts.Categories.all().forEach {
                 // cluster is assigned in the crypto processor
-                hsmRegistrationClient.assignSoftHSM(aliceVNodeId, it)
-                hsmRegistrationClient.assignSoftHSM(bobVNodeId, it)
-                hsmRegistrationClient.assignSoftHSM(charlieVNodeId, it)
+                if(hsmRegistrationClient.findHSM(aliceVNodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(aliceVNodeId, it)
+                }
+                if(hsmRegistrationClient.findHSM(bobVNodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(bobVNodeId, it)
+                }
+                if(hsmRegistrationClient.findHSM(charlieVNodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(charlieVNodeId, it)
+                }
             }
         }
     }
