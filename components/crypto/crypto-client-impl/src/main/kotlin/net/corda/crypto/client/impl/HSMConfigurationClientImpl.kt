@@ -40,7 +40,7 @@ class HSMConfigurationClientImpl(
         return request.execute(CryptoStringResult::class.java)!!.value
     }
 
-    fun linkCategories(configId: String, links: List<HSMCategoryInfo>){
+    fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {
         logger.info(
             "Sending {}(configId={},links.size={})",
             LinkHSMCategoriesCommand::class.java.simpleName,
@@ -88,39 +88,37 @@ class HSMConfigurationClientImpl(
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
     ): RESPONSE? {
-        while (true) {
-            try {
-                val response = sender.sendRequest(this).getOrThrow()
-                require(
-                    response.context.requestingComponent == context.requestingComponent &&
-                            response.context.tenantId == context.tenantId
-                ) {
-                    "Expected ${context.tenantId} tenant and ${context.requestingComponent} component, but " +
-                            "received ${response.response::class.java.name} with ${response.context.tenantId} tenant" +
-                            " ${response.context.requestingComponent} component"
-                }
-                if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
-                    logger.debug(
-                        "Received empty response for {} for tenant {}",
-                        request::class.java.name,
-                        context.tenantId
-                    )
-                    return null
-                }
-                require(response.response != null && (response.response::class.java == respClazz)) {
-                    "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
-                            "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
-                }
-                logger.debug("Received response {} for tenant {}", respClazz.name, context.tenantId)
-                return response.response as RESPONSE
-            } catch (e: CryptoServiceLibraryException) {
-                logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
-                throw e
-            } catch (e: Throwable) {
-                val message = "Failed executing ${request::class.java.name} for tenant ${context.tenantId}"
-                logger.error(message, e)
-                throw CryptoServiceLibraryException(message, e)
+        try {
+            val response = sender.sendRequest(this).getOrThrow()
+            require(
+                response.context.requestingComponent == context.requestingComponent &&
+                        response.context.tenantId == context.tenantId
+            ) {
+                "Expected ${context.tenantId} tenant and ${context.requestingComponent} component, but " +
+                        "received ${response.response::class.java.name} with ${response.context.tenantId} tenant" +
+                        " ${response.context.requestingComponent} component"
             }
+            if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
+                logger.debug(
+                    "Received empty response for {} for tenant {}",
+                    request::class.java.name,
+                    context.tenantId
+                )
+                return null
+            }
+            require(response.response != null && (response.response::class.java == respClazz)) {
+                "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
+                        "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
+            }
+            logger.debug("Received response {} for tenant {}", respClazz.name, context.tenantId)
+            return response.response as RESPONSE
+        } catch (e: CryptoServiceLibraryException) {
+            logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
+            throw e
+        } catch (e: Throwable) {
+            val message = "Failed executing ${request::class.java.name} for tenant ${context.tenantId}"
+            logger.error(message, e)
+            throw CryptoServiceLibraryException(message, e)
         }
     }
 }
