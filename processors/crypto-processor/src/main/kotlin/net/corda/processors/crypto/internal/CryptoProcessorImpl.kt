@@ -141,7 +141,13 @@ class CryptoProcessorImpl @Activate constructor(
             is RegistrationStatusChangeEvent -> {
                 logger.info("Crypto processor is ${event.status}")
                 if(event.status == LifecycleStatus.UP) {
-                    temporaryAssociateClusterWithSoftHSM()
+                    if(!temporaryAssociateClusterWithSoftHSM()) {
+                        coordinator.updateStatus(
+                            LifecycleStatus.ERROR,
+                            "Failed to associate SOFT HSMs with cluster tenants."
+                        )
+                        return
+                    }
                 }
                 coordinator.updateStatus(event.status)
             }
@@ -177,14 +183,26 @@ class CryptoProcessorImpl @Activate constructor(
         }
     }
 
-    private fun temporaryAssociateClusterWithSoftHSM() {
+    private fun temporaryAssociateClusterWithSoftHSM(): Boolean {
+        var result = true
         CryptoConsts.Categories.all.forEach { category ->
             CryptoTenants.allClusterTenants.forEach { tenantId ->
-                if(hsmService.findAssignedHSM(tenantId, category) == null) {
-                    hsmService.assignSoftHSM(tenantId, category)
+                if(!tryAssignSoftHSM(tenantId, category)) {
+                    result = false
                 }
             }
         }
+        return result
+    }
+
+    private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
+        if (hsmService.findAssignedHSM(tenantId, category) == null) {
+            hsmService.assignSoftHSM(tenantId, category)
+        }
+        true
+    } catch (e: Throwable) {
+        logger.error("Failed to assign SOFT HSM for $tenantId:$category", e)
+        false
     }
 }
 
