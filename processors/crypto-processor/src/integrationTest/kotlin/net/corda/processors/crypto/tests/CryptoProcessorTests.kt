@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -239,7 +240,7 @@ class CryptoProcessorTests {
         }
 
         private fun assignHSMs() {
-            CryptoConsts.Categories.all().forEach {
+            CryptoConsts.Categories.all.forEach {
                 // cluster is assigned in the crypto processor
                 if(hsmRegistrationClient.findHSM(vnodeId, it) == null) {
                     hsmRegistrationClient.assignSoftHSM(vnodeId, it)
@@ -251,16 +252,16 @@ class CryptoProcessorTests {
         fun testCategories(): Stream<Arguments> = Stream.of(
             Arguments.of(CryptoConsts.Categories.LEDGER, vnodeId),
             Arguments.of(CryptoConsts.Categories.TLS, vnodeId),
-            Arguments.of(CryptoConsts.Categories.SESSION, vnodeId),
-            Arguments.of(CryptoConsts.Categories.LEDGER, CryptoConsts.CLUSTER_TENANT_ID),
-            Arguments.of(CryptoConsts.Categories.TLS, CryptoConsts.CLUSTER_TENANT_ID),
-            Arguments.of(CryptoConsts.Categories.SESSION, CryptoConsts.CLUSTER_TENANT_ID)
+            Arguments.of(CryptoConsts.Categories.SESSION_INIT, vnodeId),
+            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.RPC_API),
+            Arguments.of(CryptoConsts.Categories.TLS, CryptoTenants.P2P)
         )
 
         @JvmStatic
         fun testTenants(): Stream<Arguments> = Stream.of(
             Arguments.of(vnodeId),
-            Arguments.of(CryptoConsts.CLUSTER_TENANT_ID),
+            Arguments.of(CryptoTenants.P2P),
+            Arguments.of(CryptoTenants.RPC_API)
         )
     }
 
@@ -338,6 +339,7 @@ class CryptoProcessorTests {
 
         val original = opsClient.freshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
             externalId = externalId,
             scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
@@ -347,7 +349,7 @@ class CryptoProcessorTests {
             tenantId,
             null,
             original,
-            CryptoConsts.Categories.FRESH_KEYS,
+            CryptoConsts.Categories.CI,
             externalId
         )
 
@@ -365,6 +367,7 @@ class CryptoProcessorTests {
     ) {
         val original = opsClient.freshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
             scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
@@ -373,7 +376,7 @@ class CryptoProcessorTests {
             tenantId,
             null,
             original,
-            CryptoConsts.Categories.FRESH_KEYS,
+            CryptoConsts.Categories.CI,
             null
         )
 
@@ -392,6 +395,7 @@ class CryptoProcessorTests {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
             scheme = RSA_CODE_NAME
         )
         publisher.publish(
@@ -422,6 +426,7 @@ class CryptoProcessorTests {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
             scheme = RSA_CODE_NAME,
             externalId = externalId
         )

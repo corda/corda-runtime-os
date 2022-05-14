@@ -8,6 +8,7 @@ import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
 import net.corda.crypto.persistence.signing.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeySaveContext
+import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.signing.alias
@@ -86,7 +87,8 @@ class TestSigningKeyCacheActions(
                     externalId = null,
                     encodingVersion = null,
                     timestamp = now,
-                    associationId = context.associationId
+                    associationId = context.associationId,
+                    status = SigningKeyStatus.NORMAL
                 )
             }
             is SigningWrappedKeySaveContext -> {
@@ -104,7 +106,8 @@ class TestSigningKeyCacheActions(
                     externalId = context.externalId,
                     encodingVersion = context.key.encodingVersion,
                     timestamp = now,
-                    associationId = context.associationId
+                    associationId = context.associationId,
+                    status = SigningKeyStatus.NORMAL
                 )
             }
             else -> throw  IllegalArgumentException("Unknown type ${context::class.java.name}")

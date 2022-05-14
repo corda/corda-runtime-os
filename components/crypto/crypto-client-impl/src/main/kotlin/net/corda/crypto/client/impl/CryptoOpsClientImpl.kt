@@ -1,6 +1,6 @@
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -147,6 +147,7 @@ class CryptoOpsClientImpl(
 
     fun freshKey(
         tenantId: String,
+        category: String,
         scheme: String,
         context: Map<String, String>
     ): PublicKey {
@@ -157,7 +158,7 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(null, scheme, context.toWire())
+            request = GenerateFreshKeyRpcCommand(category, null, scheme, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
@@ -165,6 +166,7 @@ class CryptoOpsClientImpl(
 
     fun freshKey(
         tenantId: String,
+        category: String,
         externalId: String,
         scheme: String,
         context: Map<String, String>
@@ -177,13 +179,18 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId, scheme, context.toWire())
+            request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKeyProxy(tenantId: String, scheme: String, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(
+        tenantId: String,
+        category: String,
+        scheme: String,
+        context: KeyValuePairList
+    ): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -191,12 +198,18 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(null, scheme, context)
+            request = GenerateFreshKeyRpcCommand(category, null, scheme, context)
         )
         return request.execute(CryptoPublicKey::class.java)!!
     }
 
-    fun freshKeyProxy(tenantId: String, externalId: String, scheme: String, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(
+        tenantId: String,
+        category: String,
+        externalId: String,
+        scheme: String,
+        context: KeyValuePairList
+    ): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -205,7 +218,7 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId, scheme, context)
+            request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context)
         )
         return request.execute(CryptoPublicKey::class.java)!!
     }
@@ -304,7 +317,7 @@ class CryptoOpsClientImpl(
             masterKeyAlias
         )
         val request = createRequest(
-            CryptoConsts.CLUSTER_TENANT_ID,
+            CryptoTenants.CRYPTO,
             GenerateWrappingKeyRpcCommand(
                 configId,
                 masterKeyAlias,

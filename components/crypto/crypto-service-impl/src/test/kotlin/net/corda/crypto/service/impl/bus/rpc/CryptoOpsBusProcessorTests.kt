@@ -388,6 +388,7 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateFreshKeyRpcCommand(
+                    CryptoConsts.Categories.CI,
                     null,
                     ECDSA_SECP256R1_CODE_NAME,
                     KeyValuePairList(operationContext)
@@ -402,7 +403,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.FRESH_KEYS, operationContextMap[CRYPTO_CATEGORY])
+        assertEquals(CryptoConsts.Categories.CI, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -430,6 +431,7 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context1,
                 GenerateFreshKeyRpcCommand(
+                    CryptoConsts.Categories.CI,
                     externalId.toString(),
                     ECDSA_SECP256R1_CODE_NAME,
                     KeyValuePairList(operationContext)
@@ -444,7 +446,7 @@ class CryptoOpsBusProcessorTests {
         assertEquals(operationContext[0].value, operationContextMap[CTX_TRACKING])
         assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquals(tenantId, operationContextMap[CRYPTO_TENANT_ID])
-        assertEquals(CryptoConsts.Categories.FRESH_KEYS, operationContextMap[CRYPTO_CATEGORY])
+        assertEquals(CryptoConsts.Categories.CI, operationContextMap[CRYPTO_CATEGORY])
         assertResponseContext(context1, result1.context)
         assertThat(result1.response).isInstanceOf(CryptoPublicKey::class.java)
         val publicKey = schemeMetadata.decodePublicKey((result1.response as CryptoPublicKey).key.array())
@@ -614,7 +616,7 @@ class CryptoOpsBusProcessorTests {
             RpcOpsRequest(
                 context,
                 SupportedSchemesRpcQuery(
-                    CryptoConsts.Categories.FRESH_KEYS
+                    CryptoConsts.Categories.CI
                 )
             ),
             future

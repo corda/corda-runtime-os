@@ -90,18 +90,20 @@ class CryptoOpsClientComponent @Activate constructor(
 
     override fun freshKey(
         tenantId: String,
+        category: String,
         scheme: String,
         context: Map<String, String>
     ): PublicKey =
-        impl.ops.freshKey(tenantId, scheme, context)
+        impl.ops.freshKey(tenantId, category, scheme, context)
 
     override fun freshKey(
         tenantId: String,
+        category: String,
         externalId: String,
         scheme: String,
         context: Map<String, String>
     ): PublicKey =
-        impl.ops.freshKey(tenantId, externalId, scheme, context)
+        impl.ops.freshKey(tenantId, category, externalId, scheme, context)
 
     override fun sign(
         tenantId: String,
@@ -146,16 +148,18 @@ class CryptoOpsClientComponent @Activate constructor(
 
     override fun freshKeyProxy(
         tenantId: String,
+        category: String,
         scheme: String,
         context: KeyValuePairList
-    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, scheme, context)
+    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, category, scheme, context)
 
     override fun freshKeyProxy(
         tenantId: String,
+        category: String,
         externalId: String,
         scheme: String,
         context: KeyValuePairList
-    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, externalId, scheme, context)
+    ): CryptoPublicKey = impl.ops.freshKeyProxy(tenantId, category, externalId, scheme, context)
 
     override fun signProxy(
         tenantId: String,

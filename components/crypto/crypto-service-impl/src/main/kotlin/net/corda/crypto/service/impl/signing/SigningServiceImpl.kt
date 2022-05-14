@@ -1,6 +1,5 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyCache
 import net.corda.crypto.persistence.signing.SigningKeyCacheActions
@@ -122,12 +121,13 @@ open class SigningServiceImpl(
 
     override fun freshKey(
         tenantId: String,
+        category: String,
         scheme: String,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.Categories.FRESH_KEYS,
+            category = category,
             alias = null,
             externalId = null,
             schemeCode = scheme,
@@ -136,13 +136,14 @@ open class SigningServiceImpl(
 
     override fun freshKey(
         tenantId: String,
+        category: String,
         externalId: String,
         scheme: String,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.Categories.FRESH_KEYS,
+            category = category,
             alias = null,
             externalId = externalId,
             schemeCode = scheme,

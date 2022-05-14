@@ -147,7 +147,8 @@ class HSMRegistrationBusProcessorTests {
             config = HSMConfig(
                 info = HSMInfo(),
                 serviceConfig = "{}".toByteArray()
-            )
+            ),
+            deprecatedAt = null
         )
         val hsmService = mock<HSMService> {
             on { findAssignedHSM(any(), any()) } doReturn association

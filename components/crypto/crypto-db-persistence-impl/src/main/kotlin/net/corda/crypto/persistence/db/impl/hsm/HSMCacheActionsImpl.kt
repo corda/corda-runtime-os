@@ -41,6 +41,8 @@ class HSMCacheActionsImpl(
                 JOIN FETCH ca.hsm a
                 JOIN FETCH a.config c
             WHERE ca.category = :category 
+                AND ca.tenantId = :tenantId
+                AND ca.deprecatedAt IS NULL
                 AND a.tenantId = :tenantId
             """.trimIndent(),
             HSMCategoryAssociationEntity::class.java
@@ -152,9 +154,11 @@ class HSMCacheActionsImpl(
             ?: createAndPersistAssociation(tenantId, configId)
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
+            tenantId = tenantId,
             category = category,
             timestamp = Instant.now(),
-            hsm = association
+            hsm = association,
+            deprecatedAt = null
         )
         entityManager.doInTransaction {
             it.persist(categoryAssociation)
@@ -249,7 +253,8 @@ class HSMCacheActionsImpl(
         category = category,
         masterKeyAlias = hsm.masterKeyAlias,
         aliasSecret = hsm.aliasSecret,
-        config = hsm.config.toHSMConfig()
+        config = hsm.config.toHSMConfig(),
+        deprecatedAt = deprecatedAt
     )
 
     private class LookupBuilder(

@@ -178,12 +178,14 @@ class CryptoOpsBusProcessor(
             val publicKey = if (request.externalId.isNullOrBlank()) {
                 signingService.freshKey(
                     tenantId = context.tenantId,
+                    category = request.category,
                     scheme = request.schemeCodeName,
                     context = request.context.items.toMap()
                 )
             } else {
                 signingService.freshKey(
                     tenantId = context.tenantId,
+                    category = request.category,
                     externalId = request.externalId,
                     scheme = request.schemeCodeName,
                     context = request.context.items.toMap()

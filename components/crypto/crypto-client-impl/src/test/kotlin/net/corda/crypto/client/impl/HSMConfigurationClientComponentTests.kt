@@ -4,6 +4,7 @@ import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.data.KeyValuePair
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -104,7 +105,7 @@ class HSMConfigurationClientComponentTests {
 
     private fun assertRequestContext(result: SendActResult<HSMConfigurationRequest, *>) {
         val context = result.firstRequest.context
-        assertEquals(CryptoConsts.CLUSTER_TENANT_ID, context.tenantId)
+        assertEquals(CryptoTenants.CRYPTO, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(HSMConfigurationClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items).isEmpty()

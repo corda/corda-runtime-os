@@ -266,7 +266,7 @@ class MemberProcessorIntegrationTest {
         }
 
         private fun assignHSMs() {
-            CryptoConsts.Categories.all().forEach {
+            CryptoConsts.Categories.all.forEach {
                 // cluster is assigned in the crypto processor
                 if(hsmRegistrationClient.findHSM(aliceVNodeId, it) == null) {
                     hsmRegistrationClient.assignSoftHSM(aliceVNodeId, it)

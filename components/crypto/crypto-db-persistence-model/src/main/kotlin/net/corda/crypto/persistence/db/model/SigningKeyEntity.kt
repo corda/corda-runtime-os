@@ -6,6 +6,8 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
@@ -99,7 +101,14 @@ class SigningKeyEntity(
     var externalId: String?,
 
     @Column(name = "association_id", nullable = false, updatable = true, length = 36)
-    var associationId: String
+    var associationId: String,
+
+    /**
+     * Defines how wrapping key should be used for each tenant.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    var status: SigningKeyEntityStatus
 )
 
 @Embeddable

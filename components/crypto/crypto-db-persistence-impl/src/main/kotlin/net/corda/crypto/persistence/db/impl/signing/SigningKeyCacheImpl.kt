@@ -2,7 +2,7 @@ package net.corda.crypto.persistence.db.impl.signing
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.impl.config.CryptoSigningPersistenceConfig
 import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyCache
@@ -45,19 +45,17 @@ class SigningKeyCacheImpl(
     }
 
     private fun getEntityManagerFactory(tenantId: String): EntityManagerFactory =
-        when (tenantId) {
-            CryptoConsts.CLUSTER_TENANT_ID -> dbConnectionOps.getOrCreateEntityManagerFactory(
-                CordaDb.Crypto,
-                DbPrivilege.DML
+        if (CryptoTenants.isClusterTenant(tenantId)) {
+            dbConnectionOps.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+        } else {
+            dbConnectionOps.getOrCreateEntityManagerFactory(
+                "vnode_crypto_$tenantId",
+                DbPrivilege.DML,
+                jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
+                    ?: throw java.lang.IllegalStateException(
+                        "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
+                    )
             )
-            else -> dbConnectionOps.getOrCreateEntityManagerFactory(
-                    "vnode_crypto_$tenantId",
-                    DbPrivilege.DML,
-                    jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
-                        ?: throw java.lang.IllegalStateException(
-                            "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
-                        )
-                )
         }
 
     private fun buildCache(tenantId: String): Cache<String, SigningCachedKey> {

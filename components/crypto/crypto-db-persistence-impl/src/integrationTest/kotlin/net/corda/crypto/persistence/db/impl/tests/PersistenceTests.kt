@@ -34,7 +34,9 @@ import net.corda.crypto.persistence.db.model.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
+import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
+import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -158,7 +160,8 @@ class PersistenceTests {
         category: String,
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
         capacity: Int = 3,
-        categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() }
+        categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() },
+        deprecatedAt: Instant? = null
     ): HSMCategoryAssociationEntity {
         val configId = UUID.randomUUID().toString()
         val associationId = UUID.randomUUID().toString()
@@ -186,9 +189,11 @@ class PersistenceTests {
         }
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = categoryAssociationId,
+            tenantId = tenantId,
             category = category,
             hsm = association,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            deprecatedAt = deprecatedAt
         )
         cryptoEmf.transaction { em ->
             em.persist(categoryAssociation)
@@ -264,6 +269,13 @@ class PersistenceTests {
     ) {
         assertNotNull(actual)
         assertEquals(expected.category, actual!!.category)
+        assertEquals(expected.tenantId, actual.tenantId)
+        if(expected.deprecatedAt == null) {
+            assertNull(actual.deprecatedAt)
+        } else {
+            assertNotNull(actual.deprecatedAt)
+            assertEquals(expected.deprecatedAt!!.epochSecond, actual.deprecatedAt!!.epochSecond)
+        }
         assertEquals(expected.hsm.config.id, actual.config.info.id)
         assertEquals(expected.hsm.tenantId, actual.tenantId)
         assertEquals(expected.hsm.masterKeyAlias, actual.masterKeyAlias)
@@ -315,6 +327,7 @@ class PersistenceTests {
         assertTrue(actual.timestamp >= now.minusSeconds(60))
         assertTrue(actual.timestamp <= now.minusSeconds(-1))
         assertEquals(expected.associationId, actual.associationId)
+        assertEquals(SigningKeyStatus.NORMAL, actual.status)
     }
 
     private fun assertSigningCachedKey(
@@ -443,7 +456,7 @@ class PersistenceTests {
             masterKeyAlias = UUID.randomUUID().toString(),
             externalId = UUID.randomUUID().toString(),
             alias = null,
-            category = CryptoConsts.Categories.FRESH_KEYS,
+            category = CryptoConsts.Categories.CI,
             signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
             associationId = UUID.randomUUID().toString()
         )
@@ -511,7 +524,8 @@ class PersistenceTests {
             alias = UUID.randomUUID().toString(),
             hsmAlias = UUID.randomUUID().toString(),
             externalId = UUID.randomUUID().toString(),
-            associationId = UUID.randomUUID().toString()
+            associationId = UUID.randomUUID().toString(),
+            status = SigningKeyEntityStatus.NORMAL
         )
         cryptoEmf.transaction { em ->
             em.persist(entity)
@@ -582,9 +596,11 @@ class PersistenceTests {
         }
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = categoryAssociationId,
+            tenantId = tenantId,
             category = CryptoConsts.Categories.LEDGER,
             hsm = association,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            deprecatedAt = null
         )
         cryptoEmf.transaction { em ->
             em.persist(categoryAssociation)
@@ -650,9 +666,11 @@ class PersistenceTests {
         val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
+            tenantId = tenantId,
             category = a1.category,
             hsm = a1.hsm,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            deprecatedAt = null
         )
         assertThrows(PersistenceException::class.java) {
             cryptoEmf.transaction { em ->
@@ -662,33 +680,60 @@ class PersistenceTests {
     }
 
     @Test
-    fun `findTenantAssociation should be able to find tenant HSM associations with categories`() {
+    fun `findTenantAssociation(tenantId, category) should not return deprecated associations`() {
+        val cache = createHSMCacheImpl()
+        val tenantId1 = randomTenantId()
+        val a1 = createAndPersistHSMEntities(
+            tenantId = tenantId1,
+            category = CryptoConsts.Categories.LEDGER,
+            masterKeyPolicy = MasterKeyPolicy.NEW,
+            deprecatedAt = Instant.now()
+        )
+        val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
+        assertNull(r1)
+        val a2 = HSMCategoryAssociationEntity(
+            id = UUID.randomUUID().toString(),
+            tenantId = a1.tenantId,
+            category = a1.category,
+            hsm = a1.hsm,
+            timestamp = Instant.now(),
+            deprecatedAt = null
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(a2)
+        }
+        val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
+        assertHSMCategoryAssociationEntity(a2, r2)
+    }
+
+    @Test
+    fun `findTenantAssociation(tenantId, category) should be able to find tenant HSM associations with categories`() {
         val tenantId1 = randomTenantId()
         val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
-        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION, MasterKeyPolicy.SHARED)
+        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION_INIT, MasterKeyPolicy.SHARED)
         val cache = createHSMCacheImpl()
         val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
-        val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.SESSION) }
+        val r2 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.SESSION_INIT) }
         assertHSMCategoryAssociationEntity(a1, r1)
         assertHSMCategoryAssociationEntity(a2, r2)
     }
 
     @Test
-    fun `findTenantAssociation should return null when parameters are not matching`() {
+    fun `findTenantAssociation(tenantId, category) should return null when parameters are not matching`() {
         val tenantId = randomTenantId()
         createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val cache = createHSMCacheImpl()
-        val r1 = cache.act { it.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION) }
+        val r1 = cache.act { it.findTenantAssociation(tenantId, CryptoConsts.Categories.SESSION_INIT) }
         assertNull(r1)
         val r2 = cache.act { it.findTenantAssociation(randomTenantId(), CryptoConsts.Categories.LEDGER) }
         assertNull(r2)
     }
 
     @Test
-    fun `findTenantAssociation should be able to find tenant HSM associations by its id`() {
+    fun `findTenantAssociation(associationId) should be able to find tenant HSM associations by its id`() {
         val tenantId1 = randomTenantId()
         val a1 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
-        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION, MasterKeyPolicy.SHARED)
+        val a2 = createAndPersistHSMEntities(tenantId1, CryptoConsts.Categories.SESSION_INIT, MasterKeyPolicy.SHARED)
         val cache = createHSMCacheImpl()
         val r1 = cache.act { it.findTenantAssociation(a1.id) }
         val r2 = cache.act { it.findTenantAssociation(a2.id) }
@@ -697,7 +742,7 @@ class PersistenceTests {
     }
 
     @Test
-    fun `findTenantAssociation should return null when ids are not matching`() {
+    fun `findTenantAssociation(associationId) should return null when ids are not matching`() {
         val tenantId = randomTenantId()
         createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val cache = createHSMCacheImpl()
@@ -871,7 +916,7 @@ class PersistenceTests {
             it.linkCategories(
                 configId, listOf(
                     HSMCategoryInfo(
-                        CryptoConsts.Categories.SESSION,
+                        CryptoConsts.Categories.SESSION_INIT,
                         net.corda.data.crypto.wire.hsm.PrivateKeyPolicy.WRAPPED
                     )
                 )
@@ -882,7 +927,7 @@ class PersistenceTests {
         }
         assertEquals(1, mapping2.size)
         assertTrue(mapping2.any {
-            it.category == CryptoConsts.Categories.SESSION &&
+            it.category == CryptoConsts.Categories.SESSION_INIT &&
                     it.keyPolicy == PrivateKeyPolicy.WRAPPED
         })
     }
@@ -1112,7 +1157,7 @@ class PersistenceTests {
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
         val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val cache = createSigningKeyCacheImpl()
         cache.act(tenantId1) { it.save(p1) }
@@ -1137,7 +1182,7 @@ class PersistenceTests {
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
         val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
@@ -1176,7 +1221,7 @@ class PersistenceTests {
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
         val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
@@ -1221,7 +1266,7 @@ class PersistenceTests {
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
         val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
@@ -1271,7 +1316,7 @@ class PersistenceTests {
                 take = 10,
                 SigningKeyOrderBy.ALIAS_DESC,
                 mapOf(
-                    CATEGORY_FILTER to CryptoConsts.Categories.FRESH_KEYS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.CI,
                     SCHEME_CODE_NAME_FILTER to EDDSA_ED25519_CODE_NAME
                 )
             )
@@ -1300,7 +1345,7 @@ class PersistenceTests {
                 mapOf(
                     MASTER_KEY_ALIAS_FILTER to w3.masterKeyAlias!!,
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
-                    CATEGORY_FILTER to CryptoConsts.Categories.FRESH_KEYS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.CI,
                     EXTERNAL_ID_FILTER to w3.externalId!!
                 )
             )
@@ -1341,7 +1386,7 @@ class PersistenceTests {
         val p1 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p12 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val p2 = createSigningPublicKeySaveContext(CryptoConsts.Categories.TLS, ECDSA_SECP256R1_CODE_NAME)
-        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION, EDDSA_ED25519_CODE_NAME)
+        val p3 = createSigningPublicKeySaveContext(CryptoConsts.Categories.SESSION_INIT, EDDSA_ED25519_CODE_NAME)
         val p4 = createSigningPublicKeySaveContext(CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)
         val w1 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)
         val w12 = createSigningWrappedKeySaveContext(EDDSA_ED25519_CODE_NAME)

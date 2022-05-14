@@ -67,12 +67,13 @@ class CryptoFlowOpsTransformer(
      */
     fun createFreshKey(
         tenantId: String,
+        category: String,
         scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
-            GenerateFreshKeyFlowCommand(null, scheme, context.toWire())
+            GenerateFreshKeyFlowCommand(category, null, scheme, context.toWire())
         )
     }
 
@@ -81,13 +82,14 @@ class CryptoFlowOpsTransformer(
      */
     fun createFreshKey(
         tenantId: String,
+        category: String,
         externalId: String,
         scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
         return createRequest(
             tenantId,
-            GenerateFreshKeyFlowCommand(externalId, scheme, context.toWire())
+            GenerateFreshKeyFlowCommand(category, externalId, scheme, context.toWire())
         )
     }
 

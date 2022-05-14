@@ -4,7 +4,6 @@ package net.corda.crypto.core
  * Common crypto constants.
  */
 object CryptoConsts {
-    const val CLUSTER_TENANT_ID = "cluster"
     const val SOFT_HSM_CONFIG_ID = "soft-hsm-config"
     const val SOFT_HSM_SERVICE_NAME = "soft"
 
@@ -12,19 +11,20 @@ object CryptoConsts {
      * Constants defining HSM categories.
      */
     object Categories {
-        const val FRESH_KEYS = "FRESH_KEYS"
+        const val ACCOUNTS = "ACCOUNTS"
+        const val CI = "CI"
         const val LEDGER = "LEDGER"
         const val NOTARY = "NOTARY"
-        const val SESSION = "SESSION"
+        const val SESSION_INIT = "SESSION_INIT"
         const val TLS = "TLS"
-
         const val JWT_KEY = "JWT_KEY"
 
-        fun all() = listOf(
-            FRESH_KEYS,
+        val all: Set<String> = setOf(
+            ACCOUNTS,
+            CI,
             LEDGER,
             NOTARY,
-            SESSION,
+            SESSION_INIT,
             TLS,
             JWT_KEY
         )

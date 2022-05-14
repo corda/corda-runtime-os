@@ -6,6 +6,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.hsm.HSMCache
@@ -180,7 +181,7 @@ class HSMServiceImpl(
                 failIfExists = false,
                 masterKeyAlias = info.masterKeyAlias,
                 context = mapOf(
-                    CRYPTO_TENANT_ID to CryptoConsts.CLUSTER_TENANT_ID
+                    CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
                 )
             )
         }
@@ -205,7 +206,7 @@ class HSMServiceImpl(
         add(info, encryptor.encrypt(serviceConfig))
         linkCategories(
             info.id,
-            CryptoConsts.Categories.all().map {
+            CryptoConsts.Categories.all.map {
                 HSMCategoryInfo(it, PrivateKeyPolicy.WRAPPED)
             }
         )

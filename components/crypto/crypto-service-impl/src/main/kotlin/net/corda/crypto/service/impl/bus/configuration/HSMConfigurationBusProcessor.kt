@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.bus.configuration
 
-import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.WireProcessor
 import net.corda.crypto.service.impl.toMap
@@ -70,7 +70,7 @@ class HSMConfigurationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<LinkHSMCategoriesCommand> {
         override fun handle(context: CryptoRequestContext, request: LinkHSMCategoriesCommand): Any {
-            require(context.tenantId == CryptoConsts.CLUSTER_TENANT_ID) {
+            require(context.tenantId == CryptoTenants.CRYPTO) {
                 "Illegal tenant id."
             }
             hsmService.linkCategories(request.configId, request.links)
@@ -82,7 +82,7 @@ class HSMConfigurationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<PutHSMCommand> {
         override fun handle(context: CryptoRequestContext, request: PutHSMCommand): Any {
-            require(context.tenantId == CryptoConsts.CLUSTER_TENANT_ID) {
+            require(context.tenantId == CryptoTenants.CRYPTO) {
                 "Illegal tenant id."
             }
             return CryptoStringResult(
@@ -95,7 +95,7 @@ class HSMConfigurationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<HSMLinkedCategoriesQuery> {
         override fun handle(context: CryptoRequestContext, request: HSMLinkedCategoriesQuery): Any {
-            require(context.tenantId == CryptoConsts.CLUSTER_TENANT_ID) {
+            require(context.tenantId == CryptoTenants.CRYPTO) {
                 "Illegal tenant id."
             }
             return HSMCategoryInfos(
@@ -108,7 +108,7 @@ class HSMConfigurationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<HSMQuery> {
         override fun handle(context: CryptoRequestContext, request: HSMQuery): Any {
-            require(context.tenantId == CryptoConsts.CLUSTER_TENANT_ID) {
+            require(context.tenantId == CryptoTenants.CRYPTO) {
                 "Illegal tenant id."
             }
             return HSMInfos(

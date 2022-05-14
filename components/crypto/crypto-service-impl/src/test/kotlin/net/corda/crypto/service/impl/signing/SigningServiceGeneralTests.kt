@@ -13,6 +13,7 @@ import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyCache
 import net.corda.crypto.persistence.signing.SigningKeyCacheActions
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
+import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
@@ -240,7 +241,8 @@ class SigningServiceGeneralTests {
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
             encodingVersion = 1,
             associationId = UUID.randomUUID().toString(),
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         val actions = mock<SigningKeyCacheActions> {
             on { find(any<String>()) } doReturn existingKey
@@ -359,6 +361,7 @@ class SigningServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.CI,
                 scheme = ECDSA_SECP256R1_CODE_NAME,
             )
         }
@@ -380,6 +383,7 @@ class SigningServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.CI,
                 scheme = ECDSA_SECP256R1_CODE_NAME,
             )
         }
@@ -401,6 +405,7 @@ class SigningServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.CI,
                 externalId = UUID.randomUUID().toString(),
                 scheme = ECDSA_SECP256R1_CODE_NAME,
             )
@@ -423,6 +428,7 @@ class SigningServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.CI,
                 externalId = UUID.randomUUID().toString(),
                 scheme = ECDSA_SECP256R1_CODE_NAME,
             )

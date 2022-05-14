@@ -89,7 +89,7 @@ class CryptoFlowOpsBusProcessor(
                 FlowOpsResponse(createResponseContext(request), response)
             )
             logger.debug(
-                "Handled {} for tenant {} with {}",
+                "Handled {} for tenant {}",
                 request.request::class.java.name,
                 request.context.tenantId
             )
@@ -153,12 +153,14 @@ class CryptoFlowOpsBusProcessor(
             if (request.externalId.isNullOrBlank()) {
                 client.freshKeyProxy(
                     tenantId = context.tenantId,
+                    category = request.category,
                     scheme = request.schemeCodeName,
                     context = request.context
                 )
             } else {
                 client.freshKeyProxy(
                     tenantId = context.tenantId,
+                    category = request.category,
                     externalId = request.externalId,
                     scheme = request.schemeCodeName,
                     context = request.context

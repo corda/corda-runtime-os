@@ -151,9 +151,11 @@ class TestHSMCache : HSMCache {
                 ?: createAndPersistAssociation(tenantId, configId)
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
+                tenantId = tenantId,
                 category = category,
                 timestamp = Instant.now(),
-                hsm = association
+                hsm = association,
+                deprecatedAt = null
             )
             cache.categoryAssociations.add(categoryAssociation)
             categoryAssociation.toHSMTenantAssociation()
@@ -225,7 +227,8 @@ class TestHSMCache : HSMCache {
             category = category,
             masterKeyAlias = hsm.masterKeyAlias,
             aliasSecret = hsm.aliasSecret,
-            config = hsm.config.toHSMConfig()
+            config = hsm.config.toHSMConfig(),
+            deprecatedAt = deprecatedAt
         )
     }
 }

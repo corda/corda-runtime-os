@@ -470,7 +470,7 @@ class HSMServiceTests {
         val configId = service.putHSMConfig(info, serviceConfig)
         service.linkCategories(
             configId,
-            CryptoConsts.Categories.all().map {
+            CryptoConsts.Categories.all.map {
                 HSMCategoryInfo(it, PrivateKeyPolicy.ALIASED)
             }
         )
@@ -542,7 +542,7 @@ class HSMServiceTests {
         val configId2 = service.putHSMConfig(info2, serviceConfig2)
         service.linkCategories(
             configId2,
-            CryptoConsts.Categories.all().map {
+            CryptoConsts.Categories.all.map {
                 HSMCategoryInfo(it, PrivateKeyPolicy.ALIASED)
             }
         )

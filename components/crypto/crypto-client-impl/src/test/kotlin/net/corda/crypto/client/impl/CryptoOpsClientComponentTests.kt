@@ -12,6 +12,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.data.KeyValuePair
@@ -649,12 +650,18 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.freshKey(knownTenantId, ECDSA_SECP256R1_CODE_NAME, knownOperationContext)
+            component.freshKey(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownOperationContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
@@ -673,12 +680,18 @@ class CryptoOpsClientComponentTests {
             CryptoPublicKey(publicKey)
         }
         val result = sender.act {
-            component.freshKeyProxy(knownTenantId, ECDSA_SECP256R1_CODE_NAME, knownRawOperationContext)
+            component.freshKeyProxy(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownRawOperationContext
+            )
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
@@ -698,12 +711,19 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.freshKey(knownTenantId, externalId, ECDSA_SECP256R1_CODE_NAME, knownOperationContext)
+            component.freshKey(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                externalId,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownOperationContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(externalId, command.externalId)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
@@ -724,12 +744,19 @@ class CryptoOpsClientComponentTests {
             CryptoPublicKey(publicKey)
         }
         val result = sender.act {
-            component.freshKeyProxy(knownTenantId, externalId, ECDSA_SECP256R1_CODE_NAME, knownRawOperationContext)
+            component.freshKeyProxy(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                externalId,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownRawOperationContext
+            )
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(externalId, command.externalId)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
@@ -761,7 +788,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
         assertOperationContext(command.context)
-        assertRequestContext(result, CryptoConsts.CLUSTER_TENANT_ID)
+        assertRequestContext(result, CryptoTenants.CRYPTO)
     }
 
     @Test

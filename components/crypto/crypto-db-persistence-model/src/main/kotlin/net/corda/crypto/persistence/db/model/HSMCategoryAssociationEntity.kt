@@ -15,6 +15,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_HSM_CATEGORY_ASSOCIATION_TABLE)
+@Suppress("LongParameterList")
 class HSMCategoryAssociationEntity(
     /**
      * The association id.
@@ -22,6 +23,12 @@ class HSMCategoryAssociationEntity(
     @Id
     @Column(name = "id", nullable = false, updatable = false, length = 36)
     val id: String,
+
+    /**
+     * Tenant which the association belongs to, added as the means to keep uniqueness for tenant/category/deprecation
+     */
+    @Column(name = "tenant_id", nullable = false, updatable = false, length = 12)
+    var tenantId: String,
 
     /**
      * Category (LEDGER, TLS, etc.) which the configuration is described for.
@@ -34,8 +41,14 @@ class HSMCategoryAssociationEntity(
     var hsm: HSMAssociationEntity,
 
     /**
-     * When the configuration was created.
+     * When the association was created.
      */
     @Column(name = "timestamp", nullable = false, updatable = false)
-    var timestamp: Instant
+    var timestamp: Instant,
+
+    /**
+     * When the association was deprecated.
+     */
+    @Column(name = "deprecated_at", nullable = true, updatable = false)
+    var deprecatedAt: Instant?
 )

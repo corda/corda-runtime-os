@@ -3,6 +3,7 @@ package net.corda.processors.crypto.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.db.model.CryptoEntities
@@ -177,9 +178,11 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun temporaryAssociateClusterWithSoftHSM() {
-        CryptoConsts.Categories.all().forEach {
-            if(hsmService.findAssignedHSM(CryptoConsts.CLUSTER_TENANT_ID, it) == null) {
-                hsmService.assignSoftHSM(CryptoConsts.CLUSTER_TENANT_ID, it)
+        CryptoConsts.Categories.all.forEach { category ->
+            CryptoTenants.allClusterTenants.forEach { tenantId ->
+                if(hsmService.findAssignedHSM(tenantId, category) == null) {
+                    hsmService.assignSoftHSM(tenantId, category)
+                }
             }
         }
     }

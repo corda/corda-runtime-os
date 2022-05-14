@@ -16,6 +16,8 @@ import net.corda.crypto.persistence.signing.createdBefore
 import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
+import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
+import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.externalId
 import net.corda.crypto.persistence.signing.masterKeyAlias
 import net.corda.crypto.persistence.signing.schemeCodeName
@@ -62,7 +64,8 @@ class SigningKeyCacheActionsImpl(
                     alias = context.alias,
                     hsmAlias = context.key.hsmAlias,
                     externalId = context.externalId,
-                    associationId = context.associationId
+                    associationId = context.associationId,
+                    status = SigningKeyEntityStatus.NORMAL
                 )
             }
             is SigningWrappedKeySaveContext -> {
@@ -80,7 +83,8 @@ class SigningKeyCacheActionsImpl(
                     alias = context.alias,
                     hsmAlias = null,
                     externalId = context.externalId,
-                    associationId = context.associationId
+                    associationId = context.associationId,
+                    status = SigningKeyEntityStatus.NORMAL
                 )
             }
             else -> throw IllegalArgumentException("Unknown context type: ${context::class.java.name}")
@@ -185,7 +189,8 @@ class SigningKeyCacheActionsImpl(
             externalId = externalId,
             encodingVersion = encodingVersion,
             timestamp = timestamp,
-            associationId = associationId
+            associationId = associationId,
+            status = SigningKeyStatus.valueOf(status.name)
         )
 
     private class LookupBuilder(

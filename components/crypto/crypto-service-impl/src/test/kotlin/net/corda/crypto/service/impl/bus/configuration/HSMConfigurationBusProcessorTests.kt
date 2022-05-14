@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.bus.configuration
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.service.HSMService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -45,7 +46,7 @@ import kotlin.test.assertTrue
 class HSMConfigurationBusProcessorTests {
     companion object {
         private fun createRequestContext(
-            tenantId: String = CryptoConsts.CLUSTER_TENANT_ID
+            tenantId: String = CryptoTenants.CRYPTO
         ): CryptoRequestContext = CryptoRequestContext(
             "test-component",
             Instant.now(),

@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
@@ -127,7 +128,8 @@ class CryptoServiceRefUtilsTests {
             externalId = null,
             encodingVersion = 11,
             associationId = ref.associationId,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         val result = ref.sign(record, scheme, data, context)
         assertSame(expectedResult, result)
@@ -177,7 +179,8 @@ class CryptoServiceRefUtilsTests {
             externalId = null,
             encodingVersion = 11,
             associationId = ref.associationId,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         assertThrows<IllegalArgumentException> {
             ref.sign(record, scheme, data, context)
@@ -213,7 +216,8 @@ class CryptoServiceRefUtilsTests {
             externalId = null,
             encodingVersion = null,
             associationId = ref.associationId,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         assertThrows<IllegalArgumentException> {
             ref.sign(record, scheme, data, context)
@@ -251,7 +255,8 @@ class CryptoServiceRefUtilsTests {
             externalId = null,
             encodingVersion = null,
             associationId = ref.associationId,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         val result = ref.sign(record, scheme, data, context)
         assertSame(expectedResult, result)
@@ -299,7 +304,8 @@ class CryptoServiceRefUtilsTests {
             externalId = null,
             encodingVersion = null,
             associationId = ref.associationId,
-            timestamp = Instant.now()
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         assertThrows<IllegalArgumentException> {
             ref.sign(record, scheme, data, context)

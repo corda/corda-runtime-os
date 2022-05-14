@@ -1,6 +1,6 @@
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoStringResult
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
@@ -79,7 +79,7 @@ class HSMConfigurationClientImpl(
 
     private fun createRequest(request: Any): HSMConfigurationRequest =
         HSMConfigurationRequest(
-            createWireRequestContext<HSMConfigurationClientImpl>(CryptoConsts.CLUSTER_TENANT_ID),
+            createWireRequestContext<HSMConfigurationClientImpl>(CryptoTenants.CRYPTO),
             request
         )
 

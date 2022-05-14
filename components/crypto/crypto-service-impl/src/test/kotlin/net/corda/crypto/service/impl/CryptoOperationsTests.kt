@@ -171,6 +171,7 @@ class CryptoOperationsTests {
                     signingService = signingService,
                     publicKey = signingService.freshKey(
                         tenantId = tenantId,
+                        category = CryptoConsts.Categories.CI,
                         externalId = externalId,
                         scheme = it.codeName
                     )
@@ -183,6 +184,7 @@ class CryptoOperationsTests {
                     signingService = signingService,
                     publicKey = signingService.freshKey(
                         tenantId = tenantId,
+                        category = CryptoConsts.Categories.CI,
                         scheme = it.codeName
                     )
                 )
@@ -229,7 +231,7 @@ class CryptoOperationsTests {
             assertNotNull(generatedKeyData)
             assertEquals(tenantId, generatedKeyData.tenantId)
             if (generatedKeyData.alias == null) {
-                assertEquals(CryptoConsts.Categories.FRESH_KEYS, generatedKeyData.category)
+                assertEquals(CryptoConsts.Categories.CI, generatedKeyData.category)
             } else {
                 assertEquals(category, generatedKeyData.category)
             }
@@ -252,7 +254,7 @@ class CryptoOperationsTests {
             assertEquals(alias, key.alias)
             assertNull(key.hsmAlias)
             if (key.alias == null) {
-                assertEquals(CryptoConsts.Categories.FRESH_KEYS, key.category)
+                assertEquals(CryptoConsts.Categories.CI, key.category)
             } else {
                 assertEquals(category, key.category)
             }

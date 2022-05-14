@@ -93,7 +93,7 @@ interface SigningService {
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as TLS, LEDGER, FRESH_KEY, etc.
+     * @param category The HSM category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
@@ -116,7 +116,7 @@ interface SigningService {
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as TLS, LEDGER, FRESH_KEY, etc.
+     * @param category The HSM category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
      * @param externalId the external id to be associated with the key.
      * @param scheme the key's scheme code name describing which type of the key to generate.
@@ -142,6 +142,7 @@ interface SigningService {
      * Generates a new random [KeyPair] and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
+     * @param category The HSM category, such as ACCOUNTS, CI, etc.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
@@ -149,6 +150,7 @@ interface SigningService {
      */
     fun freshKey(
         tenantId: String,
+        category: String,
         scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
@@ -158,6 +160,7 @@ interface SigningService {
      * an external id.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
+     * @param category The HSM category, such as ACCOUNTS, CI, etc.
      * @param externalId the external id to be associated with the key.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
@@ -166,6 +169,7 @@ interface SigningService {
      */
     fun freshKey(
         tenantId: String,
+        category: String,
         externalId: String,
         scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
