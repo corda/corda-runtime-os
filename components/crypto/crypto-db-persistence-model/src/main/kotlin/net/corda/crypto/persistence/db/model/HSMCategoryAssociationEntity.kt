@@ -49,6 +49,6 @@ class HSMCategoryAssociationEntity(
     /**
      * When the association was deprecated.
      */
-    @Column(name = "deprecated_at", nullable = true, updatable = false)
-    var deprecatedAt: Instant?
+    @Column(name = "deprecated_at", nullable = false, updatable = false)
+    var deprecatedAt: Long
 )

@@ -155,7 +155,7 @@ class TestHSMCache : HSMCache {
                 category = category,
                 timestamp = Instant.now(),
                 hsm = association,
-                deprecatedAt = null
+                deprecatedAt = 0
             )
             cache.categoryAssociations.add(categoryAssociation)
             categoryAssociation.toHSMTenantAssociation()

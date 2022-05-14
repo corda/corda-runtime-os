@@ -161,7 +161,7 @@ class PersistenceTests {
         masterKeyPolicy: MasterKeyPolicy = MasterKeyPolicy.SHARED,
         capacity: Int = 3,
         categories: (HSMConfigEntity) -> List<HSMCategoryMapEntity> = { emptyList() },
-        deprecatedAt: Instant? = null
+        deprecatedAt: Long = 0
     ): HSMCategoryAssociationEntity {
         val configId = UUID.randomUUID().toString()
         val associationId = UUID.randomUUID().toString()
@@ -270,12 +270,7 @@ class PersistenceTests {
         assertNotNull(actual)
         assertEquals(expected.category, actual!!.category)
         assertEquals(expected.tenantId, actual.tenantId)
-        if(expected.deprecatedAt == null) {
-            assertNull(actual.deprecatedAt)
-        } else {
-            assertNotNull(actual.deprecatedAt)
-            assertEquals(expected.deprecatedAt!!.epochSecond, actual.deprecatedAt!!.epochSecond)
-        }
+        assertEquals(expected.deprecatedAt, actual.deprecatedAt)
         assertEquals(expected.hsm.config.id, actual.config.info.id)
         assertEquals(expected.hsm.tenantId, actual.tenantId)
         assertEquals(expected.hsm.masterKeyAlias, actual.masterKeyAlias)
@@ -600,7 +595,7 @@ class PersistenceTests {
             category = CryptoConsts.Categories.LEDGER,
             hsm = association,
             timestamp = Instant.now(),
-            deprecatedAt = null
+            deprecatedAt = 0
         )
         cryptoEmf.transaction { em ->
             em.persist(categoryAssociation)
@@ -661,7 +656,7 @@ class PersistenceTests {
     }
 
     @Test
-    fun `Should fail to save HSMCategoryAssociationEntity with duplicate category and association`() {
+    fun `Should not fail to save HSMCategoryAssociationEntity with duplicate category and association`() {
         val tenantId = randomTenantId()
         val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
         val categoryAssociation = HSMCategoryAssociationEntity(
@@ -670,7 +665,24 @@ class PersistenceTests {
             category = a1.category,
             hsm = a1.hsm,
             timestamp = Instant.now(),
-            deprecatedAt = null
+            deprecatedAt = Instant.now().toEpochMilli()
+        )
+        cryptoEmf.transaction { em ->
+            em.persist(categoryAssociation)
+        }
+    }
+
+    @Test
+    fun `Should fail to save HSMCategoryAssociationEntity with duplicate tenant, category and deprecation`() {
+        val tenantId = randomTenantId()
+        val a1 = createAndPersistHSMEntities(tenantId, CryptoConsts.Categories.LEDGER, MasterKeyPolicy.NEW)
+        val categoryAssociation = HSMCategoryAssociationEntity(
+            id = UUID.randomUUID().toString(),
+            tenantId = tenantId,
+            category = a1.category,
+            hsm = a1.hsm,
+            timestamp = Instant.now(),
+            deprecatedAt = 0
         )
         assertThrows(PersistenceException::class.java) {
             cryptoEmf.transaction { em ->
@@ -687,7 +699,7 @@ class PersistenceTests {
             tenantId = tenantId1,
             category = CryptoConsts.Categories.LEDGER,
             masterKeyPolicy = MasterKeyPolicy.NEW,
-            deprecatedAt = Instant.now()
+            deprecatedAt = Instant.now().toEpochMilli()
         )
         val r1 = cache.act { it.findTenantAssociation(tenantId1, CryptoConsts.Categories.LEDGER) }
         assertNull(r1)
@@ -697,7 +709,7 @@ class PersistenceTests {
             category = a1.category,
             hsm = a1.hsm,
             timestamp = Instant.now(),
-            deprecatedAt = null
+            deprecatedAt = 0
         )
         cryptoEmf.transaction { em ->
             em.persist(a2)

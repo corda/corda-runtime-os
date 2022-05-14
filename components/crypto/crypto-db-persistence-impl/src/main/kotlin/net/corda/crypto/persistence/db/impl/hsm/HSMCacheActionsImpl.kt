@@ -42,7 +42,7 @@ class HSMCacheActionsImpl(
                 JOIN FETCH a.config c
             WHERE ca.category = :category 
                 AND ca.tenantId = :tenantId
-                AND ca.deprecatedAt IS NULL
+                AND ca.deprecatedAt = 0
                 AND a.tenantId = :tenantId
             """.trimIndent(),
             HSMCategoryAssociationEntity::class.java
@@ -158,7 +158,7 @@ class HSMCacheActionsImpl(
             category = category,
             timestamp = Instant.now(),
             hsm = association,
-            deprecatedAt = null
+            deprecatedAt = 0
         )
         entityManager.doInTransaction {
             it.persist(categoryAssociation)
