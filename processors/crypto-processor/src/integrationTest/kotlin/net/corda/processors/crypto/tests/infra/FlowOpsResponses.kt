@@ -9,6 +9,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 class FlowOpsResponses(
@@ -41,7 +42,7 @@ class FlowOpsResponses(
     }
 
     fun waitForResponse(key: String): FlowOpsResponse =
-        eventually {
+        eventually(duration = Duration.ofSeconds(20)) {
             val event = receivedEvents[key]
             Assertions.assertNotNull(event)
             event!!
