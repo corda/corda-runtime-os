@@ -90,7 +90,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         } catch (e: Exception) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
-            logger.warn("Reconciliation failed. Will not schedule any further reconciliations", e)
+            logger.warn("Reconciliation failed. Terminating reconciliations", e)
             coordinator.updateStatus(LifecycleStatus.DOWN)
             closeResources()
         }

@@ -236,7 +236,7 @@ class CpiEntitiesIntegrationTest {
                 .also { cpiMetadataEntity ->
                     cpiMetadataEntity.cpks.forEach { cpkMetadataEntity ->
                         cpkMetadataEntity.cpkDependencies.forEach {
-                            // just loading the cpkMetadataEntity.cpkDependencies (they are lazy loaded)
+                            // just loading the cpkMetadataEntity.cpkDependencies (they are currently lazy loaded)
                         }
                     }
                 }

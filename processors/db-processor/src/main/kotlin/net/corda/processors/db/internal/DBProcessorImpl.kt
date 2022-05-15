@@ -207,7 +207,6 @@ class DBProcessorImpl @Activate constructor(
         }
 
         if (cpiInfoReconciler == null) {
-            log.info("Creating and starting Cpi Info ${Reconciler::class.java.name}")
             cpiInfoReconciler = reconcilerFactory.create(
                 dbReader = cpiInfoDbReader!!,
                 kafkaReader = cpiInfoReadService,
