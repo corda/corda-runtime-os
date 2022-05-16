@@ -707,13 +707,10 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
-                .allSatisfy {
-                    assertThat(it)
-                        .isEqualTo(
-                            "No partitions from topic link.in are currently assigned to the inbound message processor. " +
-                                "Not going to reply to session initiation for session Session."
-                        )
-                }
+                .contains(
+                    "No partitions from topic link.in are currently assigned to the inbound message processor. " +
+                            "Not going to reply to session initiation for session Session."
+                )
         }
         @Test
         fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to the correct topics`() {
