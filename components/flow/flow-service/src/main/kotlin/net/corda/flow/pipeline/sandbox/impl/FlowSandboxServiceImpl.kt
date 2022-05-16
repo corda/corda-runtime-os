@@ -106,7 +106,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext, cpiMetadata)
         }
 
-        return FlowSandboxGroupContext(sandboxGroupContext)
+        return FlowSandboxGroupContext.fromContext(sandboxGroupContext)
     }
 
     private fun initialiseSandbox(

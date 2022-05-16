@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowIORequest;
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
+import net.corda.flow.pipeline.sessions.FlowProtocolStore;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.sandboxgroupcontext.SandboxGroupContext;
@@ -30,12 +31,18 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final SerializationService serializationService = mock(SerializationService.class);
-    private final FlowSandboxGroupContext sandboxGroupContext = mock(FlowSandboxGroupContext.class);
+    private final FlowSandboxGroupContext flowSandboxGroupContext = new FlowSandboxGroupContext(
+            mock(SandboxDependencyInjector.class),
+            mock(CheckpointSerializer.class),
+            serializationService,
+            mock(FlowProtocolStore.class),
+            mock(SandboxGroupContext.class)
+    );
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
             mock(SandboxDependencyInjector.class),
             mock(FlowCheckpoint.class),
             mock(CheckpointSerializer.class),
-            sandboxGroupContext,
+            flowSandboxGroupContext,
             new HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
             mock(MembershipGroupReader.class)
     );
@@ -55,8 +62,6 @@ public class FlowSessionImplJavaTest {
         received.put("session id", new byte[]{ 1, 2, 3 });
         when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
         when(serializationService.deserialize(any(byte[].class), any())).thenReturn(1);
-        when(sandboxGroupContext.get(FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService.class))
-                .thenReturn(serializationService);
         when(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext);
         when(flowFiber.suspend(any(FlowIORequest.SendAndReceive.class))).thenReturn(received);
         when(flowFiber.suspend(any(FlowIORequest.Receive.class))).thenReturn(received);
