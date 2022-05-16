@@ -34,6 +34,7 @@ dependencies {
     runtimeOnly project(':components:configuration:configuration-rpcops-service-impl')
     runtimeOnly project(':components:flow:flow-rpcops-service-impl')
     runtimeOnly project(":components:membership:membership-http-rpc-impl")
+    runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(":components:membership:membership-client-impl")
     runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')
     runtimeOnly project(":components:membership:membership-group-read-impl")
