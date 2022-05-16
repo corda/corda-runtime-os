@@ -17,29 +17,29 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class LinkManager(
     @Reference(service = SubscriptionFactory::class)
-    internal val subscriptionFactory: SubscriptionFactory,
+    subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    internal val publisherFactory: PublisherFactory,
+    publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    internal val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
-    internal val configurationReaderService: ConfigurationReadService,
-    internal val configuration: SmartConfig,
-    internal val groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
+    configurationReaderService: ConfigurationReadService,
+    configuration: SmartConfig,
+    groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
         lifecycleCoordinatorFactory, subscriptionFactory, configuration
     ),
-    internal val members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
+    members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
         lifecycleCoordinatorFactory, subscriptionFactory, configuration
     ),
-    internal val linkManagerHostingMap: LinkManagerHostingMap =
+    linkManagerHostingMap: LinkManagerHostingMap =
         StubLinkManagerHostingMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             configuration,
         ),
-    internal val linkManagerCryptoProcessor: CryptoProcessor =
+    linkManagerCryptoProcessor: CryptoProcessor =
         StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration),
-    internal val clock: Clock = UTCClock()
+    clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -48,9 +48,40 @@ class LinkManager(
         }
     }
 
-    internal val commonComponents = CommonComponents(this)
-    private val outboundLinkManager = OutboundLinkManager(this)
-    private val inboundLinkManager = InboundLinkManager(this)
+    private val commonComponents = CommonComponents(
+        lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
+        linkManagerHostingMap = linkManagerHostingMap,
+        groups = groups,
+        members = members,
+        configurationReaderService = configurationReaderService,
+        linkManagerCryptoProcessor = linkManagerCryptoProcessor,
+        subscriptionFactory = subscriptionFactory,
+        publisherFactory = publisherFactory,
+        configuration = configuration,
+        clock = clock,
+    )
+    private val outboundLinkManager = OutboundLinkManager(
+        lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
+        commonComponents = commonComponents,
+        linkManagerHostingMap = linkManagerHostingMap,
+        groups = groups,
+        members = members,
+        configurationReaderService = configurationReaderService,
+        linkManagerCryptoProcessor = linkManagerCryptoProcessor,
+        subscriptionFactory = subscriptionFactory,
+        publisherFactory = publisherFactory,
+        configuration = configuration,
+        clock = clock,
+    )
+    private val inboundLinkManager = InboundLinkManager(
+        lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
+        commonComponents = commonComponents,
+        groups = groups,
+        members = members,
+        subscriptionFactory = subscriptionFactory,
+        configuration = configuration,
+        clock = clock,
+    )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

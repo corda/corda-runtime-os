@@ -1,38 +1,49 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.utilities.time.Clock
 
+@Suppress("LongParameterList")
 internal class InboundLinkManager(
-    linkManager: LinkManager,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    commonComponents: CommonComponents,
+    groups: LinkManagerGroupPolicyProvider,
+    members: LinkManagerMembershipGroupReader,
+    subscriptionFactory: SubscriptionFactory,
+    configuration: SmartConfig,
+    clock: Clock,
 ) : LifecycleWithDominoTile {
     companion object {
         private const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
     }
-    private val inboundMessageSubscription = linkManager.subscriptionFactory.createEventLogSubscription(
+    private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
         InboundMessageProcessor(
-            linkManager.commonComponents.sessionManager,
-            linkManager.groups,
-            linkManager.members,
-            linkManager.commonComponents.inboundAssignmentListener,
-            linkManager.clock
+            commonComponents.sessionManager,
+            groups,
+            members,
+            commonComponents.inboundAssignmentListener,
+            clock
         ),
-        linkManager.configuration,
-        partitionAssignmentListener = linkManager.commonComponents.inboundAssignmentListener
+        configuration,
+        partitionAssignmentListener = commonComponents.inboundAssignmentListener
     )
 
     override val dominoTile = SubscriptionDominoTile(
-        linkManager.lifecycleCoordinatorFactory,
+        lifecycleCoordinatorFactory,
         inboundMessageSubscription,
         dependentChildren = listOf(
-            linkManager.groups.dominoTile,
-            linkManager.members.dominoTile,
+            groups.dominoTile,
+            members.dominoTile,
         ),
         managedChildren = listOf(
-            linkManager.commonComponents.inboundAssignmentListener.dominoTile,
+            commonComponents.inboundAssignmentListener.dominoTile,
         )
     )
 }

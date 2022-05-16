@@ -1,74 +1,91 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.schema.Schemas
+import net.corda.utilities.time.Clock
 
+@Suppress("LongParameterList")
 internal class CommonComponents(
-    linkManager: LinkManager,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    linkManagerHostingMap: LinkManagerHostingMap,
+    groups: LinkManagerGroupPolicyProvider,
+    members: LinkManagerMembershipGroupReader,
+    configurationReaderService: ConfigurationReadService,
+    linkManagerCryptoProcessor: CryptoProcessor,
+    subscriptionFactory: SubscriptionFactory,
+    publisherFactory: PublisherFactory,
+    configuration: SmartConfig,
+    clock: Clock,
 ) : LifecycleWithDominoTile {
     internal val inboundAssignmentListener = InboundAssignmentListener(
-        linkManager.lifecycleCoordinatorFactory,
+        lifecycleCoordinatorFactory,
         Schemas.P2P.LINK_IN_TOPIC
     )
 
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
-        linkManager.publisherFactory,
-        linkManager.lifecycleCoordinatorFactory,
-        linkManager.configuration
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration
     )
 
     internal val sessionManager = SessionManagerImpl(
-        linkManager.groups,
-        linkManager.members,
-        linkManager.linkManagerCryptoProcessor,
+        groups,
+        members,
+        linkManagerCryptoProcessor,
         messagesPendingSession,
-        linkManager.publisherFactory,
-        linkManager.configurationReaderService,
-        linkManager.lifecycleCoordinatorFactory,
-        linkManager.configuration,
+        publisherFactory,
+        configurationReaderService,
+        lifecycleCoordinatorFactory,
+        configuration,
         inboundAssignmentListener,
-        linkManager.linkManagerHostingMap,
-        clock = linkManager.clock,
+        linkManagerHostingMap,
+        clock = clock,
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(
-        linkManager.subscriptionFactory,
-        linkManager.publisherFactory,
-        linkManager.lifecycleCoordinatorFactory,
-        linkManager.configuration,
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
     ).also {
-        linkManager.groups.registerListener(it)
+        groups.registerListener(it)
     }
 
     private val tlsCertificatesPublisher = TlsCertificatesPublisher(
-        linkManager.subscriptionFactory,
-        linkManager.publisherFactory,
-        linkManager.lifecycleCoordinatorFactory,
-        linkManager.configuration,
+        subscriptionFactory,
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
     ).also {
-        linkManager.linkManagerHostingMap.registerListener(it)
+        linkManagerHostingMap.registerListener(it)
     }
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
-        linkManager.lifecycleCoordinatorFactory,
+        lifecycleCoordinatorFactory,
         dependentChildren = listOf(
-            linkManager.groups.dominoTile,
-            linkManager.members.dominoTile,
-            linkManager.linkManagerHostingMap.dominoTile,
-            linkManager.linkManagerCryptoProcessor.dominoTile,
+            groups.dominoTile,
+            members.dominoTile,
+            linkManagerHostingMap.dominoTile,
+            linkManagerCryptoProcessor.dominoTile,
             messagesPendingSession.dominoTile,
             sessionManager.dominoTile,
             trustStoresPublisher.dominoTile,
             tlsCertificatesPublisher.dominoTile,
         ),
         managedChildren = listOf(
-            linkManager.groups.dominoTile,
-            linkManager.members.dominoTile,
-            linkManager.linkManagerHostingMap.dominoTile,
-            linkManager.linkManagerCryptoProcessor.dominoTile,
+            groups.dominoTile,
+            members.dominoTile,
+            linkManagerHostingMap.dominoTile,
+            linkManagerCryptoProcessor.dominoTile,
             messagesPendingSession.dominoTile,
             sessionManager.dominoTile,
             trustStoresPublisher.dominoTile,
