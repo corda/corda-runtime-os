@@ -185,6 +185,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun temporaryAssociateClusterWithSoftHSM(): Boolean {
+        logger.info("Assigning SOFT HSM to cluster tenants.")
         var result = true
         CryptoConsts.Categories.all.forEach { category ->
             CryptoTenants.allClusterTenants.forEach { tenantId ->
@@ -196,14 +197,29 @@ class CryptoProcessorImpl @Activate constructor(
         return result
     }
 
-    private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
-        hsmService.assignSoftHSM(tenantId, category, mapOf(
-            NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-        ))
-        true
-    } catch (e: Throwable) {
-        logger.error("Failed to assign SOFT HSM for $tenantId:$category", e)
-        false
+    private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean {
+        var left = 3
+        var lastException: Throwable? = null
+        while (left > 0) {
+            try {
+                logger.info("Assigning SOFT HSM for $tenantId:$category (retry counter=$left)")
+                hsmService.assignSoftHSM(
+                    tenantId, category, mapOf(
+                        NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+                    )
+                )
+                return true
+            } catch (e: Throwable) {
+                left--
+                logger.warn("Failed to assign SOFT HSM for $tenantId:$category (retry counter=$left)", e)
+                lastException = e
+                if(left > 0) {
+                    Thread.sleep(200)
+                }
+            }
+        }
+        logger.error("Failed to assign SOFT HSM for $tenantId:$category", lastException)
+        throw lastException!!
     }
 }
 
