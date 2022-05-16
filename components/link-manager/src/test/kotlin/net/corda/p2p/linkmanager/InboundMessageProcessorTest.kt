@@ -267,6 +267,37 @@ class InboundMessageProcessorTest {
         }
 
         @Test
+        fun `AuthenticatedMessageAck with InboundSession session will discard the message`() {
+            val session = mock<AuthenticatedSession>()
+            whenever(sessionManager.getSessionById(any())).thenReturn(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.SessionCounterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val messageAck = MessageAck(
+                AuthenticatedMessageAck(
+                    MESSAGE_ID
+                )
+            )
+            val dataMessage = AuthenticatedDataMessage(
+                commonHeader,
+                messageAck.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+
+            val records = processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+            assertThat(records).hasSize(0)
+        }
+
+        @Test
         fun `AuthenticatedDataMessage with no session  will not produce records`() {
             val authenticatedMsg = AuthenticatedMessage(
                 AuthenticatedMessageHeader(
@@ -325,13 +356,13 @@ class InboundMessageProcessorTest {
                 commonHeader,
                 messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
             )
-            // DataMessagePayload
             val session = mock<AuthenticatedEncryptionSession> {
                 on { encryptData(any()) } doReturn encryptionResult
                 on {
                     decryptData(
                         commonHeader, messageAndPayload.toByteBuffer().array(), byteArrayOf()
-                    ) } doReturn messageAndPayload.toByteBuffer().array()
+                    )
+                } doReturn messageAndPayload.toByteBuffer().array()
             }
             whenever(sessionManager.getSessionById(any())).thenReturn(
                 SessionManager.SessionDirection.Inbound(
@@ -369,6 +400,7 @@ class InboundMessageProcessorTest {
             }
             verify(sessionManager).inboundSessionEstablished(anyOrNull())
         }
+
         @Test
         fun `when the message's source identity does not match the one of the session the message is discarded`() {
             val authenticatedMsg = AuthenticatedMessage(
@@ -406,6 +438,57 @@ class InboundMessageProcessorTest {
                     SessionManager.SessionCounterparties(
                         myIdentity,
                         remoteIdentity,
+                    ),
+                    session
+                )
+            )
+
+            val records = processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+            assertThat(records).isEmpty()
+        }
+
+        @Test
+        fun `when the message's dest identity does not match the one of the session the message is discarded`() {
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity,
+                    myIdentity,
+                    null, MESSAGE_ID, "trace-id", "system-1"
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val encryptionResult = mock<EncryptionResult> {
+                on { header } doReturn commonHeader
+                on { authTag } doReturn byteArrayOf()
+                on { encryptedPayload } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            val dataMessage = AuthenticatedEncryptedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+            val session = mock<AuthenticatedEncryptionSession> {
+                on { encryptData(any()) } doReturn encryptionResult
+                on {
+                    decryptData(
+                        commonHeader, messageAndPayload.toByteBuffer().array(), byteArrayOf()
+                    )
+                } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            whenever(sessionManager.getSessionById(any())).thenReturn(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.SessionCounterparties(
+                        myIdentity,
+                        myIdentity,
                     ),
                     session
                 )
@@ -489,8 +572,8 @@ class InboundMessageProcessorTest {
         }
         @Test
         fun `ResponderHandshakeMessage calls to processSessionMessage`() {
-            val responderHelloMessage = mock<ResponderHandshakeMessage>()
-            val message = LinkInMessage(responderHelloMessage)
+            val responderHandshakeMessage = mock<ResponderHandshakeMessage>()
+            val message = LinkInMessage(responderHandshakeMessage)
 
             processor.onNext(
                 listOf(
@@ -502,8 +585,8 @@ class InboundMessageProcessorTest {
         }
         @Test
         fun `InitiatorHandshakeMessage calls to processSessionMessage`() {
-            val responderHelloMessage = mock<InitiatorHandshakeMessage>()
-            val message = LinkInMessage(responderHelloMessage)
+            val initiatorHandshakeMessage = mock<InitiatorHandshakeMessage>()
+            val message = LinkInMessage(initiatorHandshakeMessage)
 
             processor.onNext(
                 listOf(
@@ -516,8 +599,8 @@ class InboundMessageProcessorTest {
 
         @Test
         fun `InitiatorHelloMessage calls to processSessionMessage`() {
-            val responderHelloMessage = mock<InitiatorHelloMessage>()
-            val message = LinkInMessage(responderHelloMessage)
+            val initiatorHelloMessage = mock<InitiatorHelloMessage>()
+            val message = LinkInMessage(initiatorHelloMessage)
 
             processor.onNext(
                 listOf(
@@ -530,8 +613,8 @@ class InboundMessageProcessorTest {
 
         @Test
         fun `null response from sessionManager will produce no records`() {
-            val responderHelloMessage = mock<InitiatorHelloMessage>()
-            val message = LinkInMessage(responderHelloMessage)
+            val initiatorHelloMessage = mock<InitiatorHelloMessage>()
+            val message = LinkInMessage(initiatorHelloMessage)
             whenever(sessionManager.processSessionMessage(message)).thenReturn(null)
 
             val records = processor.onNext(
@@ -544,7 +627,7 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `most other responses from sessionManager will produce link out message`() {
+        fun `non null responses from sessionManager will produce link out message`() {
             val handshake = ResponderHandshakeMessage()
             val message = LinkInMessage(handshake)
             val response = LinkOutMessage(LinkOutHeader(), handshake)
@@ -581,7 +664,7 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
         }
         @Test
-        fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to link out and session out`() {
+        fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to the correct topics`() {
             val hello = mock<InitiatorHelloMessage> {
                 on { header } doReturn commonHeader
             }
