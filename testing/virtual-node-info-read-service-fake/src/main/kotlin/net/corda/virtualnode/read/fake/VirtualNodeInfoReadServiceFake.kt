@@ -87,6 +87,9 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         callbacks.clear()
     }
 
+    /**
+     * Active wait the service is *running*.
+     */
     fun waitUntilRunning() {
         repeat(10) {
             if (isRunning) return

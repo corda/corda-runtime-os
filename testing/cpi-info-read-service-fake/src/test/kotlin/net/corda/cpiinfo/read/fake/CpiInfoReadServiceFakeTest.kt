@@ -1,18 +1,11 @@
 package net.corda.cpiinfo.read.fake
 
 import net.corda.cpiinfo.read.CpiInfoListener
-import net.corda.libs.packaging.CordappManifest
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.ManifestCordappInfo
 import net.corda.libs.packaging.converters.toCorda
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkIdentifier
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -92,38 +85,5 @@ internal class CpiInfoReadServiceFakeTest {
 
     private fun snapshot(vararg metadatas: CpiMetadata): Map<Cpi.Identifier, Cpi.Metadata> {
         return metadatas.map { it.toAvro().toCorda() }.associateBy { it.id }
-    }
-}
-
-object TestCatalogue {
-    object Cpi {
-        fun createMetadata(cpiName: String, cpkName: String): CpiMetadata {
-            return CpiMetadata(
-                CpiIdentifier(cpiName, "0.0", SecureHash("ALG", byteArrayOf(0, 0, 0, 0))),
-                SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
-                listOf(
-                    CpkMetadata(
-                        CpkIdentifier(cpkName, "0.0", SecureHash("ALG", byteArrayOf(0, 0, 0, 0))),
-                        Cpk.Manifest.newInstance(Cpk.FormatVersion.newInstance(0, 0)),
-                        "",
-                        listOf(),
-                        listOf(),
-                        CordappManifest(
-                            "",
-                            "",
-                            0,
-                            0,
-                            ManifestCordappInfo(null, null, null, null),
-                            ManifestCordappInfo(null, null, null, null),
-                            mapOf()
-                        ),
-                        Cpk.Type.UNKNOWN,
-                        SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
-                        setOf()
-                    )
-                ),
-                ""
-            )
-        }
     }
 }

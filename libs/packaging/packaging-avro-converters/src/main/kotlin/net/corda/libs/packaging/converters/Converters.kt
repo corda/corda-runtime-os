@@ -121,13 +121,13 @@ fun Cpk.Metadata.toAvro() : CpkMetadata = CpkMetadata.newBuilder().also {
         .collect(Collectors.toUnmodifiableList())
 }.build()
 
-fun CpiIdentifier.toCorda(): Cpi.Identifier = Cpi.Identifier.newInstance(
+fun CpiIdentifier.toCorda() = Cpi.Identifier.newInstance(
     name,
     version,
     signerSummaryHash?.let { net.corda.v5.crypto.SecureHash(it.algorithm, it.serverHash.array()) },
 )
 
-fun Cpi.Identifier.toAvro(): CpiIdentifier = CpiIdentifier.newBuilder().also {
+fun Cpi.Identifier.toAvro() = CpiIdentifier.newBuilder().also {
     it.name = name
     it.version = version
     it.signerSummaryHash = signerSummaryHash?.let { hash -> SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes)) }

@@ -35,7 +35,6 @@ internal class CpiMetadataImpl(
             it.id to it
         }.toMap(TreeMap())
     }
-
     override val cpks: Collection<Cpk.Metadata>
         get() = Collections.unmodifiableCollection(cpkMap.values)
 
