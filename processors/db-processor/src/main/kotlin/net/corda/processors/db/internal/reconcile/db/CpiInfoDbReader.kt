@@ -2,10 +2,10 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.findAllCpiMetadata
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,9 +16,9 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.packaging.CordappManifest
-import net.corda.packaging.Cpk
-import net.corda.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.ManifestCordappInfo
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.annotations.VisibleForTesting

@@ -1,6 +1,6 @@
 package net.corda.cpiinfo.write
 
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerWriter

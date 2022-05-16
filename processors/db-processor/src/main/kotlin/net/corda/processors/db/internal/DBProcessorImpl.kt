@@ -15,8 +15,8 @@ import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -46,8 +46,6 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
-import java.time.Duration
 
 @Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
