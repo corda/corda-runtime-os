@@ -25,6 +25,33 @@ object UniquenessAssertions {
             }
         }
 
+
+    /**
+     * Checks for a malformed request response with the specified error text
+     */
+    fun assertMalformedRequestResponse(
+        response: UniquenessCheckResponse,
+        errorText: String
+    ) {
+        getResultOfType(response, UniquenessCheckResultMalformedRequest::class.java).run {
+            assertThat(this.errorText).isEqualTo(errorText)
+        }
+    }
+
+    /**
+     * Checks for an unknown input state response, ensuring that all specified unknown states
+     *  are captured.
+     */
+    fun assertUnknownInputStateResponse(
+        response: UniquenessCheckResponse,
+        expectedUnknownStates: List<String>
+    ) {
+        getResultOfType(response, UniquenessCheckResultInputStateUnknown::class.java).run {
+            assertThat(unknownStates)
+                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
+        }
+    }
+
     /**
      * Checks for an input state conflict response, ensuring that all specified conflicting
      * states are captured.
@@ -36,6 +63,20 @@ object UniquenessAssertions {
         getResultOfType(response, UniquenessCheckResultInputStateConflict::class.java).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
+        }
+    }
+
+    /**
+     * Checks for an unknown reference state response, ensuring that all specified unknown states
+     *  are captured.
+     */
+    fun assertUnknownReferenceStateResponse(
+        response: UniquenessCheckResponse,
+        expectedUnknownStates: List<String>
+    ) {
+        getResultOfType(response, UniquenessCheckResultReferenceStateUnknown::class.java).run {
+            assertThat(unknownStates)
+                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
     }
 

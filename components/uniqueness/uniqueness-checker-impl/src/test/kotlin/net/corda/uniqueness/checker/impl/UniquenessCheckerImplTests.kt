@@ -1,13 +1,17 @@
 package net.corda.uniqueness.checker.impl
 
+import net.corda.crypto.testkit.SecureHashUtils.randomBytes
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.UniquenessAssertions.assertInputStateConflictResponse
+import net.corda.uniqueness.UniquenessAssertions.assertMalformedRequestResponse
 import net.corda.uniqueness.UniquenessAssertions.assertReferenceStateConflictResponse
 import net.corda.uniqueness.UniquenessAssertions.assertStandardSuccessResponse
 import net.corda.uniqueness.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
 import net.corda.uniqueness.UniquenessAssertions.assertUniqueCommitTimestamps
+import net.corda.uniqueness.UniquenessAssertions.assertUnknownInputStateResponse
+import net.corda.uniqueness.UniquenessAssertions.assertUnknownReferenceStateResponse
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -92,7 +96,50 @@ class UniquenessCheckerImplTests {
     }
 
     @Nested
+    inner class MalformedRequests {
+        @Test
+        fun `Request is missing time window upper bound`() {
+            assertThrows(org.apache.avro.AvroRuntimeException::class.java, {
+                newRequestBuilder()
+                    .setTimeWindowUpperBound(null)
+                    .build()
+            }, "Field timeWindowUpperBound type:LONG pos:5 does not accept null values")
+        }
+
+        @Test
+        fun `Request contains a negative number of output states`() {
+            processRequests(
+                newRequestBuilder()
+                    .setNumOutputStates(-1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertMalformedRequestResponse(
+                        responses[0], "Number of output states cannot be less than 0.") }
+                )
+            }
+        }
+    }
+
+    @Nested
     inner class InputStates {
+        @Test
+        fun `Attempting to spend an unknown input state fails`() {
+            val inputStateRef = "${randomSecureHash()}:0"
+
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(listOf(inputStateRef))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownInputStateResponse(responses[0], listOf(inputStateRef)) }
+                )
+            }
+        }
+
         @Test
         fun `Single tx and single state spend is successful`() {
             processRequests(
@@ -438,6 +485,22 @@ class UniquenessCheckerImplTests {
     @Nested
     inner class ReferenceStates {
         @Test
+        fun `Attempting to spend an unknown reference state fails`() {
+            val referenceStateRef = "${randomSecureHash()}:0"
+
+            processRequests(
+                newRequestBuilder()
+                    .setReferenceStates(listOf(referenceStateRef))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownReferenceStateResponse(responses[0], listOf(referenceStateRef)) }
+                )
+            }
+        }
+
+        @Test
         fun `Single tx, no input states, single ref state is successful`() {
             processRequests(
                 newRequestBuilder()
@@ -774,6 +837,97 @@ class UniquenessCheckerImplTests {
     }
 
     @Nested
+    inner class OutputStates {
+        @Test
+        fun `Replaying an issuance transaction in same batch is successful`() {
+            val issueTxId = randomSecureHash()
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(3)
+                    .build(),
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(3)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    // Responses equal (idempotency)
+                    { assertEquals(responses[0], responses[1]) }
+                )
+            }
+        }
+
+        @Test
+        fun `Replaying an issuance transaction in different batch is successful`() {
+            val issueTxId = randomSecureHash()
+            lateinit var initialResponse: UniquenessCheckResponse
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(3)
+                    .build(),
+
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], testClock) }
+                )
+
+                initialResponse = responses[0]
+            }
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(3)
+                    .build(),
+                ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    // Responses equal (idempotency)
+                    { assertEquals(responses[0], initialResponse) }
+                )
+            }
+        }
+
+        @Test
+        fun `Generation and subsequent spend of large number of states is successful`() {
+            val issueTxId = randomSecureHash()
+            val numStates = Short.MAX_VALUE
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(numStates.toInt())
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0], testClock) }
+                )
+            }
+
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(List(2048) { "${issueTxId}:${it}" })
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf("${issueTxId}:${Short.MAX_VALUE}"))
+                    .build(),
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertUnknownInputStateResponse(
+                        responses[1], listOf("${issueTxId}:${Short.MAX_VALUE}")) }
+                )
+            }
+        }
+    }
+
+    @Nested
     inner class TimeWindows {
         @Test
         fun `Tx processed within time window bounds is successful`() {
@@ -913,6 +1067,91 @@ class UniquenessCheckerImplTests {
                 emptyList<UniquenessCheckResponse>(),
                 uniquenessChecker.processRequests(emptyList())
             )
+        }
+
+        @Test
+        fun `The same hash code produced by different algorithms are distinct states`() {
+            val randomBytes = randomBytes()
+            val hash1 = SecureHash("SHA-256", randomBytes)
+            val hash2 = SecureHash("SHA-512", randomBytes)
+            val hash3 = SecureHash("SHAKE256", randomBytes)
+
+            processRequests(
+                newRequestBuilder(hash1)
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder(hash2)
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertUniqueCommitTimestamps(responses) }
+                )
+            }
+
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(listOf("${hash1}:0"))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf("${hash2}:0"))
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf("${hash3}:0"))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(3) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertUnknownInputStateResponse(responses[2], listOf("${hash3}:0")) },
+                    { assertUniqueCommitTimestamps(listOf(responses[0], responses[1])) }
+                )
+            }
+        }
+
+        @Test
+        fun `Issue and subsequent spend of same state in a batch is successful`() {
+            val issueTxId = randomSecureHash()
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setInputStates(listOf("${issueTxId}:0"))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertUniqueCommitTimestamps(responses) }
+                )
+            }
+        }
+
+        @Test
+        fun `Spend and subsequent issue of same state in a batch fails spend, succeeds issue`() {
+            val issueTxId = randomSecureHash()
+
+            processRequests(
+                newRequestBuilder()
+                    .setInputStates(listOf("${issueTxId}:0"))
+                    .build(),
+                newRequestBuilder(issueTxId)
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertUnknownInputStateResponse(responses[0], listOf("${issueTxId}:0")) },
+                    { assertStandardSuccessResponse(responses[1], testClock) }
+                )
+            }
         }
 
         @Test

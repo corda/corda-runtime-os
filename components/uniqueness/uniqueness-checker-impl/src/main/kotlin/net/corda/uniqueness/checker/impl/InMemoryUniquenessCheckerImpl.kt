@@ -81,13 +81,6 @@ class InMemoryUniquenessCheckerImpl(
                                 "Number of output states cannot be less than 0."
                             )
                         )
-                    } else if (request.timeWindowUpperBound == null) {
-                        UniquenessCheckResponse(
-                            request.txId,
-                            UniquenessCheckResultMalformedRequest(
-                                "Time window upper bound is mandatory."
-                            )
-                        )
                     } else if (unknownInputStates.isNotEmpty()) {
                         UniquenessCheckResponse(
                             request.txId,

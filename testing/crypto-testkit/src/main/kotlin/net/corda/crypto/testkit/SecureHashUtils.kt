@@ -4,10 +4,19 @@ import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
 
 object SecureHashUtils {
-    fun randomSecureHash(): SecureHash {
-        val allowedChars = '0'..'9'
-        val randomBytes = (1..16).map { allowedChars.random() }.joinToString("").toByteArray()
-        val digest = MessageDigest.getInstance("SHA-256")
-        return SecureHash(digest.algorithm, digest.digest(randomBytes))
+
+    /**
+     * Returns a random set of bytes
+     */
+    fun randomBytes(): ByteArray {
+        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
+    }
+
+    /**
+     * Returns a random secure hash of the specified algorithm
+     */
+    fun randomSecureHash(algorithm: String = "SHA-256"): SecureHash {
+        val digest = MessageDigest.getInstance(algorithm)
+        return SecureHash(digest.algorithm, digest.digest(randomBytes()))
     }
 }
