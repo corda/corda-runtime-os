@@ -3,13 +3,11 @@ package net.corda.sandbox.internal
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
-import java.security.MessageDigest
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.random.Random.Default.nextLong

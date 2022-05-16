@@ -1,3 +1,4 @@
+@file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.testkit.SecureHashUtils.randomBytes

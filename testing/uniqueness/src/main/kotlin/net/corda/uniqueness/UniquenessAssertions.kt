@@ -1,3 +1,4 @@
+@file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness
 
 import net.corda.data.uniqueness.*
@@ -9,6 +10,7 @@ import java.time.Instant
 /**
  * Uniqueness check related assertions for use in tests
  */
+@Suppress("SpreadOperator")
 object UniquenessAssertions {
     /**
      * Checks for a valid, standard success response. If a clock is specified, will additionally
@@ -17,7 +19,7 @@ object UniquenessAssertions {
     fun assertStandardSuccessResponse(response: UniquenessCheckResponse,
                                       clock: AutoTickTestClock? = null
     ) =
-        getResultOfType(response, UniquenessCheckResultSuccess::class.java).run {
+        getResultOfType<UniquenessCheckResultSuccess>(response).run {
             assertThat(commitTimestamp).isAfter(Instant.MIN)
             if ( clock != null) {
                 assertThat(commitTimestamp)
@@ -31,10 +33,10 @@ object UniquenessAssertions {
      */
     fun assertMalformedRequestResponse(
         response: UniquenessCheckResponse,
-        errorText: String
+        expectedErrorText: String
     ) {
-        getResultOfType(response, UniquenessCheckResultMalformedRequest::class.java).run {
-            assertThat(this.errorText).isEqualTo(errorText)
+        getResultOfType<UniquenessCheckResultMalformedRequest>(response).run {
+            assertThat(errorText).isEqualTo(expectedErrorText)
         }
     }
 
@@ -46,7 +48,7 @@ object UniquenessAssertions {
         response: UniquenessCheckResponse,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType(response, UniquenessCheckResultInputStateUnknown::class.java).run {
+        getResultOfType<UniquenessCheckResultInputStateUnknown>(response).run {
             assertThat(unknownStates)
                 .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
@@ -60,7 +62,7 @@ object UniquenessAssertions {
         response: UniquenessCheckResponse,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType(response, UniquenessCheckResultInputStateConflict::class.java).run {
+        getResultOfType<UniquenessCheckResultInputStateConflict>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
         }
@@ -74,7 +76,7 @@ object UniquenessAssertions {
         response: UniquenessCheckResponse,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType(response, UniquenessCheckResultReferenceStateUnknown::class.java).run {
+        getResultOfType<UniquenessCheckResultReferenceStateUnknown>(response).run {
             assertThat(unknownStates)
                 .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
@@ -88,7 +90,7 @@ object UniquenessAssertions {
         response: UniquenessCheckResponse,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType(response, UniquenessCheckResultReferenceStateConflict::class.java).run {
+        getResultOfType<UniquenessCheckResultReferenceStateConflict>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
         }
@@ -103,7 +105,7 @@ object UniquenessAssertions {
         expectedLowerBound: Instant? = null,
         expectedUpperBound: Instant
     ) {
-        getResultOfType(response, UniquenessCheckResultTimeWindowOutOfBounds::class.java).run {
+        getResultOfType<UniquenessCheckResultTimeWindowOutOfBounds>(response).run {
             assertAll(
                 { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
                 { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
@@ -120,8 +122,8 @@ object UniquenessAssertions {
         }.size)
     }
 
-    private fun<T> getResultOfType(response: UniquenessCheckResponse, expectedType: Class<T>) : T {
-        assertInstanceOf(expectedType, response.result)
+    private inline fun<reified T> getResultOfType(response: UniquenessCheckResponse) : T {
+        assertInstanceOf(T::class.java, response.result)
         @Suppress("UNCHECKED_CAST")
         return response.result as T
     }

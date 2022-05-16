@@ -58,6 +58,7 @@ class InMemoryUniquenessCheckerImpl(
     }
 
     @Synchronized
+    @Suppress("ComplexMethod")
     override fun processRequests(
         requests: List<UniquenessCheckRequest>
     ): List<UniquenessCheckResponse> {
@@ -73,40 +74,48 @@ class InMemoryUniquenessCheckerImpl(
                     .filter { stateCache[it] != null && stateCache[it] != request.txId }
                 val timeWindowEvaluationTime = clock.instant()
 
-                val response =
-                    if (request.numOutputStates < 0) {
+                val response = when {
+                    request.numOutputStates < 0 -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultMalformedRequest(
                                 "Number of output states cannot be less than 0."
                             )
                         )
-                    } else if (unknownInputStates.isNotEmpty()) {
+                    }
+
+                    unknownInputStates.isNotEmpty() -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultInputStateUnknown(unknownInputStates)
                         )
-                    } else if (unknownReferenceStates.isNotEmpty()) {
+                    }
+
+                    unknownReferenceStates.isNotEmpty() -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultReferenceStateUnknown(unknownReferenceStates)
                         )
-                    } else if (inputStateConflicts.isNotEmpty()) {
+                    }
+
+                    inputStateConflicts.isNotEmpty() -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultInputStateConflict(inputStateConflicts)
                         )
-                    } else if (referenceStateConflicts.isNotEmpty()) {
+                    }
+
+                    referenceStateConflicts.isNotEmpty() -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultReferenceStateConflict(referenceStateConflicts)
                         )
-                    } else if (!validateTimeWindow(
-                            timeWindowEvaluationTime,
-                            request.timeWindowLowerBound,
-                            request.timeWindowUpperBound
-                        )
-                    ) {
+                    }
+
+                    !isTimeWindowValid(
+                        timeWindowEvaluationTime,
+                        request.timeWindowLowerBound,
+                        request.timeWindowUpperBound) -> {
                         UniquenessCheckResponse(
                             request.txId,
                             UniquenessCheckResultTimeWindowOutOfBounds(
@@ -115,7 +124,9 @@ class InMemoryUniquenessCheckerImpl(
                                 request.timeWindowUpperBound
                             )
                         )
-                    } else {
+                    }
+
+                    else -> {
                         // Write unspent states
                         repeat(request.numOutputStates) {
                             stateCache["${request.txId}:${it}"] = null
@@ -127,6 +138,7 @@ class InMemoryUniquenessCheckerImpl(
                             UniquenessCheckResultSuccess(clock.instant())
                         )
                     }
+                }
 
                 responseCache[request.txId] = response
                 response
@@ -134,7 +146,7 @@ class InMemoryUniquenessCheckerImpl(
         }
     }
 
-    private fun validateTimeWindow(
+    private fun isTimeWindowValid(
         currentTime: Instant,
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
