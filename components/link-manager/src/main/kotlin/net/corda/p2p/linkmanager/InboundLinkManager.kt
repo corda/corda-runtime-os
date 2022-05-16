@@ -5,7 +5,7 @@ import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.schema.Schemas
 
-internal class InboundTile(
+internal class InboundLinkManager(
     linkManager: LinkManager,
 ) : LifecycleWithDominoTile {
     companion object {
@@ -14,14 +14,14 @@ internal class InboundTile(
     private val inboundMessageSubscription = linkManager.subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC),
         InboundMessageProcessor(
-            linkManager.commonTile.sessionManager,
+            linkManager.commonComponents.sessionManager,
             linkManager.groups,
             linkManager.members,
-            linkManager.commonTile.inboundAssignmentListener,
+            linkManager.commonComponents.inboundAssignmentListener,
             linkManager.clock
         ),
         linkManager.configuration,
-        partitionAssignmentListener = linkManager.commonTile.inboundAssignmentListener
+        partitionAssignmentListener = linkManager.commonComponents.inboundAssignmentListener
     )
 
     override val dominoTile = SubscriptionDominoTile(
@@ -32,7 +32,7 @@ internal class InboundTile(
             linkManager.members.dominoTile,
         ),
         managedChildren = listOf(
-            linkManager.commonTile.inboundAssignmentListener.dominoTile,
+            linkManager.commonComponents.inboundAssignmentListener.dominoTile,
         )
     )
 }

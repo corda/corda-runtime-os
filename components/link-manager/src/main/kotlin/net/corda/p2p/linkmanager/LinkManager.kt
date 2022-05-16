@@ -48,22 +48,22 @@ class LinkManager(
         }
     }
 
-    internal val commonTile = CommonTile(this)
-    private val outboundTile = OutboundTile(this)
-    private val inboundTile = InboundTile(this)
+    internal val commonComponents = CommonComponents(this)
+    private val outboundLinkManager = OutboundLinkManager(this)
+    private val inboundLinkManager = InboundLinkManager(this)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(
-            commonTile.dominoTile,
-            outboundTile.dominoTile,
-            inboundTile.dominoTile,
+            commonComponents.dominoTile,
+            outboundLinkManager.dominoTile,
+            inboundLinkManager.dominoTile,
         ),
         managedChildren = setOf(
-            commonTile.dominoTile,
-            outboundTile.dominoTile,
-            inboundTile.dominoTile,
+            commonComponents.dominoTile,
+            outboundLinkManager.dominoTile,
+            inboundLinkManager.dominoTile,
         )
     )
 }

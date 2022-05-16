@@ -6,19 +6,19 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.schema.Schemas
 
-class OutboundTile(
+internal class OutboundLinkManager(
     linkManager: LinkManager,
 ) : LifecycleWithDominoTile {
     companion object {
         private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
     }
     private val outboundMessageProcessor = OutboundMessageProcessor(
-        linkManager.commonTile.sessionManager,
+        linkManager.commonComponents.sessionManager,
         linkManager.linkManagerHostingMap,
         linkManager.groups,
         linkManager.members,
-        linkManager.commonTile.inboundAssignmentListener,
-        linkManager.commonTile.messagesPendingSession,
+        linkManager.commonComponents.inboundAssignmentListener,
+        linkManager.commonComponents.messagesPendingSession,
         linkManager.clock
     )
     private val deliveryTracker = DeliveryTracker(
@@ -30,7 +30,7 @@ class OutboundTile(
         linkManager.groups,
         linkManager.members,
         linkManager.linkManagerCryptoProcessor,
-        linkManager.commonTile.sessionManager,
+        linkManager.commonComponents.sessionManager,
         clock = linkManager.clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
@@ -46,8 +46,8 @@ class OutboundTile(
         outboundMessageSubscription,
         dependentChildren = listOf(
             deliveryTracker.dominoTile,
-            linkManager.commonTile.dominoTile,
-            linkManager.commonTile.inboundAssignmentListener.dominoTile,
+            linkManager.commonComponents.dominoTile,
+            linkManager.commonComponents.inboundAssignmentListener.dominoTile,
         ),
         managedChildren = setOf(deliveryTracker.dominoTile)
     )

@@ -5,7 +5,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.schema.Schemas
 
-internal class CommonTile(
+internal class CommonComponents(
     linkManager: LinkManager,
 ) : LifecycleWithDominoTile {
     internal val inboundAssignmentListener = InboundAssignmentListener(
