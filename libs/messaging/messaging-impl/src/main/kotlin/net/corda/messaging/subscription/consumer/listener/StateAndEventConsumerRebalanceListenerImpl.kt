@@ -1,7 +1,6 @@
 package net.corda.messaging.subscription.consumer.listener
 
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
@@ -12,13 +11,13 @@ import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
-internal class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
+internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val mapFactory: MapFactory<K, Pair<Long, S>>,
     stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null
-) : CordaConsumerRebalanceListener {
+) : StateAndEventConsumerRebalanceListener {
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
@@ -72,6 +71,15 @@ internal class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
 
             currentStates[partitionId]?.let { partitionStates ->
                 mapFactory.destroyMap(partitionStates)
+            }
+        }
+    }
+
+
+    override fun close() {
+        stateAndEventListener?.let { listener ->
+            currentStates.keys.forEach {
+                listener.onPartitionLost(getStatesForPartition(it))
             }
         }
     }

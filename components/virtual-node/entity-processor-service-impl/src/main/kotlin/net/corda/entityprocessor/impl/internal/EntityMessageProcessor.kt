@@ -18,6 +18,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
+import java.nio.ByteBuffer
 import java.time.Instant
 import javax.persistence.EntityManagerFactory
 
@@ -69,7 +70,7 @@ class EntityMessageProcessor(
         val serializationService = sandbox.getSerializationService()
 
         // we match on the type, and pass the cast into the persistence service.
-        val responseBytes = entityManagerFactory.createEntityManager().transaction {
+        val responsePayload = entityManagerFactory.createEntityManager().transaction {
             when (request.request) {
                 is PersistEntity -> persistenceServiceInternal.persist(
                     serializationService,
@@ -96,7 +97,8 @@ class EntityMessageProcessor(
             }
         }
 
-        return EntityResponse(Instant.now(), key, responseBytes)
+        val response = if(null == responsePayload) null else ByteBuffer.wrap(responsePayload.bytes)
+        return EntityResponse(Instant.now(), key, response)
     }
 
     private fun exceptionResponse(key: String, e: Exception) =

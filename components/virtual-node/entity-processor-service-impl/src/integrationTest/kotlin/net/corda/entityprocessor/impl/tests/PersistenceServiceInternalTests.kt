@@ -266,8 +266,8 @@ class PersistenceServiceInternalTests {
 
         // assert it's the dog
         assertThat(responses.size).isEqualTo(1)
-        val bytes = (responses[0].value as EntityResponse).result as SerializedBytes<*>
-        val result = ctx.sandbox.getSerializer().deserialize(bytes.bytes, Any::class.java)
+        val bytes = (responses[0].value as EntityResponse).result as ByteBuffer
+        val result = ctx.sandbox.getSerializer().deserialize(bytes.array(), Any::class.java)
         assertThat(result).isEqualTo(dog)
     }
 
@@ -295,8 +295,8 @@ class PersistenceServiceInternalTests {
         assertThat(responses.size).isEqualTo(1)
 
         // assert that Bella has been returned
-        val bytes = (responses[0].value as EntityResponse).result as SerializedBytes<*>
-        val responseEntity = ctx.sandbox.getSerializer().deserialize(bytes.bytes, Any::class.java)
+        val bytes = (responses[0].value as EntityResponse).result as ByteBuffer
+        val responseEntity = ctx.sandbox.getSerializer().deserialize(bytes.array(), Any::class.java)
         assertThat(responseEntity).isEqualTo(bellaTheDog)
 
         // and can be found in the DB
