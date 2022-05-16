@@ -135,9 +135,6 @@ data class CpkDependencyEntityKey(
     val signerSummaryHash: String
 ) : Serializable
 
-//@Embeddable
-//data class CpkIdentifier(val mainBundleName: String, val mainBundleVersion: String, val signerSummaryHash: String)
-
 @Embeddable
 data class CpkManifest(
     @Embedded
