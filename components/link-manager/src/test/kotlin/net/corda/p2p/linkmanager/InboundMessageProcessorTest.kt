@@ -29,6 +29,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.EncryptionResult
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -40,6 +41,7 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -73,6 +75,7 @@ class InboundMessageProcessorTest {
         1,
         1
     )
+    private val loggingInterceptor = LoggingInterceptor.setupLogging()
 
     private val processor = InboundMessageProcessor(
         sessionManager,
@@ -81,6 +84,11 @@ class InboundMessageProcessorTest {
         assignedListener,
         mockTimeFacilitiesProvider.clock
     )
+
+    @AfterEach
+    fun cleanUp() {
+        loggingInterceptor.reset()
+    }
 
     @Test
     fun `ignores messages with null values`() {
@@ -92,6 +100,9 @@ class InboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
+        assertThat(loggingInterceptor.errors)
+            .hasSize(2)
+            .contains("Received null message. The message was discarded.")
     }
 
     @Test
@@ -104,6 +115,9 @@ class InboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
+        assertThat(loggingInterceptor.errors)
+            .contains("Received unknown payload type Integer. The message was discarded.")
+            .contains("Received unknown payload type String. The message was discarded.")
     }
 
     @Nested
@@ -264,6 +278,9 @@ class InboundMessageProcessorTest {
 
             assertThat(records).hasSize(0)
             verify(sessionManager, never()).messageAcknowledged(SESSION_ID)
+            assertThat(loggingInterceptor.errors).allSatisfy {
+                assertThat(it).matches("Could not deserialize message for session Session.* The message was discarded\\.")
+            }
         }
 
         @Test
@@ -295,6 +312,11 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).hasSize(0)
+            assertThat(loggingInterceptor.errors)
+                .hasSize(1)
+                .anySatisfy {
+                    assertThat(it).matches("Could not deserialize message for session Session\\..* Cannot resolve schema for fingerprint.*")
+                }
         }
 
         @Test
@@ -327,6 +349,9 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
+            assertThat(loggingInterceptor.warnings)
+                .hasSize(1)
+                .contains("Received message with SessionId = Session for which there is no active session. The message was discarded.")
         }
     }
 
@@ -450,6 +475,15 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
+            assertThat(loggingInterceptor.warnings)
+                .hasSize(1)
+                .anySatisfy {
+                    assertThat(it).matches(
+                        "The identity in the message's source header.*" +
+                            " does not match the session's source identity.*" +
+                            " which indicates a spoofing attempt! The message was discarded\\."
+                    )
+                }
         }
 
         @Test
@@ -501,6 +535,15 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
+            assertThat(loggingInterceptor.warnings)
+                .hasSize(1)
+                .allSatisfy {
+                    assertThat(it).matches(
+                        "The identity in the message's destination header.*" +
+                            " does not match the session's destination identity.*" +
+                            " which indicates a spoofing attempt! The message was discarded"
+                    )
+                }
         }
 
         @Test
@@ -662,6 +705,15 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
+            assertThat(loggingInterceptor.warnings)
+                .hasSize(1)
+                .allSatisfy {
+                    assertThat(it)
+                        .isEqualTo(
+                            "No partitions from topic link.in are currently assigned to the inbound message processor. " +
+                                "Not going to reply to session initiation for session Session."
+                        )
+                }
         }
         @Test
         fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to the correct topics`() {
