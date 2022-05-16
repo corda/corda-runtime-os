@@ -36,7 +36,7 @@ class CreateCertificate : Runnable {
 
     @Option(
         names = ["-p", "--public-key"],
-        description = ["The filename of the public key. If unset a new key pair is generated."]
+        description = ["The filename of the public key (in PEM format). If not specified, a new key pair is generated."]
     )
     private val publicKeyFile: File? = null
 
