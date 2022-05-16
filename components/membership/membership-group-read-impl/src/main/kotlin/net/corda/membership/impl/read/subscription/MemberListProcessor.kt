@@ -38,10 +38,10 @@ class MemberListProcessor(
             {
                 toMemberInfo(
                     layeredPropertyMapFactory.create<MemberContextImpl>(
-                        getContextMap(it.value.signedMemberInfo.memberContext)
+                        getContextMap(it.value.memberContext)
                     ),
                     layeredPropertyMapFactory.create<MGMContextImpl>(
-                        getContextMap(it.value.signedMemberInfo.mgmContext)
+                        getContextMap(it.value.mgmContext)
                     )
                 )
             }
@@ -60,10 +60,10 @@ class MemberListProcessor(
     ) {
         toMemberInfo(
             layeredPropertyMapFactory.create<MemberContextImpl>(
-                getContextMap(newRecord.value!!.signedMemberInfo.memberContext)
+                getContextMap(newRecord.value!!.memberContext)
             ),
             layeredPropertyMapFactory.create<MGMContextImpl>(
-                getContextMap(newRecord.value!!.signedMemberInfo.mgmContext)
+                getContextMap(newRecord.value!!.mgmContext)
             )
         ).apply {
             membershipGroupReadCache.memberListCache.put(
