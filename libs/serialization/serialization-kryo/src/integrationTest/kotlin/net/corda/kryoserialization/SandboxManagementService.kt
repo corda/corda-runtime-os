@@ -1,7 +1,7 @@
 package net.corda.kryoserialization
 
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.testing.sandboxes.CpiLoader
@@ -22,8 +22,8 @@ class SandboxManagementService @Activate constructor(
         private const val CPI_TWO = "serializable-cpk-two-package.cpb"
     }
 
-    val cpi1: CPI = loadCPI(resourceName = CPI_ONE)
-    val cpi2: CPI = loadCPI(resourceName = CPI_TWO)
+    val cpi1: Cpi = loadCPI(resourceName = CPI_ONE)
+    val cpi2: Cpi = loadCPI(resourceName = CPI_TWO)
     val group1: SandboxGroup = createSandboxGroupFor(cpi1.cpks)
     val group2: SandboxGroup = createSandboxGroupFor(cpi2.cpks)
 
@@ -34,11 +34,11 @@ class SandboxManagementService @Activate constructor(
         sandboxCreationService.unloadSandboxGroup(group2)
     }
 
-    private fun loadCPI(resourceName: String): CPI {
+    private fun loadCPI(resourceName: String): Cpi {
         return cpiLoader.loadCPI(resourceName)
     }
 
-    private fun createSandboxGroupFor(cpks: Iterable<CPK>): SandboxGroup {
+    private fun createSandboxGroupFor(cpks: Iterable<Cpk>): SandboxGroup {
         return sandboxCreationService.createSandboxGroup(cpks)
     }
 }

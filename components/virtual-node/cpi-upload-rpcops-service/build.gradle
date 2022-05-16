@@ -1,6 +1,6 @@
 plugins {
     id 'corda.common-library'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description 'Endpoint API for uploading a CPI.'
@@ -18,14 +18,14 @@ dependencies {
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
     implementation project(':libs:virtual-node:cpi-upload-manager')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
-    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':libs:packaging:packaging-core')
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-crypto'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema"
     implementation 'net.corda:corda-topic-schema'
-    implementation "net.corda:corda-packaging"
+    implementation project(":libs:packaging:packaging")
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')

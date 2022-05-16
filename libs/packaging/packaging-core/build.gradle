@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Packaging Interfaces and Data Classes"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api "net.corda:corda-avro-schema"
+    api project(":libs:packaging:packaging")
+    api project(":libs:packaging:packaging-avro-converters")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

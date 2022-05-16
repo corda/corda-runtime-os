@@ -100,7 +100,7 @@ class UserRoleAssociationE2eTest {
             // add the role again to assert validation
             Assertions.assertThatThrownBy { proxy.addRole(userName, roleId) }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Role '$roleId' is already associated with User '${userName.toLowerCase()}'.")
+                .hasMessageContaining("Role '$roleId' is already associated with User '${userName.lowercase()}'.")
 
             // remove role
             with(proxy.removeRole(userName, roleId)) {
@@ -126,12 +126,12 @@ class UserRoleAssociationE2eTest {
             // remove the role again to assert validation of role being associated.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, roleId) }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Role '$roleId' is not associated with User '${userName.toLowerCase()}'.")
+                .hasMessageContaining("Role '$roleId' is not associated with User '${userName.lowercase()}'.")
 
             // remove a fake role to assert validation does not expose role names in the system.
             Assertions.assertThatThrownBy { proxy.removeRole(userName, "fakeRoleId") }
                 .isInstanceOf(RequestErrorException::class.java)
-                .hasMessageContaining("Role 'fakeRoleId' is not associated with User '${userName.toLowerCase()}'.")
+                .hasMessageContaining("Role 'fakeRoleId' is not associated with User '${userName.lowercase()}'.")
 
         }
     }

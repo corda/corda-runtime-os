@@ -11,6 +11,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
 import java.io.NotSerializableException
+import java.util.Locale
 
 @Suppress("LongParameterList")
 class ThrowableSerializer(
@@ -23,6 +24,16 @@ class ThrowableSerializer(
 
     companion object {
         private val logger = contextLogger()
+
+        private fun String.capitalise(): String {
+            return replaceFirstChar { c ->
+                if (c.isLowerCase()) {
+                    c.titlecase(Locale.getDefault())
+                } else {
+                    c.toString()
+                }
+            }
+        }
     }
 
     private val LocalTypeInformation.constructor: LocalConstructorInformation
@@ -67,7 +78,7 @@ class ThrowableSerializer(
                 val constructor = typeInformation.constructor
                 val params = constructor.parameters.map { parameter ->
                     proxy.additionalProperties[parameter.name]
-                        ?: proxy.additionalProperties[parameter.name.capitalize()]
+                        ?: proxy.additionalProperties[parameter.name.capitalise()]
                 }
                 val throwable = constructor.observedMethod.newInstance(*params.toTypedArray())
                 (throwable as CordaThrowable).apply {

@@ -33,7 +33,7 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
 
     override fun stop() {
         if (isRunning) {
-            synchronized(isRunning) {
+            synchronized(this) {
                 if (isRunning) {
                     keyStoreInfo?.run { File(path.toFile().parent).deleteRecursively() }
                     _isRunning = false

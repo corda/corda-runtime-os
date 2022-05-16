@@ -30,6 +30,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import java.util.Locale
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.primaryConstructor
@@ -399,9 +400,10 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         }.toMap()
 
         return rawType.propertyDescriptors(validateProperties).asSequence().mapNotNull { (name, descriptor) ->
+            val decapitalisedName = name.replaceFirstChar { it.lowercase(Locale.getDefault()) }
             val normalisedName = when {
                 name in constructorParameterIndices -> name
-                name.decapitalize() in constructorParameterIndices -> name.decapitalize()
+                decapitalisedName in constructorParameterIndices -> decapitalisedName
                 else -> return@mapNotNull null
             }
 

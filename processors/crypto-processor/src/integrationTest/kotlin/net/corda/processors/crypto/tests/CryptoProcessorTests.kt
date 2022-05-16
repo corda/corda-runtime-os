@@ -20,7 +20,6 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -45,6 +44,7 @@ import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.processors.crypto.tests.infra.stopAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
@@ -92,7 +92,7 @@ class CryptoProcessorTests {
         lateinit var subscriptionFactory: SubscriptionFactory
 
         @InjectService(timeout = 5000L)
-        lateinit var processor: CryptoProcessor
+        lateinit var cryptoProcessor: CryptoProcessor
 
         @InjectService(timeout = 5000L)
         lateinit var opsClient: CryptoOpsClient
@@ -147,7 +147,6 @@ class CryptoProcessorTests {
             setupMessagingAndCryptoConfigs()
             setupDatabases()
             startDependencies()
-            dbConnectionManager.bootstrap(clusterDb.config)
             testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
             // temporary hack as the DbAdmin doesn't support HSQL
             addDbConnectionConfigs(cryptoDb, vnodeDb)
@@ -205,8 +204,13 @@ class CryptoProcessorTests {
         }
 
         private fun startDependencies() {
+            val boostrapConfig = makeBootstrapConfig(
+                BOOT_CONFIGURATION, mapOf(
+                    ConfigKeys.DB_CONFIG to clusterDb.config
+                )
+            )
             opsClient.startAndWait()
-            processor.startAndWait(makeBootstrapConfig(BOOT_CONFIGURATION))
+            cryptoProcessor.startAndWait(boostrapConfig)
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
                 coordinatorFactory,
@@ -241,13 +245,11 @@ class CryptoProcessorTests {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
             databaseInstaller.setupClusterDatabase(
                 clusterDb,
-                "config",
-                ConfigurationEntities.classes
+                "config"
             ).close()
             databaseInstaller.setupDatabase(
                 cryptoDb,
-                "crypto",
-                CryptoEntities.classes
+                "crypto"
             ).close()
             databaseInstaller.setupDatabase(
                 vnodeDb,

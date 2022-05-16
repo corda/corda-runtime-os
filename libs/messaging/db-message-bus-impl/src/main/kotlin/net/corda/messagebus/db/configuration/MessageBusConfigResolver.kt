@@ -93,7 +93,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             consumerConfig.group,
             consumerConfig.clientId,
             dbProperties.getInt(MAX_POLL_RECORDS),
-            CordaOffsetResetStrategy.valueOf(dbProperties.getString(AUTO_OFFSET_RESET).toUpperCase()),
+            CordaOffsetResetStrategy.valueOf(dbProperties.getString(AUTO_OFFSET_RESET).uppercase()),
             dbProperties.getStringOrNull(JDBC_URL),
             dbProperties.getStringOrDefault(JDBC_USER, ""),
             dbProperties.getStringOrDefault(JDBC_PASS, "")

@@ -127,6 +127,17 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             val deleteParams = delete.parameters
             assertEquals("query", deleteParams[0].name)
         }
+
+        with(openAPI.paths["/health/stringmethodwithnameinannotation"]) {
+            assertNotNull(this)
+            val content = post.requestBody.content["application/json"]
+            assertNotNull(content)
+            val properties = content.schema.properties
+            assertEquals(1, properties.size)
+            val field = properties["correctName"]
+            assertNotNull(field)
+            assertEquals("string", field.type)
+        }
     }
 
     @Test
@@ -161,7 +172,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
             assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
             assertEquals(2, multipartFormData.schema.properties.size)
-            val fileName = multipartFormData.schema.properties["fileName"]
+            val fileName = multipartFormData.schema.properties["name"]
             assertNotNull(fileName)
             assertEquals("string", fileName.type, "Multipart file type should be a string.")
             assertFalse(fileName.nullable)
@@ -250,6 +261,52 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", files.items.type)
             assertEquals("binary", files.items.format)
             assertFalse(files.items.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/uploadwithqueryparam"]) {
+            assertNotNull(this)
+            assertEquals(1, post.parameters.size)
+            val queryParam = post.parameters.first()
+            assertEquals("tenant", queryParam.name)
+            assertFalse(queryParam.required)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type)
+            assertEquals("binary", file.format)
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/uploadwithpathparam/{tenant}"]) {
+            assertNotNull(this)
+            assertEquals(1, post.parameters.size)
+            val queryParam = post.parameters.first()
+            assertEquals("tenant", queryParam.name)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val file = multipartFormData.schema.properties["file"]
+            assertNotNull(file)
+            assertEquals("string", file.type)
+            assertEquals("binary", file.format)
+            assertFalse(file.nullable)
+        }
+
+        with(openAPI.paths["/fileupload/uploadwithnameinannotation"]) {
+            assertNotNull(this)
+            val multipartFormData = post.requestBody.content["multipart/form-data"]
+            assertNotNull(multipartFormData, "Multipart file upload should be under multipart form-data content in request body.")
+            assertEquals("object", multipartFormData.schema.type, "Multipart file content should be in an object.")
+            assertEquals(1, multipartFormData.schema.properties.size)
+            val file = multipartFormData.schema.properties["differentName"]
+            assertNotNull(file)
+            assertEquals("string", file.type)
+            assertEquals("binary", file.format)
+            assertFalse(file.nullable)
         }
     }
 

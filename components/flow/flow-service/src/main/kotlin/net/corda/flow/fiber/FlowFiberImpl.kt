@@ -2,14 +2,15 @@ package net.corda.flow.fiber
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
+import co.paralleluniverse.fibers.FiberWriter
 import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.MDC
+import java.io.Serializable
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -21,6 +22,8 @@ class FlowFiberImpl<R>(
     override val flowLogic: Flow<R>,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber<R> {
+
+    private fun interface SerializableFiberWriter : FiberWriter, Serializable
 
     companion object {
         private val log: Logger = contextLogger()
@@ -100,22 +103,19 @@ class FlowFiberImpl<R>(
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         log.info("Flow suspending.")
-        try {
-            parkAndSerialize { _, _ ->
-                log.info("Parking...")
-                val fiberState = getExecutionContext().checkpointSerializer.serialize(this)
-                flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
-                log.info("Parked.")
-            }
-        } catch (e: Throwable) {
-            throw e
-        }
+        parkAndSerialize(SerializableFiberWriter { _, _ ->
+            log.info("Parking...")
+            val fiberState = getExecutionContext().checkpointSerializer.serialize(this)
+            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
+            log.info("Parked.")
+        })
 
         setLoggingContext()
         log.info("Flow resuming.")
 
+        @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
-            is FlowContinuation.Run -> uncheckedCast(outcome.value)
+            is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
             is FlowContinuation.Error -> throw outcome.exception
             else -> throw IllegalStateException("Tried to return when suspension outcome says to continue")
         }
@@ -174,7 +174,7 @@ class FlowFiberImpl<R>(
 
     private fun setLoggingContext() {
         MDC.put("flow-id", flowId.toString())
-        MDC.put("fiber-id", this.getId().toString())
+        MDC.put("fiber-id", id.toString())
         MDC.put("thread-id", Thread.currentThread().id.toString())
     }
 }

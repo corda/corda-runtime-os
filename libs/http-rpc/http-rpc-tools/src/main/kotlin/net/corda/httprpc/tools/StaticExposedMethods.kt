@@ -8,8 +8,8 @@ import java.lang.reflect.Method
  *
  * Note: These are also exempt from sanity checks in HttpRpcClientProxyHandler.invoke(...).
  */
-private val staticExposedGetMethods: Set<String> = listOf("getProtocolVersion").map { it.toLowerCase() }.toSet()
+private val staticExposedGetMethods: Set<String> = listOf("getProtocolVersion").map { it.lowercase() }.toSet()
 
 fun Method.isStaticallyExposedGet(): Boolean {
-    return staticExposedGetMethods.contains(name.toLowerCase())
+    return staticExposedGetMethods.contains(name.lowercase())
 }

@@ -260,7 +260,7 @@ object AMQPCharPropertyReadStrategy : PropertyReadStrategy {
     override fun readProperty(obj: Any?, serializationSchemas: SerializationSchemas, metadata: Metadata,
                               input: DeserializationInput, context: SerializationContext
     ): Any? {
-        return if (obj == null) null else (obj as Short).toChar()
+        return (obj as? Short)?.toInt()?.toChar()
     }
 }
 
@@ -271,6 +271,6 @@ class AMQPCharPropertyWriteStategy(private val reader: PropertyReader) : Propert
                                context: SerializationContext, debugIndent: Int
     ) {
         val input = reader.read(obj)
-        if (input != null) data.putShort((input as Char).toShort()) else data.putNull()
+        if (input != null) data.putShort((input as Char).code.toShort()) else data.putNull()
     }
 }

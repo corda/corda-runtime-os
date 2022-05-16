@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.Cpk
 import org.osgi.framework.Bundle
 
 /**
@@ -20,7 +20,7 @@ interface SandboxCreationService {
      *
      * A [SandboxException] is thrown if the [securityDomain] contains a '/' character, or if sandbox creation fails.
      */
-    fun createSandboxGroup(cpks: Iterable<CPK>, securityDomain: String = ""): SandboxGroup
+    fun createSandboxGroup(cpks: Iterable<Cpk>, securityDomain: String = ""): SandboxGroup
 
     /**
      * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].
@@ -31,7 +31,7 @@ interface SandboxCreationService {
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxGroupWithoutStarting(cpks: Iterable<CPK>, securityDomain: String = ""): SandboxGroup
+    fun createSandboxGroupWithoutStarting(cpks: Iterable<Cpk>, securityDomain: String = ""): SandboxGroup
 
     /**
      * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the

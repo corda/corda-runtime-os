@@ -8,6 +8,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.versioning.Version
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -32,6 +33,7 @@ class ConfigurationValidatorImplTest {
         private const val NO_FILE_EXISTS = "no-file-here"
 
         private const val VALID_DATA = "data/valid.conf"
+        private const val VALID_MISSING_REFERENCE_DATA = "data/valid-missing-reference.conf"
         private const val INVALID_DATA = "data/invalid.conf"
 
         private val TEST_VERSION = Version.fromString("1.0")
@@ -40,8 +42,27 @@ class ConfigurationValidatorImplTest {
     @Test
     fun `valid document against test schema`() {
         val validator = createSchemaValidator()
-        val json = loadData(VALID_DATA)
-        validator.validate(TEST_SCHEMA, TEST_VERSION, json)
+        val smartConfig = loadData(VALID_DATA)
+        val outputConfig = validator.validate(TEST_SCHEMA, TEST_VERSION, smartConfig)
+        assertThat(smartConfig).isEqualTo(outputConfig)
+    }
+
+    @Test
+    fun `valid document against test schema, applies defaults`() {
+        val validator = createSchemaValidator()
+        val smartConfig = loadData(VALID_DATA)
+        val outputConfig = validator.validate(TEST_SCHEMA, TEST_VERSION, smartConfig, true)
+        assertThat(smartConfig).isNotEqualTo(outputConfig)
+        assertThat(outputConfig.getInt("testInteger")).isEqualTo(7)
+    }
+
+    @Test
+    fun `valid document against test schema with missing testReference fields, applies defaults`() {
+        val validator = createSchemaValidator()
+        val smartConfig = loadData(VALID_DATA)
+        val outputConfig = validator.validate(TEST_SCHEMA, TEST_VERSION, smartConfig, true)
+        assertThat(smartConfig).isNotEqualTo(outputConfig)
+        assertThat(outputConfig.getBoolean("testReference.bar")).isEqualTo(false)
     }
 
     @Test

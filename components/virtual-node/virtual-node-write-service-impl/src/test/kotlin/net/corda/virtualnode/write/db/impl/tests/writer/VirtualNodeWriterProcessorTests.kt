@@ -2,7 +2,7 @@ package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
-import net.corda.data.packaging.CPIIdentifier
+import net.corda.data.packaging.CpiIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.data.virtualnode.VirtualNodeInfo
@@ -13,7 +13,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.CPI
+import net.corda.libs.packaging.Cpi
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -52,9 +52,9 @@ class VirtualNodeWriterProcessorTests {
         "SHA-256",
         ByteBuffer.wrap("\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000".toByteArray())
     )
-    private val cpiIdentifier = CPIIdentifier("dummy_name", "dummy_version", secureHash)
+    private val cpiIdentifier = CpiIdentifier("dummy_name", "dummy_version", secureHash)
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
-    private val cpiId = CPI.Identifier.newInstance("dummy_name", "dummy_version", summaryHash)
+    private val cpiId = Cpi.Identifier.newInstance("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData = CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId)
 
     private val connectionId = UUID.randomUUID().toString()

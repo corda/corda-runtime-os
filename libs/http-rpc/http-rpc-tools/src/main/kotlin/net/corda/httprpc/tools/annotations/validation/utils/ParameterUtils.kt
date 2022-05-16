@@ -25,9 +25,9 @@ fun Parameter.isBodyParameter() = this.annotations.any { it is HttpRpcRequestBod
 fun getParameterName(parameter: Parameter) =
     parameter.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }?.let {
         when (it) {
-            is HttpRpcPathParameter -> it.name(parameter).toLowerCase()
-            is HttpRpcQueryParameter -> it.name(parameter).toLowerCase()
-            is HttpRpcRequestBodyParameter -> it.name(parameter).toLowerCase()
+            is HttpRpcPathParameter -> it.name(parameter).lowercase()
+            is HttpRpcQueryParameter -> it.name(parameter).lowercase()
+            is HttpRpcRequestBodyParameter -> it.name(parameter).lowercase()
             else -> throw IllegalArgumentException("Unknown parameter type")
         }
-    } ?: HttpRpcRequestBodyParameter::class.createInstance().name(parameter).toLowerCase()
+    } ?: HttpRpcRequestBodyParameter::class.createInstance().name(parameter).lowercase()

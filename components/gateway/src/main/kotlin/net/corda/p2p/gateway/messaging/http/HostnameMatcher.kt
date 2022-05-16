@@ -94,7 +94,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         names.forEach {
             if(ALTNAME_DNS == it[0]) {
                 val altName = it[1] as String
-                if (matchWithWildcard(hostName.toLowerCase(), altName.toLowerCase())) {
+                if (matchWithWildcard(hostName.lowercase(), altName.lowercase())) {
                     return true
                 }
             }
@@ -107,7 +107,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             .groupBy(AttributeTypeAndValue::getType, AttributeTypeAndValue::getValue)
             .mapValues { it.value[0].toString() }
         val cn = attrs[BCStyle.CN]
-        if (matchWithWildcard(hostName.toLowerCase(), cn?.toLowerCase())) {
+        if (matchWithWildcard(hostName.lowercase(), cn?.lowercase())) {
             return true
         }
 

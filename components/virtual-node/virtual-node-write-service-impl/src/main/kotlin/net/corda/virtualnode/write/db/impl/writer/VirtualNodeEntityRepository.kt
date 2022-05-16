@@ -5,7 +5,9 @@ import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.utils.transaction
-import net.corda.packaging.CPI
+import net.corda.libs.packaging.Cpi
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import javax.persistence.EntityManager
@@ -14,6 +16,10 @@ import javax.persistence.EntityManagerFactory
 /** Reads and writes CPIs, holding identities and virtual nodes to and from the cluster database. */
 internal class VirtualNodeEntityRepository(private val entityManagerFactory: EntityManagerFactory) {
 
+    private companion object {
+        val log = contextLogger()
+    }
+
     /** Reads CPI metadata from the database. */
     internal fun getCPIMetadata(cpiFileChecksum: String): CPIMetadata? {
         val cpiMetadataEntity = entityManagerFactory.transaction {
@@ -21,7 +27,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 "SELECT cpi FROM CpiMetadataEntity cpi " +
                         "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum",
                 CpiMetadataEntity::class.java)
-                .setParameter("cpiFileChecksum", "%${cpiFileChecksum.toUpperCase()}%")
+                .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
                 .resultList
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
@@ -29,7 +35,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
             if (it == "") null else SecureHash.create(it)
         }
-        val cpiId = CPI.Identifier.newInstance(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
+        val cpiId = Cpi.Identifier.newInstance(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
         val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
         return CPIMetadata(cpiId, fileChecksum, cpiMetadataEntity.groupId)
     }
@@ -79,7 +85,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @param cpiId CPI identifier
      * @return true if virtual node exists in database, false otherwise
      */
-    internal fun virtualNodeExists(holdingId: HoldingIdentity, cpiId: CPI.Identifier): Boolean {
+    internal fun virtualNodeExists(holdingId: HoldingIdentity, cpiId: Cpi.Identifier): Boolean {
         return entityManagerFactory
             .transaction {
                 val signerSummaryHash = if (cpiId.signerSummaryHash != null)  cpiId.signerSummaryHash.toString() else ""
@@ -93,10 +99,14 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @param holdingId Holding identity
      * @param cpiId CPI identifier
      */
-    internal fun putVirtualNode(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: CPI.Identifier) {
-        val signerSummaryHash = if (cpiId.signerSummaryHash != null)  cpiId.signerSummaryHash.toString() else ""
+    internal fun putVirtualNode(entityManager: EntityManager, holdingId: HoldingIdentity, cpiId: Cpi.Identifier) {
+        val signerSummaryHash = cpiId.signerSummaryHash?.toString() ?: ""
         val key = VirtualNodeEntityKey(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash)
-        entityManager.find(VirtualNodeEntity::class.java, key) ?:
-        entityManager.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash))
+        val foundVNode = entityManager.find(VirtualNodeEntity::class.java, key)
+        if (foundVNode == null) {
+            entityManager.persist(VirtualNodeEntity(holdingId.id, cpiId.name, cpiId.version, signerSummaryHash))
+        } else {
+            log.debug { "vNode for key already exists: $key" }
+        }
     }
 }

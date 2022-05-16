@@ -8,7 +8,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -21,10 +21,6 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager
 ) : FlowWaitingForHandler<SessionConfirmation> {
-
-    private companion object {
-        val CLOSED_STATUSES = listOf(SessionStateType.CLOSED)
-    }
 
     override val type = SessionConfirmation::class.java
 
@@ -41,7 +37,7 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
                 }
             }
             SessionConfirmationType.CLOSE -> {
-                if (flowSessionManager.areAllSessionsInStatuses(checkpoint, waitingFor.sessionIds, CLOSED_STATUSES)) {
+                if (flowSessionManager.doAllSessionsHaveStatus(checkpoint, waitingFor.sessionIds, SessionStateType.CLOSED)) {
                     val receivedEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
                     if (receivedEvents.any { (_, event) -> event.payload !is SessionClose }) {
                         FlowContinuation.Error(CordaRuntimeException("Unexpected data message when session is closing"))

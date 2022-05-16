@@ -3,7 +3,7 @@ import aQute.bnd.gradle.Bundle
 plugins {
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description 'Corda Kryo Serialization Library'
@@ -24,7 +24,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-packaging"
+    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"

@@ -1,6 +1,6 @@
 package net.corda.virtualnode
 
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.core.CpiIdentifier
 import java.util.UUID
 
 /**

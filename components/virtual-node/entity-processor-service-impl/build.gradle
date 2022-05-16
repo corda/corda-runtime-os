@@ -1,0 +1,106 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
+}
+
+description "Entity Processor Impl"
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:db:db-connection-manager-impl')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:entity-processor-service')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(':libs:db:db-admin')
+    implementation project(':libs:db:db-admin-impl')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:serialization:serialization-internal")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation "net.corda:corda-application"
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-membership'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
+    testImplementation project(':libs:db:db-orm-impl')
+    testImplementation project(":libs:messaging:messaging")
+    testImplementation project(':testing:db-testkit')
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // Integration test resources using cpis configuration
+    cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
+
+
+    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion") {
+        // do I need this? - trying to ensure this doesn't get "suggested" to the unwary
+        // it doesn't @Export anything for OSGi and anyone that uses it gets a resolution failure at _runtime_
+        exclude group: 'org.mockito.kotlin', module: 'mockito-kotlin'
+    }
+
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
+
+    // needed to import serialization libs
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':components:virtual-node:cpk-read-service')
+    integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
+
+    // Get it compiling and running.
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
+
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+}
+
+//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
+}

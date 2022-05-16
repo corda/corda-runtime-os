@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
 }
@@ -28,6 +28,7 @@ dependencies {
     implementation project(':components:crypto:crypto-service')
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:configuration:configuration-datamodel")
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')
@@ -38,7 +39,6 @@ dependencies {
     implementation project(":libs:messaging:messaging")
 
     integrationTestImplementation project(":libs:configuration:configuration-core")
-    integrationTestImplementation project(":libs:configuration:configuration-datamodel")
     integrationTestImplementation project(":libs:crypto:crypto-flow")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
@@ -57,20 +57,19 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-db-persistence-impl")
     runtimeOnly project(':components:crypto:crypto-service-impl')
     runtimeOnly project(":components:db:db-connection-manager-impl")
-    runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:db:db-orm-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 }

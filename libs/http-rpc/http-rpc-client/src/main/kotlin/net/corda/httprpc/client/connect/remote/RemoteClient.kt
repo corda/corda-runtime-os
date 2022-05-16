@@ -26,6 +26,8 @@ import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
 import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
+import kong.unirest.MultipartBody
+import net.corda.httprpc.client.processing.HttpRpcClientFileUpload
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -85,19 +87,16 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             HttpVerb.DELETE -> Unirest.delete(path)
         }
 
-        request.header("accept", "application/json")
-        request.header("accept", "text/plain")
+        request = if(isMultipartFormRequest(webRequest)) {
+            buildMultipartFormRequest(webRequest, request)
+        } else {
+            buildApplicationJsonRequest(webRequest, request)
+        }
 
         context.authenticationScheme.authenticate(context.credentials, request, context)
 
-        if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
-        webRequest.queryParameters?.forEach { item ->
-            if (item.value is Collection<*>) {
-                (item.value as Collection<*>).forEach { request = request.queryString(item.key, it) }
-            } else {
-                request = request.queryString(item.key, item.value)
-            }
-        }
+        request = applyQueryParameters(webRequest, request)
+
         try {
             val response = request.remoteCallFn()
             if (!response.isSuccess || response.parsingError.isPresent) {
@@ -124,6 +123,47 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         }
     }
 
+    private fun <T> buildMultipartFormRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request.header("accept", "multipart/form-data")
+        if(request is HttpRequestWithBody) {
+            requestBuilder = request.multiPartContent() as MultipartBody
+
+            if(!webRequest.formParameters.isNullOrEmpty()) {
+                webRequest.formParameters.forEach {
+                    requestBuilder.field(it.key, it.value)
+                }
+            }
+
+            if(!webRequest.files.isNullOrEmpty()) {
+                webRequest.files.forEach { filesForParameter ->
+                    addFilesForEachField(filesForParameter, requestBuilder)
+                }
+            }
+        }
+        return requestBuilder
+    }
+
+    private fun addFilesForEachField(filesForParameter: Map.Entry<String, List<HttpRpcClientFileUpload>>, requestBuilder: MultipartBody) {
+        val formFieldName = filesForParameter.key
+        filesForParameter.value.forEach { file ->
+            // we can add multiple files to the same form field name
+            requestBuilder.field(formFieldName, file.content, file.fileName)
+        }
+    }
+
+    private fun <T> buildApplicationJsonRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request
+        requestBuilder.header("accept", "application/json")
+        requestBuilder.header("accept", "text/plain")
+
+        if(requestBuilder is HttpRequestWithBody) {
+            if (webRequest.body != null) {
+                requestBuilder = requestBuilder.body(webRequest.body)
+            }
+        }
+        return requestBuilder
+    }
+
     private fun addSslParams() {
         log.trace { "Add Ssl params." }
         if (enableSsl) {
@@ -141,5 +181,20 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             }
         }
         log.trace { "Add Ssl params completed." }
+    }
+
+    private fun isMultipartFormRequest(webRequest: WebRequest<*>) =
+        !webRequest.formParameters.isNullOrEmpty() || !webRequest.files.isNullOrEmpty()
+
+    private fun <T> applyQueryParameters(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request
+        webRequest.queryParameters?.forEach { item ->
+            if (item.value is Collection<*>) {
+                (item.value as Collection<*>).forEach { requestBuilder = requestBuilder.queryString(item.key, it) }
+            } else {
+                requestBuilder = requestBuilder.queryString(item.key, item.value)
+            }
+        }
+        return requestBuilder
     }
 }

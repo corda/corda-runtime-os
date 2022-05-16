@@ -1,11 +1,13 @@
 package net.corda.processor.member
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -16,8 +18,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
@@ -35,19 +35,28 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import java.util.*
+import java.time.Duration
+import java.lang.IllegalStateException
+import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {
-        val bootConf =
-            SmartConfigFactory.create(ConfigFactory.empty()).create(
-                ConfigFactory.parseString(
-                    """
-                       |$INSTANCE_ID=1
-                       |$BUS_TYPE = INMEMORY
-                   """.trimMargin()
-                )
+        private const val CRYPTO_BOOT_CONFIGURATION = """
+        instance.id=1
+        bus.busType = INMEMORY
+    """
+
+        fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
+            var cfg = ConfigFactory.parseString(CRYPTO_BOOT_CONFIGURATION)
+            extra.forEach {
+                cfg = cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped()))
+            }
+            return SmartConfigFactory.create(
+                ConfigFactory.empty()
+            ).create(
+                cfg
             )
+        }
 
         val cryptoConf = ""
 
@@ -77,15 +86,16 @@ class MemberProcessorTestUtils {
         val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
         val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
+        val bobHoldingIdentity = HoldingIdentity(bobName, groupId)
 
         fun Publisher.publishRawGroupPolicyData(
             virtualNodeInfoReader: VirtualNodeInfoReadService,
             cpiInfoReadService: CpiInfoReadService,
-            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
+            holdingIdentity: HoldingIdentity,
             groupPolicy: String = sampleGroupPolicy1
         ) {
             val cpiVersion = UUID.randomUUID().toString()
-            val previous = getVirtualNodeInfo(virtualNodeInfoReader)
+            val previous = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
             val previousCpiInfo = getCpiInfo(cpiInfoReadService, previous?.cpiIdentifier)
             // Create test data
             val cpiMetadata = getCpiMetadata(
@@ -111,7 +121,7 @@ class MemberProcessorTestUtils {
 
             // wait for virtual node info reader to pick up changes
             eventually {
-                val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader)
+                val newVNodeInfo = getVirtualNodeInfo(virtualNodeInfoReader, holdingIdentity)
                 assertNotNull(newVNodeInfo)
                 assertNotEquals(previous, newVNodeInfo)
                 assertEquals(virtualNodeInfo.cpiIdentifier, newVNodeInfo?.cpiIdentifier)
@@ -135,18 +145,21 @@ class MemberProcessorTestUtils {
         val sampleGroupPolicy1 get() = getSampleGroupPolicy("/SampleGroupPolicy.json")
         val sampleGroupPolicy2 get() = getSampleGroupPolicy("/SampleGroupPolicy2.json")
 
-        fun getRegistrationResult(registrationProxy: RegistrationProxy): MembershipRequestRegistrationResult =
-            eventually {
+        /**
+         * Registration is not a call expected to happen repeatedly in quick succession so allowing more time in
+         * between calls for a more realistic set up.
+         */
+        fun getRegistrationResult(
+            registrationProxy: RegistrationProxy,
+            holdingIdentity: HoldingIdentity
+        ): MembershipRequestRegistrationResult =
+            eventually(
+                waitBetween = Duration.ofMillis(1000)
+            ) {
                 assertDoesNotThrow {
-                    registrationProxy.register(aliceHoldingIdentity)
+                    registrationProxy.register(holdingIdentity)
                 }
             }
-
-        fun getRegistrationResultFails(registrationProvider: RegistrationProxy) = eventually {
-            assertThrows<IllegalStateException> {
-                registrationProvider.register(aliceHoldingIdentity)
-            }
-        }
 
         fun lookup(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
             val lookupResult = groupReader.lookup(holdingIdentity)
@@ -167,7 +180,7 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicyFails(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity = aliceHoldingIdentity,
+            holdingIdentity: HoldingIdentity,
             expectedException: Class<out Exception> = IllegalStateException::class.java
         ) = eventually {
             val e = assertThrows<Exception> { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
@@ -176,7 +189,7 @@ class MemberProcessorTestUtils {
 
         fun getGroupPolicy(
             groupPolicyProvider: GroupPolicyProvider,
-            holdingIdentity: HoldingIdentity = aliceHoldingIdentity
+            holdingIdentity: HoldingIdentity
         ) = eventually {
             assertDoesNotThrow { groupPolicyProvider.getGroupPolicy(holdingIdentity) }
         }
@@ -221,8 +234,8 @@ class MemberProcessorTestUtils {
             groupPolicy
         )
 
-        fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService) =
-            virtualNodeInfoReader.get(aliceHoldingIdentity)
+        fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService, holdingIdentity: HoldingIdentity) =
+            virtualNodeInfoReader.get(holdingIdentity)
 
         fun getCpiInfo(cpiInfoReadService: CpiInfoReadService, cpiIdentifier: CpiIdentifier?) =
             when (cpiIdentifier) {

@@ -65,6 +65,8 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
 
     override fun parseUuid(uuid: String): UUID = UUID.fromString(uuid)
 
+    override fun stringMethodWithNameInAnnotation(incorrectName: String): String = "Completed $incorrectName"
+
     override fun echoQuery(requestString: String): String {
         return requestString
     }

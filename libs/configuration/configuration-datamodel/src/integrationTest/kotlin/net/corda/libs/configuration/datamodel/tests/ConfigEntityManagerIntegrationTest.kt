@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.random.Random
 
@@ -68,7 +68,7 @@ class ConfigEntityManagerIntegrationTest {
     @Test
     fun `can persist and read back config entities`() {
         val config = ConfigEntity(
-            "${random.nextInt()}", "a=b", 999,
+            "${random.nextInt()}", "a=b", 999, 0,
             // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
             Instant.now().truncatedTo(ChronoUnit.MILLIS), "actor"
         )
@@ -86,7 +86,7 @@ class ConfigEntityManagerIntegrationTest {
     @Test
     fun `can persist and read back config audit entities`() {
         val config = ConfigEntity(
-            "${random.nextInt()}", "a=b", 999,
+            "${random.nextInt()}", "a=b", 999, 0,
             // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
             Instant.now().truncatedTo(ChronoUnit.MILLIS), "joel"
         )
@@ -103,7 +103,7 @@ class ConfigEntityManagerIntegrationTest {
     }
 
     @Test
-    fun `can persiste and read back db connection configs`() {
+    fun `can persist and read back db connection configs by name and privilege`() {
         val dbConnection = DbConnectionConfig(
             UUID.randomUUID(),
             "batman",
@@ -131,7 +131,7 @@ hello=world
             em.persist(dbConnectionAudit)
         }
 
-        var results = entityManagerFactory.createEntityManager().transaction {
+        val results = entityManagerFactory.createEntityManager().transaction {
             val table = DbConnectionAudit::class.simpleName
             val query = "SELECT c FROM $table c WHERE c.name=:name AND c.privilege=:privilege"
 
@@ -144,6 +144,36 @@ hello=world
         assertEquals(
             dbConnectionAudit,
             results?.first()
+        )
+    }
+
+    @Test
+    fun `can persist and read back db connection configs by id`() {
+        val id = UUID.randomUUID()
+        val dbConnection = DbConnectionConfig(
+            id,
+            "Alfred Thaddeus Crane Pennyworth",
+            DbPrivilege.DDL,
+            // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "the joker",
+            "You may call me Alfred without the mister -- and it's I who will do for you!",
+            """
+hello=world
+            """.trimIndent()
+        )
+
+        entityManagerFactory.createEntityManager().transaction { em ->
+            em.persist(dbConnection)
+        }
+
+        var result = entityManagerFactory.createEntityManager().transaction {
+            it.find(DbConnectionConfig::class.java, id)
+        }
+
+        assertEquals(
+            dbConnection,
+            result
         )
     }
 }

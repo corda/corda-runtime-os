@@ -1,0 +1,30 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk'
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-ledger'
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}
+
+tasks.named('jar', Jar) {
+    osgi {
+        symbolicName = contractSymbolicName
+    }
+}
+
+cordapp {
+    targetPlatformVersion 1000
+    minimumPlatformVersion 999 as Integer
+
+    contract {
+        name = 'Contract cpk to be used for unit tests for the packaging module'
+        versionId = 1
+        licence = 'Test-Licence'
+        vendor = 'R3'
+    }
+}

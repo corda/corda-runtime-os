@@ -99,7 +99,7 @@ class ResourceToOpenApiSpecMapperTest {
         val schemaModelProvider = DefaultSchemaModelProvider(schemaModelContextHolder)
 
         val requestBody = listOf(bodyParameter).toRequestBody(schemaModelProvider, "testSchemaName")
-        val schema = requestBody!!.content["application/json"]!!.schema.properties["id"]!!
+        val schema = requestBody!!.content["application/json"]!!.schema.properties["name"]!!
 
         assertEquals("array", schema.type)
         assertEquals(null, schema.format)
@@ -126,6 +126,30 @@ class ResourceToOpenApiSpecMapperTest {
         val bodyParameter = EndpointParameter(
             id = "id",
             name = "name",
+            description = "description",
+            required = true,
+            default = "default",
+            classType = String::class.java,
+            type = ParameterType.BODY
+        )
+        val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
+        val requestBody = listOf(bodyParameter).toRequestBody(schemaModelProvider, "testSchemaName")
+
+        assertEquals(true, requestBody!!.required)
+        assertTrue(requestBody.content.containsKey("application/json"))
+        val content = requestBody.content["application/json"]
+        assertTrue(content!!.schema.properties.containsKey("name"))
+        assertEquals(content.schema.type, "object")
+        val property = content.schema.properties["name"]
+        assertEquals("string", property!!.example)
+        assertEquals("string", property.type)
+    }
+
+    @Test
+    fun `Can convert body parameter with empty name`() {
+        val bodyParameter = EndpointParameter(
+            id = "id",
+            name = "",
             description = "description",
             required = true,
             default = "default",
@@ -165,7 +189,7 @@ class ResourceToOpenApiSpecMapperTest {
             }
 
 
-            assert(components.schemas.containsKey("PingPongData"))
+            assertTrue(components.schemas.containsKey("PingPongData"))
 
             assertEquals(
                 "#/components/schemas/PingRequest",
@@ -296,7 +320,8 @@ class ResourceToOpenApiSpecMapperTest {
                     classType = InputStream::class.java,
                     parameterizedTypes = emptyList(),
                     type = ParameterType.BODY,
-                    default = ""
+                    default = "",
+                    isFile = true
                 )
             ),
             responseBody = ResponseBody(
@@ -316,7 +341,8 @@ class ResourceToOpenApiSpecMapperTest {
         val properties = multipartFormData.schema.properties
         assertEquals(1, properties.size)
 
-        val file = properties["file_id"]
+        // open-api generation uses the name if its present as the property name
+        val file = properties["file"]
         assertNotNull(file)
         assertEquals("file", file!!.name)
         assertEquals("string", file.type)
@@ -349,7 +375,8 @@ class ResourceToOpenApiSpecMapperTest {
                     required = true,
                     classType = InputStream::class.java,
                     type = ParameterType.BODY,
-                    default = ""
+                    default = "",
+                    isFile = true
                 )
             ),
             responseBody = ResponseBody(
@@ -372,7 +399,7 @@ class ResourceToOpenApiSpecMapperTest {
         val properties = multipartFormData.schema.properties
         assertEquals(2, properties.size)
 
-        val filename = properties["filename_id"]
+        val filename = properties["filename"]
         assertNotNull(filename)
         assertEquals("filename", filename!!.name)
         assertEquals("string", filename.type)
@@ -380,7 +407,7 @@ class ResourceToOpenApiSpecMapperTest {
         assertEquals("string", filename.example)
         assertFalse(filename.nullable)
 
-        val file = properties["file_id"]
+        val file = properties["file"]
         assertNotNull(file)
         assertEquals("file", file!!.name)
         assertEquals("string", file.type)

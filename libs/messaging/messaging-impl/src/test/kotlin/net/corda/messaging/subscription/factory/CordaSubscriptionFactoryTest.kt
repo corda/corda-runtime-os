@@ -51,7 +51,7 @@ class CordaSubscriptionFactoryTest {
 
     @Test
     fun createPubSub() {
-        factory.createPubSubSubscription<Any, Any>(subscriptionConfig, mock(), null, config)
+        factory.createPubSubSubscription<Any, Any>(subscriptionConfig, mock(), config)
     }
 
     @Test

@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
@@ -14,7 +14,7 @@ dependencies {
 
     api project(':libs:sandbox')
     api project(':libs:virtual-node:virtual-node-info')
-    api 'net.corda:corda-packaging'
+    api project(":libs:packaging:packaging")
     api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -24,7 +24,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
 
-    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':libs:packaging:packaging-core')
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')

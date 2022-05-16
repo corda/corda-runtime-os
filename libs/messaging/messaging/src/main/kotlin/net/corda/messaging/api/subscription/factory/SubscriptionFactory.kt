@@ -15,7 +15,6 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import java.util.concurrent.ExecutorService
 
 /**
  * Factory for creating subscriptions. Factory can be obtained an OSGi Service.
@@ -38,15 +37,12 @@ interface SubscriptionFactory {
      *
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [PubSubProcessor])
-     * @param executor This will allow for the threading model to be controlled by the subscriber. If null processor will
-     * execute on the same thread as the consumer.
      * @param messagingConfig Configuration to override the default settings for the subscription
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
-        executor: ExecutorService?,
         messagingConfig: SmartConfig
     ): Subscription<K, V>
 

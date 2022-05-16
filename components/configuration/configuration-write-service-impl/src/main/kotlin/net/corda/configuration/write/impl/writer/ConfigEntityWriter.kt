@@ -27,7 +27,9 @@ internal class ConfigEntityWriter(dbConnectionManager: DbConnectionManager) {
      *  @return The updated [ConfigEntity].
      */
     fun writeEntities(req: ConfigurationManagementRequest, clock: Clock): ConfigEntity {
-        val newConfig = ConfigEntity(req.section, req.config, req.schemaVersion, clock.instant(), req.updateActor)
+        val newConfig = ConfigEntity(
+            req.section, req.config, req.schemaVersion.majorVersion, req.schemaVersion.minorVersion, clock.instant(), req.updateActor
+        )
         val newConfigAudit = ConfigAuditEntity(newConfig)
         return entityManagerFactory.transaction { entityManager ->
             val existingConfig = entityManager.find(ConfigEntity::class.java, newConfig.section)

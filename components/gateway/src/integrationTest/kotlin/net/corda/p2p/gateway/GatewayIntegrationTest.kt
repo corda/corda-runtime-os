@@ -84,7 +84,7 @@ class GatewayIntegrationTest : TestBase() {
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"), messagingConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
 
         fun stop() {
             publisher.close()
@@ -433,23 +433,12 @@ class GatewayIntegrationTest : TestBase() {
 
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
-            val servers = (1..serversCount).map {
+            val serverUrls = (1..serversCount).map {
                 getOpenPort()
             }.map {
                 "http://www.chip.net:$it"
-            }.onEach { serverUrl ->
-                repeat(messageCount) {
-                    val msg = LinkOutMessage.newBuilder().apply {
-                        header = LinkOutHeader(
-                            HoldingIdentity("", GROUP_ID),
-                            NetworkType.CORDA_5,
-                            serverUrl,
-                        )
-                        payload = authenticatedP2PMessage("Target-$serverUrl")
-                    }.build()
-                    alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
-                }
-            }.map { serverUrl ->
+            }
+            val servers = serverUrls.map { serverUrl ->
                 URI.create(serverUrl)
             }.map { serverUri ->
                 val serverListener = object : ListenerWithServer() {
@@ -484,7 +473,7 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         gatewayAddress.first,
                         gatewayAddress.second,
-                        aliceSslConfig
+                        aliceSslConfig,
                     )
                 ),
                 alice.subscriptionFactory,
@@ -495,6 +484,20 @@ class GatewayIntegrationTest : TestBase() {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
+                serverUrls.forEach { url ->
+                    repeat(messageCount) {
+                        val msg = LinkOutMessage.newBuilder().apply {
+                            header = LinkOutHeader(
+                                HoldingIdentity("", GROUP_ID),
+                                NetworkType.CORDA_5,
+                                url,
+                            )
+                            payload = authenticatedP2PMessage("Target-$url")
+                        }.build()
+                        alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
+                    }
+                }
+
                 // Wait until all messages have been delivered
                 deliveryLatch.await(1, TimeUnit.MINUTES)
                 endTime = Instant.now().toEpochMilli()

@@ -13,7 +13,7 @@ internal class ResourceNameConflictValidator(private val classes: List<Class<out
         return classes.filter {
             it.annotations.any { annotation -> annotation is HttpRpcResource }
         }.map {
-            it.getAnnotation(HttpRpcResource::class.java).path(it).toLowerCase()
+            it.getAnnotation(HttpRpcResource::class.java).path(it).lowercase()
         }.fold(HttpRpcValidationResult()) { total, next ->
             total + if (next in resourceNames) {
                 HttpRpcValidationResult(listOf("Duplicate resource name: $next"))

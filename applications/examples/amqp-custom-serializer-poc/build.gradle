@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-app'
 }
 
@@ -23,20 +23,20 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
 
-    implementation "net.corda:corda-packaging"
+    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
-    implementation project(':libs:virtual-node:packaging-core')
+    implementation project(':libs:packaging:packaging-core')
     implementation project(':components:virtual-node:cpk-read-service')
 
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
     // Constraints block can be removed when Avro is upgraded to the next version
     constraints {
-        implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion") {
+        implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion") {
             because 'sonatype-2021-4682'
         }
     }

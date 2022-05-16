@@ -20,6 +20,18 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "app.kubernetes.io/component"
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: {{ include "corda.workerName" . }}
         image: {{ include "corda.workerImage" . }}
@@ -29,8 +41,28 @@ spec:
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
         {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
+          - name: DATABASE_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "corda.clusterDbSecretName" . }}
+                key: password
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                key: salt
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                key: passphrase
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
+          - -spassphrase=$(PASSPHRASE)
+          - -ssalt=$(SALT)
+          - -ddatabase.user={{ .Values.db.cluster.user }}
+          - -ddatabase.pass=$(DATABASE_PASS)
+          - -ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" .Values.db.cluster.host }}:{{ .Values.db.cluster.port }}/{{ .Values.db.cluster.database }}
         ports:
         {{- if .Values.workers.crypto.debug.enabled }}
           - name: debug
@@ -38,6 +70,7 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if not .Values.workers.crypto.debug.enabled }}
         livenessProbe:
           httpGet:
             path: /isHealthy
@@ -50,6 +83,7 @@ spec:
             port: health
           periodSeconds: 10
           failureThreshold: 5
+        {{- end }}
       nodeSelector:
         kubernetes.io/os: linux
         kubernetes.io/arch: amd64

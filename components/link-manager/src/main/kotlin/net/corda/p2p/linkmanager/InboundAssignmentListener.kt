@@ -1,79 +1,80 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
-class InboundAssignmentListener(coordinatorFactory: LifecycleCoordinatorFactory): PartitionAssignmentListener, LifecycleWithDominoTile {
+class InboundAssignmentListener(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val observedTopic: String,
+) : PartitionAssignmentListener, LifecycleWithDominoTile {
 
-    override val dominoTile = ComplexDominoTile(
+    override val dominoTile = SimpleDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        createResources = ::createResources
     )
 
-    private val lock = ReentrantReadWriteLock()
-    private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
-    private var firstAssignment = true
-    private val topicToCallback = mutableMapOf<String, MutableList<(partitions: Set<Int>) -> Unit>>()
-
-    private val future: CompletableFuture<Unit> = CompletableFuture()
+    private val partitions = ConcurrentHashMap.newKeySet<Int>()
+    private val callbacks = ConcurrentHashMap.newKeySet<(partitions: Set<Int>) -> Unit>()
+    private var logger = LoggerFactory.getLogger(this::class.java.name)
 
     override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
-        lock.write {
-            for ((topic, partition) in topicPartitions) {
-                topicToPartition[topic]?.remove(partition)
+        topicPartitions.forEach { (topic, partition) ->
+            if (topic != observedTopic) {
+                logger.warn(
+                    "Unexpected notifications: notifications for $topic were received, " +
+                        "but expected notifications only for $observedTopic"
+                )
+            } else {
+                partitions.remove(partition)
             }
-            callCallbacks(topicPartitions.map { it.first }.toSet())
+        }
+
+        if (partitions.isEmpty()) {
+            logger.warn("No partitions assigned to $observedTopic.")
+            dominoTile.updateState(DominoTileState.StoppedDueToBadConfig)
+        } else {
+            callCallbacks()
         }
     }
 
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
-        lock.write {
-            for ((topic, partition) in topicPartitions) {
-                val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }
-                partitionSet.add(partition)
+        topicPartitions.forEach { (topic, partition) ->
+            if (topic != observedTopic) {
+                logger.warn(
+                    "Unexpected notifications: notifications for $topic were received," +
+                        " but expected notifications only for $observedTopic"
+                )
+            } else {
+                partitions.add(partition)
             }
-            callCallbacks(topicPartitions.map { it.first }.toSet())
-            if (firstAssignment) {
-                firstAssignment = false
-                future.complete(Unit)
-            }
+        }
+        if (partitions.isNotEmpty()) {
+            dominoTile.updateState(DominoTileState.Started)
+            callCallbacks()
         }
     }
 
-    fun getCurrentlyAssignedPartitions(topic: String) : Set<Int> {
-        return lock.read {
-            topicToPartition[topic] ?: emptySet()
+    fun getCurrentlyAssignedPartitions(): Set<Int> {
+        return partitions
+    }
+
+    fun registerCallbackForTopic(callback: (partitions: Set<Int>) -> Unit) {
+        callbacks.add(callback)
+        if (dominoTile.isRunning) {
+            callback.invoke(partitions)
         }
     }
 
-    fun registerCallbackForTopic(topic: String, callback: (partitions: Set<Int>) -> Unit) {
-        lock.write {
-            topicToCallback.compute(topic) { _, callbacks ->
-                callbacks?.apply { add(callback) } ?: mutableListOf(callback)
+    private fun callCallbacks() {
+        if (dominoTile.isRunning) {
+            callbacks.forEach {
+                it.invoke(partitions)
             }
-            if (future.isDone) {
-                callCallbacks(setOf(topic))
-            }
         }
-    }
-
-    private fun callCallbacks(topics: Set<String>) {
-        topics.forEach { topic ->
-            val callbacks = topicToCallback[topic]
-            val partitions = topicToPartition[topic]
-            partitions?.let { callbacks?.forEach { callback -> callback(partitions) } }
-        }
-    }
-
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
-        return future
     }
 }

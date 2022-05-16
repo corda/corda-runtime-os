@@ -29,9 +29,15 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
         }
     }
 
+    override fun createFlowRetryingStatusMessage(checkpoint: FlowCheckpoint): FlowStatus {
+        return getCommonFlowStatus(checkpoint).apply {
+            flowStatus = FlowStates.RETRYING
+        }
+    }
+
     override fun createFlowFailedStatusMessage(checkpoint: FlowCheckpoint, errorType: String, message: String): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
-            flowStatus =  FlowStates.COMPLETED
+            flowStatus =  FlowStates.FAILED
             error =  ExceptionEnvelope(errorType, message)
         }
     }

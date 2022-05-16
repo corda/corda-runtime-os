@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
@@ -13,6 +13,7 @@ dependencies {
     implementation project(':components:db:db-connection-manager')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation "com.typesafe:config:$typeSafeConfigVersion"

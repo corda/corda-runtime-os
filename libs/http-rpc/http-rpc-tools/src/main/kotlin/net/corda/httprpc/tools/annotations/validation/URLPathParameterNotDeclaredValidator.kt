@@ -35,7 +35,7 @@ internal class URLPathParameterNotDeclaredValidator(private val clazz: Class<out
     @Suppress("ComplexMethod")
     private fun getParameterName(parameter: Parameter) =
         parameter.annotations.single { it is HttpRpcPathParameter }?.let { annotation ->
-            (annotation as HttpRpcPathParameter).name.toLowerCase().takeIf { name -> name.isNotBlank() }
-                ?: parameter.name.toLowerCase()
+            (annotation as HttpRpcPathParameter).name.lowercase().takeIf { name -> name.isNotBlank() }
+                ?: parameter.name.lowercase()
         }
 }

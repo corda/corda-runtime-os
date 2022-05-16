@@ -19,8 +19,8 @@ class ParameterNameConflictValidatorTest {
 
             @HttpRpcGET
             fun test(@HttpRpcQueryParameter(name = "foo") foo1: String, @HttpRpcQueryParameter(name = "foo") foo2: String) {
-                foo1.toLowerCase()
-                foo2.toLowerCase()
+                foo1.lowercase()
+                foo2.lowercase()
             }
         }
 
@@ -39,8 +39,8 @@ class ParameterNameConflictValidatorTest {
 
             @HttpRpcGET
             fun test(@HttpRpcQueryParameter(name = "foo") foo1: String, @HttpRpcQueryParameter foo: String) {
-                foo1.toLowerCase()
-                foo.toLowerCase()
+                foo1.lowercase()
+                foo.lowercase()
             }
         }
 
@@ -63,9 +63,9 @@ class ParameterNameConflictValidatorTest {
                 @HttpRpcQueryParameter Foo: String,
                 @HttpRpcQueryParameter(name = "FOO") foo2: String
             ) {
-                Foo.toLowerCase()
-                foo1.toLowerCase()
-                foo2.toLowerCase()
+                Foo.lowercase()
+                foo1.lowercase()
+                foo2.lowercase()
             }
         }
 
@@ -84,8 +84,8 @@ class ParameterNameConflictValidatorTest {
 
             @HttpRpcGET
             fun test(@HttpRpcQueryParameter(name = "foo") foo1: String, @HttpRpcPathParameter(name = "foo") foo2: String) {
-                foo1.toLowerCase()
-                foo2.toLowerCase()
+                foo1.lowercase()
+                foo2.lowercase()
             }
         }
 
@@ -104,8 +104,8 @@ class ParameterNameConflictValidatorTest {
 
             @HttpRpcGET
             fun test(foO: String, @HttpRpcRequestBodyParameter(name = "Foo") foo2: String) {
-                foO.toLowerCase()
-                foo2.toLowerCase()
+                foO.lowercase()
+                foo2.lowercase()
             }
         }
 

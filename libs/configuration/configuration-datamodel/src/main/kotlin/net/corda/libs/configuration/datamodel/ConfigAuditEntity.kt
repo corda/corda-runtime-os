@@ -51,7 +51,7 @@ data class ConfigAuditEntity(
         0,
         configEntity.section,
         configEntity.config,
-        configEntity.schemaVersion,
+        configEntity.version,
         configEntity.updateTimestamp,
         configEntity.updateActor
     )

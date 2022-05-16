@@ -32,7 +32,7 @@ internal class PathParameterInURLPathValidator(private val clazz: Class<out RpcO
         if (path == null) {
             return HttpRpcValidationResult(listOf("Path parameter '$parameterName' incompatible with the defaulted endpoint path"))
         }
-        val exists = parameterName.toLowerCase().existsInPath(path.toLowerCase())
+        val exists = parameterName.lowercase().existsInPath(path.lowercase())
         return if (exists) HttpRpcValidationResult()
         else HttpRpcValidationResult(listOf("Path parameter '$parameterName' does not exist in endpoint path '$path'"))
     }

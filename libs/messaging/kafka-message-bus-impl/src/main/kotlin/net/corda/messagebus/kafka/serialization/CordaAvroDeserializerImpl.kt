@@ -3,7 +3,6 @@ package net.corda.messagebus.kafka.serialization
 import net.corda.data.CordaAvroDeserializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import java.nio.ByteBuffer
@@ -20,18 +19,19 @@ class CordaAvroDeserializerImpl<T : Any>(
     }
 
     override fun deserialize(data: ByteArray): T? {
-        when (expectedClass) {
+        @Suppress("unchecked_cast")
+        return when (expectedClass) {
             String::class.java -> {
-                return uncheckedCast(stringDeserializer.deserialize(null, data))
+                stringDeserializer.deserialize(null, data)
             }
             ByteArray::class.java -> {
-                return uncheckedCast(data)
+                data
             }
             else -> {
-                return try {
+                try {
                     val dataBuffer = ByteBuffer.wrap(data)
                     val classType = schemaRegistry.getClassType(dataBuffer)
-                    uncheckedCast(schemaRegistry.deserialize(dataBuffer, classType, null))
+                    schemaRegistry.deserialize(dataBuffer, classType, null)
                 } catch (ex: Throwable) {
                     log.error("Failed to deserialise to expected class $expectedClass", ex)
                     // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
@@ -41,7 +41,7 @@ class CordaAvroDeserializerImpl<T : Any>(
                     null
                 }
             }
-        }
+        } as? T?
     }
 
     override fun deserialize(topic: String?, data: ByteArray?): T? {

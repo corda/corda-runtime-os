@@ -11,7 +11,7 @@ class Simulator(
 ) : Job() {
     private val instanceId = Random.nextInt()
     private val mode = labels["mode"]
-        ?.toLowerCase()
+        ?.lowercase()
         ?.replace('_', '-')
         ?: Random.nextInt().toString()
     override val image by lazy {

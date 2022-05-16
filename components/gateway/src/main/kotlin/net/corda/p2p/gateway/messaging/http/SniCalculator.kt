@@ -29,7 +29,7 @@ object SniCalculator {
                     AttributeTypeAndValue::getType, AttributeTypeAndValue::getValue)
                     .mapValues { it.value[0].toString() }.map { it }.joinToString(", ")
                 sha256Hash(x500NameSorted.toByteArray()).toHex().take(HASH_TRUNCATION_SIZE)
-                    .toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
+                    .lowercase() + CLASSIC_CORDA_SNI_SUFFIX
             }
             NetworkType.CORDA_5 -> {
                 val sni = URI.create(address).host

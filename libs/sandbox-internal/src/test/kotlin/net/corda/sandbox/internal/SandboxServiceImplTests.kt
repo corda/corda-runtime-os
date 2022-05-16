@@ -1,8 +1,8 @@
 package net.corda.sandbox.internal
 
-import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.CPK
-import net.corda.packaging.CordappManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CordappManifest
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -481,24 +481,24 @@ class SandboxServiceImplTests {
     }
 }
 
-/** For testing, associates a [CPK] with its bundles, the classes within those, and its CPK dependencies. */
+/** For testing, associates a Cpk with its bundles, the classes within those, and its CPK dependencies. */
 private data class CpkAndContents(
     val mainBundleClass: Class<*>,
     val libraryClass: Class<*>,
     val mainBundleName: String? = "${random.nextInt()}",
     val libraryBundleName: String? = "${random.nextInt()}",
-    private val cpkDependencies: NavigableSet<CPK.Identifier> = emptyNavigableSet()
+    private val cpkDependencies: NavigableSet<Cpk.Identifier> = emptyNavigableSet()
 ) {
     val bundleNames = setOf(mainBundleName, libraryBundleName)
     val cpk = createDummyCpk(cpkDependencies)
 
-    /** Creates a dummy [CPK]. */
-    private fun createDummyCpk(cpkDependencies: NavigableSet<CPK.Identifier>) = object : CPK {
-        override val metadata = object : CPK.Metadata {
-            override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())
-            override val type = CPK.Type.UNKNOWN
-            override val manifest = object : CPK.Manifest {
-                override val cpkFormatVersion = CPK.FormatVersion.parse("0.0")
+    /** Creates a dummy Cpk. */
+    private fun createDummyCpk(cpkDependencies: NavigableSet<Cpk.Identifier>) = object : Cpk {
+        override val metadata = object : Cpk.Metadata {
+            override val id = Cpk.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())
+            override val type = Cpk.Type.UNKNOWN
+            override val manifest = object : Cpk.Manifest {
+                override val cpkFormatVersion = Cpk.FormatVersion.parse("0.0")
             }
             override val hash = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH))
 

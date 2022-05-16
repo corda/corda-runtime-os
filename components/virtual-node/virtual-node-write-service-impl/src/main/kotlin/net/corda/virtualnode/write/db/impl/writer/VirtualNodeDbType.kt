@@ -27,7 +27,7 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
      * @param holdingIdentityId Holding identity ID (short hash)
      * @return schema name for given holding identity ID
      */
-    fun getSchemaName(holdingIdentityId: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityId".toLowerCase()
+    fun getSchemaName(holdingIdentityId: String) = "${DbSchema.VNODE}_${infix}_$holdingIdentityId".lowercase()
 
     /**
      * Returns DB user for given DB privilege
@@ -37,8 +37,8 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
      */
     fun getUserName(dbPrivilege: DbPrivilege, holdingIdentityId: String) =
         when (dbPrivilege) {
-            DDL -> "vnode_${infix}_${holdingIdentityId}_ddl".toLowerCase()
-            DML -> "vnode_${infix}_${holdingIdentityId}_dml".toLowerCase()
+            DDL -> "vnode_${infix}_${holdingIdentityId}_ddl".lowercase()
+            DML -> "vnode_${infix}_${holdingIdentityId}_dml".lowercase()
         }
 
     /**
@@ -46,7 +46,7 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
      * @param holdingIdentityId Holding identity ID (short hash)
      * @return DB connection name
      */
-    fun getConnectionName(holdingIdentityId: String) = "vnode_${infix}_$holdingIdentityId".toLowerCase()
+    fun getConnectionName(holdingIdentityId: String) = "vnode_${infix}_$holdingIdentityId".lowercase()
 
     /**
      * Returns DB connection description for given privilege

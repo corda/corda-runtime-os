@@ -31,7 +31,7 @@ object SchemaModelToOpenApiSchemaConverter {
                 schemaModel.enum?.forEach { this.addEnumItemObject(it) }
             }
             is SchemaCollectionModel -> ArraySchema().apply {
-                schemaModel.type?.let { this.type(it.toString().toLowerCase()) }
+                schemaModel.type?.let { this.type(it.toString().lowercase()) }
                 schemaModel.items?.let { this.items(convert(it)) }
                 this.uniqueItems(schemaModel.uniqueItems)
             }
@@ -66,8 +66,8 @@ object SchemaModelToOpenApiSchemaConverter {
     }
 
     private fun convertBaseSchemaModel(schemaModel: SchemaModel) = Schema<Any>().apply {
-        schemaModel.format?.let { this.format(it.toString().toLowerCase()) }
-        schemaModel.type?.let { this.type(it.toString().toLowerCase()) }
+        schemaModel.format?.let { this.format(it.toString().lowercase()) }
+        schemaModel.type?.let { this.type(it.toString().lowercase()) }
         schemaModel.name?.let { this.name(it) }
         schemaModel.description?.let { this.description(it) }
         schemaModel.example?.let { this.example(it) }

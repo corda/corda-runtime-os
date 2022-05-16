@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
@@ -10,7 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    api "net.corda:corda-packaging"
+    api project(":libs:packaging:packaging")
 
     api project(':libs:virtual-node:virtual-node-info')
     api project(':libs:serialization:serialization-checkpoint-api')

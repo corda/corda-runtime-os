@@ -2,19 +2,18 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
-import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
-import net.corda.packaging.CPI
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -24,9 +23,10 @@ import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
 import java.nio.ByteBuffer
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
+import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -135,17 +135,16 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun persistHoldingIdAndVirtualNode(holdingIdentity: HoldingIdentity, vNodeDbs: Map<VirtualNodeDbType,
-            VirtualNodeDb>, cpiId: CPI.Identifier, updateActor: String): VirtualNodeDbConnections {
+            VirtualNodeDb>, cpiId: Cpi.Identifier, updateActor: String): VirtualNodeDbConnections {
         try {
             return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
                 .transaction { entityManager ->
-                    val dbConnections = with(holdingIdentity) {
+                    val dbConnections =
                         VirtualNodeDbConnections(
                             putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
                             putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
                             putConnection(entityManager,vNodeDbs, CRYPTO, DML, updateActor)!!)
-                    }
                     virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
                     dbConnections
@@ -256,9 +255,9 @@ internal class VirtualNodeWriterProcessor(
         return handleException(respFuture, errMsg, request, cpiMetadata, holdingId)
     }
 
-    /** Converts a [CPI.Identifier] to its Avro representation. */
-    private fun CPI.Identifier.toAvro(): CPIIdentifier {
+    /** Converts a [Cpi.Identifier] to its Avro representation. */
+    private fun Cpi.Identifier.toAvro(): CpiIdAvro {
         val secureHashAvro = signerSummaryHash?.let { SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
-        return CPIIdentifier(name, version, secureHashAvro)
+        return CpiIdAvro(name, version, secureHashAvro)
     }
 }

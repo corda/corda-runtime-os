@@ -35,16 +35,6 @@ pluginManagement {
                 }
             }
             gradlePluginPortal()
-            maven {
-                url "${artifactoryContextUrl}/engineering-tools-maven"
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-                }
-            }
         }
     }
     plugins {
@@ -57,12 +47,10 @@ pluginManagement {
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
-        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
-        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
-        id 'com.github.ben-manes.versions' version gradleVersions
+        id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
-        id "com.r3.internal.gradle.plugins.r3-docker" version internalDockerVersion
+        id "com.jfrog.artifactory" version artifactoryPluginVersion
     }
 }
 
@@ -99,8 +87,6 @@ include 'applications:workers:worker-common'
 include 'applications:workers:workers-smoketest'
 include 'components:configuration:configuration-rpcops-service'
 include 'components:configuration:configuration-rpcops-service-impl'
-include 'components:configuration:configuration-publish-service'
-include 'components:configuration:configuration-publish-service-impl'
 include 'components:configuration:configuration-read-service'
 include 'components:configuration:configuration-read-service-impl'
 include 'components:configuration:configuration-write-service'
@@ -161,6 +147,8 @@ include 'components:virtual-node:cpk-read-service-impl'
 include 'components:virtual-node:cpk-write-service'
 include 'components:virtual-node:cpk-write-service-impl'
 include 'components:virtual-node:cpk-service-common'
+include 'components:virtual-node:entity-processor-service'
+include 'components:virtual-node:entity-processor-service-impl'
 include 'components:virtual-node:sandbox-group-context-service'
 include 'components:virtual-node:virtual-node-common'
 include 'components:virtual-node:virtual-node-info-read-service'
@@ -174,8 +162,6 @@ include 'libs:chunking:chunking-datamodel'
 include 'libs:configuration:configuration-core'
 include 'libs:configuration:configuration-datamodel'
 include 'libs:configuration:configuration-endpoints'
-include 'libs:configuration:configuration-publish'
-include 'libs:configuration:configuration-publish-impl'
 include 'libs:configuration:configuration-schema:p2p'
 include 'libs:configuration:configuration-validation'
 include 'libs:crypto:crypto-core'
@@ -217,6 +203,7 @@ include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
+include 'libs:lifecycle:lifecycle-test-impl'
 include 'libs:lifecycle:registry'
 include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
@@ -245,6 +232,11 @@ include 'libs:permissions:permission-storage-reader-impl'
 include 'libs:permissions:permission-storage-writer'
 include 'libs:permissions:permission-storage-writer-impl'
 include 'libs:p2p-crypto'
+include 'libs:packaging:packaging'
+include 'libs:packaging:packaging-avro-converters'
+include 'libs:packaging:packaging-core'
+include 'libs:packaging:packaging:test:contract-cpk'
+include 'libs:packaging:packaging:test:workflow-cpk'
 include 'libs:permissions:permission-datamodel'
 include 'libs:permissions:permission-validation'
 include 'libs:permissions:permission-validation-impl'
@@ -283,7 +275,6 @@ include 'libs:virtual-node:cpi-datamodel'
 include 'libs:virtual-node:cpi-upload-endpoints'
 include 'libs:virtual-node:cpi-upload-manager'
 include 'libs:virtual-node:cpi-upload-manager-impl'
-include 'libs:virtual-node:packaging-core'
 include 'libs:virtual-node:sandbox-group-context'
 include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
@@ -307,6 +298,7 @@ include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
 include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:connect4'
+include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:flow-worker-dev'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:sandbox-scr-cpk'
@@ -321,6 +313,7 @@ include 'testing:message-patterns'
 include 'testing:p2p:inmemory-messaging-impl'
 include 'testing:sandboxes'
 include 'testing:test-utilities'
+include 'testing:virtual-node-info-read-service-fake'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:secret-config'
@@ -328,9 +321,8 @@ include 'tools:plugins:secret-config'
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
-
-if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
-    includeBuild('../corda-api') {
+if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
+    includeBuild(cordaApiLocation) {
         dependencySubstitution {
             substitute module('net.corda:corda-application') using project(':application')
             substitute module('net.corda:corda-base') using project(':base')
@@ -343,12 +335,13 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
-            substitute module('net.corda:corda-packaging') using project(':packaging')
-            substitute module('net.corda:corda-packaging-avro-converters') using project(':packaging:packaging-avro-converters')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
     }
+}
+if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
+    includeBuild(cordaCliHostLocation)
 }
 
 gradleEnterprise {

@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-app'
 }
 
@@ -19,8 +19,8 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-packaging"
-    implementation "net.corda:corda-packaging-avro-converters"
+    implementation project(":libs:packaging:packaging")
+    implementation project(":libs:packaging:packaging-avro-converters")
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:virtual-node:virtual-node-info")

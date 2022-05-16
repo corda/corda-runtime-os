@@ -34,6 +34,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.test.TestFileUploadAPI
+import net.corda.httprpc.test.TestFileUploadImpl
+import net.corda.httprpc.test.utls.ChecksumUtil.generateChecksum
 
 internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     companion object {
@@ -57,7 +61,8 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     CustomSerializationAPIImpl(),
                     NumberSequencesRPCOpsImpl(),
                     CalendarRPCOpsImpl(),
-                    TestEntityRpcOpsImpl()
+                    TestEntityRpcOpsImpl(),
+                    TestFileUploadImpl()
                 ),
                 securityManager,
                 httpRpcSettings,
@@ -359,6 +364,150 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
 
                     it.assertThat(deleteUsingQuery("MyQuery")).isEqualTo("\"Deleted using query: MyQuery\"")
                 }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(100)
+    fun `operations on file upload using InputStream`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestFileUploadAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        val text = "some text for test"
+        val text2 = "some other text for test with multi files"
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                SoftAssertions.assertSoftly {
+                    it.assertThat(
+                        upload(text.byteInputStream())
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        uploadWithName("someName", text.byteInputStream())
+                    ).isEqualTo(
+                        "\"someName, ${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        multiInputStreamFileUpload(text.byteInputStream(), text2.byteInputStream())
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(100)
+    fun `operations on file upload using HttpFileUpload`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestFileUploadAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        val text = "some text for test"
+        val text2 = "some other text for test with multi files"
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                SoftAssertions.assertSoftly {
+                    it.assertThat(
+                        fileUpload(HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 123L))
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        fileUploadWithQueryParam(
+                            "tenant1",
+                            HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
+                        )
+                    ).isEqualTo(
+                        "\"tenant1, ${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        fileUploadWithPathParam(
+                            "tenant1",
+                            HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
+                        )
+                    ).isEqualTo(
+                        "\"tenant1, ${generateChecksum(text.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        fileUpload(
+                            HttpFileUpload(text.byteInputStream(), "", "", "SampleFile1.txt", 123L),
+                            HttpFileUpload(text2.byteInputStream(), "", "", "SampleFile2.txt", 123L),
+                        )
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                    )
+
+                    // test client ability to send list of files
+                    it.assertThat(
+                        fileUploadObjectList(
+                            listOf(
+                                HttpFileUpload(text.byteInputStream(), "", "", "SampleFile1.txt", 123L),
+                                HttpFileUpload(text2.byteInputStream(), "", "", "SampleFile2.txt", 123L)
+                            )
+                        )
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                    )
+
+                    it.assertThat(
+                        fileUploadWithNameInAnnotation(
+                            HttpFileUpload(text.byteInputStream(), "SampleFile.txt")
+                        )
+                    ).isEqualTo(
+                        "\"${generateChecksum(text.byteInputStream())}\""
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(100)
+    fun `name in annotation method call`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                // Extra set of quotes will be fixed by https://r3-cev.atlassian.net/browse/CORE-4248
+                assertThat(stringMethodWithNameInAnnotation("foo")).isEqualTo("\"Completed foo\"")
             }
         }
     }

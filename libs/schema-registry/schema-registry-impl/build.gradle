@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
@@ -14,7 +14,7 @@ dependencies {
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
     // Constraints block can be removed when Avro is upgraded to the next version
     constraints {
-        implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion") {
+        implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion") {
             because 'sonatype-2021-4682'
         }
     }

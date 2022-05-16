@@ -1,14 +1,20 @@
 package net.corda.configuration.write.impl.writer
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.v5.base.versioning.Version
 import java.time.Clock
 
 /**
@@ -24,8 +30,11 @@ import java.time.Clock
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
     private val configEntityWriter: ConfigEntityWriter,
+    private val validator: ConfigurationValidator,
     private val clock: Clock = Clock.systemUTC()
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
+
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     /**
      * For each [request], the processor attempts to commit the updated config to the cluster database. If successful,
@@ -37,9 +46,29 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-        val configEntity = publishConfigToDB(request, respFuture)
-        if (configEntity != null) {
-            publishConfigToKafka(configEntity, respFuture)
+        if (validateAndApplyDefaults(request, respFuture)) {
+            val configEntity = publishConfigToDB(request, respFuture)
+            if (configEntity != null) {
+                publishConfigToKafka(configEntity, respFuture)
+            }
+        }
+    }
+
+    private fun validateAndApplyDefaults(req: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture): Boolean {
+        return try {
+            val config = smartConfigFactory.create(ConfigFactory.parseString(req.config))
+            val updatedConfig = validator.validate(
+                req.section,
+                Version(req.schemaVersion.majorVersion, req.schemaVersion.minorVersion),
+                config,
+                true
+            )
+            req.config = updatedConfig.root().render(ConfigRenderOptions.concise())
+            true
+        } catch (e: Exception) {
+            val errMsg = "New configuration represented by $req couldn't be validated. Cause: $e"
+            handleException(respFuture, errMsg, e, req.section, req.config, req.schemaVersion, req.version)
+            false
         }
     }
 
@@ -84,12 +113,23 @@ internal class ConfigWriterProcessor(
             future.get()
         } catch (e: Exception) {
             val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
-            handleException(respFuture, errMsg, e, entity.section, entity.config, entity.schemaVersion, entity.version)
+            handleException(
+                respFuture, errMsg, e, entity.section, entity.config, ConfigurationSchemaVersion(
+                    entity.schemaVersionMajor,
+                    entity.schemaVersionMinor
+                ),
+                entity.version
+            )
             return
         }
 
         val response = ConfigurationManagementResponse(
-            true, null, entity.section, entity.config, entity.schemaVersion, entity.version
+            true,
+            null,
+            entity.section,
+            entity.config,
+            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor),
+            entity.version
         )
         respFuture.complete(response)
     }
@@ -102,7 +142,7 @@ internal class ConfigWriterProcessor(
         cause: Exception,
         section: String,
         config: String,
-        schemaVersion: Int,
+        schemaVersion: ConfigurationSchemaVersion,
         version: Int
     ) {
         val exception = ExceptionEnvelope(cause.javaClass.name, errMsg)

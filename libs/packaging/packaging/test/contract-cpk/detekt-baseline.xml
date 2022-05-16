@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>EmptyFunctionBlock:Contract.kt$PackagingTestContract${}</ID>
+    <ID>FinalNewline:net.corda.packaging.test.contract.Contract.kt:1</ID>
+    <ID>NewLineAtEndOfFile:Contract.kt$net.corda.packaging.test.contract.Contract.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

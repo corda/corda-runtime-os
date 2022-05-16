@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: create-topics
-          image: bitnami/kafka:2.8.1-debian-10-r99
+          image: bitnami/kafka:3.1.0-debian-10-r89
           imagePullPolicy: Always
           command:
             - /bin/sh
@@ -57,6 +57,7 @@ spec:
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.key.soft &
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.key.info &
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.ops.flow &
+              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}db.entity.processor &
               wait
               echo -e 'Successfully created the following topics:'
               kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --list

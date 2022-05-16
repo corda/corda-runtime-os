@@ -2,8 +2,8 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX

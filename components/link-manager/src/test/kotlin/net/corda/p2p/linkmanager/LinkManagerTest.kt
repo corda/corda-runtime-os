@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.publisher.Publisher
@@ -200,6 +201,11 @@ class LinkManagerTest {
         @Suppress("UNCHECKED_CAST")
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
     }
+    private val simpleDominoTile = Mockito.mockConstruction(SimpleDominoTile::class.java) { mock, context ->
+        whenever(mock.isRunning).doReturn(true)
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
+    }
     private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
 
     private val testPublisher = TestListBasedPublisher()
@@ -221,6 +227,7 @@ class LinkManagerTest {
         dominoTile.close()
         subscriptionTile.close()
         publisherTile.close()
+        simpleDominoTile.close()
     }
 
     class TestListBasedPublisher : Publisher {
@@ -300,7 +307,7 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener(mock())
+        val listener = InboundAssignmentListener(mock(), LINK_IN_TOPIC)
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }
@@ -377,7 +384,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(listOf(1)),
             mock(),
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
@@ -475,7 +482,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(listOf(1)),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
 
         val numberOfMessages = 3
@@ -552,7 +559,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(inboundSubscribedTopics),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val appMessage = AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID))
         val messages = listOf(EventLogRecord(TOPIC, KEY, appMessage, 0, 0))
@@ -633,7 +640,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(listOf(1)),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val messageIds = listOf("Id1", "Id2", "Id3")
 
@@ -736,7 +743,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(listOf(1)),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
@@ -796,7 +803,7 @@ class LinkManagerTest {
             mockMembers,
             assignedListener(listOf(1)),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val appMessage = AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID))
         val messages = listOf(EventLogRecord(TOPIC, KEY, appMessage, 0, 0))
@@ -1015,7 +1022,7 @@ class LinkManagerTest {
             membersAndGroups.second,
             membersAndGroups.first,
             assignedListener(listOf(1)),
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
 
@@ -1289,7 +1296,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(emptyList()),
             mock(),
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val messages = listOf(
             EventLogRecord(
@@ -1359,7 +1366,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(listOf(1)),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
 
         val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
@@ -1388,7 +1395,7 @@ class LinkManagerTest {
             membersAndGroups.first,
             assignedListener(listOf(1)),
             pendingSessionMessageQueues,
-            mockTimeFacilitiesProvider.mockClock
+            mockTimeFacilitiesProvider.clock
         )
         val expiredTTL = 0L
 

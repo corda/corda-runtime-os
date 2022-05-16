@@ -18,8 +18,8 @@ class ParameterAnnotationValidatorTest {
 
             @HttpRpcPOST
             fun test(foo: String, @HttpRpcQueryParameter @HttpRpcRequestBodyParameter bar: String) {
-                foo.toLowerCase()
-                bar.toLowerCase()
+                foo.lowercase()
+                bar.lowercase()
             }
         }
 
@@ -37,8 +37,8 @@ class ParameterAnnotationValidatorTest {
 
             @HttpRpcPOST
             fun test(foo: String, bar: String) {
-                foo.toLowerCase()
-                bar.toLowerCase()
+                foo.lowercase()
+                bar.lowercase()
             }
         }
 

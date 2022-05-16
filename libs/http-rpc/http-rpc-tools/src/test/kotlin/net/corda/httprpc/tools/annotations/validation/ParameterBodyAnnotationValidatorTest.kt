@@ -18,12 +18,12 @@ class ParameterBodyAnnotationValidatorTest {
 
             @HttpRpcGET
             fun test(@HttpRpcRequestBodyParameter foo: String) {
-                foo.toLowerCase()
+                foo.lowercase()
             }
 
             @HttpRpcGET
             fun testWithImplicitBodyParam(foo: String) {
-                foo.toLowerCase()
+                foo.lowercase()
             }
         }
 
@@ -42,14 +42,14 @@ class ParameterBodyAnnotationValidatorTest {
 
             @HttpRpcPOST
             fun test(@HttpRpcRequestBodyParameter foo: String, @HttpRpcRequestBodyParameter bar: String) {
-                foo.toLowerCase()
-                bar.toLowerCase()
+                foo.lowercase()
+                bar.lowercase()
             }
 
             @HttpRpcPOST
             fun testWithImplicitBodyParam(foo: String, bar: String) {
-                foo.toLowerCase()
-                bar.toLowerCase()
+                foo.lowercase()
+                bar.lowercase()
             }
         }
 

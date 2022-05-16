@@ -26,6 +26,7 @@ import java.time.LocalDateTime
 import java.util.Date
 import java.util.UUID
 import javax.security.auth.x500.X500Principal
+import net.corda.httprpc.HttpFileUpload
 
 class SchemaModelProviderTest {
 
@@ -242,6 +243,19 @@ class SchemaModelProviderTest {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = ByteArrayInputStream(byteArrayOf(1, 2, 3))
+        val mockParam = endpointParameter(data::class.java)
+
+        val result = provider.toSchemaModel(mockParam)
+
+        assertEquals(DataType.STRING, result.type)
+        assertEquals(DataFormat.BINARY, result.format)
+    }
+
+    @Test
+    fun `build with HttpFileUpload succeeds`() {
+        val schemaModelContextHolder = SchemaModelContextHolder()
+        val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
+        val data = HttpFileUpload("content".byteInputStream(), "binary", ".png", "test", 123L)
         val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)

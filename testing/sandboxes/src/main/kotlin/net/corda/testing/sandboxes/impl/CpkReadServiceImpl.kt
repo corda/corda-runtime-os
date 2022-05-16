@@ -1,12 +1,12 @@
 package net.corda.testing.sandboxes.impl
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.CPI
-import net.corda.packaging.CPK
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext
@@ -44,9 +44,9 @@ class CpkReadServiceImpl @Activate constructor(
     private val testBundle = (properties[TEST_BUNDLE_KEY] as? String)?.let(bundleContext::getBundle)
         ?: throw IllegalStateException("Test bundle not found")
 
-    private val cpis = ConcurrentHashMap<CpiIdentifier, CPI>()
-    private val cpks: Collection<CPK>
-        get() = cpis.values.flatMap(CPI::cpks)
+    private val cpis = ConcurrentHashMap<CpiIdentifier, Cpi>()
+    private val cpks: Collection<Cpk>
+        get() = cpis.values.flatMap(Cpi::cpks)
 
     private val cpksMeta: Collection<CpkMetadata>
         get() = cpks.map(CpkMetadata::fromLegacyCpk)
@@ -62,9 +62,9 @@ class CpkReadServiceImpl @Activate constructor(
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
-    override fun loadCPI(resourceName: String): CPI {
+    override fun loadCPI(resourceName: String): Cpi {
         return getInputStream(resourceName).buffered().use { input ->
-            CPI.from(input, expansionLocation = cpkDir, verifySignature = true)
+            Cpi.from(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
             val cpiId = CpiIdentifier.fromLegacy(newCpi.metadata.id)
             cpis.putIfAbsent(cpiId, newCpi)?.also {
@@ -73,7 +73,7 @@ class CpkReadServiceImpl @Activate constructor(
         }
     }
 
-    override fun unloadCPI(cpi: CPI) {
+    override fun unloadCPI(cpi: Cpi) {
         removeCpiMetadata(CpiIdentifier.fromLegacy(cpi.metadata.id))
     }
 
@@ -88,12 +88,12 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
-        val legacyCpi: CPI? = cpis[id]
+        val legacyCpi: Cpi? = cpis[id]
         val cpi: CpiMetadata? = legacyCpi?.let(CpiMetadata::fromLegacy)
         return CompletableFuture.completedFuture(cpi)
     }
 
-    override fun get(cpkId: CpkIdentifier): CPK? {
+    override fun get(cpkId: CpkIdentifier): Cpk? {
         val cpk = cpks.firstOrNull {
             it.metadata.id.name == cpkId.name &&
                     it.metadata.id.version == cpkId.version &&

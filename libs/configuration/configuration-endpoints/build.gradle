@@ -1,6 +1,6 @@
 plugins {
     id 'corda.common-library'
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
 }
 
 description 'Endpoint API for management of cluster configuration.'
@@ -11,4 +11,5 @@ dependencies {
     api project(':libs:http-rpc:http-rpc')
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
 }

@@ -1,5 +1,5 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-publishing'
     id 'corda.common-app'
 }
 
@@ -11,6 +11,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:utilities")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-config-schema:$cordaApiVersion"

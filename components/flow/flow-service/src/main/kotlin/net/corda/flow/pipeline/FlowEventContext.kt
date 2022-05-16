@@ -25,6 +25,7 @@ data class FlowEventContext<T>(
     val inputEventPayload: T,
     val config: SmartConfig,
     val outputRecords: List<Record<*, *>>,
+    val sendToDlq: Boolean = false
 )
 
 

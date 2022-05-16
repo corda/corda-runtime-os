@@ -1,15 +1,15 @@
 package net.corda.p2p.gateway
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.configuration.publish.CordaConfigurationKey
-import net.corda.libs.configuration.publish.CordaConfigurationVersion
-import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -36,6 +36,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.TestSchema
 import net.corda.test.util.eventually
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
@@ -142,6 +143,14 @@ open class TestBase {
             }
         }
 
+        private fun Publisher.publishGatewayConfig(config: Config) {
+            this.publish(listOf(Record(
+                CONFIG_TOPIC,
+                "p2p.gateway",
+                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+            ))).forEach { it.get() }
+        }
+
         fun publishConfig(configuration: GatewayConfiguration) {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
@@ -155,33 +164,17 @@ open class TestBase {
                 .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
                 .withValue("connectionConfig.maximalReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maximalReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig(configPublisherClientId), messagingConfig).use { publisher ->
-                val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
-                configurationPublisher.updateConfiguration(
-                    CordaConfigurationKey(
-                        "myKey",
-                        CordaConfigurationVersion("p2p", 0, 1),
-                        CordaConfigurationVersion("gateway", 0, 1)
-                    ),
-                    publishConfig
-                )
-            }
+                .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig).use { publisher ->
+                    publisher.publishGatewayConfig(publishConfig)
+                }
         }
         fun publishBadConfig() {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig(configPublisherClientId), messagingConfig)
+                .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
                 .use { publisher ->
-                    val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
-                    configurationPublisher.updateConfiguration(
-                        CordaConfigurationKey(
-                            "myKey",
-                            CordaConfigurationVersion("p2p", 0, 1),
-                            CordaConfigurationVersion("gateway", 0, 1)
-                        ),
-                        publishConfig
-                    )
+                    publisher.publishGatewayConfig(publishConfig)
                 }
         }
     }
