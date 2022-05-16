@@ -89,7 +89,11 @@ open class SoftCryptoService(
         if (!isSupported(spec.signatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${spec.signatureScheme.codeName}")
         }
-        val wrappingKey = cache.act { it.findWrappingKey(spec.masterKeyAlias!!) }
+        val wrappingKey = cache.act { if(it.findWrappingKey(spec.masterKeyAlias!!) == null) {
+            it.saveWrappingKey(spec.masterKeyAlias!!, WrappingKey.createWrappingKey(schemeMetadata), false)
+        }
+            it.findWrappingKey(spec.masterKeyAlias!!)
+        }
             ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
         val keyPairGenerator = KeyPairGenerator.getInstance(
             spec.signatureScheme.algorithmName,
