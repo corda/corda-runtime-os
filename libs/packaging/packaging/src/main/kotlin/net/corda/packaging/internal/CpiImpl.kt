@@ -35,12 +35,23 @@ internal class CpiMetadataImpl(
             it.id to it
         }.toMap(TreeMap())
     }
+
     override val cpks: Collection<Cpk.Metadata>
         get() = Collections.unmodifiableCollection(cpkMap.values)
 
     override fun cpkById(id: Cpk.Identifier) = cpkMap[id] ?: throw NoSuchElementException(
         "No CPK file with id '$id' exist in this CPI"
     )
+
+    internal companion object {
+        // This comparator is incomplete...
+        private val comparator = Comparator.comparing(Cpi.Metadata::id)
+            .thenComparing(Cpi.Metadata::hash, secureHashComparator)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is Cpi.Metadata && comparator.compare(this, other) == 0
+    }
 }
 
 internal class CpiImpl(override val metadata: Cpi.Metadata, cpks : Iterable<Cpk>) : Cpi {

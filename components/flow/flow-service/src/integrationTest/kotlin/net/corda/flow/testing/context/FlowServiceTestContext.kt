@@ -92,14 +92,6 @@ class FlowServiceTestContext @Activate constructor(
         cpiInfoReadService.waitUntilRunning()
     }
 
-    private fun Lifecycle.waitUntilRunning() {
-        repeat(10) {
-            if (isRunning) return
-            Thread.sleep(100)
-        }
-        check(false) { "Timeout waiting for ${this::class.simpleName} to start" }
-    }
-
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 

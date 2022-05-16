@@ -87,6 +87,14 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         callbacks.clear()
     }
 
+    fun waitUntilRunning() {
+        repeat(10) {
+            if (isRunning) return
+            Thread.sleep(100)
+        }
+        check(false) { "Timeout waiting for ${this::class.simpleName} to start" }
+    }
+
     override fun getAll(): List<VirtualNodeInfo> {
         throwIfNotRunning()
         return map.values.toList()

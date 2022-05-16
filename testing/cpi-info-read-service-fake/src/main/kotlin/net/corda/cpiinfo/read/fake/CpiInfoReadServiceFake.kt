@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.packaging.CpiIdentifier
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.lifecycle.ErrorEvent
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -61,12 +62,12 @@ class CpiInfoReadServiceFake internal constructor(
             val combined = cpi.copy(cpksMetadata = cpi.cpksMetadata + cpiMetadata.cpksMetadata)
             cpiData[combined.cpiId] = combined
         }
-        callbacks.updateWithCurrentSnapshot(cpiMetadata.cpiId)
+        callbacks.updateListenersWithCurrentSnapshot(cpiMetadata.cpiId)
     }
 
     fun remove(cpiIdentifier: CpiIdentifier) {
         cpiData.remove(cpiIdentifier)
-        callbacks.updateWithCurrentSnapshot(cpiIdentifier)
+        callbacks.updateListenersWithCurrentSnapshot(cpiIdentifier)
     }
 
     fun reset() {
@@ -87,7 +88,7 @@ class CpiInfoReadServiceFake internal constructor(
     override fun registerCallback(listener: CpiInfoListener): AutoCloseable {
         throwIfNotRunning()
         callbacks += listener
-        listOf(listener).updateWithCurrentSnapshot(cpiData.keys)
+        listOf(listener).updateListenersWithCurrentSnapshot(cpiData.keys)
         return AutoCloseable { callbacks.remove(listener) }
     }
 
@@ -98,6 +99,14 @@ class CpiInfoReadServiceFake internal constructor(
         coordinator.start()
     }
 
+    fun waitUntilRunning() {
+        repeat(10) {
+            if (isRunning) return
+            Thread.sleep(100)
+        }
+        check(false) { "Timeout waiting for ${this::class.simpleName} to start" }
+    }
+
     override fun stop() {
         coordinator.stop()
     }
@@ -106,11 +115,11 @@ class CpiInfoReadServiceFake internal constructor(
         coordinator.close()
     }
 
-    private fun Iterable<CpiInfoListener>.updateWithCurrentSnapshot(vararg keys: CpiIdentifier) {
-        return this.updateWithCurrentSnapshot(keys.asIterable())
+    private fun Iterable<CpiInfoListener>.updateListenersWithCurrentSnapshot(vararg keys: CpiIdentifier) {
+        return this.updateListenersWithCurrentSnapshot(keys.asIterable())
     }
 
-    private fun Iterable<CpiInfoListener>.updateWithCurrentSnapshot(keys: Iterable<CpiIdentifier>) {
+    private fun Iterable<CpiInfoListener>.updateListenersWithCurrentSnapshot(keys: Iterable<CpiIdentifier>) {
         val changedKeys = keys.map { it.toAvro().toCorda() }.toSet()
         val snapshot = cpiData.values.map { it.toAvro().toCorda() }.associateBy { it.id }
         this.forEach { it.onUpdate(changedKeys, snapshot) }
