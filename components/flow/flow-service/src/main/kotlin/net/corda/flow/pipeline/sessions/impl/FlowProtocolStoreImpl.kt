@@ -1,6 +1,7 @@
-package net.corda.flow.pipeline.sandbox
+package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
@@ -12,10 +13,10 @@ import net.corda.v5.application.flows.InitiatingFlow
  *
  * This is built along with the sandbox and cached with the sandbox context.
  */
-class FlowProtocolStore(
+class FlowProtocolStoreImpl(
     private val initiatorToProtocol: Map<String, List<FlowProtocol>>,
     private val protocolToResponder: Map<FlowProtocol, String>
-) {
+) : FlowProtocolStore {
 
     companion object {
 
@@ -46,26 +47,26 @@ class FlowProtocolStore(
                 }
             }
 
-            return FlowProtocolStore(initiatorToProtocol, protocolToResponder)
+            return FlowProtocolStoreImpl(initiatorToProtocol, protocolToResponder)
         }
     }
 
-    fun responderForProtocol(receivedProtocols: List<FlowProtocol>) : String {
-        if (receivedProtocols.map { it.protocol }.toSet().size != 1) {
-            throw IllegalArgumentException("Initiating flow claimed to start multiple protocols")
-        }
-        val sortedProtocols = receivedProtocols.sortedByDescending { it.version }
+    override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>) : String {
+        val sortedProtocols = supportedVersions.sortedDescending().map { FlowProtocol(protocolName, it) }
         for (protocol in sortedProtocols) {
             val responder = protocolToResponder[protocol]
             if (responder != null) {
                 return responder
             }
         }
-        throw FlowProcessingException("No responder is configured for any of the received protocols: $receivedProtocols")
+        throw FlowProcessingException("No responder is configured for protocol $protocolName at versions $supportedVersions")
     }
 
-    fun protocolsForInitiator(initiator: String): List<FlowProtocol> {
-        return initiatorToProtocol[initiator]
+    override fun protocolsForInitiator(initiator: String): Pair<String, List<Int>> {
+        val protocolList = initiatorToProtocol[initiator]
             ?: throw FlowProcessingException("No protocols were found for initiating flow $initiator")
+        return protocolList.run {
+            Pair(protocolList.first().protocol, protocolList.map { it.version })
+        }
     }
 }

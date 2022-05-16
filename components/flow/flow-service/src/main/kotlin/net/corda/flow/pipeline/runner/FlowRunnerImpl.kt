@@ -12,9 +12,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
-import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.FlowProtocol
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name
@@ -107,10 +106,9 @@ class FlowRunnerImpl @Activate constructor(
         val sandbox = getSandbox(checkpoint)
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
 
-        val protocols = sessionInit.versions.map { FlowProtocol(sessionInit.protocol, it) }
         val initiatedFlowClassName =
             flowSandboxService.get(sessionEvent.initiatedIdentity.toCorda()).protocolStore.responderForProtocol(
-                protocols
+                sessionInit.protocol, sessionInit.versions
             )
 
         val flowSession = flowSessionFactory.create(

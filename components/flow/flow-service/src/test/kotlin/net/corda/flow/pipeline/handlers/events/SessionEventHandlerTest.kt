@@ -16,8 +16,9 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
+import net.corda.flow.pipeline.sessions.impl.FlowProtocol
+import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
@@ -50,6 +51,7 @@ class SessionEventHandlerTest {
         const val CPI_ID = "cpi id"
         const val INITIATING_FLOW_NAME = "Initiating flow"
         const val INITIATED_FLOW_NAME = "Initiated flow"
+        private val PROTOCOL = FlowProtocol("protocol", 1)
 
         @JvmStatic
         fun nonInitSessionEventTypes(): Stream<Arguments> {
@@ -90,8 +92,13 @@ class SessionEventHandlerTest {
 
         whenever(flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
 
-        whenever(sandboxGroupContext.get(FlowSandboxSerializerTypes.INITIATING_TO_INITIATED_FLOWS, Map::class.java))
-            .thenReturn(mapOf(Pair(CPI_ID, INITIATING_FLOW_NAME) to INITIATED_FLOW_NAME))
+        whenever(sandboxGroupContext.protocolStore)
+            .thenReturn(
+                FlowProtocolStoreImpl(
+                    mapOf(INITIATING_FLOW_NAME to listOf(PROTOCOL)),
+                    mapOf(PROTOCOL to INITIATED_FLOW_NAME)
+                )
+            )
     }
 
     @Test
@@ -142,8 +149,8 @@ class SessionEventHandlerTest {
     fun `Receiving a session init payload throws an exception if there is no matching initiated flow`() {
         val sessionEvent = createSessionInit()
 
-        whenever(sandboxGroupContext.get(FlowSandboxSerializerTypes.INITIATING_TO_INITIATED_FLOWS, Map::class.java))
-            .thenReturn(emptyMap<String, String>())
+        whenever(sandboxGroupContext.protocolStore)
+            .thenReturn(FlowProtocolStoreImpl(mapOf(), mapOf()))
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)

@@ -9,7 +9,6 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.FlowProtocol
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
@@ -68,9 +67,8 @@ class SessionEventHandler @Activate constructor(
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
-        val protocols = sessionInit.versions.map { FlowProtocol(sessionInit.protocol, it) }
         val protocolStore = flowSandboxService.get(initiatedIdentity.toCorda()).protocolStore
-        val initiatedFlow = protocolStore.responderForProtocol(protocols)
+        val initiatedFlow = protocolStore.responderForProtocol(sessionInit.protocol, sessionInit.versions)
         val startContext = FlowStartContext.newBuilder()
             .setStatusKey(FlowKey(sessionId, initiatedIdentity))
             .setInitiatorType(FlowInitiatorType.P2P)

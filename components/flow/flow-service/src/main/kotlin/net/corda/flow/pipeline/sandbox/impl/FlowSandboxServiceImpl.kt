@@ -7,7 +7,7 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
-import net.corda.flow.pipeline.sandbox.FlowProtocolStore
+import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -61,6 +61,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
+    @Reference(service = FlowProtocolStoreFactory::class)
+    private val flowProtocolStoreFactory: FlowProtocolStoreFactory,
     private val componentContext: ComponentContext
 ) : FlowSandboxService {
 
@@ -199,6 +201,6 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     private fun MutableSandboxGroupContext.putInitiatingToInitiatedFlowsMap(cpiMetadata: CpiMetadata) {
-        putUniqueObject(FlowProtocolStore.build(sandboxGroup, cpiMetadata))
+        putUniqueObject(flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata))
     }
 }

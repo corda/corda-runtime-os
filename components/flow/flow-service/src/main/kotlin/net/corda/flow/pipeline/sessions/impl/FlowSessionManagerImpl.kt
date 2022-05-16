@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.sessions
+package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -9,7 +9,8 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sandbox.FlowProtocol
+import net.corda.flow.pipeline.sessions.FlowSessionHeaders
+import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.layeredpropertymap.toWire
 import net.corda.session.manager.Constants
@@ -31,12 +32,11 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
-        flowProtocols: List<FlowProtocol>,
+        protocolName: String,
+        protocolVersions: List<Int>,
         headers: FlowSessionHeaders,
         instant: Instant
     ): SessionState {
-        val protocolName = flowProtocols.first().protocol
-        val protocolVersions = flowProtocols.map { it.version }
         val payload = SessionInit.newBuilder()
             .setProtocol(protocolName)
             .setVersions(protocolVersions)

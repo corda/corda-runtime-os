@@ -1,9 +1,9 @@
 package net.corda.flow.testing.fakes
 
+import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE
-import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.CHECKPOINT_SERIALIZER
-import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.DEPENDENCY_INJECTOR
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.CpkIdentifier
 import net.corda.libs.packaging.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -76,9 +76,10 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         override val sandboxGroup: SandboxGroup
     ) :SandboxGroupContext{
         private val serviceMap = mapOf(
-            DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
-            CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
+            SandboxDependencyInjector::class.java.name to FakeSandboxDependencyInjector(),
+            CheckpointSerializer::class.java.name to FakeCheckpointSerializer(),
             AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
+            FlowProtocolStore::class.java.name to FlowProtocolStoreImpl(mapOf(), mapOf()) // TODO
             )
 
         override fun <T : Any> get(key: String, valueType: Class<out T>): T? {

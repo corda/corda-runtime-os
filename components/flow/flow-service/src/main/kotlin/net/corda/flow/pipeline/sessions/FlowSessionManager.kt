@@ -7,7 +7,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sandbox.FlowProtocol
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -24,7 +23,8 @@ interface FlowSessionManager {
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
-     * @param flowProtocols The protocols supported by the flow creating the session
+     * @param protocolName The name of the protocol to use in this session
+     * @param protocolVersions The versions of the protocol supported by the initiating side
      * @param headers The headers to add to the session message
      * @param instant The [Instant] used within the created [SessionEvent].
      *
@@ -34,7 +34,8 @@ interface FlowSessionManager {
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
-        flowProtocols: List<FlowProtocol>,
+        protocolName: String,
+        protocolVersions: List<Int>,
         headers: FlowSessionHeaders,
         instant: Instant
     ): SessionState

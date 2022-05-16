@@ -13,7 +13,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sandbox.FlowProtocol
+import net.corda.flow.pipeline.sessions.impl.FlowSessionManagerImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.session.manager.SessionManager
@@ -130,7 +130,8 @@ class FlowSessionManagerImplTest {
             checkpoint,
             SESSION_ID,
             X500_NAME,
-            listOf(FlowProtocol(INITIATING_FLOW_NAME, 1)),
+            INITIATING_FLOW_NAME,
+            listOf(1),
             mock(),
             instant
         )

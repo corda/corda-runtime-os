@@ -34,7 +34,7 @@ import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sessions.FlowSessionManagerImpl
+import net.corda.flow.pipeline.sessions.impl.FlowSessionManagerImpl
 import net.corda.flow.state.impl.FlowCheckpointFactoryImpl
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
