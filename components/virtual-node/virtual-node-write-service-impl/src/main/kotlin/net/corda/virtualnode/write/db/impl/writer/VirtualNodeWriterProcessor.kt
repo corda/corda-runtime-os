@@ -1,19 +1,26 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.toWire
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.impl.GroupPolicyParser.MGM.Companion.mgmInfo
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -33,11 +40,14 @@ import javax.persistence.EntityManager
  * @property vnodePublisher Used to publish to Kafka.
  * @property virtualNodeEntityRepository Used to retrieve and store virtual nodes and related entities.
  */
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
-    private val vnodeDbFactory: VirtualNodeDbFactory
+    private val vnodeDbFactory: VirtualNodeDbFactory,
+    private val keyEncodingService: KeyEncodingService,
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     /**
@@ -83,6 +93,8 @@ internal class VirtualNodeWriterProcessor(
             val dbConnections = persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, request.updateActor)
 
             publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+
+            publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
 
             sendSuccessfulResponse(respFuture, request, holdingId, cpiMetadata, dbConnections)
         } catch (e: Exception) {
@@ -203,6 +215,24 @@ internal class VirtualNodeWriterProcessor(
             throw VirtualNodeWriteServiceException(
                 "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e)
         }
+    }
+
+    private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
+        val mgmMemberInfo = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory).run {
+            val groupPolicy = parse(groupPolicyJson)
+            buildMgmMemberInfo(groupPolicy.mgmInfo, groupPolicy.groupId)
+        }
+        println("$holdingIdentity$mgmMemberInfo")
+        val mgmRecord = Record(
+            MEMBER_LIST_TOPIC,
+            holdingIdentity,
+            PersistentMemberInfo(
+                holdingIdentity.toAvro(),
+                mgmMemberInfo.memberProvidedContext.toWire(),
+                mgmMemberInfo.mgmProvidedContext.toWire()
+            )
+        )
+        vnodePublisher.publish(listOf(mgmRecord))
     }
 
     private fun sendSuccessfulResponse(

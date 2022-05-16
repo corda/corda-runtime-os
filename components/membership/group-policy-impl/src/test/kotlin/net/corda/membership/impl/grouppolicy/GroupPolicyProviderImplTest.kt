@@ -1,6 +1,7 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,6 +14,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -124,6 +126,8 @@ class GroupPolicyProviderImplTest {
             coordinator
         }
     }
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
 
     fun registrationChange(status: LifecycleStatus = LifecycleStatus.UP) {
         handler?.processEvent(RegistrationStatusChangeEvent(mock(), status), coordinator)
@@ -134,7 +138,9 @@ class GroupPolicyProviderImplTest {
         groupPolicyProvider = GroupPolicyProviderImpl(
             virtualNodeInfoReadService,
             cpiInfoReader,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
         )
     }
 

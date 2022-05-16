@@ -9,11 +9,13 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -54,7 +56,7 @@ class VirtualNodeWriterProcessorTests {
     private val cpiIdentifier = CpiIdentifier("dummy_name", "dummy_version", secureHash)
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
-    private val cpiMetaData = CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId)
+    private val cpiMetaData = CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId, "dummy_group_policy")
 
     private val connectionId = UUID.randomUUID().toString()
     private val vnodeInfo =
@@ -116,6 +118,9 @@ class VirtualNodeWriterProcessorTests {
         on { getHoldingIdentity(any()) }.doReturn(null)
     }
 
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
+
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
     /** Returns a mock [Publisher]. */
@@ -146,7 +151,14 @@ class VirtualNodeWriterProcessorTests {
         val expectedRecord = Record(VIRTUAL_NODE_INFO_TOPIC, vnodeInfo.holdingIdentity, vnodeInfo)
 
         val publisher = getPublisher()
-        val processor = VirtualNodeWriterProcessor(publisher, connectionManager, vNodeRepo, vNodeFactory)
+        val processor = VirtualNodeWriterProcessor(
+            publisher,
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
 
         processRequest(processor, vnodeCreationReq)
 
@@ -171,7 +183,14 @@ class VirtualNodeWriterProcessorTests {
             null
         )
 
-        val processor = VirtualNodeWriterProcessor(getPublisher(), connectionManager, vNodeRepo, vNodeFactory)
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -199,7 +218,14 @@ class VirtualNodeWriterProcessorTests {
             null
         )
 
-        val processor = VirtualNodeWriterProcessor(getErroringPublisher(), connectionManager, vNodeRepo, vNodeFactory)
+        val processor = VirtualNodeWriterProcessor(
+            getErroringPublisher(),
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp.success, resp.success)
@@ -226,7 +252,14 @@ class VirtualNodeWriterProcessorTests {
         val entityRepository = mock<VirtualNodeEntityRepository>().apply {
             whenever(getCPIMetadata(any())).thenReturn(null)
         }
-        val processor = VirtualNodeWriterProcessor(getPublisher(), connectionManager, entityRepository, vNodeFactory)
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            entityRepository,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp, resp)
@@ -267,7 +300,14 @@ class VirtualNodeWriterProcessorTests {
             on { getHoldingIdentity(any()) }.doReturn(collisionHoldingIdentity)
         }
 
-        val processor = VirtualNodeWriterProcessor(getPublisher(), connectionManager, entityRepository, vNodeFactory)
+        val processor = VirtualNodeWriterProcessor(
+            getPublisher(),
+            connectionManager,
+            entityRepository,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
         val resp = processRequest(processor, vnodeCreationReq)
 
         assertEquals(expectedResp.success, resp.success)

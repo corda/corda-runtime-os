@@ -5,6 +5,7 @@ import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -13,14 +14,18 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.v5.cipher.suite.KeyEncodingService
 
 /** A factory for [VirtualNodeWriter]s. */
+@Suppress("LongParameterList")
 internal class VirtualNodeWriterFactory(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
     private val dbConnectionManager: DbConnectionManager,
     private val dbAdmin: DbAdmin,
-    private val schemaMigrator: LiquibaseSchemaMigrator
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val keyEncodingService: KeyEncodingService,
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) {
 
     /**
@@ -65,7 +70,14 @@ internal class VirtualNodeWriterFactory(
         )
         val virtualNodeEntityRepository = VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
-        val processor = VirtualNodeWriterProcessor(vnodePublisher, dbConnectionManager, virtualNodeEntityRepository, vnodeDbFactory)
+        val processor = VirtualNodeWriterProcessor(
+            vnodePublisher,
+            dbConnectionManager,
+            virtualNodeEntityRepository,
+            vnodeDbFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
     }

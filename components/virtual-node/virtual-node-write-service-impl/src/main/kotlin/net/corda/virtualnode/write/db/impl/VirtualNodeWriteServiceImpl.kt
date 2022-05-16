@@ -4,10 +4,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 import org.osgi.service.component.annotations.Activate
@@ -31,11 +33,22 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     @Reference(service = DbAdmin::class)
     dbAdmin: DbAdmin,
     @Reference(service = LiquibaseSchemaMigrator::class)
-    schemaMigrator: LiquibaseSchemaMigrator
+    schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = KeyEncodingService::class)
+    val keyEncodingService: KeyEncodingService,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : VirtualNodeWriteService {
     private val coordinator = let {
         val vnodeWriterFactory = VirtualNodeWriterFactory(
-            subscriptionFactory, publisherFactory, dbConnectionManager, dbAdmin, schemaMigrator)
+            subscriptionFactory,
+            publisherFactory,
+            dbConnectionManager,
+            dbAdmin,
+            schemaMigrator,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
     }

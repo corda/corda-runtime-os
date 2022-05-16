@@ -1,6 +1,7 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -12,8 +13,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.grouppolicy.factory.GroupPolicyParser
+import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -29,7 +31,11 @@ class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : GroupPolicyProvider {
 
     /**
@@ -83,7 +89,14 @@ class GroupPolicyProviderImpl @Activate constructor(
                 logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        swapImpl(ActiveImpl(virtualNodeInfoReadService, cpiInfoReader))
+                        swapImpl(
+                            ActiveImpl(
+                                virtualNodeInfoReadService,
+                                cpiInfoReader,
+                                keyEncodingService,
+                                layeredPropertyMapFactory
+                            )
+                        )
                         coordinator.updateStatus(LifecycleStatus.UP, "All dependencies are UP.")
                     }
                     else -> {
@@ -114,9 +127,11 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private class ActiveImpl(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        private val cpiInfoReader: CpiInfoReadService
+        private val cpiInfoReader: CpiInfoReadService,
+        private val keyEncodingService: KeyEncodingService,
+        private val layeredPropertyMapFactory: LayeredPropertyMapFactory
     ) : InnerGroupPolicyProvider {
-        private val groupPolicyParser = GroupPolicyParser()
+        private val groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
 
         private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
 

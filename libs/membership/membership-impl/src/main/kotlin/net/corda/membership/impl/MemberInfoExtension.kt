@@ -27,6 +27,9 @@ class MemberInfoExtension {
         const val PARTY_NAME = "corda.party.name"
         const val PARTY_OWNING_KEY = "corda.party.owningKey"
 
+        /** Key name for ECDH key. */
+        const val ECDH_KEY = "corda.ecdhKey"
+
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryServiceParty.name"
         const val NOTARY_SERVICE_PARTY_KEY = "corda.notaryServiceParty.owningKey"
@@ -51,6 +54,10 @@ class MemberInfoExtension {
 
         /** Key name for certificate property. */
         const val CERTIFICATE = "corda.certificate"
+        const val CERTIFICATE_KEY = "corda.certificate.%s"
+
+        /** Key name for created time property. */
+        const val CREATED_TIME = "corda.createdTime"
 
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
@@ -75,6 +82,9 @@ class MemberInfoExtension {
         /*@JvmStatic
         val MemberInfo.certificate: CertPath?
             get() = memberProvidedContext.readAs(CERTIFICATE)*/
+        @JvmStatic
+        val MemberInfo.certificate: List<String>
+            get() = memberProvidedContext.parseList(CERTIFICATE)
 
         /** Group identifier. UUID as a String. */
         @JvmStatic

@@ -1,12 +1,15 @@
-package net.corda.membership.impl.grouppolicy.factory
+package net.corda.membership.impl
 
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 
 /**
  * Unit tests for [GroupPolicyParser]
@@ -45,10 +48,12 @@ class GroupPolicyParserTest {
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
 
     @BeforeEach
     fun setUp() {
-        groupPolicyParser = GroupPolicyParser()
+        groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
     }
 
     @Test
