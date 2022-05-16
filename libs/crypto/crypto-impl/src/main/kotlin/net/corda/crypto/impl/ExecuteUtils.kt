@@ -18,14 +18,21 @@ fun <R> executeWithRetry(
     var remaining = retryCount
     while (true) {
         try {
-            return block()
+            if(remaining < retryCount) {
+                logger.info("Retrying operation (remaining=$remaining)")
+            }
+            val result = block()
+            if(remaining < retryCount) {
+                logger.info("Retrying was successful (remaining=$remaining)")
+            }
+            return result
         } catch (e: Throwable) {
             remaining--
             if(remaining <= 0) {
                 logger.error("Failed to execute", e)
                 throw e
             } else {
-                logger.error(
+                logger.warn(
                     "Failed to execute, will retry after ${waitBetween.toMillis()} milliseconds (remaining=$remaining)",
                     e
                 )

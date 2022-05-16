@@ -131,7 +131,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "Crypto processor received event $event." }
+        logger.info("Crypto processor received event $event.")
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
@@ -140,9 +140,11 @@ class CryptoProcessorImpl @Activate constructor(
                 dependentComponents.stopAll()
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Crypto processor is ${event.status}")
                 if(event.status == LifecycleStatus.UP) {
-                    if(!temporaryAssociateClusterWithSoftHSM()) {
+                    logger.info("Assigning SOFT HSMs")
+                    val failed = temporaryAssociateClusterWithSoftHSM()
+                    if(failed.isNotEmpty()) {
+                        logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
                         coordinator.updateStatus(
                             LifecycleStatus.ERROR,
                             "Failed to associate SOFT HSMs with cluster tenants."
@@ -150,6 +152,7 @@ class CryptoProcessorImpl @Activate constructor(
                         return
                     }
                 }
+                logger.info("Crypto processor is set to be ${event.status}")
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
@@ -184,17 +187,25 @@ class CryptoProcessorImpl @Activate constructor(
         }
     }
 
-    private fun temporaryAssociateClusterWithSoftHSM(): Boolean {
+    private fun temporaryAssociateClusterWithSoftHSM(): List<Pair<String, String>> {
         logger.info("Assigning SOFT HSM to cluster tenants.")
-        var result = true
+        val assigned = mutableListOf<Pair<String, String>>()
+        val failed = mutableListOf<Pair<String, String>>()
         CryptoConsts.Categories.all.forEach { category ->
             CryptoTenants.allClusterTenants.forEach { tenantId ->
-                if(!tryAssignSoftHSM(tenantId, category)) {
-                    result = false
+                if(tryAssignSoftHSM(tenantId, category)) {
+                    assigned.add(Pair(tenantId, category))
+                } else {
+                    failed.add(Pair(tenantId, category))
                 }
             }
         }
-        return result
+        logger.info(
+            "SOFT HSM assignment is done. Assigned=[{}], failed=[{}]",
+            assigned.joinToString { "${it.first}:${it.second}" },
+            failed.joinToString { "${it.first}:${it.second}" }
+        )
+        return failed
     }
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
