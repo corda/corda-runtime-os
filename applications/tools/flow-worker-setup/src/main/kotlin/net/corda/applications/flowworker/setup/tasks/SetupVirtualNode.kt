@@ -8,10 +8,10 @@ import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.CpkChunkId
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.converters.toAvro
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.Cpi
-import net.corda.packaging.converters.toAvro
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC

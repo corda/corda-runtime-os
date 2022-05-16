@@ -15,8 +15,8 @@
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.postgresql.jdbc',\
-    bnd.identity;id='net.corda.testing-cats',\
-    bnd.identity;id='net.corda.testing-dogs'
+    bnd.identity;id='com.r3.testing.testing-cats',\
+    bnd.identity;id='com.r3.testing.testing-dogs'
 
 -runstartlevel: \
     order=sortbynameversion,\

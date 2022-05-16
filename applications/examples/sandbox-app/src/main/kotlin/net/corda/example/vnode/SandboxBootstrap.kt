@@ -14,7 +14,11 @@ import net.corda.testing.sandboxes.SandboxSetup
 import org.osgi.framework.AdminPermission
 import org.osgi.framework.BundleContext
 import org.osgi.framework.PackagePermission
+import org.osgi.framework.PackagePermission.EXPORTONLY
+import org.osgi.framework.PackagePermission.IMPORT
 import org.osgi.framework.ServicePermission
+import org.osgi.framework.ServicePermission.GET
+import org.osgi.framework.ServicePermission.REGISTER
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,15 +38,15 @@ class SandboxBootstrap @Activate constructor(
         securityManager.denyPermissions("FLOW/*", listOf(
             // OSGi permissions.
             AdminPermission(),
-            ServicePermission("*", ServicePermission.GET),
-            ServicePermission("net.corda.v5.*", ServicePermission.REGISTER),
-            PackagePermission("net.corda", "${PackagePermission.EXPORTONLY},${PackagePermission.IMPORT}"),
-            PackagePermission("net.corda.*", "${PackagePermission.EXPORTONLY},${PackagePermission.IMPORT}"),
+            ServicePermission("*", GET),
+            ServicePermission("net.corda.v5.*", REGISTER),
+            PackagePermission("net.corda", "$EXPORTONLY,$IMPORT"),
+            PackagePermission("net.corda.*", "$EXPORTONLY,$IMPORT"),
 
             // Prevent the FLOW sandboxes from importing these packages,
             // which effectively forbids them from executing most OSGi code.
-            PackagePermission("org.osgi.framework", PackagePermission.IMPORT),
-            PackagePermission("org.osgi.service.component", PackagePermission.IMPORT),
+            PackagePermission("org.osgi.framework", IMPORT),
+            PackagePermission("org.osgi.service.component", IMPORT),
 
             // Java permissions.
             RuntimePermission("*"),
@@ -57,12 +61,12 @@ class SandboxBootstrap @Activate constructor(
             FilePermission("<<ALL FILES>>", "read,write,execute,delete,readlink")
         ))
         securityManager.grantPermissions("FLOW/*", listOf(
-            PackagePermission("net.corda.v5.*", PackagePermission.IMPORT),
-            ServicePermission("(location=FLOW/*)", ServicePermission.GET),
-            ServicePermission("net.corda.v5.*", ServicePermission.GET)
+            PackagePermission("net.corda.v5.*", IMPORT),
+            ServicePermission("(location=FLOW/*)", GET),
+            ServicePermission("net.corda.v5.*", GET)
         ))
         securityManager.denyPermissions("*", listOf(
-            ServicePermission(PermissionAdmin::class.java.name, ServicePermission.REGISTER)
+            ServicePermission(PermissionAdmin::class.java.name, REGISTER)
         ))
 
         val baseDirectory = Paths.get(System.getProperty("app.name", System.getProperty("user.dir", "."))).toAbsolutePath()

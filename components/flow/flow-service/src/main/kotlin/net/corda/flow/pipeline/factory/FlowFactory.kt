@@ -1,9 +1,9 @@
 package net.corda.flow.pipeline.factory
 
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.messaging.FlowSession
 
 /**
  * [FlowFactory] creates [Flow]s.
@@ -23,11 +23,10 @@ interface FlowFactory {
     /**
      * Creates an initiated [Flow].
      *
-     * @param flowClassName The class name of the flow.
-     * @param flowSession The [FlowSession] to pass into the flow's constructor.
+     * @param flowStartContext The [FlowStartContext] describing the flow.
      * @param sandboxGroupContext The sandbox to load the [Flow] class from.
      *
      * @return A new [Flow] instance.
      */
-    fun createInitiatedFlow(flowClassName: String, flowSession: FlowSession, sandboxGroupContext: SandboxGroupContext): Flow<*>
+    fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): Flow<*>
 }

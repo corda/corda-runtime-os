@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Entity Processor Component"
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api project(':libs:lifecycle:lifecycle')
+    api project(':components:db:db-connection-manager')
+    api project(':components:virtual-node:cpi-info-read-service')
+    api project(':components:virtual-node:virtual-node-info-read-service')
+    api project(':components:virtual-node:sandbox-group-context-service')
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:configuration:configuration-core')
+
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}

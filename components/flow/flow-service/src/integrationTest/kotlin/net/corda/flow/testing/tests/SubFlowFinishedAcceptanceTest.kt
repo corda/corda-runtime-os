@@ -7,7 +7,7 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.WhenSetup
+import net.corda.flow.testing.context.StepSetup
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,10 +27,10 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         @JvmStatic
         fun wakeupAndSessionAck(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(Wakeup::class.simpleName, { dsl: WhenSetup -> dsl.wakeupEventReceived(FLOW_ID1) }),
+                Arguments.of(Wakeup::class.simpleName, { dsl: StepSetup -> dsl.wakeupEventReceived(FLOW_ID1) }),
                 Arguments.of(
                     SessionAck::class.simpleName,
-                    { dsl: WhenSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2) }
+                    { dsl: StepSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2) }
                 )
             )
         }
@@ -40,7 +40,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             return Stream.of(
                 Arguments.of(
                     SessionData::class.simpleName,
-                    { dsl: WhenSetup ->
+                    { dsl: StepSetup ->
                         dsl.sessionDataEventReceived(
                             FLOW_ID1,
                             SESSION_ID_2,
@@ -52,7 +52,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 ),
                 Arguments.of(
                     SessionClose::class.simpleName,
-                    { dsl: WhenSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2) }
+                    { dsl: StepSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2) }
                 )
             )
         }
@@ -210,7 +210,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     @MethodSource("wakeupAndSessionAck")
     fun `Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
         @Suppress("UNUSED_PARAMETER") name: String,
-        parameter: (WhenSetup) -> Unit
+        parameter: (StepSetup) -> Unit
     ) {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
@@ -239,7 +239,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     @MethodSource("unrelatedSessionEvents")
     fun `Receiving a session event for an unrelated session does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
-        parameter: (WhenSetup) -> Unit
+        parameter: (StepSetup) -> Unit
     ) {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")

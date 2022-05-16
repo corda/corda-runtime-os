@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext.impl
 
-import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext

@@ -3,8 +3,8 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
-import net.corda.packaging.Cpi
-import net.corda.packaging.PackagingException
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream

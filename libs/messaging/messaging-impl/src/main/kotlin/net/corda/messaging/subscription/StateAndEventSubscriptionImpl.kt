@@ -19,6 +19,7 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.utils.getEventsByBatch
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
@@ -75,6 +76,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     @Volatile
     private var stopped = false
+    private var isRunningInternal = true
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
@@ -90,14 +92,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * Is the subscription running.
      */
     override val isRunning: Boolean
-        get() {
-            return !stopped
-        }
+        get() = isRunningInternal
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name
 
     override fun start() {
+        isRunningInternal = true
         log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
             if (consumeLoopThread == null) {
@@ -137,10 +138,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             threadTmp
         }
         thread?.join(config.threadStopTimeout.toMillis())
+        isRunningInternal = false
     }
 
     fun runConsumeLoop() {
         var attempts = 0
+        var nullableRebalanceListener: StateAndEventConsumerRebalanceListener? = null
+
         while (!stopped) {
             attempts++
             try {
@@ -161,6 +165,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         deadLetterRecords.add(data)
                     }
                 )
+                nullableRebalanceListener = rebalanceListener
                 val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
                 nullableStateAndEventConsumer = stateAndEventConsumerTmp
                 nullableEventConsumer = eventConsumerTmp
@@ -191,11 +196,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 closeStateAndEventProducerConsumer()
             }
         }
+        nullableRebalanceListener?.close()
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         closeStateAndEventProducerConsumer()
     }
 
-    private fun closeStateAndEventProducerConsumer(){
+    private fun closeStateAndEventProducerConsumer() {
         nullableProducer?.close()
         nullableStateAndEventConsumer?.close()
         nullableProducer = null

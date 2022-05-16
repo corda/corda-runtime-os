@@ -123,7 +123,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
         }
     }
 
-    private fun <T> buildMultipartFormRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*>? {
+    private fun <T> buildMultipartFormRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
         var requestBuilder = request.header("accept", "multipart/form-data")
         if(request is HttpRequestWithBody) {
             requestBuilder = request.multiPartContent() as MultipartBody

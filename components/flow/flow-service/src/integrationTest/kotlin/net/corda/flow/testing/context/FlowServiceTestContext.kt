@@ -1,7 +1,6 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -15,22 +14,22 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeCpiInfoReadService
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
-import net.corda.flow.testing.fakes.FakeVirtualNodeInfoReadService
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.Cpk
-import net.corda.packaging.CordappManifest
-import net.corda.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.Cpk
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -38,6 +37,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.fake.VirtualNodeInfoReadServiceFake
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
@@ -50,8 +50,8 @@ import java.util.*
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
-    @Reference(service = FakeVirtualNodeInfoReadService::class)
-    val virtualNodeInfoReadService: FakeVirtualNodeInfoReadService,
+    @Reference(service = VirtualNodeInfoReadServiceFake::class)
+    val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
     @Reference(service = FakeCpiInfoReadService::class)
     val cpiInfoReadService: FakeCpiInfoReadService,
     @Reference(service = FakeSandboxGroupContextComponent::class)
@@ -62,25 +62,31 @@ class FlowServiceTestContext @Activate constructor(
     val eventProcessorFactory: FlowEventProcessorFactory,
     @Reference(service = FakeFlowFiberFactory::class)
     val flowFiberFactory: FakeFlowFiberFactory,
-) : GivenSetup, WhenSetup, ThenSetup {
+) : StepSetup, ThenSetup {
 
     private companion object {
         val log = contextLogger()
     }
+
+    private val testConfig = mutableMapOf<String, Any>(
+        FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
+        FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
+        FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
+        FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
+        FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000
+    )
 
     private val testRuns = mutableListOf<TestRun>()
     private val assertions = mutableListOf<OutputAssertionsImpl>()
     private var lastPublishedState: Checkpoint? = null
     private var sessionInitiatingIdentity: HoldingIdentity? = null
     private var sessionInitiatedIdentity: HoldingIdentity? = null
-    private val testConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-        .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-    private val flowEventProcessor = eventProcessorFactory.create(
-        SmartConfigFactory
-            .create(testConfig)
-            .create(testConfig)
-    )
+
+
+    fun start() {
+        virtualNodeInfoReadService.start()
+        virtualNodeInfoReadService.waitUntilRunning()
+    }
 
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
@@ -88,8 +94,7 @@ class FlowServiceTestContext @Activate constructor(
     override fun virtualNode(cpiId: String, holdingId: HoldingIdentity) {
         val emptyUUID = UUID(0, 0)
 
-        virtualNodeInfoReadService.addVirtualNodeInfo(
-            holdingId.toCorda(),
+        virtualNodeInfoReadService.addOrUpdate(
             VirtualNodeInfo(
                 holdingId.toCorda(),
                 getCpiIdentifier(cpiId),
@@ -150,6 +155,10 @@ class FlowServiceTestContext @Activate constructor(
 
     override fun sessionInitiatedIdentity(initiatedIdentity: HoldingIdentity) {
         this.sessionInitiatedIdentity = initiatedIdentity
+    }
+
+    override fun flowConfiguration(key: String, value: Any) {
+        testConfig[key] = value
     }
 
     override fun startFlowEventReceived(
@@ -244,7 +253,13 @@ class FlowServiceTestContext @Activate constructor(
         testRuns.clear()
     }
 
+    fun clearAssertions() {
+        assertions.clear()
+    }
+
     fun execute() {
+        val flowEventProcessor = getFlowEventProcessor()
+
         testRuns.forEachIndexed { iteration, testRun ->
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
@@ -302,6 +317,15 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity ?: sessionInitiatedIdentity!!
         )
         return addTestRun(getEventRecord(flowId, sessionEvent))
+    }
+
+    private fun getFlowEventProcessor(): FlowEventProcessor {
+        val cfg = ConfigFactory.parseMap(testConfig)
+        return eventProcessorFactory.create(
+            SmartConfigFactory
+                .create(cfg)
+                .create(cfg)
+        )
     }
 
     private fun getEventRecord(key: String, payload: Any): Record<String, FlowEvent> {

@@ -11,12 +11,10 @@ import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
@@ -32,13 +30,8 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.charlieName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.daisyName
-import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.ericName
-import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.frankieName
-import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithDuplicateMembers
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
-import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgm
-import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutMgmKeyAlias
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.toMemberInfo
 import net.corda.membership.impl.toSortedMap
@@ -81,8 +74,7 @@ class StaticMemberRegistrationServiceTest {
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
-    private val eric = HoldingIdentity(ericName.toString(), DUMMY_GROUP_ID)
-    private val frankie = HoldingIdentity(frankieName.toString(), DUMMY_GROUP_ID)
+
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
     }
@@ -100,9 +92,7 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(alice) } doReturn groupPolicyWithStaticNetwork
         on { getGroupPolicy(bob) } doReturn groupPolicyWithInvalidStaticNetworkTemplate
         on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
-        on { getGroupPolicy(daisy) } doReturn groupPolicyWithDuplicateMembers
-        on { getGroupPolicy(eric) } doReturn groupPolicyWithoutMgm
-        on { getGroupPolicy(frankie) } doReturn groupPolicyWithoutMgmKeyAlias
+        on { getGroupPolicy(daisy) } doReturn groupPolicyWithStaticNetwork
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -206,7 +196,7 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
-    fun `during registration, the static network inside the GroupPolicy file gets parsed and published`() {
+    fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
         setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(alice)
@@ -215,60 +205,47 @@ class StaticMemberRegistrationServiceTest {
         assertEquals(3, publishedList.size)
 
         publishedList.forEach {
-            assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, it.topic)
-            assertTrue { it.key.startsWith(alice.id) }
-            val signedMemberPublished = it.value as PersistentMemberInfo
-            val memberPublished = toMemberInfo(
-                layeredPropertyMapFactory.create<MemberContextImpl>(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished.signedMemberInfo.memberContext).toSortedMap()
-                ),
-                layeredPropertyMapFactory.create<MGMContextImpl>(
-                    KeyValuePairList.fromByteBuffer(signedMemberPublished.signedMemberInfo.mgmContext).toSortedMap()
-                )
-            )
-            assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
-            assertNotNull(memberPublished.softwareVersion)
-            assertNotNull(memberPublished.platformVersion)
-            assertNotNull(memberPublished.serial)
-            assertNotNull(memberPublished.modifiedTime)
-
-            when (memberPublished.name) {
-                aliceName -> {
-                    assertEquals(aliceKey, memberPublished.owningKey)
-                    assertEquals(1, memberPublished.identityKeys.size)
-                    assertEquals(1, memberPublished.identityKeyHashes.size)
-                    assertEquals(aliceKey.calculateHash(), memberPublished.identityKeyHashes.first())
-                    assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
-                    assertEquals(1, memberPublished.endpoints.size)
-                }
-                bobName -> {
-                    assertEquals(bobKey, memberPublished.owningKey)
-                    assertEquals(1, memberPublished.identityKeys.size)
-                    assertEquals(1, memberPublished.identityKeyHashes.size)
-                    assertEquals(bobKey.calculateHash(), memberPublished.identityKeyHashes.first())
-                    assertNotNull(memberPublished.status)
-                    assertNotNull(memberPublished.endpoints)
-                }
-                charlieName -> {
-                    assertEquals(1, memberPublished.identityKeys.size)
-                    assertEquals(1, memberPublished.identityKeyHashes.size)
-                    assertEquals(MEMBER_STATUS_SUSPENDED, memberPublished.status)
-                    assertEquals(2, memberPublished.endpoints.size)
-                }
-            }
+            assertTrue(it.key.startsWith(alice.id) || it.key.startsWith(bob.id) || it.key.startsWith(charlie.id))
+            assertTrue(it.key.endsWith(alice.id))
         }
+
+        val publishedInfo = publishedList.first()
+
+        assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
+        val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
+        val memberPublished = toMemberInfo(
+            layeredPropertyMapFactory.create<MemberContextImpl>(
+                KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
+            ),
+            layeredPropertyMapFactory.create<MGMContextImpl>(
+                KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
+            )
+        )
+        assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
+        assertNotNull(memberPublished.softwareVersion)
+        assertNotNull(memberPublished.platformVersion)
+        assertNotNull(memberPublished.serial)
+        assertNotNull(memberPublished.modifiedTime)
+
+        assertEquals(aliceKey, memberPublished.owningKey)
+        assertEquals(1, memberPublished.identityKeys.size)
+        assertEquals(1, memberPublished.identityKeyHashes.size)
+        assertEquals(aliceKey.calculateHash(), memberPublished.identityKeyHashes.first())
+        assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
+        assertEquals(1, memberPublished.endpoints.size)
+
         assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
     }
 
     @Test
-    fun `parsing of MemberInfo list fails when name field is empty in the GroupPolicy file`() {
+    fun `registration fails when name field is empty in the GroupPolicy file`() {
         setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(bob)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
-                "Registration failed. Reason: Member's name is not provided."
+                "Registration failed. Reason: Member's name is not provided in static member list."
             ),
             registrationResult
         )
@@ -291,76 +268,27 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
-    fun `registration fails when we have duplicated members defined`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(daisy)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Duplicated static member declaration."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
-
-    @Test
     fun `registration fails when coordinator is not running`() {
         setUpPublisher()
-        val registrationResult = registrationService.register(daisy)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
-            ),
-            registrationResult
-        )
-    }
-
-    @Test
-    fun `registration fails when mgm is not defined`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(eric)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: Static mgm inside the group policy file should be defined."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
-
-    @Test
-    fun `registration fails when mgm's key alias is not defined`() {
-        setUpPublisher()
-        registrationService.start()
-        val registrationResult = registrationService.register(frankie)
-        assertEquals(
-            MembershipRequestRegistrationResult(
-                NOT_SUBMITTED,
-                "Registration failed. Reason: MGM's key alias is not provided."
-            ),
-            registrationResult
-        )
-        registrationService.stop()
-    }
-
-    @Test
-    fun `registration fails when dependency component goes down`() {
-        setUpPublisher()
-        registrationService.start()
-        registrationServiceLifecycleHandler?.processEvent(
-            RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN),
-            coordinator
-        )
         val registrationResult = registrationService.register(alice)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
+            ),
+            registrationResult
+        )
+    }
+
+    @Test
+    fun `registration fails when registering member is not in the static member list`() {
+        setUpPublisher()
+        registrationService.start()
+        val registrationResult = registrationService.register(daisy)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is not listed in the static member list."
             ),
             registrationResult
         )

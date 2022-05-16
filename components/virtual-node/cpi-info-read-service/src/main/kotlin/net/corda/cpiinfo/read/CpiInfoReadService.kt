@@ -1,7 +1,7 @@
 package net.corda.cpiinfo.read
 
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 
 interface CpiInfoReadService : Lifecycle {

@@ -17,8 +17,8 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-db-schema'
-    implementation "net.corda:corda-packaging"
-    implementation "net.corda:corda-packaging-avro-converters"
+    implementation project(":libs:packaging:packaging")
+    implementation project(":libs:packaging:packaging-avro-converters")
     implementation "net.corda:corda-topic-schema"
 
     implementation project(":components:configuration:configuration-read-service")

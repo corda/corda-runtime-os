@@ -52,7 +52,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWait
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
-import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.ConfigKeys
@@ -101,9 +100,6 @@ class MemberProcessorIntegrationTest {
 
         @InjectService(timeout = 5000L)
         lateinit var cryptoProcessor: CryptoProcessor
-
-        @InjectService(timeout = 5000L)
-        lateinit var cryptoDependenciesProcessor: CryptoDependenciesProcessor
 
         @InjectService(timeout = 5000)
         lateinit var dbConnectionManager: DbConnectionManager
@@ -173,7 +169,6 @@ class MemberProcessorIntegrationTest {
                     ConfigKeys.DB_CONFIG to clusterDb.config
                 )
             )
-            cryptoDependenciesProcessor.start(bootConf)
             cryptoProcessor.start(bootConf)
             memberProcessor.start(bootConf)
 
@@ -374,27 +369,39 @@ class MemberProcessorIntegrationTest {
      */
     @Test
     fun `Register and view static member list`() {
-        val result = getRegistrationResult(registrationProxy, aliceHoldingIdentity)
-        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, result.outcome)
+        val aliceResult = getRegistrationResult(registrationProxy, aliceHoldingIdentity)
+        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, aliceResult.outcome)
 
-        val groupReader = eventually {
+        val aliceGroupReader = eventually {
             membershipGroupReaderProvider.getGroupReader(aliceHoldingIdentity).also {
                 assertEquals(aliceX500Name, it.owningMember)
                 assertEquals(groupId, it.groupId)
             }
         }
 
-        val aliceMemberInfo = lookup(groupReader, aliceX500Name)
-        val bobMemberInfo = lookup(groupReader, bobX500Name)
+        assertEquals(1, aliceGroupReader.lookup().size)
 
-        // Charlie is inactive in the sample group policy as only active members are returned by default
-        lookupFails(groupReader, charlieX500Name)
+        val bobResult = getRegistrationResult(registrationProxy, bobHoldingIdentity)
+        assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, bobResult.outcome)
+
+        val aliceMemberInfo = lookup(aliceGroupReader, aliceX500Name)
+        val bobMemberInfo = lookup(aliceGroupReader, bobX500Name)
 
         assertEquals(aliceX500Name, aliceMemberInfo.name)
         assertEquals(bobX500Name, bobMemberInfo.name)
+        assertEquals(2, aliceGroupReader.lookup().size)
 
-        assertEquals(aliceMemberInfo, lookUpFromPublicKey(groupReader, aliceMemberInfo))
-        assertEquals(bobMemberInfo, lookUpFromPublicKey(groupReader, bobMemberInfo))
+        // Charlie is inactive in the sample group policy as only active members are returned by default
+        lookupFails(aliceGroupReader, charlieX500Name)
+
+        val bobReader = eventually {
+            membershipGroupReaderProvider.getGroupReader(bobHoldingIdentity)
+        }
+
+        assertEquals(2, bobReader.lookup().size)
+
+        assertEquals(aliceMemberInfo, lookUpFromPublicKey(aliceGroupReader, aliceMemberInfo))
+        assertEquals(bobMemberInfo, lookUpFromPublicKey(aliceGroupReader, bobMemberInfo))
 
     }
 }

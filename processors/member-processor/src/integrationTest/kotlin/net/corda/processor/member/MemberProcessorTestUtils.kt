@@ -9,8 +9,8 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -85,8 +85,8 @@ class MemberProcessorTestUtils {
         val bobX500Name = MemberX500Name.parse(bobName)
         val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
-        val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
-        val bobHoldingIdentity = HoldingIdentity(bobName, groupId)
+        val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
+        val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
 
         fun Publisher.publishRawGroupPolicyData(
             virtualNodeInfoReader: VirtualNodeInfoReadService,

@@ -1,6 +1,6 @@
 package net.corda.cpiinfo.write
 
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.Lifecycle
 
 /**

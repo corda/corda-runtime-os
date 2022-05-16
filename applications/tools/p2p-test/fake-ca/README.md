@@ -27,10 +27,9 @@ A custom directory can be specified instead of `~/.fake.ca` using the command li
 
 To create a TLS certificate run:
 ```bash
-java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca*.jar create-certificate alice.com www.alice.com
+java -jar ./applications/tools/p2p-test/fake-ca/build/bin/corda-fake-ca*.jar create-certificate --public-key alicePublic.pem alice.com www.alice.com
 ```
-This will create a TLS certificate for the DNS names `alice.com`, `www.alice.com` and store the certificate and the keys under `.fake.ca/alice.com/`.
-This requires a certificate authority to have been created first and it will attempt to load it from `~/.fake.ca/ca/.ca/` (this can be changed using the option `-m`).
+This will create a TLS certificate for the DNS names `alice.com` and `www.alice.com`, using the public key `alicePublic.pem`. The certificate is stored under `.fake.ca/alice.com/`.
+If the `--public-key` parameter is omitted then a new key pair will be generated and stored under `.fake.ca/alice.com/`.
+Creating a certificate requires a certificate authority to have been created first and it will attempt to load it from `~/.fake.ca/ca/.ca/` (this can be changed using the option `-m`).
 By default, the generated keys will be [elliptic curve (EC) keys](https://en.wikipedia.org/wiki/Elliptic_curve). You can specify a different algorithm using the option `-a`.
-
-

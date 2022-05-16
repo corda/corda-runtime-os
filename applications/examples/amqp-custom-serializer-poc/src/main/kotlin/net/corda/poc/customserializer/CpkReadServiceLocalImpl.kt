@@ -1,9 +1,9 @@
 package net.corda.poc.customserializer
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.packaging.Cpi
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.core.CpkIdentifier
 import org.osgi.service.component.annotations.Component
 import java.io.InputStream
 import java.nio.file.Files
