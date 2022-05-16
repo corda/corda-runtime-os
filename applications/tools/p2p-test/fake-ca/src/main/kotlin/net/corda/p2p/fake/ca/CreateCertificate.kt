@@ -38,7 +38,7 @@ class CreateCertificate : Runnable {
         names = ["-p", "--public-key"],
         description = ["The filename of the public key. If unset a new key pair is generated."]
     )
-    private var publicKeyFile: String? = null
+    private val publicKeyFile: File? = null
 
     @ParentCommand
     private lateinit var ca: Ca
@@ -63,7 +63,7 @@ class CreateCertificate : Runnable {
             }
             keysAndCertificate.certificate
         } else {
-            ca.authority.generateCertificate(dnsNames, readPemPublicKey(File(publicKeyFile)))
+            ca.authority.generateCertificate(dnsNames, readPemPublicKey(publicKeyFile))
         }
 
         // Save the authority because the serial number had changed.
