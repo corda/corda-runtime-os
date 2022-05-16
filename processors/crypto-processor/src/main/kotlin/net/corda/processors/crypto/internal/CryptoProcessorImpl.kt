@@ -197,11 +197,9 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
-        if (hsmService.findAssignedHSM(tenantId, category) == null) {
-            hsmService.assignSoftHSM(tenantId, category, mapOf(
-                NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-            ))
-        }
+        hsmService.assignSoftHSM(tenantId, category, mapOf(
+            NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+        ))
         true
     } catch (e: Throwable) {
         logger.error("Failed to assign SOFT HSM for $tenantId:$category", e)
