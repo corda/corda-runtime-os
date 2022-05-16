@@ -35,13 +35,25 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     private companion object {
         val log = contextLogger()
 
-        private fun Chunk.toDboProperties(chunkEntity: ChunkEntity): MutableSet<ChunkPropertyEntity> {
+        private fun Chunk.toDboProperties(): List<ChunkPropertyEntity> {
             return properties?.items?.map {
-                ChunkPropertyEntity(Instant.now(), requestId, chunkEntity, it.key, it.value)
-            }?.toMutableSet() ?: mutableSetOf()
+                ChunkPropertyEntity(requestId, it.key, it.value, Instant.now())
+            } ?: emptyList()
         }
 
-        private fun ChunkEntity.toAvroChunkProperties(): KeyValuePairList? {
+        private fun EntityManager.getAvroChunkPropertiesInTransaction(requestId: RequestId): KeyValuePairList? {
+
+            val table = ChunkPropertyEntity::class.simpleName
+            val chunkProperties = createQuery(
+                """
+                SELECT c FROM $table c
+                WHERE c.requestId = :requestId
+                """.trimIndent(),
+                ChunkPropertyEntity::class.java
+            )
+            .setParameter("requestId", requestId)
+            .resultList
+
             return if (chunkProperties.isEmpty()) {
                 null
             } else {
@@ -68,20 +80,23 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         var status = AllChunksReceived.NO
         entityManagerFactory.createEntityManager().transaction { em ->
             // Persist this chunk.
-            val entity = ChunkEntity(
+            val chunkEntity = ChunkEntity(
                 chunk.requestId,
                 chunk.fileName,
                 cordaSecureHash?.toString(),
                 chunk.partNumber,
                 chunk.offset,
-                data,
-                mutableSetOf()
-            ).also {
-                it.chunkProperties = chunk.toDboProperties(it)
-            }
+                data
+            )
+
+            em.persist(chunkEntity)
+
+            val chunkProperties = chunk.toDboProperties()
 
             // Merge because same chunk property may already exist
-            em.merge(entity)
+            chunkProperties.forEach {
+                em.merge(it)
+            }
 
             // At this point we have at least one chunk.
             val table = ChunkEntity::class.simpleName
@@ -152,9 +167,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      * @param onChunk lambda method to be called on each chunk
      */
     override fun forEachChunk(requestId: RequestId, onChunk: (chunk: Chunk) -> Unit) {
-        entityManagerFactory.createEntityManager().transaction {
+        entityManagerFactory.createEntityManager().transaction { em ->
             val table = ChunkEntity::class.simpleName
-            val streamingResults = it.createQuery(
+            val streamingResults = em.createQuery(
                 """
                 SELECT c FROM $table c
                 WHERE c.requestId = :requestId
@@ -165,12 +180,15 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 .setParameter("requestId", requestId)
                 .resultStream
 
+            val avroChunkProperties = em.getAvroChunkPropertiesInTransaction(requestId)
+
             streamingResults.forEach { entity ->
                 // Do the reverse of [persist] particularly for data - if null, return zero bytes.
                 val checksum = if (entity.checksum != null) SecureHash.create(entity.checksum!!).toAvro() else null
                 val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
                 val chunk = Chunk(requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,
-                    entity.toAvroChunkProperties())
+                    avroChunkProperties
+                )
                 onChunk(chunk)
             }
         }

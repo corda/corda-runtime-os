@@ -1,13 +1,10 @@
 package net.corda.chunking.datamodel
 
 import net.corda.db.schema.DbSchema
-import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
-import javax.persistence.OneToMany
 import javax.persistence.Table
 
 /**
@@ -30,11 +27,8 @@ data class ChunkEntity(
     @Column(name = "data_offset", nullable = false)
     var offset: Long,
     @Column(name = "data", nullable = true)
-    var data: ByteArray?,
-    @OneToMany(mappedBy = "chunk", orphanRemoval = true, cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
-    var chunkProperties: MutableSet<ChunkPropertyEntity> = mutableSetOf()
+    var data: ByteArray?
 ) {
-    @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -47,7 +41,6 @@ data class ChunkEntity(
         if (partNumber != other.partNumber) return false
         if (offset != other.offset) return false
         if (!data.contentEquals(other.data)) return false
-        if (chunkProperties != other.chunkProperties) return false
 
         return true
     }
@@ -59,12 +52,6 @@ data class ChunkEntity(
         result = 31 * result + partNumber
         result = 31 * result + offset.hashCode()
         result = 31 * result + data.contentHashCode()
-        result = 31 * result + chunkProperties.hashCode()
         return result
-    }
-
-    override fun toString(): String {
-        return this::class.simpleName + "(requestId = $requestId , fileName = $fileName , " +
-                "partNumber = $partNumber , chunkProperties = $chunkProperties )"
     }
 }

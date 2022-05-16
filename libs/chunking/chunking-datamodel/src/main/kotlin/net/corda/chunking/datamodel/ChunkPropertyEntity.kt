@@ -4,38 +4,33 @@ import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
 import javax.persistence.Table
 
+/**
+ * Note: There is no association from this entity to [ChunkEntity], this is due to the fact that [ChunkEntity] has
+ * `partNumber` whereas [ChunkPropertyEntity] does not. Therefore, it is possible to say that a set of properties applies
+ * to multiple ChunkEntities.
+ */
 @Entity
 @IdClass(ChunkPropertyEntityPrimaryKey::class)
 @Table(name = "file_upload_props", schema = DbSchema.CONFIG)
 data class ChunkPropertyEntity(
 
-    @Column(name = "update_ts", nullable = false)
-    var updateTimestamp: Instant,
-
     @Id
     @Column(name = "request_id", nullable = false)
     val requestId: String,
-
-    /**
-     * A ChunkProperty can be associated with one Chunk.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", nullable = false)
-    val chunk: ChunkEntity,
 
     @Id
     @Column(name = "key", nullable = false)
     val key: String,
 
     @Column(name = "value", nullable = true)
-    val value: String?
+    val value: String?,
+
+    @Column(name = "update_ts", nullable = false)
+    var updateTimestamp: Instant
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
