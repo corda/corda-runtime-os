@@ -36,8 +36,6 @@ subprojects {
         }
     }
 
-
-
     tasks.withType(KotlinCompile).configureEach {
         kotlinOptions {
             languageVersion = '1.4'
