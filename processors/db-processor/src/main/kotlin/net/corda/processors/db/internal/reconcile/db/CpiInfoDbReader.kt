@@ -106,6 +106,7 @@ class CpiInfoDbReader(
     }
 
     // Separating actual logic from lifecycle stuff so it can be unit tested.
+    @Suppress("ComplexMethod")
     @VisibleForTesting
     internal fun doGetAllVersionedRecords() =
         entityManagerFactory!!.createEntityManager().run {

@@ -112,6 +112,7 @@ class ReconcilerImpl<K : Any, V : Any>(
     /**
      * @throws [ReconciliationException] if an error occurs at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
+    @Suppress("ComplexMethod")
     @VisibleForTesting
     internal fun reconcile() {
         val kafkaRecords =

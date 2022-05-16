@@ -1,7 +1,5 @@
 package net.corda.reconciliation
 
-import java.time.Duration
-
 /**
  * Creates [Reconciler]s out of db [ReconcilerReader], Kafka [ReconcilerReader] and Kafka [ReconcilerWriter].
  */

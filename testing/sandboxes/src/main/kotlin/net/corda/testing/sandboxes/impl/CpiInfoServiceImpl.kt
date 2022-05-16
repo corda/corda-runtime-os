@@ -9,8 +9,6 @@ import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.reconciliation.VersionedRecord
 
 @Suppress("unused")
 @Component

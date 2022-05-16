@@ -78,8 +78,14 @@ data class CpkMetadataEntity(
         joinColumns = [
             JoinColumn(name = "cpi_name", referencedColumnName = "cpi_name", insertable = false, updatable = false),
             JoinColumn(name = "cpi_version", referencedColumnName = "cpi_version", insertable = false, updatable = false),
-            JoinColumn(name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash", insertable = false, updatable = false),
-            JoinColumn(name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum", insertable = false, updatable = false)
+            JoinColumn(
+                name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash",
+                insertable = false, updatable = false
+            ),
+            JoinColumn(
+                name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum",
+                insertable = false, updatable = false
+            )
         ]
     )
     @Column(name = "library_name")
@@ -152,7 +158,10 @@ data class CpkCordappManifestEntity(
     @JoinColumns(
         JoinColumn(name = "cpi_name", referencedColumnName = "cpi_name", insertable = false, updatable = false),
         JoinColumn(name = "cpi_version", referencedColumnName = "cpi_version", insertable = false, updatable = false),
-        JoinColumn(name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash", insertable = false, updatable = false),
+        JoinColumn(
+            name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash",
+            insertable = false, updatable = false
+        ),
         JoinColumn(name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum", insertable = false, updatable = false)
     )
     val cpkMetadataEntity: CpkMetadataEntity,

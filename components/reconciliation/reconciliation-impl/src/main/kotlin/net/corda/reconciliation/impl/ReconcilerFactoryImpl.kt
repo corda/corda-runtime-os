@@ -7,7 +7,6 @@ import net.corda.reconciliation.ReconcilerWriter
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 @Component(service = [ReconcilerFactory::class])
 class ReconcilerFactoryImpl @Activate constructor(
