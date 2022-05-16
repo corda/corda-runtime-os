@@ -142,9 +142,18 @@ class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `draft`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("http://www.alice.net:$port")
+
+            val client: java.net.http.HttpClient = newBuilder().build()
+            val request: java.net.http.HttpRequest =
+                java.net.http.HttpRequest.newBuilder().uri(serverAddress).build()
+
+            val response: java.net.http.HttpResponse<*> = client.send(request, BodyHandlers.ofByteArray())
+            assertThat(response.statusCode()).isEqualTo(200)
+
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
@@ -916,51 +925,4 @@ class GatewayIntegrationTest : TestBase() {
             }
         }
     }
-
-    @Test
-    fun ensureThatUserAPICallReturnStatusCode200() {
-        val client: java.net.http.HttpClient = newBuilder().build()
-        val request: java.net.http.HttpRequest =
-            java.net.http.HttpRequest.newBuilder().uri(URI.create("https://www.r3.com")).build()
-        val response: java.net.http.HttpResponse<String> = client.send(request, BodyHandlers.ofString())
-        assertThat(response.statusCode()).isEqualTo(200)
-    }
-
-/*    @Test
-    fun ensureThatUserAPICallReturnStatusCode200() {
-        val client = HttpClient.newHttpClient()
-        val request = HttpRequest.newBuilder(URI.create("https://api.github.com/users/vogella")).build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        assertThat(response.statusCode()).isEqualTo(200)
-    }*/
-
-    /*@Test
-    @DisplayName("Ensures that the content type starts with application/json")
-    @Throws(
-        Exception::class
-    )
-    fun ensureThatJsonIsReturnedAsContentType() {
-        val client: java.net.http.HttpClient = java.net.http.HttpClient.newBuilder().build()
-        val request: java.net.http.HttpRequest =
-            java.net.http.HttpRequest.newBuilder().uri(URI.create("https://api.github.com/users/vogella")).build()
-        val response: java.net.http.HttpResponse<String> = client.send(request, BodyHandlers.ofString())
-        val firstValue: Optional<String> = response.headers().firstValue("Content-Type")
-        val string = firstValue.get()
-        assertThat(string).startsWith("application/json")
-    }
-
-    @Test
-    @DisplayName("Ensure that the JSON for the user vogella contains a reference to the Twitter user")
-    @Throws(
-        Exception::class
-    )
-    fun ensureJsonContainsTwitterHandler() {
-        val client: java.net.http.HttpClient = java.net.http.HttpClient.newBuilder().build()
-        val request: java.net.http.HttpRequest =
-            java.net.http.HttpRequest.newBuilder().uri(URI.create("https://api.github.com/users/vogella")).build()
-        val response: java.net.http.HttpResponse<String> = client.send(request, BodyHandlers.ofString())
-        val body: String = response.body()
-        println(body)
-        assertThat(body).contains("twitter_username\":\"vogella\"")
-    }*/
 }
