@@ -37,8 +37,8 @@ class HSMConfigurationClientComponent @Activate constructor(
     )
 ), HSMConfigurationClient {
     companion object {
-        const val GROUP_NAME = "crypto.hsm.configuration"
-        const val CLIENT_ID = "crypto.hsm.configuration"
+        const val GROUP_NAME = "crypto.hsm.configuration.client"
+        const val CLIENT_ID = "crypto.hsm.configuration.client"
     }
 
     interface Impl : AutoCloseable {

@@ -36,8 +36,8 @@ class HSMRegistrationClientComponent @Activate constructor(
     )
 ), HSMRegistrationClient {
     companion object {
-        const val GROUP_NAME = "crypto.hsm.registration"
-        const val CLIENT_ID = "crypto.hsm.registration"
+        const val GROUP_NAME = "crypto.hsm.registration.client"
+        const val CLIENT_ID = "crypto.hsm.registration.client"
     }
 
     interface Impl : AutoCloseable {

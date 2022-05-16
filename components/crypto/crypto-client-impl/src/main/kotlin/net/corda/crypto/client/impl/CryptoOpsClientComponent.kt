@@ -50,8 +50,8 @@ class CryptoOpsClientComponent @Activate constructor(
     )
 ), CryptoOpsClient, CryptoOpsProxyClient {
     companion object {
-        const val CLIENT_ID = "crypto.ops.rpc"
-        const val GROUP_NAME = "crypto.ops.rpc"
+        const val CLIENT_ID = "crypto.ops.rpc.client"
+        const val GROUP_NAME = "crypto.ops.rpc.client"
     }
 
     interface Impl : AutoCloseable {
