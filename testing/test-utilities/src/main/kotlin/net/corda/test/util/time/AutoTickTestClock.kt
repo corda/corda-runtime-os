@@ -21,4 +21,8 @@ class AutoTickTestClock(initialTime: Instant, private val autoTickBy: Duration) 
      * Returns the current time of the clock without triggering auto-ticking
      */
     fun peekTime(): Instant = now
+
+    fun setTime(instant: Instant) {
+        now = instant
+    }
 }

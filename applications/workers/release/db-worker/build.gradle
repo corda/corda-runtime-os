@@ -24,6 +24,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     testImplementation 'org.osgi:osgi.core'
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
