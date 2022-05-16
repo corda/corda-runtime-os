@@ -20,4 +20,11 @@ class CryptoHSMPersistenceConfig(internal val config: SmartConfig) : SmartConfig
         } catch (e: Throwable) {
             throw CryptoConfigurationException("Failed to get ${this::maximumSize.name}", e)
         }
+
+    val downstreamRetries: Int
+        get() = try {
+            config.getInt(this::downstreamRetries.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::downstreamRetries.name}", e)
+        }
 }

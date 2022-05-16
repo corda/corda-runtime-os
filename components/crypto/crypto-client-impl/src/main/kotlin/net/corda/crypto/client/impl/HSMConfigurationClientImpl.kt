@@ -18,6 +18,7 @@ import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.nio.ByteBuffer
+import java.time.Duration
 
 class HSMConfigurationClientImpl(
     private val sender: RPCSender<HSMConfigurationRequest, HSMConfigurationResponse>
@@ -37,7 +38,10 @@ class HSMConfigurationClientImpl(
         val request = createRequest(
             request = PutHSMCommand(info, ByteBuffer.wrap(serviceConfig))
         )
-        return request.execute(CryptoStringResult::class.java)!!.value
+        return request.execute(
+            Duration.ofSeconds(60),
+            CryptoStringResult::class.java
+        )!!.value
     }
 
     fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {
@@ -50,7 +54,11 @@ class HSMConfigurationClientImpl(
         val request = createRequest(
             request = LinkHSMCategoriesCommand(configId, links)
         )
-        request.execute(CryptoNoContentValue::class.java, allowNoContentValue = true)
+        request.execute(
+            Duration.ofSeconds(60),
+            CryptoNoContentValue::class.java,
+            allowNoContentValue = true
+        )
     }
 
     fun lookup(filter: Map<String, String>): List<HSMInfo> {
@@ -62,7 +70,11 @@ class HSMConfigurationClientImpl(
         val request = createRequest(
             request = HSMQuery(filter.toWire())
         )
-        return request.execute(HSMInfos::class.java, allowNoContentValue = true)!!.items
+        return request.execute(
+            Duration.ofSeconds(60),
+            HSMInfos::class.java,
+            allowNoContentValue = true
+        )!!.items
     }
 
     fun getLinkedCategories(configId: String): List<HSMCategoryInfo> {
@@ -74,7 +86,11 @@ class HSMConfigurationClientImpl(
         val request = createRequest(
             request = HSMLinkedCategoriesQuery(configId)
         )
-        return request.execute(HSMCategoryInfos::class.java, allowNoContentValue = true)!!.links
+        return request.execute(
+            Duration.ofSeconds(60),
+            HSMCategoryInfos::class.java,
+            allowNoContentValue = true
+        )!!.links
     }
 
     private fun createRequest(request: Any): HSMConfigurationRequest =
@@ -85,11 +101,12 @@ class HSMConfigurationClientImpl(
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <RESPONSE> HSMConfigurationRequest.execute(
+        timeout: Duration,
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
     ): RESPONSE? {
         try {
-            val response = sender.sendRequest(this).getOrThrow()
+            val response = sender.sendRequest(this).getOrThrow(timeout)
             require(
                 response.context.requestingComponent == context.requestingComponent &&
                         response.context.tenantId == context.tenantId

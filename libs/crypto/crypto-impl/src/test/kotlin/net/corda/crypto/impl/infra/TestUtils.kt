@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.infra
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import java.security.KeyPair

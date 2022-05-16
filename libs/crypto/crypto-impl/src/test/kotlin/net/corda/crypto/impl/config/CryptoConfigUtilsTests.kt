@@ -127,6 +127,7 @@ class CryptoConfigUtilsTests {
         val config = smartConfig.hsmPersistence()
         assertEquals(240, config.expireAfterAccessMins)
         assertEquals(1000, config.maximumSize)
+        assertEquals(3, config.downstreamRetries)
     }
 
     @Test
@@ -288,6 +289,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
+        assertEquals(3, hsmPersistence.downstreamRetries)
         assertTrue(config.hasPath("instance"))
     }
 
@@ -331,6 +333,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
+        assertEquals(3, hsmPersistence.downstreamRetries)
         assertTrue(config.hasPath("instance"))
     }
 
@@ -372,6 +375,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
+        assertEquals(3, hsmPersistence.downstreamRetries)
         assertTrue(config.hasPath("instance"))
     }
 
@@ -413,6 +417,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
+        assertEquals(3, hsmPersistence.downstreamRetries)
         assertTrue(config.hasPath("instance"))
     }
 
@@ -430,7 +435,8 @@ class CryptoConfigUtilsTests {
                         "softPersistence.maximumSize" to "77",
                         "signingPersistence.expireAfterAccessMins" to "42",
                         "hsmPersistence.expireAfterAccessMins" to "11",
-                        "hsmPersistence.maximumSize" to 222
+                        "hsmPersistence.maximumSize" to 222,
+                        "hsmPersistence.downstreamRetries" to 17
                     )
                 )
             )
@@ -460,6 +466,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(11, hsmPersistence.expireAfterAccessMins)
         assertEquals(222, hsmPersistence.maximumSize)
+        assertEquals(17, hsmPersistence.downstreamRetries)
         assertTrue(config.hasPath("instance"))
     }
 }

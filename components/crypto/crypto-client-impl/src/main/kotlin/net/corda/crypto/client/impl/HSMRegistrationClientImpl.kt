@@ -11,6 +11,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import java.time.Duration
 
 class HSMRegistrationClientImpl(
     private val sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
@@ -30,7 +31,10 @@ class HSMRegistrationClientImpl(
             tenantId = tenantId,
             request = AssignHSMCommand(category, context.toWire())
         )
-        val response = request.execute(HSMInfo::class.java)
+        val response = request.execute(
+            Duration.ofSeconds(60),
+            HSMInfo::class.java
+        )
         return response!!
     }
 
@@ -49,7 +53,10 @@ class HSMRegistrationClientImpl(
             tenantId = tenantId,
             request = AssignSoftHSMCommand(category, context.toWire())
         )
-        val response = request.execute(HSMInfo::class.java)
+        val response = request.execute(
+            Duration.ofSeconds(60),
+            HSMInfo::class.java
+        )
         return response!!
     }
 
@@ -64,7 +71,11 @@ class HSMRegistrationClientImpl(
             tenantId = tenantId,
             request = AssignedHSMQuery(category)
         )
-        return request.execute(HSMInfo::class.java, allowNoContentValue = true)
+        return request.execute(
+            Duration.ofSeconds(60),
+            HSMInfo::class.java,
+            allowNoContentValue = true
+        )
     }
 
     private fun createRequest(tenantId: String, request: Any): HSMRegistrationRequest =
@@ -75,11 +86,12 @@ class HSMRegistrationClientImpl(
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <RESPONSE> HSMRegistrationRequest.execute(
+        timeout: Duration,
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
     ): RESPONSE? {
         try {
-            val response = sender.sendRequest(this).getOrThrow()
+            val response = sender.sendRequest(this).getOrThrow(timeout)
             require(
                 response.context.requestingComponent == context.requestingComponent &&
                         response.context.tenantId == context.tenantId

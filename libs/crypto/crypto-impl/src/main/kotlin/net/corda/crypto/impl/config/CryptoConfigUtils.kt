@@ -24,6 +24,8 @@ import java.util.UUID
     "softPersistence": {
         "expireAfterAccessMins": 60,
         "maximumSize": 100,
+        "retries": 0,
+        "timeoutMills": 20000,
         "salt": "<plain-text-value>"
         "passphrase": {
             "configSecret": {
@@ -37,7 +39,8 @@ import java.util.UUID
     },
     "hsmPersistence": {
         "expireAfterAccessMins": 60,
-        "maximumSize": 100
+        "maximumSize": 100,
+        "downstreamRetries": 3
     }
 }
  */
@@ -163,7 +166,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                 HSM_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         "expireAfterAccessMins" to "240",
-                        "maximumSize" to "1000"
+                        "maximumSize" to "1000",
+                        CryptoHSMPersistenceConfig::downstreamRetries.name to "3",
                     )
                 )
             )

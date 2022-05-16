@@ -35,6 +35,7 @@ import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Duration
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -56,7 +57,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = SupportedSchemesRpcQuery(category)
         )
-        val response = request.execute(CryptoSignatureSchemes::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureSchemes::class.java)
         return response!!.codes
     }
 
@@ -75,7 +76,7 @@ class CryptoOpsClientImpl(
                 }
             )
         )
-        val response = request.execute(CryptoSigningKeys::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
         return response!!.keys.map {
             schemeMetadata.decodePublicKey(it.publicKey.array())
         }
@@ -96,7 +97,7 @@ class CryptoOpsClientImpl(
                 }
             )
         )
-        return request.execute(CryptoSigningKeys::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
 
     fun generateKeyPair(
@@ -117,7 +118,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = GenerateKeyPairCommand(category, alias, null, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
@@ -141,7 +142,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = GenerateKeyPairCommand(category, alias, externalId, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
@@ -160,7 +161,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = GenerateFreshKeyRpcCommand(category, null, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
@@ -181,7 +182,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
@@ -200,7 +201,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = GenerateFreshKeyRpcCommand(category, null, scheme, context)
         )
-        return request.execute(CryptoPublicKey::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)!!
     }
 
     fun freshKeyProxy(
@@ -220,7 +221,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context)
         )
-        return request.execute(CryptoPublicKey::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)!!
     }
 
     fun sign(
@@ -243,7 +244,7 @@ class CryptoOpsClientImpl(
                 context.toWire()
             )
         )
-        val response = request.execute(CryptoSignatureWithKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
@@ -273,7 +274,7 @@ class CryptoOpsClientImpl(
                 context.toWire()
             )
         )
-        val response = request.execute(CryptoSignatureWithKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
@@ -300,7 +301,7 @@ class CryptoOpsClientImpl(
                 context
             )
         )
-        return request.execute(CryptoSignatureWithKey::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)!!
     }
 
     fun createWrappingKey(
@@ -325,7 +326,7 @@ class CryptoOpsClientImpl(
                 context.toWire()
             )
         )
-        request.execute(CryptoNoContentValue::class.java, allowNoContentValue = true)
+        request.execute(Duration.ofSeconds(20), CryptoNoContentValue::class.java, allowNoContentValue = true)
     }
 
     fun lookup(
@@ -353,7 +354,7 @@ class CryptoOpsClientImpl(
                 filter.toWire()
             )
         )
-        return request.execute(CryptoSigningKeys::class.java)!!.keys
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
@@ -370,7 +371,7 @@ class CryptoOpsClientImpl(
             tenantId,
             ByIdsRpcQuery(ids)
         )
-        return request.execute(CryptoSigningKeys::class.java)!!.keys
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
@@ -392,11 +393,12 @@ class CryptoOpsClientImpl(
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <RESPONSE> RpcOpsRequest.execute(
+        timeout: Duration,
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
     ): RESPONSE? {
         try {
-            val response = sender.sendRequest(this).getOrThrow()
+            val response = sender.sendRequest(this).getOrThrow(timeout)
             require(
                 response.context.requestingComponent == context.requestingComponent &&
                         response.context.tenantId == context.tenantId

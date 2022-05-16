@@ -8,8 +8,10 @@ import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLIC
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
+import net.corda.crypto.impl.executeWithRetry
 import net.corda.crypto.persistence.hsm.HSMCache
 import net.corda.crypto.persistence.hsm.HSMCacheActions
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -48,6 +50,8 @@ class HSMServiceImpl(
     private val encryptor = config.rootEncryptor()
 
     private val softConfig = config.softPersistence()
+
+    private val hsmConfig = config.hsmPersistence()
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
@@ -190,14 +194,16 @@ class HSMServiceImpl(
             }
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
-            opsProxyClient.createWrappingKey(
-                configId = association.config.info.id,
-                failIfExists = false,
-                masterKeyAlias = association.masterKeyAlias!!,
-                context = mapOf(
-                    CRYPTO_TENANT_ID to association.tenantId
+            executeWithRetry(logger, hsmConfig.downstreamRetries) {
+                opsProxyClient.createWrappingKey(
+                    configId = association.config.info.id,
+                    failIfExists = false,
+                    masterKeyAlias = association.masterKeyAlias!!,
+                    context = mapOf(
+                        CRYPTO_TENANT_ID to association.tenantId
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -205,14 +211,16 @@ class HSMServiceImpl(
         if (info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
-            opsProxyClient.createWrappingKey(
-                configId = info.id,
-                failIfExists = false,
-                masterKeyAlias = info.masterKeyAlias,
-                context = mapOf(
-                    CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+            executeWithRetry(logger, hsmConfig.downstreamRetries) {
+                opsProxyClient.createWrappingKey(
+                    configId = info.id,
+                    failIfExists = false,
+                    masterKeyAlias = info.masterKeyAlias,
+                    context = mapOf(
+                        CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+                    )
                 )
-            )
+            }
         }
     }
 
