@@ -1,12 +1,12 @@
 package net.corda.testing.sandboxes.impl
 
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.Cpi
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.BundleContext

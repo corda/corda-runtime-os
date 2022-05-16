@@ -5,7 +5,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messaging.TOPIC_PREFIX
@@ -17,6 +16,7 @@ import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
@@ -26,7 +26,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -43,6 +42,7 @@ class StateAndEventSubscriptionImplTest {
     private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val rebalanceListener: StateAndEventConsumerRebalanceListener = mock()
 
     private data class Mocks(
         val builder: StateAndEventBuilder,
@@ -53,7 +53,6 @@ class StateAndEventSubscriptionImplTest {
     private fun setupMocks(iterations: Long): Mocks {
         val latch = CountDownLatch(iterations.toInt() + 1)
         val stateAndEventConsumer: StateAndEventConsumer<String, String, String> = mock()
-        val rebalanceListener: CordaConsumerRebalanceListener = mock()
         val eventConsumer: CordaConsumer<String, String> = mock()
         val stateConsumer: CordaConsumer<String, String> = mock()
         val producer: CordaProducer = mock()
@@ -197,7 +196,8 @@ class StateAndEventSubscriptionImplTest {
         )
         verify(builder, times(1)).createProducer(any())
         verify(eventConsumer, times(1)).poll(any())
-        verifyNoInteractions(producer)
+        verify(producer, times(0)).beginTransaction()
+        verify(rebalanceListener).close()
     }
 
     @Test
@@ -348,14 +348,13 @@ class StateAndEventSubscriptionImplTest {
         val records = mutableListOf<CordaConsumerRecord<String, String>>()
         records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
 
-        var eventsPaused = false
+        var callCount = 0
         val eventConsumer = stateAndEventConsumer.eventConsumer
         doAnswer {
-            if (eventsPaused) {
-                emptyList()
-            } else {
-                eventsPaused = true
+            if (callCount++ == 0) {
                 records
+            } else {
+                mutableListOf()
             }
         }.whenever(eventConsumer).poll(any())
 
@@ -375,7 +374,13 @@ class StateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning && !eventsPaused) {
+
+        /**
+         * wait for a second poll to be called before we complete
+         * as we need to be sure the first poll has completed processing
+         * before we go to the asserts
+         */
+        while (subscription.isRunning && callCount <= 1) {
             Thread.sleep(10)
         }
         subscription.stop()

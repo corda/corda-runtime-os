@@ -1,17 +1,17 @@
 package net.corda.cpiinfo.read.fake
 
 import net.corda.cpiinfo.read.CpiInfoListener
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
-import net.corda.libs.packaging.CpkIdentifier
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.converters.toCorda
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.packaging.CordappManifest
-import net.corda.packaging.Cpi
-import net.corda.packaging.Cpk
-import net.corda.packaging.ManifestCordappInfo
-import net.corda.packaging.converters.toCorda
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

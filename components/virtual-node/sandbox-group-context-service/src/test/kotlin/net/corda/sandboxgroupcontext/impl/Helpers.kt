@@ -1,8 +1,8 @@
 package net.corda.sandboxgroupcontext.impl
 
-import net.corda.packaging.Cpk
-import net.corda.packaging.CordappManifest
-import net.corda.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.ManifestCordappInfo
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash

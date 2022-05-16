@@ -9,7 +9,7 @@ import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationResponse
 import net.corda.data.membership.rpc.response.RegistrationStatus
-import net.corda.libs.packaging.CpiIdentifier
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult

@@ -1,8 +1,8 @@
 package net.corda.testing.sandboxes
 
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
-import net.corda.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.Cpi
 import java.util.concurrent.CompletableFuture
 
 interface CpiLoader {

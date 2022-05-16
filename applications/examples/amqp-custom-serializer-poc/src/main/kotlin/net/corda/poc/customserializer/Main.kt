@@ -5,9 +5,9 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.libs.packaging.Cpk
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.packaging.Cpi
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -22,10 +22,10 @@ import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicyOption.GREEDY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.util.Hashtable
+import kotlin.io.path.inputStream
 
 
 // Requirements:
@@ -67,8 +67,8 @@ class Main @Activate constructor(
 
         val cpkA = Path.of(args[1])
         val cpkB = Path.of(args[2])
-        val sandboxA = prepareSandbox(listOf(cpkA))
-        val sandboxB = prepareSandbox(listOf(cpkB))
+        val sandboxA = prepareSandbox(listOf(cpkA), tmpDir)
+        val sandboxB = prepareSandbox(listOf(cpkB), tmpDir)
 
         differentSerializersPerSandboxGroup(sandboxA, sandboxB)
         consoleLogger.info("------------------------------------------------")
@@ -84,15 +84,14 @@ class Main @Activate constructor(
 
     data class SandboxAndSerializers(val sandboxGroup: SandboxGroup, val serializers: List<String>)
 
-    private fun prepareSandbox(cpkFiles: List<Path>): SandboxAndSerializers {
-        val outputStream = ByteArrayOutputStream()
-        Cpi.assemble(outputStream, "cpi", "1.0", cpkFiles)
+    private fun prepareSandbox(cpkFiles: List<Path>, cacheDir: String): SandboxAndSerializers {
 
-        // NOTE - re-enable with a custom implementation of CpkReadService
-        val loadCpb: Cpi = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
+        val cpks = cpkFiles.map { cpkPath ->
+            cpkPath.inputStream(StandardOpenOption.READ).use { inputStream -> Cpk.from(inputStream, Path.of(cacheDir)) }
+        }
 
-        val serializers: List<String> = loadCpb.metadata.cpks.flatMap { it.cordappManifest.serializers }
-        return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(loadCpb.cpks), serializers)
+        val serializers: List<String> = cpks.map { it.metadata }.flatMap { it.cordappManifest.serializers }
+        return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(cpks), serializers)
     }
 
     private fun configureSystem(tmpDir: String) {

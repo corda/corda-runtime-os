@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpkMetadata
 import org.osgi.framework.Bundle
 
 /** A container for isolating a set of bundles created from a CPK. */

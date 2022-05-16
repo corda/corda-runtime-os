@@ -17,8 +17,8 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.packaging.Cpi
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll

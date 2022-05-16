@@ -56,6 +56,7 @@ import java.nio.file.Path
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -209,7 +210,12 @@ class PersistenceServiceInternalTests {
 
         // request persist - cats & dogs are in different CPKs/bundles
         val dogId = UUID.randomUUID()
-        val dog = ctx.sandbox.createDogInstance(dogId, "Pluto", Instant.now(), "me")
+        val dog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Pluto",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
         val dogRequest = createRequest(
             ctx.virtualNodeInfo.holdingIdentity, PersistEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(dog).bytes)))
         val catId = UUID.randomUUID()
@@ -252,7 +258,12 @@ class PersistenceServiceInternalTests {
 
         // save a dog
         val dogId = UUID.randomUUID()
-        val dog = ctx.sandbox.createDogInstance(dogId, "Basil", Instant.now(), "me")
+        val dog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Basil",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
         ctx.persist(dog)
 
         // use API to find it
@@ -266,8 +277,8 @@ class PersistenceServiceInternalTests {
 
         // assert it's the dog
         assertThat(responses.size).isEqualTo(1)
-        val bytes = (responses[0].value as EntityResponse).result as SerializedBytes<*>
-        val result = ctx.sandbox.getSerializer().deserialize(bytes.bytes, Any::class.java)
+        val bytes = (responses[0].value as EntityResponse).result as ByteBuffer
+        val result = ctx.sandbox.getSerializer().deserialize(bytes.array(), Any::class.java)
         assertThat(result).isEqualTo(dog)
     }
 
@@ -281,7 +292,12 @@ class PersistenceServiceInternalTests {
         ctx.persist(dog)
 
         // change the dog's name
-        val bellaTheDog = ctx.sandbox.createDogInstance(dogId, "Bella", Instant.now(), "me")
+        val bellaTheDog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Bella",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
 
         // use API to find it
         val mergeEntity = MergeEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(bellaTheDog).bytes))
@@ -295,8 +311,8 @@ class PersistenceServiceInternalTests {
         assertThat(responses.size).isEqualTo(1)
 
         // assert that Bella has been returned
-        val bytes = (responses[0].value as EntityResponse).result as SerializedBytes<*>
-        val responseEntity = ctx.sandbox.getSerializer().deserialize(bytes.bytes, Any::class.java)
+        val bytes = (responses[0].value as EntityResponse).result as ByteBuffer
+        val responseEntity = ctx.sandbox.getSerializer().deserialize(bytes.array(), Any::class.java)
         assertThat(responseEntity).isEqualTo(bellaTheDog)
 
         // and can be found in the DB
