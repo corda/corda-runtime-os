@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResultTimeWindowOutOfBounds",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "evaluationTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "timeWindowLowerBound",
+      "type": ["null", {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }]
+    },
+    {
+      "name": "timeWindowUpperBound",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

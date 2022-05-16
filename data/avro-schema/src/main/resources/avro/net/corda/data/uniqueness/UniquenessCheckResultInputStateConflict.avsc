@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResultInputStateConflict",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "conflictingStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}

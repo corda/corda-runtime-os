@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResponse",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "txId",
+      "type": "string"
+    },
+    {
+      "name": "result",
+      "type": [
+        "net.corda.data.uniqueness.UniquenessCheckResultSuccess",
+        "net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict",
+        "net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown",
+        "net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict",
+        "net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown",
+        "net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds",
+        "net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResultSuccess",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "commitTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

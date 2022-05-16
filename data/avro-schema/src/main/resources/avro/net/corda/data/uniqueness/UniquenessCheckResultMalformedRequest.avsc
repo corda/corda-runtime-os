@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResultMalformedRequest",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "errorText",
+      "type": "string"
+    }
+  ]
+}

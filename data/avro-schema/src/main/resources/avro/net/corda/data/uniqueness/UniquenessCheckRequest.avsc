@@ -1,0 +1,43 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckRequest",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "txId",
+      "type": "string"
+    },
+    {
+      "name": "inputStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "referenceStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "numOutputStates",
+      "type": "int"
+    },
+    {
+      "name": "timeWindowLowerBound",
+      "type": ["null", {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }]
+    },
+    {
+      "name": "timeWindowUpperBound",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}

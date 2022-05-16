@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResultReferenceStateUnknown",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "unknownStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
+  ]
+}
