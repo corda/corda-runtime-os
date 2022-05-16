@@ -7,7 +7,7 @@ subprojects { subProject ->
     // we have to apply the gradle jvm plugin, because it provides the jar and build tasks
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
-    // the plugin task will put the files into a zip file
+    // the plugin task will put the files into a jar file with the correct manifest
     def plugin = tasks.register('plugin', Jar) {
 
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE

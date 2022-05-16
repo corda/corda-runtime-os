@@ -3,7 +3,7 @@
 # get path to script
 SCRIPTPATH=$(dirname "$0")
 
-rootDir="$SCRIPTPATH/.."
+rootDir="$SCRIPTPATH/../.."
 binDir="$rootDir/app/build/libs"
 pluginsDir="$rootDir/build/plugins"
 
