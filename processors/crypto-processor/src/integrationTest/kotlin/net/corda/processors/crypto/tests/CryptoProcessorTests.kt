@@ -243,7 +243,7 @@ class CryptoProcessorTests {
             CryptoConsts.Categories.all.forEach {
                 // cluster is assigned in the crypto processor
                 if(hsmRegistrationClient.findHSM(vnodeId, it) == null) {
-                    hsmRegistrationClient.assignSoftHSM(vnodeId, it)
+                    hsmRegistrationClient.assignSoftHSM(vnodeId, it, emptyMap())
                 }
             }
         }

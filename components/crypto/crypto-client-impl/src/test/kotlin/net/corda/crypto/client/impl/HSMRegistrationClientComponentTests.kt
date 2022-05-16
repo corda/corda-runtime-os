@@ -4,6 +4,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.client.impl.infra.SendActResult
 import net.corda.crypto.client.impl.infra.TestConfigurationReadService
 import net.corda.crypto.client.impl.infra.act
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.data.KeyValuePair
@@ -158,12 +159,19 @@ class HSMRegistrationClientComponentTests {
         val result = sender.act {
             component.assignSoftHSM(
                 tenantId = knownTenantId,
-                category = CryptoConsts.Categories.LEDGER
+                category = CryptoConsts.Categories.LEDGER,
+                context = mapOf(
+                    NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+                )
             )
         }
         assertSame(response, result.value)
         val command = assertOperationType<AssignSoftHSMCommand>(result)
         assertEquals (CryptoConsts.Categories.LEDGER, command.category)
+        assertThat(command.context.items).contains(KeyValuePair(
+            NOT_FAIL_IF_ASSOCIATION_EXISTS,
+            "YES"
+        ))
         assertRequestContext(result)
     }
 

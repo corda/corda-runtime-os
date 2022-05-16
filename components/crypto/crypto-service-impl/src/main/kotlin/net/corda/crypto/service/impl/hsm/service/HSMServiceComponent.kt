@@ -64,8 +64,8 @@ class HSMServiceComponent @Activate constructor(
     override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
         impl.service.assignHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(tenantId: String, category: String): HSMInfo =
-        impl.service.assignSoftHSM(tenantId, category)
+    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+        impl.service.assignSoftHSM(tenantId, category, context)
 
     override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) =
         impl.service.linkCategories(configId, links)

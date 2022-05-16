@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.hsm.service
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_CONFIG_ID
@@ -399,7 +400,7 @@ class HSMServiceTests {
     fun `Should assign SOFT HSM with new master key alias and create HSM when id does not exists and then retrieves assignment`() {
         val softConfig = config.softPersistence()
         val tenantId1 = UUID.randomUUID().toString()
-        val hsm1 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER)
+        val hsm1 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.LEDGER, emptyMap())
         assertEquals(SOFT_HSM_CONFIG_ID, hsm1.id)
         assertEquals(-1, hsm1.capacity)
         assertEquals(MasterKeyPolicy.NEW, hsm1.masterKeyPolicy)
@@ -416,7 +417,7 @@ class HSMServiceTests {
         assert(SOFT_HSM_CONFIG_ID, tenantId1, hsm1, association11)
         val association111 = service.findAssociation(UUID.randomUUID().toString())
         assertNull(association111)
-        val hsm2 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS)
+        val hsm2 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS, emptyMap())
         assert(SOFT_HSM_CONFIG_ID, hsm1, hsm2)
         val association2 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
         assertNotNull(association2)
@@ -431,9 +432,27 @@ class HSMServiceTests {
         )
         assertThat(factory.softCache.keys).containsKey(association2.masterKeyAlias)
         assert(SOFT_HSM_CONFIG_ID, hsm1, "{}".toByteArray(), association2.config)
-
+        // should not fail, just repeats the creating of the wrapping key
+        val hsm21 = service.assignSoftHSM(tenantId1, CryptoConsts.Categories.TLS, mapOf(
+            NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+        ))
+        assert(SOFT_HSM_CONFIG_ID, hsm1, hsm21)
+        val association21 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.TLS)
+        assertNotNull(association21)
+        assertEquals(tenantId1, association21.tenantId)
+        assertEquals(CryptoConsts.Categories.TLS, association21.category)
+        assertNotNull(association21.aliasSecret)
+        assertNotNull(association21.masterKeyAlias)
+        assertEquals(
+            association1.masterKeyAlias,
+            association21.masterKeyAlias,
+            "The master key alias must stay the same for the same tenant, even if categories are different"
+        )
+        assertEquals(association2.masterKeyAlias, association21.masterKeyAlias)
+        assert(SOFT_HSM_CONFIG_ID, hsm1, "{}".toByteArray(), association21.config)
+        //
         val tenantId2 = UUID.randomUUID().toString()
-        val hsm3 = service.assignSoftHSM(tenantId2, CryptoConsts.Categories.TLS)
+        val hsm3 = service.assignSoftHSM(tenantId2, CryptoConsts.Categories.TLS, emptyMap())
         assert(SOFT_HSM_CONFIG_ID, hsm1, hsm3)
         val association3 = service.findAssignedHSM(tenantId2, CryptoConsts.Categories.TLS)
         assertNotNull(association3)

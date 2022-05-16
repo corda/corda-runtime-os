@@ -67,7 +67,7 @@ open class SoftCryptoService(
     override fun supportedSchemes(): Array<SignatureScheme> = supportedSchemes.values.toTypedArray()
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
-        logger.debug("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
+        logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
         cache.act {
             if (it.findWrappingKey(masterKeyAlias) != null) {
                 if (failIfExists) {
@@ -92,10 +92,11 @@ open class SoftCryptoService(
     }
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey = try {
-        logger.debug(
-            "generateKeyPair(masterKeyAlias={}, signatureScheme={})",
+        logger.info(
+            "generateKeyPair(alias={},masterKeyAlias={},scheme={})",
+            spec.alias,
             spec.masterKeyAlias,
-            spec.signatureScheme
+            spec.signatureScheme.codeName
         )
         if (spec.masterKeyAlias.isNullOrBlank()) {
             throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")

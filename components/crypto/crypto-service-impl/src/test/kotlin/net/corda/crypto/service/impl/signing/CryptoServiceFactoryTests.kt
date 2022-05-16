@@ -62,10 +62,10 @@ class CryptoServiceFactoryTests {
                 CustomCryptoServiceProvider()
             )
         )
-        factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER)
-        factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.TLS)
-        factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.LEDGER)
-        factory.hsmService.assignSoftHSM(tenantId3, CryptoConsts.Categories.LEDGER)
+        factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER, emptyMap())
+        factory.hsmService.assignSoftHSM(tenantId, CryptoConsts.Categories.TLS, emptyMap())
+        factory.hsmService.assignSoftHSM(tenantId2, CryptoConsts.Categories.LEDGER, emptyMap())
+        factory.hsmService.assignSoftHSM(tenantId3, CryptoConsts.Categories.LEDGER, emptyMap())
         customHSMConfigId = factory.hsmService.putHSMConfig(
             HSMInfo(
                 "",

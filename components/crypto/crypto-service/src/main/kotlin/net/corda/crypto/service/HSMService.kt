@@ -24,7 +24,7 @@ interface HSMService : Lifecycle {
     /**
      * Assigns a Soft HSM, note that a new HSMConfig record will be created for each tenant.
      */
-    fun assignSoftHSM(tenantId: String, category: String): HSMInfo
+    fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo
 
     /**
      * Replaces or adds the category links to HSM configuration.

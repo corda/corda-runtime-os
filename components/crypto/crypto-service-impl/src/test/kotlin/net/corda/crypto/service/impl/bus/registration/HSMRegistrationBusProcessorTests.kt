@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl.bus.registration
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -117,7 +118,7 @@ class HSMRegistrationBusProcessorTests {
     fun `Should execute handle AssignSoftHSMCommand`() {
         val info = HSMInfo()
         val hsmService = mock<HSMService> {
-            on { assignSoftHSM(any(), any()) } doReturn info
+            on { assignSoftHSM(any(), any(), any()) } doReturn info
         }
         val processor = HSMRegistrationBusProcessor(hsmService)
         val context = createRequestContext()
@@ -125,7 +126,14 @@ class HSMRegistrationBusProcessorTests {
         processor.onNext(
             HSMRegistrationRequest(
                 context,
-                AssignSoftHSMCommand(CryptoConsts.Categories.LEDGER)
+                AssignSoftHSMCommand(
+                    CryptoConsts.Categories.LEDGER,
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(NOT_FAIL_IF_ASSOCIATION_EXISTS, "YES")
+                        )
+                    )
+                )
             ),
             future
         )
@@ -133,7 +141,13 @@ class HSMRegistrationBusProcessorTests {
         assertResponseContext(context, result.context)
         assertThat(result.response).isInstanceOf(HSMInfo::class.java)
         assertSame(info, result.response)
-        Mockito.verify(hsmService, times(1)).assignSoftHSM(tenantId, CryptoConsts.Categories.LEDGER)
+        Mockito.verify(hsmService, times(1)).assignSoftHSM(
+            eq(tenantId),
+            eq(CryptoConsts.Categories.LEDGER),
+            argThat {
+                this[NOT_FAIL_IF_ASSOCIATION_EXISTS] == "YES"
+            }
+        )
     }
 
     @Test

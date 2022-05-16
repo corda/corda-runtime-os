@@ -3,6 +3,7 @@ package net.corda.processors.crypto.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
@@ -197,7 +198,9 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
         if (hsmService.findAssignedHSM(tenantId, category) == null) {
-            hsmService.assignSoftHSM(tenantId, category)
+            hsmService.assignSoftHSM(tenantId, category, mapOf(
+                NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+            ))
         }
         true
     } catch (e: Throwable) {

@@ -71,7 +71,7 @@ class HSMRegistrationBusProcessor(
         private val hsmService: HSMService
     ) : Handler<AssignSoftHSMCommand> {
         override fun handle(context: CryptoRequestContext, request: AssignSoftHSMCommand): Any {
-            return hsmService.assignSoftHSM(context.tenantId, request.category)
+            return hsmService.assignSoftHSM(context.tenantId, request.category, request.context.items.toMap())
         }
     }
 

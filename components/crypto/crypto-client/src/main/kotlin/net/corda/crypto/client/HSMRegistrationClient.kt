@@ -30,12 +30,15 @@ interface HSMRegistrationClient : Lifecycle {
      *
      * @param tenantId the tenant which HSM should be assigned to.
      * @param category which category the assignment should be done.
-     *
+     * @param context optional operation context, which may advise on how the assignment should be done, see
+     * [CryptoConsts.HSMContext] for available parameters.
+     * *
      * @return info object about the assigned HSM.
      */
     fun assignSoftHSM(
         tenantId: String,
-        category: String
+        category: String,
+        context: Map<String, String>
     ): HSMInfo
 
     /**

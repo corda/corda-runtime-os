@@ -37,11 +37,11 @@ class TestHSMService(
         return impl.assignHSM(tenantId, category, context)
     }
 
-    override fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
+    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         check(isRunning) {
             "The component is in invalid state."
         }
-        return impl.assignSoftHSM(tenantId, category)
+        return impl.assignSoftHSM(tenantId, category, context)
     }
 
     override fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {

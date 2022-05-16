@@ -3,6 +3,7 @@ package net.corda.crypto.service.impl.hsm.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_ALIASED
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
@@ -36,6 +37,12 @@ class HSMServiceImpl(
 ) : AutoCloseable {
     companion object {
         private val logger = contextLogger()
+
+        private fun Map<String, String>.isPreferredPrivateKeyPolicy(policy: String): Boolean =
+            this[PREFERRED_PRIVATE_KEY_POLICY_KEY] == policy
+
+        private fun Map<String, String>.notFailIfAssociationExists(): Boolean =
+            this[NOT_FAIL_IF_ASSOCIATION_EXISTS]?.equals("YES", true) ?: false
     }
 
     private val encryptor = config.rootEncryptor()
@@ -46,9 +53,9 @@ class HSMServiceImpl(
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
         validatePutHSMConfig(info)
         val id = hsmCache.act {
-            if(info.id.isNullOrBlank()) {
+            if (info.id.isNullOrBlank()) {
                 it.add(info, encryptor.encrypt(serviceConfig))
-            } else if(it.findConfig(info.id) != null) {
+            } else if (it.findConfig(info.id) != null) {
                 it.merge(info, encryptor.encrypt(serviceConfig))
                 info.id
             } else {
@@ -63,29 +70,50 @@ class HSMServiceImpl(
 
     fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         logger.info("assignHSM(tenant={}, category={})", tenantId, category)
-        val stats = hsmCache.act {
-            it.getHSMStats(category)
-        }.filter { s ->
-            s.usages < s.capacity && (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
+        val pre = hsmCache.act {
+            Pair(
+                if (context.notFailIfAssociationExists()) {
+                    it.findTenantAssociation(tenantId, category)
+                } else {
+                    null
+                },
+                it.getHSMStats(category)
+            )
         }
-        val chosen = if(context[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_ALIASED) {
-            tryChooseAliased(stats)
+        val association = if (pre.first != null) {
+            pre.first
         } else {
-            tryChooseAny(stats)
+            val stats = pre.second.filter { s ->
+                s.usages < s.capacity && (!s.serviceName.equals(SOFT_HSM_SERVICE_NAME, true))
+            }
+            val chosen = if (context.isPreferredPrivateKeyPolicy(PREFERRED_PRIVATE_KEY_POLICY_ALIASED)) {
+                tryChooseAliased(stats)
+            } else {
+                tryChooseAny(stats)
+            }
+            hsmCache.act {
+                it.associate(tenantId = tenantId, category = category, configId = chosen.configId)
+            }
         }
-        val association = hsmCache.act {
-            it.associate(tenantId = tenantId, category = category, configId = chosen.configId)
-        }
-        ensureWrappingKey(association)
+        ensureWrappingKey(association!!)
         return association.config.info
     }
 
-    fun assignSoftHSM(tenantId: String, category: String): HSMInfo {
+    fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
         val association = hsmCache.act {
-            val hsm = it.findConfig(CryptoConsts.SOFT_HSM_CONFIG_ID)?.info
-                ?: it.addSoftConfig()
-            it.associate(tenantId = tenantId, category = category, configId = hsm.id)
+            val existing = if (context.notFailIfAssociationExists()) {
+                it.findTenantAssociation(tenantId, category)
+            } else {
+                null
+            }
+            if (existing != null) {
+                existing
+            } else {
+                val hsm = it.findConfig(CryptoConsts.SOFT_HSM_CONFIG_ID)?.info
+                    ?: it.addSoftConfig()
+                it.associate(tenantId = tenantId, category = category, configId = hsm.id)
+            }
         }
         ensureWrappingKey(association)
         return association.config.info
@@ -136,7 +164,7 @@ class HSMServiceImpl(
     }
 
     private fun validatePutHSMConfig(info: HSMInfo) {
-        if(info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
+        if (info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
             require(!info.masterKeyAlias.isNullOrBlank()) {
                 "The master key alias must be specified for '${info.masterKeyPolicy}' master key policy."
             }
@@ -154,6 +182,7 @@ class HSMServiceImpl(
             }
         }
     }
+
     private fun ensureWrappingKey(association: HSMTenantAssociation) {
         if (association.config.info.masterKeyPolicy == MasterKeyPolicy.NEW) {
             require(!association.masterKeyAlias.isNullOrBlank()) {

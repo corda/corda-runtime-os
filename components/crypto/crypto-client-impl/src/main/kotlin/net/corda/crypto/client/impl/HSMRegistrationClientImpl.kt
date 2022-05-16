@@ -36,7 +36,8 @@ class HSMRegistrationClientImpl(
 
     fun assignSoftHSM(
         tenantId: String,
-        category: String
+        category: String,
+        context: Map<String, String>
     ): HSMInfo {
         logger.info(
             "Sending {}(tenant={},category={})",
@@ -46,7 +47,7 @@ class HSMRegistrationClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = AssignSoftHSMCommand(category)
+            request = AssignSoftHSMCommand(category, context.toWire())
         )
         val response = request.execute(HSMInfo::class.java)
         return response!!

@@ -51,8 +51,8 @@ class HSMRegistrationClientComponent @Activate constructor(
     override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
         impl.registrar.assignHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(tenantId: String, category: String): HSMInfo =
-        impl.registrar.assignSoftHSM(tenantId, category)
+    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+        impl.registrar.assignSoftHSM(tenantId, category, context)
 
     override fun findHSM(tenantId: String, category: String): HSMInfo? =
         impl.registrar.findHSM(tenantId, category)
