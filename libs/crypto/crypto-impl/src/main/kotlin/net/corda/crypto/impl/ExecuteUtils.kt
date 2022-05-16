@@ -2,6 +2,7 @@ package net.corda.crypto.impl
 
 import org.slf4j.Logger
 import java.time.Duration
+import java.util.UUID
 
 fun <R> executeWithRetry(
     logger: Logger,
@@ -16,24 +17,27 @@ fun <R> executeWithRetry(
     block: () -> R
 ): R {
     var remaining = retryCount
+    var opId = ""
     while (true) {
         try {
             if(remaining < retryCount) {
-                logger.info("Retrying operation (remaining=$remaining)")
+                logger.info("Retrying operation (op={}},remaining={})", opId, remaining)
             }
             val result = block()
             if(remaining < retryCount) {
-                logger.info("Retrying was successful (remaining=$remaining)")
+                logger.info("Retrying was successful (op={}},remaining={})", opId, remaining)
             }
             return result
         } catch (e: Throwable) {
             remaining--
             if(remaining <= 0) {
-                logger.error("Failed to execute", e)
+                logger.error("Failed to execute (opId=$opId)", e)
                 throw e
             } else {
+                opId = UUID.randomUUID().toString()
                 logger.warn(
-                    "Failed to execute, will retry after ${waitBetween.toMillis()} milliseconds (remaining=$remaining)",
+                    "Failed to execute, will retry after ${waitBetween.toMillis()} milliseconds" +
+                            "(op=$opId,remaining=$remaining)",
                     e
                 )
                 Thread.sleep(waitBetween.toMillis())
