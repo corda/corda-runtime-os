@@ -2,13 +2,15 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.applications.workers.workercommon.internal.CUSTOM_CONFIG_PATH
+import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
@@ -21,6 +23,7 @@ data class PathAndConfig(val path: String, val config: Map<String, String>)
 class WorkerHelpers {
     companion object {
         private val logger = contextLogger()
+        private const val BOOT_CONFIG_PATH = "boot/config/corda.boot.json"
 
         /**
          * Parses the [args] into the [params].
@@ -44,10 +47,9 @@ class WorkerHelpers {
          */
         fun getBootstrapConfig(
             defaultParams: DefaultWorkerParams,
+            validator: ConfigurationValidator,
             extraParams: List<PathAndConfig> = emptyList()
         ): SmartConfig {
-            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> key.trim() }
-            val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.${key.trim()}" }
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
                 .flatMap { map -> map.entries }
@@ -59,15 +61,17 @@ class WorkerHelpers {
             )
 
             val config = ConfigFactory
-                .parseMap(messagingParamsMap + dirsConfig + additionalParamsMap + extraParamsMap)
+                .parseMap(defaultParams.messagingParams + dirsConfig + extraParamsMap)
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
 
-            val secretsConfig = ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys {
-                    (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
+            val secretsConfig =
+                ConfigFactory.parseMap(defaultParams.secretsParams.mapKeys { (key, _) -> "${ConfigKeys.SECRETS_CONFIG}.${key.trim()}" })
 
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
+
+            validator.validateConfig(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
 
             return bootConfig
         }
@@ -104,6 +108,16 @@ class WorkerHelpers {
             }
 
             return false
+        }
+
+        private fun loadResource(resource: String): InputStream {
+            val bundle = FrameworkUtil.getBundle(this::class.java)
+            val url = bundle?.getResource(resource)
+                ?: this::class.java.classLoader.getResource(resource)
+                ?: throw IllegalArgumentException(
+                    "Failed to find resource $resource on worker startup."
+                )
+            return url.openStream()
         }
     }
 }

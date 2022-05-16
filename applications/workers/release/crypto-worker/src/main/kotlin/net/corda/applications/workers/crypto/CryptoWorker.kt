@@ -2,17 +2,18 @@ package net.corda.applications.workers.crypto
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoDependenciesProcessor
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.BootConfig
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -31,7 +32,9 @@ class CryptoWorker @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor
+    private val healthMonitor: HealthMonitor,
+    @Reference(service = ConfigurationValidatorFactory::class)
+    private val configurationValidatorFactory: ConfigurationValidatorFactory
 ) : Application {
 
     private companion object {
@@ -47,8 +50,8 @@ class CryptoWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseConfig = PathAndConfig(DB_CONFIG, params.databaseParams)
-        val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig))
+        val databaseConfig = PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams)
+        val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf(databaseConfig))
 
         dependenciesProcessor.start(config)
         processor.start(config)

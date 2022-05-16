@@ -2,12 +2,13 @@ package net.corda.applications.workers.combined
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -15,6 +16,8 @@ import net.corda.processors.db.DBProcessor
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.rpc.RPCProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_RPC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -39,13 +42,13 @@ class CombinedWorker @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor
+    private val healthMonitor: HealthMonitor,
+    @Reference(service = ConfigurationValidatorFactory::class)
+    private val configurationValidatorFactory: ConfigurationValidatorFactory
 ) : Application {
 
     private companion object {
         private val logger = contextLogger()
-        private const val DB_CONFIG_PATH = "database"
-        private const val RPC_CONFIG_PATH = "rpc"
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
@@ -57,9 +60,13 @@ class CombinedWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
-        val rpcConfig = PathAndConfig(RPC_CONFIG_PATH, params.rpcParams)
-        val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig, rpcConfig))
+        val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
+        val rpcConfig = PathAndConfig(BOOT_RPC, params.rpcParams)
+        val config = getBootstrapConfig(
+            params.defaultParams,
+            configurationValidatorFactory.createConfigValidator(),
+            listOf(databaseConfig, rpcConfig)
+        )
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)

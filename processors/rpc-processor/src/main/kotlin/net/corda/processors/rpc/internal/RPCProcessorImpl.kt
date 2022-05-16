@@ -6,6 +6,7 @@ import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -24,7 +25,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -105,19 +106,21 @@ class RPCProcessorImpl @Activate constructor(
             is BootConfigEvent -> {
                 configReadService.bootstrapConfig(event.config)
 
+                //this config code needs to be removed in the future. currently required by the e2e tests
                 val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR)
                 val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
                 publisher.start()
                 publisher.use {
-                    val bootstrapServersConfig = if (event.config.hasPath(BOOTSTRAP_SERVER)) {
-                        val bootstrapServers = event.config.getString(BOOTSTRAP_SERVER)
-                        "\n$BOOTSTRAP_SERVER=\"$bootstrapServers\""
+                    val bootstrapServersConfig = if (event.config.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {
+                        val bootstrapServers = event.config.getString(KAFKA_BOOTSTRAP_SERVERS)
+                        "\n$KAFKA_BOOTSTRAP_SERVERS=\"$bootstrapServers\""
                     } else {
                         ""
                     }
                     val configValue = "$CONFIG_HTTP_RPC$bootstrapServersConfig"
 
-                    val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1"))
+                    val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1",
+                        ConfigurationSchemaVersion(1, 0)))
                     publisher.publish(listOf(record)).forEach { future -> future.get() }
                 }
             }

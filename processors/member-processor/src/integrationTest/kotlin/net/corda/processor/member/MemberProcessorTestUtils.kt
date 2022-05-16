@@ -2,8 +2,11 @@ package net.corda.processor.member
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.time.Duration
+import java.util.*
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CpiIdentifier
@@ -35,14 +38,11 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import java.time.Duration
-import java.lang.IllegalStateException
-import java.util.UUID
 
 class MemberProcessorTestUtils {
     companion object {
         private const val CRYPTO_BOOT_CONFIGURATION = """
-        instance.id=1
+        instanceId=1
         bus.busType = INMEMORY
     """
 
@@ -268,8 +268,9 @@ class MemberProcessorTestUtils {
         fun Publisher.publishCryptoConf() =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConf)
 
+        private val schemaVersion = ConfigurationSchemaVersion(1,0)
         private fun Publisher.publishConf(configKey: String, conf: String) =
-            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, "1"))
+            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, "1", schemaVersion))
 
         fun <K : Any, V : Any> Publisher.publishRecord(topic: String, key: K, value: V) =
             publish(listOf(Record(topic, key, value)))
