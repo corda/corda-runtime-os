@@ -57,8 +57,8 @@ data class CpkMetadataEntity(
     val mainBundleName: String,
     @Column(name = "cpk_main_bundle_version", nullable = false)
     val mainBundleVersion: String,
-    @Column(name = "cpk_signer_summary_hash", nullable = true)
-    val signerSummaryHash: String?,
+    @Column(name = "cpk_signer_summary_hash", nullable = false)
+    val signerSummaryHash: String,
     @Embedded
     @AttributeOverrides(
         value = [
@@ -123,8 +123,8 @@ data class CpkDependencyEntity(
     @Column(name = "main_bundle_version", nullable = false)
     val mainBundleVersion: String,
     @Id
-    @Column(name = "signer_summary_hash", nullable = true)
-    val signerSummaryHash: String?
+    @Column(name = "signer_summary_hash", nullable = false)
+    val signerSummaryHash: String
 ) : Serializable
 
 @Embeddable
@@ -160,31 +160,31 @@ data class CpkCordappManifestEntity(
     )
     val cpkMetadataEntity: CpkMetadataEntity,
 
-    @Column(name = "bundle_symbolic_name")
+    @Column(name = "bundle_symbolic_name", nullable = false)
     val bundleSymbolicName: String,
-    @Column(name = "bundle_version")
+    @Column(name = "bundle_version", nullable = false)
     val bundleVersion: String,
-    @Column(name = "min_platform_version")
+    @Column(name = "min_platform_version", nullable = false)
     val minPlatformVersion: Int,
-    @Column(name = "target_platform_version")
+    @Column(name = "target_platform_version", nullable = false)
     val targetPlatformVersion: Int,
     @Embedded
     @AttributeOverrides(
         value = [
-            AttributeOverride(name = "shortName", column = Column(name = "contract_info_short_name")),
-            AttributeOverride(name = "vendor", column = Column(name = "contract_info_vendor")),
-            AttributeOverride(name = "versionId", column = Column(name = "contract_info_version_id")),
-            AttributeOverride(name = "license", column = Column(name = "contract_info_license"))
+            AttributeOverride(name = "shortName", column = Column(name = "contract_info_short_name", nullable = true)),
+            AttributeOverride(name = "vendor", column = Column(name = "contract_info_vendor", nullable = true)),
+            AttributeOverride(name = "versionId", column = Column(name = "contract_info_version_id", nullable = true)),
+            AttributeOverride(name = "license", column = Column(name = "contract_info_license", nullable = true))
         ]
     )
     val contractInfo: ManifestCorDappInfo,
     @Embedded
     @AttributeOverrides(
         value = [
-            AttributeOverride(name = "shortName", column = Column(name = "work_flow_info_short_name")),
-            AttributeOverride(name = "vendor", column = Column(name = "work_flow_info_vendor")),
-            AttributeOverride(name = "versionId", column = Column(name = "work_flow_info_version_id")),
-            AttributeOverride(name = "license", column = Column(name = "work_flow_info_license"))
+            AttributeOverride(name = "shortName", column = Column(name = "work_flow_info_short_name", nullable = true)),
+            AttributeOverride(name = "vendor", column = Column(name = "work_flow_info_vendor", nullable = true)),
+            AttributeOverride(name = "versionId", column = Column(name = "work_flow_info_version_id", nullable = true)),
+            AttributeOverride(name = "license", column = Column(name = "work_flow_info_license", nullable = true))
         ]
     )
     val workflowInfo: ManifestCorDappInfo,

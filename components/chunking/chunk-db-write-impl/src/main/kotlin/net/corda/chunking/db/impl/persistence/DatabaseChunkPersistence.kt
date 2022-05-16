@@ -178,57 +178,55 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
 
                 val cpkMetadataEntity = CpkMetadataEntity(
-                    cpiMetadataEntity,
-                    cpkChecksum,
-                    it.originalFileName!!,
-                    it.metadata.id.name,
-                    it.metadata.id.version,
-                    it.metadata.id.signerSummaryHash.toString(),
-                    CpkManifest(
+                    cpi = cpiMetadataEntity,
+                    cpkFileChecksum = cpkChecksum,
+                    cpkFileName = it.originalFileName!!,
+                    mainBundleName = it.metadata.id.name,
+                    mainBundleVersion = it.metadata.id.version,
+                    signerSummaryHash = it.metadata.id.signerSummaryHash?.toString() ?: "",
+                    cpkManifest = CpkManifest(
                         CpkFormatVersion(
                             it.metadata.manifest.cpkFormatVersion.major,
                             it.metadata.manifest.cpkFormatVersion.minor
                         )
                     ),
-                    it.metadata.mainBundle,
-                    it.metadata.type.name,
-                    it.metadata.libraries
+                    cpkMainBundle = it.metadata.mainBundle,
+                    cpkType = it.metadata.type.name,
+                    cpkLibraries = it.metadata.libraries
                 )
-                em.merge(cpkMetadataEntity)
+                em.persist(cpkMetadataEntity)
 
                 it.metadata.dependencies.forEach { cpkIdentifier ->
-                    em.merge(
-                        CpkDependencyEntity(
-                            cpkMetadataEntity,
-                            cpkIdentifier.name,
-                            cpkIdentifier.version,
-                            cpkIdentifier.signerSummaryHash.toString()
-                        )
+                    val cpkDependencyEntity = CpkDependencyEntity(
+                        cpkMetadataEntity = cpkMetadataEntity,
+                        mainBundleName = cpkIdentifier.name,
+                        mainBundleVersion = cpkIdentifier.version,
+                        signerSummaryHash = cpkIdentifier.signerSummaryHash?.toString() ?: ""
                     )
+                    em.persist(cpkDependencyEntity)
                 }
 
                 it.metadata.cordappManifest.run {
-                    em.persist(
-                        CpkCordappManifestEntity(
-                            cpkMetadataEntity,
-                            this.bundleSymbolicName,
-                            this.bundleVersion,
-                            this.minPlatformVersion,
-                            this.targetPlatformVersion,
-                            ManifestCorDappInfo(
-                                this.contractInfo.shortName,
-                                this.contractInfo.vendor,
-                                this.contractInfo.versionId,
-                                this.contractInfo.licence
-                            ),
-                            ManifestCorDappInfo(
-                                this.workflowInfo.shortName,
-                                this.workflowInfo.vendor,
-                                this.workflowInfo.versionId,
-                                this.workflowInfo.licence
-                            )
+                    val cpkCordappManifestEntity = CpkCordappManifestEntity(
+                        cpkMetadataEntity = cpkMetadataEntity,
+                        bundleSymbolicName = this.bundleSymbolicName,
+                        bundleVersion = this.bundleVersion,
+                        minPlatformVersion = this.minPlatformVersion,
+                        targetPlatformVersion = this.targetPlatformVersion,
+                        contractInfo = ManifestCorDappInfo(
+                            shortName = this.contractInfo.shortName,
+                            vendor = this.contractInfo.vendor,
+                            versionId = this.contractInfo.versionId,
+                            license = this.contractInfo.licence
+                        ),
+                        workflowInfo = ManifestCorDappInfo(
+                            shortName = this.workflowInfo.shortName,
+                            vendor = this.workflowInfo.vendor,
+                            versionId = this.workflowInfo.versionId,
+                            license = this.workflowInfo.licence
                         )
                     )
+                    em.persist(cpkCordappManifestEntity)
                 }
             }
         }

@@ -26,7 +26,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
-import kotlin.streams.asSequence
 
 // Maybe this class needs to be moved elsewhere, although it should only be used by `DBProcessorImpl`.
 class CpiInfoDbReader(
@@ -115,20 +114,26 @@ class CpiInfoDbReader(
                 close()
             }.map { cpiMetadataEntity ->
                 val cpiMetadata = CpiMetadata(
-                    CpiIdentifier(
+                    cpiId = CpiIdentifier(
                         cpiMetadataEntity.name,
                         cpiMetadataEntity.version,
-                        SecureHash.create(cpiMetadataEntity.signerSummaryHash)
+                        if (cpiMetadataEntity.signerSummaryHash != "")
+                            SecureHash.create(cpiMetadataEntity.signerSummaryHash)
+                        else
+                            null
                     ),
-                    SecureHash.create(cpiMetadataEntity.fileChecksum),
-                    mutableListOf<CpkMetadata>().also { cpkMetadataList ->
-                        cpiMetadataEntity.cpks.forEach { cpkMetadataEntity ->
+                    fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum),
+                    cpksMetadata = mutableListOf<CpkMetadata>().also { cpkMetadataList ->
+                        for (cpkMetadataEntity in cpiMetadataEntity.cpks) {
                             cpkMetadataList.add(
                                 CpkMetadata(
                                     cpkId = CpkIdentifier(
                                         cpkMetadataEntity.mainBundleName,
                                         cpkMetadataEntity.mainBundleVersion,
-                                        cpkMetadataEntity.signerSummaryHash?.let { SecureHash.create(it) }
+                                        if (cpkMetadataEntity.signerSummaryHash != "")
+                                            SecureHash.create(cpkMetadataEntity.signerSummaryHash)
+                                        else
+                                            null
                                     ),
                                     manifest = Cpk.Manifest.newInstance(
                                         Cpk.FormatVersion.newInstance(
@@ -144,7 +149,10 @@ class CpiInfoDbReader(
                                                 CpkIdentifier(
                                                     cpkDependencyEntity.mainBundleName,
                                                     cpkDependencyEntity.mainBundleVersion,
-                                                    cpkDependencyEntity.signerSummaryHash?.let { SecureHash.create(it) }
+                                                    if (cpkDependencyEntity.signerSummaryHash != "")
+                                                        SecureHash.create(cpkDependencyEntity.signerSummaryHash)
+                                                    else
+                                                        null
                                                 )
                                             )
                                         }
@@ -155,28 +163,28 @@ class CpiInfoDbReader(
                                         minPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.minPlatformVersion,
                                         targetPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.targetPlatformVersion,
                                         contractInfo = ManifestCordappInfo(
-                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.shortName,
-                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.vendor,
-                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.versionId,
-                                            cpkMetadataEntity.cpkCordappManifest!!.contractInfo.license
+                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.shortName,
+                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.vendor,
+                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.versionId,
+                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.license
                                         ),
                                         workflowInfo = ManifestCordappInfo(
-                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.shortName,
-                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.vendor,
-                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.versionId,
-                                            cpkMetadataEntity.cpkCordappManifest!!.workflowInfo.license
+                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.shortName,
+                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.vendor,
+                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.versionId,
+                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.license
                                         ),
                                         emptyMap() // TODO
                                     ),
-                                    type = Cpk.Type.parse(cpkMetadataEntity.cpkType ?: ""), // TODO revise null case
+                                    type = Cpk.Type.parse(cpkMetadataEntity.cpkType ?: ""),
                                     fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
                                     cordappCertificates = emptySet() // TODO
                                 )
                             )
                         }
                     },
-                    cpiMetadataEntity.groupPolicy,
-                    cpiMetadataEntity.entityVersion
+                    groupPolicy = cpiMetadataEntity.groupPolicy,
+                    version = cpiMetadataEntity.entityVersion
                 )
 
                 VersionedRecord(
