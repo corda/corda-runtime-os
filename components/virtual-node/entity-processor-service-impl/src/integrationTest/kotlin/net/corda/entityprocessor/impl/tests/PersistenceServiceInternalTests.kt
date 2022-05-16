@@ -56,6 +56,7 @@ import java.nio.file.Path
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -209,7 +210,12 @@ class PersistenceServiceInternalTests {
 
         // request persist - cats & dogs are in different CPKs/bundles
         val dogId = UUID.randomUUID()
-        val dog = ctx.sandbox.createDogInstance(dogId, "Pluto", Instant.now(), "me")
+        val dog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Pluto",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
         val dogRequest = createRequest(
             ctx.virtualNodeInfo.holdingIdentity, PersistEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(dog).bytes)))
         val catId = UUID.randomUUID()
@@ -252,7 +258,12 @@ class PersistenceServiceInternalTests {
 
         // save a dog
         val dogId = UUID.randomUUID()
-        val dog = ctx.sandbox.createDogInstance(dogId, "Basil", Instant.now(), "me")
+        val dog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Basil",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
         ctx.persist(dog)
 
         // use API to find it
@@ -281,7 +292,12 @@ class PersistenceServiceInternalTests {
         ctx.persist(dog)
 
         // change the dog's name
-        val bellaTheDog = ctx.sandbox.createDogInstance(dogId, "Bella", Instant.now(), "me")
+        val bellaTheDog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Bella",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
 
         // use API to find it
         val mergeEntity = MergeEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(bellaTheDog).bytes))
