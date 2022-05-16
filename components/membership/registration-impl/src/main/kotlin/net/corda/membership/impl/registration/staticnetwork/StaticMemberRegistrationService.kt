@@ -53,7 +53,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.nio.ByteBuffer
 import java.security.PublicKey
 
 @Suppress("LongParameterList")
@@ -130,11 +129,11 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     /**
-     * Parses the static member list template as SignedMemberInfo objects and creates the records for the
+     * Parses the static member list template, creates the MemberInfo for the registering member and the records for the
      * kafka publisher.
      */
     private fun parseMemberTemplate(registeringMember: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
-        val members = mutableListOf<Record<String, PersistentMemberInfo>>()
+        val records = mutableListOf<Record<String, PersistentMemberInfo>>()
 
         val policy = try {
             groupPolicyProvider.getGroupPolicy(registeringMember)
@@ -147,17 +146,18 @@ class StaticMemberRegistrationService @Activate constructor(
         val staticMemberList = policy.staticMembers
         validateStaticMemberList(staticMemberList)
 
+        val memberName = registeringMember.x500Name
+        val memberId = registeringMember.id
+
         val staticMemberInfo = staticMemberList.firstOrNull {
-            MemberX500Name.parse(it.name!!) == MemberX500Name.parse(member.x500Name)
-        } ?: throw IllegalArgumentException("Our membership is not listed on the static member list or the member's " +
-                    "name is not provided in the list.")
+            MemberX500Name.parse(it.name!!) == MemberX500Name.parse(memberName)
+        } ?: throw IllegalArgumentException("Our membership " + memberName + " is not listed in the static member list.")
 
         validateStaticMemberDeclaration(staticMemberInfo)
-        val memberName = MemberX500Name.parse(staticMemberInfo.name!!).toString()
-        val memberId = HoldingIdentity(memberName, groupId).id
         val memberKey = generateOwningKey(staticMemberInfo, memberId)
         val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
 
+        @Suppress("SpreadOperator")
         val memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 PARTY_NAME to memberName,
@@ -179,23 +179,25 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         )
 
-        //staticMemberList.forEach {
-            members.add(
+        staticMemberList.forEach {
+            val owningMemberName = MemberX500Name.parse(it.name!!).toString()
+            val owningMemberHoldingIdentity = HoldingIdentity(owningMemberName, groupId)
+            records.add(
                 Record(
                     MEMBER_LIST_TOPIC,
-                    registeringMember.id + "-" + memberId,
-                    PersistentMemberInfo(registeringMember.toAvro(), signedMemberInfo)
+                    owningMemberHoldingIdentity.id + "-" + memberId,
+                    PersistentMemberInfo(owningMemberHoldingIdentity.toAvro(), memberProvidedContext.toWire(), mgmProvidedContext.toWire())
                 )
             )
-        //}
+        }
 
-        return members
+        return records
     }
 
     private fun validateStaticMemberList(members: List<StaticMember>) {
         require(members.isNotEmpty()) { "Static member list inside the group policy file cannot be empty." }
         members.forEach {
-            require(!it.name.isNullOrBlank()) { "Member's name is not provided in." }
+            require(!it.name.isNullOrBlank()) { "Member's name is not provided in static member list." }
         }
     }
 
@@ -302,6 +304,4 @@ class StaticMemberRegistrationService @Activate constructor(
             ) to hash.toString()
         }
     }
-
-    private fun ByteArray.toByteBuffer(): ByteBuffer = ByteBuffer.wrap(this)
 }

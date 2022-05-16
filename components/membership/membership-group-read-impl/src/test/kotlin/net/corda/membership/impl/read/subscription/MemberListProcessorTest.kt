@@ -1,8 +1,6 @@
 package net.corda.membership.impl.read.subscription
 
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -40,7 +38,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 

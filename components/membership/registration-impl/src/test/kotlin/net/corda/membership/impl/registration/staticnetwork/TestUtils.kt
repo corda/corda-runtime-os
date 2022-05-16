@@ -40,7 +40,7 @@ class TestUtils {
         val aliceName = MemberX500Name("Alice", "London", "GB")
         val bobName = MemberX500Name("Bob", "London", "GB")
         val charlieName = MemberX500Name("Charlie", "London", "GB")
-        val frankieName = MemberX500Name("Frankie", "London", "GB")
+        val daisyName = MemberX500Name("Daisy", "London", "GB")
 
         private val dummyMap = mapOf("key" to "value")
 

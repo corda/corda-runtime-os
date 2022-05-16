@@ -30,6 +30,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.bobName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.charlieName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
+import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.daisyName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
@@ -73,6 +74,7 @@ class StaticMemberRegistrationServiceTest {
     private val alice = HoldingIdentity(aliceName.toString(), DUMMY_GROUP_ID)
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
+    private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
 
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
@@ -91,6 +93,7 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(alice) } doReturn groupPolicyWithStaticNetwork
         on { getGroupPolicy(bob) } doReturn groupPolicyWithInvalidStaticNetworkTemplate
         on { getGroupPolicy(charlie) } doReturn groupPolicyWithoutStaticNetwork
+        on { getGroupPolicy(daisy) } doReturn groupPolicyWithStaticNetwork
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -194,25 +197,29 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
-    fun `during registration, the static member inside the GroupPolicy file gets parsed and published`() {
+    fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
         setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(alice)
         registrationService.stop()
 
-        assertEquals(1, publishedList.size)
+        assertEquals(3, publishedList.size)
+
+        publishedList.forEach {
+            assertTrue(it.key.startsWith(alice.id) || it.key.startsWith(bob.id) || it.key.startsWith(charlie.id))
+            assertTrue(it.key.endsWith(alice.id))
+        }
 
         val publishedInfo = publishedList.first()
 
         assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
-        assertTrue { publishedInfo.key.startsWith(alice.id) }
-        val signedMemberPublished = publishedInfo.value as PersistentMemberInfo
+        val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
         val memberPublished = toMemberInfo(
             layeredPropertyMapFactory.create<MemberContextImpl>(
-                KeyValuePairList.fromByteBuffer(signedMemberPublished.memberContext).toSortedMap()
+                KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
             ),
             layeredPropertyMapFactory.create<MGMContextImpl>(
-                KeyValuePairList.fromByteBuffer(signedMemberPublished.mgmContext).toSortedMap()
+                KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
             )
         )
         assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
@@ -232,14 +239,14 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
-    fun `parsing of MemberInfo list fails when name field is empty in the GroupPolicy file`() {
+    fun `registration fails when name field is empty in the GroupPolicy file`() {
         setUpPublisher()
         registrationService.start()
         val registrationResult = registrationService.register(bob)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
-                "Registration failed. Reason: Our membership is not listed on the static member list or the member's name is not provided in the list."
+                "Registration failed. Reason: Member's name is not provided in static member list."
             ),
             registrationResult
         )
@@ -272,5 +279,20 @@ class StaticMemberRegistrationServiceTest {
             ),
             registrationResult
         )
+    }
+
+    @Test
+    fun `registration fails when registering member is not in the static member list`() {
+        setUpPublisher()
+        registrationService.start()
+        val registrationResult = registrationService.register(daisy)
+        assertEquals(
+            MembershipRequestRegistrationResult(
+                NOT_SUBMITTED,
+                "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is not listed in the static member list."
+            ),
+            registrationResult
+        )
+        registrationService.stop()
     }
 }
