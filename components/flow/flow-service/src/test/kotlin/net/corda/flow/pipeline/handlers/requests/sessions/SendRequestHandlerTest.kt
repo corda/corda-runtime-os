@@ -24,7 +24,7 @@ class SendRequestHandlerTest {
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.Send(mapOf(sessionId1 to payload1, sessionId2 to payload2))
-    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.layeredPropertyMapFactory)
 
 
     @Suppress("Unused")
@@ -35,7 +35,7 @@ class SendRequestHandlerTest {
         whenever(flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
         whenever(flowCheckpoint.getSessionState(sessionId2)).thenReturn(sessionState2)
 
-        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any())).thenReturn(
+        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any(), any())).thenReturn(
             listOf(
                 sessionState1,
                 sessionState2
@@ -58,6 +58,7 @@ class SendRequestHandlerTest {
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
             eq(ioRequest.sessionToPayload),
+            any(),
             any()
         )
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())

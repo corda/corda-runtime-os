@@ -9,11 +9,9 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
-import net.corda.flow.pipeline.sandbox.impl.FlowProtocolStore
+import net.corda.flow.pipeline.sandbox.FlowProtocol
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -85,9 +83,5 @@ class SessionEventHandler @Activate constructor(
             .build()
 
         context.checkpoint.initFromNew(sessionInit.flowId, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
-    }
-
-    private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): FlowProtocolStore {
-        return flowSandboxService.get(initiatedIdentity).protocolStore
     }
 }

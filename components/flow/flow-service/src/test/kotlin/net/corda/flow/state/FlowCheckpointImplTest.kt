@@ -445,14 +445,14 @@ class FlowCheckpointImplTest {
 }
 
 @Suppress("Unused")
-@InitiatingFlow(1)
+@InitiatingFlow("valid-example")
 class InitiatingFlowExample : Flow<Unit> {
     override fun call() {
     }
 }
 
 @Suppress("Unused")
-@InitiatingFlow(0)
+@InitiatingFlow("invalid-example")
 class InvalidInitiatingFlowExample : Flow<Unit> {
     override fun call() {
     }

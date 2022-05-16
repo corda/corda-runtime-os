@@ -6,7 +6,9 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
+import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -17,7 +19,9 @@ class SendAndReceiveRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
+    private val flowRecordFactory: FlowRecordFactory,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : FlowRequestHandler<FlowIORequest.SendAndReceive> {
 
     override val type = FlowIORequest.SendAndReceive::class.java
@@ -26,12 +30,19 @@ class SendAndReceiveRequestHandler @Activate constructor(
         return WaitingFor(net.corda.data.flow.state.waiting.SessionData(request.sessionToPayload.keys.toList()))
     }
 
-    override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): FlowEventContext<Any> {
+    override fun postProcess(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.SendAndReceive
+    ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
+        // For now, the headers are empty. In the future platform and user context should be passed through to these
+        // message headers.
+        val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
 
-        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
-            checkpoint.putSessionState(updatedSessionState)
-        }
+        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, headers, Instant.now())
+            .forEach { updatedSessionState ->
+                checkpoint.putSessionState(updatedSessionState)
+            }
 
         return if (flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())

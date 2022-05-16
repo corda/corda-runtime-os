@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sandbox
 
-import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContext
 import net.corda.virtualnode.HoldingIdentity
 
 interface FlowSandboxService {

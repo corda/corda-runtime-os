@@ -37,11 +37,11 @@ class SubFlowFinishedRequestHandlerTest {
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
-    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
+    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory, testContext.layeredPropertyMapFactory)
 
     @BeforeEach
     fun setup() {
-        whenever(flowSessionManager.sendCloseMessages(any(), eq(sessions), any())).thenReturn(listOf(sessionState1, sessionState2))
+        whenever(flowSessionManager.sendCloseMessages(any(), eq(sessions), any(), any())).thenReturn(listOf(sessionState1, sessionState2))
     }
 
     @Test
@@ -146,7 +146,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         verify(testContext.flowCheckpoint).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint).putSessionState(sessionState2)
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any(), any())
         verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).hasSize(0)
     }
@@ -172,7 +172,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any(), any())
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
@@ -198,7 +198,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any(), any())
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
@@ -232,7 +232,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowSessionManager, never()).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any(), any())
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }

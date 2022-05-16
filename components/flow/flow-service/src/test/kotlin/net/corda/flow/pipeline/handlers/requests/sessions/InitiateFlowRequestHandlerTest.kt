@@ -6,7 +6,7 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
+import net.corda.flow.pipeline.sandbox.FlowProtocol
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,7 +21,7 @@ class InitiateFlowRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1)
-    private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager)
+    private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager, testContext.flowSandboxService, testContext.layeredPropertyMapFactory)
 
     @Suppress("Unused")
     @BeforeEach
@@ -33,6 +33,7 @@ class InitiateFlowRequestHandlerTest {
                 eq(sessionId1),
                 eq(ALICE_X500_NAME),
                 eq(listOf(FlowProtocol("foo", 1))),
+                any(),
                 any()
             )
         ).thenReturn(sessionState1)

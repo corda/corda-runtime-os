@@ -5,6 +5,7 @@ import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
 import net.corda.flow.fiber.FlowFiberService;
 import net.corda.flow.fiber.FlowIORequest;
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
@@ -29,7 +30,7 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final SerializationService serializationService = mock(SerializationService.class);
-    private final SandboxGroupContext sandboxGroupContext = mock(SandboxGroupContext.class);
+    private final FlowSandboxGroupContext sandboxGroupContext = mock(FlowSandboxGroupContext.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
             mock(SandboxDependencyInjector.class),
             mock(FlowCheckpoint.class),

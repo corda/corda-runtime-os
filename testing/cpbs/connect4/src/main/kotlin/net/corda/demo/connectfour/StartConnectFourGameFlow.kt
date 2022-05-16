@@ -10,7 +10,6 @@ import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-@InitiatingFlow
 @StartableByRPC
 class StartConnectFourGameFlow(private val jsonArg: String) : Flow<String> {
 

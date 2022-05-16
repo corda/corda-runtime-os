@@ -8,8 +8,8 @@ import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.state.FlowStack
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import java.nio.ByteBuffer
@@ -187,18 +187,7 @@ class FlowCheckpointImpl(private var nullableCheckpoint: Checkpoint?) : FlowChec
         }
 
         private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            var current: Class<in Flow<*>> = this.javaClass
-
-            while (true) {
-                val annotation = current.getDeclaredAnnotation(InitiatingFlow::class.java)
-                if (annotation != null) {
-                    require(annotation.version > 0) { "Flow versions have to be greater or equal to 1" }
-                    return true
-                }
-
-                current = current.superclass
-                    ?: return false
-            }
+            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

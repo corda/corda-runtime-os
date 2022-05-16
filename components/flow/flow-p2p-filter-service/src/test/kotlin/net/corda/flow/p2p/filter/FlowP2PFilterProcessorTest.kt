@@ -40,9 +40,19 @@ class FlowP2PFilterProcessorTest {
         val testValue = "test"
         val identity = HoldingIdentity(testValue, testValue)
         val flowHeader = AuthenticatedMessageHeader(identity, identity, 1, testValue, testValue, "flowSession")
+        val version = listOf(1)
         val flowEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), testValue, 1, identity, identity, 0, listOf(), SessionInit(
-                testValue, testValue, null, ByteBuffer.wrap("".toByteArray())
+            MessageDirection.OUTBOUND,
+            Instant.now(),
+            testValue,
+            1,
+            identity,
+            identity,
+            0,
+            listOf(),
+            ByteBuffer.wrap("".toByteArray()),
+            SessionInit(
+                testValue, version, testValue, null, ByteBuffer.wrap("".toByteArray())
             )
         )
 

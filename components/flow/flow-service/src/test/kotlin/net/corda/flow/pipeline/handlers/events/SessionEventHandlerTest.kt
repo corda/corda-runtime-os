@@ -16,11 +16,11 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.session.manager.SessionManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -65,7 +65,7 @@ class SessionEventHandlerTest {
     private val checkpointSessionState = SessionState()
     private val updatedSessionState = SessionState()
     private val checkpoint = mock<FlowCheckpoint>()
-    private val sandboxGroupContext = mock<SandboxGroupContext>()
+    private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowSandboxService = mock<FlowSandboxService>()
     private val sessionManager = mock<SessionManager>()
 
@@ -165,7 +165,7 @@ class SessionEventHandlerTest {
 
     private fun createSessionInit(): SessionEvent {
         val payload = SessionInit.newBuilder()
-            .setFlowName(INITIATING_FLOW_NAME)
+            .setProtocol(INITIATING_FLOW_NAME)
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))

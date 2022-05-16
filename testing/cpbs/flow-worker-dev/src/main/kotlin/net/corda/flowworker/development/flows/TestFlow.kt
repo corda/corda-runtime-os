@@ -2,11 +2,10 @@ package net.corda.flowworker.development.flows
 
 import net.corda.flowworker.development.messages.TestFlowInput
 import net.corda.flowworker.development.messages.TestFlowOutput
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.StartableByRPC
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -19,7 +18,6 @@ import net.corda.v5.base.util.contextLogger
  * is used as a basic flow worker smoke test.
  */
 @Suppress("unused")
-@InitiatingFlow
 @StartableByRPC
 class TestFlow(private val jsonArg: String) : Flow<String> {
 
@@ -49,11 +47,7 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
                 "No member lookup requested."
             }else{
                 val lookupResult = memberLookupService.lookup(MemberX500Name.parse(inputs.memberInfoLookup!!))
-                    if(lookupResult==null){
-                        "Failed to find MemberInfo for ${inputs.memberInfoLookup!!}"
-                    }else{
-                        lookupResult.name.toString()
-                    }
+                lookupResult?.name?.toString() ?: "Failed to find MemberInfo for ${inputs.memberInfoLookup!!}"
             }
 
             /**

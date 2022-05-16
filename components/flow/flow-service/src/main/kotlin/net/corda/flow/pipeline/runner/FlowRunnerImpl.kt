@@ -13,8 +13,8 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.impl.FlowProtocol
-import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContext
+import net.corda.flow.pipeline.sandbox.FlowProtocol
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name

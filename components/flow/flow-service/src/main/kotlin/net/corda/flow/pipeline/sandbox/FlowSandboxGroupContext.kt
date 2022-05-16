@@ -1,8 +1,7 @@
-package net.corda.flow.pipeline.sandbox.impl
+package net.corda.flow.pipeline.sandbox
 
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.getUniqueObject

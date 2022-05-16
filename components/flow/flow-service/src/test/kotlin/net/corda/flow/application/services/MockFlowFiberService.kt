@@ -5,11 +5,11 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.state.FlowStack
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -20,7 +20,7 @@ class MockFlowFiberService : FlowFiberService {
     val flowCheckpoint: FlowCheckpoint = mock()
     val flowStack: FlowStack = mock()
     val checkpointSerializer: CheckpointSerializer = mock()
-    val sandboxGroupContext: SandboxGroupContext = mock()
+    val sandboxGroupContext: FlowSandboxGroupContext = mock()
     val holdingIdentity: HoldingIdentity =  HoldingIdentity(BOB_X500_NAME.toString(),"group1")
     val membershipGroupReader: MembershipGroupReader = mock()
     val flowFiberExecutionContext: FlowFiberExecutionContext

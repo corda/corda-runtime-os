@@ -25,7 +25,7 @@ class CloseSessionsRequestHandlerTest {
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.CloseSessions(sessions.toSet())
-    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.layeredPropertyMapFactory)
 
     @Suppress("Unused")
     @BeforeEach
@@ -39,6 +39,7 @@ class CloseSessionsRequestHandlerTest {
             testContext.flowSessionManager.sendCloseMessages(
                 eq(testContext.flowCheckpoint),
                 eq(sessions),
+                any(),
                 any()
             )
         ).thenReturn(listOf(sessionState1, sessionState2))
@@ -67,7 +68,7 @@ class CloseSessionsRequestHandlerTest {
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
+        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any(), any())
         verify(testContext.flowCheckpoint).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint).putSessionState(sessionState2)
         assertThat(outputContext.outputRecords).hasSize(0)

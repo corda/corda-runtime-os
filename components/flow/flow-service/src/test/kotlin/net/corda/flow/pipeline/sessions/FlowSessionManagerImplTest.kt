@@ -13,6 +13,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.sandbox.FlowProtocol
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.session.manager.SessionManager
@@ -110,7 +111,7 @@ class FlowSessionManagerImplTest {
         val instant = Instant.now()
 
         val expectedSessionInit = SessionInit.newBuilder()
-            .setFlowName(INITIATING_FLOW_NAME)
+            .setProtocol(INITIATING_FLOW_NAME)
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
@@ -125,7 +126,14 @@ class FlowSessionManagerImplTest {
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
-        val sessionState = flowSessionManager.sendInitMessage(checkpoint, SESSION_ID, X500_NAME, instant)
+        val sessionState = flowSessionManager.sendInitMessage(
+            checkpoint,
+            SESSION_ID,
+            X500_NAME,
+            listOf(FlowProtocol(INITIATING_FLOW_NAME, 1)),
+            mock(),
+            instant
+        )
 
         verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(null), any(), eq(instant))
         assertEquals(expectedSessionEvent, sessionState.sendEventsState.undeliveredMessages.single())
@@ -179,6 +187,7 @@ class FlowSessionManagerImplTest {
         val sessionStates = flowSessionManager.sendDataMessages(
             checkpoint,
             mapOf(SESSION_ID to payload, ANOTHER_SESSION_ID to anotherPayload),
+            mock(),
             instant
         )
 
@@ -191,7 +200,7 @@ class FlowSessionManagerImplTest {
     @Test
     fun `sendDataMessages does nothing when there are no sessions passed in`() {
         val instant = Instant.now()
-        flowSessionManager.sendDataMessages(checkpoint, emptyMap(), instant)
+        flowSessionManager.sendDataMessages(checkpoint, emptyMap(), mock(), instant)
         verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
     }
 
@@ -205,6 +214,7 @@ class FlowSessionManagerImplTest {
             flowSessionManager.sendDataMessages(
                 checkpoint,
                 mapOf(SESSION_ID to byteArrayOf(), ANOTHER_SESSION_ID to byteArrayOf()),
+                mock(),
                 instant
             )
         }
@@ -253,6 +263,7 @@ class FlowSessionManagerImplTest {
         val sessionStates = flowSessionManager.sendCloseMessages(
             checkpoint,
             listOf(SESSION_ID, ANOTHER_SESSION_ID),
+            mock(),
             instant
         )
 
@@ -265,7 +276,7 @@ class FlowSessionManagerImplTest {
     @Test
     fun `sendCloseMessages does nothing when there are no sessions passed in`() {
         val instant = Instant.now()
-        flowSessionManager.sendCloseMessages(checkpoint, emptyList(), instant)
+        flowSessionManager.sendCloseMessages(checkpoint, emptyList(), mock(), instant)
         verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
     }
 
@@ -279,6 +290,7 @@ class FlowSessionManagerImplTest {
             flowSessionManager.sendCloseMessages(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
+                mock(),
                 instant
             )
         }

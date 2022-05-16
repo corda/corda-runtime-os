@@ -6,7 +6,9 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
+import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -17,7 +19,9 @@ class SendRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
+    private val flowRecordFactory: FlowRecordFactory,
+    @Reference(service = LayeredPropertyMapFactory::class)
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : FlowRequestHandler<FlowIORequest.Send> {
 
     override val type = FlowIORequest.Send::class.java
@@ -29,11 +33,15 @@ class SendRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Send): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
-            checkpoint.putSessionState(updatedSessionState)
-        }
+        // For now, the headers are empty. In the future platform and user context should be passed through to these
+        // message headers.
+        val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
+        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, headers, Instant.now())
+            .forEach { updatedSessionState ->
+                checkpoint.putSessionState(updatedSessionState)
+            }
 
-        val wakeup =  flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+        val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
         return context.copy(outputRecords = context.outputRecords + wakeup)
     }
 }

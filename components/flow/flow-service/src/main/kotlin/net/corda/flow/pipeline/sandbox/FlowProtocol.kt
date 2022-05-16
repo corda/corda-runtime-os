@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.sandbox.impl
+package net.corda.flow.pipeline.sandbox
 
 /**
  * Represents the protocol supported by a particular initiator or responder flow.

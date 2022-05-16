@@ -6,9 +6,11 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import org.mockito.kotlin.mock
@@ -25,7 +27,9 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowStack = mock<FlowStack>()
     val holdingIdentity = BOB_X500_HOLDING_IDENTITY
     val flowStartContext = FlowStartContext()
-    val flowCheckpoint: FlowCheckpoint = mock()
+    val flowCheckpoint = mock<FlowCheckpoint>()
+    val flowSandboxService = mock<FlowSandboxService>()
+    val layeredPropertyMapFactory = mock<LayeredPropertyMapFactory>()
 
     init {
         flowStartContext.identity = holdingIdentity

@@ -42,6 +42,7 @@ class InitiateFlowRequestHandler @Activate constructor(
         val protocolStore = flowSandboxService.get(context.checkpoint.holdingIdentity.toCorda()).protocolStore
         val initiator = checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty")
         val protocols = protocolStore.protocolsForInitiator(initiator)
+        // For now these headers are empty. In the future platform and user context should be provided via these headers
         val headers = FlowSessionHeaders(layeredPropertyMapFactory.create(mapOf()))
         checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(

@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.sandbox.impl
+package net.corda.flow.pipeline.sandbox
 
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.libs.packaging.CpiMetadata

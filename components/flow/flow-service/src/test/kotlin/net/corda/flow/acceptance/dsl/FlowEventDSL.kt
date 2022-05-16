@@ -32,13 +32,14 @@ import net.corda.flow.pipeline.handlers.waiting.sessions.SessionDataWaitingForHa
 import net.corda.flow.pipeline.handlers.waiting.sessions.SessionInitWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManagerImpl
 import net.corda.flow.state.impl.FlowCheckpointFactoryImpl
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.impl.SessionManagerImpl
@@ -159,11 +160,13 @@ private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
 
 private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager, recordFactory)
 
-private val sandboxGroupContext = mock<SandboxGroupContext>()
+private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
 
 private val flowSandboxService = mock<FlowSandboxService>().apply {
     whenever(get(any())).thenReturn(sandboxGroupContext)
 }
+
+private val layeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(listOf())
 
 // Must be updated when new flow event handlers are added
 private val flowEventHandlers = listOf(
@@ -182,18 +185,18 @@ private val flowWaitingForHandlers = listOf(
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
-    CloseSessionsRequestHandler(flowSessionManager, recordFactory),
+    CloseSessionsRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
     FlowFailedRequestHandler(mock(), recordFactory),
     FlowFinishedRequestHandler(mock(), recordFactory),
     ForceCheckpointRequestHandler(recordFactory),
     GetFlowInfoRequestHandler(),
-    InitiateFlowRequestHandler(flowSessionManager),
+    InitiateFlowRequestHandler(flowSessionManager, flowSandboxService, layeredPropertyMapFactory),
     ReceiveRequestHandler(flowSessionManager, recordFactory),
-    SendAndReceiveRequestHandler(flowSessionManager, recordFactory),
-    SendRequestHandler(flowSessionManager, recordFactory),
+    SendAndReceiveRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
+    SendRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
-    SubFlowFinishedRequestHandler(flowSessionManager, recordFactory),
+    SubFlowFinishedRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
     WaitForSessionConfirmationsRequestHandler()
 )
 
