@@ -86,8 +86,8 @@ class MemberProcessorTestUtils {
         val bobX500Name = MemberX500Name.parse(bobName)
         val charlieX500Name = MemberX500Name.parse(charlieName)
         val groupId = "ABC123"
-        val aliceHoldingIdentity = HoldingIdentity(aliceName, groupId)
-        val bobHoldingIdentity = HoldingIdentity(bobName, groupId)
+        val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
+        val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
 
         fun Publisher.publishRawGroupPolicyData(
             virtualNodeInfoReader: VirtualNodeInfoReadService,
