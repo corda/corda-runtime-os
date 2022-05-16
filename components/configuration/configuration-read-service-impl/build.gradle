@@ -24,7 +24,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")

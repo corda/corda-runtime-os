@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -90,7 +91,7 @@ class TestLifecycleCoordinatorImpl(
         TODO("Custom Events not currently supported for testing.")
     }
 
-    private fun addNewRegistration(coordinators: Set<LifecycleCoordinatorName>): TestRegistration {
+    private fun addNewRegistration(coordinators: Map<LifecycleCoordinatorName, LifecycleStatus>): TestRegistration {
         return TestRegistration(coordinators, this).also { registrations.add(it) }
     }
 
@@ -101,14 +102,14 @@ class TestLifecycleCoordinatorImpl(
         if (coordinators.contains(this)) {
             throw LifecycleException("Attempt was made to register coordinator $name on itself")
         }
-        return followStatusChangesByName(coordinators.map { it.name }.toSet())
+        return addNewRegistration(coordinators.associate { it.name to it.status })
     }
 
     /**
      * See [LifecycleCoordinator].
      */
     override fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle {
-        return addNewRegistration(coordinatorNames)
+        return addNewRegistration(coordinatorNames.associateWith { LifecycleStatus.DOWN })
     }
 
     /**
@@ -207,5 +208,35 @@ class TestLifecycleCoordinatorImpl(
         _isRunning = false
         _isClosed = true
         registrations.clear()
+    }
+
+    /*
+      Test specific API
+     */
+
+    fun bringDown(coordinator: LifecycleCoordinator) {
+        bringDown(coordinator.name)
+    }
+
+    fun bringUp(coordinator: LifecycleCoordinator) {
+        bringUp(coordinator.name)
+    }
+
+    fun bringDown(coordinator: LifecycleCoordinatorName) {
+        changeStatus(coordinator, LifecycleStatus.DOWN)
+    }
+
+    fun bringUp(coordinator: LifecycleCoordinatorName) {
+        changeStatus(coordinator, LifecycleStatus.UP)
+    }
+
+    private fun changeStatus(coordinator: LifecycleCoordinatorName, status: LifecycleStatus) {
+        registrations.filter { it.coordinators.contains(coordinator) }
+            .forEach {
+                val statusChanged = it.changeCoordinatorStatus(coordinator, status)
+                if (statusChanged) {
+                    postEvent(RegistrationStatusChangeEvent(it, status))
+                }
+            }
     }
 }
