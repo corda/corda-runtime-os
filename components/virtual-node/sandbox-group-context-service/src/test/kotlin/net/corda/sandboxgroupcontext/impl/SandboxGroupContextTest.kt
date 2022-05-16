@@ -35,7 +35,7 @@ inline fun <reified T : Any> SandboxGroupContext.getUniqueObject() = this.get(T:
 
 class SandboxGroupContextTest {
     private val holdingIdentity = HoldingIdentity("foo", "bar")
-    private val cpkMetadata: CpkMetadata = CpkMetadata.fromLegacyCpk(Helpers.mockTrivialCpk("MAIN_BUNDLE", "example", "1.0.0"))
+    private val cpkMetadata: CpkMetadata = Helpers.mockTrivialCpk("MAIN_BUNDLE", "example", "1.0.0").metadata
 
     private val cpksMetadata = setOf(cpkMetadata)
 

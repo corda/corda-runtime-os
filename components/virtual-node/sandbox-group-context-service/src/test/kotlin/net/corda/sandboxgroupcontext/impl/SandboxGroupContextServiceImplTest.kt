@@ -64,7 +64,7 @@ class SandboxGroupContextServiceImplTest {
 
     class CpkReadServiceFake(private val cpks: Set<Cpk>) : CpkReadService {
         override fun get(cpkId: CpkIdentifier): Cpk? {
-            return cpks.singleOrNull { (it.metadata.id.name == cpkId.name) && (it.metadata.id.version == cpkId.version) }
+            return cpks.singleOrNull { (it.metadata.cpkId.name == cpkId.name) && (it.metadata.cpkId.version == cpkId.version) }
         }
 
         override val isRunning: Boolean
@@ -89,7 +89,7 @@ class SandboxGroupContextServiceImplTest {
             cache
         )
         virtualNodeContext = createVirtualNodeContextForFlow(
-            holdingIdentity, cpks.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+            holdingIdentity, cpks.map { it.metadata.cpkId }.toSet()
         )
     }
 
@@ -150,15 +150,15 @@ class SandboxGroupContextServiceImplTest {
 
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,
-            cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+            cpks1.map { it.metadata.cpkId }.toSet()
         )
         val ctx2 = createVirtualNodeContextForFlow(
             holdingIdentity2,
-            cpks2.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+            cpks2.map { it.metadata.cpkId }.toSet()
         )
         val ctx3 = createVirtualNodeContextForFlow(
             holdingIdentity3,
-            cpks3.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+            cpks3.map { it.metadata.cpkId }.toSet()
         )
 
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1, cpks2, cpks3))
@@ -214,7 +214,7 @@ class SandboxGroupContextServiceImplTest {
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,
-            cpks1.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+            cpks1.map { it.metadata.cpkId }.toSet()
         )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)
@@ -242,10 +242,10 @@ class SandboxGroupContextServiceImplTest {
         }
 
         val existingCpkIds = existingCpks.map {
-            CpkIdentifier.fromLegacy(it.metadata.id)
+            it.metadata.cpkId
         }.toSet()
 
-        val nonExistingCpkId = nonExistingCpk.map { CpkIdentifier.fromLegacy(it.metadata.id) }.toSet()
+        val nonExistingCpkId = nonExistingCpk.map { it.metadata.cpkId }.toSet()
 
         val noCpks = emptySet<CpkIdentifier>()
 

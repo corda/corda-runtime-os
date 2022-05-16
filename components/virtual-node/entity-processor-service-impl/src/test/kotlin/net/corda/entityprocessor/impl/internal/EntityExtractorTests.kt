@@ -1,7 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.core.CordappManifest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn

@@ -174,16 +174,16 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(cpiMetadataEntity)
             cpi.cpks.forEach {
-                val cpkChecksum = it.metadata.hash.toString()
+                val cpkChecksum = it.metadata.fileChecksum.toString()
                 em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
 
                 val cpkMetadataEntity = CpkMetadataEntity(
                     cpi = cpiMetadataEntity,
                     cpkFileChecksum = cpkChecksum,
                     cpkFileName = it.originalFileName!!,
-                    mainBundleName = it.metadata.id.name,
-                    mainBundleVersion = it.metadata.id.version,
-                    signerSummaryHash = it.metadata.id.signerSummaryHash?.toString() ?: "",
+                    mainBundleName = it.metadata.cpkId.name,
+                    mainBundleVersion = it.metadata.cpkId.version,
+                    signerSummaryHash = it.metadata.cpkId.signerSummaryHash?.toString() ?: "",
                     cpkManifest = CpkManifest(
                         CpkFormatVersion(
                             it.metadata.manifest.cpkFormatVersion.major,
@@ -266,9 +266,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity(
-            name = cpiMetadata.id.name,
-            version = cpiMetadata.id.version,
-            signerSummaryHash = cpiMetadata.id.signerSummaryHash?.toString() ?: "",
+            name = cpiMetadata.cpiId.name,
+            version = cpiMetadata.cpiId.version,
+            signerSummaryHash = cpiMetadata.cpiId.signerSummaryHash?.toString() ?: "",
             fileName = cpiFileName,
             fileChecksum = checksum.toString(),
             groupPolicy = cpi.metadata.groupPolicy!!,
