@@ -1,5 +1,6 @@
 package net.corda.sandbox.internal
 
+import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CordappManifest

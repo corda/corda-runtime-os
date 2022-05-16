@@ -1,5 +1,6 @@
 package net.corda.test.util.time
 
+import net.corda.utilities.time.Clock
 import java.time.Duration
 import java.time.Instant
 
@@ -7,7 +8,9 @@ import java.time.Instant
  * A test clock which automatically ticks up the clock by the specified [autoTickBy] amount prior
  * to returning an instant.
  */
-class AutoTickTestClock(initialTime: Instant, val autoTickBy: Duration) : TestClock(initialTime) {
+class AutoTickTestClock(initialTime: Instant, private val autoTickBy: Duration) : Clock {
+
+    private var now = initialTime
 
     override fun instant(): Instant {
         now += autoTickBy
