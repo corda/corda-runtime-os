@@ -86,7 +86,7 @@ data class CpiMetadataEntityKey(
 // Although the following query is currently simple (so maybe it doesn't make sense to be here), however,
 // in subsequent work where we add timestamps this will also take timestamp and maybe then it is worth
 // testing the query, which should happen in this module.
-// TODO JIRA to revise the stream. It currently throws
+// TODO the following needs to return a `Stream` as per (https://r3-cev.atlassian.net/browse/CORE-4823). But, It currently throws
 //  org.hibernate.exception.GenericJDBCException: could not advance using next()
 //      Caused by: org.postgresql.util.PSQLException: This ResultSet is closed.
 fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> =
