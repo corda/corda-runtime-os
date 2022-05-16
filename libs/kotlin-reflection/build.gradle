@@ -1,6 +1,8 @@
 import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
+import com.gradle.enterprise.gradleplugin.test.ImportJUnitXmlReports
+import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.GENERIC
 
 plugins {
     id 'corda.common-publishing'
@@ -77,6 +79,14 @@ def resolve = tasks.register('resolve', Resolve) {
     }
 }
 
+// Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
+def importOSGiJunitXml = tasks.register('importOSGiJUnitXml', ImportJUnitXmlReports) {
+    dialect = GENERIC
+    reports.from(fileTree("$testResultsDir/integrationTest").matching {
+        include '**/TEST-*.xml'
+    })
+}
+
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
     resultsDirectory = file("$testResultsDir/integrationTest")
     bundles = files(
@@ -85,6 +95,7 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }
+    finalizedBy importOSGiJunitXml
 }
 
 tasks.named('integrationTest') {
