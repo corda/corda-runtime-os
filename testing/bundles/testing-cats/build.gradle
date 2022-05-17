@@ -5,7 +5,9 @@ plugins {
 
 description 'Cats test bundle'
 
-// so that we can build this into CPBs without the corda gradle plugin complaining
+// IMPORTANT:  We must set the group to anything other than `net.corda`.
+// This is so that we can link this into a CPB without the corda gradle plugin refusing.
+// `net.corda` is reserved for Corda "system" bundles.
 group 'com.r3.testing'
 
 cordapp {

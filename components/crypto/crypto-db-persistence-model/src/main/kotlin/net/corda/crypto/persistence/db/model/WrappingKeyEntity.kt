@@ -10,6 +10,8 @@ import javax.persistence.Table
 /**
  * An entity representing a wrapping key which is used by Soft HSM implementation of the CryptoService
  * to wrap.
+ *
+ * The records are immutable.
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_WRAPPING_KEY_TABLE)
@@ -44,15 +46,4 @@ class WrappingKeyEntity(
      */
     @Column(name = "key_material", nullable = false, updatable = false, columnDefinition="BLOB")
     var keyMaterial: ByteArray
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is WrappingKeyEntity) return false
-        if (alias != other.alias) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return alias.hashCode()
-    }
-}
+)
