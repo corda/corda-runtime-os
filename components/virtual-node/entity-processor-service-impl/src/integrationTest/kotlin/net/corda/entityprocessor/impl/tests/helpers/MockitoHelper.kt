@@ -2,7 +2,8 @@ package net.corda.entityprocessor.impl.tests.helpers
 
 import org.mockito.Mockito
 
-// Might not be needed - Mockito.any() may just work.
+
+/** Helps where `Mockito.any()` can't infer the type correctly and returns `null` instead */
 object MockitoHelper {
     fun <T> anyObject(): T {
         Mockito.any<T>()

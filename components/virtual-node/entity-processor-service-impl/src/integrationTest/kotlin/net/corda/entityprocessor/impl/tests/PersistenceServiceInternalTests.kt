@@ -68,6 +68,9 @@ import javax.persistence.EntityManagerFactory
  *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
  *
  *     gradlew integrationTest -PpostgresPort=5432
+ *
+ * Rather than creating a new serializer in these tests from scratch,
+ * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
  */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -134,7 +137,6 @@ class PersistenceServiceInternalTests {
         persistenceService.persist(sandbox.getSerializer(), entityManager, payload)
 
         Mockito.verify(entityManager).persist(Mockito.any())
-
     }
 
     @Test
@@ -200,6 +202,7 @@ class PersistenceServiceInternalTests {
 
         assertThat(responses.size).isEqualTo(1)
         assertThat((responses[0].value as EntityResponse).result).isInstanceOf(ExceptionEnvelope::class.java)
+
         // TODO - error types should not be string but categories of errors
         assertThat(((responses[0].value as EntityResponse).result as ExceptionEnvelope).errorType).contains("NotSerializableException")
     }

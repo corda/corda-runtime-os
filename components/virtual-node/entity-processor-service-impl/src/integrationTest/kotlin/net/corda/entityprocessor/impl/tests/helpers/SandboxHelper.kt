@@ -8,6 +8,11 @@ import net.corda.v5.application.serialization.SerializationService
 import java.time.Instant
 import java.util.UUID
 
+/**
+ * We need to use this object because we cannot include the `Cat` and `Dog` bundles as
+ * _direct gradle dependencies_ of this test.  That means they would be loaded by OSGi
+ * twice, with a separate class loader.
+ */
 object SandboxHelper {
     const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
 
