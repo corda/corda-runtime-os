@@ -55,7 +55,7 @@ class CpiInfoDbReaderTest {
 
         val versionedRecords = cpiInfoDbReader.doGetAllVersionedRecords().toList()
         val cpiMetdata = versionedRecords.single().value
-        // Could check more fields if its worth it...
+        // TODO Add checks for all fields in https://r3-cev.atlassian.net/browse/CORE-4828
         assertEquals(DUMMY_HASH, cpiMetdata.cpiId.signerSummaryHash!!.toString())
         assertEquals(DUMMY_HASH, cpiMetdata.fileChecksum.toString())
         println(versionedRecords)
