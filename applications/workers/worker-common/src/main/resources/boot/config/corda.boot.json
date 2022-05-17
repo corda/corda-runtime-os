@@ -57,11 +57,9 @@
     "db": {
       "description": "Configuration options related to database.",
       "properties": {
-        "properties": {
-          "params": {
-            "description": "Additional db params the worker is bootstrapped with.",
-            "type": "object"
-          }
+        "params": {
+          "description": "Additional db params the worker is bootstrapped with.",
+          "type": "object"
         },
         "jdbcUrl": {
           "description": "The JDBC database URL",
@@ -92,15 +90,21 @@
       "properties": {
         "workspace": {
           "description": "Local workspace directory",
-          "type": ["string"]
+          "type": [
+            "string"
+          ]
         },
         "tmp": {
           "description": "Tmp directory",
-          "type": ["string"]
+          "type": [
+            "string"
+          ]
         },
         "pass": {
           "description": "Cluster admin password to connect to the database with.",
-          "type": ["string"]
+          "type": [
+            "string"
+          ]
         }
       },
       "additionalProperties": false
