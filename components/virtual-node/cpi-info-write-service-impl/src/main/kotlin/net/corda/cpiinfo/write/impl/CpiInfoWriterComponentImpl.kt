@@ -53,7 +53,6 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     private var publisher: Publisher? = null
 
-    @Suppress("Warnings")
     override fun put(cpiMetadata: CpiMetadata) {
         publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())))
     }

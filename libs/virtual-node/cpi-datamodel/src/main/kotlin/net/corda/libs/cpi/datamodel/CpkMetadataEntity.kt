@@ -52,7 +52,7 @@ data class CpkMetadataEntity(
     val cpkFileChecksum: String,
     @Column(name = "cpk_file_name", nullable = false)
     val cpkFileName: String,
-    // following 3 properties are CpkIdentifier. Maybe we need to bring that back
+    // Following 3 properties are CpkIdentifier
     @Column(name = "cpk_main_bundle_name", nullable = false)
     val mainBundleName: String,
     @Column(name = "cpk_main_bundle_version", nullable = false)
@@ -90,7 +90,7 @@ data class CpkMetadataEntity(
     )
     @Column(name = "library_name")
     val cpkLibraries: List<String>
-    // TODO cordappCertificates // bytes we have it elsewhere look it up
+    // cordappCertificates TODO To be added as per https://r3-cev.atlassian.net/browse/CORE-4658
 ) {
     // If set to FetchType.EAGER below we then getting a stack overflow exception
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "cpkMetadataEntity")
@@ -122,6 +122,7 @@ data class CpkDependencyEntity(
     )
     val cpkMetadataEntity: CpkMetadataEntity,
 
+    // Following 3 properties are CpkIdentifier
     @Id
     @Column(name = "main_bundle_name", nullable = false)
     val mainBundleName: String,
@@ -194,7 +195,7 @@ data class CpkCordappManifestEntity(
         ]
     )
     val workflowInfo: ManifestCorDappInfo,
-    // TODO attributes
+    // attributes TODO To be added as per https://r3-cev.atlassian.net/browse/CORE-4658
 ) : Serializable
 
 @Embeddable

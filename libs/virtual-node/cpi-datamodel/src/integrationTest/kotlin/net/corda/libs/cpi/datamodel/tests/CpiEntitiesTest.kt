@@ -391,19 +391,15 @@ private object CpkMetadataEntityFactory {
         val cpkDependencyEntities = setOf(
             CpkDependencyEntity(
                 cpkMetadataEntity,
-//                CpkIdentifier(
-                    "main-bundle-name-1",
-                    "main-bundle-version-1",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
-//                )
+                "main-bundle-name-1",
+                "main-bundle-version-1",
+                "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
             ),
             CpkDependencyEntity(
                 cpkMetadataEntity,
-//                CpkIdentifier(
-                    "main-bundle-name-2",
-                    "main-bundle-version-2",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB"
-//                )
+                "main-bundle-name-2",
+                "main-bundle-version-2",
+                "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB"
             )
         )
         val cordappManifest = CpkCordappManifestEntity(

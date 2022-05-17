@@ -27,7 +27,13 @@ import net.corda.v5.crypto.SecureHash
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
-// Maybe this class needs to be moved elsewhere, although it should only be used by `DBProcessorImpl`.
+/**
+ * A [ReconcilerReader] for CPI Info database data. This class is a [Lifecycle] and therefore has its own lifecycle.
+ * What's special about it is, when its public API [getAllVersionedRecords] method gets called, if an error occurs
+ * during the call the exception gets captured and its lifecycle state gets notified with a [GetRecordsErrorEvent].
+ * Then depending on if the exception is a transient or not its state should be taken to [LifecycleStatus.DOWN] or
+ * [LifecycleStatus.ERROR].
+ */
 class CpiInfoDbReader(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val dbConnectionManager: DbConnectionManager
@@ -175,11 +181,13 @@ class CpiInfoDbReader(
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.versionId,
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.license
                                         ),
-                                        emptyMap() // TODO
+                                        // TODO below field to be populated from CpkCordappManifestEntity.attributes when added (https://r3-cev.atlassian.net/browse/CORE-4658)
+                                        emptyMap()
                                     ),
                                     type = Cpk.Type.parse(cpkMetadataEntity.cpkType ?: ""),
                                     fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
-                                    cordappCertificates = emptySet() // TODO
+                                    // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added (https://r3-cev.atlassian.net/browse/CORE-4658)
+                                    cordappCertificates = emptySet()
                                 )
                             )
                         }

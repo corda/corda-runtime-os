@@ -42,6 +42,7 @@ class CpiInfoDbReaderTest {
     fun `doGetAllVersionedRecords converts db data to version records`() {
         val typeQuery = mock<TypedQuery<CpiMetadataEntity>>()
         // TODO to be reverted when CpiMetadataEntity.kt EntityManager.findAllCpiMetadata() is fixed (to use a stream again)
+        //  as per https://r3-cev.atlassian.net/browse/CORE-4823.
         //whenever(typeQuery.resultStream).thenReturn(Stream.of(dummyCpiMetadataEntity))
         whenever(typeQuery.resultList).thenReturn(listOf(dummyCpiMetadataEntity))
         val entityManager = mock<EntityManager>()

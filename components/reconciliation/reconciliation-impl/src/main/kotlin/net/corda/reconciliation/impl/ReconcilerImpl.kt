@@ -106,31 +106,29 @@ class ReconcilerImpl<K : Any, V : Any>(
         closeResources()
     }
 
-    // TODO must add to the below debug logging reporting to be reconciled records potentially more
-    // Failure at some point during reconciliation could inform us where it stopped so that next reconciliation can take it
-    // from there, or perhaps that could be done under timestamps optimization and then we update max timestamp reconciled.
+    // TODO Must add to the below DEBUG logging reporting to be reconciled records potentially more
     /**
-     * @throws [ReconciliationException] if an error occurs at kafka or db [ReconcilerReader.getAllVersionedRecords].
+     * @throws [ReconciliationException] to notify an an error occurs at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
     @Suppress("ComplexMethod")
     @VisibleForTesting
     internal fun reconcile() {
         val kafkaRecords =
-            kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key } ?: run {
-                // Error occurred in kafka getAllVersionedRecords, we need to return and wait on failure to surface
-                // by upcoming RegistrationStatusChangeEvent
-                throw ReconciliationException("Error occurred while retrieving kafka records")
-            }
+            kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
+                ?: throw ReconciliationException("Error occurred while retrieving kafka records")
 
-        val toBeReconciledDbRecords = dbReader.getAllVersionedRecords()?.filter { dbRecord ->
-            kafkaRecords[dbRecord.key]?.let { kafkaRecord ->
-                dbRecord.version > kafkaRecord.version || dbRecord.isDeleted // reconcile db updates and db deletes
-            } ?: !dbRecord.isDeleted // reconcile db insert (i.e. db column cpi.is_deleted == false)
-        } ?: run {
-            // Error occurred in db getAllVersionedRecords, we need to return and wait on failure to surface
-            // by upcoming RegistrationStatusChangeEvent
-            throw ReconciliationException("Error occurred while retrieving db records")
-        }
+        val toBeReconciledDbRecords =
+            dbReader.getAllVersionedRecords()?.filter { dbRecord ->
+                val matchedKafkaRecord = kafkaRecords[dbRecord.key]
+                val toBeReconciled = if (matchedKafkaRecord == null) {
+                    !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
+                } else {
+                    dbRecord.version > matchedKafkaRecord.version // reconcile db updates
+                            || dbRecord.isDeleted // reconcile db deletes
+                }
+                toBeReconciled
+            }
+                ?: throw ReconciliationException("Error occurred while retrieving db records")
 
         toBeReconciledDbRecords.use {
             it.forEach { dbRecord ->
