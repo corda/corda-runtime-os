@@ -19,7 +19,7 @@ class ReconcilerImplTest {
                 String::class.java,
                 Int::class.java,
                 mock(),
-                mock()
+                1000L
             )
         assertEquals(
             "${ReconcilerImpl::class.java.name}<${String::class.java.name}, ${Int::class.java.name}>",
