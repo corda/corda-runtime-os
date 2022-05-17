@@ -4,13 +4,22 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -19,22 +28,43 @@ import java.security.PublicKey
 class KeysRpcOpsImplTest {
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val keyEncodingService = mock<KeyEncodingService>()
+    private val coordinator = mock<LifecycleCoordinator>()
+    private val handler = argumentCaptor<LifecycleEventHandler>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
+    }
 
-    private val keysOps = KeysRpcOpsImpl(cryptoOpsClient, keyEncodingService)
+    private val keysOps = KeysRpcOpsImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory)
 
     @Test
     fun `listKeys return the correct key IDs`() {
         val keys = (1..4).map {
             val idToReturn = "id.$it"
+            val aliasToReturn = "alias-$it"
+            val categoryToReturn = "category:$it"
             mock<CryptoSigningKey> {
                 on { id } doReturn idToReturn
+                on { alias } doReturn aliasToReturn
+                on { category } doReturn categoryToReturn
             }
         }
         whenever(cryptoOpsClient.lookup("id", 0, 500, CryptoKeyOrderBy.NONE, emptyMap())).doReturn(keys)
 
         val list = keysOps.listKeys("id")
 
-        assertThat(list).containsExactlyInAnyOrder("id.1", "id.2", "id.3", "id.4")
+        assertThat(list)
+            .containsEntry(
+                "id.1", KeyMetaData("id.1", "alias-1", "category:1")
+            )
+            .containsEntry(
+                "id.2", KeyMetaData("id.2", "alias-2", "category:2")
+            )
+            .containsEntry(
+                "id.3", KeyMetaData("id.3", "alias-3", "category:3")
+            )
+            .containsEntry(
+                "id.4", KeyMetaData("id.4", "alias-4", "category:4")
+            )
     }
 
     @Test
@@ -79,23 +109,61 @@ class KeysRpcOpsImplTest {
     }
 
     @Test
-    fun `isRunning returns the crypto client status`() {
-        whenever(cryptoOpsClient.isRunning).doReturn(true)
+    fun `isRunning returns the coordinator status`() {
+        whenever(coordinator.status).doReturn(LifecycleStatus.UP)
 
         assertThat(keysOps.isRunning).isTrue
     }
 
     @Test
-    fun `start starts the cryptoOpsClient`() {
+    fun `start starts the cryptoOpsClient and coordinator`() {
         keysOps.start()
 
         verify(cryptoOpsClient).start()
+        verify(coordinator).start()
     }
 
     @Test
-    fun `stop stops the cryptoOpsClient`() {
+    fun `stop stops the cryptoOpsClient and coordinator`() {
         keysOps.stop()
 
         verify(cryptoOpsClient).stop()
+        verify(coordinator).stop()
+    }
+
+    @Test
+    fun `UP event will set the status to up if not up`() {
+        whenever(coordinator.status).doReturn(LifecycleStatus.DOWN)
+
+        handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+        verify(coordinator).updateStatus(LifecycleStatus.UP, "Dependencies are UP")
+    }
+
+    @Test
+    fun `UP event will not set the status to up if already up`() {
+        whenever(coordinator.status).doReturn(LifecycleStatus.UP)
+
+        handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+        verify(coordinator, never()).updateStatus(any(), any())
+    }
+
+    @Test
+    fun `DOWN event will set the status to up if not DOWN`() {
+        whenever(coordinator.status).doReturn(LifecycleStatus.UP)
+
+        handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mock())
+
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Dependencies are DOWN")
+    }
+
+    @Test
+    fun `DOWN event will not set the status to down if already down`() {
+        whenever(coordinator.status).doReturn(LifecycleStatus.DOWN)
+
+        handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mock())
+
+        verify(coordinator, never()).updateStatus(any(), any())
     }
 }

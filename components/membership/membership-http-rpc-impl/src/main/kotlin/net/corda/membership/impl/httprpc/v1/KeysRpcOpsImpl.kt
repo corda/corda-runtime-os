@@ -5,7 +5,12 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.KeysRpcOps
+import net.corda.membership.httprpc.v1.types.response.KeyMetaData
+import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
@@ -18,16 +23,18 @@ class KeysRpcOpsImpl @Activate constructor(
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : KeysRpcOps, PluggableRPCOps<KeysRpcOps>, Lifecycle {
 
-    override fun listKeys(holdingIdentityId: String): Collection<String> {
+    override fun listKeys(holdingIdentityId: String): Map<String, KeyMetaData> {
         return cryptoOpsClient.lookup(
             holdingIdentityId,
             0,
             500,
             CryptoKeyOrderBy.NONE,
             emptyMap()
-        ).map { it.id }
+        ).associate { it.id to KeyMetaData(keyId = it.id, alias = it.alias, hsmCategory = it.category) }
     }
 
     override fun generateKeyPair(holdingIdentityId: String, alias: String, hsmCategory: String): String {
@@ -55,14 +62,42 @@ class KeysRpcOpsImpl @Activate constructor(
 
     override val protocolVersion = 1
 
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<KeysRpcOps>(
+        protocolVersion.toString()
+    )
+    private fun updateStatus(status: LifecycleStatus, reason: String) {
+        if (coordinator.status != status) {
+            coordinator.updateStatus(status, reason)
+        }
+    }
+
+    private fun activate(reason: String) {
+        updateStatus(LifecycleStatus.UP, reason)
+    }
+
+    private fun deactivate(reason: String) {
+        updateStatus(LifecycleStatus.DOWN, reason)
+    }
+
+    private val lifecycleHandler = RpcOpsLifecycleHandler(
+        ::activate,
+        ::deactivate,
+        setOf(
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+        )
+    )
+    private val coordinator = lifecycleCoordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)
+
     override val isRunning
-        get() = cryptoOpsClient.isRunning
+        get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
+        coordinator.start()
         cryptoOpsClient.start()
     }
 
     override fun stop() {
+        coordinator.stop()
         cryptoOpsClient.stop()
     }
 }

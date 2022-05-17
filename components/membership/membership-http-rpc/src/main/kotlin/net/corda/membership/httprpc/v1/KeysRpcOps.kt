@@ -6,6 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 
 @HttpRpcResource(
     name = "KeysRpcOps",
@@ -19,20 +20,20 @@ interface KeysRpcOps : RpcOps {
     /**
      * GET endpoint which returns the list of the cluster keys.
      *
-     * @return The list of the cluster keys IDs.
+     * @return A map from a cluster key ID to its metadata.
      */
     @HttpRpcGET(
         path = "cluster",
         description = "Get list of keys for cluster."
     )
-    fun listClusterKeys(): Collection<String> = listKeys(CLUSTER_ID)
+    fun listClusterKeys(): Map<String, KeyMetaData> = listKeys(CLUSTER_ID)
 
     /**
      * GET endpoint which returns the list of a holding identity keys.
      *
      * @param holdingIdentityId The ID of the holding identity.
      *
-     * @return The list of the holding identity keys IDs.
+     * @return A map from a holding identity key ID to its metadata.
      */
     @HttpRpcGET(
         path = "{holdingIdentityId}",
@@ -41,7 +42,7 @@ interface KeysRpcOps : RpcOps {
     fun listKeys(
         @HttpRpcPathParameter(description = "The Holding Identity ID.")
         holdingIdentityId: String,
-    ): Collection<String>
+    ): Map<String, KeyMetaData>
 
     /**
      * POST endpoint which Generate a key pair for the cluster.
