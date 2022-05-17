@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.httprpc.server.impl.apigen.processing.openapi
 
 import io.swagger.v3.oas.models.Components
