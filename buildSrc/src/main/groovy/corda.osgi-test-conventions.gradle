@@ -5,7 +5,8 @@ import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
-import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.*
+
+import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.GENERIC
 import com.gradle.enterprise.gradleplugin.test.ImportJUnitXmlReports
 
 plugins {
@@ -88,21 +89,21 @@ tasks.named('check') {
     dependsOn testOSGi
 }
 
-tasks.named('integrationTest') {
-    dependsOn testOSGi
-    enabled = false
-}
 
 //Gradle enterprise does not pick up OSGI tests by deafult as they they are of type TestOSGi rather than standard
 // Test task this ensures test results are captured
-tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
+def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
     dialect = GENERIC
     reports.from(fileTree("$testResultsDir/dbIntegrationTest").matching {
         include '**/TEST-*.xml'
     })
 }
 
-tasks.integrationTest.finalizedBy('importOSGiJUnitXml')
+tasks.named('integrationTest') {
+    finalizedBy importTask
+    dependsOn testOSGi
+    enabled = false
+}
 
 artifacts {
     archives testingBundle
