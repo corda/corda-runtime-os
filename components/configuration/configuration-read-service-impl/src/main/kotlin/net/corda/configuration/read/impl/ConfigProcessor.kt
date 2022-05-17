@@ -45,6 +45,25 @@ internal class ConfigProcessor(
         }
     }
 
+    override fun onNext(
+        newRecord: Record<String, Configuration>,
+        oldValue: Configuration?,
+        currentData: Map<String, Configuration>
+    ) {
+        val newConfig = newRecord.value?.toSmartConfig()
+        if (newConfig != null) {
+            val config = mergeConfigs(currentData)
+            val newConfigKey = newRecord.key
+            logger.info(
+                "Received configuration for key $newConfigKey: " +
+                    newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+            )
+            coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
+        } else {
+            logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }
+        }
+    }
+
     private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
         return if (currentData.isNotEmpty()) {
             val config = currentData.mapValues { config ->
@@ -63,25 +82,6 @@ internal class ConfigProcessor(
             config
         } else {
             mutableMapOf()
-        }
-    }
-
-    override fun onNext(
-        newRecord: Record<String, Configuration>,
-        oldValue: Configuration?,
-        currentData: Map<String, Configuration>
-    ) {
-        val newConfig = newRecord.value?.toSmartConfig()
-        if (newConfig != null) {
-            val config = mergeConfigs(currentData)
-            val newConfigKey = newRecord.key
-            logger.info(
-                "Received configuration for key $newConfigKey: " +
-                    newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-            )
-            coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
-        } else {
-            logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }
         }
     }
 

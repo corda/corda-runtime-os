@@ -49,7 +49,7 @@ class ChunkDbWriterFactoryImpl(
     }
 
     override fun create(
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
@@ -59,7 +59,7 @@ class ChunkDbWriterFactoryImpl(
 
         val subscription = createSubscription(
             uploadTopic,
-            config,
+            messagingConfig,
             entityManagerFactory,
             statusTopic,
             cpiInfoWriteService
@@ -75,28 +75,28 @@ class ChunkDbWriterFactoryImpl(
 
     /**
      * @param uploadTopic we read (subscribe) chunks from this topic
-     * @param config
+     * @param messagingConfig
      * @param entityManagerFactory we use this to write chunks to the database
      * @param statusTopic we write (publish) status changes to this topic
      */
     private fun createSubscription(
         uploadTopic: String,
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Subscription<RequestId, Chunk> {
         val persistence = DatabaseChunkPersistence(entityManagerFactory)
-        val publisher = createPublisher(config)
+        val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
-        val cpiCacheDir = tempPathProvider.getOrCreate(config, CPI_CACHE_DIR)
-        val cpiPartsDir = tempPathProvider.getOrCreate(config, CPI_PARTS_DIR)
+        val cpiCacheDir = tempPathProvider.getOrCreate(messagingConfig, CPI_CACHE_DIR)
+        val cpiPartsDir = tempPathProvider.getOrCreate(messagingConfig, CPI_PARTS_DIR)
         val validator =
             CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
-            subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, config, null)
+            subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null)
         } catch (e: Exception) {
              throw ChunkWriteException("Could not create subscription to process configuration update requests.", e)
         }
