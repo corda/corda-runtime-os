@@ -32,8 +32,6 @@ class FlowSessionManagerImpl @Activate constructor(
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
-            // TODO Throw an error if a non initiating flow is trying to create this session (shouldn't really get here for real, but for
-            //  this class, it's not valid)
             .setFlowName(checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty"))
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
@@ -44,9 +42,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(instant)
             .setSequenceNum(null)
-            .setInitiatingIdentity(checkpoint.flowKey.identity)
-            // TODO Need member lookup service to get the holding identity of the peer
-            .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), "flow-worker-dev"))
+            .setInitiatingIdentity(checkpoint.holdingIdentity)
+            .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
@@ -69,7 +66,7 @@ class FlowSessionManagerImpl @Activate constructor(
             val sessionState = checkpoint.getSessionState(sessionId)
                 ?: throw FlowProcessingException("No existing session when trying to send data message")
             val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-                sessionState, checkpoint.flowKey.identity
+                sessionState, checkpoint.holdingIdentity
             )
             sessionManager.processMessageToSend(
                 key = checkpoint.flowId,
@@ -99,7 +96,7 @@ class FlowSessionManagerImpl @Activate constructor(
             val sessionState = checkpoint.getSessionState(sessionId)
                 ?: throw FlowProcessingException("No existing session when trying to send close message")
             val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-                sessionState, checkpoint.flowKey.identity
+                sessionState, checkpoint.holdingIdentity
             )
             sessionManager.processMessageToSend(
                 key = checkpoint.flowId,
