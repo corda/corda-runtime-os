@@ -1,7 +1,7 @@
 import aQute.bnd.gradle.Bundle
 
 plugins {
-    id 'corda.common-publishing'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
