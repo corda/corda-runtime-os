@@ -8,6 +8,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_CONFIG
 import net.corda.schema.configuration.ConfigKeys.PLATFORM_CONFIG
 import net.corda.schema.configuration.ConfigKeys.POLICY_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SANDBOX_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SECRETS_CONFIG
@@ -37,7 +38,8 @@ class SchemaProviderImplTest {
             POLICY_CONFIG,
             RPC_CONFIG,
             SECRETS_CONFIG,
-            SANDBOX_CONFIG
+            SANDBOX_CONFIG,
+            RECONCILIATION_CONFIG
         )
         private val VERSIONS = listOf("1.0")
 
