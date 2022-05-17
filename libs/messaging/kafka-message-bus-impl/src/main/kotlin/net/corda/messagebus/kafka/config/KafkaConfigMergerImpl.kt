@@ -7,9 +7,10 @@ import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [BusConfigMerger::class])
@@ -24,14 +25,12 @@ class KafkaConfigMergerImpl : BusConfigMerger {
 
         var updatedMessagingConfig = messagingConfig?: getBaseKafkaMessagingConfig(bootConfig)
         val kafkaBootConfig = bootConfig.getConfig(BOOT_KAFKA).entrySet()
+        logger.debug("Looping through kafka boot config")
         kafkaBootConfig.forEach { entry ->
-            //todo make debug or remove
-            logger.info("Looping through kafka boot config")
-            logger.info("Entry: $entry")
-            logger.info("Entry key: ${entry.key}")
-            logger.info("Entry value: ${entry.value}")
+            logger.debug {"Entry key: ${entry.key}" }
             updatedMessagingConfig = updatedMessagingConfig.withValue(
-                MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON + entry.key, ConfigValueFactory.fromAnyRef(bootConfig.getString(entry.key))
+                "$KAFKA_PROPERTIES_COMMON.${entry.key}",
+                ConfigValueFactory.fromAnyRef(bootConfig.getString("$BOOT_KAFKA.${entry.key}"))
             )
         }
 

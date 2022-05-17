@@ -5,14 +5,13 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.BOOT_RECONCILIATION
 import net.corda.schema.configuration.BootConfig.BOOT_RPC
-import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-
 
 @Component(service = [ConfigMerger::class])
 class ConfigMergerImpl @Activate constructor(
@@ -43,8 +42,8 @@ class ConfigMergerImpl @Activate constructor(
     }
 
     override fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig {
-        //TODO - Boot params for db connection details currently passed in via BOOT_DB_PARAMS.*. Db config needs to be migrated to use the
-        // defined schema values. When that this done they can be merged properly from boot db config here.
+        //TODO - Boot params for db connection details currently passed in via BOOT_DB_PARAMS.*. Db config logic needs to be
+        // migrated to use the defined boot schema values. When that this done they can be merged properly from boot db config here.
         val updatedDbConfig = dbConfig?: SmartConfigImpl.empty()
         val bootDBParamsConfig = bootConfig.getConfigOrEmpty(BOOT_DB_PARAMS)
         return bootDBParamsConfig.withFallback(updatedDbConfig)
