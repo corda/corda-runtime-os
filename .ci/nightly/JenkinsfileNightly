@@ -7,7 +7,7 @@ cordaNightlyPipeline(
     createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
-    publishHelmChart: true,
+    publishHelmChart: false,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true
     )
