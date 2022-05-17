@@ -99,7 +99,7 @@ This should yield a result similar to this:
 ### Running the Flow Worker
 The flow worker can be run from the command line using:
 ```shell
-java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 --messagingParams bus.kafkaProperties.common.bootstrap.servers=localhost:9093 bus.busType=KAFKA
+java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 -mkafka.common.bootstrap.servers=localhost:9093 
 ```
 
 or it can be run/debugged direct from intelliJ:
