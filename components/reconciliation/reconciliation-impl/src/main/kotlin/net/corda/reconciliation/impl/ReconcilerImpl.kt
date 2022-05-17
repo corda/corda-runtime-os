@@ -108,7 +108,7 @@ class ReconcilerImpl<K : Any, V : Any>(
 
     // TODO Must add to the below DEBUG logging reporting to be reconciled records potentially more
     /**
-     * @throws [ReconciliationException] to notify an an error occurs at kafka or db [ReconcilerReader.getAllVersionedRecords].
+     * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
     @Suppress("ComplexMethod")
     @VisibleForTesting

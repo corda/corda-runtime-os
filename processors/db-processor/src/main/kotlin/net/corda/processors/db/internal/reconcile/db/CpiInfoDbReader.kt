@@ -181,12 +181,14 @@ class CpiInfoDbReader(
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.versionId,
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.license
                                         ),
-                                        // TODO below field to be populated from CpkCordappManifestEntity.attributes when added (https://r3-cev.atlassian.net/browse/CORE-4658)
+                                        // TODO below field to be populated from CpkCordappManifestEntity.attributes when added
+                                        //  (https://r3-cev.atlassian.net/browse/CORE-4658)
                                         emptyMap()
                                     ),
                                     type = Cpk.Type.parse(cpkMetadataEntity.cpkType ?: ""),
                                     fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
-                                    // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added (https://r3-cev.atlassian.net/browse/CORE-4658)
+                                    // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added
+                                    //  (https://r3-cev.atlassian.net/browse/CORE-4658)
                                     cordappCertificates = emptySet()
                                 )
                             )
