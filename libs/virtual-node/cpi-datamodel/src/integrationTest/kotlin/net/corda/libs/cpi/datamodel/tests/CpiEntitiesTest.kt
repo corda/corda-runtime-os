@@ -233,6 +233,8 @@ class CpiEntitiesIntegrationTest {
         ).use {
             it
                 .find(CpiMetadataEntity::class.java, CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash))
+                // TODO the following should be removed once we fix cpkDependencies to EAGER fetch
+                //  as per https://r3-cev.atlassian.net/browse/CORE-4829
                 .also { cpiMetadataEntity ->
                     cpiMetadataEntity.cpks.forEach { cpkMetadataEntity ->
                         cpkMetadataEntity.cpkDependencies.forEach {
