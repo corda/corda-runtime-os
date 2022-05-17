@@ -62,7 +62,12 @@ class ConfigRPCOpsConfigHandlerTests {
         }
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+            configHandler.onNewConfiguration(
+                setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config,
+                    BOOT_CONFIG to config,
+                    MESSAGING_CONFIG to config)
+            )
         }
     }
 
@@ -91,7 +96,10 @@ class ConfigRPCOpsConfigHandlerTests {
         val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
 
         val e = assertThrows<ConfigRPCOpsServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+            configHandler.onNewConfiguration(
+                setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            )
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -111,7 +119,10 @@ class ConfigRPCOpsConfigHandlerTests {
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+            configHandler.onNewConfiguration(
+                setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            )
         }
     }
 
