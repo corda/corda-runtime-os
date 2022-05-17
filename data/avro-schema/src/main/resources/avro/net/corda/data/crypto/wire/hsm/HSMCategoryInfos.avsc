@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "HSMCategoryInfos",
+  "namespace": "net.corda.data.crypto.wire.hsm",
+  "doc": "Defines information about category and HSM configuration relation.",
+  "fields": [
+    {
+      "name": "links",
+      "type": {
+        "type": "array",
+        "items": "HSMCategoryInfo"
+      },
+      "doc": "Collection of HSMCategoryInfo"
+    }
+  ]
+}

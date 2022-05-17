@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "HSMRegistrationResponse",
+  "namespace": "net.corda.data.crypto.wire.hsm.registration",
+  "doc": "Internal over-the-wire HSM registration response envelope.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoResponseContext",
+      "doc": "Response context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "response",
+      "type": [
+        "net.corda.data.crypto.wire.hsm.HSMInfo",
+        "net.corda.data.crypto.wire.CryptoNoContentValue"
+      ],
+      "doc": "Response's payload, depends on the requested operation."
+    }
+  ]
+}

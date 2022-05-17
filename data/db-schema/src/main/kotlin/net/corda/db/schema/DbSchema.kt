@@ -31,4 +31,8 @@ object DbSchema {
     const val CRYPTO = "CRYPTO"
     const val CRYPTO_WRAPPING_KEY_TABLE = "crypto_wrapping_key"
     const val CRYPTO_SIGNING_KEY_TABLE = "crypto_signing_key"
+    const val CRYPTO_HSM_CONFIG_TABLE = "crypto_hsm_config"
+    const val CRYPTO_HSM_CATEGORY_MAP_TABLE = "crypto_hsm_category_map"
+    const val CRYPTO_HSM_ASSOCIATION_TABLE = "crypto_hsm_association"
+    const val CRYPTO_HSM_CATEGORY_ASSOCIATION_TABLE = "crypto_hsm_category_association"
 }

@@ -5,7 +5,6 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 /**
  * Defines parameters to generate a key pair.
  *
- * @property tenantId The tenant id which the key pair is generated for.
  * @property signatureScheme The spec defining properties of the key pair being generated.
  * @property alias Optional, the key alias for the pair as defined by the tenant, as that value is not guarantied to be
  * unique, in case if the HSM is shared between several tenants, the implementation must translate it something unique,
@@ -21,8 +20,8 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
  * aliases for public and private keys, in such cases their names have to be derived from the single key pair alias.
  * It could be suffixes or whatever internal naming scheme is used.
  */
+@Suppress("LongParameterList")
 class KeyGenerationSpec(
-    val tenantId: String,
     val signatureScheme: SignatureScheme,
     val alias: String?,
     val masterKeyAlias: String?,

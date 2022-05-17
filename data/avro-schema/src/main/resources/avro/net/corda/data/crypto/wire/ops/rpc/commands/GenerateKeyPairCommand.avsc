@@ -7,7 +7,7 @@
     {
       "name": "category",
       "type": "string",
-      "doc": "The category, like TLS, LEDGER, FRESH_KEYS, etc., which needs assignment."
+      "doc": "The category, like TLS, LEDGER, etc., which needs assignment."
     },
     {
       "name": "alias",
@@ -21,6 +21,14 @@
         "string"
       ],
       "doc": "If provided then the key will be associated with that id."
+    },
+    {
+      "name": "schemeCodeName",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "The key's scheme describing which type of the key to generate."
     },
     {
       "name": "context",

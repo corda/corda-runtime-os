@@ -114,15 +114,11 @@ class Schemas {
      */
     class Crypto {
         companion object {
-            const val HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.registration.hsm"
+            const val RPC_HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.hsm.rpc.registration"
+            const val RPC_HSM_CONFIGURATION_MESSAGE_TOPIC = "crypto.hsm.rpc.configuration"
+            const val HSM_CONFIGURATION_LABEL_TOPIC = "crypto.hsm.label"
             const val RPC_OPS_MESSAGE_TOPIC = "crypto.ops.rpc"
             const val FLOW_OPS_MESSAGE_TOPIC = "crypto.ops.flow"
-            const val HSM_CONFIG_TOPIC = "crypto.config.hsm"
-            const val HSM_CONFIG_LABEL_TOPIC = "crypto.config.hsm.label"
-            const val MEMBER_CONFIG_TOPIC = "crypto.config.member"
-            const val SIGNING_KEY_PERSISTENCE_TOPIC = "crypto.key.info"
-            const val SOFT_HSM_PERSISTENCE_TOPIC = "crypto.key.soft"
-            const val EVENT_TOPIC = "crypto.event"
         }
     }
 

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "HSMQuery",
+  "namespace": "net.corda.data.crypto.wire.hsm.configuration.queries",
+  "doc": "Request to get all configured HSMs.",
+  "fields": [
+    {
+      "name": "filter",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "Filter key-values such as serviceName."
+    }
+  ]
+}

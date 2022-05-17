@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "LinkHSMCategoriesCommand",
+  "namespace": "net.corda.data.crypto.wire.hsm.configuration.commands",
+  "doc": "Request to replace or add categories mapping to an HSM configuration.",
+  "fields": [
+    {
+      "name": "configId",
+      "type": "string",
+      "doc": "The HSM's configuration id"
+    },
+    {
+      "name": "links",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.crypto.wire.hsm.HSMCategoryInfo"
+      },
+      "doc": "Collection of HSMCategoryInfo"
+    }
+  ]
+}

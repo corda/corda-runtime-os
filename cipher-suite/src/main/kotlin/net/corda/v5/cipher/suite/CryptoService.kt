@@ -48,7 +48,8 @@ interface CryptoService {
      * Generate and optionally store an asymmetric key pair.
      *
      * @param spec parameters to generate key pair.
-     * @param context the optional key/value operation context.
+     * @param context the optional key/value operation context. The context will have at least two variables defined -
+     * 'tenantId' and 'category'.
      *
      * Returns information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
      *
@@ -66,7 +67,8 @@ interface CryptoService {
      *
      * @param spec (either [SigningAliasSpec] or [SigningWrappedSpec]) to be used for signing.
      * @param data the data to be signed.
-     * @param context the optional key/value operation context.
+     * @param context the optional key/value operation context. The context will have at least one variable defined -
+     * 'tenantId'.
      *
      * @throws [CryptoServiceBadRequestException] if the private key does not exist as defined in the [key],
      * the key scheme is not supported,  or the [data] is empty array.

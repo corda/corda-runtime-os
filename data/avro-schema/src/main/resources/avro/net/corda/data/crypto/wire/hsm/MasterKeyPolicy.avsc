@@ -1,0 +1,11 @@
+{
+  "type": "enum",
+  "name": "MasterKeyPolicy",
+  "namespace": "net.corda.data.crypto.wire.hsm",
+  "doc": "SHARED - all tenants for that instance will use the same wrapping key, NEW - each tenant will get auto generated wrapping key, NONE - no action related to wrapping key generation.",
+  "symbols": [
+    "NONE",
+    "SHARED",
+    "NEW"
+  ]
+}

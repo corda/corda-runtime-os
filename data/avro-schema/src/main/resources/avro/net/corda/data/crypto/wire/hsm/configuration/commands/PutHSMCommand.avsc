@@ -1,13 +1,13 @@
 {
   "type": "record",
-  "name": "HSMConfig",
-  "namespace": "net.corda.data.crypto.config",
-  "doc": "Defines complete persistent record for the HSM configuration.",
+  "name": "PutHSMCommand",
+  "namespace": "net.corda.data.crypto.wire.hsm.configuration.commands",
+  "doc": "Request to add new or update existing HSM configuration. If the info.id is empty then it's an add operation",
   "fields": [
     {
       "name": "info",
-      "type": "HSMInfo",
-      "doc": "Common configuration parameters."
+      "type": "net.corda.data.crypto.wire.hsm.HSMInfo",
+      "doc": "The HSM configuration"
     },
     {
       "name": "serviceConfig",

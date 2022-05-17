@@ -7,7 +7,7 @@
     {
       "name": "category",
       "type": "string",
-      "doc": "Category like TLS, LEDGER, FRESH_KEY, etc."
+      "doc": "Category like TLS, LEDGER, etc."
     }
   ]
 }

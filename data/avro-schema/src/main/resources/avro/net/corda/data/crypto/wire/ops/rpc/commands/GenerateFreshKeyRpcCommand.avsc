@@ -5,12 +5,25 @@
   "doc": "Request to generate new wrapped key (fresh key) pair.",
   "fields": [
     {
+      "name": "category",
+      "type": "string",
+      "doc": "The category, like CI, ACCOUNTS, etc., which needs assignment."
+    },
+    {
       "name": "externalId",
       "type": [
         "null",
         "string"
       ],
       "doc": "If provided then the key will be associated with that id."
+    },
+    {
+      "name": "schemeCodeName",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "The key's scheme describing which type of the key to generate."
     },
     {
       "name": "context",
