@@ -94,7 +94,7 @@ tasks.named('check') {
 // Test task this ensures test results are captured
 def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
     dialect = GENERIC
-    reports.from(fileTree("$testResultsDir/dbIntegrationTest").matching {
+    reports.from(fileTree("$testResultsDir/integrationTest").matching {
         include '**/TEST-*.xml'
     })
 }
