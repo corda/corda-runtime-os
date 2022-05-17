@@ -1,5 +1,6 @@
 package net.corda.session.mapper.service
 
+import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -16,7 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -32,7 +33,6 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
@@ -103,7 +103,7 @@ class FlowMapperService @Activate constructor(
      * Recreate the Flow Mapper service in response to new config [event]
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
-        val messagingConfig = event.config.toMessagingConfig()
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
         scheduledTaskState?.close()
         stateAndEventSub?.close()

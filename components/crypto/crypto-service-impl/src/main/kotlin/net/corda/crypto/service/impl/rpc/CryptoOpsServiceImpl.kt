@@ -2,18 +2,19 @@ package net.corda.crypto.service.impl.rpc
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.SigningServiceFactory
-import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,7 +52,7 @@ class CryptoOpsServiceImpl @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC)
-        val messagingConfig = event.config.toMessagingConfig()
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = CryptoOpsRpcProcessor(signingFactory)
         return ActiveImpl(
             subscriptionFactory.createRPCSubscription(

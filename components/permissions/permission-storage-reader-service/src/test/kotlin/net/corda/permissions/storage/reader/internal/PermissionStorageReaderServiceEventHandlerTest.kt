@@ -1,13 +1,17 @@
 package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -15,30 +19,26 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_PASS
 import net.corda.schema.configuration.ConfigKeys.DB_USER
 import net.corda.schema.configuration.ConfigKeys.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import javax.persistence.EntityManagerFactory
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.permissions.management.cache.PermissionManagementCacheService
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.mockito.kotlin.eq
 
 class PermissionStorageReaderServiceEventHandlerTest {
 
@@ -85,18 +85,19 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
-    private val reconciliationConfigMap = mapOf("$RECONCILIATION_CONFIG.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS" to 12345L)
+    private val reconciliationConfigMap = mapOf(
+        ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to 12345L,
+        ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS to 12345L)
 
-    private val config = configFactory.create(
-        ConfigFactory.empty()
-            .withValue(
-                DB_CONFIG,
-                ConfigValueFactory.fromMap(mapOf(JDBC_URL to "dbUrl", DB_USER to "dbUser", DB_PASS to "dbPass"))
-            )
-    ).withFallback(ConfigFactory.parseMap(reconciliationConfigMap))
+    private val dbConfig = configFactory.create(
+        ConfigFactory.parseMap(mapOf(JDBC_URL to "dbUrl", DB_USER to "dbUser", DB_PASS to "dbPass"))
+    )
 
+    private val reconilationConfig: SmartConfig = configFactory.create(ConfigFactory.parseMap(reconciliationConfigMap))
     private val bootstrapConfig =
-        mapOf(BOOT_CONFIG to config, MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
+        mapOf(RECONCILIATION_CONFIG to reconilationConfig,
+            DB_CONFIG to dbConfig,
+            MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
 
     @Test
     fun `processing a START event follows and starts dependencies`() {

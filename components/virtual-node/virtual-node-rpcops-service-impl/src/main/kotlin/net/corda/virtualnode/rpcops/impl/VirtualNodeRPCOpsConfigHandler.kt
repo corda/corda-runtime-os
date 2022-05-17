@@ -8,7 +8,6 @@ import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
 

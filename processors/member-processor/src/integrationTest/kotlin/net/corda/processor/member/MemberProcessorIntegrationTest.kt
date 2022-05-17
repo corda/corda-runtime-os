@@ -1,5 +1,6 @@
 package net.corda.processor.member
 
+import java.time.Duration
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.SoftCryptoServiceConfig
@@ -54,7 +55,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWai
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
@@ -69,7 +70,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.time.Duration
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -166,7 +166,7 @@ class MemberProcessorIntegrationTest {
             // Set basic bootstrap config
             bootConf = makeBootstrapConfig(
                 mapOf(
-                    ConfigKeys.DB_CONFIG to clusterDb.config
+                    BOOT_DB_PARAMS to clusterDb.config
                 )
             )
             cryptoProcessor.start(bootConf)

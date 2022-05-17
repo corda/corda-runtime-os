@@ -16,7 +16,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -142,12 +142,10 @@ class PermissionStorageReaderServiceEventHandler(
 
     @VisibleForTesting
     internal fun onConfigurationUpdated(config: Map<String, SmartConfig>) {
-        val messagingConfig = config.toMessagingConfig()
-        val reconciliationConfig = config[RECONCILIATION_CONFIG]?.withFallback(messagingConfig) ?: messagingConfig
+        val messagingConfig = config.getConfig(MESSAGING_CONFIG)
+        val reconciliationConfig = config.getConfig(RECONCILIATION_CONFIG)
 
-        reconciliationTaskIntervalMs = reconciliationConfig
-            .getConfig(RECONCILIATION_CONFIG)
-            .getLong(RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS)
+        reconciliationTaskIntervalMs = reconciliationConfig.getLong(RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS)
 
         log.info("Permission summary reconciliation interval set to $reconciliationTaskIntervalMs ms.")
 

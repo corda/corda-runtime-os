@@ -1,5 +1,10 @@
 package net.corda.configuration.write.impl.tests.writer
 
+import java.time.Clock
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import javax.persistence.RollbackException
 import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.configuration.write.impl.writer.ConfigWriterProcessor
 import net.corda.configuration.write.impl.writer.ConfigurationManagementResponseFuture
@@ -25,10 +30,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Clock
-import java.time.Instant
-import java.util.concurrent.*
-import javax.persistence.RollbackException
 
 /** Tests of [ConfigWriterProcessor]. */
 class ConfigWriterProcessorTests {
@@ -95,7 +96,7 @@ class ConfigWriterProcessorTests {
         val expectedRecord = Record(
             CONFIG_TOPIC,
             configMgmtReq.section,
-            Configuration(configMgmtReq.config, configMgmtReq.version.toString())
+            Configuration(configMgmtReq.config, configMgmtReq.version.toString(), configMgmtReq.schemaVersion)
         )
 
         val publisher = getPublisher()
@@ -148,7 +149,7 @@ class ConfigWriterProcessorTests {
     @Test
     fun `sends RPC failure response if fails to publish configuration to Kafka`() {
         val expectedRecord = configMgmtReq.run {
-            Record(CONFIG_TOPIC, section, Configuration(config, version.toString()))
+            Record(CONFIG_TOPIC, section, Configuration(config, version.toString(), schemaVersion))
         }
         val expectedEnvelope = ExceptionEnvelope(
             ExecutionException::class.java.name,

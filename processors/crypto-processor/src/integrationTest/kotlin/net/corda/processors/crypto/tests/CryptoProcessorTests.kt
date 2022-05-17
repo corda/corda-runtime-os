@@ -2,6 +2,12 @@ package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.security.PublicKey
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.time.Duration
+import java.util.*
+import java.util.stream.Stream
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -10,6 +16,7 @@ import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -44,7 +51,8 @@ import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.processors.crypto.tests.infra.stopAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
@@ -67,12 +75,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.time.Duration
-import java.util.*
-import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -140,6 +142,8 @@ class CryptoProcessorTests {
             schemaName = "vnode_crypto"
         )
 
+        private val schemaVersion = ConfigurationSchemaVersion(1,0)
+
         @JvmStatic
         @BeforeAll
         fun setup() {
@@ -185,7 +189,8 @@ class CryptoProcessorTests {
                 SmartConfigFactory.create(ConfigFactory.empty())
                     .create(
                         ConfigFactory.empty()
-                            .withValue(MessagingConfig.Boot.INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+                            .withValue(BootConfig.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                            .withValue(BootConfig.INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
                             .withValue(MessagingConfig.Bus.BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
                     )
             )
@@ -206,7 +211,7 @@ class CryptoProcessorTests {
         private fun startDependencies() {
             val boostrapConfig = makeBootstrapConfig(
                 BOOT_CONFIGURATION, mapOf(
-                    ConfigKeys.DB_CONFIG to clusterDb.config
+                    BOOT_DB_PARAMS to clusterDb.config
                 )
             )
             opsClient.startAndWait()
@@ -229,12 +234,12 @@ class CryptoProcessorTests {
                         Record(
                             CONFIG_TOPIC,
                             MESSAGING_CONFIG,
-                            Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
+                            Configuration(MESSAGING_CONFIGURATION_VALUE, "1", schemaVersion)
                         ),
                         Record(
                             CONFIG_TOPIC,
                             CRYPTO_CONFIG,
-                            Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
+                            Configuration(CRYPTO_CONFIGURATION_VALUE, "1", schemaVersion)
                         )
                     )
                 )

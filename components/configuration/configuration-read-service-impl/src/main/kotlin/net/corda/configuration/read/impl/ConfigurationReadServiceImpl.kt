@@ -3,6 +3,7 @@ package net.corda.configuration.read.impl
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -25,10 +26,12 @@ class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger
 ) : ConfigurationReadService {
 
-    private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory)
+    private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger)
 
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator<ConfigurationReadService>(eventHandler)

@@ -1,8 +1,10 @@
 package net.corda.membership.impl.read
 
 import com.typesafe.config.ConfigFactory
+import kotlin.reflect.KFunction
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
@@ -13,8 +15,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
@@ -31,7 +33,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipGroupReaderProviderIntegrationTest {
@@ -83,6 +84,8 @@ class MembershipGroupReaderProviderIntegrationTest {
         get() = listOf(
             configurationReadService
         )
+    private val schemaVersion = ConfigurationSchemaVersion(1,0)
+
 
     @BeforeEach
     fun setUp() {
@@ -100,7 +103,7 @@ class MembershipGroupReaderProviderIntegrationTest {
                     Record(
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(messagingConf, "1")
+                        Configuration(messagingConf, "1", schemaVersion)
                     )
                 )
             )[0]
@@ -218,7 +221,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     }
 
     private fun Publisher.publishMessagingConf() =
-        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, "1"))
+        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, "1", schemaVersion))
 
     private fun <K : Any, V : Any> Publisher.publishRecord(topic: String, key: K, value: V) =
         publish(listOf(Record(topic, key, value)))

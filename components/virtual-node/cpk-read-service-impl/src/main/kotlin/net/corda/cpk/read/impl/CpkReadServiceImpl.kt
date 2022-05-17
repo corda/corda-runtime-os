@@ -1,5 +1,6 @@
 package net.corda.cpk.read.impl
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
@@ -18,12 +19,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.libs.packaging.Cpk
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.WorkspacePathProvider
@@ -34,7 +36,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
 class CpkReadServiceImpl (
@@ -119,7 +120,7 @@ class CpkReadServiceImpl (
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Configuring CPK Read Service")
-        createCpkChunksKafkaReader(event.config.toMessagingConfig())
+        createCpkChunksKafkaReader(event.config.getConfig(MESSAGING_CONFIG))
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 

@@ -8,10 +8,11 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -72,7 +73,7 @@ class HSMRegistrationClientComponent @Activate constructor(
     ) : Impl {
         private val publisher: Publisher = publisherFactory.createPublisher(
             PublisherConfig(CLIENT_ID),
-            event.config.toMessagingConfig()
+            event.config.getConfig(MESSAGING_CONFIG)
         )
         override val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(publisher)
         override fun close() {

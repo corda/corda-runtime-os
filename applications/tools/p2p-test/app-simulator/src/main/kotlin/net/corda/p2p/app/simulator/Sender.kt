@@ -28,10 +28,7 @@ import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
-import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,

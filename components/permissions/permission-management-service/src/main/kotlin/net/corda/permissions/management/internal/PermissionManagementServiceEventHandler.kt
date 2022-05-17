@@ -18,7 +18,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -104,7 +104,7 @@ internal class PermissionManagementServiceEventHandler(
             }
             is ConfigChangedEvent -> {
                 log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
-                val messagingConfig = event.config.toMessagingConfig()
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
                 val rpcConfig = event.config[RPC_CONFIG]!!
                 createPermissionManager(rpcConfig)

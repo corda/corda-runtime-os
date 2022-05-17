@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -69,7 +69,7 @@ class ConfigRPCOpsConfigHandlerTests {
     fun `creates RPC sender if RPC config is provided`() {
         val configRPCOps = mock<ConfigRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
+            whenever(hasPath(KAFKA_BOOTSTRAP_SERVERS)).thenReturn(true)
             whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)

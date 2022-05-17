@@ -12,9 +12,8 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -50,7 +49,7 @@ class CryptoWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BootConfig.BOOT_CRYPTO, params.cryptoParams)
+        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
         val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf
             (databaseConfig, cryptoConfig))
 

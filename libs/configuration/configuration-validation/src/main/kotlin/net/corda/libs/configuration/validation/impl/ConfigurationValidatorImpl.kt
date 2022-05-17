@@ -9,6 +9,7 @@ import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersion
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
+import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
@@ -17,7 +18,6 @@ import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
-import java.io.InputStream
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -61,6 +61,32 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         }
 
         return config.factory.create(ConfigFactory.parseString(jsonNode.toString()))
+    }
+
+    override fun validateConfig(key: String, config: SmartConfig, schemaInput: InputStream) {
+        logger.debug {
+            "Configuration to validate: ${
+                config.toSafeConfig().root().render(ConfigRenderOptions.concise())
+            }"
+        }
+        val jsonNode = config.toJsonNode()
+        val schema = try {
+             getSchema(schemaInput, false)
+        } catch (e: Exception) {
+            val message = "Could not retrieve the schema for key $key: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
+        }
+        val errors = schema.validate(jsonNode)
+        if (errors.isNotEmpty()) {
+            val errorSet = errors.map { it.message }.toSet()
+            logger.error(
+                "Configuration validation failed for config key $key. Errors: $errorSet."
+            )
+            throw ConfigurationValidationException(key, null, config, errorSet).also {
+                logger.debug { it.fullErrorDetail() }
+            }
+        }
     }
 
     private fun getSchema(schemaInput: InputStream, applyDefaults: Boolean): JsonSchema {

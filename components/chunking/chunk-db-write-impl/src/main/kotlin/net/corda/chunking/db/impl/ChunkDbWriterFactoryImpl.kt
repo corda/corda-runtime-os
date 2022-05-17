@@ -1,5 +1,6 @@
 package net.corda.chunking.db.impl
 
+import javax.persistence.EntityManagerFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
@@ -22,7 +23,6 @@ import net.corda.utilities.TempPathProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import javax.persistence.EntityManagerFactory
 
 @Suppress("UNUSED")
 @Component(service = [ChunkDbWriterFactory::class])

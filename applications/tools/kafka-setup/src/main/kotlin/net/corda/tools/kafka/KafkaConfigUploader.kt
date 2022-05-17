@@ -11,6 +11,7 @@ import java.util.*
 import kotlin.random.Random
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -30,7 +31,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.util.Properties
 
 
 @Suppress("SpreadOperator")
@@ -117,7 +117,9 @@ class KafkaConfigUploader @Activate constructor(
         return try {
             val recordKey = "$packageKey.$componentKey"
             val version = packageConfig.getString("$componentKey.componentVersion")
-            val content = Configuration(packageConfig.getConfig(componentKey).root().render(ConfigRenderOptions.concise()), version)
+            val content = Configuration(packageConfig.getConfig(componentKey).root().render(ConfigRenderOptions.concise()), version,
+                ConfigurationSchemaVersion(1, 0)
+            )
             Record(CONFIG_TOPIC, recordKey, content)
         } catch (e: ConfigException) {
             logger.warn("Component $componentKey has no defined componentVersion. Discarding component configuration")

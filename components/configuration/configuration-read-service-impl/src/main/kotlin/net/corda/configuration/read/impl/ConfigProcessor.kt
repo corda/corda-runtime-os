@@ -5,17 +5,23 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 internal class ConfigProcessor(
     private val coordinator: LifecycleCoordinator,
     private val smartConfigFactory: SmartConfigFactory,
-    private val bootConfig: SmartConfig
+    private val bootConfig: SmartConfig,
+    private val configMerger: ConfigMerger
 ) : CompactedProcessor<String, Configuration> {
 
     private companion object {
@@ -37,13 +43,11 @@ internal class ConfigProcessor(
                     )
                 }
             }.toMutableMap()
-            // This is a tactical change (CORE-3849) to ensure that the messaging config always has a default (i.e. the boot config).
-            // All config keys should really have some default, but currently there's no way of ensuring this for other
-            // keys (and there's not much config for other keys anyway). Longer term we may want to ensure that defaults
-            // are always pushed to the config topic, so the workers know to wait until the first config reconciliation
-            // has happened. Should be addressed properly under CORE-3972
-            val messagingConfig = config[MESSAGING_CONFIG]?.withFallback(bootConfig) ?: bootConfig
-            config[MESSAGING_CONFIG] = messagingConfig
+            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+            config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
+            config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
+            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
             coordinator.postEvent(NewConfigReceived(config))
         } else {
             logger.debug { "No initial data to read from configuration topic" }

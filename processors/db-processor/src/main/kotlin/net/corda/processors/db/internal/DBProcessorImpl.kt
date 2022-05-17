@@ -28,8 +28,8 @@ import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -141,7 +141,7 @@ class DBProcessorImpl @Activate constructor(
                 instanceId = event.config.getInt(INSTANCE_ID)
 
                 log.info("Bootstrapping DB connection Manager")
-                dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))
+                dbConnectionManager.bootstrap(event.config.getConfig(BOOT_DB_PARAMS))
             }
             is StopEvent -> {
                 dependentComponents.stopAll()

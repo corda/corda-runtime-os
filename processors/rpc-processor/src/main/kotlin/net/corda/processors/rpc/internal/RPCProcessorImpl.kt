@@ -9,6 +9,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.flow.rpcops.FlowRPCOpsService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -61,7 +62,9 @@ class RPCProcessorImpl @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger
 ) : RPCProcessor {
 
     private companion object {
@@ -108,7 +111,7 @@ class RPCProcessorImpl @Activate constructor(
 
                 //this config code needs to be removed in the future. currently required by the e2e tests
                 val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR)
-                val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
+                val publisher = publisherFactory.createPublisher(publisherConfig, configMerger.getMessagingConfig(event.config, null))
                 publisher.start()
                 publisher.use {
                     val bootstrapServersConfig = if (event.config.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {

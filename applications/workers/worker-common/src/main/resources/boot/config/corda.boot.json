@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "resource:boot/config/corda.boot",
+  "title": "Corda Boot Configuration Schema",
+  "description": "Configuration schema for the boot config. This configures stores the values the worker is bootstrapped with.",
+  "type": "object",
+  "properties": {
+    "instanceId": {
+      "description": "Unique ID for this worker.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "topicPrefix": {
+      "description": "Topic prefix to apply when connecting to topics.",
+      "type": "string",
+      "default": ""
+    },
+    "kafka": {
+      "description": "Configuration options specific to kafka backend.",
+      "properties": {
+        "common": {
+          "description": "Kafka properties that are common between consumers and producers, e.g. connection details, security settings.",
+          "type": "object"
+        }
+      }
+    },
+    "rpc": {
+      "description": "Configuration options specific to rpc worker.",
+      "type": "object",
+      "properties": {}
+    },
+    "crypto": {
+      "description": "Configuration options specific to rpc worker.",
+      "type": "object",
+      "properties": {}
+    },
+    "reconciliation": {
+      "description": "Configuration options specific to reconciliation.",
+      "type": "object",
+      "properties": {
+        "permissionSummaryIntervalMs": {
+          "description": "The JDBC database URL",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cpkWriteIntervalMs": {
+          "description": "Cluster admin username to connect to the database with.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "db": {
+      "description": "Configuration options related to database.",
+      "properties": {
+        "properties": {
+          "params": {
+            "description": "Additional db params the worker is bootstrapped with.",
+            "type": "object"
+          }
+        },
+        "jdbcUrl": {
+          "description": "The JDBC database URL",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "user": {
+          "description": "Cluster admin username to connect to the database with.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pass": {
+          "description": "Cluster admin password to connect to the database with.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "dir": {
+      "description": "Configuration for file system directories.",
+      "properties": {
+        "workspace": {
+          "description": "Local workspace directory",
+          "type": ["string"]
+        },
+        "tmp": {
+          "description": "Tmp directory",
+          "type": ["string"]
+        },
+        "pass": {
+          "description": "Cluster admin password to connect to the database with.",
+          "type": ["string"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

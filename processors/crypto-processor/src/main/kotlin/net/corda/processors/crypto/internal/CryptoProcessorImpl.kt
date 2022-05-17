@@ -12,10 +12,12 @@ import net.corda.crypto.service.HSMRegistration
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,8 +32,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -67,7 +69,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger
 ) : CryptoProcessor {
     private companion object {
         const val CRYPTO_PROCESSOR_CLIENT_ID = "crypto.processor"
@@ -130,14 +134,14 @@ class CryptoProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
 
                 log.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
-                dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))
+                dbConnectionManager.bootstrap(event.config.getConfig(BOOT_DB_PARAMS))
 
                 val publisherConfig = PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID)
-                val publisher = publisherFactory.createPublisher(publisherConfig, event.config)
+                val publisher = publisherFactory.createPublisher(publisherConfig, configMerger.getMessagingConfig(event.config, null))
                 publisher.start()
                 publisher.use {
                     val configValue = "{}"
-                    val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1"))
+                    val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1", ConfigurationSchemaVersion(1, 0)))
                     publisher.publish(listOf(record)).forEach { future -> future.get() }
                 }
             }

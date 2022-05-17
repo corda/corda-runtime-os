@@ -127,8 +127,7 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mbus.kafkaProperties.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
-- -mbus.busType=KAFKA
+- -mkafka.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
 - --topicPrefix={{ .Values.kafka.topicPrefix }}
 {{- end }}
 
