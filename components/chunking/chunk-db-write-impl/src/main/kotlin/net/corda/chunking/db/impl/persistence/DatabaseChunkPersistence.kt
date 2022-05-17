@@ -266,15 +266,15 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity(
-            cpiMetadata.id.name,
-            cpiMetadata.id.version,
-            cpiMetadata.id.signerSummaryHash?.toString() ?: "",
-            cpiFileName,
-            checksum.toString(),
-            cpi.metadata.groupPolicy!!,
-            groupId,
-            requestId,
-            false
+            name = cpiMetadata.id.name,
+            version = cpiMetadata.id.version,
+            signerSummaryHash = cpiMetadata.id.signerSummaryHash?.toString() ?: "",
+            fileName = cpiFileName,
+            fileChecksum = checksum.toString(),
+            groupPolicy = cpi.metadata.groupPolicy!!,
+            groupId = groupId,
+            fileUploadRequestId = requestId,
+            isDeleted = false
         )
     }
 }

@@ -92,7 +92,8 @@ data class CpkMetadataEntity(
     val cpkLibraries: List<String>
     // cordappCertificates TODO To be added as per https://r3-cev.atlassian.net/browse/CORE-4658
 ) {
-    // If set to FetchType.EAGER below we then getting a stack overflow exception
+    // TODO We need to set the below fetch to be FetchType.EAGER (Currently we are getting a `StackOverflowException`
+    //  that gets fixed with LAZY). as per https://r3-cev.atlassian.net/browse/CORE-4829
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "cpkMetadataEntity")
     val cpkDependencies: Set<CpkDependencyEntity> = emptySet()
     @OneToOne(fetch = FetchType.EAGER, mappedBy = "cpkMetadataEntity")
