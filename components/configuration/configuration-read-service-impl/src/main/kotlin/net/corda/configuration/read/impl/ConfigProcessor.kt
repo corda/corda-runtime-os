@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -35,19 +36,7 @@ internal class ConfigProcessor(
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         if (currentData.isNotEmpty()) {
-            val config = currentData.mapValues { config ->
-                config.value.toSmartConfig().also { smartConfig ->
-                    logger.info(
-                        "Received configuration for key ${config.key}: " +
-                            smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
-                    )
-                }
-            }.toMutableMap()
-            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
-            config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
-            config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
-            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
-            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            val config = mergeConfigs(currentData)
             coordinator.postEvent(NewConfigReceived(config))
         } else {
             logger.debug { "No initial data to read from configuration topic" }
@@ -56,23 +45,41 @@ internal class ConfigProcessor(
         }
     }
 
+    private fun mergeConfigs(currentData: Map<String, Configuration>): MutableMap<String, SmartConfig> {
+        return if (currentData.isNotEmpty()) {
+            val config = currentData.mapValues { config ->
+                config.value.toSmartConfig().also { smartConfig ->
+                    logger.info(
+                        "Received configuration for key ${config.key}: " +
+                                smartConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+                    )
+                }
+            }.toMutableMap()
+            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+            config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
+            config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
+            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            config
+        } else {
+            mutableMapOf()
+        }
+    }
+
     override fun onNext(
         newRecord: Record<String, Configuration>,
         oldValue: Configuration?,
         currentData: Map<String, Configuration>
     ) {
-        val config = newRecord.value?.toSmartConfig()
-        if (config != null) {
+        val newConfig = newRecord.value?.toSmartConfig()
+        if (newConfig != null) {
+            val config = mergeConfigs(currentData)
+            val newConfigKey = newRecord.key
             logger.info(
-                "Received configuration for key ${newRecord.key}: " +
-                    config.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
+                "Received configuration for key $newConfigKey: " +
+                    newConfig.toSafeConfig().root().render(ConfigRenderOptions.concise().setFormatted(true))
             )
-            val configToPush = if (newRecord.key == MESSAGING_CONFIG) {
-                config.withFallback(bootConfig)
-            } else {
-                config
-            }
-            coordinator.postEvent(NewConfigReceived(mapOf(newRecord.key to configToPush)))
+            coordinator.postEvent(NewConfigReceived(mapOf(newConfigKey to config.getConfig(newConfigKey))))
         } else {
             logger.debug { "Received config change event on key ${newRecord.key} with no configuration" }
         }
