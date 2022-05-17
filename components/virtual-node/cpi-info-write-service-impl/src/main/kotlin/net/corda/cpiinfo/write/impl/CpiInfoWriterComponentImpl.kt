@@ -6,8 +6,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -47,7 +47,9 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
-    private val coordinator = coordinatorFactory.createCoordinator<CpiInfoWriteService>(eventHandler)
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
+
+    private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, eventHandler)
 
     private var publisher: Publisher? = null
 
