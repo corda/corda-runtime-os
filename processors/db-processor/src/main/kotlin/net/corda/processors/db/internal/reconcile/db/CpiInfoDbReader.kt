@@ -211,12 +211,12 @@ class CpiInfoDbReader(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("${CpiInfoDbReader::class.java.name} starting")
+        logger.info("Starting")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("${CpiInfoDbReader::class.java.name} stopping")
+        logger.info("Stopping")
         coordinator.stop()
         closeResources()
     }

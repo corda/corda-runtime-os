@@ -29,7 +29,6 @@ dependencies {
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:db:db-orm')
 
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:reconciliation:reconciliation")
 
     implementation 'javax.persistence:javax.persistence-api'
