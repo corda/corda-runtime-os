@@ -1,18 +1,18 @@
 package net.corda.crypto.persistence.db.impl.soft
 
-import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.persistence.SoftCryptoKeyCache
-import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
 import net.corda.crypto.core.aes.WrappingKey
+import net.corda.crypto.impl.config.softPersistence
+import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
@@ -20,7 +20,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [SoftCryptoKeyCacheProvider::class])
 class SoftCryptoKeyCacheProviderImpl @Activate constructor(
@@ -48,7 +47,7 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     )
 ), SoftCryptoKeyCacheProvider {
     interface Impl: AutoCloseable {
-        fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache
+        fun getInstance(): SoftCryptoKeyCache
     }
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
@@ -56,11 +55,11 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
         ActiveImpl(event, dbConnectionManager, schemeMetadata)
 
-    override fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache =
-        impl.getInstance(passphrase, salt)
+    override fun getInstance(): SoftCryptoKeyCache =
+        impl.getInstance()
 
     class InactiveImpl : Impl {
-        override fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache =
+        override fun getInstance(): SoftCryptoKeyCache =
             throw IllegalStateException("The component is in illegal state.")
 
         override fun close() = Unit
@@ -74,31 +73,29 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
         private val config: SmartConfig
 
         init {
-            config = event.config[ConfigKeys.CRYPTO_CONFIG] ?:
-                    SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
+            config = event.config.toCryptoConfig()
         }
 
-        private val instances = ConcurrentHashMap<String, SoftCryptoKeyCache>()
-
-        override fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache =
-            instances.computeIfAbsent(passphrase + salt) {
-                SoftCryptoKeyCacheImpl(
-                    config = config,
-                    entityManagerFactory = dbConnectionOps.getOrCreateEntityManagerFactory(
-                        CordaDb.Crypto,
-                        DbPrivilege.DML
-                    ),
-                    masterKey = WrappingKey.derive(
-                        schemeMetadata = schemeMetadata,
-                        passphrase = passphrase,
-                        salt = salt
-                    )
+        private val _instance: SoftCryptoKeyCache by lazy {
+            val softConfig = config.softPersistence()
+            SoftCryptoKeyCacheImpl(
+                config = softConfig,
+                entityManagerFactory = dbConnectionOps.getOrCreateEntityManagerFactory(
+                    CordaDb.Crypto,
+                    DbPrivilege.DML
+                ),
+                masterKey = WrappingKey.derive(
+                    schemeMetadata = schemeMetadata,
+                    passphrase = softConfig.passphrase,
+                    salt = softConfig.salt
                 )
-            }
+            )
+        }
+
+        override fun getInstance(): SoftCryptoKeyCache = _instance
 
         override fun close() {
-            instances.values.forEach { it.close() }
-            instances.clear()
+            _instance.close()
         }
     }
 }

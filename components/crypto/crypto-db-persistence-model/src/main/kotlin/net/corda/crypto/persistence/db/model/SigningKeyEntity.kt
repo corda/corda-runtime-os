@@ -6,6 +6,8 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
 import javax.persistence.Id
 import javax.persistence.IdClass
 import javax.persistence.Table
@@ -15,6 +17,8 @@ import javax.persistence.Table
  *
  * As the crypto manages keys on behalf of members and cluster itself the tenant is defined as either
  * a member id (derived from the VNODE id of that member) or word  'cluster' for the keys belonging to the cluster.
+ *
+ * The only fields whcih are allowed to be changed are:
  */
 @Entity
 @Table(name = DbSchema.CRYPTO_SIGNING_KEY_TABLE)
@@ -38,8 +42,8 @@ class SigningKeyEntity(
     /**
      * When the key was generated.
      */
-    @Column(name = "created", nullable = false, updatable = false)
-    var created: Instant,
+    @Column(name = "timestamp", nullable = false, updatable = false)
+    var timestamp: Instant,
 
     /**
      * HSM category where the private key of the pair was generated.
@@ -94,26 +98,18 @@ class SigningKeyEntity(
      * Some external id associated with the key pair by the tenant.
      */
     @Column(name = "external_id", nullable = true, updatable = false, length = 64)
-    var externalId: String?
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+    var externalId: String?,
 
-        other as SigningKeyEntity
+    @Column(name = "association_id", nullable = false, updatable = true, length = 36)
+    var associationId: String,
 
-        if (tenantId != other.tenantId) return false
-        if (keyId != other.keyId) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = tenantId.hashCode()
-        result = 31 * result + keyId.hashCode()
-        return result
-    }
-}
+    /**
+     * Defines how wrapping key should be used for each tenant.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    var status: SigningKeyEntityStatus
+)
 
 @Embeddable
 data class SigningKeyEntityPrimaryKey(
