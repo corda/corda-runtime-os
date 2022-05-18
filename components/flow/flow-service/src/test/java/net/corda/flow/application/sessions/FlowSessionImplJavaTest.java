@@ -31,13 +31,7 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final SerializationService serializationService = mock(SerializationService.class);
-    private final FlowSandboxGroupContext flowSandboxGroupContext = new FlowSandboxGroupContext(
-            mock(SandboxDependencyInjector.class),
-            mock(CheckpointSerializer.class),
-            serializationService,
-            mock(FlowProtocolStore.class),
-            mock(SandboxGroupContext.class)
-    );
+    private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
             mock(SandboxDependencyInjector.class),
             mock(FlowCheckpoint.class),
@@ -63,6 +57,7 @@ public class FlowSessionImplJavaTest {
         when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
         when(serializationService.deserialize(any(byte[].class), any())).thenReturn(1);
         when(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext);
+        when(flowSandboxGroupContext.getAmqpSerializer()).thenReturn(serializationService);
         when(flowFiber.suspend(any(FlowIORequest.SendAndReceive.class))).thenReturn(received);
         when(flowFiber.suspend(any(FlowIORequest.Receive.class))).thenReturn(received);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);

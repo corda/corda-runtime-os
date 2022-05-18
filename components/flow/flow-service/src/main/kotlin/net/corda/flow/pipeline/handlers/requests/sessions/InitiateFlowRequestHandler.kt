@@ -11,7 +11,6 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.layeredpropertymap.create
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -43,7 +42,7 @@ class InitiateFlowRequestHandler @Activate constructor(
         val initiator = checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty")
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator)
         // For now these headers are empty. In the future platform and user context should be provided via these headers
-        val headers = FlowSessionHeaders(layeredPropertyMapFactory.create(mapOf()))
+        val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
         checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(
                 checkpoint,

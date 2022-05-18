@@ -3,7 +3,6 @@ package net.corda.flow.application.sessions
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -47,8 +46,7 @@ class FlowSessionImplTest {
     @BeforeEach
     fun setup() {
         mockFlowFiberService.sandboxGroupContext.apply {
-            whenever(get(FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService::class.java))
-                .thenReturn(serializationService)
+            whenever(amqpSerializer).thenReturn(serializationService)
         }
     }
 

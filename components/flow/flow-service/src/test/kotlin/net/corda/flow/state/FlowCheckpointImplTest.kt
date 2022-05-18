@@ -399,20 +399,6 @@ class FlowCheckpointImplTest {
     }
 
     @Test
-    fun `flow stack - initiating flow with version less than 1 is invalid`() {
-        val flow1 = InvalidInitiatingFlowExample()
-        val checkpoint = Checkpoint().apply {
-            flowState = StateMachineState()
-            flowStartContext = FlowStartContext()
-            this.flowStackItems = mutableListOf()
-        }
-
-        val service = createFlowCheckpoint(checkpoint).flowStack
-        val error = assertThrows<IllegalArgumentException> { service.push(flow1) }
-        assertThat(error.message).isEqualTo("Flow versions have to be greater or equal to 1")
-    }
-
-    @Test
     fun `flow stack - nearest first returns first match closest to the top`() {
         val flowStackItem0 = FlowStackItem("1", false, mutableListOf())
         val flowStackItem1 = FlowStackItem("2", true, mutableListOf())
@@ -444,21 +430,12 @@ class FlowCheckpointImplTest {
     }
 }
 
-@Suppress("Unused")
 @InitiatingFlow("valid-example")
 class InitiatingFlowExample : Flow<Unit> {
     override fun call() {
     }
 }
 
-@Suppress("Unused")
-@InitiatingFlow("invalid-example")
-class InvalidInitiatingFlowExample : Flow<Unit> {
-    override fun call() {
-    }
-}
-
-@Suppress("Unused")
 class NonInitiatingFlowExample : Flow<Unit> {
     override fun call() {
     }

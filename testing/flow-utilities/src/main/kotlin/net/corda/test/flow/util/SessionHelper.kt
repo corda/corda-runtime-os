@@ -6,6 +6,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import java.nio.ByteBuffer
 import java.time.Instant
 
 @Suppress("LongParameterList")
@@ -44,6 +45,7 @@ fun buildSessionEvent(
     timestamp: Instant = Instant.now(),
     initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
     initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
+    headers: ByteBuffer = ByteBuffer.wrap("".toByteArray())
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
@@ -55,5 +57,6 @@ fun buildSessionEvent(
         .setTimestamp(timestamp)
         .setReceivedSequenceNum(receivedSequenceNum)
         .setOutOfOrderSequenceNums(outOfOrderSeqNums)
+        .setHeaders(headers)
         .build()
 }

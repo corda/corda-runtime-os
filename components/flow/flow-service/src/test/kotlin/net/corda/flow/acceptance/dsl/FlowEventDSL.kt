@@ -34,8 +34,6 @@ import net.corda.flow.pipeline.impl.FlowEventProcessorImpl
 import net.corda.flow.pipeline.impl.FlowGlobalPostProcessorImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.flow.pipeline.sessions.impl.FlowSessionManagerImpl
 import net.corda.flow.state.impl.FlowCheckpointFactoryImpl
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
@@ -44,9 +42,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig
-import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.session.manager.impl.SessionManagerImpl
-import net.corda.v5.application.serialization.SerializationService
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -164,13 +160,7 @@ private val flowSessionManager = FlowSessionManagerImpl(sessionManager)
 
 private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(sessionManager, recordFactory)
 
-private val sandboxGroupContext = FlowSandboxGroupContext(
-    mock(),
-    mock(),
-    mock(),
-    mock(),
-    mock()
-)
+private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
 
 private val flowSandboxService = mock<FlowSandboxService>().apply {
     whenever(get(any())).thenReturn(sandboxGroupContext)

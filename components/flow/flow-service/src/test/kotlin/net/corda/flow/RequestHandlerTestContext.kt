@@ -13,6 +13,7 @@ import net.corda.flow.state.FlowStack
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -39,6 +40,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(flowCheckpoint.holdingIdentity).thenReturn(holdingIdentity)
+        whenever(layeredPropertyMapFactory.createMap(any())).thenReturn(mock())
     }
 
     val flowEventContext = FlowEventContext(flowCheckpoint, flowEvent, payload, mock(), recordList)

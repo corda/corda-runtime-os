@@ -8,6 +8,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import java.nio.ByteBuffer
 import java.time.Instant
 
 /**
@@ -17,6 +18,7 @@ import java.time.Instant
  * @param errorMessage Error text
  * @param errorType Error type
  * @param instant timestamp for SessionEvent
+ * @param headers The headers to provide with this message
  * @return SessionEvent with SessionError payload.
  */
 fun generateErrorEvent(
@@ -24,7 +26,8 @@ fun generateErrorEvent(
     sessionEvent: SessionEvent,
     errorMessage: String,
     errorType: String,
-    instant: Instant
+    instant: Instant,
+    headers: ByteBuffer
 ): SessionEvent {
     return generateErrorEvent(
         sessionState,
@@ -32,7 +35,8 @@ fun generateErrorEvent(
         sessionEvent.initiatedIdentity,
         errorMessage,
         errorType,
-        instant
+        instant,
+        headers
     )
 }
 
@@ -41,8 +45,10 @@ fun generateErrorEvent(
  * @param sessionState Session state to build error for
  * @param initiatingIdentity initiating identity
  * @param initiatedIdentity initiated identity
+ * @param errorMessage The error message to provide along with this session error
  * @param errorType Error type
  * @param instant timestamp for SessionEvent
+ * @param headers The headers to provide with this error message
  * @return SessionEvent with SessionError payload.
  */
 @Suppress("LongParameterList")
@@ -52,7 +58,8 @@ fun generateErrorEvent(
     initiatedIdentity: HoldingIdentity,
     errorMessage: String,
     errorType: String,
-    instant: Instant
+    instant: Instant,
+    headers: ByteBuffer
 ): SessionEvent {
     val sessionId = sessionState.sessionId
     val errorEnvelope = ExceptionEnvelope(errorType, errorMessage)
@@ -66,6 +73,7 @@ fun generateErrorEvent(
         .setSessionId(sessionId)
         .setReceivedSequenceNum(0)
         .setOutOfOrderSequenceNums(emptyList())
+        .setHeaders(headers)
         .setPayload(sessionError)
         .build()
 }
@@ -92,7 +100,7 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
         .setStatus(SessionStateType.ERROR)
         .build()
 
-    val errorEvent = generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)
+    val errorEvent = generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant, sessionEvent.headers)
     return sessionState.apply {
         sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(errorEvent)
     }

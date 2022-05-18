@@ -33,7 +33,6 @@ class SubFlowFinishedRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
     private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
     private val flowStackItem = FlowStackItem()
-    private val ioRequest = FlowIORequest.SubFlowFinished(flowStackItem)
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager

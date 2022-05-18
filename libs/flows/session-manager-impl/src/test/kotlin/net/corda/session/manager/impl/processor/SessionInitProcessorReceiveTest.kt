@@ -18,7 +18,7 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionInit("flow", "cpiId", "flowId1", null)
+            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -43,7 +43,7 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionInit("flow", "cpiId", "flowId1", null)
+            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -71,7 +71,7 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionInit("flow", "cpiId", "flowId1", null)
+            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())

@@ -1,16 +1,20 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
+import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
+import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -21,6 +25,8 @@ class InitiateFlowRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1)
     private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager, testContext.flowSandboxService, testContext.layeredPropertyMapFactory)
+    private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
+    private val protocolStore = mock<FlowProtocolStore>()
 
     @Suppress("Unused")
     @BeforeEach
@@ -37,6 +43,10 @@ class InitiateFlowRequestHandlerTest {
                 any()
             )
         ).thenReturn(sessionState1)
+        whenever(testContext.flowSandboxService.get(any())).thenReturn(sandboxGroupContext)
+        whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
+        whenever(protocolStore.protocolsForInitiator(any())).thenReturn(Pair("protocol", listOf(1)))
+        whenever(testContext.flowStack.peek()).thenReturn(FlowStackItem("flow", true, listOf()))
     }
 
     @Test

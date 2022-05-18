@@ -16,10 +16,10 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
-import net.corda.flow.pipeline.sessions.impl.FlowProtocol
-import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.flow.pipeline.sessions.impl.FlowProtocol
+import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.session.manager.SessionManager
@@ -172,7 +172,8 @@ class SessionEventHandlerTest {
 
     private fun createSessionInit(): SessionEvent {
         val payload = SessionInit.newBuilder()
-            .setProtocol(INITIATING_FLOW_NAME)
+            .setProtocol(PROTOCOL.protocol)
+            .setVersions(listOf(1))
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
@@ -192,6 +193,7 @@ class SessionEventHandlerTest {
             .setPayload(payload)
             .setInitiatedIdentity(ALICE_X500_HOLDING_IDENTITY)
             .setInitiatingIdentity(BOB_X500_HOLDING_IDENTITY)
+            .setHeaders(ByteBuffer.wrap("".toByteArray()))
             .build()
     }
 }
