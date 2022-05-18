@@ -64,11 +64,10 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         }
 
         configSecretHelper.insertSecrets(configAsJSONNode, secretsNode)
-        return config.factory.create(ConfigFactory.parseString(secretsNode.toString()))
+        return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
     }
 
-    override fun validateConfig(key: String, config: SmartConfig, schemaResourcePath: String) {
-        val schemaInput = loadResource(schemaResourcePath)
+    override fun validateConfig(key: String, config: SmartConfig, schemaInput: InputStream) {
         logger.debug {
             "Configuration to validate: ${
                 config.toSafeConfig().root().render(ConfigRenderOptions.concise())

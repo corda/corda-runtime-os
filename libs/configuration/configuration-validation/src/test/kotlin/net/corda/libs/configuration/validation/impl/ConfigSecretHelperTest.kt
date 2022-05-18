@@ -2,6 +2,7 @@ package net.corda.libs.configuration.validation.impl
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -23,13 +24,11 @@ class ConfigSecretHelperTest {
             "foo": [1, 2, 3.14],
             "bar": "test",
             "bool": true,
-            "bar.secret": "1111111111111",
-            "secret": $passwordsObject
+            "bar.${SmartConfig.SECRET_KEY}": "1111111111111",
+            "configSecret": $passwordsObject
         }
        }
     """.trimIndent()
-
-
 
     private val helper = ConfigSecretHelper()
 
@@ -38,16 +37,16 @@ class ConfigSecretHelperTest {
         val inputNode = convertJSONToNode(input)!!
         val secrets = helper.hideSecrets(inputNode)
 
-        assertThat(inputNode["testReference"]["secret"].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
-        assertThat(inputNode["testReference"]["bar.secret"].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
+        assertThat(inputNode["testReference"][SmartConfig.SECRET_KEY].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
+        assertThat(inputNode["testReference"]["bar.${SmartConfig.SECRET_KEY}"].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
         assertThat(inputNode["testReference"]["bar"].textValue()).isEqualTo("test")
 
         helper.insertSecrets(inputNode, secrets)
 
         val secretsNode = convertJSONToNode(passwordsObject)!!
 
-        assertThat(inputNode["testReference"]["secret"]).isEqualTo(secretsNode)
-        assertThat(inputNode["testReference"]["bar.secret"].textValue()).isEqualTo("1111111111111")
+        assertThat(inputNode["testReference"][SmartConfig.SECRET_KEY]).isEqualTo(secretsNode)
+        assertThat(inputNode["testReference"]["bar.${SmartConfig.SECRET_KEY}"].textValue()).isEqualTo("1111111111111")
         assertThat(inputNode["testReference"]["bar"].textValue()).isEqualTo("test")
     }
 
