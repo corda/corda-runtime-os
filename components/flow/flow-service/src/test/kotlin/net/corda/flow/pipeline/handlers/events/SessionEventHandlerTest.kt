@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.handlers.events
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -11,16 +13,16 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
-import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.exceptions.FlowProcessingException
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.SessionManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -62,6 +64,9 @@ class SessionEventHandlerTest {
         }
     }
 
+    private val flowConfig = ConfigFactory.empty()
+        .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
+    private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
     private val checkpointSessionState = SessionState()
     private val updatedSessionState = SessionState()
     private val checkpoint = mock<FlowCheckpoint>()
@@ -114,15 +119,9 @@ class SessionEventHandlerTest {
             true
         }
 
-        val expectedSessionInit: (WaitingFor) -> Boolean = { waitingFor ->
-            val sessionInit = waitingFor.value
-            sessionInit is WaitingForSessionInit && sessionInit.sessionId == SESSION_ID
-        }
-
         verify(checkpoint).initFromNew(
             eq(FLOW_ID),
-            argThat { fsc -> expectedStartFlowContext(fsc) },
-            argThat { wf -> expectedSessionInit(wf) }
+            argThat { fsc -> expectedStartFlowContext(fsc) }
         )
     }
 
@@ -137,7 +136,7 @@ class SessionEventHandlerTest {
             sessionEventHandler.preProcess(inputContext)
         }
 
-        verify(checkpoint, never()).initFromNew(any(), any(), any())
+        verify(checkpoint, never()).initFromNew(any(), any())
     }
 
     @Test
