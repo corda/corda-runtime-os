@@ -18,7 +18,6 @@ import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
-import org.osgi.framework.FrameworkUtil
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -114,13 +113,4 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         return builder.build()
     }
 
-    private fun loadResource(resource: String): InputStream {
-        val bundle = FrameworkUtil.getBundle(this::class.java) ?: null
-        val url = bundle?.getResource(resource)
-            ?: this::class.java.classLoader.getResource(resource)
-            ?: throw IllegalArgumentException(
-                "Failed to find resource $resource on worker startup."
-            )
-        return url.openStream()
-    }
 }
