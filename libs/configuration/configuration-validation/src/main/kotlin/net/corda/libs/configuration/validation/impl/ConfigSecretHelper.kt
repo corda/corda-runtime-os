@@ -3,6 +3,7 @@ package net.corda.libs.configuration.validation.impl
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 
 /**
@@ -31,7 +32,7 @@ class ConfigSecretHelper {
         if (node.isObject) {
             for ((name, newNode) in node.fields().asSequence().toList()) {
                 val nodePath = if (nodeName == "") name else "$nodeName.$name"
-                if (name.endsWith(".secret") || name == "secret") {
+                if (name.endsWith(".${SmartConfig.SECRET_KEY}") || name == SmartConfig.SECRET_KEY) {
                     secrets[nodePath] = newNode
                     (node as ObjectNode).remove(name)
                     node.put(name, TMP_SECRET)
@@ -61,7 +62,7 @@ class ConfigSecretHelper {
         if (node.isObject) {
             for ((name, newNode) in node.fields().asSequence().toList()) {
                 val nodePath = if (nodeName == "") name else "$nodeName.$name"
-                if (name.endsWith(".secret") || name == "secret") {
+                if (name.endsWith(".${SmartConfig.SECRET_KEY}") || name == SmartConfig.SECRET_KEY) {
                     val secret = secretsNode[nodePath]
                     (node as ObjectNode).set(name, secret)
                 } else {
