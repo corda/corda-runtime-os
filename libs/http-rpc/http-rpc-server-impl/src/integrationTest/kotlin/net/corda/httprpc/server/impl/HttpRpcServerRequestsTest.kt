@@ -481,8 +481,8 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             POST,
             WebRequest<Any>(
                 path = "fileupload/upload",
-                formParameters = mapOf(
-                    "file" to TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt")
+                files = mapOf(
+                    "file" to listOf(TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt"))
                 )
             ),
             userName,
@@ -502,9 +502,9 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             POST,
             WebRequest<Any>(
                 path = "fileupload/uploadwithname",
-                formParameters = mapOf(
-                    "name" to "some-text-as-parameter",
-                    "file" to TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt")
+                formParameters = mapOf("name" to "some-text-as-parameter"),
+                files = mapOf(
+                    "file" to listOf(TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt"))
                 )
             ),
             userName,
@@ -524,8 +524,8 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             POST,
             WebRequest<Any>(
                 path = "fileupload/fileuploadobject",
-                formParameters = mapOf(
-                    "file" to TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt")
+                files = mapOf(
+                    "file" to listOf(TestClientFileUpload(text.byteInputStream(), "uploadedTestFile.txt"))
                 )
             ),
             userName,
@@ -546,9 +546,9 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             POST,
             WebRequest<Any>(
                 path = "fileupload/multifileuploadobject",
-                formParameters = mapOf(
-                    "file1" to TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt"),
-                    "file2" to TestClientFileUpload(text2.byteInputStream(), "uploadedTestFile2.txt")
+                files = mapOf(
+                    "file1" to listOf(TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt")),
+                    "file2" to listOf(TestClientFileUpload(text2.byteInputStream(), "uploadedTestFile2.txt"))
                 )
             ),
             userName,
@@ -561,4 +561,106 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         assertEquals("\"$expectedResult\"", createEntityResponse.body)
     }
 
+    @Test
+    fun `file upload of list of HttpFileUpload using multi-part form request`() {
+        val text1 = "test text 1"
+        val text2 = "test text 2"
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(
+                path = "fileupload/fileuploadobjectlist",
+                files = mapOf(
+                    "files" to listOf(
+                        TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt"),
+                        TestClientFileUpload(text2.byteInputStream(), "uploadedTestFile2.txt")
+                    )
+                )
+            ),
+            userName,
+            password
+        )
+
+        val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + ", " + ChecksumUtil.generateChecksum(text2.byteInputStream())
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `file upload of HttpFileUpload using name in annotation`() {
+        val text1 = "test text 1"
+        val createEntityResponse = client.call(
+            POST,
+            WebRequest<Any>(
+                path = "fileupload/uploadwithnameinannotation",
+                files = mapOf(
+                    "differentName" to listOf(TestClientFileUpload(text1.byteInputStream(), "uploadedTestFile1.txt"))
+                )
+            ),
+            userName,
+            password
+        )
+
+        val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream())
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+    }
+
+    @Test
+    fun `POST call using name in annotation`() {
+
+        val fullUrl = "health/stringmethodwithnameinannotation"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl,
+                """{"correctName": "foo"}"""
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(""""Completed foo"""", helloResponse.body)
+    }
+
+    @Test
+    fun `test api that returns null object `() {
+
+        val fullUrl = "health/apireturningnullobject"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("""null""", helloResponse.body)
+    }
+
+    @Test
+    fun `test api that returns null string`() {
+
+        val fullUrl = "health/apireturningnullstring"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("""null""", helloResponse.body)
+    }
+
+    @Test
+    fun `test api that returns object wrapping a null string`() {
+
+        val fullUrl = "health/apireturningobjectwithnullablestringinside"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("""{"str":null}""", helloResponse.body)
+    }
 }

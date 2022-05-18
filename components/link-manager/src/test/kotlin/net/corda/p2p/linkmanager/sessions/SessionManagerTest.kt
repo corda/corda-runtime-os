@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -35,11 +36,10 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.GroupPolicyListener
 import net.corda.p2p.linkmanager.HostingMapListener
-import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
+import net.corda.p2p.linkmanager.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -102,14 +102,16 @@ class SessionManagerTest {
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
-        private val OUR_PARTY = LinkManagerInternalTypes.HoldingIdentity("Alice", GROUP_ID)
+        private val OUR_PARTY = HoldingIdentity("Alice", GROUP_ID)
         private val OUR_KEY = keyGenerator.genKeyPair()
-        private val OUR_MEMBER_INFO = LinkManagerInternalTypes.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
-            LinkManagerInternalTypes.EndPoint("http://alice.com"))
-        private val PEER_PARTY = LinkManagerInternalTypes.HoldingIdentity("Bob", GROUP_ID)
+        private val OUR_MEMBER_INFO =
+            LinkManagerMembershipGroupReader.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
+                "http://alice.com")
+        private val PEER_PARTY = HoldingIdentity("Bob", GROUP_ID)
         private val PEER_KEY = keyGenerator.genKeyPair()
-        private val PEER_MEMBER_INFO = LinkManagerInternalTypes.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
-            LinkManagerInternalTypes.EndPoint("http://bob.com"))
+        private val PEER_MEMBER_INFO =
+            LinkManagerMembershipGroupReader.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
+                "http://bob.com")
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -175,7 +177,7 @@ class SessionManagerTest {
         on { getMemberInfo(messageDigest.hash(PEER_KEY.public.encoded), GROUP_ID) } doReturn PEER_MEMBER_INFO
     }
     private val hostingIdentity = HostingMapListener.IdentityInfo(
-        holdingIdentity = OUR_PARTY.toHoldingIdentity(),
+        holdingIdentity = OUR_PARTY,
         tlsCertificates = emptyList(),
         tlsTenantId = "tlsId",
         sessionKeyTenantId = "id",
@@ -190,7 +192,7 @@ class SessionManagerTest {
     private val cryptoService = mock<StubCryptoProcessor> {
         on { sign(any(), eq(OUR_KEY.public), any(), any()) } doReturn "signature-from-A".toByteArray()
     }
-    private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
+    private val pendingSessionMessageQueues = Mockito.mock(PendingSessionMessageQueues::class.java)
     private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
     private val protocolInitiator = mock<AuthenticationProtocolInitiator> {
         on { sessionId } doReturn "sessionId"
@@ -220,7 +222,7 @@ class SessionManagerTest {
         mock(),
         linkManagerHostingMap,
         protocolFactory,
-        mockTimeFacilitiesProvider.mockClock,
+        mockTimeFacilitiesProvider.clock,
         sessionReplayer,
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
@@ -247,8 +249,8 @@ class SessionManagerTest {
     private val message = AuthenticatedMessageAndKey(
         AuthenticatedMessage(
             AuthenticatedMessageHeader(
-                PEER_PARTY.toHoldingIdentity(),
-                OUR_PARTY.toHoldingIdentity(),
+                PEER_PARTY,
+                OUR_PARTY,
                 null,
                 "messageId",
                 "", "system-1"
@@ -311,8 +313,8 @@ class SessionManagerTest {
                 eq(counterparties)
             )
             assertThat(this.allValues.size).isEqualTo(2)
-            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.source }.containsOnly(OUR_PARTY)
-            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.dest }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> { it.source }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> { it.dest }.containsOnly(PEER_PARTY)
             assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
                 .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
         }
@@ -350,8 +352,8 @@ class SessionManagerTest {
                 eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY))
             )
             assertThat(this.allValues.size).isEqualTo(2)
-            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.source }.containsOnly(OUR_PARTY)
-            assertThat(this.allValues).extracting<LinkManagerInternalTypes.HoldingIdentity> { it.dest }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> { it.source }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> { it.dest }.containsOnly(PEER_PARTY)
             assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
                 .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
         }
@@ -1036,7 +1038,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1086,7 +1088,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1157,7 +1159,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1217,7 +1219,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1276,7 +1278,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1342,7 +1344,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
@@ -1409,7 +1411,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
-            mockTimeFacilitiesProvider.mockClock,
+            mockTimeFacilitiesProvider.clock,
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()

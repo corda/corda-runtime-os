@@ -1,16 +1,32 @@
 plugins {
-    id 'corda.common-library'
-    id 'corda.common-publishing'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk'
 }
 
 description 'Dogs test bundle'
 
-dependencies {
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    compileOnly "org.osgi:osgi.annotation"
+// IMPORTANT:  We must set the group to anything other than `net.corda`.
+// This is so that we can link this into a CPB without the corda gradle plugin refusing.
+// `net.corda` is reserved for Corda "system" bundles.
+group 'com.r3.testing'
 
-    api 'javax.persistence:javax.persistence-api'
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    workflow {
+        name 'Testing Dogs CPK'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided "org.osgi:osgi.core"
+
+    cordaProvided 'javax.persistence:javax.persistence-api'
 }
 
 tasks.named('jar', Jar) {

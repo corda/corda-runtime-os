@@ -57,7 +57,6 @@ dependencies {
     runtimeOnly project(":components:crypto:crypto-db-persistence-impl")
     runtimeOnly project(':components:crypto:crypto-service-impl')
     runtimeOnly project(":components:db:db-connection-manager-impl")
-    runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:db:db-orm-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")

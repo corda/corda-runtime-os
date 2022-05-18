@@ -61,7 +61,7 @@ abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
                 registrationHandle = null
                 configHandle?.close()
                 configHandle = null
-                deactivate("Stopping component.")
+                deactivateImpl("Stopping component.")
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -70,23 +70,29 @@ abstract class AbstractConfigurableComponent<IMPL: AutoCloseable>(
                 } else {
                     configHandle?.close()
                     configHandle = null
-                    deactivate("At least one dependency is DOWN.")
+                    deactivateImpl("At least one dependency is DOWN.")
                 }
             }
             is ConfigChangedEvent -> {
-                activate(event)
+                activateImpl(event)
             }
         }
     }
 
-    private fun activate(event: ConfigChangedEvent) {
+    private fun activateImpl(event: ConfigChangedEvent) {
         logger.info("Activating")
-        impl.close()
-        impl = createActiveImpl(event)
+        try {
+            impl.close()
+            impl = createActiveImpl(event)
+        } catch (e: Throwable) {
+            logger.error("Failed activate...", e)
+            throw e
+        }
+        logger.info("Activated, setting the status of {} UP", this::class.simpleName)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun deactivate(reason: String) {
+    private fun deactivateImpl(reason: String) {
         logger.info("Deactivating due {}", reason)
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN, reason)
         impl.close()

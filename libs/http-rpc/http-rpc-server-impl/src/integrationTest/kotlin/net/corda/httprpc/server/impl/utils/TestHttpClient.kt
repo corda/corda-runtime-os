@@ -19,8 +19,9 @@ data class TestClientFileUpload(val fileContent: InputStream, val fileName: Stri
 data class WebRequest<T>(
     val path: String,
     val body: T? = null,
-    val queryParameters: Map<String, Any>? = null,
-    val formParameters: Map<String, Any>? = null
+    val queryParameters: Map<String, Any?>? = null,
+    val formParameters: Map<String, String>? = null,
+    val files: Map<String, List<TestClientFileUpload>>? = null
 )
 
 data class WebResponse<T>(val body: T?, val headers: Map<String, String>, val responseStatus: Int, val responseStatusText: String?)
@@ -48,8 +49,10 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
             HttpVerb.DELETE -> Unirest.delete(baseAddress + webRequest.path).basicAuth(userName, password)
         }.addOriginHeader()
 
-        if(request is HttpRequestWithBody) {
-            request = applyBody(webRequest, request)
+        request = if(isMultipartFormRequest(webRequest)) {
+            buildMultipartFormRequest(webRequest, request)
+        } else {
+            buildApplicationJsonRequest(webRequest, request)
         }
 
         request = applyQueryParameters(webRequest, request)
@@ -85,9 +88,12 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
         request.encodeAuth()
 
-        if(request is HttpRequestWithBody) {
-            request = applyBody(webRequest, request)
+        request = if(isMultipartFormRequest(webRequest)) {
+            buildMultipartFormRequest(webRequest, request)
+        } else {
+            buildApplicationJsonRequest(webRequest, request)
         }
+
         request = applyQueryParameters(webRequest, request)
 
         val response = request.asString()
@@ -96,6 +102,50 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
                 .associateBy({ it.name }, { it.value }), response.status, response.statusText
         )
     }
+
+    private fun <T> buildMultipartFormRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request.header("accept", "multipart/form-data")
+        if(request is HttpRequestWithBody) {
+            requestBuilder = request.multiPartContent() as MultipartBody
+
+            if(!webRequest.formParameters.isNullOrEmpty()) {
+                webRequest.formParameters.forEach {
+                    requestBuilder.field(it.key, it.value)
+                }
+            }
+
+            if(!webRequest.files.isNullOrEmpty()) {
+                webRequest.files.forEach { filesForParameter ->
+                    addFilesForEachField(filesForParameter, requestBuilder)
+                }
+            }
+        }
+        return requestBuilder
+    }
+
+    private fun addFilesForEachField(filesForParameter: Map.Entry<String, List<TestClientFileUpload>>, requestBuilder: MultipartBody) {
+        val formFieldName = filesForParameter.key
+        filesForParameter.value.forEach { file ->
+            // we can add multiple files to the same form field name
+            requestBuilder.field(formFieldName, file.fileContent, file.fileName)
+        }
+    }
+
+    private fun <T> buildApplicationJsonRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
+        var requestBuilder = request
+        requestBuilder.header("accept", "application/json")
+        requestBuilder.header("accept", "text/plain")
+
+        if(requestBuilder is HttpRequestWithBody) {
+            if (webRequest.body != null) {
+                requestBuilder = requestBuilder.body(webRequest.body)
+            }
+        }
+        return requestBuilder
+    }
+
+    private fun isMultipartFormRequest(webRequest: WebRequest<*>) =
+        !webRequest.formParameters.isNullOrEmpty() || !webRequest.files.isNullOrEmpty()
 
     private fun <T> applyBody(webRequest: WebRequest<T>, request: HttpRequestWithBody): HttpRequest<*> {
         var requestBuilder: HttpRequest<*> = request

@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.httprpc.server.impl.apigen.processing.openapi
 
 import io.swagger.v3.oas.models.Components
@@ -5,6 +6,7 @@ import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.PathItem
 import io.swagger.v3.oas.models.Paths
+import io.swagger.v3.oas.models.media.ComposedSchema
 import io.swagger.v3.oas.models.media.Content
 import io.swagger.v3.oas.models.media.MediaType
 import io.swagger.v3.oas.models.media.Schema
@@ -98,7 +100,7 @@ internal fun EndpointParameter.toOpenApiParameter(schemaModelProvider: SchemaMod
 private fun List<EndpointParameter>.toProperties(schemaModelProvider: SchemaModelProvider): Map<String, Schema<Any>> {
     log.trace { "Map \"${this.size}\" EndpointParameters to Schema properties." }
     return this.associateBy(
-        { it.id },
+        { endpointParam -> endpointParam.name.takeIf { it.isNotBlank() } ?: endpointParam.id },
         {
             SchemaModelToOpenApiSchemaConverter.convert(
                 schemaModelProvider.toSchemaModel(it)
@@ -208,16 +210,7 @@ private fun ApiResponse.withResponseBodyFrom(
             this.content(
                 Content().addMediaType(
                     APPLICATION_JSON_CONTENT_TYPE,
-                    MediaType().schema(
-                        SchemaModelToOpenApiSchemaConverter.convert(
-                            schemaModelProvider.toSchemaModel(
-                                ParameterizedClass(
-                                    endpoint.responseBody.type,
-                                    endpoint.responseBody.parameterizedTypes
-                                )
-                            )
-                        )
-                    )
+                    MediaType().schema(createResponseSchema(schemaModelProvider, endpoint))
                 )
             )
         } else this
@@ -228,6 +221,32 @@ private fun ApiResponse.withResponseBodyFrom(
             log.error("$it: ${e.message}")
             throw Exception(it, e)
         }
+    }
+}
+
+private fun createResponseSchema(schemaModelProvider: SchemaModelProvider, endpoint: Endpoint): Schema<Any> {
+    val schema = SchemaModelToOpenApiSchemaConverter.convert(
+        schemaModelProvider.toSchemaModel(
+            ParameterizedClass(
+                endpoint.responseBody.type,
+                endpoint.responseBody.parameterizedTypes,
+                endpoint.responseBody.nullable
+            )
+        )
+    )
+    return wrapNullableReferencedTypeIfNecessary(endpoint, schema)
+}
+
+private fun wrapNullableReferencedTypeIfNecessary(endpoint: Endpoint, schema: Schema<Any>): Schema<Any> {
+    // To make a referenced type nullable we must wrap it with an `allOf` property from `ComposedSchema` and set this as nullable.
+    // We only need to perform wrapping if it is a referenced type.
+    return if (endpoint.responseBody.nullable && schema.`$ref` != null) {
+        ComposedSchema().apply {
+            allOf = listOf(schema)
+            nullable = true
+        }
+    } else {
+        schema
     }
 }
 

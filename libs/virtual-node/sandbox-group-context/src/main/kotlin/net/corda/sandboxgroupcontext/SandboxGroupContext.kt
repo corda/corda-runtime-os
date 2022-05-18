@@ -18,7 +18,7 @@ interface SandboxGroupContext : SandboxGroupContextData {
     /**
      * Get an object from *this* [SandboxGroupContext] instance's object cache using the given key.
      *
-     * You should use the extension methods instead: [getObjectByKey] and [getUniqueObject]
+     * You could use the extension method instead: [getObjectByKey]
      *
      * IMPORTANT:  caller must check `null` return - that's generally a sign you're looking for the wrong
      * key/type combo.

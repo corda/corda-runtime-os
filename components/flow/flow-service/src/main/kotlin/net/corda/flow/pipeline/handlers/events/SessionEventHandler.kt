@@ -7,6 +7,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.session.manager.SessionManager
@@ -48,10 +49,12 @@ class SessionEventHandler @Activate constructor(
 
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-        when (val sessionInit = nextSessionEvent?.payload) {
-            is SessionInit -> {
-                createInitiatedFlowCheckpoint(context, sessionInit,nextSessionEvent)
-            }
+        val sessionInit = nextSessionEvent?.payload
+
+        if (!checkpoint.doesExist && sessionInit is SessionInit) {
+            createInitiatedFlowCheckpoint(context, sessionInit, nextSessionEvent)
+        } else if (!checkpoint.doesExist) {
+            throw FlowEventException("Received a session event for flow [${context.inputEvent.flowId}] that does not exist", context)
         }
 
         checkpoint.putSessionState(updatedSessionState)

@@ -8,6 +8,8 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.security.KeyFactory
+import java.security.PublicKey
+import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.spec.PKCS8EncodedKeySpec
 import javax.crypto.Mac
@@ -203,6 +205,10 @@ internal class TinyCertCertificatesAuthority(
         }
 
         return PrivateKeyWithCertificate(key, certificate)
+    }
+
+    override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
+        throw CertificateAuthorityException("TinyCert does not support generating a certificate with a specified public key.")
     }
 
     override fun close() {

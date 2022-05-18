@@ -1,5 +1,7 @@
 package net.corda.flow.state
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
@@ -9,17 +11,26 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.state.impl.FlowCheckpointImpl
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
+import java.time.Instant
 
 class FlowCheckpointImplTest {
 
+
+    private val flowConfig = ConfigFactory.empty()
+        .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
+    private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
+    private val now = Instant.MIN
+
     private fun createFlowCheckpoint(checkpoint: Checkpoint? = null): FlowCheckpointImpl {
-        return FlowCheckpointImpl(checkpoint)
+        return FlowCheckpointImpl(checkpoint, smartFlowConfig) { now }
     }
 
     @Test
@@ -248,6 +259,7 @@ class FlowCheckpointImplTest {
         val checkpoint = Checkpoint().apply {
             flowState = StateMachineState()
             flowStartContext = FlowStartContext()
+            maxFlowSleepDuration = 60000
         }
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
@@ -264,6 +276,7 @@ class FlowCheckpointImplTest {
         assertThat(avroCheckpoint.flowStackItems.first()).isEqualTo(flowStackItem)
         assertThat(avroCheckpoint.sessions.first()).isEqualTo(session1)
         assertThat(avroCheckpoint.fiber).isEqualTo(fiber)
+        assertThat(avroCheckpoint.maxFlowSleepDuration).isEqualTo(60000)
 
         flowCheckpoint.markDeleted()
         assertThat(flowCheckpoint.toAvro()).isNull()

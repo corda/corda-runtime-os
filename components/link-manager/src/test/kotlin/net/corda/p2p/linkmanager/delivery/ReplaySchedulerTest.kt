@@ -3,12 +3,12 @@ package net.corda.p2p.linkmanager.delivery
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.test.util.MockTimeFacilitiesProvider
@@ -35,8 +35,8 @@ class ReplaySchedulerTest {
         private const val MAX_REPLAYING_MESSAGES = 100
         private val replayPeriod = Duration.ofMillis(2)
         private val sessionCounterparties = SessionManager.SessionCounterparties(
-            LinkManagerInternalTypes.HoldingIdentity("Source", DeliveryTrackerTest.groupId),
-            LinkManagerInternalTypes.HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
+            HoldingIdentity("Source", DeliveryTrackerTest.groupId),
+            HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
         )
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -75,7 +75,7 @@ class ReplaySchedulerTest {
     @Test
     fun `The ReplayScheduler will not replay before start`() {
         val replayManager = ReplayScheduler(coordinatorFactory, service, false,
-            { _: Any -> }, clock = mockTimeFacilitiesProvider.mockClock)
+            { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionCounterparties::class.java))
         }
@@ -88,7 +88,7 @@ class ReplaySchedulerTest {
             service,
             false,
             { _: Any -> },
-            clock = mockTimeFacilitiesProvider.mockClock
+            clock = mockTimeFacilitiesProvider.clock
         )
         val inner = ConfigFactory.empty()
             .withValue(LinkManagerConfiguration.REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
@@ -110,7 +110,7 @@ class ReplaySchedulerTest {
             service,
             false,
             { _: Any -> },
-            clock = mockTimeFacilitiesProvider.mockClock
+            clock = mockTimeFacilitiesProvider.clock
         )
         val inner = ConfigFactory.empty()
             .withValue(LinkManagerConfiguration.BASE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
@@ -127,7 +127,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future exceptionally if config is invalid`() {
-        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.mockClock)
+        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
         val future = configHandler.applyNewConfiguration(
             ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
                 Duration.ofMillis(-10),
@@ -144,7 +144,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future if config is valid`() {
-        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.mockClock)
+        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
         val future = configHandler.applyNewConfiguration(
             ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
                 replayPeriod,
@@ -167,7 +167,7 @@ class ReplaySchedulerTest {
             false,
             { _: Any -> },
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         val future = createResources(resourcesHolder)
         verify(resourcesHolder).keep(isA<AutoClosableExecutorService>())
         assertThat(future.isDone).isTrue
@@ -185,7 +185,7 @@ class ReplaySchedulerTest {
             false,
             tracker::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
@@ -231,7 +231,7 @@ class ReplaySchedulerTest {
             false,
             tracker::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
@@ -265,7 +265,7 @@ class ReplaySchedulerTest {
             false,
             tracker::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(
@@ -312,7 +312,7 @@ class ReplaySchedulerTest {
             false,
             ::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
@@ -345,7 +345,7 @@ class ReplaySchedulerTest {
             false,
             tracker::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
@@ -397,7 +397,7 @@ class ReplaySchedulerTest {
             true,
             tracker::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)
@@ -438,7 +438,7 @@ class ReplaySchedulerTest {
             true,
             tracker::replayMessage,
             {mockTimeFacilitiesProvider.mockScheduledExecutor},
-            clock = mockTimeFacilitiesProvider.mockClock)
+            clock = mockTimeFacilitiesProvider.clock)
         replayScheduler.start()
         setRunning()
         createResources(resourcesHolder)

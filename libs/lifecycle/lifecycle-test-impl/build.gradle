@@ -1,0 +1,17 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Test Lifecycle Coordinator implementation"
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation project(":libs:lifecycle:lifecycle")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
+    implementation 'org.slf4j:slf4j-api'
+}

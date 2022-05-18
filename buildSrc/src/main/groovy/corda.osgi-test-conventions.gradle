@@ -6,6 +6,9 @@ import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
+import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.GENERIC
+import com.gradle.enterprise.gradleplugin.test.ImportJUnitXmlReports
+
 plugins {
     id 'biz.aQute.bnd.builder'
 }
@@ -86,7 +89,18 @@ tasks.named('check') {
     dependsOn testOSGi
 }
 
+
+//Gradle enterprise does not pick up OSGI tests by deafult as they they are of type TestOSGi rather than standard
+// Test task this ensures test results are captured
+def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
+    dialect = GENERIC
+    reports.from(fileTree("$testResultsDir/integrationTest").matching {
+        include '**/TEST-*.xml'
+    })
+}
+
 tasks.named('integrationTest') {
+    finalizedBy importTask
     dependsOn testOSGi
     enabled = false
 }

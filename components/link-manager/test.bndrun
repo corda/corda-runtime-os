@@ -23,7 +23,6 @@
     bnd.identity;id='net.corda.db-message-bus-impl',\
     bnd.identity;id='net.corda.db-message-bus-testkit',\
     bnd.identity;id='net.corda.db-topic-admin-impl',\
-    bnd.identity;id='net.corda.configuration-publish-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\

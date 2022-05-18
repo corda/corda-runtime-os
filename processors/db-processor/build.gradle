@@ -16,8 +16,12 @@ dependencies {
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
+    implementation project(':components:reconciliation:reconciliation')
     implementation project(':components:virtual-node:cpk-read-service')
     implementation project(':components:virtual-node:cpk-write-service')
+    implementation project(':components:virtual-node:entity-processor-service')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:cpi-info-write-service')
     implementation project(':components:virtual-node:virtual-node-write-service')
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:configuration:configuration-core')
@@ -40,12 +44,15 @@ dependencies {
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
-    runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
-    runtimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')
+    runtimeOnly project(':components:reconciliation:reconciliation-impl')
+    runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')
+    runtimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
     runtimeOnly project(':components:virtual-node:cpk-read-service-impl')
     runtimeOnly project(':components:virtual-node:cpk-write-service-impl')
-    runtimeOnly project(':libs:configuration:configuration-publish-impl')
+    runtimeOnly project(':components:virtual-node:entity-processor-service-impl')
+    runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
+
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
@@ -56,10 +63,15 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-management-cache-impl')
     runtimeOnly project(':libs:permissions:permission-storage-reader-impl')
     runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
+    runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

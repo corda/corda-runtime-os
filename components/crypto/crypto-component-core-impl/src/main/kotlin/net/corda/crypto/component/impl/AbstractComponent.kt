@@ -63,8 +63,14 @@ abstract class AbstractComponent<IMPL: AutoCloseable>(
 
     private fun activateImpl() {
         logger.info("Activating")
-        impl.close()
-        impl = createActiveImpl()
+        try {
+            impl.close()
+            impl = createActiveImpl()
+        } catch (e: Throwable) {
+            logger.error("Failed activate...", e)
+            throw e
+        }
+        logger.info("Activated, setting the status of {} UP", this::class.simpleName)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 

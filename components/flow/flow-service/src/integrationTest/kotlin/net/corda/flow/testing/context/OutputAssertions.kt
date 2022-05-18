@@ -23,13 +23,31 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun sessionErrorEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
     fun flowDidNotResume()
 
-    fun <T> flowResumedWith(value: T)
+    fun flowResumedWith(value: Any)
+
+    fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
     fun wakeUpEvent()
 
-    fun flowStatus(state: FlowStates, result: String? = null, error: Exception? = null)
+    fun noFlowEvents()
+
+    fun checkpointHasRetry(expectedCount: Int)
+
+    fun checkpointDoesNotHaveRetry()
+
+    fun flowStatus(state: FlowStates, result: String? = null, errorType: String? = null, errorMessage:String? = null)
 
     fun nullStateRecord()
+
+    fun markedForDlq()
 }
+
+inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

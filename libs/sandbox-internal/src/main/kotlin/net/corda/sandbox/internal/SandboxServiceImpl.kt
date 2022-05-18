@@ -1,8 +1,8 @@
 @file:JvmName("SandboxServiceUtils")
 package net.corda.sandbox.internal
 
-import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.Cpk
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.Cpk
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService

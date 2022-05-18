@@ -1,8 +1,8 @@
 package net.corda.sandbox.internal
 
-import net.corda.libs.packaging.CpkMetadata
-import net.corda.packaging.Cpk
-import net.corda.packaging.CordappManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CordappManifest
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -481,7 +481,7 @@ class SandboxServiceImplTests {
     }
 }
 
-/** For testing, associates a [Cpk] with its bundles, the classes within those, and its CPK dependencies. */
+/** For testing, associates a Cpk with its bundles, the classes within those, and its CPK dependencies. */
 private data class CpkAndContents(
     val mainBundleClass: Class<*>,
     val libraryClass: Class<*>,
@@ -492,7 +492,7 @@ private data class CpkAndContents(
     val bundleNames = setOf(mainBundleName, libraryBundleName)
     val cpk = createDummyCpk(cpkDependencies)
 
-    /** Creates a dummy [Cpk]. */
+    /** Creates a dummy Cpk. */
     private fun createDummyCpk(cpkDependencies: NavigableSet<Cpk.Identifier>) = object : Cpk {
         override val metadata = object : Cpk.Metadata {
             override val id = Cpk.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())

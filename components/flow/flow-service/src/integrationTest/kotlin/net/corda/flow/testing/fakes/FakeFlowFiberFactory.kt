@@ -19,12 +19,15 @@ class FakeFlowFiberFactory : FlowFiberFactory {
 
     val fiber = FakeFiber<Any?>(UUID(0, 0), FakeFlow())
 
-    override fun createFlowFiber(flowId: String, logic: Flow<*>, scheduler: FiberScheduler): FlowFiber<Any?> {
+    override fun createFlowFiber(flowId: String, logic: Flow<*>): FlowFiber<Any?> {
         return fiber
     }
 
-    override fun createFlowFiber(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiber<*> {
-        return fiber
+    override fun createAndResumeFlowFiber(
+        flowFiberExecutionContext: FlowFiberExecutionContext,
+        suspensionOutcome: FlowContinuation
+    ): Future<FlowIORequest<*>> {
+        return fiber.resume(suspensionOutcome)
     }
 
     class FakeFiber<R>(
@@ -55,6 +58,12 @@ class FakeFlowFiberFactory : FlowFiberFactory {
             flowFiberExecutionContext: FlowFiberExecutionContext,
             suspensionOutcome: FlowContinuation,
             scheduler: FiberScheduler
+        ): Future<FlowIORequest<*>> {
+            TODO("Not yet implemented")
+        }
+
+        fun resume(
+            suspensionOutcome: FlowContinuation
         ): Future<FlowIORequest<*>> {
             flowContinuation = suspensionOutcome
             return getCompletedFuture()

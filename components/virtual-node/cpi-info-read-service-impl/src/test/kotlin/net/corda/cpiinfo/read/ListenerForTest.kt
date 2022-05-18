@@ -1,6 +1,6 @@
 package net.corda.cpiinfo.read
 
-import net.corda.packaging.Cpi
+import net.corda.libs.packaging.Cpi
 
 class ListenerForTest : CpiInfoListener {
     var update = false

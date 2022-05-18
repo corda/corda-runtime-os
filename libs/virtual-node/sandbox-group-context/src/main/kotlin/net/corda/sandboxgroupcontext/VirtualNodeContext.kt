@@ -1,6 +1,6 @@
 package net.corda.sandboxgroupcontext
 
-import net.corda.libs.packaging.CpkIdentifier
+import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.virtualnode.HoldingIdentity
 
 /**

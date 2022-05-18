@@ -27,7 +27,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-serialization'
-    implementation 'net.corda:corda-packaging'
+    implementation project(":libs:packaging:packaging")
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-application'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
@@ -57,7 +57,7 @@ dependencies {
     runtimeOnly project(':libs:serialization:serialization-kryo')
 
     // Add OSGi security support.
-    implementation project(':libs:security-manager')
+    implementation project(':components:security-manager')
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'

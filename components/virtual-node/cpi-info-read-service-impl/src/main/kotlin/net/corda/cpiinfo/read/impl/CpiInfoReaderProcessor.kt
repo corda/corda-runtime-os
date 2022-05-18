@@ -1,11 +1,11 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.cpiinfo.read.CpiInfoListener
-import net.corda.libs.packaging.CpiIdentifier
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.converters.toCorda
+import net.corda.libs.packaging.converters.toCorda
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.util.*

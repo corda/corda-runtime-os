@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.libs.packaging.CpkMetadata
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID

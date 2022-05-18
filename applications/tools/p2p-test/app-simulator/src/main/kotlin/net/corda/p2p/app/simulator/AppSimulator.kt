@@ -11,6 +11,8 @@ import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -20,7 +22,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
-import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
@@ -37,7 +38,7 @@ class AppSimulator @Activate constructor(
 
     companion object {
         private val logger: Logger = contextLogger()
-        private val clock: Clock = Clock.systemUTC()
+        private val clock: Clock = UTCClock()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"

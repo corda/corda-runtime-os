@@ -65,6 +65,20 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
 
     override fun parseUuid(uuid: String): UUID = UUID.fromString(uuid)
 
+    override fun stringMethodWithNameInAnnotation(incorrectName: String): String = "Completed $incorrectName"
+
+    override fun apiReturningNullObject(): TestHealthCheckAPI.SomeTestNullableType? {
+        return null
+    }
+
+    override fun apiReturningNullString(): String? {
+        return null
+    }
+
+    override fun apiReturningObjectWithNullableStringInside(): TestHealthCheckAPI.ObjectWithNullableString {
+        return TestHealthCheckAPI.ObjectWithNullableString(null)
+    }
+
     override fun echoQuery(requestString: String): String {
         return requestString
     }

@@ -3,16 +3,15 @@ package net.corda.cpiinfo.write.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.packaging.CpiMetadata
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.packaging.Cpi
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -27,7 +26,7 @@ import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 /**
  * CPI Info Service writer so that we can [put] and [remove]
- * [Cpi.Metadata] from Kafka compacted queues
+ * [CpiMetadata] from Kafka compacted queues
  *
  * Complements [CpiInfoReaderComponent]
  */
@@ -48,7 +47,9 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
-    private val coordinator = coordinatorFactory.createCoordinator<CpiInfoWriteService>(eventHandler)
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
+
+    private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, eventHandler)
 
     private var publisher: Publisher? = null
 
