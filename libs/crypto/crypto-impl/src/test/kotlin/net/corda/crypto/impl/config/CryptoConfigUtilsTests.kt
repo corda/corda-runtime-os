@@ -2,12 +2,14 @@ package net.corda.crypto.impl.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.util.UUID
+import kotlin.test.assertEquals
 import net.corda.crypto.core.aes.AesEncryptor
 import net.corda.crypto.core.aes.AesKey
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -16,8 +18,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.UUID
-import kotlin.test.assertEquals
 
 class CryptoConfigUtilsTests {
     companion object {
@@ -47,7 +47,7 @@ class CryptoConfigUtilsTests {
     fun `Should be able to get crypto config from the map`() {
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty()),
-            CRYPTO_CONFIG to smartConfig
+            BOOT_CRYPTO to smartConfig
         )
         val result = map.toCryptoConfig()
         assertSame(smartConfig, result)
@@ -267,7 +267,7 @@ class CryptoConfigUtilsTests {
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -299,7 +299,7 @@ class CryptoConfigUtilsTests {
             ConfigFactory.parseMap(
                 mapOf(
                     "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "rootKey.salt" to "s1",
                         "softPersistence.passphrase" to "p2",
@@ -311,7 +311,7 @@ class CryptoConfigUtilsTests {
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -353,7 +353,7 @@ class CryptoConfigUtilsTests {
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -395,7 +395,7 @@ class CryptoConfigUtilsTests {
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -444,7 +444,7 @@ class CryptoConfigUtilsTests {
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
