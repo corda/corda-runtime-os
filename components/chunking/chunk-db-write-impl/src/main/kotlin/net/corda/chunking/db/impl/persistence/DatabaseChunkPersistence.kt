@@ -237,7 +237,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
         cpks.forEach {
             val cpkChecksum = it.metadata.hash.toString()
-            em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+            // Using `merge` here as exactly the same CPK data may already exist
+            em.merge(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
 
             val cpkMetadataEntity = CpkMetadataEntity(
                 cpi = cpiMetadataEntity,
