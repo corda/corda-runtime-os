@@ -237,7 +237,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
         cpks.forEach {
             val cpkChecksum = it.metadata.hash.toString()
-            em.merge(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+            em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
 
             val cpkMetadataEntity = CpkMetadataEntity(
                 cpi = cpiMetadataEntity,
@@ -256,7 +256,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 cpkType = it.metadata.type.name,
                 cpkLibraries = it.metadata.libraries
             )
-            em.merge(cpkMetadataEntity)
+            em.persist(cpkMetadataEntity)
 
             it.metadata.dependencies.forEach { cpkIdentifier ->
                 val cpkDependencyEntity = CpkDependencyEntity(
@@ -265,7 +265,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                     mainBundleVersion = cpkIdentifier.version,
                     signerSummaryHash = cpkIdentifier.signerSummaryHash?.toString() ?: ""
                 )
-                em.merge(cpkDependencyEntity)
+                em.persist(cpkDependencyEntity)
             }
 
             it.metadata.cordappManifest.run {
@@ -288,7 +288,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                         license = this.workflowInfo.licence
                     )
                 )
-                em.merge(cpkCordappManifestEntity)
+                em.persist(cpkCordappManifestEntity)
             }
         }
     }
