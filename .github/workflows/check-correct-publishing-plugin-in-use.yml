@@ -19,14 +19,4 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Check for wrong publishing plugin
-      run: |
-        # there are two places mentions are allowed
-        # 1. this file!!!!
-        # 2. buildSrc/src/main/groovy/corda.common-publishing.gradle
-        if [ $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l) -gt 2 ]
-        then
-          echo "com.r3.internal.gradle.plugins.r3Publish has been used by mistake!"
-          echo "Please replace it with corda.common-publishing"
-          exit 1
-        fi
+    - uses: wzur-r3/check-correct-publish-plugin-is-in-use-action@v1
