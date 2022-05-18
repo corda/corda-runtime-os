@@ -3,10 +3,10 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultCryptoConfig
+import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
@@ -85,7 +85,7 @@ class MemberProcessorTestUtils {
                     .withFallback(
                         ConfigFactory.parseString(BOOT_CONFIGURATION)
                     )
-            ).addDefaultCryptoConfig(
+            ).addDefaultBootCryptoConfig(
                 fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
                 fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
             )

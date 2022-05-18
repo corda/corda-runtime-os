@@ -84,7 +84,7 @@ fun createDefaultCryptoConfig(
     throw CryptoConfigurationException("Failed to create default crypto config", e)
 }
 
-fun SmartConfig.addDefaultCryptoConfig(
+fun SmartConfig.addDefaultBootCryptoConfig(
     fallbackCryptoRootKey: KeyCredentials,
     fallbackSoftKey: KeyCredentials
 ): SmartConfig {

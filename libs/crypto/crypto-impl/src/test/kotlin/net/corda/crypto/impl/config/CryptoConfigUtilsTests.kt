@@ -10,6 +10,7 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -47,7 +48,7 @@ class CryptoConfigUtilsTests {
     fun `Should be able to get crypto config from the map`() {
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty()),
-            BOOT_CRYPTO to smartConfig
+            CRYPTO_CONFIG to smartConfig
         )
         val result = map.toCryptoConfig()
         assertSame(smartConfig, result)
@@ -260,10 +261,10 @@ class CryptoConfigUtilsTests {
             ConfigFactory.parseMap(
                 mapOf(
                     "instance" to 123,
-                    "corda.cryptoLibrary" to emptyMap<String, Any>()
+                    BOOT_CRYPTO to emptyMap<String, Any>()
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
@@ -307,7 +308,7 @@ class CryptoConfigUtilsTests {
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
@@ -343,13 +344,13 @@ class CryptoConfigUtilsTests {
             ConfigFactory.parseMap(
                 mapOf(
                     "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.salt" to "s1",
                         "softPersistence.salt" to "s2"
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
@@ -385,13 +386,13 @@ class CryptoConfigUtilsTests {
             ConfigFactory.parseMap(
                 mapOf(
                     "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "softPersistence.passphrase" to "p2"
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
@@ -427,7 +428,7 @@ class CryptoConfigUtilsTests {
             ConfigFactory.parseMap(
                 mapOf(
                     "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "rootKey.salt" to "s1",
                         "softPersistence.passphrase" to "p2",
@@ -440,7 +441,7 @@ class CryptoConfigUtilsTests {
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )

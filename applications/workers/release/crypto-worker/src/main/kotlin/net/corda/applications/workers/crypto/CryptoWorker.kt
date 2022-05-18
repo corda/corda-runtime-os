@@ -9,7 +9,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultCryptoConfig
+import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
@@ -68,7 +68,7 @@ fun buildBoostrapConfig(params: CryptoWorkerParams, configurationValidatorFactor
     val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
     return getBootstrapConfig(
         params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf(databaseConfig, cryptoConfig)
-    ).addDefaultCryptoConfig(
+    ).addDefaultBootCryptoConfig(
         fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
         fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
     )
