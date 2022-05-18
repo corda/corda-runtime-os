@@ -16,7 +16,8 @@ class ConfigSecretHelper {
     }
 
     /**
-     * Replaces all secret paths with the string MaskedSecretsLookupService.MASK_VALUE and returns a new JsonNode with the secrets that have been removed.
+     * Replaces all secret paths with the string MaskedSecretsLookupService.MASK_VALUE
+     * and returns a new JsonNode with the secrets that have been removed.
      * @param node Node to replace secrets with strings
      * @return a new JSON node containing only secrets
      */
