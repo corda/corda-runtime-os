@@ -4,6 +4,7 @@ import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleCoordinatorScheduler
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
@@ -1137,7 +1138,7 @@ internal class LifecycleCoordinatorImplTest {
     @Test
     fun `not closing a coordinator registration eventually leads to a down state`() {
         val trackedLatch = CountDownLatch(1)
-        val factory = LifecycleCoordinatorFactoryImpl(mock())
+        val factory = LifecycleCoordinatorFactoryImpl(mock(), mock())
         val coordinator = factory.createCoordinator(LifecycleCoordinatorName("a", "b")) { _, _ -> }
         coordinator.start()
 
@@ -1157,12 +1158,14 @@ internal class LifecycleCoordinatorImplTest {
 
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
+        scheduler: LifecycleCoordinatorScheduler = mock(),
         processor: LifecycleEventHandler
     ): LifecycleCoordinator {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,
             registry,
+            scheduler,
             processor
         )
     }

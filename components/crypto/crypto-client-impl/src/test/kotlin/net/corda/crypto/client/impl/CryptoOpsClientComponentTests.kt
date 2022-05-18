@@ -38,6 +38,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -72,7 +73,7 @@ import java.nio.ByteBuffer
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -103,7 +104,7 @@ class CryptoOpsClientComponentTests {
         )
         schemeMetadata = CipherSchemeMetadataImpl()
         sender = mock()
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         publisherFactory = mock {
             on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
         }

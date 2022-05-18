@@ -19,6 +19,7 @@ import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -60,7 +61,7 @@ class HSMRegistrationClientComponentTests {
     @BeforeEach
     fun setup() {
         knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         sender = mock()
         publisherFactory = mock {
             on { createRPCSender<HSMRegistrationRequest, HSMRegistrationResponse>(any(), any()) } doReturn sender
@@ -411,3 +412,4 @@ class HSMRegistrationClientComponentTests {
         Mockito.verify(sender, atLeast(1)).close()
     }
 }
+

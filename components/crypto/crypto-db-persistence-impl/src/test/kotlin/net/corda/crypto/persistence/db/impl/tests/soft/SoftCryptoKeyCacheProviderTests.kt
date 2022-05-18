@@ -8,6 +8,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,7 +33,7 @@ class SoftCryptoKeyCacheProviderTests {
 
     @BeforeEach
     fun setup() {
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         configurationReadService = TestConfigurationReadService(coordinatorFactory).also {
             it.start()
             eventually {
@@ -126,3 +127,4 @@ class SoftCryptoKeyCacheProviderTests {
         assertNotSame(instance11, instance21)
     }
 }
+

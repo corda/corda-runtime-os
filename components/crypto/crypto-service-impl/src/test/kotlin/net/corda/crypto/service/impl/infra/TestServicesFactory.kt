@@ -19,6 +19,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
@@ -52,7 +53,7 @@ class TestServicesFactory {
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 
     val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
