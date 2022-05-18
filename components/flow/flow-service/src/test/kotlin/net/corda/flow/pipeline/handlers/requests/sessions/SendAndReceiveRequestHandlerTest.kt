@@ -24,7 +24,7 @@ class SendAndReceiveRequestHandlerTest {
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.SendAndReceive(mapOf(sessionId1 to payload1, sessionId2 to payload2))
-    private val handler = SendAndReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.layeredPropertyMapFactory)
+    private val handler = SendAndReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
 
 
     @Suppress("Unused")

@@ -35,7 +35,7 @@ class SubFlowFinishedRequestHandlerTest {
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
-    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory, testContext.layeredPropertyMapFactory)
+    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
 
     @BeforeEach
     fun setup() {

@@ -1,6 +1,5 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.flow.pipeline.sessions.impl.FlowProtocolStoreImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
@@ -79,8 +78,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
             SandboxDependencyInjector::class.java.name to FakeSandboxDependencyInjector(),
             CheckpointSerializer::class.java.name to FakeCheckpointSerializer(),
             AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
-            FlowProtocolStore::class.java.name to FlowProtocolStoreImpl(mapOf(), mapOf()) // TODO
-            )
+            FlowProtocolStore::class.java.name to FakeFlowProtocolStore()
+        )
 
         override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
             return serviceMap[key]?.let(valueType::cast)
@@ -142,6 +141,16 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
         override fun getClass(className: String, serialisedClassTag: String): Class<*> {
             TODO("Not yet implemented")
+        }
+    }
+
+    class FakeFlowProtocolStore : FlowProtocolStore {
+        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>): String {
+            return "net.corda.flow.testing.fakes.FakeResponder"
+        }
+
+        override fun protocolsForInitiator(initiator: String): Pair<String, List<Int>> {
+            return Pair("protocol", listOf(1))
         }
     }
 }

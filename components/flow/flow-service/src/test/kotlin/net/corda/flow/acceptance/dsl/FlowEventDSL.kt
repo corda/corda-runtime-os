@@ -185,18 +185,18 @@ private val flowWaitingForHandlers = listOf(
 
 // Must be updated when new flow request handlers are added
 private val flowRequestHandlers = listOf(
-    CloseSessionsRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
+    CloseSessionsRequestHandler(flowSessionManager, recordFactory),
     FlowFailedRequestHandler(mock(), recordFactory),
     FlowFinishedRequestHandler(mock(), recordFactory),
     ForceCheckpointRequestHandler(recordFactory),
     GetFlowInfoRequestHandler(),
-    InitiateFlowRequestHandler(flowSessionManager, flowSandboxService, layeredPropertyMapFactory),
+    InitiateFlowRequestHandler(flowSessionManager, flowSandboxService),
     ReceiveRequestHandler(flowSessionManager, recordFactory),
-    SendAndReceiveRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
-    SendRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
+    SendAndReceiveRequestHandler(flowSessionManager, recordFactory),
+    SendRequestHandler(flowSessionManager, recordFactory),
     SleepRequestHandler(),
     SubFlowFailedRequestHandler(),
-    SubFlowFinishedRequestHandler(flowSessionManager, recordFactory, layeredPropertyMapFactory),
+    SubFlowFinishedRequestHandler(flowSessionManager, recordFactory),
     WaitForSessionConfirmationsRequestHandler()
 )
 

@@ -9,7 +9,6 @@ import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -21,9 +20,7 @@ class InitiateFlowRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowSandboxService::class)
-    private val flowSandboxService: FlowSandboxService,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val flowSandboxService: FlowSandboxService
 ) : FlowRequestHandler<FlowIORequest.InitiateFlow> {
 
     override val type = FlowIORequest.InitiateFlow::class.java

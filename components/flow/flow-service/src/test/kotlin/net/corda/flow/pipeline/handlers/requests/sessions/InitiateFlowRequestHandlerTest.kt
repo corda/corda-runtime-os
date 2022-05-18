@@ -24,7 +24,7 @@ class InitiateFlowRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1)
-    private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager, testContext.flowSandboxService, testContext.layeredPropertyMapFactory)
+    private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager, testContext.flowSandboxService)
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val protocolStore = mock<FlowProtocolStore>()
 
