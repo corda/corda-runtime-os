@@ -19,6 +19,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Debug
+      run: |
+        echo "Grep: $(grep -ril com.r3.internal.gradle.plugins.r3Publish)"
+        echo "Count: $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l)"
     - name: Check for wrong publishing plugin
       run: |
         if [ $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l) -gt 1 ]
@@ -27,4 +31,3 @@ jobs:
           echo "Please replace it with corda.common-publishing"
           exit 1
         fi
-        
