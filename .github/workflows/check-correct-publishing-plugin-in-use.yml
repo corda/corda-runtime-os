@@ -1,0 +1,30 @@
+# Check if `com.r3.internal.gradle.plugins.r3Publish` hasn't been used my mistake
+# fail if it does
+
+name: Correct Gradle publishing plugin is in use
+
+on:
+  push:
+    branches: [ release/os/5.0 ]
+  pull_request:
+    branches: [ release/os/5.0 ]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check for wrong publishing plugin
+      run: |
+        if [ $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l) -gt 1 ]
+        then
+          echo "com.r3.internal.gradle.plugins.r3Publish has been used by mistake!"
+          echo "Please replace it with corda.common-publishing"
+          exit 1
+        fi
+        
