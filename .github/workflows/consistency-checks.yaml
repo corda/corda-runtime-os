@@ -1,6 +1,6 @@
 # fast adhoc checks of the sources
 
-name: Correct Gradle publishing plugin is in use
+name: Consistency checks
 
 on:
   push:
