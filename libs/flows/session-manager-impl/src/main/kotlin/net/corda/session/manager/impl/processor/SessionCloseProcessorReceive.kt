@@ -100,14 +100,7 @@ class SessionCloseProcessorReceive(
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages =
-                sendEventsState.undeliveredMessages.plus(
-                    generateErrorEvent(
-                        sessionState,
-                        sessionEvent,
-                        errorMessage,
-                        errorType,
-                        instant
-                    ))
+                sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant))
 
         }
     }

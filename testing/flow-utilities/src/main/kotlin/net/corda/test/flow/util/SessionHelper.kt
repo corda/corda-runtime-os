@@ -43,7 +43,7 @@ fun buildSessionEvent(
     outOfOrderSeqNums: List<Int> = listOf(0),
     timestamp: Instant = Instant.now(),
     initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
-    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1")
+    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)

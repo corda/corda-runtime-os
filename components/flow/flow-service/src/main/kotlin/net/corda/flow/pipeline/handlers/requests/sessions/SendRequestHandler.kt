@@ -29,10 +29,9 @@ class SendRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Send): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now())
-            .forEach { updatedSessionState ->
-                checkpoint.putSessionState(updatedSessionState)
-            }
+        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
+            checkpoint.putSessionState(updatedSessionState)
+        }
 
         val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
         return context.copy(outputRecords = context.outputRecords + wakeup)

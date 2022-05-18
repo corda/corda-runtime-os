@@ -43,11 +43,9 @@ class SessionEventExecutor(
         val sessionId = sessionEvent.sessionId
         val record = Record(
             Schemas.P2P.P2P_OUT_TOPIC, sessionId, FlowMapperEvent(
-                SessionEvent(
-                    MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
+                SessionEvent(MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
                     sessionEvent.initiatedIdentity, 0, emptyList(),
-                    SessionError(
-                        ExceptionEnvelope(
+                    SessionError(ExceptionEnvelope(
                             "FlowMapper-SessionExpired",
                             "Tried to process session event for expired session with sessionId $sessionId"
                         )

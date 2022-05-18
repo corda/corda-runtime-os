@@ -26,16 +26,12 @@ class SendAndReceiveRequestHandler @Activate constructor(
         return WaitingFor(net.corda.data.flow.state.waiting.SessionData(request.sessionToPayload.keys.toList()))
     }
 
-    override fun postProcess(
-        context: FlowEventContext<Any>,
-        request: FlowIORequest.SendAndReceive
-    ): FlowEventContext<Any> {
+    override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now())
-            .forEach { updatedSessionState ->
-                checkpoint.putSessionState(updatedSessionState)
-            }
+        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
+            checkpoint.putSessionState(updatedSessionState)
+        }
 
         return if (flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
