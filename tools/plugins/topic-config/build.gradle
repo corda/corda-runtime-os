@@ -16,7 +16,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-topic-schema'
-    implementation 'javax.persistence:javax.persistence-api'
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"

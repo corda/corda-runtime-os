@@ -29,7 +29,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
         - name: run-topic-script
-          image: bitnami/kafka:latest
+          image: bitnami/kafka:3.1.0-debian-10-r89
 #          imagePullPolicy: Always
           command: [ "/bin/sh", "/tmp/working_dir/create-topics.sh" ]
           volumeMounts:
