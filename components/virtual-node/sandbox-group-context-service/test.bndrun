@@ -8,6 +8,7 @@
     osgi.service;objectClass:List<String>='org.osgi.service.condpermadmin.ConditionalPermissionAdmin';effective:=active
 
 -runvm: \
+    -Djdk.io.permissionsUseCanonicalPath=true, \
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 -runsystempackages: \
