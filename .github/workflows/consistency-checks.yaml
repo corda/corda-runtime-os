@@ -1,5 +1,4 @@
-# Check if `com.r3.internal.gradle.plugins.r3Publish` hasn't been used my mistake
-# fail if it does
+# fast adhoc checks of the sources
 
 name: Correct Gradle publishing plugin is in use
 
