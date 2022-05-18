@@ -57,6 +57,8 @@ dependencies {
     integrationTestImplementation project(":components:db:db-connection-manager")
     integrationTestImplementation project(":components:membership:membership-group-read")
     integrationTestImplementation project(":libs:configuration:configuration-datamodel")
+    integrationTestImplementation project(":libs:crypto:crypto-core")
+    integrationTestImplementation project(":libs:crypto:crypto-impl")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-core")

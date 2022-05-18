@@ -2,6 +2,9 @@ import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 
+import static com.gradle.enterprise.gradleplugin.test.JUnitXmlDialect.GENERIC
+import com.gradle.enterprise.gradleplugin.test.ImportJUnitXmlReports
+
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 plugins {
@@ -131,12 +134,24 @@ tasks.register('dbIntegrationTest', TestOSGi) {
     bndrun = dbResolve.flatMap { it.outputBndrun }
 }
 
+// Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
+// Test task this ensures test results are captured
+def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
+    dialect = GENERIC
+    reports.from(fileTree("$testResultsDir/dbIntegrationTest").matching {
+        include '**/TEST-*.xml'
+    })
+}
+
 tasks.named('integrationTest') {
     // By default this is expected to run against the in-memory db, effectively
     // running an in-mem version of the message pattern tests
+    finalizedBy importTask
     dependsOn dbIntegrationTest
+
     enabled = false
 }
+
 
 artifacts {
     archives testingBundle

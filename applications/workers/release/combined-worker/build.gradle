@@ -11,6 +11,7 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(":components:security-manager")
     implementation project(':processors:crypto-processor')
     implementation project(':processors:db-processor')
     implementation project(':processors:flow-processor')
@@ -27,4 +28,15 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+
+    runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.apache.felix'
+        exclude group: 'org.osgi'
+    }
+
+    osgiRun {
+        frameworkProperties.putAll(
+                'org.osgi.framework.security': 'osgi'
+        )
+    }
 }

@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sessions
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
@@ -49,8 +48,7 @@ class FlowSessionManagerImplTest {
             country = "GB"
         )
         val HOLDING_IDENTITY = HoldingIdentity("x500 name", "group id")
-        val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "flow-worker-dev")
-        val FLOW_KEY = FlowKey(FLOW_ID, HOLDING_IDENTITY)
+        val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "group id")
     }
 
     private val sessionState = buildSessionState(
@@ -82,7 +80,7 @@ class FlowSessionManagerImplTest {
     @BeforeEach
     fun setup() {
         whenever(checkpoint.flowId).thenReturn(FLOW_ID)
-        whenever(checkpoint.flowKey).thenReturn(FLOW_KEY)
+        whenever(checkpoint.holdingIdentity).thenReturn(HOLDING_IDENTITY)
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(sessionState)
         whenever(checkpoint.getSessionState(ANOTHER_SESSION_ID)).thenReturn(anotherSessionState)
     }

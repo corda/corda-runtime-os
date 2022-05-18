@@ -9,8 +9,13 @@ import net.corda.chunking.toCorda
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkCordappManifestEntity
 import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.cpi.datamodel.CpkDependencyEntity
+import net.corda.libs.cpi.datamodel.CpkFormatVersion
+import net.corda.libs.cpi.datamodel.CpkManifest
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.ManifestCorDappInfo
 import net.corda.orm.utils.transaction
 import net.corda.libs.packaging.Cpi
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -171,7 +176,58 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.hash.toString()
                 em.persist(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
-                em.merge(CpkMetadataEntity(cpiMetadataEntity, cpkChecksum, it.originalFileName!!))
+
+                val cpkMetadataEntity = CpkMetadataEntity(
+                    cpi = cpiMetadataEntity,
+                    cpkFileChecksum = cpkChecksum,
+                    cpkFileName = it.originalFileName!!,
+                    mainBundleName = it.metadata.id.name,
+                    mainBundleVersion = it.metadata.id.version,
+                    signerSummaryHash = it.metadata.id.signerSummaryHash?.toString() ?: "",
+                    cpkManifest = CpkManifest(
+                        CpkFormatVersion(
+                            it.metadata.manifest.cpkFormatVersion.major,
+                            it.metadata.manifest.cpkFormatVersion.minor
+                        )
+                    ),
+                    cpkMainBundle = it.metadata.mainBundle,
+                    cpkType = it.metadata.type.name,
+                    cpkLibraries = it.metadata.libraries
+                )
+                em.persist(cpkMetadataEntity)
+
+                it.metadata.dependencies.forEach { cpkIdentifier ->
+                    val cpkDependencyEntity = CpkDependencyEntity(
+                        cpkMetadataEntity = cpkMetadataEntity,
+                        mainBundleName = cpkIdentifier.name,
+                        mainBundleVersion = cpkIdentifier.version,
+                        signerSummaryHash = cpkIdentifier.signerSummaryHash?.toString() ?: ""
+                    )
+                    em.persist(cpkDependencyEntity)
+                }
+
+                it.metadata.cordappManifest.run {
+                    val cpkCordappManifestEntity = CpkCordappManifestEntity(
+                        cpkMetadataEntity = cpkMetadataEntity,
+                        bundleSymbolicName = this.bundleSymbolicName,
+                        bundleVersion = this.bundleVersion,
+                        minPlatformVersion = this.minPlatformVersion,
+                        targetPlatformVersion = this.targetPlatformVersion,
+                        contractInfo = ManifestCorDappInfo(
+                            shortName = this.contractInfo.shortName,
+                            vendor = this.contractInfo.vendor,
+                            versionId = this.contractInfo.versionId,
+                            license = this.contractInfo.licence
+                        ),
+                        workflowInfo = ManifestCorDappInfo(
+                            shortName = this.workflowInfo.shortName,
+                            vendor = this.workflowInfo.vendor,
+                            versionId = this.workflowInfo.versionId,
+                            license = this.workflowInfo.licence
+                        )
+                    )
+                    em.persist(cpkCordappManifestEntity)
+                }
             }
         }
     }
@@ -210,14 +266,15 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity(
-            cpiMetadata.id.name,
-            cpiMetadata.id.version,
-            cpiMetadata.id.signerSummaryHash?.toString() ?: "",
-            cpiFileName,
-            checksum.toString(),
-            cpi.metadata.groupPolicy!!,
-            groupId,
-            requestId
+            name = cpiMetadata.id.name,
+            version = cpiMetadata.id.version,
+            signerSummaryHash = cpiMetadata.id.signerSummaryHash?.toString() ?: "",
+            fileName = cpiFileName,
+            fileChecksum = checksum.toString(),
+            groupPolicy = cpi.metadata.groupPolicy!!,
+            groupId = groupId,
+            fileUploadRequestId = requestId,
+            isDeleted = false
         )
     }
 }

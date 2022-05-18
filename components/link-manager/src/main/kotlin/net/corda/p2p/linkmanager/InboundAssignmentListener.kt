@@ -8,7 +8,7 @@ import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
-class InboundAssignmentListener(
+internal class InboundAssignmentListener(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val observedTopic: String,
 ) : PartitionAssignmentListener, LifecycleWithDominoTile {

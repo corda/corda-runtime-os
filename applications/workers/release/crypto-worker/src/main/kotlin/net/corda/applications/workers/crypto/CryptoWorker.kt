@@ -9,6 +9,11 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.impl.config.addDefaultCryptoConfig
+import net.corda.libs.configuration.SmartConfig
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -48,10 +53,7 @@ class CryptoWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseConfig = PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
-        val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf
-            (databaseConfig, cryptoConfig))
+        val config = buildBoostrapConfig(params)
 
         processor.start(config)
     }
@@ -63,8 +65,19 @@ class CryptoWorker @Activate constructor(
     }
 }
 
+fun buildBoostrapConfig(params: CryptoWorkerParams): SmartConfig {
+    val databaseConfig = PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams)
+    val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
+    return getBootstrapConfig(
+        params.defaultParams,  configurationValidatorFactory.createConfigValidator(), listOf(databaseConfig, cryptoConfig)
+    ).addDefaultCryptoConfig(
+        fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+        fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+    )
+}
+
 /** Additional parameters for the crypto worker are added here. */
-private class CryptoWorkerParams {
+class CryptoWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 

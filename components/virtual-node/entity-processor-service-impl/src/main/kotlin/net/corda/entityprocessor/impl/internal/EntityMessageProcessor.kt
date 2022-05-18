@@ -23,7 +23,12 @@ import java.time.Instant
 import javax.persistence.EntityManagerFactory
 
 /**
- * Handles incoming requests and sends responses.
+ * Handles incoming requests, typically from the flow worker, and sends responses.
+ *
+ * The [EntityRequest] contains the request and a typed payload.
+ *
+ * The [EntityResponse] contains the response or an exception-like payload whose presence indicates
+ * an error has occurred.
  */
 class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,

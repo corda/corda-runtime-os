@@ -3,12 +3,12 @@ package net.corda.p2p.linkmanager.delivery
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.test.util.MockTimeFacilitiesProvider
@@ -35,8 +35,8 @@ class ReplaySchedulerTest {
         private const val MAX_REPLAYING_MESSAGES = 100
         private val replayPeriod = Duration.ofMillis(2)
         private val sessionCounterparties = SessionManager.SessionCounterparties(
-            LinkManagerInternalTypes.HoldingIdentity("Source", DeliveryTrackerTest.groupId),
-            LinkManagerInternalTypes.HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
+            HoldingIdentity("Source", DeliveryTrackerTest.groupId),
+            HoldingIdentity("Dest", DeliveryTrackerTest.groupId)
         )
         lateinit var loggingInterceptor: LoggingInterceptor
 

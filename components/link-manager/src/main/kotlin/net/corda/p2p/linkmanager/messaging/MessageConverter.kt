@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.messaging
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.HeartbeatMessage
@@ -7,7 +8,7 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
-import net.corda.data.identity.HoldingIdentity
+import net.corda.p2p.NetworkType
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
@@ -17,11 +18,6 @@ import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.MemberInfo
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.NetworkType
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toNetworkType
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
@@ -40,28 +36,41 @@ class MessageConverter {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType): LinkOutMessage {
+        internal fun createLinkOutMessage(
+            payload: Any,
+            dest: LinkManagerMembershipGroupReader.MemberInfo,
+            networkType: NetworkType
+        ): LinkOutMessage {
             val header = generateLinkOutHeaderFromPeer(dest, networkType)
             return LinkOutMessage(header, payload)
         }
 
-        private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
+        private fun generateLinkOutHeaderFromPeer(
+            peer: LinkManagerMembershipGroupReader.MemberInfo,
+            networkType: NetworkType
+        ): LinkOutHeader {
             return LinkOutHeader(
-                peer.holdingIdentity.toHoldingIdentity(),
-                networkType.toNetworkType(),
-                peer.endPoint.address,
+                peer.holdingIdentity,
+                networkType,
+                peer.endPoint,
             )
         }
 
-        private fun <T> deserializeHandleAvroErrors(deserialize: (ByteBuffer) -> T, data: ByteBuffer, sessionId: String): T? {
+        private fun <T> deserializeHandleAvroErrors(
+            deserialize: (ByteBuffer) -> T,
+            data: ByteBuffer,
+            sessionId: String
+        ): T? {
             return try {
                 deserialize(data)
             } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${sessionId}. The message was discarded.")
+                logger.warn("Could not deserialize message for session $sessionId. The message was discarded.")
                 null
             } catch (exception: AvroRuntimeException) {
-                logger.error("Could not deserialize message for session ${sessionId}. Error: $exception.message." +
-                        " The message was discarded.")
+                logger.error(
+                    "Could not deserialize message for session $sessionId. Error: $exception.message." +
+                        " The message was discarded."
+                )
                 null
             }
         }
@@ -87,8 +96,8 @@ class MessageConverter {
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
-            groups : LinkManagerGroupPolicyProvider,
-            members : LinkManagerMembershipGroupReader,
+            groups: LinkManagerGroupPolicyProvider,
+            members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -112,8 +121,8 @@ class MessageConverter {
             destination: HoldingIdentity,
             message: HeartbeatMessage,
             session: Session,
-            groups : LinkManagerGroupPolicyProvider,
-            members : LinkManagerMembershipGroupReader,
+            groups: LinkManagerGroupPolicyProvider,
+            members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val serializedMessage = try {
                 DataMessagePayload(message).toByteBuffer()
@@ -137,20 +146,22 @@ class MessageConverter {
             members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val destination = message.header.destination
-            val destMemberInfo = members.getMemberInfo(destination.toHoldingIdentity())
+            val destMemberInfo = members.getMemberInfo(destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
 
-            val groupInfo = groups.getGroupInfo(destination.toHoldingIdentity().groupId)
+            val groupInfo = groups.getGroupInfo(destination.groupId)
             if (groupInfo == null) {
-                logger.warn("Could not find the group information in the" +
-                        " GroupPolicyProvider for ${destination}. The message was discarded.")
+                logger.warn(
+                    "Could not find the group information in the" +
+                        " GroupPolicyProvider for $destination. The message was discarded."
+                )
                 return null
             }
 
-            return createLinkOutMessage(message, destMemberInfo, groupInfo.networkType.toLMNetworkType())
+            return createLinkOutMessage(message, destMemberInfo, groupInfo.networkType)
         }
 
         @Suppress("LongParameterList")
@@ -159,8 +170,8 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
-            groups : LinkManagerGroupPolicyProvider,
-            members : LinkManagerMembershipGroupReader,
+            groups: LinkManagerGroupPolicyProvider,
+            members: LinkManagerMembershipGroupReader,
         ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -176,26 +187,30 @@ class MessageConverter {
                     )
                 }
                 else -> {
-                    logger.warn("Invalid Session type ${session::class.java.simpleName}.Session must be either " +
-                        "${AuthenticatedSession::class.java.simpleName} or ${AuthenticatedEncryptionSession::class.java.simpleName}." +
-                        " The message was discarded.")
+                    logger.warn(
+                        "Invalid Session type ${session::class.java.simpleName}.Session must be either " +
+                            "${AuthenticatedSession::class.java.simpleName} or ${AuthenticatedEncryptionSession::class.java.simpleName}." +
+                            " The message was discarded."
+                    )
                     return null
                 }
             }
 
-            val destMemberInfo = members.getMemberInfo(destination.toHoldingIdentity())
+            val destMemberInfo = members.getMemberInfo(destination)
             if (destMemberInfo == null) {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
             val groupInfo = groups.getGroupInfo(source.groupId)
             if (groupInfo == null) {
-                logger.warn("Could not find the group info in the " +
-                        "GroupPolicyProvider for our identity = ${source}. The message was discarded.")
+                logger.warn(
+                    "Could not find the group info in the " +
+                        "GroupPolicyProvider for our identity = $source. The message was discarded."
+                )
                 return null
             }
 
-            return createLinkOutMessage(result, destMemberInfo, groupInfo.networkType.toLMNetworkType())
+            return createLinkOutMessage(result, destMemberInfo, groupInfo.networkType)
         }
 
         fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {
@@ -216,8 +231,10 @@ class MessageConverter {
             val decryptedData = try {
                 session.decryptData(message.header, message.encryptedPayload.array(), message.authTag.array())
             } catch (exception: DecryptionFailedError) {
-                logger.warn("Decryption failed for message for session ${message.header.sessionId}. Reason: ${exception.message} " +
-                        "The message was discarded.")
+                logger.warn(
+                    "Decryption failed for message for session ${message.header.sessionId}. Reason: ${exception.message} " +
+                        "The message was discarded."
+                )
                 return null
             }
             return deserializeHandleAvroErrors(deserialize, ByteBuffer.wrap(decryptedData), message.header.sessionId)
@@ -238,5 +255,4 @@ class MessageConverter {
             return deserializeHandleAvroErrors(deserialize, message.payload, message.header.sessionId)
         }
     }
-
 }

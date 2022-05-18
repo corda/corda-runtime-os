@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -9,7 +10,6 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
@@ -56,7 +56,7 @@ internal class StubMembershipGroupReader(
             val newValue = newRecord.value
             if (oldValue != null) {
                 publicHashToMemberInformation.remove(oldValue.toGroupIdWithPublicKeyHash())
-                membersInformation.remove(oldValue.holdingIdentity.toHoldingIdentity())
+                membersInformation.remove(oldValue.holdingIdentity)
             }
             if (newValue != null) {
                 addMember(newValue)
@@ -64,7 +64,7 @@ internal class StubMembershipGroupReader(
         }
 
         private fun addMember(member: MemberInfoEntry) {
-            membersInformation[member.holdingIdentity.toHoldingIdentity()] = member.toMemberInfo()
+            membersInformation[member.holdingIdentity] = member.toMemberInfo()
             publicHashToMemberInformation[member.toGroupIdWithPublicKeyHash()] = member.toMemberInfo()
         }
     }
@@ -88,11 +88,11 @@ internal class StubMembershipGroupReader(
         return readyFuture
     }
 
-    private val membersInformation = ConcurrentHashMap<LinkManagerInternalTypes.HoldingIdentity, LinkManagerInternalTypes.MemberInfo>()
+    private val membersInformation = ConcurrentHashMap<HoldingIdentity, LinkManagerMembershipGroupReader.MemberInfo>()
     private val publicHashToMemberInformation =
-        ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerInternalTypes.MemberInfo>()
+        ConcurrentHashMap<GroupIdWithPublicKeyHash, LinkManagerMembershipGroupReader.MemberInfo>()
 
-    override fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity) = membersInformation[holdingIdentity]
+    override fun getMemberInfo(holdingIdentity: HoldingIdentity) = membersInformation[holdingIdentity]
 
     override fun getMemberInfo(hash: ByteArray, groupId: String) =
         publicHashToMemberInformation[
@@ -102,13 +102,13 @@ internal class StubMembershipGroupReader(
             )
         ]
 
-    private fun MemberInfoEntry.toMemberInfo(): LinkManagerInternalTypes.MemberInfo {
+    private fun MemberInfoEntry.toMemberInfo(): LinkManagerMembershipGroupReader.MemberInfo {
         val publicKey = publicKeyReader.loadPublicKey(this.sessionPublicKey)
-        return LinkManagerInternalTypes.MemberInfo(
-            LinkManagerInternalTypes.HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
+        return LinkManagerMembershipGroupReader.MemberInfo(
+            HoldingIdentity(this.holdingIdentity.x500Name, this.holdingIdentity.groupId),
             publicKey,
             publicKey.toKeyAlgorithm(),
-            LinkManagerInternalTypes.EndPoint(this.address),
+            this.address,
         )
     }
 

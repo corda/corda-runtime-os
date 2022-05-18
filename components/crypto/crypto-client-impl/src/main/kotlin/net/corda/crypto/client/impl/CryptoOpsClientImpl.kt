@@ -1,8 +1,8 @@
 package net.corda.crypto.client.impl
 
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
@@ -15,9 +15,9 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
@@ -35,6 +35,7 @@ import net.corda.v5.crypto.sha256Bytes
 import net.corda.v5.crypto.toStringShort
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Duration
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -56,7 +57,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = SupportedSchemesRpcQuery(category)
         )
-        val response = request.execute(CryptoSignatureSchemes::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureSchemes::class.java)
         return response!!.codes
     }
 
@@ -75,7 +76,7 @@ class CryptoOpsClientImpl(
                 }
             )
         )
-        val response = request.execute(CryptoSigningKeys::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)
         return response!!.keys.map {
             schemeMetadata.decodePublicKey(it.publicKey.array())
         }
@@ -96,13 +97,14 @@ class CryptoOpsClientImpl(
                 }
             )
         )
-        return request.execute(CryptoSigningKeys::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!
     }
 
     fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey {
         logger.info(
@@ -114,17 +116,19 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateKeyPairCommand(category, alias, null, context.toWire())
+            request = GenerateKeyPairCommand(category, alias, null, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
+    @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
         externalId: String,
+        scheme: String,
         context: Map<String, String>
     ): PublicKey {
         logger.info(
@@ -136,13 +140,18 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateKeyPairCommand(category, alias, externalId, context.toWire())
+            request = GenerateKeyPairCommand(category, alias, externalId, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
+    fun freshKey(
+        tenantId: String,
+        category: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
         logger.info(
             "Sending '{}'(tenant={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -150,13 +159,19 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(null, context.toWire())
+            request = GenerateFreshKeyRpcCommand(category, null, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKey(tenantId: String, externalId: String, context: Map<String, String>): PublicKey {
+    fun freshKey(
+        tenantId: String,
+        category: String,
+        externalId: String,
+        scheme: String,
+        context: Map<String, String>
+    ): PublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -165,13 +180,18 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId, context.toWire())
+            request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context.toWire())
         )
-        val response = request.execute(CryptoPublicKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    fun freshKeyProxy(tenantId: String, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(
+        tenantId: String,
+        category: String,
+        scheme: String,
+        context: KeyValuePairList
+    ): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -179,12 +199,18 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(null, context)
+            request = GenerateFreshKeyRpcCommand(category, null, scheme, context)
         )
-        return request.execute(CryptoPublicKey::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)!!
     }
 
-    fun freshKeyProxy(tenantId: String, externalId: String, context: KeyValuePairList): CryptoPublicKey {
+    fun freshKeyProxy(
+        tenantId: String,
+        category: String,
+        externalId: String,
+        scheme: String,
+        context: KeyValuePairList
+    ): CryptoPublicKey {
         logger.info(
             "Sending '{}'(tenant={},externalId={})",
             GenerateFreshKeyRpcCommand::class.java.simpleName,
@@ -193,9 +219,9 @@ class CryptoOpsClientImpl(
         )
         val request = createRequest(
             tenantId = tenantId,
-            request = GenerateFreshKeyRpcCommand(externalId, context)
+            request = GenerateFreshKeyRpcCommand(category, externalId, scheme, context)
         )
-        return request.execute(CryptoPublicKey::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoPublicKey::class.java)!!
     }
 
     fun sign(
@@ -218,7 +244,7 @@ class CryptoOpsClientImpl(
                 context.toWire()
             )
         )
-        val response = request.execute(CryptoSignatureWithKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
@@ -248,7 +274,7 @@ class CryptoOpsClientImpl(
                 context.toWire()
             )
         )
-        val response = request.execute(CryptoSignatureWithKey::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
@@ -275,7 +301,32 @@ class CryptoOpsClientImpl(
                 context
             )
         )
-        return request.execute(CryptoSignatureWithKey::class.java)!!
+        return request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)!!
+    }
+
+    fun createWrappingKey(
+        configId: String,
+        failIfExists: Boolean,
+        masterKeyAlias: String,
+        context: Map<String, String>
+    ) {
+        logger.info(
+            "Sending '{}'(configId={},failIfExists={},masterKeyAlias={})",
+            GenerateWrappingKeyRpcCommand::class.java.simpleName,
+            configId,
+            failIfExists,
+            masterKeyAlias
+        )
+        val request = createRequest(
+            CryptoTenants.CRYPTO,
+            GenerateWrappingKeyRpcCommand(
+                configId,
+                masterKeyAlias,
+                failIfExists,
+                context.toWire()
+            )
+        )
+        request.execute(Duration.ofSeconds(20), CryptoNoContentValue::class.java, allowNoContentValue = true)
     }
 
     fun lookup(
@@ -303,7 +354,7 @@ class CryptoOpsClientImpl(
                 filter.toWire()
             )
         )
-        return request.execute(CryptoSigningKeys::class.java)!!.keys
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
@@ -320,21 +371,7 @@ class CryptoOpsClientImpl(
             tenantId,
             ByIdsRpcQuery(ids)
         )
-        return request.execute(CryptoSigningKeys::class.java)!!.keys
-    }
-
-    fun findHSM(tenantId: String, category: String): HSMInfo? {
-        logger.info(
-            "Sending '{}'(tenant={},category={})",
-            AssignedHSMRpcQuery::class.java.simpleName,
-            tenantId,
-            category
-        )
-        val request = createRequest(
-            tenantId,
-            AssignedHSMRpcQuery(category)
-        )
-        return request.execute(HSMInfo::class.java, allowNoContentValue = true)
+        return request.execute(Duration.ofSeconds(20), CryptoSigningKeys::class.java)!!.keys
     }
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
@@ -356,42 +393,41 @@ class CryptoOpsClientImpl(
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <RESPONSE> RpcOpsRequest.execute(
+        timeout: Duration,
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
     ): RESPONSE? {
-        while (true) {
-            try {
-                val response = sender.sendRequest(this).getOrThrow()
-                require(
-                    response.context.requestingComponent == context.requestingComponent &&
-                            response.context.tenantId == context.tenantId
-                ) {
-                    "Expected ${context.tenantId} tenant and ${context.requestingComponent} component, but " +
-                            "received ${response.response::class.java.name} with ${response.context.tenantId} tenant" +
-                            " ${response.context.requestingComponent} component"
-                }
-                if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
-                    logger.debug(
-                        "Received empty response for {} for tenant {}",
-                        request::class.java.name,
-                        context.tenantId
-                    )
-                    return null
-                }
-                require(response.response != null && (response.response::class.java == respClazz)) {
-                    "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
-                            "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
-                }
-                logger.debug("Received response {} for tenant {}", respClazz.name, context.tenantId)
-                return response.response as RESPONSE
-            } catch (e: CryptoServiceLibraryException) {
-                logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
-                throw e
-            } catch (e: Throwable) {
-                val message = "Failed executing ${request::class.java.name} for tenant ${context.tenantId}"
-                logger.error(message, e)
-                throw CryptoServiceLibraryException(message, e)
+        try {
+            val response = sender.sendRequest(this).getOrThrow(timeout)
+            require(
+                response.context.requestingComponent == context.requestingComponent &&
+                        response.context.tenantId == context.tenantId
+            ) {
+                "Expected ${context.tenantId} tenant and ${context.requestingComponent} component, but " +
+                        "received ${response.response::class.java.name} with ${response.context.tenantId} tenant" +
+                        " ${response.context.requestingComponent} component"
             }
+            if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
+                logger.debug(
+                    "Received empty response for {} for tenant {}",
+                    request::class.java.name,
+                    context.tenantId
+                )
+                return null
+            }
+            require(response.response != null && (response.response::class.java == respClazz)) {
+                "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
+                        "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
+            }
+            logger.debug("Received response {} for tenant {}", respClazz.name, context.tenantId)
+            return response.response as RESPONSE
+        } catch (e: CryptoServiceLibraryException) {
+            logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
+            throw e
+        } catch (e: Throwable) {
+            val message = "Failed executing ${request::class.java.name} for tenant ${context.tenantId}"
+            logger.error(message, e)
+            throw CryptoServiceLibraryException(message, e)
         }
     }
 }
