@@ -42,6 +42,7 @@ class FlowSessionManagerImplTest {
         const val ANOTHER_SESSION_ID = "another session id"
         const val CPI_ID = "cpi id"
         const val INITIATING_FLOW_NAME = "Initiating flow"
+        private const val PROTOCOL = "protocol"
         val X500_NAME = MemberX500Name(
             commonName = "Alice",
             organisation = "Alice Corp",
@@ -110,7 +111,7 @@ class FlowSessionManagerImplTest {
         val instant = Instant.now()
 
         val expectedSessionInit = SessionInit.newBuilder()
-            .setProtocol(INITIATING_FLOW_NAME)
+            .setProtocol(PROTOCOL)
             .setVersions(listOf(1))
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
@@ -130,7 +131,7 @@ class FlowSessionManagerImplTest {
             checkpoint,
             SESSION_ID,
             X500_NAME,
-            INITIATING_FLOW_NAME,
+            PROTOCOL,
             listOf(1),
             instant
         )
