@@ -13,7 +13,7 @@ class FlowProtocolStoreImpl(
     private val protocolToResponder: Map<FlowProtocol, String>
 ) : FlowProtocolStore {
 
-    override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>) : String {
+    override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>): String {
         val sortedProtocols = supportedVersions.sortedDescending().map { FlowProtocol(protocolName, it) }
         for (protocol in sortedProtocols) {
             val responder = protocolToResponder[protocol]
@@ -27,6 +27,10 @@ class FlowProtocolStoreImpl(
     override fun protocolsForInitiator(initiator: String): Pair<String, List<Int>> {
         val protocolList = initiatorToProtocol[initiator]
             ?: throw FlowProcessingException("No protocols were found for initiating flow $initiator")
+        val protocolNames = protocolList.map { it.protocol }.toSet()
+        if (protocolNames.size != 1) {
+            throw FlowProcessingException("Multiple protocol names were declared by initiating flow $initiator. Names: $protocolNames")
+        }
         return protocolList.run {
             Pair(protocolList.first().protocol, protocolList.map { it.version })
         }

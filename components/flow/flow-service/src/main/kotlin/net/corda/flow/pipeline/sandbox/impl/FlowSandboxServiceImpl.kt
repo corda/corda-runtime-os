@@ -137,7 +137,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
         sandboxGroupContext.putAMQPSerializationEnvironment(cpiMetadata)
 
-        sandboxGroupContext.putInitiatingToInitiatedFlowsMap(cpiMetadata)
+        sandboxGroupContext.putUniqueObject(flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata))
 
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
@@ -198,9 +198,5 @@ class FlowSandboxServiceImpl @Activate constructor(
                 SerializationCustomSerializer::class.java
             ).getConstructor().newInstance()
         }
-    }
-
-    private fun MutableSandboxGroupContext.putInitiatingToInitiatedFlowsMap(cpiMetadata: CpiMetadata) {
-        putUniqueObject(flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata))
     }
 }

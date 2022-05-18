@@ -36,7 +36,6 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.impl.FlowSessionManagerImpl
 import net.corda.flow.state.impl.FlowCheckpointFactoryImpl
-import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -165,8 +164,6 @@ private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
 private val flowSandboxService = mock<FlowSandboxService>().apply {
     whenever(get(any())).thenReturn(sandboxGroupContext)
 }
-
-private val layeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(listOf())
 
 // Must be updated when new flow event handlers are added
 private val flowEventHandlers = listOf(

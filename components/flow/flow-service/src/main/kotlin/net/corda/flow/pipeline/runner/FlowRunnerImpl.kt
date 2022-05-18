@@ -18,7 +18,6 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -83,7 +82,7 @@ class FlowRunnerImpl @Activate constructor(
                     "flowClassName: ${startFlowEvent.startContext.flowClassName} args ${startFlowEvent.flowStartArgs}"
         )
 
-        val sandbox = getSandbox(checkpoint)
+        val sandbox = flowSandboxService.get(checkpoint.holdingIdentity.toCorda())
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
         val flow = flowFactory.createFlow(startFlowEvent, sandbox)
         val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow, scheduler)
@@ -103,7 +102,7 @@ class FlowRunnerImpl @Activate constructor(
 
         log.info("start new initiated flow for protocol name: ${sessionInit.protocol}")
 
-        val sandbox = getSandbox(checkpoint)
+        val sandbox = flowSandboxService.get(checkpoint.holdingIdentity.toCorda())
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
 
         val initiatedFlowClassName =
@@ -148,19 +147,10 @@ class FlowRunnerImpl @Activate constructor(
         flowContinuation: FlowContinuation
     ): Future<FlowIORequest<*>> {
         val checkpoint = context.checkpoint
-        val sandbox = getSandbox(checkpoint)
+        val sandbox = flowSandboxService.get(checkpoint.holdingIdentity.toCorda())
         val fiberContext = createFiberExecutionContext(sandbox, checkpoint)
         val flowFiber = flowFiberFactory.createFlowFiber(fiberContext)
 
         return flowFiber.resume(fiberContext, flowContinuation, scheduler)
-    }
-
-    private fun getSandbox(checkpoint: FlowCheckpoint): FlowSandboxGroupContext {
-        return flowSandboxService.get(
-            HoldingIdentity(
-                checkpoint.holdingIdentity.x500Name,
-                checkpoint.holdingIdentity.groupId
-            )
-        )
     }
 }

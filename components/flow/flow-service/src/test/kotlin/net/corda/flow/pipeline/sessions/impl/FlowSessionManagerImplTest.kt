@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.sessions
+package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
@@ -13,7 +13,6 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.FlowProcessingException
-import net.corda.flow.pipeline.sessions.impl.FlowSessionManagerImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.session.manager.SessionManager
