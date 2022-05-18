@@ -19,13 +19,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Debug
-      run: |
-        echo "Grep: $(grep -ril com.r3.internal.gradle.plugins.r3Publish)"
-        echo "Count: $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l)"
     - name: Check for wrong publishing plugin
       run: |
-        if [ $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l) -gt 1 ]
+        # there are two places mentions are allowed
+        # 1. this file!!!!
+        # 2. buildSrc/src/main/groovy/corda.common-publishing.gradle
+        if [ $(grep -ril com.r3.internal.gradle.plugins.r3Publish | wc -l) -gt 2 ]
         then
           echo "com.r3.internal.gradle.plugins.r3Publish has been used by mistake!"
           echo "Please replace it with corda.common-publishing"
