@@ -5,9 +5,13 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.virtualnode.DeleteEntity
 import net.corda.data.virtualnode.EntityRequest
 import net.corda.data.virtualnode.EntityResponse
+import net.corda.data.virtualnode.EntityResponseFailure
+import net.corda.data.virtualnode.Error
 import net.corda.data.virtualnode.FindEntity
 import net.corda.data.virtualnode.MergeEntity
 import net.corda.data.virtualnode.PersistEntity
+import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
+import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -17,10 +21,14 @@ import net.corda.schema.Schemas
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
-import java.nio.ByteBuffer
 import java.time.Instant
 import javax.persistence.EntityManagerFactory
+
+
+fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
+    this.get(holdingIdentity).sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -37,77 +45,129 @@ class EntityMessageProcessor(
         private val log = contextLogger()
     }
 
-    private val persistenceServiceInternal = PersistenceServiceInternal(entitySandboxService)
-
     private fun SandboxGroupContext.getSerializationService(): SerializationService =
         getObjectByKey(EntitySandboxContextTypes.SANDBOX_SERIALIZER)
-            ?: throw CordaRuntimeException("P2P serialization service not found within the sandbox for identity: " +
-                    "${virtualNodeContext.holdingIdentity}")
+            ?: throw CordaRuntimeException(
+                "Entity serialization service not found within the sandbox for identity: " +
+                        "${virtualNodeContext.holdingIdentity}"
+            )
 
     private fun SandboxGroupContext.getEntityManagerFactory(): EntityManagerFactory =
         getObjectByKey(EntitySandboxContextTypes.SANDBOX_EMF)
-            ?: throw CordaRuntimeException("Entity manager factory not found within the sandbox for identity: " +
-                    "${virtualNodeContext.holdingIdentity}")
+            ?: throw CordaRuntimeException(
+                "Entity manager factory not found within the sandbox for identity: " +
+                        "${virtualNodeContext.holdingIdentity}"
+            )
 
     override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
         val responses = mutableListOf<Record<FlowKey, EntityResponse>>()
         events.forEach {
-            try {
-                val response = processRequest(it.key, it.value!!)
-                responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, it.value!!.flowKey, response))
+            val response = try {
+                processRequest(it.key, it.value!!)
             } catch (e: Exception) {
-                // TODO - allow a throw or not?  Matthew mentioned something about resubmitting/handling failure.
-                responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, it.value!!.flowKey, exceptionResponse(it.key, e)))
+                // If we're catching at this point, it's an unrecoverable error.
+                failureResponse(it.key, e, Error.FATAL)
             }
+            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, it.value!!.flowKey, response))
         }
 
         return responses
     }
 
-    private fun processRequest(key: String, request: EntityRequest): EntityResponse {
-        // Now get its sandbox
+    private fun processRequest(requestId: String, request: EntityRequest): EntityResponse {
         val holdingIdentity = request.flowKey.identity.toCorda()
-        val sandbox = entitySandboxService.get(holdingIdentity)
+
+        // Get the sandbox for the given request.
+        // Handle any exceptions as close to the throw-site as possible.
+        val sandbox = try {
+            entitySandboxService.get(holdingIdentity)
+        } catch (e: NotReadyException) {
+            // Flow worker could retry later, but may not be successful.
+            return failureResponse(requestId, e, Error.NOT_READY)
+        } catch (e: VirtualNodeException) {
+            // Flow worker could retry later, but may not be successful.
+            return failureResponse(requestId, e, Error.VIRTUAL_NODE)
+        } catch (e: Exception) {
+            throw e // rethrow and handle higher up
+        }
+
+        return processRequestWithSandbox(sandbox, requestId, request)
+    }
+
+    private fun processRequestWithSandbox(
+        sandbox: SandboxGroupContext,
+        requestId: String,
+        request: EntityRequest
+    ): EntityResponse {
+        val holdingIdentity = request.flowKey.identity.toCorda()
 
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
 
-        // we match on the type, and pass the cast into the persistence service.
-        val responsePayload = entityManagerFactory.createEntityManager().transaction {
-            when (request.request) {
-                is PersistEntity -> persistenceServiceInternal.persist(
-                    serializationService,
-                    it,
-                    request.request as PersistEntity
-                )
-                is DeleteEntity -> persistenceServiceInternal.remove(
-                    serializationService,
-                    it,
-                    request.request as DeleteEntity
-                )
-                is MergeEntity -> persistenceServiceInternal.merge(
-                    serializationService,
-                    it,
-                    request.request as MergeEntity
-                )
-                is FindEntity -> persistenceServiceInternal.find(
-                    serializationService,
-                    it,
-                    request.request as FindEntity,
-                    holdingIdentity
-                )
-                else -> throw CordaRuntimeException("Unexpected PersistenceService operation type: ${request.request}")
-            }
-        }
+        val persistenceServiceInternal = PersistenceServiceInternal(entitySandboxService::getClass, requestId)
 
-        val response = if(null == responsePayload) null else ByteBuffer.wrap(responsePayload.bytes)
-        return EntityResponse(Instant.now(), key, response)
+        // We match on the type, and pass the cast into the persistence service.
+        // Any exception that occurs next we assume orignates in Hibernate and categorise
+        // it accordingly.
+        val response = try {
+            entityManagerFactory.createEntityManager().transaction {
+                when (request.request) {
+                    is PersistEntity -> persistenceServiceInternal.persist(
+                        serializationService,
+                        it,
+                        request.request as PersistEntity
+                    )
+                    is DeleteEntity -> persistenceServiceInternal.remove(
+                        serializationService,
+                        it,
+                        request.request as DeleteEntity
+                    )
+                    is MergeEntity -> persistenceServiceInternal.merge(
+                        serializationService,
+                        it,
+                        request.request as MergeEntity
+                    )
+                    is FindEntity -> persistenceServiceInternal.find(
+                        serializationService,
+                        it,
+                        request.request as FindEntity,
+                        holdingIdentity
+                    )
+                    else -> {
+                        // Flow worker could retry and a *different* db processor that supports the command is used.
+                        failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
+                    }
+                }
+            }
+        } catch (e: java.io.NotSerializableException) {
+            // Deserialization failure should be deterministic, and therefore retrying won't save you.
+            // We mark this as FATAL so the flow worker knows about it, as per PR discussion.
+            EntityResponse(
+                Instant.now(), requestId, EntityResponseFailure(
+                    Error.FATAL, ExceptionEnvelope(e.javaClass.canonicalName, e.localizedMessage)
+                )
+            )
+        } catch (e: Exception) {
+            EntityResponse(
+                Instant.now(), requestId, EntityResponseFailure(
+                    Error.DATABASE, ExceptionEnvelope(e.javaClass.canonicalName, e.localizedMessage)
+                )
+            )
+        }
+        return response
     }
 
-    private fun exceptionResponse(key: String, e: Exception) =
-        EntityResponse(Instant.now(), key, ExceptionEnvelope(e::class.java.simpleName, e.localizedMessage))
+    private fun failureResponse(requestId: String, e: Exception, errorType: Error) =
+        EntityResponse(
+            Instant.now(),
+            requestId,
+            EntityResponseFailure(
+                errorType,
+                ExceptionEnvelope(e::class.java.simpleName, e.localizedMessage)
+            )
+        )
 
     override val keyClass: Class<String>
         get() = String::class.java
