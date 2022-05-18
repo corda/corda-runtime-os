@@ -1,12 +1,15 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.waiting.SessionData
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionMissingException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,17 +26,23 @@ class SendAndReceiveRequestHandler @Activate constructor(
     override val type = FlowIORequest.SendAndReceive::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): WaitingFor {
-        return WaitingFor(net.corda.data.flow.state.waiting.SessionData(request.sessionToPayload.keys.toList()))
+        return WaitingFor(SessionData(request.sessionToPayload.keys.toList()))
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
-            checkpoint.putSessionState(updatedSessionState)
+        val hasReceivedEvents = try {
+            flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now()).forEach { updatedSessionState ->
+                checkpoint.putSessionState(updatedSessionState)
+            }
+            flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())
+        } catch (e: FlowSessionMissingException) {
+            // TODO CORE-4850 Wakeup with error when session does not exist
+            throw FlowFatalException(e.message, context, e)
         }
 
-        return if (flowSessionManager.hasReceivedEvents(checkpoint, request.sessionToPayload.keys.toList())) {
+        return if (hasReceivedEvents) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {
