@@ -14,7 +14,6 @@ dependencies {
     implementation project(":libs:lifecycle:registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-//    implementation 'net.corda:corda-config-schema'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.assertj:assertj-core:$assertjVersion"

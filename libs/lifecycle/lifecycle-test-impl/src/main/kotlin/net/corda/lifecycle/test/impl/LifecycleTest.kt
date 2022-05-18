@@ -77,6 +77,15 @@ class LifecycleTest<T : Lifecycle>(
         bringDependencyDown(LifecycleCoordinatorName.forComponent<T>())
     }
 
+    private fun LifecycleCoordinator.bringUp() {
+        this.start()
+        this.updateStatus(LifecycleStatus.UP)
+    }
+
+    private fun LifecycleCoordinator.bringDown() {
+        this.updateStatus(LifecycleStatus.DOWN)
+    }
+
     init {
         initializer.invoke(this)
     }
