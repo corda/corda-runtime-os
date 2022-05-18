@@ -21,12 +21,22 @@ interface StepSetup {
 
     fun flowConfiguration(key:String, value:Any)
 
+    fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
+
     fun startFlowEventReceived(
         flowId: String,
         requestId: String,
         holdingId: HoldingIdentity,
         cpiId: String,
         args: String
+    ): FlowIoRequestSetup
+
+    fun sessionInitEventReceived(
+        flowId: String,
+        sessionId: String,
+        cpiId: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
     fun sessionAckEventReceived(
@@ -48,6 +58,15 @@ interface StepSetup {
     ): FlowIoRequestSetup
 
     fun sessionCloseEventReceived(
+        flowId: String,
+        sessionId: String,
+        sequenceNum: Int,
+        receivedSequenceNum: Int,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    ): FlowIoRequestSetup
+
+    fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,

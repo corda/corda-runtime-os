@@ -16,5 +16,5 @@ interface FlowEventContextConverter {
      *
      * @return the populated [StateAndEventProcessor.Response] instance.
      */
-    fun convert(flowContext: FlowEventContext<Any>): StateAndEventProcessor.Response<Checkpoint>
+    fun convert(flowContext: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
 }

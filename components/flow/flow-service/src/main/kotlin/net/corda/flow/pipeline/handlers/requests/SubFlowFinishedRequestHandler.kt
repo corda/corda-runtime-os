@@ -1,14 +1,16 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionMissingException
 import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -26,10 +28,16 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     override val type = FlowIORequest.SubFlowFinished::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFinished): WaitingFor {
-        return if (doesSubFlowHaveSessions(request)) {
-            WaitingFor(SessionConfirmation(request.flowStackItem.sessionIds, SessionConfirmationType.CLOSE))
+        val sessionsToClose = try {
+            getSessionsToClose(context.checkpoint, request)
+        } catch (e: FlowSessionMissingException) {
+            // TODO CORE-4850 Wakeup with error when session does not exist
+            throw FlowFatalException(e.message, context, e)
+        }
+        return if (sessionsToClose.isEmpty()) {
+            WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
-            WaitingFor(Wakeup())
+            WaitingFor(SessionConfirmation(sessionsToClose, SessionConfirmationType.CLOSE))
         }
     }
 
@@ -39,31 +47,29 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        val doesSubFlowHaveSessions = doesSubFlowHaveSessions(request)
+        val hasNoSessionsOrAllClosed = try {
+            val sessionsToClose = getSessionsToClose(checkpoint, request)
 
-        if (doesSubFlowHaveSessions) {
-            flowSessionManager.sendCloseMessages(checkpoint, request.flowStackItem.sessionIds, Instant.now())
-                .map { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
+            flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now())
+                .forEach { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
+
+            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
+        } catch (e: FlowSessionMissingException) {
+            // TODO CORE-4850 Wakeup with error when session does not exist
+            throw FlowFatalException(e.message, context, e)
         }
 
-        val shouldWakeup = !doesSubFlowHaveSessions || allSessionsAreClosed(checkpoint, request)
-
-        if (shouldWakeup){
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, net.corda.data.flow.event.Wakeup())
-            return context.copy(outputRecords = context.outputRecords + record)
+        return if (hasNoSessionsOrAllClosed) {
+            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+            context.copy(outputRecords = context.outputRecords + listOf(record))
+        } else {
+            context
         }
-        return context
     }
 
-    private fun doesSubFlowHaveSessions(request: FlowIORequest.SubFlowFinished): Boolean {
-        return request.flowStackItem.isInitiatingFlow && request.flowStackItem.sessionIds.isNotEmpty()
-    }
-
-    private fun allSessionsAreClosed(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): Boolean {
-        return flowSessionManager.doAllSessionsHaveStatus(
-            checkpoint,
-            request.flowStackItem.sessionIds,
-            SessionStateType.CLOSED
-        )
+    private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): List<String> {
+        val flowStackItem = request.flowStackItem
+        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.ERROR)
+        return flowStackItem.sessionIds - erroredSessions.map { it.sessionId }
     }
 }
