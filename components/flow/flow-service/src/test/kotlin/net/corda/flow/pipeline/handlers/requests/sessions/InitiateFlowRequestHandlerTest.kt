@@ -39,7 +39,6 @@ class InitiateFlowRequestHandlerTest {
                 eq(ALICE_X500_NAME),
                 eq("protocol"),
                 eq(listOf(1)),
-                any(),
                 any()
             )
         ).thenReturn(sessionState1)

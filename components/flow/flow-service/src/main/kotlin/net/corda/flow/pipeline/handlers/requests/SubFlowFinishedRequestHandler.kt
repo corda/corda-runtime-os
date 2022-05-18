@@ -8,7 +8,6 @@ import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -46,8 +45,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         val doesSubFlowHaveSessions = doesSubFlowHaveSessions(request)
 
         if (doesSubFlowHaveSessions) {
-            val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
-            flowSessionManager.sendCloseMessages(checkpoint, request.flowStackItem.sessionIds, headers, Instant.now())
+            flowSessionManager.sendCloseMessages(checkpoint, request.flowStackItem.sessionIds, Instant.now())
                 .map { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
         }
 

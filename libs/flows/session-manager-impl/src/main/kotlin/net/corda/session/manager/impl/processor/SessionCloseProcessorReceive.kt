@@ -10,7 +10,6 @@ import net.corda.session.manager.impl.processor.helper.generateErrorSessionState
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.nio.ByteBuffer
 import java.time.Instant
 
 
@@ -107,8 +106,7 @@ class SessionCloseProcessorReceive(
                         sessionEvent,
                         errorMessage,
                         errorType,
-                        instant,
-                        ByteBuffer.wrap("".toByteArray()) // Headers are not yet wired up.
+                        instant
                     ))
 
         }

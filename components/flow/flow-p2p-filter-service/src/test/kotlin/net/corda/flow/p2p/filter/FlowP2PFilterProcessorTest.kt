@@ -50,7 +50,6 @@ class FlowP2PFilterProcessorTest {
             identity,
             0,
             listOf(),
-            ByteBuffer.wrap("".toByteArray()),
             SessionInit(
                 testValue, version, testValue, null, ByteBuffer.wrap("".toByteArray())
             )

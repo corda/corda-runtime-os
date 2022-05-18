@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import org.osgi.service.component.annotations.Activate
@@ -35,11 +34,8 @@ class SendAndReceiveRequestHandler @Activate constructor(
         request: FlowIORequest.SendAndReceive
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        // For now, the headers are empty. In the future platform and user context should be passed through to these
-        // message headers.
-        val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
 
-        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, headers, Instant.now())
+        flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now())
             .forEach { updatedSessionState ->
                 checkpoint.putSessionState(updatedSessionState)
             }

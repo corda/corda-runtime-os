@@ -45,7 +45,7 @@ class SessionEventExecutor(
             Schemas.P2P.P2P_OUT_TOPIC, sessionId, FlowMapperEvent(
                 SessionEvent(
                     MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
-                    sessionEvent.initiatedIdentity, 0, emptyList(), sessionEvent.headers,
+                    sessionEvent.initiatedIdentity, 0, emptyList(),
                     SessionError(
                         ExceptionEnvelope(
                             "FlowMapper-SessionExpired",

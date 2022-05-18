@@ -1,6 +1,5 @@
 package net.corda.flow.p2p.filter.integration
 
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroSerializationFactory
@@ -13,7 +12,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.p2p.filter.integration.processor.TestFlowSessionFilterProcessor
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -54,9 +52,6 @@ class FlowFilterServiceIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
-
-    // no secrets needed -> empty config
-    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
@@ -105,7 +100,6 @@ class FlowFilterServiceIntegrationTest {
             identity,
             0,
             listOf(),
-            ByteBuffer.wrap("".toByteArray()),
             SessionInit(
                 testId, version, testId, null, ByteBuffer.wrap("".toByteArray())
             )

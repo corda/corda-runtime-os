@@ -35,7 +35,7 @@ class SendAndReceiveRequestHandlerTest {
         whenever(flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
         whenever(flowCheckpoint.getSessionState(sessionId2)).thenReturn(sessionState2)
 
-        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any(), any())).thenReturn(
+        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any())).thenReturn(
             listOf(
                 sessionState1,
                 sessionState2
@@ -65,7 +65,6 @@ class SendAndReceiveRequestHandlerTest {
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
             eq(ioRequest.sessionToPayload),
-            any(),
             any()
         )
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
@@ -84,7 +83,6 @@ class SendAndReceiveRequestHandlerTest {
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
             eq(ioRequest.sessionToPayload),
-            any(),
             any()
         )
 

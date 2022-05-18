@@ -16,7 +16,6 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import org.osgi.service.component.annotations.Component
-import java.nio.ByteBuffer
 import java.time.Instant
 
 @Component
@@ -124,8 +123,7 @@ class SessionManagerImpl : SessionManager {
                     initiatedIdentity,
                     "Session has timed out. No messages received since $lastReceivedMessageTime",
                     "SessionTimeout-Heartbeat",
-                    instant,
-                    ByteBuffer.wrap("".toByteArray()) // Message headers are not yet wired up.
+                    instant
                 ).apply {
                     this.initiatedIdentity = initiatedIdentity
                     this.initiatingIdentity = initiatingIdentity

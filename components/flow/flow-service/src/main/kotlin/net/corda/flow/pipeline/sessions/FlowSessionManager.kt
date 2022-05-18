@@ -25,7 +25,6 @@ interface FlowSessionManager {
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
      * @param protocolName The name of the protocol to use in this session
      * @param protocolVersions The versions of the protocol supported by the initiating side
-     * @param headers The headers to add to the session message
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
@@ -36,7 +35,6 @@ interface FlowSessionManager {
         x500Name: MemberX500Name,
         protocolName: String,
         protocolVersions: List<Int>,
-        headers: FlowSessionHeaders,
         instant: Instant
     ): SessionState
 
@@ -45,7 +43,6 @@ interface FlowSessionManager {
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionToPayload A map of the sessions ids to the payload to send.
-     * @param headers The headers to add to the session message.
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return Updated [SessionState] containing [SessionData] messages to send.
@@ -55,7 +52,6 @@ interface FlowSessionManager {
     fun sendDataMessages(
         checkpoint: FlowCheckpoint,
         sessionToPayload: Map<String, ByteArray>,
-        headers: FlowSessionHeaders,
         instant: Instant
     ): List<SessionState>
 
@@ -64,7 +60,6 @@ interface FlowSessionManager {
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionIds The sessions ids to close.
-     * @param headers The headers to add to the session message.
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return Updated [SessionState] containing [SessionClose] messages to send.
@@ -74,7 +69,6 @@ interface FlowSessionManager {
     fun sendCloseMessages(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
-        headers: FlowSessionHeaders,
         instant: Instant
     ): List<SessionState>
 

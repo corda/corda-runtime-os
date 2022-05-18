@@ -193,7 +193,6 @@ class SessionEventHandlerTest {
             .setPayload(payload)
             .setInitiatedIdentity(ALICE_X500_HOLDING_IDENTITY)
             .setInitiatingIdentity(BOB_X500_HOLDING_IDENTITY)
-            .setHeaders(ByteBuffer.wrap("".toByteArray()))
             .build()
     }
 }

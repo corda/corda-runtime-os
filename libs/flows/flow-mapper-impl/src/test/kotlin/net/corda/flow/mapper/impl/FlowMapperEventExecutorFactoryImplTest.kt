@@ -41,7 +41,7 @@ class FlowMapperEventExecutorFactoryImplTest {
     fun testSessionEventExecutor() {
         val executor = executorFactoryImpl.create("",
             FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1,
-                HoldingIdentity(), HoldingIdentity(), 0, listOf(), null, mock())),
+                HoldingIdentity(), HoldingIdentity(), 0, listOf(), null)),
             null)
         assertThat(executor::class).isEqualTo(SessionEventExecutor::class)
     }

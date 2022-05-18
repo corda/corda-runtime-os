@@ -8,7 +8,6 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.virtualnode.toCorda
@@ -41,8 +40,6 @@ class InitiateFlowRequestHandler @Activate constructor(
         val protocolStore = flowSandboxService.get(context.checkpoint.holdingIdentity.toCorda()).protocolStore
         val initiator = checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty")
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator)
-        // For now these headers are empty. In the future platform and user context should be provided via these headers
-        val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
         checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(
                 checkpoint,
@@ -50,7 +47,6 @@ class InitiateFlowRequestHandler @Activate constructor(
                 request.x500Name,
                 protocolName,
                 protocolVersions,
-                headers,
                 Instant.now()
             )
         )

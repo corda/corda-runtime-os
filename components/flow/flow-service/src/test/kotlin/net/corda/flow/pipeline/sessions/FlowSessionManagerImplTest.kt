@@ -16,7 +16,6 @@ import net.corda.flow.pipeline.FlowProcessingException
 import net.corda.flow.pipeline.sessions.impl.FlowSessionManagerImpl
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
-import net.corda.layeredpropertymap.toWire
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -110,7 +109,6 @@ class FlowSessionManagerImplTest {
         whenever(checkpoint.flowStack).thenReturn(flowStack)
 
         val instant = Instant.now()
-        val headers = FlowSessionHeaders(mock())
 
         val expectedSessionInit = SessionInit.newBuilder()
             .setProtocol(INITIATING_FLOW_NAME)
@@ -126,8 +124,7 @@ class FlowSessionManagerImplTest {
             payload = expectedSessionInit,
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
-            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            headers = headers.toWire()
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
         val sessionState = flowSessionManager.sendInitMessage(
@@ -136,7 +133,6 @@ class FlowSessionManagerImplTest {
             X500_NAME,
             INITIATING_FLOW_NAME,
             listOf(1),
-            headers,
             instant
         )
 
@@ -166,7 +162,6 @@ class FlowSessionManagerImplTest {
         }
 
         val instant = Instant.now()
-        val headers = FlowSessionHeaders(mock())
 
         val payload = byteArrayOf(1)
         val anotherPayload = byteArrayOf(2)
@@ -178,8 +173,7 @@ class FlowSessionManagerImplTest {
             payload = SessionData(ByteBuffer.wrap(payload)),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
-            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            headers = headers.toWire()
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
         val anotherExpectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -188,14 +182,12 @@ class FlowSessionManagerImplTest {
             payload = SessionData(ByteBuffer.wrap(anotherPayload)),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
-            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            headers = headers.toWire()
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
         val sessionStates = flowSessionManager.sendDataMessages(
             checkpoint,
             mapOf(SESSION_ID to payload, ANOTHER_SESSION_ID to anotherPayload),
-            FlowSessionHeaders(mock()),
             instant
         )
 
@@ -208,7 +200,7 @@ class FlowSessionManagerImplTest {
     @Test
     fun `sendDataMessages does nothing when there are no sessions passed in`() {
         val instant = Instant.now()
-        flowSessionManager.sendDataMessages(checkpoint, emptyMap(), FlowSessionHeaders(mock()), instant)
+        flowSessionManager.sendDataMessages(checkpoint, emptyMap(), instant)
         verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
     }
 
@@ -222,7 +214,6 @@ class FlowSessionManagerImplTest {
             flowSessionManager.sendDataMessages(
                 checkpoint,
                 mapOf(SESSION_ID to byteArrayOf(), ANOTHER_SESSION_ID to byteArrayOf()),
-                FlowSessionHeaders(mock()),
                 instant
             )
         }
@@ -248,7 +239,6 @@ class FlowSessionManagerImplTest {
         }
 
         val instant = Instant.now()
-        val headers = FlowSessionHeaders(mock())
 
         val expectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -257,8 +247,7 @@ class FlowSessionManagerImplTest {
             payload = SessionClose(),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
-            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            headers = headers.toWire()
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
         val anotherExpectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -267,14 +256,12 @@ class FlowSessionManagerImplTest {
             payload = SessionClose(),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
-            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            headers = headers.toWire()
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
         val sessionStates = flowSessionManager.sendCloseMessages(
             checkpoint,
             listOf(SESSION_ID, ANOTHER_SESSION_ID),
-            headers,
             instant
         )
 
@@ -287,7 +274,7 @@ class FlowSessionManagerImplTest {
     @Test
     fun `sendCloseMessages does nothing when there are no sessions passed in`() {
         val instant = Instant.now()
-        flowSessionManager.sendCloseMessages(checkpoint, emptyList(), FlowSessionHeaders(mock()), instant)
+        flowSessionManager.sendCloseMessages(checkpoint, emptyList(), instant)
         verify(sessionManager, never()).processMessageToSend(eq(FLOW_ID), any(), any(), eq(instant))
     }
 
@@ -301,7 +288,6 @@ class FlowSessionManagerImplTest {
             flowSessionManager.sendCloseMessages(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID),
-                FlowSessionHeaders(mock()),
                 instant
             )
         }

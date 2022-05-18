@@ -9,7 +9,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.sessions.FlowSessionHeaders
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import org.osgi.service.component.annotations.Activate
@@ -36,8 +35,7 @@ class CloseSessionsRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        val headers = FlowSessionHeaders(layeredPropertyMapFactory.createMap(mapOf()))
-        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), headers, Instant.now())
+        flowSessionManager.sendCloseMessages(checkpoint, request.sessions.toList(), Instant.now())
             .map { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
 
         val haveSessionsAlreadyBeenClosed = flowSessionManager.doAllSessionsHaveStatus(
