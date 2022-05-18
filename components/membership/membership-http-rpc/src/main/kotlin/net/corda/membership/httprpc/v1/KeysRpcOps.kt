@@ -14,19 +14,21 @@ import net.corda.membership.httprpc.v1.types.response.KeyMetaData
     path = "keys"
 )
 interface KeysRpcOps : RpcOps {
-    companion object {
-        private const val CLUSTER_ID = "cluster"
-    }
     /**
-     * GET endpoint which returns the list of the cluster keys.
+     * GET endpoint which returns the list of the schemes in the cluster.
      *
-     * @return A map from a cluster key ID to its metadata.
+     * @return A list of scheme names.
      */
     @HttpRpcGET(
-        path = "cluster",
-        description = "Get list of keys for cluster."
+        path = "{holdingIdentityId}/schemes/{hsmCategory}",
+        description = "Get list of schemes for the cluster."
     )
-    fun listClusterKeys(): Map<String, KeyMetaData> = listKeys(CLUSTER_ID)
+    fun listSchemes(
+        @HttpRpcPathParameter(description = "The Holding Identity ID.")
+        holdingIdentityId: String,
+        @HttpRpcPathParameter(description = "The HSM Category")
+        hsmCategory: String,
+    ): Collection<String>
 
     /**
      * GET endpoint which returns the list of a holding identity keys.
@@ -45,37 +47,6 @@ interface KeysRpcOps : RpcOps {
     ): Map<String, KeyMetaData>
 
     /**
-     * POST endpoint which Generate a key pair for the cluster.
-     *
-     * @param alias The key alias.
-     * @param hsmCategory The HSM category.
-     *
-     * @return The ID of the newly generated key pair.
-     */
-    @HttpRpcPOST(
-        path = "cluster",
-        description = "Generate key pair for cluster."
-    )
-    fun generateKeyPairForCluster(
-        @HttpRpcRequestBodyParameter(
-            name = "alias",
-            description = "The key alias",
-            required = true,
-        )
-        alias: String,
-        @HttpRpcRequestBodyParameter(
-            name = "hsmCategory",
-            description = "The HSM Category",
-            required = true,
-        )
-        hsmCategory: String,
-    ): String = generateKeyPair(
-        holdingIdentityId = CLUSTER_ID,
-        alias = alias,
-        hsmCategory = hsmCategory
-    )
-
-    /**
      * POST endpoint which Generate a key pair for a holding identity.
      *
      * @param holdingIdentityId The Holding identity IDs.
@@ -92,34 +63,21 @@ interface KeysRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The Holding Identity ID.")
         holdingIdentityId: String,
         @HttpRpcRequestBodyParameter(
-            name = "alias",
             description = "The key alias",
             required = true,
         )
         alias: String,
         @HttpRpcRequestBodyParameter(
-            name = "hsmCategory",
             description = "The HSM Category",
             required = true,
         )
         hsmCategory: String,
+        @HttpRpcRequestBodyParameter(
+            description = "The scheme",
+            required = false,
+        )
+        scheme: String?,
     ): String
-
-    /**
-     * GET endpoint which returns a PEM string from a cluster KEY.
-     *
-     * @param keyId The ID of the key.
-     *
-     * @return The public key in PEM format.
-     */
-    @HttpRpcGET(
-        path = "cluster/{keyId}",
-        description = "GET key in PEM format."
-    )
-    fun generateClusterKeyPem(
-        @HttpRpcPathParameter(description = "The Key ID.")
-        keyId: String,
-    ): String = generateKeyPem(CLUSTER_ID, keyId)
 
     /**
      * GET endpoint which returns a PEM string from a holding identity KEY.

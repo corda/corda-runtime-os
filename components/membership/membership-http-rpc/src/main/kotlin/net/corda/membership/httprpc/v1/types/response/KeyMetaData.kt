@@ -16,4 +16,8 @@ data class KeyMetaData(
      * The key HSM category
      */
     val hsmCategory: String,
+    /**
+     * The key scheme
+     */
+    val scheme: String,
 )
