@@ -14,13 +14,13 @@ data class CpiMetadata(
     val version: Int = -1,
     val timestamp: Instant) {
     companion object {
-        fun fromAvro(other: AvroCpiMetadata) = CpiMetadata(
-            CpiIdentifier.fromAvro(other.id),
-            SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
-            other.cpks.map{ CpkMetadata.fromAvro(it) },
-            other.groupPolicy,
-            other.version,
-            other.timestamp
+        fun fromAvro(avroData: AvroCpiMetadata) = CpiMetadata(
+            CpiIdentifier.fromAvro(avroData.id),
+            SecureHash(avroData.hash.algorithm, avroData.hash.serverHash.array()),
+            avroData.cpks.map{ CpkMetadata.fromAvro(it) },
+            avroData.groupPolicy,
+            avroData.version,
+            avroData.timestamp
         )
 
         // TODO - remove

@@ -40,7 +40,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     private companion object {
         val log = contextLogger()
 
-        private fun Chunk.toDboProperties(): List<ChunkPropertyEntity> {
+        private fun Chunk.toDbProperties(): List<ChunkPropertyEntity> {
             return properties?.items?.map {
                 ChunkPropertyEntity(requestId, it.key, it.value, Instant.now())
             } ?: emptyList()
@@ -48,10 +48,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
         private fun EntityManager.getAvroChunkPropertiesInTransaction(requestId: RequestId): KeyValuePairList? {
 
-            val table = ChunkPropertyEntity::class.simpleName
             val chunkProperties = createQuery(
                 """
-                SELECT c FROM $table c
+                SELECT c FROM ${ChunkPropertyEntity::class.simpleName} c
                 WHERE c.requestId = :requestId
                 """.trimIndent(),
                 ChunkPropertyEntity::class.java
@@ -96,7 +95,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             em.persist(chunkEntity)
 
-            val chunkProperties = chunk.toDboProperties()
+            val chunkProperties = chunk.toDbProperties()
 
             // Merge because same chunk property may already exist
             chunkProperties.forEach {
@@ -136,8 +135,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         var expectedChecksum: SecureHash? = null
         var actualChecksum: ByteArray? = null
 
-        entityManagerFactory.createEntityManager().transaction {
-            val streamingResults = it.createQuery(
+        entityManagerFactory.createEntityManager().transaction { em ->
+            val streamingResults = em.createQuery(
                 "SELECT c FROM ${ChunkEntity::class.simpleName} c " +
                         "WHERE c.requestId = :requestId " +
                         "ORDER BY c.partNumber ASC",
@@ -148,12 +147,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             val messageDigest = Checksum.newMessageDigest()
 
-            streamingResults.forEach { e ->
-                if (e.data == null) { // zero chunk
-                    if (e.checksum == null) throw CordaRuntimeException("No checksum found in zero-sized chunk")
-                    expectedChecksum = SecureHash.create(e.checksum!!)
-                } else { // non-zero chunk
-                    messageDigest.update(e.data!!)
+            streamingResults.use {
+                it.forEach { e ->
+                    if (e.data == null) { // zero chunk
+                        if (e.checksum == null) throw CordaRuntimeException("No checksum found in zero-sized chunk")
+                        expectedChecksum = SecureHash.create(e.checksum!!)
+                    } else { // non-zero chunk
+                        messageDigest.update(e.data!!)
+                    }
                 }
             }
 
@@ -187,15 +188,17 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             val avroChunkProperties = em.getAvroChunkPropertiesInTransaction(requestId)
 
-            streamingResults.forEach { entity ->
-                // Do the reverse of [persist] particularly for data - if null, return zero bytes.
-                val checksum = if (entity.checksum != null) SecureHash.create(entity.checksum!!).toAvro() else null
-                val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
-                val chunk = Chunk(
-                    requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,
-                    avroChunkProperties
-                )
-                onChunk(chunk)
+            streamingResults.use {
+                it.forEach { entity ->
+                    // Do the reverse of [persist] particularly for data - if null, return zero bytes.
+                    val checksum = if (entity.checksum != null) SecureHash.create(entity.checksum!!).toAvro() else null
+                    val data = if (entity.data != null) ByteBuffer.wrap(entity.data) else ByteBuffer.allocate(0)
+                    val chunk = Chunk(
+                        requestId, entity.fileName, checksum, entity.partNumber, entity.offset, data,
+                        avroChunkProperties
+                    )
+                    onChunk(chunk)
+                }
             }
         }
     }
@@ -316,12 +319,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHashForDbQuery)
                 .resultStream
 
-            cpkMetadataStream.forEach { cpkMeta ->
-                // To be reviewed after more changes merged and we will be able to update the version and timestamp
-                // on CPK metadata
-                em.remove(em.merge(cpkMeta.cpkCordappManifest))
-                cpkMeta.cpkDependencies.forEach { em.remove(em.merge(it)) }
-                em.remove(em.merge(cpkMeta))
+            cpkMetadataStream.use { stream ->
+                stream.forEach { cpkMeta ->
+                    // To be reviewed after more changes merged, and we will be able to update the version and timestamp
+                    // on CPK metadata
+                    em.remove(em.merge(cpkMeta.cpkCordappManifest))
+                    cpkMeta.cpkDependencies.forEach { em.remove(em.merge(it)) }
+                    em.remove(em.merge(cpkMeta))
+                }
             }
         }
 
