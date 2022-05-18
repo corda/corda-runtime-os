@@ -170,6 +170,7 @@ class GroupPolicyUploader @Activate constructor(
         hash,
         cpks,
         groupPolicy,
+        -1,
         Instant.now()
     )
 

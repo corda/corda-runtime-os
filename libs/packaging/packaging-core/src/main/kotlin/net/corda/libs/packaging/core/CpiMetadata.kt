@@ -28,7 +28,7 @@ data class CpiMetadata(
             return CpiMetadata(
                 CpiIdentifier.fromLegacy(legacyCpi.metadata.id),
                 legacyCpi.metadata.hash,
-                legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
+                legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it, timestamp) },
                 legacyCpi.metadata.groupPolicy,
                 -1,
                 timestamp

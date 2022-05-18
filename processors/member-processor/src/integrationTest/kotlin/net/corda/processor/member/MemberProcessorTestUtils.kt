@@ -253,6 +253,7 @@ class MemberProcessorTestUtils {
             SecureHash.create("SHA-256:0000000000000000"),
             emptyList(),
             groupPolicy,
+            -1,
             Instant.now()
         )
 

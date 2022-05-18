@@ -51,12 +51,14 @@ class CpiValidatorImpl(
         validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
 
         publisher.update(requestId, "Notifying flow workers")
+        val timestamp = Instant.now()
         val cpiMetadata = CpiMetadata(
             CpiIdentifier.fromLegacy(cpi.metadata.id),
             fileInfo.checksum,
-            cpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
+            cpi.cpks.map { CpkMetadata.fromLegacyCpk(it, timestamp) },
             cpi.metadata.groupPolicy,
-            Instant.now()
+            -1,
+            timestamp
         )
         cpiInfoWriteService.put(cpiMetadata)
 

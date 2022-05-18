@@ -119,6 +119,7 @@ class FlowServiceTestContext @Activate constructor(
             mapOf()
         )
 
+        val timestamp = Instant.now()
         val cpkMeta = CpkMetadata(
             getCpkIdentifier(cpkId),
             Cpk.Manifest.newInstance(Cpk.FormatVersion.newInstance(0, 0)),
@@ -129,7 +130,7 @@ class FlowServiceTestContext @Activate constructor(
             Cpk.Type.UNKNOWN,
             getSecureHash(),
             setOf(),
-            Instant.now()
+            timestamp
         )
 
         val cpiMeta = CpiMetadata(
@@ -137,7 +138,8 @@ class FlowServiceTestContext @Activate constructor(
             getSecureHash(),
             listOf(cpkMeta),
             "",
-            Instant.now()
+            -1,
+            timestamp
         )
 
         cpiInfoReadService.add(cpiMeta)

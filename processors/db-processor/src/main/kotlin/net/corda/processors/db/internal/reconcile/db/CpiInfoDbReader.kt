@@ -189,13 +189,15 @@ class CpiInfoDbReader(
                                     fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
                                     // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added
                                     //  (https://r3-cev.atlassian.net/browse/CORE-4658)
-                                    cordappCertificates = emptySet()
+                                    cordappCertificates = emptySet(),
+                                    timestamp = cpkMetadataEntity.insertTimestamp!!
                                 )
                             )
                         }
                     },
                     groupPolicy = cpiMetadataEntity.groupPolicy,
-                    version = cpiMetadataEntity.entityVersion
+                    version = cpiMetadataEntity.entityVersion,
+                    timestamp = cpiMetadataEntity.insertTimestamp!!
                 )
 
                 VersionedRecord(
