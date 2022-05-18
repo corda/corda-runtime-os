@@ -49,7 +49,6 @@ omissions, and create a pull request if you wish to see changes to this list.
 * Razvan Codreanu (R3)
 * Ronan Browne (R3)
 * Ryan Fowler (R3)
-* Schife (R3)
 * Simon Dobson (R3)
 * Stefano Franz (R3)
 * Viktor Kolomeyko (R3)
