@@ -57,7 +57,7 @@ class CpiValidatorImpl(
             fileInfo.checksum,
             cpi.cpks.map { CpkMetadata.fromLegacyCpk(it, timestamp) },
             cpi.metadata.groupPolicy,
-            -1,
+            version = -1,
             timestamp
         )
         cpiInfoWriteService.put(cpiMetadata)
