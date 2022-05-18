@@ -319,6 +319,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             cpkMetadataStream.forEach { cpkMeta ->
                 // To be reviewed after more changes merged and we will be able to update the version and timestamp
                 // on CPK metadata
+                em.remove(em.merge(cpkMeta.cpkCordappManifest))
+                cpkMeta.cpkDependencies.forEach { em.remove(em.merge(it)) }
                 em.remove(em.merge(cpkMeta))
             }
         }
@@ -326,7 +328,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         // Perform update of CPI and store CPK along with its metadata
         entityManagerFactory.createEntityManager().transaction { em ->
             // We cannot delete old representation of CPI as there is FK constraint from `vnode_instance`
-            val oldCpiMetadataEntity = requireNotNull(
+            val existingMetadataEntity = requireNotNull(
                 findCpiMetadataEntityInTransaction(
                     em,
                     cpiId.name,
@@ -336,14 +338,20 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             ) {
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
-            em.merge(oldCpiMetadataEntity)
+
+            existingMetadataEntity.entityVersion++
+            existingMetadataEntity.fileUploadRequestId = requestId
+            existingMetadataEntity.insertTimestamp = Instant.now()
+            existingMetadataEntity.fileName = cpiFileName
+            existingMetadataEntity.fileChecksum = checksum.toString()
+            existingMetadataEntity.groupPolicy = cpi.metadata.groupPolicy!!
+            existingMetadataEntity.groupId = groupId
 
             // Perform update
-            val newCpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
-            em.merge(newCpiMetadataEntity)
+            em.merge(existingMetadataEntity)
 
             // Store CPK data
-            storeCpkContentInTransaction(cpi.cpks, em, newCpiMetadataEntity)
+            storeCpkContentInTransaction(cpi.cpks, em, existingMetadataEntity)
         }
     }
 
