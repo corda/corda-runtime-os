@@ -2,7 +2,6 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
