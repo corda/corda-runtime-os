@@ -4,7 +4,6 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.createCoordinator
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.mock
 
@@ -19,7 +18,7 @@ class LifecycleTest<T : Lifecycle>(
         get() = coordinatorFactory.registry
 
     inline fun <reified T> addDependency(): LifecycleCoordinator {
-        return coordinatorFactory.createCoordinator<T>(mock())
+        return addDependency(LifecycleCoordinatorName.forComponent<T>())
     }
 
     fun addDependency(name: LifecycleCoordinatorName): LifecycleCoordinator {
