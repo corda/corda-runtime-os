@@ -5,8 +5,7 @@ contributing to the design of Corda during the architecture review sessions of t
 R3 Architecture Working Group and during design reviews since Corda has been
 open-sourced, or by contributing code via pull requests. Some people have
 moved to a different organisation since their contribution. Please forgive any
-omissions, and create a pull request if you wish to
-see changes to this list.
+omissions, and create a pull request if you wish to see changes to this list.
 
 * Adel El-Beik (R3)
 * Alan Barclay (R3)
