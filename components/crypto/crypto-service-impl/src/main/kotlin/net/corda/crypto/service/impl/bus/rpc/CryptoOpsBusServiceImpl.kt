@@ -3,7 +3,6 @@ package net.corda.crypto.service.impl.bus.rpc
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.service.CryptoOpsService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest

@@ -10,9 +10,6 @@ import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.config.getConfig
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.config.toMessagingConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG

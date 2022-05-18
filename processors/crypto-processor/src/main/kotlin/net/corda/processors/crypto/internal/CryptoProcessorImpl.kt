@@ -143,10 +143,10 @@ class CryptoProcessorImpl @Activate constructor(
                 dependentComponents.stopAll()
             }
             is RegistrationStatusChangeEvent -> {
-                if(event.status == LifecycleStatus.UP) {
+                if (event.status == LifecycleStatus.UP) {
                     logger.info("Assigning SOFT HSMs")
                     val failed = temporaryAssociateClusterWithSoftHSM()
-                    if(failed.isNotEmpty()) {
+                    if (failed.isNotEmpty()) {
                         logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
                         coordinator.updateStatus(
                             LifecycleStatus.ERROR,
@@ -174,9 +174,12 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun publishCryptoBootstrapConfig(event: BootConfigEvent) {
-        publisherFactory.createPublisher(PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID), configMerger.getMessagingConfig(event.config, null)).use {
+        publisherFactory.createPublisher(
+            PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID),
+            configMerger.getMessagingConfig(event.config, null)
+        ).use {
             it.start()
-            val configValue = if(event.config.hasPath(CRYPTO_CONFIG))  {
+            val configValue = if (event.config.hasPath(CRYPTO_CONFIG)) {
                 event.config.getConfig(CRYPTO_CONFIG)
             } else {
                 event.config.factory.createDefaultCryptoConfig(
@@ -196,7 +199,7 @@ class CryptoProcessorImpl @Activate constructor(
         val failed = mutableListOf<Pair<String, String>>()
         CryptoConsts.Categories.all.forEach { category ->
             CryptoTenants.allClusterTenants.forEach { tenantId ->
-                if(tryAssignSoftHSM(tenantId, category)) {
+                if (tryAssignSoftHSM(tenantId, category)) {
                     assigned.add(Pair(tenantId, category))
                 } else {
                     failed.add(Pair(tenantId, category))
@@ -213,9 +216,11 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
         logger.info("Assigning SOFT HSM for $tenantId:$category")
-        hsmService.assignSoftHSM(tenantId, category, mapOf(
-            NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-        ))
+        hsmService.assignSoftHSM(
+            tenantId, category, mapOf(
+                NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+            )
+        )
         logger.info("Assigned SOFT HSM for $tenantId:$category")
         true
     } catch (e: Throwable) {

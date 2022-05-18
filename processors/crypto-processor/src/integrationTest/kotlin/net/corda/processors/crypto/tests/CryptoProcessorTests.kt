@@ -1,14 +1,14 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import java.security.PublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.time.Duration
-import java.util.*
+import java.time.Instant
+import java.util.UUID
 import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -40,9 +40,9 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.processors.crypto.tests.infra.DependenciesTracker
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
-import net.corda.processors.crypto.tests.infra.DependenciesTracker
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
@@ -51,10 +51,7 @@ import net.corda.processors.crypto.tests.infra.randomTenantId
 import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -75,14 +72,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -185,7 +174,7 @@ class CryptoProcessorTests {
                     Record(
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
-                        Configuration(messagingConfig.root().render(), "1")
+                        Configuration(messagingConfig.root().render(), "1", ConfigurationSchemaVersion(1, 0))
                     )
                 )
             )

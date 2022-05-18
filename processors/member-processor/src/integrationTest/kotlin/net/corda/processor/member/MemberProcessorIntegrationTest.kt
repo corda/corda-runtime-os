@@ -1,7 +1,10 @@
 package net.corda.processor.member
 
-import java.time.Duration
 import com.typesafe.config.ConfigRenderOptions
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -72,10 +75,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

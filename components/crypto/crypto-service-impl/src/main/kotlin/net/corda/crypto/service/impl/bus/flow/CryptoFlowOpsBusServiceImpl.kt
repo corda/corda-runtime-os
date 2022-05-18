@@ -6,7 +6,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.service.CryptoFlowOpsService
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

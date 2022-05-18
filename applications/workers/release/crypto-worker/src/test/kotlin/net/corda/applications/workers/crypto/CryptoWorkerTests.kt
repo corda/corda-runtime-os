@@ -13,6 +13,7 @@ import net.corda.schema.configuration.ConfigKeys.SECRETS_SALT
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class CryptoWorkerTests {
     @Test
@@ -26,7 +27,7 @@ class CryptoWorkerTests {
                 )
             }
         )
-        val config = buildBoostrapConfig(params)
+        val config = buildBoostrapConfig(params, mock())
         val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
@@ -72,7 +73,7 @@ class CryptoWorkerTests {
                 )
             }
         )
-        val config = buildBoostrapConfig(params)
+        val config = buildBoostrapConfig(params, mock())
         val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
