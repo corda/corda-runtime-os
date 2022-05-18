@@ -36,15 +36,14 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
 
-/** It's a sandbox service, that's internal to this component!
+/** This is a sandbox service that is internal to this component.
  *
- * It gets/creates a per-sandbox with:
+ * It gets/creates a sandbox with a per-sandbox:
  *
  *   * serializer
  *   * entity manager factory
  *
- *
- * */
+ */
 @Suppress("LongParameterList")
 @Component(
     service = [EntitySandboxService::class],
@@ -129,8 +128,9 @@ class EntitySandboxServiceImpl @Activate constructor (
     ): AutoCloseable {
         // Get all the entity class names from the cpk metadata, and then map to their types
         // This bit is quite important - we've bnd-scanned the **CPKS** (not jars!) and written the list
-        // of classes annotated with @Entity to the CPK manifest.  We now use them and convert to types
-        // so that we can correctly construct an entity manager factory per sandbox.
+        // of classes annotated with @Entity and @CordaSerializable to the CPK manifest.
+        // We now use them and convert them to types so that we can correctly construct an
+        // entity manager factory per sandbox.
 
         // TODO - add general vault entities
         val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {

@@ -11,6 +11,7 @@ data class CpiMetadata(
     val fileChecksum: SecureHash,
     val cpksMetadata: Collection<CpkMetadata>,
     val groupPolicy: String?,
+    val version: Int = -1,
     val timestamp: Instant) {
     companion object {
         fun fromAvro(other: AvroCpiMetadata) = CpiMetadata(
@@ -18,6 +19,7 @@ data class CpiMetadata(
             SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
             other.cpks.map{ CpkMetadata.fromAvro(it) },
             other.groupPolicy,
+            other.version,
             other.timestamp
         )
 
@@ -26,8 +28,9 @@ data class CpiMetadata(
             return CpiMetadata(
                 CpiIdentifier.fromLegacy(legacyCpi.metadata.id),
                 legacyCpi.metadata.hash,
-                legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it, timestamp) },
+                legacyCpi.cpks.map { CpkMetadata.fromLegacyCpk(it) },
                 legacyCpi.metadata.groupPolicy,
+                -1,
                 timestamp
             )
         }
@@ -39,7 +42,7 @@ data class CpiMetadata(
             net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cpksMetadata.map { it.toAvro() },
             groupPolicy,
-            -1,
+            version,
             timestamp
         )
     }

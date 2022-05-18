@@ -23,6 +23,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PublicKey
+import java.security.cert.Certificate
 import java.time.Duration
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
@@ -102,6 +103,12 @@ internal open class LocalCertificatesAuthority(
     }
 
     override fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate {
+        val keys = generateKeyPair()
+        val certificate = generateCertificate(hosts, keys.public)
+        return PrivateKeyWithCertificate(keys.private, certificate)
+    }
+
+    override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
         val signatureAlgorithm =
             when (privateKeyAndCertificate.privateKey.algorithm) {
                 "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
@@ -117,10 +124,9 @@ internal open class LocalCertificatesAuthority(
             else -> throw InvalidParameterException("Unsupported Algorithm")
         }.build(parameter)
 
-        val keys = generateKeyPair()
         val certificateBuilder = certificateBuilder(
             "C=UK CN=${hosts.first()}",
-            keys.public
+            publicKey
         )
         hosts.forEach { host ->
             val altName = GeneralName(GeneralName.dNSName, host)
@@ -128,10 +134,8 @@ internal open class LocalCertificatesAuthority(
             certificateBuilder.addExtension(Extension.subjectAlternativeName, true, subjectAltName)
         }
 
-        val certificate = JcaX509CertificateConverter().getCertificate(
+        return JcaX509CertificateConverter().getCertificate(
             certificateBuilder.build(sigGen)
         )
-
-        return PrivateKeyWithCertificate(keys.private, certificate)
     }
 }

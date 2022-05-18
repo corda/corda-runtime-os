@@ -511,4 +511,74 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
             }
         }
     }
+
+    @Test
+    @Timeout(100)
+    fun `test api with nullable object return type that returns null`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                assertThat(apiReturningNullObject()).isNull()
+            }
+        }
+    }
+
+    @Test
+    @Timeout(100)
+    fun `test api with nullable String return type that returns null`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                val response = apiReturningNullString()
+                assertThat(response).isEqualTo("null")
+            }
+        }
+    }
+
+    @Test
+    @Timeout(100)
+    fun `test api with object return type with nullable String inside returns that null string value`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                val response = apiReturningObjectWithNullableStringInside()
+                assertThat(response).isNotNull
+                assertThat(response.str).isNull()
+            }
+        }
+    }
+
 }

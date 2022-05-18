@@ -21,16 +21,20 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  *
  * Kafka -> EntityRequest
  *
- * Here:
+ * This (pseudo) code:
  *
- *    persistenceServiceInternal.persist(ss, emf, someEntityWrappedBytes)
- *    publisher.publish(FLOW_WORKER_EVENT_TOPIC, EntityResponse(...))
+ *    val entityResponse
+ *      = persistenceServiceInternal.persist(ss, emf, someEntityWrappedBytes)
+ *    publisher.publish(FLOW_WORKER_EVENT_TOPIC, entityResponse)
  *
  * Kafka -> EntityResponse
  *
  * Flow worker:
  *
- *    // resumes...
+ *    // resumes processing
+ *
+ * If the [EntityResponse] contains an exception, the flow-worker is expected to treat that
+ * as an error and handle it appropriately (such as retrying).
  * */
 class PersistenceServiceInternal(private val entitySandboxService: EntitySandboxService) {
     // TODO - these want to also handle exceptions and/or possible return EntityResponse

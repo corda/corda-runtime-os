@@ -29,6 +29,8 @@ dependencies {
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:db:db-orm')
 
+    implementation project(":components:reconciliation:reconciliation")
+
     implementation 'javax.persistence:javax.persistence-api'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"

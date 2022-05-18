@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -11,8 +12,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toLMNetworkType
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -22,7 +21,7 @@ import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
-class InMemorySessionReplayer(
+internal class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -33,7 +32,7 @@ class InMemorySessionReplayer(
 ): LifecycleWithDominoTile {
 
     companion object {
-        const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
+        private const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
     }
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)
@@ -58,8 +57,8 @@ class InMemorySessionReplayer(
     data class SessionMessageReplay(
         val message: Any,
         val sessionId: String,
-        val source: LinkManagerInternalTypes.HoldingIdentity,
-        val dest: LinkManagerInternalTypes.HoldingIdentity,
+        val source: HoldingIdentity,
+        val dest: HoldingIdentity,
         val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
     )
 
@@ -102,7 +101,7 @@ class InMemorySessionReplayer(
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType.toLMNetworkType())
+        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
