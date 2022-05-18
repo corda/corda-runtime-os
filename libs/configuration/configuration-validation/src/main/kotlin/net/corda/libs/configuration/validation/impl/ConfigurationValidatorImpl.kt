@@ -18,6 +18,7 @@ import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
+import org.osgi.framework.FrameworkUtil
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -63,7 +64,8 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         return config.factory.create(ConfigFactory.parseString(jsonNode.toString()))
     }
 
-    override fun validateConfig(key: String, config: SmartConfig, schemaInput: InputStream) {
+    override fun validateConfig(key: String, config: SmartConfig, schemaResourcePath: String) {
+        val schemaInput = loadResource(schemaResourcePath)
         logger.debug {
             "Configuration to validate: ${
                 config.toSafeConfig().root().render(ConfigRenderOptions.concise())
@@ -105,5 +107,15 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         val builder = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
         builder.uriFetcher(CordaURIFetcher(schemaProvider), REGISTERED_SCHEMES)
         return builder.build()
+    }
+
+    private fun loadResource(resource: String): InputStream {
+        val bundle = FrameworkUtil.getBundle(this::class.java) ?: null
+        val url = bundle?.getResource(resource)
+            ?: this::class.java.classLoader.getResource(resource)
+            ?: throw IllegalArgumentException(
+                "Failed to find resource $resource on worker startup."
+            )
+        return url.openStream()
     }
 }

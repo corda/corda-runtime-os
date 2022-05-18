@@ -71,7 +71,7 @@ class WorkerHelpers {
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
-            validator.validateConfig(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
+            validator.validateConfig(BOOT_CONFIG, bootConfig, BOOT_CONFIG_PATH)
 
             return bootConfig
         }
@@ -108,16 +108,6 @@ class WorkerHelpers {
             }
 
             return false
-        }
-
-        private fun loadResource(resource: String): InputStream {
-            val bundle = FrameworkUtil.getBundle(this::class.java)
-            val url = bundle?.getResource(resource)
-                ?: this::class.java.classLoader.getResource(resource)
-                ?: throw IllegalArgumentException(
-                    "Failed to find resource $resource on worker startup."
-                )
-            return url.openStream()
         }
     }
 }

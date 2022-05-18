@@ -260,7 +260,7 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
+                    "instanceId" to 123,
                     BOOT_CRYPTO to emptyMap<String, Any>()
                 )
             )
@@ -291,7 +291,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -299,7 +299,7 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
+                    "instanceId" to 123,
                     BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "rootKey.salt" to "s1",
@@ -335,7 +335,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -343,7 +343,7 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
+                    "instanceId" to 123,
                     BOOT_CRYPTO to mapOf(
                         "rootKey.salt" to "s1",
                         "softPersistence.salt" to "s2"
@@ -377,7 +377,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -385,7 +385,7 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
+                    "instanceId" to 123,
                     BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "softPersistence.passphrase" to "p2"
@@ -419,7 +419,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -427,7 +427,7 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
+                    "instanceId" to 123,
                     BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "rootKey.salt" to "s1",
@@ -468,6 +468,6 @@ class CryptoConfigUtilsTests {
         assertEquals(11, hsmPersistence.expireAfterAccessMins)
         assertEquals(222, hsmPersistence.maximumSize)
         assertEquals(17, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 }
