@@ -22,11 +22,14 @@ enum class CpkType constructor(private val text : String?) : Comparable<CpkType>
         @JvmStatic
         fun parse(text : String) = map[text.lowercase()] ?: UNKNOWN
 
-        fun fromAvro(other: CpkTypeAvro) : CpkType = parse(other.name)
+        fun fromAvro(other: CpkTypeAvro) : CpkType = when (other) {
+            CpkTypeAvro.UNKNOWN -> UNKNOWN
+            CpkTypeAvro.CORDA_API -> CORDA_API
+        }
     }
 
-    fun toAvro(): CpkTypeAvro = when (text) {
-        null -> CpkTypeAvro.UNKNOWN
-        else -> CpkTypeAvro.valueOf(text)
+    fun toAvro(): CpkTypeAvro = when (this) {
+        UNKNOWN -> CpkTypeAvro.UNKNOWN
+        CORDA_API -> CpkTypeAvro.CORDA_API
     }
 }
