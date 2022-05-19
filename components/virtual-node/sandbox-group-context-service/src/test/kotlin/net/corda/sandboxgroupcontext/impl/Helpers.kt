@@ -28,7 +28,7 @@ object Helpers {
         val cordappManifest = CordappManifest(name, version, 1, 1, contractInfo, workflowInfo, mock())
         val hash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray())
         return CpkMetadata(
-            mock(),
+            CpkIdentifier(mainBundle, version, SecureHash.create("SHA-256:0000000000000000")),
             CpkManifest(CpkFormatVersion(1, 0)),
             mainBundle,
             emptyList(),
