@@ -16,6 +16,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
+import java.time.Instant
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipEntry
@@ -86,7 +87,8 @@ internal object CpiLoader {
                 signatureCollector.certificates.asSequence().certSummaryHash()),
             fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
             cpksMetadata = cpkMetadata,
-            groupPolicy = groupPolicy
+            groupPolicy = groupPolicy,
+            timestamp = Instant.now()
         ), cpks.takeIf { expansionLocation != null } )
     }
 }

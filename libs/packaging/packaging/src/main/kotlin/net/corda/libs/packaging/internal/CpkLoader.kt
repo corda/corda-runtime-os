@@ -33,6 +33,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.cert.Certificate
+import java.time.Instant
 import java.util.Base64
 import java.util.Collections
 import java.util.NavigableMap
@@ -178,6 +179,7 @@ internal object CpkLoader {
                 cordappCertificates = cordappCertificates!!,
                 libraries = Collections.unmodifiableList(ArrayList(libraryMap.keys)),
                 dependencies = cpkDependencies.toList(),
+                timestamp = Instant.now()
             )
         }
     }

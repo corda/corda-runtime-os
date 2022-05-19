@@ -102,10 +102,10 @@ internal class ValidationFunctions(
                 cpi.metadata.cpiId.signerSummaryHashForDbQuery)
 
             if (cpiExists && fileInfo.forceUpload) {
-                log.info("Force uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
+                log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
                 chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else if (!cpiExists) {
-                log.info("Uploading CPI: ${cpi.metadata.id.name} v${cpi.metadata.id.version}")
+                log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
                 chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else {
                 throw ValidationException(

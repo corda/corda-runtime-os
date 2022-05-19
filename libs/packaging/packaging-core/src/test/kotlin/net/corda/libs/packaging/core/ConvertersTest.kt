@@ -4,6 +4,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.util.Random
 
 class ConvertersTest {
@@ -42,7 +43,8 @@ class ConvertersTest {
         cordappManifest,
         cpkType,
         SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
-        emptySet()
+        emptySet(),
+        Instant.now()
     )
 
     private companion object {
@@ -153,7 +155,8 @@ class ConvertersTest {
             cordappManifest,
             cpkType,
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
-            emptySet()
+            emptySet(),
+            Instant.now()
         )
         val avroObject = original.toAvro()
         val cordaObject = CpkMetadata.fromAvro(avroObject)
@@ -187,7 +190,9 @@ class ConvertersTest {
             cpiId,
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
             listOf(cpkMetadata),
-            "someString"
+            "someString",
+            -1,
+            Instant.now()
         )
         val avroObject = original.toAvro()
         val cordaObject = CpiMetadata.fromAvro(avroObject)

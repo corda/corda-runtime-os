@@ -249,7 +249,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 cpkFileName = it.originalFileName!!,
                 mainBundleName = it.metadata.cpkId.name,
                 mainBundleVersion = it.metadata.cpkId.version,
-                signerSummaryHash = it.metadata.cpkId.signerSummaryHash?.toString() ?: "",
+                signerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
                 cpkManifest = CpkManifest(
                     CpkFormatVersion(
                         it.metadata.manifest.cpkFormatVersion.major,
@@ -267,7 +267,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                     cpkMetadataEntity = cpkMetadataEntity,
                     mainBundleName = cpkIdentifier.name,
                     mainBundleVersion = cpkIdentifier.version,
-                    signerSummaryHash = cpkIdentifier.signerSummaryHash?.toString() ?: ""
+                    signerSummaryHash = cpkIdentifier.signerSummaryHashForDbQuery
                 )
                 em.persist(cpkDependencyEntity)
             }
@@ -304,7 +304,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         requestId: RequestId,
         groupId: String
     ) {
-        val cpiId = cpi.metadata.id
+        val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
 
         // Delete CPK metadata in separate transaction, to be reviewed
