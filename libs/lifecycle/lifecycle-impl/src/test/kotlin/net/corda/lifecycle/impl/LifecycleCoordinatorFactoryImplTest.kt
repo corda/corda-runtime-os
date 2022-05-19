@@ -12,7 +12,7 @@ class LifecycleCoordinatorFactoryImplTest {
 
     @Test
     fun `factory generates a coordinator with the correct name and set to down`() {
-        val factory = LifecycleCoordinatorFactoryImpl(mock(), mock())
+        val factory = LifecycleCoordinatorFactoryImpl(mock(), LifecycleCoordinatorSchedulerFactoryImpl())
         val name = LifecycleCoordinatorName("Alice")
         val coordinator = factory.createCoordinator(name) { _, _ -> }
         assertEquals(name, coordinator.name)
@@ -21,7 +21,7 @@ class LifecycleCoordinatorFactoryImplTest {
 
     @Test
     fun `exception is thrown if the batch size is less than 1`() {
-        val factory = LifecycleCoordinatorFactoryImpl(mock(), mock())
+        val factory = LifecycleCoordinatorFactoryImpl(mock(), LifecycleCoordinatorSchedulerFactoryImpl())
         val name = LifecycleCoordinatorName("Alice")
         assertThrows<LifecycleException> {
             factory.createCoordinator(name, 0) { _, _ -> }

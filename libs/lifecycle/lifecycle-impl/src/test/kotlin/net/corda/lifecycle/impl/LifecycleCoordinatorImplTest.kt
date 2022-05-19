@@ -1138,7 +1138,7 @@ internal class LifecycleCoordinatorImplTest {
     @Test
     fun `not closing a coordinator registration eventually leads to a down state`() {
         val trackedLatch = CountDownLatch(1)
-        val factory = LifecycleCoordinatorFactoryImpl(mock(), mock())
+        val factory = LifecycleCoordinatorFactoryImpl(mock(), LifecycleCoordinatorSchedulerFactoryImpl())
         val coordinator = factory.createCoordinator(LifecycleCoordinatorName("a", "b")) { _, _ -> }
         coordinator.start()
 
@@ -1158,7 +1158,7 @@ internal class LifecycleCoordinatorImplTest {
 
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
-        scheduler: LifecycleCoordinatorScheduler = mock(),
+        scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(),
         processor: LifecycleEventHandler
     ): LifecycleCoordinator {
         return LifecycleCoordinatorImpl(
