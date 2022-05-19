@@ -39,5 +39,27 @@
         <addPrimaryKey tableName="${table.name}" columnNames="request_id, part_nr" constraintName="${table.name}_pk"
                        schemaName="${schema.name}"/>
 
+        <createTable tableName="${table.name}_props" schemaName="${schema.name}"
+                     remarks="Holds properties for a file upload">
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="${table.name}_props" columnNames="request_id, key" constraintName="${table.name}_props_pkey"
+                       schemaName="${schema.name}"/>
+
+        <createIndex tableName="${table.name}_props" indexName="${table.name}_props_reqId__idx" schemaName="${schema.name}">
+            <column name="request_id"/>
+        </createIndex>
+
     </changeSet>
 </databaseChangeLog>

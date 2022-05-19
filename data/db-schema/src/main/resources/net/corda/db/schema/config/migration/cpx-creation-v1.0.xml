@@ -156,6 +156,7 @@
         <addForeignKeyConstraint baseTableName="cpk_library" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
                                  referencedTableName="cpi_cpk" referencedColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
                                  constraintName="FK_cpk_library_cpi_cpk"
+                                 onDelete="CASCADE"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
@@ -191,6 +192,7 @@
         <addForeignKeyConstraint baseTableName="cpk_dependency" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
                                  referencedTableName="cpi_cpk" referencedColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
                                  constraintName="FK_cpk_dependency_cpi_cpk"
+                                 onDelete="CASCADE"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
@@ -255,6 +257,7 @@
         <addForeignKeyConstraint baseTableName="cpk_cordapp_manifest" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
                                  referencedTableName="cpi_cpk" referencedColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
                                  constraintName="FK_cpk_cordapp_manifest_cpi_cpk"
+                                 onDelete="CASCADE"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
     </changeSet>

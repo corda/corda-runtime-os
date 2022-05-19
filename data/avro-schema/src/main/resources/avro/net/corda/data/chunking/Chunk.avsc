@@ -35,7 +35,15 @@
     {
       "name": "data",
       "type": "bytes",
-      "doc": "the binary chunk"
+      "doc": "the binary data fop the chunk. Zero data has a special meaning, signaling the last chunk in the sequence"
+    },
+    {
+      "name": "properties",
+      "type": [
+        "null",
+        "net.corda.data.KeyValuePairList"
+      ],
+      "doc": "Optional list of chunk properties."
     }
   ]
 }

@@ -38,6 +38,14 @@
     {
       "name": "corDappCertificates",
       "type": { "type": "array", "items": "bytes" }
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
     }
   ]
 }
