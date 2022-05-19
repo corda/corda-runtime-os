@@ -61,7 +61,7 @@ class HSMConfigurationClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         sender = mock()
         publisherFactory = mock {
             on { createRPCSender<HSMConfigurationRequest, HSMConfigurationResponse>(any(), any()) } doReturn sender
