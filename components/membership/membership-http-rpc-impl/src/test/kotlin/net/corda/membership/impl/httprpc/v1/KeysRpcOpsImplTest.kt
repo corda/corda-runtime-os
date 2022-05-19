@@ -20,7 +20,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -79,7 +78,7 @@ class KeysRpcOpsImplTest {
             }
             whenever(cryptoOpsClient.generateKeyPair("tenantId", "category", "alias", "scheme")).doReturn(publicKey)
 
-            val id = keysOps.generateKeyPair(holdingIdentityId = "tenantId", alias = "alias", hsmCategory = "category", scheme = "scheme")
+            val id = keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = "scheme")
 
             assertThat(id).isEqualTo(publicKey.publicKeyId())
         }
@@ -92,7 +91,7 @@ class KeysRpcOpsImplTest {
             whenever(cryptoOpsClient.getSupportedSchemes("tenantId", "category")).doReturn(listOf("sc1", "sc2"))
             whenever(cryptoOpsClient.generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>())).doReturn(publicKey)
 
-            keysOps.generateKeyPair(holdingIdentityId = "tenantId", alias = "alias", hsmCategory = "category", scheme = null)
+            keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = null)
 
             verify(cryptoOpsClient).generateKeyPair("tenantId", "category", "alias", "sc1")
         }
@@ -102,7 +101,7 @@ class KeysRpcOpsImplTest {
             whenever(cryptoOpsClient.getSupportedSchemes("tenantId", "category")).doReturn(emptyList())
 
             assertThrows<ResourceNotFoundException> {
-                keysOps.generateKeyPair(holdingIdentityId = "tenantId", alias = "alias", hsmCategory = "category", scheme = null)
+                keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = null)
             }
         }
 
@@ -155,55 +154,31 @@ class KeysRpcOpsImplTest {
         }
 
         @Test
-        fun `start starts the cryptoOpsClient and coordinator`() {
+        fun `start starts the coordinator`() {
             keysOps.start()
 
-            verify(cryptoOpsClient).start()
             verify(coordinator).start()
         }
 
         @Test
-        fun `stop stops the cryptoOpsClient and coordinator`() {
+        fun `stop stops the coordinator`() {
             keysOps.stop()
 
-            verify(cryptoOpsClient).stop()
             verify(coordinator).stop()
         }
 
         @Test
-        fun `UP event will set the status to up if not up`() {
-            whenever(coordinator.status).doReturn(LifecycleStatus.DOWN)
-
+        fun `UP event will set the status to up`() {
             handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             verify(coordinator).updateStatus(LifecycleStatus.UP, "Dependencies are UP")
         }
 
         @Test
-        fun `UP event will not set the status to up if already up`() {
-            whenever(coordinator.status).doReturn(LifecycleStatus.UP)
-
-            handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
-
-            verify(coordinator, never()).updateStatus(any(), any())
-        }
-
-        @Test
-        fun `DOWN event will set the status to up if not DOWN`() {
-            whenever(coordinator.status).doReturn(LifecycleStatus.UP)
-
+        fun `DOWN event will set the status to down`() {
             handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mock())
 
             verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Dependencies are DOWN")
-        }
-
-        @Test
-        fun `DOWN event will not set the status to down if already down`() {
-            whenever(coordinator.status).doReturn(LifecycleStatus.DOWN)
-
-            handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mock())
-
-            verify(coordinator, never()).updateStatus(any(), any())
         }
     }
 }

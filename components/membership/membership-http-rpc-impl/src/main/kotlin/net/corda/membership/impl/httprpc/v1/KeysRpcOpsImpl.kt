@@ -27,16 +27,16 @@ class KeysRpcOpsImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : KeysRpcOps, PluggableRPCOps<KeysRpcOps>, Lifecycle {
     override fun listSchemes(
-        holdingIdentityId: String,
+        tenantId: String,
         hsmCategory: String,
     ): Collection<String> = cryptoOpsClient.getSupportedSchemes(
-        tenantId = holdingIdentityId,
+        tenantId = tenantId,
         category = hsmCategory
     )
 
-    override fun listKeys(holdingIdentityId: String): Map<String, KeyMetaData> {
+    override fun listKeys(tenantId: String): Map<String, KeyMetaData> {
         return cryptoOpsClient.lookup(
-            holdingIdentityId,
+            tenantId,
             0,
             500,
             CryptoKeyOrderBy.NONE,
@@ -45,32 +45,32 @@ class KeysRpcOpsImpl @Activate constructor(
     }
 
     override fun generateKeyPair(
-        holdingIdentityId: String,
+        tenantId: String,
         alias: String,
         hsmCategory: String,
         scheme: String?
     ): String {
         return cryptoOpsClient.generateKeyPair(
-            tenantId = holdingIdentityId,
+            tenantId = tenantId,
             category = hsmCategory,
             alias = alias,
             scheme = scheme ?: cryptoOpsClient
                 .getSupportedSchemes(
-                    tenantId = holdingIdentityId, category = hsmCategory
+                    tenantId = tenantId, category = hsmCategory
                 ).firstOrNull()
-                ?: throw ResourceNotFoundException("Could not find any scheme for $holdingIdentityId and $hsmCategory")
+                ?: throw ResourceNotFoundException("Could not find any scheme for $tenantId and $hsmCategory")
 
         ).publicKeyId()
     }
 
     override fun generateKeyPem(
-        holdingIdentityId: String,
+        tenantId: String,
         keyId: String
     ): String {
         val key = cryptoOpsClient.lookup(
-            tenantId = holdingIdentityId,
+            tenantId = tenantId,
             ids = listOf(keyId)
-        ).firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $holdingIdentityId")
+        ).firstOrNull() ?: throw ResourceNotFoundException("Can not find any key with ID $keyId for $tenantId")
 
         val publicKey = keyEncodingService.decodePublicKey(key.publicKey.array())
         return keyEncodingService.encodeAsString(publicKey)
@@ -84,9 +84,7 @@ class KeysRpcOpsImpl @Activate constructor(
         protocolVersion.toString()
     )
     private fun updateStatus(status: LifecycleStatus, reason: String) {
-        if (coordinator.status != status) {
-            coordinator.updateStatus(status, reason)
-        }
+        coordinator.updateStatus(status, reason)
     }
 
     private fun activate(reason: String) {
@@ -111,11 +109,9 @@ class KeysRpcOpsImpl @Activate constructor(
 
     override fun start() {
         coordinator.start()
-        cryptoOpsClient.start()
     }
 
     override fun stop() {
         coordinator.stop()
-        cryptoOpsClient.stop()
     }
 }
