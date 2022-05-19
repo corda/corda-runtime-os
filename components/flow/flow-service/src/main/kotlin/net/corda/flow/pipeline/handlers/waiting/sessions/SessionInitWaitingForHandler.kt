@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.session.manager.SessionManager
 import org.osgi.service.component.annotations.Activate
@@ -21,9 +21,20 @@ class SessionInitWaitingForHandler @Activate constructor(
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: WaitingForSessionInit): FlowContinuation {
         val checkpoint = context.checkpoint
-        val sessionState = checkpoint.getSessionState(waitingFor.sessionId) ?: throw FlowProcessingException("Session doesn't exist")
+
+        val sessionState = checkpoint.getSessionState(waitingFor.sessionId)
+            ?: throw FlowFatalException(
+                "Session: ${waitingFor.sessionId} doesn't exist even though it should be created by session event pre-processing",
+                context
+            )
+
         val eventToAcknowledgeProcessingOf = sessionManager.getNextReceivedEvent(sessionState)
-            ?: throw FlowProcessingException("No event to acknowledge")
+            ?: throw FlowFatalException(
+                "Session: ${waitingFor.sessionId} has no event to acknowledge even though it should be received by session event " +
+                        "pre-processing",
+                context
+            )
+
         sessionManager.acknowledgeReceivedEvent(sessionState, eventToAcknowledgeProcessingOf.sequenceNum)
 
         return FlowContinuation.Run(Unit)
