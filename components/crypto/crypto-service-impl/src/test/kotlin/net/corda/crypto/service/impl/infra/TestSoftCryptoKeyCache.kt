@@ -1,8 +1,8 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.persistence.SoftCryptoKeyCache
-import net.corda.crypto.persistence.SoftCryptoKeyCacheActions
-import net.corda.crypto.persistence.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheActions
+import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -30,7 +30,7 @@ class TestSoftCryptoKeyCacheProvider(
         coordinator.stop()
     }
 
-    override fun getInstance(passphrase: String, salt: String): SoftCryptoKeyCache {
+    override fun getInstance(): SoftCryptoKeyCache {
         check(isRunning) {
             "The provider is in invalid state."
         }
@@ -39,7 +39,7 @@ class TestSoftCryptoKeyCacheProvider(
 }
 
 class TestSoftCryptoKeyCache : SoftCryptoKeyCache {
-    private val keys = ConcurrentHashMap<String, WrappingKey>()
+    val keys = ConcurrentHashMap<String, WrappingKey>()
     override fun act(): SoftCryptoKeyCacheActions = TestSoftCryptoKeyCacheActions(keys)
     override fun close() = Unit
 }

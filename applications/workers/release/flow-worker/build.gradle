@@ -10,6 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
+    implementation project(":components:security-manager")
     implementation project(':libs:configuration:configuration-core')
     implementation project(':processors:flow-processor')
     implementation "info.picocli:picocli:$picocliVersion"
@@ -24,4 +25,15 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+
+    runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.apache.felix'
+        exclude group: 'org.osgi'
+    }
+
+    osgiRun {
+        frameworkProperties.putAll(
+                'org.osgi.framework.security': 'osgi'
+        )
+    }
 }

@@ -9,7 +9,7 @@ import org.osgi.service.component.annotations.Component
 @Suppress("Unused")
 @Component(service = [FlowEventContextConverter::class])
 class FlowEventContextConverterImpl : FlowEventContextConverter {
-    override fun convert(flowContext: FlowEventContext<Any>): StateAndEventProcessor.Response<Checkpoint> {
+    override fun convert(flowContext: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> {
         return StateAndEventProcessor.Response(
             flowContext.checkpoint.toAvro(),
             flowContext.outputRecords,

@@ -88,7 +88,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFailed>().apply {
                 verify(flowFiber).suspend(capture())
 
-                assertThat(firstValue.exception).isEqualTo(error)
+                assertThat(firstValue.throwable).isEqualTo(error)
                 assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
             }
         }

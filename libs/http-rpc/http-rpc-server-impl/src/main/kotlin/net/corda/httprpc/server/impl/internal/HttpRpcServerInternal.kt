@@ -304,9 +304,8 @@ internal class HttpRpcServerInternal(
                 //TODO if one parameter is a list and it's exposed as a query parameter, we may need to cast list elements here
                 val result = invokeDelegatedMethod(*paramValues)
 
-                if (result != null) {
-                    ctx.json(result)
-                }
+                buildJsonResult(result, ctx, this)
+
                 ctx.header(Header.CACHE_CONTROL, "no-cache")
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
             } catch (e: Exception) {
@@ -316,6 +315,17 @@ internal class HttpRpcServerInternal(
                 if(ctx.isMultipartFormData()) {
                     cleanUpMultipartRequest(ctx)
                 }
+            }
+        }
+    }
+
+    private fun buildJsonResult(result: Any?, ctx: Context, routeInfo: RouteInfo) {
+        if (result != null) {
+            ctx.json(result)
+        } else {
+            // if the method has no return type we don't return null
+            if(routeInfo.method.method.returnType != Void.TYPE) {
+                ctx.result("null")
             }
         }
     }

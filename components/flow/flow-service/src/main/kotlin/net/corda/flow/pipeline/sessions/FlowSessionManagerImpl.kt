@@ -1,9 +1,11 @@
 package net.corda.flow.pipeline.sessions
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -32,8 +34,6 @@ class FlowSessionManagerImpl @Activate constructor(
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
-            // TODO Throw an error if a non initiating flow is trying to create this session (shouldn't really get here for real, but for
-            //  this class, it's not valid)
             .setFlowName(checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty"))
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
@@ -44,9 +44,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .setMessageDirection(MessageDirection.OUTBOUND)
             .setTimestamp(instant)
             .setSequenceNum(null)
-            .setInitiatingIdentity(checkpoint.flowKey.identity)
-            // TODO Need member lookup service to get the holding identity of the peer
-            .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), "flow-worker-dev"))
+            .setInitiatingIdentity(checkpoint.holdingIdentity)
+            .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
@@ -66,26 +65,11 @@ class FlowSessionManagerImpl @Activate constructor(
         instant: Instant
     ): List<SessionState> {
         return sessionToPayload.map { (sessionId, payload) ->
-            val sessionState = checkpoint.getSessionState(sessionId)
-                ?: throw FlowProcessingException("No existing session when trying to send data message")
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-                sessionState, checkpoint.flowKey.identity
-            )
-            sessionManager.processMessageToSend(
-                key = checkpoint.flowId,
-                sessionState = sessionState,
-                event = SessionEvent.newBuilder()
-                    .setSessionId(sessionId)
-                    .setMessageDirection(MessageDirection.OUTBOUND)
-                    .setTimestamp(instant)
-                    .setInitiatingIdentity(initiatingIdentity)
-                    .setInitiatedIdentity(initiatedIdentity)
-                    .setSequenceNum(null)
-                    .setReceivedSequenceNum(0)
-                    .setOutOfOrderSequenceNums(listOf(0))
-                    .setPayload(SessionData(ByteBuffer.wrap(payload)))
-                    .build(),
-                instant = instant
+            sendSessionMessageToExistingSession(
+                checkpoint,
+                sessionId,
+                payload = SessionData(ByteBuffer.wrap(payload)),
+                instant
             )
         }
     }
@@ -96,26 +80,27 @@ class FlowSessionManagerImpl @Activate constructor(
         instant: Instant
     ): List<SessionState> {
         return sessionIds.map { sessionId ->
-            val sessionState = checkpoint.getSessionState(sessionId)
-                ?: throw FlowProcessingException("No existing session when trying to send close message")
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-                sessionState, checkpoint.flowKey.identity
+            sendSessionMessageToExistingSession(
+                checkpoint,
+                sessionId,
+                payload = SessionClose(),
+                instant
             )
-            sessionManager.processMessageToSend(
-                key = checkpoint.flowId,
-                sessionState = sessionState,
-                event = SessionEvent.newBuilder()
-                    .setSessionId(sessionId)
-                    .setMessageDirection(MessageDirection.OUTBOUND)
-                    .setTimestamp(instant)
-                    .setInitiatingIdentity(initiatingIdentity)
-                    .setInitiatedIdentity(initiatedIdentity)
-                    .setSequenceNum(null)
-                    .setReceivedSequenceNum(0)
-                    .setOutOfOrderSequenceNums(listOf(0))
-                    .setPayload(SessionClose())
-                    .build(),
-                instant = instant
+        }
+    }
+
+    override fun sendErrorMessages(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        throwable: Throwable,
+        instant: Instant
+    ): List<SessionState> {
+        return sessionIds.map { sessionId ->
+            sendSessionMessageToExistingSession(
+                checkpoint,
+                sessionId,
+                payload = SessionError(ExceptionEnvelope(throwable::class.qualifiedName, throwable.message)),
+                instant
             )
         }
     }
@@ -125,7 +110,7 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionIds: List<String>
     ): List<Pair<SessionState, SessionEvent>> {
         return sessionIds.mapNotNull { sessionId ->
-            val sessionState = checkpoint.getSessionState(sessionId) ?: throw FlowProcessingException("Session doesn't exist")
+            val sessionState = getAndRequireSession(checkpoint, sessionId)
             sessionManager.getNextReceivedEvent(sessionState)?.let { sessionState to it }
         }
     }
@@ -140,15 +125,46 @@ class FlowSessionManagerImpl @Activate constructor(
         return getReceivedEvents(checkpoint, sessionIds).size == sessionIds.size
     }
 
+    override fun getSessionsWithStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): List<SessionState> {
+        return sessionIds
+            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+            .filter { sessionState -> sessionState.status == status }
+    }
+
     override fun doAllSessionsHaveStatus(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
         status: SessionStateType
     ): Boolean {
-        return sessionIds
-            .mapNotNull { sessionId -> checkpoint.getSessionState(sessionId) }
-            .map { sessionState -> sessionState.status }
-            .all { sessionStatus -> sessionStatus == status }
+        return getSessionsWithStatus(checkpoint, sessionIds, status).size == sessionIds.size
+    }
+
+    private fun sendSessionMessageToExistingSession(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        payload: Any,
+        instant: Instant
+    ): SessionState {
+        val sessionState = getAndRequireSession(checkpoint, sessionId)
+        val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
+            sessionState, checkpoint.holdingIdentity
+        )
+        return sessionManager.processMessageToSend(
+            key = checkpoint.flowId,
+            sessionState = sessionState,
+            event = SessionEvent.newBuilder()
+                .setSessionId(sessionId)
+                .setMessageDirection(MessageDirection.OUTBOUND)
+                .setTimestamp(instant)
+                .setInitiatingIdentity(initiatingIdentity)
+                .setInitiatedIdentity(initiatedIdentity)
+                .setSequenceNum(null)
+                .setReceivedSequenceNum(0)
+                .setOutOfOrderSequenceNums(listOf(0))
+                .setPayload(payload)
+                .build(),
+            instant = instant
+        )
     }
 
     private fun getInitiatingAndInitiatedParties(
@@ -162,5 +178,11 @@ class FlowSessionManagerImpl @Activate constructor(
             }
             else -> Pair(checkpointIdentity, sessionState.counterpartyIdentity)
         }
+    }
+
+    private fun getAndRequireSession(checkpoint: FlowCheckpoint, sessionId: String): SessionState {
+        return checkpoint.getSessionState(sessionId) ?: throw FlowSessionMissingException(
+            "Session: $sessionId does not exist when executing session operation that requires an existing session"
+        )
     }
 }

@@ -3,6 +3,7 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.media.ComposedSchema
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
@@ -24,6 +25,7 @@ import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.httprpc.test.TestFileUploadImpl
 
@@ -137,6 +139,35 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             val field = properties["correctName"]
             assertNotNull(field)
             assertEquals("string", field.type)
+        }
+
+        with(openAPI.paths["/health/apireturningnullobject"]) {
+            assertNotNull(this)
+            val post = openAPI.paths["/health/apireturningnullobject"]!!.post
+            assertNotNull(post)
+            val successResponse = post.responses["200"]
+            assertNotNull(successResponse)
+            val content = successResponse.content["application/json"]
+            assertNotNull(content)
+            val schema = content.schema as ComposedSchema
+            assertTrue(schema.nullable, "The schema should have the nullable property")
+            assertEquals(1, schema.allOf.size)
+            val wrappedObject = schema.allOf[0]
+            assertNull(wrappedObject.nullable, "The wrapped object itself shouldn't be nullable")
+            assertEquals("#/components/schemas/SomeTestNullableType", wrappedObject.`$ref`)
+        }
+
+        with(openAPI.paths["/health/apireturningnullstring"]) {
+            assertNotNull(this)
+            val post = openAPI.paths["/health/apireturningnullstring"]!!.post
+            assertNotNull(post)
+            val successResponse = post.responses["200"]
+            assertNotNull(successResponse)
+            val content = successResponse.content["application/json"]
+            assertNotNull(content)
+            val schema = content.schema
+            assertTrue(schema.nullable, "The schema should have the nullable property")
+            assertEquals("string", schema.type)
         }
     }
 

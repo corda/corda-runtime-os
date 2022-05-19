@@ -1,18 +1,19 @@
 package net.corda.processor.member
 
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
-import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -26,10 +27,12 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.transaction
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.aliceHoldingIdentity
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.aliceName
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.aliceX500Name
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertGroupPolicy
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertLookupSize
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertSecondGroupPolicy
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobHoldingIdentity
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobName
@@ -45,7 +48,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpFromP
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishCryptoConf
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
@@ -70,6 +73,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -102,9 +108,6 @@ class MemberProcessorIntegrationTest {
         lateinit var cryptoProcessor: CryptoProcessor
 
         @InjectService(timeout = 5000)
-        lateinit var dbConnectionManager: DbConnectionManager
-
-        @InjectService(timeout = 5000)
         lateinit var entitiesRegistry: JpaEntitiesRegistry
 
         @InjectService(timeout = 5000)
@@ -113,14 +116,14 @@ class MemberProcessorIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
 
-        @InjectService(timeout = 5000)
-        lateinit var softCryptoServiceProvider: SoftCryptoServiceProvider
-
         @InjectService(timeout = 5000L)
         lateinit var coordinatorFactory: LifecycleCoordinatorFactory
 
         @InjectService(timeout = 5000L)
         lateinit var lifecycleRegistry: LifecycleRegistry
+
+        @InjectService(timeout = 5000L)
+        lateinit var hsmRegistrationClient: HSMRegistrationClient
 
         lateinit var publisher: Publisher
 
@@ -156,7 +159,13 @@ class MemberProcessorIntegrationTest {
             schemaName = "vnode_crypto_charlie"
         )
 
-        private lateinit var bootConf: SmartConfig
+        private val boostrapConfig = makeBootstrapConfig(
+            mapOf(
+                ConfigKeys.DB_CONFIG to clusterDb.config
+            )
+        )
+
+        private val messagingConfig = makeMessagingConfig(boostrapConfig)
 
         @JvmStatic
         @BeforeAll
@@ -164,16 +173,10 @@ class MemberProcessorIntegrationTest {
             setupDatabases()
 
             // Set basic bootstrap config
-            bootConf = makeBootstrapConfig(
-                mapOf(
-                    ConfigKeys.DB_CONFIG to clusterDb.config
-                )
-            )
-            cryptoProcessor.start(bootConf)
-            memberProcessor.start(bootConf)
-
+            cryptoProcessor.start(boostrapConfig)
+            memberProcessor.start(boostrapConfig)
             membershipGroupReaderProvider.start()
-
+            hsmRegistrationClient.start()
             testDependencies = TestDependenciesTracker(
                 LifecycleCoordinatorName.forComponent<MemberProcessorIntegrationTest>(),
                 coordinatorFactory,
@@ -181,13 +184,13 @@ class MemberProcessorIntegrationTest {
                 setOf(
                     LifecycleCoordinatorName.forComponent<MemberProcessor>(),
                     LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
-                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()
+                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
                 )
             ).also { it.startAndWait() }
 
-            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), bootConf)
-            publisher.publishCryptoConf()
-            publisher.publishMessagingConf()
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+            publisher.publishMessagingConf(messagingConfig)
             publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, aliceHoldingIdentity)
             publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, bobHoldingIdentity)
 
@@ -195,13 +198,8 @@ class MemberProcessorIntegrationTest {
             eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
 
             testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
-            addDbConnectionConfigs(cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
-            softCryptoServiceProvider.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            ).createWrappingKey("wrapping-key", false, emptyMap())
+
+            assignHSMs()
         }
 
         @JvmStatic
@@ -214,10 +212,11 @@ class MemberProcessorIntegrationTest {
 
         private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            databaseInstaller.setupClusterDatabase(
+            val configEmf = databaseInstaller.setupClusterDatabase(
                 clusterDb,
-                "config"
-            ).close()
+                "config",
+                ConfigurationEntities.classes
+            )
             databaseInstaller.setupDatabase(
                 cryptoDb,
                 "crypto"
@@ -237,17 +236,48 @@ class MemberProcessorIntegrationTest {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
+            addDbConnectionConfigs(configEmf, cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
+            configEmf.close()
         }
 
-        private fun addDbConnectionConfigs(vararg dbs: TestDbInfo) {
+        private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo) {
             dbs.forEach { db ->
-                dbConnectionManager.putConnection(
-                    name = db.name,
-                    privilege = DbPrivilege.DML,
-                    config = db.config,
-                    description = null,
-                    updateActor = "sa"
-                )
+                val configAsString = db.config.root().render(ConfigRenderOptions.concise())
+                configEmf.transaction {
+                    val existing = it.createQuery("""
+                        SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
+                    """.trimIndent())
+                        .setParameter("name", db.name)
+                        .setParameter("privilege", DbPrivilege.DML)
+                        .resultList
+                    if(existing.isEmpty()) {
+                        val record = DbConnectionConfig(
+                            UUID.randomUUID(),
+                            db.name,
+                            DbPrivilege.DML,
+                            Instant.now(),
+                            "sa",
+                            "Test ${db.name}",
+                            configAsString
+                        )
+                        it.persist(record)
+                    }
+                }
+            }
+        }
+
+        private fun assignHSMs() {
+            CryptoConsts.Categories.all.forEach {
+                // cluster is assigned in the crypto processor
+                if(hsmRegistrationClient.findHSM(aliceVNodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(aliceVNodeId, it, emptyMap())
+                }
+                if(hsmRegistrationClient.findHSM(bobVNodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(bobVNodeId, it, emptyMap())
+                }
+                if(hsmRegistrationClient.findHSM(charlieVNodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(charlieVNodeId, it, emptyMap())
+                }
             }
         }
     }
@@ -379,7 +409,7 @@ class MemberProcessorIntegrationTest {
             }
         }
 
-        assertEquals(1, aliceGroupReader.lookup().size)
+        assertLookupSize(aliceGroupReader, 1)
 
         val bobResult = getRegistrationResult(registrationProxy, bobHoldingIdentity)
         assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, bobResult.outcome)
@@ -389,16 +419,19 @@ class MemberProcessorIntegrationTest {
 
         assertEquals(aliceX500Name, aliceMemberInfo.name)
         assertEquals(bobX500Name, bobMemberInfo.name)
-        assertEquals(2, aliceGroupReader.lookup().size)
+        assertLookupSize(aliceGroupReader, 2)
 
         // Charlie is inactive in the sample group policy as only active members are returned by default
         lookupFails(aliceGroupReader, charlieX500Name)
 
         val bobReader = eventually {
-            membershipGroupReaderProvider.getGroupReader(bobHoldingIdentity)
+            membershipGroupReaderProvider.getGroupReader(bobHoldingIdentity).also {
+                assertEquals(bobX500Name, it.owningMember)
+                assertEquals(groupId, it.groupId)
+            }
         }
 
-        assertEquals(2, bobReader.lookup().size)
+        assertLookupSize(bobReader, 2)
 
         assertEquals(aliceMemberInfo, lookUpFromPublicKey(aliceGroupReader, aliceMemberInfo))
         assertEquals(bobMemberInfo, lookUpFromPublicKey(aliceGroupReader, bobMemberInfo))

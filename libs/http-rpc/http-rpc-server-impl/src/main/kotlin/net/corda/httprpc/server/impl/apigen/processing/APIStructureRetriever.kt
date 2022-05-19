@@ -159,7 +159,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
                     ResponseBody(
                         annotation.responseDescription,
                         method.toClassAndParameterizedTypes().first,
-                        method.toClassAndParameterizedTypes().second
+                        method.toClassAndParameterizedTypes().second,
+                        method.kotlinFunction?.returnType?.isMarkedNullable ?: false
                     ),
                     method.getInvocationMethod(clazz)
                 )
@@ -205,7 +206,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             ResponseBody(
                 annotation.responseDescription,
                 this.toClassAndParameterizedTypes().first,
-                this.toClassAndParameterizedTypes().second
+                this.toClassAndParameterizedTypes().second,
+                this.kotlinFunction?.returnType?.isMarkedNullable ?: false
             ),
             this.getInvocationMethod()
         ).also { log.trace { """"Method "$name" to GET endpoint completed.""" } }
@@ -222,7 +224,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
             ResponseBody(
                 annotation.responseDescription,
                 this.toClassAndParameterizedTypes().first,
-                this.toClassAndParameterizedTypes().second
+                this.toClassAndParameterizedTypes().second,
+                this.kotlinFunction?.returnType?.isMarkedNullable ?: false
             ),
             this.getInvocationMethod()
         ).also { log.trace { """"Method "$name" to DELETE endpoint completed.""" } }
@@ -230,26 +233,30 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
 
     private fun Method.toPOSTEndpoint(annotation: HttpRpcPOST): Endpoint {
         log.trace { "Method \"${this.name}\" to POST endpoint." }
+        val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
         val responseBody = when {
             this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
                 ResponseBody(
                     annotation.responseDescription,
                     DurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second
+                    this.toClassAndParameterizedTypes().second,
+                    isReturnTypeNullable
                 )
             }
             this.isFiniteDurableStreamsMethod() -> {
                 ResponseBody(
                     annotation.responseDescription,
                     FiniteDurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second
+                    this.toClassAndParameterizedTypes().second,
+                    isReturnTypeNullable
                 )
             }
             else -> {
                 ResponseBody(
                     annotation.responseDescription,
                     this.toClassAndParameterizedTypes().first,
-                    this.toClassAndParameterizedTypes().second
+                    this.toClassAndParameterizedTypes().second,
+                    isReturnTypeNullable
                 )
             }
         }
@@ -267,26 +274,30 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRPCO
 
     private fun Method.toPUTEndpoint(annotation: HttpRpcPUT): Endpoint {
         log.trace { "Method \"${this.name}\" to PUT endpoint." }
+        val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
         val responseBody = when {
             this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
                 ResponseBody(
                     annotation.responseDescription,
                     DurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second
+                    this.toClassAndParameterizedTypes().second,
+                    isReturnTypeNullable
                 )
             }
             this.isFiniteDurableStreamsMethod() -> {
                 ResponseBody(
                     annotation.responseDescription,
                     FiniteDurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second
+                    this.toClassAndParameterizedTypes().second,
+                    isReturnTypeNullable
                 )
             }
             else -> {
                 ResponseBody(
                     annotation.responseDescription,
                     this.toClassAndParameterizedTypes().first,
-                    this.toClassAndParameterizedTypes().second
+                    this.toClassAndParameterizedTypes().second,
+                    isReturnTypeNullable
                 )
             }
         }

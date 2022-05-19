@@ -8,6 +8,9 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.print
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.impl.config.addDefaultCryptoConfig
+import net.corda.libs.configuration.SmartConfig
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -45,9 +48,7 @@ class CryptoWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseConfig = PathAndConfig(DB_CONFIG, params.databaseParams)
-        val cryptoConfig = PathAndConfig(CRYPTO_CONFIG, params.cryptoParams)
-        val config = getBootstrapConfig(params.defaultParams, listOf(databaseConfig, cryptoConfig))
+        val config = buildBoostrapConfig(params)
 
         processor.start(config)
     }
@@ -59,8 +60,19 @@ class CryptoWorker @Activate constructor(
     }
 }
 
+fun buildBoostrapConfig(params: CryptoWorkerParams): SmartConfig {
+    val databaseConfig = PathAndConfig(DB_CONFIG, params.databaseParams)
+    val cryptoConfig = PathAndConfig(CRYPTO_CONFIG, params.cryptoParams)
+    return getBootstrapConfig(
+        params.defaultParams, listOf(databaseConfig, cryptoConfig)
+    ).addDefaultCryptoConfig(
+        fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
+        fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
+    )
+}
+
 /** Additional parameters for the crypto worker are added here. */
-private class CryptoWorkerParams {
+class CryptoWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 

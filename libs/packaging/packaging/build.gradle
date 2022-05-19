@@ -41,7 +41,6 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     api platform("net.corda:corda-api:$cordaApiVersion")
 
