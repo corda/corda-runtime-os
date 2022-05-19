@@ -1,4 +1,4 @@
-package net.corda.flowworker.development.flows
+package net.cordapp.flowworker.development.flows
 
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine

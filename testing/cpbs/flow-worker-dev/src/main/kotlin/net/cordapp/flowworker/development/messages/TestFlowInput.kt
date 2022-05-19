@@ -1,4 +1,4 @@
-package net.corda.flowworker.development.messages
+package net.cordapp.flowworker.development.messages
 
 class TestFlowInput{
     var inputValue: String? = null
