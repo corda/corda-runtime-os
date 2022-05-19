@@ -6,6 +6,7 @@ import net.corda.libs.packaging.VersionComparator
 import net.corda.v5.crypto.SecureHash
 import java.util.Collections
 import java.util.NavigableMap
+import java.util.Objects
 import java.util.TreeMap
 
 internal data class CpiIdentifierImpl(
@@ -46,6 +47,10 @@ internal class CpiMetadataImpl(
         // This comparator is incomplete...
         private val comparator = Comparator.comparing(Cpi.Metadata::id)
             .thenComparing(Cpi.Metadata::hash, secureHashComparator)
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(id, hash, groupPolicy, cpks)
     }
 
     override fun equals(other: Any?): Boolean {
