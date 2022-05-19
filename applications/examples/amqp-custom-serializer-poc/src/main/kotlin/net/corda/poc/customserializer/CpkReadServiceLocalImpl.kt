@@ -29,7 +29,7 @@ class CpkReadServiceLocalImpl : CpkReadService, CpkReadServiceLoader {
     override fun load(cpiInputStream: InputStream) : Cpi {
         val cpi = Cpi.from(cpiInputStream, expansionLocation = tmpDir, verifySignature = true)
 
-        cpi.cpks.forEach { cpk -> cpkById[cpk.metadata.cpkId] = cpk }
+        cpi.cpks.forEach { cpkById[it.metadata.cpkId] = it }
 
         return cpi
     }
