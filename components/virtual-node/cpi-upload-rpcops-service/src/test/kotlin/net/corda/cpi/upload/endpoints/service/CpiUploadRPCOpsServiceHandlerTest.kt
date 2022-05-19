@@ -110,6 +110,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         val config = mock<Map<String, SmartConfig>>()
         // uncomment when we add ConfigKeys.MESSAGING_CONFIG back into the code.
         //whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.RPC_CONFIG]).thenReturn(mock())
         // uncomment when we add ConfigKeys.MESSAGING_CONFIG back into the code.
