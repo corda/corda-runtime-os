@@ -34,30 +34,27 @@ class FormatVersionReaderTest {
 
     companion object {
         @JvmStatic
-        fun invalidVersionsToTest(): List<String> {
-            return listOf(
-                "Corda-CPK-Format: ",      // Missing version
-                "",                        // Missing attribute
-                "Corda-CPK-Format: 1",     // Missing minor version
-                "Corda-CPK-Format: .1",    // Missing major version
-                "Corda-CPK-Format: 1.1.1", // Three version number components
-            )
-        }
+        fun invalidVersionsToTest() = listOf(
+            "Corda-CPK-Format: ",      // Missing version
+            "",                        // Missing attribute
+            "Corda-CPK-Format: 1",     // Missing minor version
+            "Corda-CPK-Format: .1",    // Missing major version
+            "Corda-CPK-Format: 1.1.1", // Three version number components
+        )
+        
         @JvmStatic
-        fun validVersionsToTest(): List<Pair<String, CpkFormatVersion>> {
-            return listOf(
-                "Corda-CPK-Format: 0.0"  to CpkFormatVersion(0, 0),
-                "Corda-CPK-Format: 0.1"  to CpkFormatVersion(0, 1),
-                "Corda-CPK-Format: 0.01" to CpkFormatVersion(0, 1),
-                "Corda-CPK-Format: 1.0"  to CpkFormatVersion(1, 0),
-                "Corda-CPK-Format: 1.1"  to CpkFormatVersion(1, 1),
-                "Corda-CPK-Format: 1.10" to CpkFormatVersion(1, 10),
-                "Corda-CPK-Format: 2.0"  to CpkFormatVersion(2, 0),
-                "Corda-CPK-Format: 2.1"  to CpkFormatVersion(2, 1),
-                "Corda-CPK-Format: 2.10" to CpkFormatVersion(2, 10),
-                "Corda-CPK-Format: 1000.2000" to CpkFormatVersion(1000, 2000),
-                "Corda-CPK-Format: ${Int.MAX_VALUE}.${Int.MAX_VALUE}" to CpkFormatVersion(Int.MAX_VALUE, Int.MAX_VALUE),
-            )
-        }
+        fun validVersionsToTest() = listOf(
+            "Corda-CPK-Format: 0.0"  to CpkFormatVersion(0, 0),
+            "Corda-CPK-Format: 0.1"  to CpkFormatVersion(0, 1),
+            "Corda-CPK-Format: 0.01" to CpkFormatVersion(0, 1),
+            "Corda-CPK-Format: 1.0"  to CpkFormatVersion(1, 0),
+            "Corda-CPK-Format: 1.1"  to CpkFormatVersion(1, 1),
+            "Corda-CPK-Format: 1.10" to CpkFormatVersion(1, 10),
+            "Corda-CPK-Format: 2.0"  to CpkFormatVersion(2, 0),
+            "Corda-CPK-Format: 2.1"  to CpkFormatVersion(2, 1),
+            "Corda-CPK-Format: 2.10" to CpkFormatVersion(2, 10),
+            "Corda-CPK-Format: 1000.2000" to CpkFormatVersion(1000, 2000),
+            "Corda-CPK-Format: ${Int.MAX_VALUE}.${Int.MAX_VALUE}" to CpkFormatVersion(Int.MAX_VALUE, Int.MAX_VALUE),
+        )
     }
 }
