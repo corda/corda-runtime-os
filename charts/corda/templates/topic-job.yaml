@@ -6,32 +6,25 @@ metadata:
     app: create-topics
   annotations:
     "helm.sh/hook": pre-install
-    "helm.sh/hook-delete-policy": hook-succeeded
+#    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
     metadata:
       labels: *id012
     spec:
       containers:
-        - name: create-topics
+        - name: run-topic-script
           image: bitnami/kafka:3.1.0-debian-10-r89
-#          imagePullPolicy: Always
           command:
-            - /bin/sh
-            - -e
-            - -c
-          args: ["echo", "'Topic creation finished'"]
+            - /bin/bash
+          args: [ "/tmp/working_dir/create-topics.sh" ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
       initContainers:
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
           args: [ 'topic', 'create', '-a', '{{ include "corda.kafkaBootstrapServers" . }}', '-l', '/tmp/working_dir/create-topics.sh' ]
-          volumeMounts:
-            - mountPath: /tmp/working_dir
-              name: working-volume
-        - name: run-topic-script
-          image: bitnami/kafka:3.1.0-debian-10-r89
-#          imagePullPolicy: Always
-          command: [ "/bin/sh", "/tmp/working_dir/create-topics.sh" ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume

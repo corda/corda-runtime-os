@@ -11,11 +11,11 @@ import picocli.CommandLine
 class Topic(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     companion object {
+        val classLoader = this::class.java.classLoader
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
     override fun start() {
-        Thread.currentThread().contextClassLoader = this::class.java.classLoader
         logger.info("Topic plugin started.")
     }
 

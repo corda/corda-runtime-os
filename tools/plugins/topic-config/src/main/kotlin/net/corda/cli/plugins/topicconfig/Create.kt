@@ -64,7 +64,7 @@ class Create(
     }
 
     override fun run() {
-        val cl = Thread.currentThread().contextClassLoader
+        val cl = Topic.classLoader
         val mapper = ObjectMapper(YAMLFactory()).registerModule(
             KotlinModule.Builder()
                 .withReflectionCacheSize(512)
@@ -105,28 +105,32 @@ class Create(
             val replicas = replicaOverride ?: 1
             val config = createConfigString(topicConfig.config)
             val acls = it.consumers.map { consumer ->
-                "./kafka-acls.sh --bootstrapServer $bootstrapAddr --add --allow-principal User:$consumer --operation read --topic $topicName"
+                "kafka-acls.sh --bootstrap-server $bootstrapAddr --add --allow-principal User:$consumer --operation read --topic $topicName"
             } + it.producers.map { producer ->
-                "./kafka-acls.sh --bootstrapServer $bootstrapAddr --add --allow-principal User:$producer --operation write --topic $topicName"
+                "kafka-acls.sh --bootstrap-server $bootstrapAddr --add --allow-principal User:$producer --operation write --topic $topicName"
             }
             return@flatMap listOf(
-                "./kafka-topics.sh --bootstrap-server $bootstrapAddr --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName $config &"
+                "kafka-topics.sh --bootstrap-server $bootstrapAddr --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName $config &"
             ) + acls
         } + "wait"
 
         if (outputLocation != null) {
-            writerFactory(outputLocation!!).write(topics.joinToString(System.lineSeparator()))
+            println("Wrote to path $outputLocation")
+            val writer = writerFactory(outputLocation!!)
+            writer.write(topics.joinToString(System.lineSeparator()))
+            writer.flush()
+            writer.close()
         } else {
-            println(topics.joinToString("\n"))
+            println(topics.joinToString(System.lineSeparator()))
         }
     }
 
     private fun createConfigString(config: Map<String, String>): String {
         if (config.entries.isNotEmpty()) {
             val values = config.entries.map { configEntry ->
-                return@map "\"--${configEntry.key}=${configEntry.value}\""
+                return@map "--config \"${configEntry.key}=${configEntry.value}\""
             }.joinToString(" ")
-            return "--config $values"
+            return values
         } else {
             return ""
         }
