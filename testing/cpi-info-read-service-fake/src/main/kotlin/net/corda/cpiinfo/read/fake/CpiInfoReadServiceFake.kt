@@ -2,7 +2,6 @@ package net.corda.cpiinfo.read.fake
 
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.libs.packaging.converters.toCorda
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.ErrorEvent
@@ -64,12 +63,12 @@ class CpiInfoReadServiceFake internal constructor(
             val combined = cpi.copy(cpksMetadata = cpi.cpksMetadata + cpiMetadata.cpksMetadata)
             cpiData[combined.cpiId] = combined
         }
-        callbacks.updateListenersWithCurrentSnapshot(cpiMetadata.cpiId)
+        callbacks.forEach { it.onUpdate(setOf(cpiMetadata.cpiId), cpiData) }
     }
 
     fun remove(cpiIdentifier: CpiIdentifier) {
         cpiData.remove(cpiIdentifier)
-        callbacks.updateListenersWithCurrentSnapshot(cpiIdentifier)
+        callbacks.forEach { it.onUpdate(setOf(cpiIdentifier), cpiData) }
     }
 
     fun reset() {
@@ -90,7 +89,7 @@ class CpiInfoReadServiceFake internal constructor(
     override fun registerCallback(listener: CpiInfoListener): AutoCloseable {
         throwIfNotRunning()
         callbacks += listener
-        listOf(listener).updateListenersWithCurrentSnapshot(cpiData.keys)
+        listener.onUpdate(cpiData.keys, cpiData)
         return AutoCloseable { callbacks.remove(listener) }
     }
 
@@ -122,16 +121,6 @@ class CpiInfoReadServiceFake internal constructor(
 
     override fun close() {
         coordinator.close()
-    }
-
-    private fun Iterable<CpiInfoListener>.updateListenersWithCurrentSnapshot(vararg keys: CpiIdentifier) {
-        return this.updateListenersWithCurrentSnapshot(keys.asIterable())
-    }
-
-    private fun Iterable<CpiInfoListener>.updateListenersWithCurrentSnapshot(keys: Iterable<CpiIdentifier>) {
-        val changedKeys = keys.map { it.toAvro().toCorda() }.toSet()
-        val snapshot = cpiData.values.map { it.toAvro().toCorda() }.associateBy { it.id }
-        this.forEach { it.onUpdate(changedKeys, snapshot) }
     }
 
     private fun throwIfNotRunning() {

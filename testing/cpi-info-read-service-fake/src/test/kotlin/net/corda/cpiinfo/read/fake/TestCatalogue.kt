@@ -1,12 +1,14 @@
 package net.corda.cpiinfo.read.fake
 
-import net.corda.libs.packaging.CordappManifest
-import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.v5.crypto.SecureHash
 
 object TestCatalogue {
@@ -18,7 +20,7 @@ object TestCatalogue {
                 listOf(
                     CpkMetadata(
                         CpkIdentifier(cpkName, "0.0", SecureHash("ALG", byteArrayOf(0, 0, 0, 0))),
-                        Cpk.Manifest.newInstance(Cpk.FormatVersion.newInstance(0, 0)),
+                        CpkManifest(CpkFormatVersion(0, 0)),
                         "",
                         listOf(),
                         listOf(),
@@ -27,11 +29,11 @@ object TestCatalogue {
                             "",
                             0,
                             0,
-                            ManifestCordappInfo(null, null, null, null),
-                            ManifestCordappInfo(null, null, null, null),
+                            ManifestCorDappInfo(null, null, null, null),
+                            ManifestCorDappInfo(null, null, null, null),
                             mapOf()
                         ),
-                        Cpk.Type.UNKNOWN,
+                        CpkType.UNKNOWN,
                         SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
                         setOf()
                     )

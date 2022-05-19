@@ -1,8 +1,7 @@
 package net.corda.cpiinfo.read.fake
 
 import net.corda.cpiinfo.read.CpiInfoListener
-import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.converters.toCorda
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -74,11 +73,11 @@ internal class CpiInfoReadServiceFakeTest {
         return service
     }
 
-    private fun changedKeys(vararg metadatas: CpiMetadata): Set<Cpi.Identifier> {
-        return metadatas.map { it.toAvro().toCorda().id }.toSet()
+    private fun changedKeys(vararg metadatas: CpiMetadata): Set<CpiIdentifier> {
+        return metadatas.map { it.cpiId }.toSet()
     }
 
-    private fun snapshot(vararg metadatas: CpiMetadata): Map<Cpi.Identifier, Cpi.Metadata> {
-        return metadatas.map { it.toAvro().toCorda() }.associateBy { it.id }
+    private fun snapshot(vararg metadatas: CpiMetadata): Map<CpiIdentifier, CpiMetadata> {
+        return metadatas.associateBy { it.cpiId }
     }
 }

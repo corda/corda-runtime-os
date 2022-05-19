@@ -1,14 +1,12 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.crypto.SecureHash
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -22,11 +20,9 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
-import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
-import net.corda.data.packaging.CpiIdentifier as CpiIdAvro
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -135,7 +131,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun persistHoldingIdAndVirtualNode(holdingIdentity: HoldingIdentity, vNodeDbs: Map<VirtualNodeDbType,
-            VirtualNodeDb>, cpiId: Cpi.Identifier, updateActor: String): VirtualNodeDbConnections {
+            VirtualNodeDb>, cpiId: CpiIdentifier, updateActor: String): VirtualNodeDbConnections {
         try {
             return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
                 .transaction { entityManager ->
@@ -253,11 +249,5 @@ internal class VirtualNodeWriterProcessor(
     ): Boolean {
         val errMsg = if (exception.cause != null) "${exception.message} Cause: ${exception.cause}" else exception.message ?: ""
         return handleException(respFuture, errMsg, request, cpiMetadata, holdingId)
-    }
-
-    /** Converts a [Cpi.Identifier] to its Avro representation. */
-    private fun Cpi.Identifier.toAvro(): CpiIdAvro {
-        val secureHashAvro = signerSummaryHash?.let { SecureHash(it.algorithm, ByteBuffer.wrap(it.bytes)) }
-        return CpiIdAvro(name, version, secureHashAvro)
     }
 }
