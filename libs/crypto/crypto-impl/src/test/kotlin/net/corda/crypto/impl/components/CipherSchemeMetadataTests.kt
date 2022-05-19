@@ -3,18 +3,17 @@ package net.corda.crypto.impl.components
 import net.corda.crypto.impl.infra.generateKeyPair
 import net.corda.crypto.impl.schememetadata.CordaSecureRandomService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
+import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.SM2_CODE_NAME
+import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.DERSequence
@@ -42,18 +41,13 @@ import kotlin.test.assertNotEquals
 class CipherSchemeMetadataTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata
-        private lateinit var unknownSignatureSpec: SignatureSpec
-        private lateinit var unknownScheme: SignatureScheme
+        private lateinit var unknownScheme: KeyScheme
 
         @JvmStatic
         @BeforeAll
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
-            unknownSignatureSpec = SignatureSpec(
-                signatureName = "na",
-                signatureOID = AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
-            )
-            unknownScheme = SignatureScheme(
+            unknownScheme = KeyScheme(
                 codeName = "UNKNOWN_SIGNATURE_SCHEME",
                 algorithmOIDs = listOf(
                     AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
@@ -61,13 +55,12 @@ class CipherSchemeMetadataTests {
                 providerName = "SUN",
                 algorithmName = CompositeKey.KEY_ALGORITHM,
                 algSpec = null,
-                keySize = null,
-                signatureSpec = unknownSignatureSpec,
+                keySize = null
             )
         }
 
         @JvmStatic
-        fun schemes(): Array<SignatureScheme> = schemeMetadata.schemes
+        fun schemes(): Array<KeyScheme> = schemeMetadata.schemes
 
         @JvmStatic
         fun supportedSignatureParamSpecs(): Array<AlgorithmParameterSpec> = arrayOf(
@@ -144,50 +137,50 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    fun `findScheme should throw IllegalArgumentException if the algorithm is not supported`() {
+    fun `findKeyScheme should throw IllegalArgumentException if the algorithm is not supported`() {
         assertThrows<IllegalArgumentException> {
-            schemeMetadata.findSignatureScheme(AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null))
+            schemeMetadata.findKeyScheme(AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null))
         }
     }
 
     @Test
-    fun `findScheme should throw IllegalArgumentException if the scheme code name is not supported`() {
+    fun `findKeyScheme should throw IllegalArgumentException if the scheme code name is not supported`() {
         assertThrows<IllegalArgumentException> {
-            schemeMetadata.findSignatureScheme(unknownScheme.codeName)
+            schemeMetadata.findKeyScheme(unknownScheme.codeName)
         }
     }
 
     @Test
-    fun `findScheme should throw IllegalArgumentException if the public key is not supported`() {
+    fun `findKeyScheme should throw IllegalArgumentException if the public key is not supported`() {
         val publicKey = UnsupportedPublicKey()
         assertThrows<IllegalArgumentException> {
-            schemeMetadata.findSignatureScheme(publicKey)
+            schemeMetadata.findKeyScheme(publicKey)
         }
     }
 
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find schemes for all supported scheme code names`(
-        signatureScheme: SignatureScheme
+        signatureScheme: KeyScheme
     ) {
-        val result = schemeMetadata.findSignatureScheme(signatureScheme.codeName)
+        val result = schemeMetadata.findKeyScheme(signatureScheme.codeName)
         assertEquals(signatureScheme, result)
     }
 
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find schemes for all supported signing algorithms`(
-        signatureScheme: SignatureScheme
+        signatureScheme: KeyScheme
     ) {
         assumeTrue(signatureScheme.algorithmOIDs.isNotEmpty())
-        val result = schemeMetadata.findSignatureScheme(signatureScheme.algorithmOIDs[0])
+        val result = schemeMetadata.findKeyScheme(signatureScheme.algorithmOIDs[0])
         assertEquals(signatureScheme, result)
     }
 
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find schemes for all supported public keys`(
-        signatureScheme: SignatureScheme
+        signatureScheme: KeyScheme
     ) {
         val publicKey = if (signatureScheme.codeName == COMPOSITE_KEY_CODE_NAME) {
             val alicePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
@@ -204,7 +197,7 @@ class CipherSchemeMetadataTests {
         } else {
             generateKeyPair(schemeMetadata, signatureScheme.codeName).public
         }
-        val result = schemeMetadata.findSignatureScheme(publicKey)
+        val result = schemeMetadata.findKeyScheme(publicKey)
         assertEquals(signatureScheme, result)
     }
 
@@ -218,7 +211,7 @@ class CipherSchemeMetadataTests {
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find key factories for all supported schemes`(
-        signatureScheme: SignatureScheme
+        signatureScheme: KeyScheme
     ) {
         val factory = schemeMetadata.findKeyFactory(signatureScheme)
         assertEquals(signatureScheme.providerName, factory.provider.name)

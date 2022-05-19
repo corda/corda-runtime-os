@@ -1,11 +1,14 @@
 package net.corda.crypto.impl.components
 
+import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.impl.infra.generateKeyPair
+import net.corda.crypto.impl.infra.inferSignatureSpecOrCreateDefault
 import net.corda.crypto.impl.infra.signData
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
+import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureVerificationService
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
@@ -16,15 +19,12 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.math.BigInteger
-import java.nio.file.Files
-import java.nio.file.Path
 import java.security.KeyPair
 import java.security.KeyStore
 import java.security.PublicKey
@@ -44,10 +44,6 @@ class KeyEncodingServiceTests {
         private lateinit var keyEncoder: KeyEncodingService
         private lateinit var verifier: SignatureVerificationService
         private lateinit var testParams: Array<Arguments>
-
-        @TempDir
-        @JvmStatic
-        lateinit var tempDir: Path
 
         @JvmStatic
         @BeforeAll
@@ -74,7 +70,7 @@ class KeyEncodingServiceTests {
     @ParameterizedTest
     @MethodSource("keyPairs")
     @Suppress("MaxLineLength")
-    fun `Should convert public key to PEM and backand and still to able to use for verification for all supported schemes`(
+    fun `Should convert public key to PEM and back and still to able to use for verification for all supported schemes`(
         keyPair: KeyPair
     ) {
         val encodedPublicKey = keyEncoder.encodeAsString(keyPair.public)
@@ -83,8 +79,12 @@ class KeyEncodingServiceTests {
         val decodedPublicKey = keyEncoder.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, keyPair.public)
         val data = UUID.randomUUID().toString().toByteArray(Charsets.UTF_8)
-        val signature = signData(schemeMetadata, keyPair, data)
-        assertTrue(verifier.isValid(decodedPublicKey, signature, data))
+        val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(decodedPublicKey, DigestAlgorithmName.SHA2_256)
+        val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
+        assertTrue(
+            verifier.isValid(decodedPublicKey, signatureSpec, signature, data),
+            "algorithm=${keyPair.public.algorithm}, scheme=${schemeMetadata.findKeyScheme(keyPair.public).codeName}"
+        )
     }
 
     @ParameterizedTest
@@ -97,8 +97,9 @@ class KeyEncodingServiceTests {
         val decodedPublicKey = keyEncoder.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, keyPair.public)
         val data = UUID.randomUUID().toString().toByteArray(Charsets.UTF_8)
-        val signature = signData(schemeMetadata, keyPair, data)
-        assertTrue(verifier.isValid(decodedPublicKey, signature, data))
+        val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(decodedPublicKey, DigestAlgorithmName.SHA2_256)
+        val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
+        assertTrue(verifier.isValid(decodedPublicKey, signatureSpec, signature, data))
     }
 
     @ParameterizedTest
@@ -214,29 +215,39 @@ class KeyEncodingServiceTests {
             .build(threshold = 3)
         val subjectAlias = newAlias()
         val pwdArray = "password".toCharArray()
-        val jksFile = Files.createFile(tempDir.resolve("$subjectAlias.jks")).toFile()
         val keyStoreSave = KeyStore.getInstance("JKS")
         keyStoreSave.load(null, pwdArray)
-        val signatureScheme = schemeMetadata.findSignatureScheme(keyPair1.public)
-        val caKeyPair = generateKeyPair(schemeMetadata, signatureScheme.codeName)
-        jksFile.outputStream().use {
+        val scheme = schemeMetadata.findKeyScheme(keyPair1.public)
+        val caKeyPair = generateKeyPair(schemeMetadata, scheme.codeName)
+        val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(caKeyPair.public, DigestAlgorithmName.SHA2_256)
+        val jksFile = ByteArrayOutputStream().use {
             keyStoreSave.setCertificateEntry(
                 subjectAlias, createDevCertificate(
                     issuer = X500Name("CN=ISSUER, O=o, L=L, ST=il, C=c"),
                     signer = object : ContentSigner {
-                        private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
-                            ?: throw Exception()
+                        private val sigAlgID: AlgorithmIdentifier = DefaultSignatureOIDMap.inferSignatureOID(
+                            caKeyPair.public,
+                            signatureSpec
+                        ) ?: throw Exception(
+                            "No IOD for ${caKeyPair.public.algorithm} and scheme=${scheme.codeName}"
+                        )
                         private val baos = ByteArrayOutputStream()
                         override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
                         override fun getOutputStream(): OutputStream = baos
-                        override fun getSignature(): ByteArray = signData(schemeMetadata, caKeyPair, baos.toByteArray())
+                        override fun getSignature(): ByteArray = signData(
+                            schemeMetadata,
+                            signatureSpec,
+                            caKeyPair,
+                            baos.toByteArray()
+                        )
                     },
                     subject = X500Name("CN=SUBJECT, O=o, L=L, ST=il, C=c"),
                     subjectPublicKey = aliceAndBobOrCharlie
                 )
             )
             keyStoreSave.store(it, pwdArray)
-        }
+            it
+        }.toByteArray()
         val keyStoreRead = KeyStore.getInstance("JKS")
         val loadedKey = jksFile.inputStream().use {
             keyStoreRead.load(it, pwdArray)
@@ -277,7 +288,8 @@ class KeyEncodingServiceTests {
     private fun X509CertificateHolder.toJca(): X509Certificate =
         requireNotNull(
             CertificateFactory.getInstance("X.509").generateCertificate(
-            encoded.inputStream()) as? X509Certificate
+                encoded.inputStream()
+            ) as? X509Certificate
         ) {
             "Not an X.509 certificate: $this"
         }

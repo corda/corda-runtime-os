@@ -77,7 +77,7 @@ class WrappingKey(
 
     private fun ByteArray.decodePrivateKey(): PrivateKey {
         val keyInfo = PrivateKeyInfo.getInstance(this)
-        val scheme = schemeMetadata.findSignatureScheme(keyInfo.privateKeyAlgorithm)
+        val scheme = schemeMetadata.findKeyScheme(keyInfo.privateKeyAlgorithm)
         val keyFactory = schemeMetadata.findKeyFactory(scheme)
         return keyFactory.generatePrivate(PKCS8EncodedKeySpec(this))
     }

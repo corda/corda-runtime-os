@@ -29,3 +29,11 @@ fun Map<String, String>.toWire(): KeyValuePairList {
         }
     )
 }
+
+fun List<KeyValuePair>.toMap() : Map<String, String> {
+    val map = mutableMapOf<String, String>()
+    forEach {
+        map[it.key] = it.value
+    }
+    return map
+}

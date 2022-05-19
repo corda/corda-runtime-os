@@ -36,6 +36,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
@@ -71,16 +72,7 @@ class CryptoOpsBusProcessorTests {
             )
 
         private fun getRSAasCustomSignatureSpecWithParams(): SignatureSpec =
-            SignatureSpec(
-                signatureName = "RSASSA-PSS",
-                params = PSSParameterSpec(
-                    "SHA-256",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA256,
-                    32,
-                    1
-                )
-            )
+            RSASSA_PSS_SHA256_SIGNATURE_SPEC
     }
 
     private lateinit var factory: TestServicesFactory

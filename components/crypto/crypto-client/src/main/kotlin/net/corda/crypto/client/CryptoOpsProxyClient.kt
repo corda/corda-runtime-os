@@ -2,6 +2,7 @@ package net.corda.crypto.client
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.v5.crypto.CompositeKey
@@ -72,6 +73,7 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
     fun signProxy(
         tenantId: String,
         publicKey: ByteBuffer,
+        signatureSpec: CryptoSignatureSpec,
         data: ByteBuffer,
         context: KeyValuePairList
     ): CryptoSignatureWithKey

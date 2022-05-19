@@ -3,10 +3,10 @@ package net.corda.crypto.client.impl
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
-import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -17,7 +17,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
@@ -57,7 +56,7 @@ class CryptoOpsClientImpl(
             tenantId = tenantId,
             request = SupportedSchemesRpcQuery(category)
         )
-        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureSchemes::class.java)
+        val response = request.execute(Duration.ofSeconds(20), CryptoKeySchemes::class.java)
         return response!!.codes
     }
 
@@ -227,47 +226,20 @@ class CryptoOpsClientImpl(
     fun sign(
         tenantId: String,
         publicKey: PublicKey,
-        data: ByteArray,
-        context: Map<String, String>
-    ): DigitalSignature.WithKey {
-        logger.info(
-            "Sending '{}'(tenant={},publicKey={}..)",
-            SignRpcCommand::class.java.simpleName,
-            tenantId,
-            publicKey.toStringShort().take(12)
-        )
-        val request = createRequest(
-            tenantId,
-            SignRpcCommand(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(data),
-                context.toWire()
-            )
-        )
-        val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
-        return DigitalSignature.WithKey(
-            by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-            bytes = response.bytes.array()
-        )
-    }
-
-    fun sign(
-        tenantId: String,
-        publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey {
         logger.info(
             "Sending '{}'(tenant={},publicKey={}..,signatureSpec={})",
-            SignWithSpecRpcCommand::class.java.simpleName,
+            SignRpcCommand::class.java.simpleName,
             tenantId,
             publicKey.toStringShort().take(12),
             signatureSpec
         )
         val request = createRequest(
             tenantId,
-            SignWithSpecRpcCommand(
+            SignRpcCommand(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                 signatureSpec.toWire(),
                 ByteBuffer.wrap(data),
@@ -277,13 +249,15 @@ class CryptoOpsClientImpl(
         val response = request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-            bytes = response.bytes.array()
+            bytes = response.bytes.array(),
+            context = response.context.items.toMap()
         )
     }
 
     fun signProxy(
         tenantId: String,
         publicKey: ByteBuffer,
+        signatureSpec: CryptoSignatureSpec,
         data: ByteBuffer,
         context: KeyValuePairList
     ): CryptoSignatureWithKey {
@@ -297,6 +271,7 @@ class CryptoOpsClientImpl(
             tenantId,
             SignRpcCommand(
                 publicKey,
+                signatureSpec,
                 data,
                 context
             )

@@ -1,8 +1,8 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
 import org.bouncycastle.asn1.x509.Extension

@@ -30,6 +30,7 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
@@ -664,16 +665,7 @@ class CryptoOperationsTests {
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
-        val rsaPss = SignatureSpec(
-            signatureName = "RSASSA-PSS",
-            params = PSSParameterSpec(
-                "SHA-256",
-                "MGF1",
-                MGF1ParameterSpec.SHA256,
-                32,
-                1
-            )
-        )
+        val rsaPss = RSASSA_PSS_SHA256_SIGNATURE_SPEC
         val info = signingAliasedKeys.getValue(signatureScheme)
         assertEquals(info.publicKey.algorithm, "RSA")
         val customSignature1 = info.signingService.sign(
@@ -690,16 +682,7 @@ class CryptoOperationsTests {
     fun `Should generate fresh RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
         val testData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(RSA_CODE_NAME)
-        val rsaPss = SignatureSpec(
-            signatureName = "RSASSA-PSS",
-            params = PSSParameterSpec(
-                "SHA-256",
-                "MGF1",
-                MGF1ParameterSpec.SHA256,
-                32,
-                1
-            )
-        )
+        val rsaPss = RSASSA_PSS_SHA256_SIGNATURE_SPEC
         val info = signingFreshKeys.getValue(signatureScheme)
         assertNotNull(info.publicKey)
         assertEquals(info.publicKey.algorithm, "RSA")
