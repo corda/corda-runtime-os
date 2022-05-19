@@ -3,7 +3,9 @@ package net.corda.flow.testing.fakes
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
 import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
+import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -25,20 +27,25 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<CpkIdentifier>()
+    private var initiatingToInitiatedFlowsMap: Map<Pair<String, String>, String> = mapOf()
 
-    fun putCpk(cpk: CpkIdentifier){
+    fun putCpk(cpk: CpkIdentifier) {
         availableCpk.add(cpk)
     }
 
-    fun reset(){
+    fun reset() {
         availableCpk.clear()
+    }
+
+    fun initiatingToInitiatedFlowPair(cpiId: CpiIdentifier, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        initiatingToInitiatedFlowsMap = mapOf((cpiId.name to initiatingFlowClassName) to initiatedFlowClassName)
     }
 
     override fun getOrCreate(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(mapOf()))
+        return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(mapOf()), initiatingToInitiatedFlowsMap)
     }
 
     override fun registerMetadataServices(
@@ -73,20 +80,23 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     class FakeSandboxGroupContext(
         override val virtualNodeContext: VirtualNodeContext,
-        override val sandboxGroup: SandboxGroup
-    ) :SandboxGroupContext{
-        private val serviceMap = mapOf(
+        override val sandboxGroup: SandboxGroup,
+        initiatingToInitiatedFlowsMap: Map<Pair<String, String>, String>
+    ) : SandboxGroupContext {
+
+        private val cache = mutableMapOf(
             DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
             CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
             AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
-            )
+            INITIATING_TO_INITIATED_FLOWS to initiatingToInitiatedFlowsMap
+        )
 
         override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
-            return serviceMap[key]?.let(valueType::cast)
+            return cache[key]?.let(valueType::cast)
         }
     }
 
-    class FakeSandboxDependencyInjector:SandboxDependencyInjector{
+    class FakeSandboxDependencyInjector : SandboxDependencyInjector {
         override fun injectServices(flow: Flow<*>) {
         }
 
@@ -98,7 +108,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeCheckpointSerializer:CheckpointSerializer{
+    class FakeCheckpointSerializer : CheckpointSerializer {
         override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
@@ -108,7 +118,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSerializationService:SerializationService{
+    class FakeSerializationService : SerializationService {
         override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
@@ -122,7 +132,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSandboxGroup(override val metadata: Map<Bundle, CpkMetadata>) :SandboxGroup{
+    class FakeSandboxGroup(override val metadata: Map<Bundle, CpkMetadata>) : SandboxGroup {
         override fun loadClassFromMainBundles(className: String): Class<*> {
             TODO("Not yet implemented")
         }

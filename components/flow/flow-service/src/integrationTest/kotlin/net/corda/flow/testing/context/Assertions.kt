@@ -7,6 +7,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.Checkpoint
@@ -69,16 +70,29 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun sessionErrorEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
+        asserts.add { testRun ->
+            findAndAssertSessionEvents<SessionError>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
+        }
+    }
+
     override fun flowDidNotResume() {
         asserts.add { testRun ->
             assertNull(testRun.flowContinuation, "Not expecting the flow to resume")
         }
     }
 
-    override fun <T> flowResumedWith(value: T) {
+    override fun flowResumedWith(value: Any) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Run::class.java, testRun.flowContinuation)
             assertEquals(value, (testRun.flowContinuation as FlowContinuation.Run).value)
+        }
+    }
+
+    override fun <T: Throwable> flowResumedWithError(exceptionClass: Class<T>) {
+        asserts.add { testRun ->
+            assertInstanceOf(FlowContinuation.Error::class.java, testRun.flowContinuation)
+            assertInstanceOf(exceptionClass, (testRun.flowContinuation as FlowContinuation.Error).exception)
         }
     }
 

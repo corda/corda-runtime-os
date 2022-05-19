@@ -180,6 +180,12 @@ class MemberProcessorTestUtils {
                 }
             }
 
+        fun assertLookupSize(groupReader: MembershipGroupReader, expectedSize: Int) = eventually {
+            groupReader.lookup().also {
+                assertEquals(expectedSize, it.size)
+            }
+        }
+
         fun lookup(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
             val lookupResult = groupReader.lookup(holdingIdentity)
             assertNotNull(lookupResult)
