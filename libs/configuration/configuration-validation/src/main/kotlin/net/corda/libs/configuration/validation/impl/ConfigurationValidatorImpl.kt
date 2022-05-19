@@ -7,6 +7,7 @@ import com.networknt.schema.JsonSchema
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersion
+import com.networknt.schema.ValidationMessage
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import java.io.InputStream
@@ -31,19 +32,35 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
     private val configSecretHelper = ConfigSecretHelper()
 
     override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean) : SmartConfig {
-        logger.info("Validating config for key $key with schema version $version")
-        logger.debug {
-            "Configuration to validate: ${
-                config.toSafeConfig().root().render(ConfigRenderOptions.concise())
-            }"
+        val schemaInput = try {
+            schemaProvider.getSchema(key, version)
+        } catch (e: Exception) {
+            val message = "Could not retrieve the schema for key $key at schema version $version: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
         }
+        val configAsJSONNode = validateConfigAndGetJSONNode( key, config, schemaInput, version, applyDefaults)
+        return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
+    }
+
+    override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) {
+        validateConfigAndGetJSONNode(key, config, schemaInput, null, applyDefaults)
+    }
+
+    private fun validateConfigAndGetJSONNode(
+        key: String,
+        config: SmartConfig,
+        schemaInput: InputStream,
+        version: Version?,
+        applyDefaults: Boolean
+    ): JsonNode {
+        logger.debug { "Configuration to validate: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}" }
         //jsonNode is updated in place by walker when [applyDefaults] is true
         val configAsJSONNode = config.toJsonNode()
         val secretsNode = configSecretHelper.hideSecrets(configAsJSONNode)
         val errors = try {
             // Note that the JSON schema library does lazy schema loading, so schema retrieval issues may not manifest
             // until the validation stage.
-            val schemaInput = schemaProvider.getSchema(key, version)
             val schema = getSchema(schemaInput, applyDefaults)
             logger.debug { "Schema to validate against: $schema" }
             schema.walk(configAsJSONNode, true).validationMessages
@@ -52,47 +69,26 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
             logger.error(message, e)
             throw ConfigurationSchemaFetchException(message, e)
         }
-        if (errors.isNotEmpty()) {
-            val errorSet = errors.map { it.message }.toSet()
-            logger.error(
-                "Configuration validation failed for key $key at schema version $version. Errors: $errorSet."
-            )
-            throw ConfigurationValidationException(key, version, config, errorSet).also {
-                logger.debug { it.fullErrorDetail() }
-            }
-        }
-
+        handleErrors(errors, key, null, config)
         configSecretHelper.insertSecrets(configAsJSONNode, secretsNode)
-        return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
+        return configAsJSONNode
     }
 
-    override fun validateConfig(key: String, config: SmartConfig, schemaInput: InputStream) {
-        logger.debug {
-            "Configuration to validate: ${
-                config.toSafeConfig().root().render(ConfigRenderOptions.concise())
-            }"
-        }
-        val configAsJSONNode = config.toJsonNode()
-        val secretsNode = configSecretHelper.hideSecrets(configAsJSONNode)
-        val schema = try {
-             getSchema(schemaInput, false)
-        } catch (e: Exception) {
-            val message = "Could not retrieve the schema for key $key: ${e.message}"
-            logger.error(message, e)
-            throw ConfigurationSchemaFetchException(message, e)
-        }
-        val errors = schema.validate(configAsJSONNode)
+    private fun handleErrors(
+        errors: MutableSet<ValidationMessage>,
+        key: String,
+        version: Version?,
+        config: SmartConfig
+    ) {
         if (errors.isNotEmpty()) {
             val errorSet = errors.map { it.message }.toSet()
             logger.error(
                 "Configuration validation failed for config key $key. Errors: $errorSet."
             )
-            throw ConfigurationValidationException(key, null, config, errorSet).also {
+            throw ConfigurationValidationException(key, version, config, errorSet).also {
                 logger.debug { it.fullErrorDetail() }
             }
         }
-
-        configSecretHelper.insertSecrets(configAsJSONNode, secretsNode)
     }
 
     private fun getSchema(schemaInput: InputStream, applyDefaults: Boolean): JsonSchema {

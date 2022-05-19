@@ -22,7 +22,6 @@ class KafkaConfigMergerImpl : BusConfigMerger {
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
         logger.debug ("Merging boot config into messaging config")
-
         var updatedMessagingConfig = messagingConfig?: getBaseKafkaMessagingConfig(bootConfig)
         val kafkaBootConfig = bootConfig.getConfig(BOOT_KAFKA_COMMON).entrySet()
         logger.debug("Looping through kafka boot config")

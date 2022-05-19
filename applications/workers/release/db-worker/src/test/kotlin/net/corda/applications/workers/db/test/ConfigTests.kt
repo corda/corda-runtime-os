@@ -214,6 +214,6 @@ class ConfigTests {
         override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig =
             SmartConfigImpl.empty()
 
-        override fun validateConfig(key: String, config: SmartConfig, schemaInput: InputStream) = Unit
+        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = Unit
     }
 }

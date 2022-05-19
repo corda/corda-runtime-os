@@ -9,7 +9,7 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.configuration.getStringOrDefault
 import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
-import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.messaging.api.exception.CordaAPIConfigException
 import net.corda.schema.configuration.MessagingConfig.Bus.AUTO_OFFSET_RESET
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.DB_MAX_POLL_RECORDS
@@ -59,7 +59,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     private fun resolve(messageBusConfig: SmartConfig, rolePath: String, configParams: SmartConfig): Pair<SmartConfig, DbAccessProperties> {
         val busType = messageBusConfig.getString(BUS_TYPE)
         if (busType !in EXPECTED_BUS_TYPES) {
-            throw CordaMessageAPIConfigException(
+            throw CordaAPIConfigException(
                 "Tried to configure the DB/In-Mem bus but received $busType configuration instead"
             )
         }
@@ -145,7 +145,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val bundle = FrameworkUtil.getBundle(this::class.java)
         val url = bundle?.getResource(resource)
             ?: this::class.java.classLoader.getResource(resource)
-            ?: throw CordaMessageAPIConfigException(
+            ?: throw CordaAPIConfigException(
                 "Failed to get resource $resource from DB bus implementation bundle"
             )
         val config = ConfigFactory.parseURL(url)

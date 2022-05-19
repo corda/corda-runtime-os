@@ -71,8 +71,7 @@ class WorkerHelpers {
             val bootConfig = SmartConfigFactory.create(secretsConfig).create(config)
             logger.debug { "Worker boot config\n: ${bootConfig.root().render()}" }
 
-            validator.validateConfig(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
-
+            validator.validate(BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH))
             return bootConfig
         }
 

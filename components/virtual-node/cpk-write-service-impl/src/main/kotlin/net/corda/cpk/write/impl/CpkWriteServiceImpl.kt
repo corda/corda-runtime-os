@@ -36,7 +36,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
@@ -132,8 +132,9 @@ class CpkWriteServiceImpl @Activate constructor(
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
-                    ConfigKeys.BOOT_CONFIG,
-                    ConfigKeys.MESSAGING_CONFIG
+                    BOOT_CONFIG,
+                    MESSAGING_CONFIG,
+                    RECONCILIATION_CONFIG,
                 )
             )
         } else {

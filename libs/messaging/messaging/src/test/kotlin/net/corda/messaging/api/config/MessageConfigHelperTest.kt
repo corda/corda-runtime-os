@@ -2,7 +2,7 @@ package net.corda.messaging.api.config
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.messaging.api.exception.CordaAPIConfigException
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -26,7 +26,7 @@ class MessageConfigHelperTest {
     fun `error thrown if either section is missing`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 1, "bar" to 2)))
         val map1 = mapOf(BOOT_CONFIG to bootConfig)
-        assertThrows<CordaMessageAPIConfigException> {
+        assertThrows<CordaAPIConfigException> {
             map1.getConfig(MESSAGING_CONFIG)
         }
     }
