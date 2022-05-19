@@ -37,9 +37,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
@@ -104,7 +102,7 @@ class CryptoOpsClientComponentTests {
         )
         schemeMetadata = CipherSchemeMetadataImpl()
         sender = mock()
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
+        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         publisherFactory = mock {
             on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
         }

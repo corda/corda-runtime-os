@@ -18,9 +18,7 @@ import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -53,10 +51,7 @@ class TestServicesFactory {
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(
-        LifecycleRegistryImpl(),
-        LifecycleCoordinatorSchedulerFactoryImpl()
-    )
+    val coordinatorFactory: LifecycleCoordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
 
     val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)

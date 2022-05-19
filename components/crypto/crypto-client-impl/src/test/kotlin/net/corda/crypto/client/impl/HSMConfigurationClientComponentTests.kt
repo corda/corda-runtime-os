@@ -23,9 +23,7 @@ import net.corda.data.crypto.wire.hsm.configuration.queries.HSMLinkedCategoriesQ
 import net.corda.data.crypto.wire.hsm.configuration.queries.HSMQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
@@ -62,7 +60,7 @@ class HSMConfigurationClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
+        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         sender = mock()
         publisherFactory = mock {
             on { createRPCSender<HSMConfigurationRequest, HSMConfigurationResponse>(any(), any()) } doReturn sender
