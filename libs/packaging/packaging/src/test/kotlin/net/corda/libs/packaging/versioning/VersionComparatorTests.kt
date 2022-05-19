@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.versioning
 
-import net.corda.libs.packaging.VersionComparator.Companion.cmp
+import net.corda.libs.packaging.core.comparator.VersionComparator.Companion.cmp
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.ParameterizedTest

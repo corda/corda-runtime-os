@@ -4,7 +4,7 @@ import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.PackagingException
+import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -86,16 +86,16 @@ class ValidationFunctions(
             val groupId = getGroupId(cpi)
 
             if (!chunkPersistence.cpiExists(
-                    cpi.metadata.id.name,
-                    cpi.metadata.id.version,
-                    cpi.metadata.id.signerSummaryHash?.toString() ?: ""
+                    cpi.metadata.cpiId.name,
+                    cpi.metadata.cpiId.version,
+                    cpi.metadata.cpiId.signerSummaryHash?.toString() ?: ""
                 )
             ) {
                 chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else {
                 throw ValidationException(
                     "CPI has already been inserted with cpks for " +
-                            "${cpi.metadata.id.name} ${cpi.metadata.id.version} with groupId=$groupId"
+                            "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} with groupId=$groupId"
                 )
             }
         } catch (ex: Exception) {
@@ -141,9 +141,9 @@ class ValidationFunctions(
 
     fun checkGroupIdDoesNotExistForThisCpi(persistence: ChunkPersistence, cpi: Cpi) {
         val groupIdInDatabase = persistence.getGroupId(
-            cpi.metadata.id.name,
-            cpi.metadata.id.version,
-            cpi.metadata.id.signerSummaryHash?.toString() ?: ""
+            cpi.metadata.cpiId.name,
+            cpi.metadata.cpiId.version,
+            cpi.metadata.cpiId.signerSummaryHash?.toString() ?: ""
         )
         if (groupIdInDatabase != null) {
             throw ValidationException("CPI already uploaded with groupId = $groupIdInDatabase")

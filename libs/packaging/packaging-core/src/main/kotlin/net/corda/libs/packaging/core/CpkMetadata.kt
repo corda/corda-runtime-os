@@ -1,17 +1,12 @@
 package net.corda.libs.packaging.core
 
-import net.corda.libs.packaging.CordappManifest
-import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.converters.toAvro
-import net.corda.libs.packaging.converters.toCorda
 import net.corda.v5.crypto.SecureHash
 import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.util.stream.Collectors
-
-// TODO - clean up CPI/CPK in net.corda.packaging
+import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
 
 /**
  * Represents a CPK file in the cluster
@@ -29,26 +24,26 @@ import java.util.stream.Collectors
  */
 data class CpkMetadata(
     val cpkId: CpkIdentifier,
-    val manifest: Cpk.Manifest,
+    val manifest: CpkManifest,
     val mainBundle: String,
     val libraries: List<String>,
     val dependencies: List<CpkIdentifier>,
     val cordappManifest: CordappManifest,
-    val type: Cpk.Type,
+    val type: CpkType,
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
     val cordappCertificates: Set<Certificate>
 ) {
     companion object {
-        fun fromAvro(other: net.corda.data.packaging.CpkMetadata): CpkMetadata {
+        fun fromAvro(other: CpkMetadataAvro): CpkMetadata {
             return CpkMetadata(
                 CpkIdentifier.fromAvro(other.id),
-                other.manifest.toCorda(),
+                CpkManifest.fromAvro(other.manifest),
                 other.mainBundle,
                 other.libraries,
                 other.dependencies.map { CpkIdentifier.fromAvro(it) },
-                other.corDappManifest.toCorda(),
-                other.type.toCorda(),
+                CordappManifest.fromAvro(other.corDappManifest),
+                CpkType.fromAvro(other.type),
                 SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
                 let {
                     val crtFactory = CertificateFactory.getInstance("X.509")
@@ -60,27 +55,10 @@ data class CpkMetadata(
                 }
             )
         }
-
-        // TODO - remove when refactoring complete
-        fun fromLegacyCpk(cpk: Cpk): CpkMetadata {
-            return CpkMetadata(
-                CpkIdentifier(cpk.metadata.id.name, cpk.metadata.id.version, cpk.metadata.id.signerSummaryHash),
-                cpk.metadata.manifest,
-                cpk.metadata.mainBundle,
-                cpk.metadata.libraries,
-                cpk.metadata.dependencies.map {
-                    CpkIdentifier(it.name, it.version, it.signerSummaryHash)
-                },
-                cpk.metadata.cordappManifest,
-                cpk.metadata.type,
-                cpk.metadata.hash,
-                cpk.metadata.cordappCertificates
-            )
-        }
     }
 
-    fun toAvro(): net.corda.data.packaging.CpkMetadata {
-        return net.corda.data.packaging.CpkMetadata(
+    fun toAvro(): CpkMetadataAvro {
+        return CpkMetadataAvro(
             cpkId.toAvro(),
             manifest.toAvro(),
             mainBundle,

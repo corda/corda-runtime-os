@@ -18,7 +18,6 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation project(":libs:packaging:packaging")
-    implementation project(":libs:packaging:packaging-avro-converters")
 
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:chunking:chunking-core')

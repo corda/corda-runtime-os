@@ -1,5 +1,7 @@
 package net.corda.libs.packaging
 
+import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.exception.CordappManifestException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

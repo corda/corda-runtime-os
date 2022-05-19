@@ -1,19 +1,21 @@
-package net.corda.libs.packaging
+package net.corda.libs.packaging.core
 
+import net.corda.libs.packaging.core.exception.CordappManifestException
 import org.osgi.framework.Constants
 import java.util.jar.Attributes
 import java.util.jar.Manifest
+import net.corda.data.packaging.CorDappManifest as CorDappManifestAvro
 
 /** A parsed CorDapp JAR [Manifest] providing access to CorDapp-specific attributes. */
 @Suppress("LongParameterList")
 data class CordappManifest(
-        val bundleSymbolicName: String,
-        val bundleVersion: String,
-        val minPlatformVersion: Int,
-        val targetPlatformVersion: Int,
-        val contractInfo: ManifestCordappInfo,
-        val workflowInfo: ManifestCordappInfo,
-        val attributes: Map<String, String>) {
+    val bundleSymbolicName: String,
+    val bundleVersion: String,
+    val minPlatformVersion: Int,
+    val targetPlatformVersion: Int,
+    val contractInfo: ManifestCorDappInfo,
+    val workflowInfo: ManifestCorDappInfo,
+    val attributes: Map<String, String>) {
 
     companion object {
         // The platform version at which CPKs were introduced.
@@ -47,10 +49,23 @@ data class CordappManifest(
 
         private operator fun Manifest.get(key: String): String? = mainAttributes.getValue(key)
 
-        private val DEFAULT_ATTRIBUTES = setOf(MIN_PLATFORM_VERSION, TARGET_PLATFORM_VERSION, Constants.BUNDLE_SYMBOLICNAME,
+        private val DEFAULT_ATTRIBUTES = setOf(
+            MIN_PLATFORM_VERSION, TARGET_PLATFORM_VERSION, Constants.BUNDLE_SYMBOLICNAME,
                 Constants.BUNDLE_VERSION, CORDAPP_CONTRACT_NAME, CORDAPP_CONTRACT_VENDOR, CORDAPP_CONTRACT_VERSION,
                 CORDAPP_CONTRACT_LICENCE, CORDAPP_WORKFLOW_NAME, CORDAPP_WORKFLOW_VENDOR, CORDAPP_WORKFLOW_VERSION,
-                CORDAPP_WORKFLOW_LICENCE)
+                CORDAPP_WORKFLOW_LICENCE
+        )
+
+
+        fun fromAvro(other: CorDappManifestAvro): CordappManifest = CordappManifest(
+            other.bundleSymbolicName,
+            other.bundleVersion,
+            other.minPlatformVersion,
+            other.targetPlatformVersion,
+            ManifestCorDappInfo.fromAvro(other.contractInfo),
+            ManifestCorDappInfo.fromAvro(other.workflowInfo),
+            other.attributes
+        )
 
         /**
          * Parses the [manifest] to extract specific standard attributes.
@@ -77,12 +92,12 @@ data class CordappManifest(
                     bundleVersion = bundleVersion,
                     minPlatformVersion = minPlatformVersion,
                     targetPlatformVersion = parseInt(manifestAttributes, TARGET_PLATFORM_VERSION) ?: minPlatformVersion,
-                    contractInfo = ManifestCordappInfo(
+                    contractInfo = ManifestCorDappInfo(
                             manifestAttributes.getValue(CORDAPP_CONTRACT_NAME),
                             manifestAttributes.getValue(CORDAPP_CONTRACT_VENDOR),
                             parseInt(manifestAttributes, CORDAPP_CONTRACT_VERSION),
                             manifestAttributes.getValue(CORDAPP_CONTRACT_LICENCE)),
-                    workflowInfo = ManifestCordappInfo(
+                    workflowInfo = ManifestCorDappInfo(
                             manifestAttributes.getValue(CORDAPP_WORKFLOW_NAME),
                             manifestAttributes.getValue(CORDAPP_WORKFLOW_VENDOR),
                             parseInt(manifestAttributes, CORDAPP_WORKFLOW_VERSION),
@@ -124,5 +139,16 @@ data class CordappManifest(
     val notaryProtocols: Set<String> get() = parseSet(CORDAPP_NOTARIES)
     val digestAlgorithmFactories: Set<String> get() = parseSet(CORDAPP_DIGEST_ALGORITHM_FACTORIES)
     val entities: Set<String> get() = parseSet(CORDAPP_ENTITIES)
+
+    fun toAvro(): CorDappManifestAvro =
+        CorDappManifestAvro(
+            bundleSymbolicName,
+            bundleVersion,
+            minPlatformVersion,
+            targetPlatformVersion,
+            contractInfo.toAvro(),
+            workflowInfo.toAvro(),
+            attributes
+        )
 }
 
