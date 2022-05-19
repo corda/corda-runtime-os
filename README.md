@@ -8,18 +8,21 @@
 
 <h2>Project Overview</h2>
 
-Corda is a centrally managed open source project. R3 retains full control of the code and the release cycle. This is necessary because the code in the Corda Open Source repository will be regularly checked out by R3 customers running production services.
+Corda is a scalable, permissioned peer-to-peer (P2P) distributed ledger technology (DLT) platform that enables the building of applications that foster and deliver digital trust between parties in regulated markets.
 
-Corda Open Source is available under Apache 2.0 licensing terms.
+Corda is developed and maintained by [R3](https://r3.com), and is made available under the Apache 2.0 license.
 
-<h2>Getting Involved</h2>
+This repo contains the code that will evolve to become the Corda 5 release. For the current Corda 4 codebase, head over to the [Corda 4 repo](https://github.com/corda/corda).
 
-This open-source release enables you to explore how Corda 5 works, rebuild it, and experiment with deploying it locally. It is not intended to facilitate full CorDapp development. We are very happy to accept comments and contributions. Please send us a pull request with your feedback. We can then review, test, and maintain in future releases, as appropriate. 
+We encourage you to use this code to explore how Corda 5 will work, rebuild it, and experiment with deploying it locally. We'd love your comments and feedback! But be warned it is pre-release software and is not yet intended to facilitate full CorDapp development. 
+
+Note that there is a large engineering team at R3 working on this codebase so if you see something wrong or missing, we encourage you to contact us before working on any significant PRs of your own: it's possible we may already be working on the same thing or we may have tips on how best to structure your work to maximise the chance of it being merged into the codebase.
 
 The best way to stay up-to-date with Corda is to monitor the following resources: 
 
  * Slack - [cordaledger.slack.com](https://cordaledger.slack.com)
  * Our Blog - [corda.net/blog/](https://www.corda.net/blog/)
+ * Community Forum - [community.r3.com](https://community.r3.com)
   
 <h2>Getting Started</h2>
 
