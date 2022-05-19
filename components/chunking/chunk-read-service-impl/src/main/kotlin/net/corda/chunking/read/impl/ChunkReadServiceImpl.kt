@@ -100,7 +100,7 @@ class ChunkReadServiceImpl @Activate constructor(
                 configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
                         ConfigKeys.BOOT_CONFIG,
-                        //ConfigKeys.MESSAGING_CONFIG,  // TODO - uncomment when 'messaging' is sorted out.
+                        ConfigKeys.MESSAGING_CONFIG
                     )
                 )
         } else {
