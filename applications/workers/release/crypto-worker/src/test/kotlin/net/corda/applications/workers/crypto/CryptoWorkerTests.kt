@@ -7,6 +7,7 @@ import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.softPersistence
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
@@ -23,7 +24,7 @@ class CryptoWorkerTests {
 
     companion object {
         val validator = mock<ConfigurationValidator>().apply {
-                whenever(validate(any(), any(), any(), any())).thenAnswer { it.arguments[2] }
+                whenever(validate(any(), any<SmartConfig>(), any(), any())).thenAnswer { it.arguments[2] }
             }
 
         val validatorFactoryMock = mock<ConfigurationValidatorFactory>().apply {

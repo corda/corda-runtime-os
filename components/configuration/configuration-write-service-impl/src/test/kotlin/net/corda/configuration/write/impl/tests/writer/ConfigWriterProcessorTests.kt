@@ -37,7 +37,7 @@ class ConfigWriterProcessorTests {
         whenever(instant()).thenReturn(Instant.MIN)
     }
     private val validator = mock<ConfigurationValidator>().apply {
-        whenever(validate(any(), any(), any(), any())).thenAnswer{ it.arguments[2] }
+        whenever(validate(any(), any<Version>(), any(), any())).thenAnswer{ it.arguments[2] }
     }
     private val config = ConfigEntity("section", "{}", 1, 0, clock.instant(), "actor_one")
     private val configMgmtReq = config.run {
@@ -84,7 +84,7 @@ class ConfigWriterProcessorTests {
     @Test
     fun `Config fails validation`() {
         doThrow(ConfigurationValidationException("", Version(0,0), SmartConfigImpl.empty(), emptySet()))
-            .whenever(validator).validate(any(), any(), any(), any())
+            .whenever(validator).validate(any(), any<Version>(), any(), any())
         val processor = ConfigWriterProcessor(getPublisher(), configEntityWriter, validator, clock)
         val response = processRequest(processor, configMgmtReq)
 
