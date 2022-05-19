@@ -84,28 +84,6 @@ class KeysRpcOpsImplTest {
         }
 
         @Test
-        fun `generateKeyPair without a scheme use the first scheme`() {
-            val publicKey = mock<PublicKey> {
-                on { encoded } doReturn byteArrayOf(1, 2, 3)
-            }
-            whenever(cryptoOpsClient.getSupportedSchemes("tenantId", "category")).doReturn(listOf("sc1", "sc2"))
-            whenever(cryptoOpsClient.generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>())).doReturn(publicKey)
-
-            keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = null)
-
-            verify(cryptoOpsClient).generateKeyPair("tenantId", "category", "alias", "sc1")
-        }
-
-        @Test
-        fun `generateKeyPair without a scheme throw an exception if there are no schemes`() {
-            whenever(cryptoOpsClient.getSupportedSchemes("tenantId", "category")).doReturn(emptyList())
-
-            assertThrows<ResourceNotFoundException> {
-                keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = null)
-            }
-        }
-
-        @Test
         fun `generateKeyPem returns the keys PEMs`() {
             val keyId = "keyId"
             val holdingIdentityId = "holdingIdentityId"

@@ -75,9 +75,9 @@ interface KeysRpcOps : RpcOps {
         hsmCategory: String,
         @HttpRpcRequestBodyParameter(
             description = "The scheme",
-            required = false,
+            required = true,
         )
-        scheme: String?,
+        scheme: String,
     ): String
 
     /**

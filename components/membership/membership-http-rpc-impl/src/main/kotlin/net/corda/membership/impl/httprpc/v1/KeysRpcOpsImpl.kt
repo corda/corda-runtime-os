@@ -48,18 +48,13 @@ class KeysRpcOpsImpl @Activate constructor(
         tenantId: String,
         alias: String,
         hsmCategory: String,
-        scheme: String?
+        scheme: String
     ): String {
         return cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = hsmCategory,
             alias = alias,
-            scheme = scheme ?: cryptoOpsClient
-                .getSupportedSchemes(
-                    tenantId = tenantId, category = hsmCategory
-                ).firstOrNull()
-                ?: throw ResourceNotFoundException("Could not find any scheme for $tenantId and $hsmCategory")
-
+            scheme = scheme
         ).publicKeyId()
     }
 
