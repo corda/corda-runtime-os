@@ -239,7 +239,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         cpiMetadataEntity: CpiMetadataEntity
     ) {
         cpks.forEach {
-            val cpkChecksum = it.metadata.hash.toString()
+            val cpkChecksum = it.metadata.fileChecksum.toString()
             // Using `merge` here as exactly the same CPK data may already exist
             em.merge(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
 
@@ -247,9 +247,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 cpi = cpiMetadataEntity,
                 cpkFileChecksum = cpkChecksum,
                 cpkFileName = it.originalFileName!!,
-                mainBundleName = it.metadata.id.name,
-                mainBundleVersion = it.metadata.id.version,
-                signerSummaryHash = it.metadata.id.signerSummaryHash?.toString() ?: "",
+                mainBundleName = it.metadata.cpkId.name,
+                mainBundleVersion = it.metadata.cpkId.version,
+                signerSummaryHash = it.metadata.cpkId.signerSummaryHash?.toString() ?: "",
                 cpkManifest = CpkManifest(
                     CpkFormatVersion(
                         it.metadata.manifest.cpkFormatVersion.major,
@@ -402,9 +402,9 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadata = cpi.metadata
 
         return CpiMetadataEntity(
-            name = cpiMetadata.id.name,
-            version = cpiMetadata.id.version,
-            signerSummaryHash = cpiMetadata.id.signerSummaryHashForDbQuery,
+            name = cpiMetadata.cpiId.name,
+            version = cpiMetadata.cpiId.version,
+            signerSummaryHash = cpiMetadata.cpiId.signerSummaryHashForDbQuery,
             fileName = cpiFileName,
             fileChecksum = checksum.toString(),
             groupPolicy = cpi.metadata.groupPolicy!!,

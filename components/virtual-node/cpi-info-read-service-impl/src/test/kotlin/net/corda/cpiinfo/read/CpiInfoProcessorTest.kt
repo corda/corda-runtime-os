@@ -1,9 +1,9 @@
 package net.corda.cpiinfo.read
 
 import net.corda.cpiinfo.read.impl.CpiInfoReaderProcessor
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
-import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.converters.toAvro
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,10 +29,10 @@ class CpiInfoProcessorTest {
         processor = CpiInfoReaderProcessor({ /* don't care about the callback */ }, { /* don't care about callback */ })
     }
 
-    private fun sendOnNextRandomMessage(processor: CpiInfoReaderProcessor): Cpi.Identifier {
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
-        processor.onNext(Record("", cpiMetadata.id.toAvro(), cpiMetadata.toAvro(currentTimestamp)), null, emptyMap())
+    private fun sendOnNextRandomMessage(processor: CpiInfoReaderProcessor): CpiIdentifier {
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
+        processor.onNext(Record("", cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro(currentTimestamp)), null, emptyMap())
         return cpiIdentifier
     }
 
@@ -40,19 +40,19 @@ class CpiInfoProcessorTest {
     fun `register client listener callback before onSnapshot is called`() {
         processor.registerCallback(listener)
 
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro(currentTimestamp)))
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
     }
 
     @Test
     fun `register client listener callback after onSnapshot is called`() {
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro(currentTimestamp)))
 
@@ -60,7 +60,7 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
     }
 
     @Test
@@ -70,15 +70,15 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
 
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         listener.update = false
         processor.onNext(Record("", cpiIdentifier.toAvro(), cpiMetadata.toAvro(currentTimestamp)), null, emptyMap())
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
 
         listener.update = false
 
@@ -86,13 +86,13 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(newHoldingIdentity))
-        assertEquals(listener.lastSnapshot[newHoldingIdentity]?.id, newHoldingIdentity)
+        assertEquals(listener.lastSnapshot[newHoldingIdentity]?.cpiId, newHoldingIdentity)
 
         val anotherHoldingIdentity = sendOnNextRandomMessage(processor)
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(anotherHoldingIdentity))
-        assertEquals(listener.lastSnapshot[anotherHoldingIdentity]?.id, anotherHoldingIdentity)
+        assertEquals(listener.lastSnapshot[anotherHoldingIdentity]?.cpiId, anotherHoldingIdentity)
 
         assertEquals(3, listener.lastSnapshot.size, "Expected 3 updates")
     }
@@ -101,13 +101,13 @@ class CpiInfoProcessorTest {
     fun `unregister client listener callback`() {
         val closeable = processor.registerCallback(listener)
 
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro(currentTimestamp)))
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
 
         // unregister and reset the listener
         closeable.close()
@@ -118,7 +118,7 @@ class CpiInfoProcessorTest {
         assertFalse(listener.update, "Listener should not have updated")
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier), "Listener should still contain last snapshot")
         assertEquals(
-            listener.lastSnapshot[cpiIdentifier]?.id,
+            listener.lastSnapshot[cpiIdentifier]?.cpiId,
             cpiIdentifier,
             "Listener should still contain last snapshot"
         )
@@ -133,8 +133,8 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
 
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
 
         listener.update = false
@@ -142,7 +142,7 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
 
         listener.update = false
 
@@ -150,7 +150,7 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(newHoldingIdentity))
-        assertEquals(listener.lastSnapshot[newHoldingIdentity]?.id, newHoldingIdentity)
+        assertEquals(listener.lastSnapshot[newHoldingIdentity]?.cpiId, newHoldingIdentity)
 
         assertEquals(2, listener.lastSnapshot.size, "Expected two updates")
     }
@@ -158,14 +158,14 @@ class CpiInfoProcessorTest {
     @Test
     fun `client listeners are unregistered when service closes`() {
         processor.registerCallback(listener)
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro(currentTimestamp)))
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
 
         processor.close()
         listener.update = false
@@ -176,7 +176,7 @@ class CpiInfoProcessorTest {
         assertFalse(listener.update, "Listener should not have updated")
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier), "Listener should still contain last snapshot")
         assertEquals(
-            listener.lastSnapshot[cpiIdentifier]?.id,
+            listener.lastSnapshot[cpiIdentifier]?.cpiId,
             cpiIdentifier,
             "Listener should still contain last snapshot"
         )
@@ -192,14 +192,14 @@ class CpiInfoProcessorTest {
 
         // Send message
         listener.update = false
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.onNext(Record("", cpiIdentifier.toAvro(), cpiMetadata.toAvro(currentTimestamp)), null, emptyMap())
 
         assertTrue(listener.update)
         assertTrue(listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertEquals(listener.lastSnapshot[cpiIdentifier]?.id, cpiIdentifier)
+        assertEquals(listener.lastSnapshot[cpiIdentifier]?.cpiId, cpiIdentifier)
         assertEquals(1, listener.lastSnapshot.size, "No messages in snapshot")
 
         // Delete message
@@ -208,7 +208,7 @@ class CpiInfoProcessorTest {
 
         assertTrue(listener.update)
         assertTrue(!listener.lastSnapshot.containsKey(cpiIdentifier))
-        assertNull(listener.lastSnapshot[cpiIdentifier]?.id)
+        assertNull(listener.lastSnapshot[cpiIdentifier]?.cpiId)
 
         assertEquals(0, listener.lastSnapshot.size, "No messages in snapshot")
     }
@@ -216,8 +216,8 @@ class CpiInfoProcessorTest {
     @Test
     fun `clear message processor`() {
         val processor = CpiInfoReaderProcessor({ /* don't care about callback */ }, { /* don't care about callback */ })
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.registerCallback(listener)
         processor.onSnapshot(mapOf(cpiIdentifier.toAvro() to cpiMetadata.toAvro(currentTimestamp)))
@@ -234,8 +234,8 @@ class CpiInfoProcessorTest {
     fun `internal onSnapshot callback is called`() {
         var onSnapshot = false
         val processor = CpiInfoReaderProcessor({ onSnapshot = true }, { /* don't care about callback */ })
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.registerCallback(listener)
 
@@ -248,9 +248,9 @@ class CpiInfoProcessorTest {
     fun `internal onError callback is called`() {
         var onError = false
         val processor = CpiInfoReaderProcessor({ /* don't care */ }, { onError = true })
-        val cpiIdentifier = Cpi.Identifier.newInstance("abc", UUID.randomUUID().toString(), secureHash)
-        val cpiIdentifierOther = Cpi.Identifier.newInstance("def", UUID.randomUUID().toString(), secureHash)
-        val cpiMetadata = Cpi.Metadata.newInstance(cpiIdentifier, secureHash, emptyList(), "group policy")
+        val cpiIdentifier = CpiIdentifier("abc", UUID.randomUUID().toString(), secureHash)
+        val cpiIdentifierOther = CpiIdentifier("def", UUID.randomUUID().toString(), secureHash)
+        val cpiMetadata = CpiMetadata(cpiIdentifier, secureHash, emptyList(), "group policy")
 
         processor.registerCallback(listener)
 

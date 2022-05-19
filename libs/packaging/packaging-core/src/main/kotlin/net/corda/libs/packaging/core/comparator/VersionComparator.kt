@@ -1,4 +1,4 @@
-package net.corda.libs.packaging
+package net.corda.libs.packaging.core.comparator
 
 import kotlin.math.min
 
