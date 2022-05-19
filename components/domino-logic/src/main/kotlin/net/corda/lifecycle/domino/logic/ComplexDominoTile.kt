@@ -3,7 +3,6 @@ package net.corda.lifecycle.domino.logic
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -55,7 +54,7 @@ open class ComplexDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val onStart: (() -> CompletableFuture<Unit>)? = null,
-    override val dependentChildren: Collection<DominoTile> = emptySet(),
+    final override val dependentChildren: Collection<DominoTile> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : DominoTile {
@@ -69,7 +68,7 @@ open class ComplexDominoTile(
     private data class NewConfig(val config: Config) : LifecycleEvent
     private object ResourcesCreated : LifecycleEvent
 
-    override val coordinatorName: LifecycleCoordinatorName by lazy {
+    final override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
             componentName,
             instancesIndex.compute(componentName) { _, last ->
@@ -117,7 +116,10 @@ open class ComplexDominoTile(
         it.state
     }.toMutableMap()
 
-    private val currentState = AtomicReference(Created)
+    private val currentInternalState = AtomicReference(Created)
+
+    private val internalState: DominoTileState
+        get() = currentInternalState.get()
 
     private val isOpen = AtomicBoolean(true)
 
@@ -157,18 +159,18 @@ open class ComplexDominoTile(
         }
     }
 
-    override val state: DominoTileState
-        get() = currentState.get()
+    override val state: LifecycleStatus
+        get() = coordinator.status
 
     override val isRunning: Boolean
-        get() = state == Started
+        get() = state == LifecycleStatus.UP
 
     private fun newConfig(config: Config) {
         coordinator.postEvent(NewConfig(config))
     }
 
     private fun updateState(newState: DominoTileState) {
-        val oldState = currentState.getAndSet(newState)
+        val oldState = currentInternalState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
                 Started -> LifecycleStatus.UP
@@ -178,7 +180,6 @@ open class ComplexDominoTile(
             }
             withLifecycleWriteLock {
                 status?.let { coordinator.updateStatus(it) }
-                coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
             }
             logger.info("State updated from $oldState to $newState")
         }
@@ -203,13 +204,13 @@ open class ComplexDominoTile(
                     // We don't do anything when stopping the coordinator
                 }
                 is StopTile -> {
-                    if (state != StoppedByParent) {
+                    if (internalState != StoppedByParent) {
                         stopTile()
                         updateState(StoppedByParent)
                     }
                 }
                 is StartTile -> {
-                    when (state) {
+                    when (internalState) {
                         Created, StoppedByParent -> startDependenciesIfNeeded()
                         Started, StoppedDueToChildStopped -> {} // Do nothing
                         StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
@@ -217,32 +218,20 @@ open class ComplexDominoTile(
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
-                    // we don't react to UP/DOWN signals, since we have our custom events that indicate every status change.
-                }
-                is CustomEvent -> {
-                    if (event.payload is StatusChangeEvent) {
-                        val statusChangeEvent = event.payload as StatusChangeEvent
-
-                        val child = registrationToChildMap[event.registration]
-                        if (child == null) {
-                            logger.warn(
-                                "Signal change status received from registration " +
-                                        "(${event.registration}) that didn't map to a component."
-                            )
-                            return
+                    val child = registrationToChildMap[event.registration] ?: return
+                    latestChildStateMap[child] = event.status
+                    when (event.status) {
+                         LifecycleStatus.UP -> {
+                            logger.info("Status change: child ${child.coordinatorName} went up.")
+                            handleChildStarted()
                         }
-                        latestChildStateMap[child] = statusChangeEvent.newState
-
-                        when (statusChangeEvent.newState) {
-                            Started -> {
-                                logger.info("Status change: child ${child.coordinatorName} went up.")
-                                handleChildStarted()
-                            }
-                            StoppedDueToBadConfig, StoppedDueToError, StoppedByParent, StoppedDueToChildStopped -> {
-                                logger.info("Status change: child ${child.coordinatorName} went down (${statusChangeEvent.newState}).")
-                                handleChildDown()
-                            }
-                            Created -> { }
+                        LifecycleStatus.DOWN -> {
+                            logger.info("Status change: child ${child.coordinatorName} went down.")
+                            handleChildDown()
+                        }
+                        LifecycleStatus.ERROR -> {
+                            logger.info("Status change: child ${child.coordinatorName} errored.")
+                            handleChildDown()
                         }
                     }
                 }
@@ -253,7 +242,7 @@ open class ComplexDominoTile(
                 is ConfigApplied -> {
                     when (event.configUpdateResult) {
                         ConfigUpdateResult.Success -> {
-                            if (state == StoppedDueToBadConfig) {
+                            if (currentInternalState.get() == StoppedDueToBadConfig) {
                                 logger.info(
                                     "Received valid config for $coordinatorName, which was previously stopped due to invalid config."
                                 )
@@ -321,7 +310,7 @@ open class ComplexDominoTile(
 
     private fun handleChildStarted() {
         if (!isRunning) {
-            if (dependentChildren.all { latestChildStateMap[it] == Started }) {
+            if (shouldNotWaitForChildren()) {
                 logger.info("Starting resources, since all children are now up.")
                 createResourcesAndStart()
             }
@@ -360,7 +349,7 @@ open class ComplexDominoTile(
     }
 
     private fun shouldNotWaitForChildren(): Boolean {
-        return dependentChildren.all { latestChildStateMap[it] == Started }
+        return dependentChildren.all { latestChildStateMap[it] == LifecycleStatus.UP }
     }
 
     private fun createResourcesAndStart() {

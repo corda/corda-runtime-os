@@ -13,6 +13,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -632,7 +633,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
+                assertThat(gateway.dominoTile.state).isEqualTo(LifecycleStatus.UP)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -644,7 +645,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.state).isEqualTo(LifecycleStatus.DOWN)
                 }
                 eventually(duration = 20.seconds) {
                     assertThrows<ConnectException> {
@@ -662,7 +663,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
+                    assertThat(gateway.dominoTile.state).isEqualTo(LifecycleStatus.UP)
                 }
                 assertDoesNotThrow {
                     Socket(host, anotherPort).close()
@@ -671,7 +672,7 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.state).isEqualTo(LifecycleStatus.DOWN)
                 }
                 eventually(duration = 20.seconds) {
                     assertThrows<ConnectException> {

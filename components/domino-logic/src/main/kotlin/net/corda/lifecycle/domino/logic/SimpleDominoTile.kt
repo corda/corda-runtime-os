@@ -52,11 +52,11 @@ open class SimpleDominoTile(
 
     private val currentState = AtomicReference(Created)
 
-    override val state: DominoTileState
-        get() = currentState.get()
+    override val state: LifecycleStatus
+        get() = coordinator.status
 
     override val isRunning: Boolean
-        get() = state == Started
+        get() = state == LifecycleStatus.UP
 
     override val dependentChildren: Collection<DominoTile> = emptyList()
     override val managedChildren: Collection<DominoTile> = emptyList()
@@ -71,7 +71,6 @@ open class SimpleDominoTile(
                 Created -> null
             }
             status?.let { coordinator.updateStatus(it) }
-            coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
             logger.info("State updated from $oldState to $newState")
         }
     }

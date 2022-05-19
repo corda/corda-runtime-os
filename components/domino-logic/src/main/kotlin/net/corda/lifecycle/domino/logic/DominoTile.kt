@@ -3,6 +3,7 @@ package net.corda.lifecycle.domino.logic
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 
 /**
  * This interface can be implemented by classes the encapsulate more elaborate domino logic that can be reused easily.
@@ -16,7 +17,7 @@ interface DominoTile: Lifecycle {
     /**
      * The current state of the domino tile.
      */
-    val state: DominoTileState
+    val state: LifecycleStatus
 
     /**
      * Domino tiles this tile is dependent upon.
@@ -41,9 +42,3 @@ enum class DominoTileState {
     StoppedDueToChildStopped,
     StoppedByParent
 }
-
-/**
- * Every time the state of a domino tile changes, it is responsible for sending a [CustomEvent] with the new state to any tiles that are
- * registered to follow any changes.
- */
-data class StatusChangeEvent(val newState: DominoTileState)

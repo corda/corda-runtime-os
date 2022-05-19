@@ -15,6 +15,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.messaging.api.publisher.Publisher
@@ -126,7 +127,7 @@ class LinkManagerIntegrationTest {
             val invalidConfig = createLinkManagerConfiguration(-1)
             configPublisher.publishLinkManagerConfig(invalidConfig)
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                assertThat(linkManager.dominoTile.state).isEqualTo(LifecycleStatus.DOWN)
             }
 
             logger.info("Publishing valid configuration again")

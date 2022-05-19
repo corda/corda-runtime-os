@@ -16,7 +16,6 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
-import net.corda.lifecycle.domino.logic.StatusChangeEvent
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -80,10 +79,12 @@ abstract class SubscriptionDominoTileBase(
 
     private val isOpen = AtomicBoolean(true)
 
-    override val state: DominoTileState
+    private val internalState: DominoTileState
         get() = currentState.get()
     override val isRunning: Boolean
-        get() = state == Started
+        get() = internalState == Started
+    override val state: LifecycleStatus
+        get() = coordinator.status
 
     private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it.coordinatorName }.toSet())
     private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
@@ -117,7 +118,6 @@ abstract class SubscriptionDominoTileBase(
                 Created -> null
             }
             status?.let { coordinator.updateStatus(it) }
-            coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
             logger.info("State updated from $oldState to $newState")
         }
     }
