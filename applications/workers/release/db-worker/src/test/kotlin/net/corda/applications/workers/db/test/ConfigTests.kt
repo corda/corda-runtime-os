@@ -15,8 +15,8 @@ import net.corda.schema.configuration.BootConfig.BOOT_PERMISSION_SUMMARY_INTERVA
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigDefaults
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -63,11 +63,11 @@ class ConfigTests {
         assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
 
         assertEquals(
-            ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS,
+            ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS_DEFAULT,
             config.getLong(BOOT_PERMISSION_SUMMARY_INTERVAL)
         )
         assertEquals(
-            ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS,
+            ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT,
             config.getLong(BOOT_CPK_WRITE_INTERVAL)
         )
     }

@@ -21,7 +21,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_PASS
@@ -86,8 +86,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     private val reconciliationConfigMap = mapOf(
-        ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to 12345L,
-        ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS to 12345L)
+        ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to 12345L,
+        ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS to 12345L)
 
     private val dbConfig = configFactory.create(
         ConfigFactory.parseMap(mapOf(JDBC_URL to "dbUrl", DB_USER to "dbUser", DB_PASS to "dbPass"))

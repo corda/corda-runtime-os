@@ -40,6 +40,7 @@ import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -169,7 +170,7 @@ class DBProcessorImpl @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(ConfigKeys.RECONCILIATION_CPI_INFO_INTERVAL_MS)
+                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(RECONCILIATION_CPI_INFO_INTERVAL_MS)
                     ?.let { cpiInfoReconciliationIntervalMs ->
                         log.info("Cpi info reconciliation interval set to $cpiInfoReconciliationIntervalMs ms")
                         createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs)

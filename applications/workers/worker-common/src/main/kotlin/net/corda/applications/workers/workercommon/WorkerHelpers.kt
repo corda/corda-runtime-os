@@ -23,7 +23,7 @@ data class PathAndConfig(val path: String, val config: Map<String, String>)
 class WorkerHelpers {
     companion object {
         private val logger = contextLogger()
-        private const val BOOT_CONFIG_PATH = "boot/config/corda.boot.json"
+        private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
 
         /**
          * Parses the [args] into the [params].

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "resource:boot/config/corda.boot",
+  "$id": "https://corda.r3.com/net/corda/schema/configuration/boot/1.0/corda.boot.json",
   "title": "Corda Boot Configuration Schema",
   "description": "Configuration schema for the boot config. This configures stores the values the worker is bootstrapped with.",
   "type": "object",

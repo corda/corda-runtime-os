@@ -67,9 +67,9 @@ class DBWorker @Activate constructor(
     private fun getReconciliationTaskConfigWithDefaults(reconciliationTaskParams: Map<String, String>): PathAndConfig {
         val fallback: MutableMap<String, String> = mutableMapOf(
             BootConfig.PERMISSION_SUMMARY_INTERVAL to
-                    ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS.toString(),
+                    ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS_DEFAULT.toString(),
             BootConfig.CPK_WRITE_INTERVAL to
-                    ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS.toString()
+                    ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT.toString()
         )
         fallback.putAll(reconciliationTaskParams)
         return PathAndConfig(BOOT_RECONCILIATION, fallback)

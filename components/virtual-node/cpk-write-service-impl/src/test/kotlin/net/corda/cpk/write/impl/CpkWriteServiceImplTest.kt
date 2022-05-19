@@ -20,6 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -104,7 +105,7 @@ class CpkWriteServiceImplTest {
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(messagingSmartConfigMock)
         whenever(config[ConfigKeys.RECONCILIATION_CONFIG]).thenReturn(mockReconciliationConfig)
-        whenever(mockReconciliationConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
+        whenever(mockReconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 
@@ -135,7 +136,7 @@ class CpkWriteServiceImplTest {
         whenever(config[ConfigKeys.RECONCILIATION_CONFIG]).thenReturn(extraReconciliationConfig)
         whenever(extraReconciliationConfig.withFallback(mockConfig)).thenReturn(totalConfig)
         whenever(totalConfig.getConfig(ConfigKeys.RECONCILIATION_CONFIG)).thenReturn(mockReconciliationConfig)
-        whenever(mockReconciliationConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
+        whenever(mockReconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 
@@ -181,7 +182,7 @@ class CpkWriteServiceImplTest {
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(messagingSmartConfigMock)
         whenever(config[ConfigKeys.RECONCILIATION_CONFIG]).thenReturn(mockReconciliationConfig)
-        whenever(mockReconciliationConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
+        whenever(mockReconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)).thenReturn(10000L)
 
         cpkWriteServiceImpl.processEvent(ConfigChangedEvent(keys, config), coordinator)
 

@@ -39,6 +39,7 @@ import net.corda.schema.Schemas.VirtualNode
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -153,7 +154,7 @@ class CpkWriteServiceImpl @Activate constructor(
         // TODO fill the following with configuration once we know where they lie?
         timeout = 20.seconds
 
-        timerEventIntervalMs = reconciliationConfig.getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)
+        timerEventIntervalMs = reconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)
         logger.info("CPK write reconciliation interval set to $timerEventIntervalMs ms.")
 
         try {
