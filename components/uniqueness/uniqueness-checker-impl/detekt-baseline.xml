@@ -2,8 +2,9 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:142</ID>
-    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:143</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:116</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:152</ID>
+    <ID>Indentation:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:153</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:119</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:120</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1304</ID>
@@ -14,15 +15,16 @@
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:887</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:924</ID>
     <ID>Indentation:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:925</ID>
-    <ID>LongMethod:InMemoryUniquenessCheckerImpl.kt$InMemoryUniquenessCheckerImpl$@Synchronized override fun processRequests( requests: List&lt;UniquenessCheckRequest&gt; ): List&lt;UniquenessCheckResponse&gt;</ID>
+    <ID>LongMethod:InMemoryUniquenessCheckerImpl.kt$InMemoryUniquenessCheckerImpl$@Synchronized @Suppress("ComplexMethod") override fun processRequests( requests: List&lt;UniquenessCheckRequest&gt; ): List&lt;UniquenessCheckResponse&gt;</ID>
     <ID>LongMethod:UniquenessCheckerImplTests.kt$UniquenessCheckerImplTests.Miscellaneous$@Test fun `Complex test scenario with multiple successes and failures in one batch`()</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:3</ID>
+    <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:4</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:19</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:25</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:26</ID>
     <ID>NoWildcardImports:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:6</ID>
     <ID>SpacingAroundColon:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:48</ID>
-    <ID>StringTemplate:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:121</ID>
+    <ID>StringTemplate:net.corda.uniqueness.checker.impl.InMemoryUniquenessCheckerImpl.kt:130</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1098</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1101</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:1104</ID>
@@ -35,5 +37,6 @@
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:918</ID>
     <ID>StringTemplate:net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests.kt:925</ID>
     <ID>WildcardImport:InMemoryUniquenessCheckerImpl.kt$import net.corda.data.uniqueness.*</ID>
+    <ID>WildcardImport:InMemoryUniquenessCheckerImpl.kt$import net.corda.lifecycle.*</ID>
   </CurrentIssues>
 </SmellBaseline>

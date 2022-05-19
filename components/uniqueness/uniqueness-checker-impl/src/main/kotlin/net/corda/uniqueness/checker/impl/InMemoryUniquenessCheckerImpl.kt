@@ -1,9 +1,7 @@
 package net.corda.uniqueness.checker.impl
 
 import net.corda.data.uniqueness.*
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.createCoordinator
+import net.corda.lifecycle.*
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -42,7 +40,7 @@ class InMemoryUniquenessCheckerImpl(
     private val stateCache = HashMap<String, String?>()
 
     private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
-        .createCoordinator<UniquenessChecker> { event, _ -> log.info("Uniqueness checker received event $event") }
+        .createCoordinator<UniquenessChecker>(::eventHandler)
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -153,5 +151,26 @@ class InMemoryUniquenessCheckerImpl(
     ): Boolean {
         return ((timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
                 timeWindowUpperBound.isAfter(currentTime))
+    }
+
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.info("Uniqueness checker received event $event.")
+        when (event) {
+            is StartEvent -> {
+                log.info("Uniqueness checker is UP")
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+            is StopEvent -> {
+                log.info("Uniqueness checker is DOWN")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            }
+            is RegistrationStatusChangeEvent -> {
+                log.info("Uniqueness checker is ${event.status}")
+                coordinator.updateStatus(event.status)
+            }
+            else -> {
+                log.warn("Unexpected event $event!")
+            }
+        }
     }
 }
