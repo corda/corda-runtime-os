@@ -6,11 +6,7 @@
     <img src="https://ci.corda. r3cev.com/app/rest/builds/buildType:Corda_CordaBuild/statusIcon"/>
 </a> 
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Build Status](https://ci02.dev.r3.com/buildStatus/icon?job=Corda5%2Fcorda-runtime-os%2Frelease%252Fent%252F5.0)](https://ci02.dev.r3.com/job/Corda5/job/corda-runtime-os/job/release%252Fos%252F5.0/)
-
---
-
-# Corda Runtime OS
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Build Status](https://ci02.dev.r3.com/buildStatus/icon?job=Corda5%2Fcorda-runtime-os%2Frelease%252Fos%252F5.0)](https://ci02.dev.r3.com/job/Corda5/job/corda-runtime-os/job/release%252Fos%252F5.0/)
 
 <h2>Project Overview</h2>
 
