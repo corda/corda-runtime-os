@@ -62,7 +62,7 @@ class DummyLinkManagerService @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                        setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
                     )
                 } else {
                     configHandle?.close()
