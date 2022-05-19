@@ -15,10 +15,12 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.packaging.CordappManifest
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.ManifestCordappInfo
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -34,6 +36,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.UUID
+import java.util.TreeSet
 import javax.persistence.EntityManagerFactory
 import javax.persistence.NoResultException
 import javax.persistence.NonUniqueResultException
@@ -160,7 +163,37 @@ internal class DatabaseChunkPersistenceTest {
     }
 
     private fun mockCpk(hash: SecureHash, name: String) = mock<Cpk>().also { cpk ->
-        val metadata = mock<Cpk.Metadata>().also { whenever(it.hash).thenReturn(hash) }
+        val cpkId = mock<Cpk.Identifier>().also {
+            whenever(it.name).thenReturn("cpk-name")
+            whenever(it.version).thenReturn("cpk-version")
+            whenever(it.signerSummaryHash).thenReturn(hash)
+        }
+
+        val cpkManifest = mock<Cpk.Manifest>().also {
+            val cpkFormatError = mock<Cpk.FormatVersion>().also { cpkFormatVersion ->
+                whenever(cpkFormatVersion.major).thenReturn(1)
+                whenever(cpkFormatVersion.minor).thenReturn(0)
+            }
+            whenever(it.cpkFormatVersion).thenReturn(cpkFormatError)
+        }
+
+        val cordappManifest = CordappManifest(
+            "", "", -1, -1,
+            ManifestCordappInfo(null, null, null, null),
+            ManifestCordappInfo(null, null, null, null),
+            emptyMap()
+        )
+
+        val metadata = mock<Cpk.Metadata>().also {
+            whenever(it.id).thenReturn(cpkId)
+            whenever(it.manifest).thenReturn(cpkManifest)
+            whenever(it.mainBundle).thenReturn("main-bundle")
+            whenever(it.libraries).thenReturn(emptyList())
+            whenever(it.dependencies).thenReturn(TreeSet())
+            whenever(it.cordappManifest).thenReturn(cordappManifest)
+            whenever(it.type).thenReturn(Cpk.Type.UNKNOWN)
+            whenever(it.hash).thenReturn(hash)
+        }
         whenever(cpk.path).thenReturn(mockCpkContent.writeToPath())
         whenever(cpk.originalFileName).thenReturn(name)
         whenever(cpk.metadata).thenReturn(metadata)

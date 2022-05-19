@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 
 /**
@@ -10,9 +11,9 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
  */
 interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
-    fun isHostedLocally(identity: LinkManagerInternalTypes.HoldingIdentity): Boolean
+    fun isHostedLocally(identity: HoldingIdentity): Boolean
 
-    fun getInfo(identity: LinkManagerInternalTypes.HoldingIdentity): HostingMapListener.IdentityInfo?
+    fun getInfo(identity: HoldingIdentity): HostingMapListener.IdentityInfo?
 
     fun getInfo(hash: ByteArray, groupId: String): HostingMapListener.IdentityInfo?
 

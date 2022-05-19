@@ -26,7 +26,7 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         }
     }
 
-    private class TestAppender: AbstractAppender("TestAppender", null, null, false, null) {
+    private class TestAppender : AbstractAppender("TestAppender", null, null, false, null) {
 
         data class LoggerMessage(val message: String, val level: Level)
 
@@ -66,4 +66,9 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         assertEquals(1, errors.size)
         assertThat(errors.single().message).contains(message)
     }
+
+    val errors: List<String>
+        get() = testAppender.messages.filter { it.level == Level.ERROR }.map { it.message }
+    val warnings: List<String>
+        get() = testAppender.messages.filter { it.level == Level.WARN }.map { it.message }
 }

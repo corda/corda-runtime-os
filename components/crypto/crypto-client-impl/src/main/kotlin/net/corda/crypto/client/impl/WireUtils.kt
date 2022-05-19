@@ -2,19 +2,13 @@
 
 package net.corda.crypto.client.impl
 
-import net.corda.crypto.client.CryptoPublishResult
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 val emptyKeyValuePairList = KeyValuePairList(emptyList())
-
-fun CryptoRequestContext.toCryptoPublishResult() = CryptoPublishResult(requestId)
-
-fun List<CompletableFuture<Unit>>.waitAll() = forEach { it.get() }
 
 inline fun <reified CALLER> createWireRequestContext(
     tenantId: String

@@ -2,6 +2,7 @@ package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -12,6 +13,8 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
@@ -22,14 +25,14 @@ import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messaging.api.records.Record
 import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.ManifestCordappInfo
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.packaging.Cpk
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -45,7 +48,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -81,7 +84,6 @@ class FlowServiceTestContext @Activate constructor(
     private var lastPublishedState: Checkpoint? = null
     private var sessionInitiatingIdentity: HoldingIdentity? = null
     private var sessionInitiatedIdentity: HoldingIdentity? = null
-
 
     fun start() {
         virtualNodeInfoReadService.start()
@@ -164,6 +166,10 @@ class FlowServiceTestContext @Activate constructor(
         testConfig[key] = value
     }
 
+    override fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(getCpiIdentifier(cpiId), initiatingFlowClassName, initiatedFlowClassName)
+    }
+
     override fun startFlowEventReceived(
         flowId: String,
         requestId: String,
@@ -185,12 +191,35 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
+    override fun sessionInitEventReceived(
+        flowId: String,
+        sessionId: String,
+        cpiId: String,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            initiatingIdentity,
+            initiatedIdentity,
+            SessionInit.newBuilder()
+                .setFlowName(FLOW_NAME)
+                .setFlowId(flowId)
+                .setCpiId(cpiId)
+                .setPayload(ByteBuffer.wrap(byteArrayOf()))
+                .build(),
+            sequenceNum = 0,
+            receivedSequenceNum = 1,
+        )
+    }
+
     override fun sessionAckEventReceived(
         flowId: String,
         sessionId: String,
         receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -237,6 +266,25 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionClose(),
+            sequenceNum,
+            receivedSequenceNum,
+        )
+    }
+
+    override fun sessionErrorEventReceived(
+        flowId: String,
+        sessionId: String,
+        sequenceNum: Int,
+        receivedSequenceNum: Int,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            initiatingIdentity,
+            initiatedIdentity,
+            SessionError(ExceptionEnvelope(RuntimeException::class.qualifiedName, "Something went wrong!")),
             sequenceNum,
             receivedSequenceNum,
         )

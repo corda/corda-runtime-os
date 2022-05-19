@@ -122,18 +122,20 @@ class SessionEventHandlerTest {
         verify(checkpoint).initFromNew(
             eq(FLOW_ID),
             argThat { fsc -> expectedStartFlowContext(fsc) },
-            argThat { wf-> expectedSessionInit(wf) }
+            argThat { wf -> expectedSessionInit(wf) }
         )
     }
 
     @Test
-    fun `Receiving a session init payload does not create a checkpoint when the session manager returns no next received event`() {
+    fun `Receiving a session init payload throws an exception when the session manager returns no next received event`() {
         val sessionEvent = createSessionInit()
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
 
         whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(null)
 
-        sessionEventHandler.preProcess(inputContext)
+        assertThrows<FlowProcessingException> {
+            sessionEventHandler.preProcess(inputContext)
+        }
 
         verify(checkpoint, never()).initFromNew(any(), any(), any())
     }
@@ -150,17 +152,17 @@ class SessionEventHandlerTest {
         assertThrows<FlowProcessingException> { sessionEventHandler.preProcess(inputContext) }
     }
 
-    @ParameterizedTest(name = "Receiving a {0} payload updates the existing checkpoint")
+    @ParameterizedTest(name = "Receiving a {0} payload when a checkpoint does not exist throws an exception")
     @MethodSource("nonInitSessionEventTypes")
-    fun `Receiving a session data payload does not create a checkpoint`(payload: Any) {
+    fun `Receiving a non-session data payload when a checkpoint does not exist throws an exception`(payload: Any) {
         val sessionEvent = createSessionEvent(payload)
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = sessionEvent)
 
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(null)
 
-        sessionEventHandler.preProcess(inputContext)
-
-        verify(checkpoint).putSessionState(updatedSessionState)
+        assertThrows<FlowProcessingException> {
+            sessionEventHandler.preProcess(inputContext)
+        }
     }
 
     private fun createSessionInit(): SessionEvent {
