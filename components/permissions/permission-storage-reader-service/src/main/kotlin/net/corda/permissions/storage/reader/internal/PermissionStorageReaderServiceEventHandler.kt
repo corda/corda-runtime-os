@@ -92,7 +92,7 @@ class PermissionStorageReaderServiceEventHandler(
             LifecycleStatus.UP -> {
                 crsSub = configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG, RECONCILIATION_CONFIG)
                 )
             }
             LifecycleStatus.DOWN -> {
