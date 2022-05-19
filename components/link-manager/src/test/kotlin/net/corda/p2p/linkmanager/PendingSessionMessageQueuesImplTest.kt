@@ -1,5 +1,5 @@
 import net.corda.data.identity.HoldingIdentity
-import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -44,10 +43,8 @@ class PendingSessionMessageQueuesImplTest {
     private val sessionManager = mock<SessionManager>()
     private val publisherWithDominoLogic = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
-        val dominoTile = mock<ComplexDominoTile> {
+        val dominoTile = mock<SimpleDominoTile> {
             on { isRunning } doReturn true
-            @Suppress("UNCHECKED_CAST")
-            on { withLifecycleLock(any<() -> Any>()) } doAnswer { (it.arguments.first() as () -> Any).invoke() }
         }
         whenever(mock.dominoTile).doReturn(dominoTile)
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())

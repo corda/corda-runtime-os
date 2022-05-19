@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -116,7 +115,7 @@ internal class TlsCertificatesPublisher(
     override val dominoTile = ComplexDominoTile(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
+        onStart = ::onStart,
         managedChildren = listOf(
             publisher.dominoTile,
             subscriptionDominoTile,
@@ -127,10 +126,7 @@ internal class TlsCertificatesPublisher(
         )
     )
 
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER")
-        resourcesHolder: ResourcesHolder
-    ): CompletableFuture<Unit> {
+    private fun onStart(): CompletableFuture<Unit> {
         publishQueueIfPossible()
         return ready
     }

@@ -79,7 +79,7 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
+    fun createResources(): CompletableFuture<Unit> {
         return future
     }
 }

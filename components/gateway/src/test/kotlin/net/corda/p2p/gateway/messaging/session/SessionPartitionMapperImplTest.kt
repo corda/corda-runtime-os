@@ -34,7 +34,6 @@ class SessionPartitionMapperImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
-    private val resourcesHolder = mock<ResourcesHolder>()
     private val config = SmartConfigImpl.empty()
 
     @AfterEach
@@ -52,7 +51,7 @@ class SessionPartitionMapperImplTest {
 
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
         doReturn(true).whenever(dominoTile.constructed().last()).isRunning
-        sessionPartitionMapper.createResources(mock())
+        sessionPartitionMapper.createResources()
 
         processor.firstValue.onSnapshot(partitionsMapping)
 
@@ -69,7 +68,7 @@ class SessionPartitionMapperImplTest {
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-        sessionPartitionMapper.createResources(mock())
+        sessionPartitionMapper.createResources()
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
@@ -87,7 +86,7 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `onSnapshot will complete the resource created future`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-        val future = sessionPartitionMapper.createResources(resourcesHolder)
+        val future = sessionPartitionMapper.createResources()
 
         processor.firstValue.onSnapshot(emptyMap())
         assertThat(future.isDone).isTrue
@@ -98,7 +97,7 @@ class SessionPartitionMapperImplTest {
     fun `empty record will remove the partition`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
         doReturn(true).whenever(dominoTile.constructed().last()).isRunning
-        sessionPartitionMapper.createResources(mock())
+        sessionPartitionMapper.createResources()
         processor.firstValue.onSnapshot(mapOf("session" to SessionPartitions(listOf(3))))
 
         processor.firstValue.onNext(Record(SESSION_OUT_PARTITIONS, "session", null), null, emptyMap())

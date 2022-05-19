@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -141,7 +140,7 @@ internal class SessionManagerImpl(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        ::createResources,
+        ::onTileStart,
         dependentChildren = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile,
@@ -269,7 +268,7 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder): CompletableFuture<Unit> {
+    private fun onTileStart(): CompletableFuture<Unit> {
         inboundAssignmentListener.registerCallbackForTopic { partitions ->
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
@@ -676,7 +675,7 @@ internal class SessionManagerImpl(
         private val members: LinkManagerMembershipGroupReader,
         private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
         private val clock: Clock,
-        private val executorServiceFactory: () -> ScheduledExecutorService
+        executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -710,16 +709,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-            val future = CompletableFuture<Unit>()
-            executorService = executorServiceFactory()
-            resources.keep(AutoClosableExecutorService(executorService))
-            future.complete(Unit)
-            return future
-        }
-
-        @Volatile
-        private lateinit var executorService: ScheduledExecutorService
+        private val executorService = executorServiceFactory()
 
         private fun fromConfig(config: Config): HeartbeatManagerConfig {
             return HeartbeatManagerConfig(
@@ -737,14 +727,18 @@ internal class SessionManagerImpl(
             configuration
         )
 
-        override val dominoTile = ComplexDominoTile(
-            this::class.java.simpleName,
+        override val dominoTile = object: ComplexDominoTile(
+            HeartbeatManager::class.java.simpleName,
             coordinatorFactory,
-            ::createResources,
             dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
-        )
+        ) {
+            override fun close() {
+                executorService.shutdownNow()
+                super.close()
+            }
+        }
 
         /**
          * Calculates a weight for a Session.

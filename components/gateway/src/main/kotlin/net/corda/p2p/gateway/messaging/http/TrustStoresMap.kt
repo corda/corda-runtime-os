@@ -4,7 +4,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -51,7 +50,7 @@ internal class TrustStoresMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
+        onStart = ::onStart,
         managedChildren = listOf(subscriptionTile),
         dependentChildren = listOf(subscriptionTile),
     )
@@ -74,9 +73,7 @@ internal class TrustStoresMap(
         }
     }
 
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER") resources: ResourcesHolder
-    ): CompletableFuture<Unit> {
+    private fun onStart(): CompletableFuture<Unit> {
         return ready
     }
 

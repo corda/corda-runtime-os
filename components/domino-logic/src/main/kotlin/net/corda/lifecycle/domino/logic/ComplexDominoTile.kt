@@ -39,10 +39,10 @@ import kotlin.concurrent.write
  * The order of events is the following:
  * - once [start] is invoked, the [managedChildren] will be [start]ed, if any.
  * - then it will wait for [dependentChildren] to start.
- * - once they have started, [createResources] will be invoked, if specified.
+ * - once they have started, [onStart] will be invoked, if specified.
  * - once resources are created and configuration has been applied successfully, the component will be fully started.
  *
- * @param createResources the callback method used to start any resources needed by the tile.
+ * @param onStart the callback method used to start any resources needed by the tile.
  *  When the tile stops, these resources will be stopped. If there are no resources, it can be left undefined.
  * @param managedChildren the children tiles this tile is responsible for starting when it starts.
  * @param dependentChildren the children tiles this component requires in order to function properly.
@@ -51,10 +51,10 @@ import kotlin.concurrent.write
  * If no configuration is needed, it can be left undefined.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
-class ComplexDominoTile(
+open class ComplexDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null,
+    private val onStart: (() -> CompletableFuture<Unit>)? = null,
     override val dependentChildren: Collection<DominoTile> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
@@ -108,7 +108,6 @@ class ComplexDominoTile(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
-    private val resources = ResourcesHolder()
     private val configResources = ResourcesHolder()
 
     private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = dependentChildren.associateBy {
@@ -357,7 +356,7 @@ class ComplexDominoTile(
     }
 
     private fun shouldNotWaitForResource(): Boolean {
-        return createResources == null || resourcesReady
+        return onStart == null || resourcesReady
     }
 
     private fun shouldNotWaitForChildren(): Boolean {
@@ -365,10 +364,9 @@ class ComplexDominoTile(
     }
 
     private fun createResourcesAndStart() {
-        if (createResources != null && !resourcesReady) {
-            resources.close()
+        if (onStart != null && !resourcesReady) {
             logger.info("Starting resources")
-            val future = createResources.invoke(resources)
+            val future = onStart.invoke()
             future.whenComplete { _, exception ->
                 if (exception != null) {
                     resourcesStarted(exception)
@@ -377,7 +375,6 @@ class ComplexDominoTile(
                 }
             }
         }
-
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config updates.")
             configRegistration =
@@ -403,7 +400,6 @@ class ComplexDominoTile(
 
     private fun stopResources() {
         logger.info("Stopping resources")
-        resources.close()
         resourcesReady = false
         configResources.close()
     }

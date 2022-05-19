@@ -52,15 +52,12 @@ internal class StubLinkManagerHostingMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ::createResources,
+        ::onStart,
         setOf(subscriptionTile),
         setOf(subscriptionTile)
     )
 
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER")
-        resourcesHolder: ResourcesHolder
-    ): CompletableFuture<Unit> {
+    private fun onStart(): CompletableFuture<Unit> {
         return ready
     }
 

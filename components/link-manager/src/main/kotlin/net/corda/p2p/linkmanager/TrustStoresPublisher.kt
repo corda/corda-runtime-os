@@ -63,7 +63,7 @@ internal class TrustStoresPublisher(
     override val dominoTile = ComplexDominoTile(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
+        onStart = ::onStart,
         managedChildren = listOf(
             publisher.dominoTile,
             subscriptionTile
@@ -101,9 +101,7 @@ internal class TrustStoresPublisher(
         }
     }
 
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER") resourcesHolder: ResourcesHolder
-    ): CompletableFuture<Unit> {
+    private fun onStart(): CompletableFuture<Unit> {
         publishQueueIfPossible()
         return ready
     }

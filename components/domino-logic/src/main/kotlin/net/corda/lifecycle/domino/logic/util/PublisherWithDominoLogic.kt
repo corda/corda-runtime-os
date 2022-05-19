@@ -3,7 +3,9 @@ package net.corda.lifecycle.domino.logic.util
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -11,42 +13,36 @@ import net.corda.messaging.api.records.Record
 import java.util.concurrent.CompletableFuture
 
 class PublisherWithDominoLogic(
-    private val publisherFactory: PublisherFactory,
+    publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val publisherConfig: PublisherConfig,
-    private val configuration: SmartConfig,
+    publisherConfig: PublisherConfig,
+    configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
-    @Volatile
-    private var publisher: Publisher? = null
+    private val publisher = publisherFactory.createPublisher(
+        publisherConfig,
+        configuration
+    ).also {
+        it.start()
+    }
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
-
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val resourceReady = CompletableFuture<Unit>()
-        publisher = publisherFactory.createPublisher(
-            publisherConfig,
-            configuration
-        ).also {
-            resources.keep {
-                it.close()
-                publisher = null
-            }
-            it.start()
+    override val dominoTile = object: SimpleDominoTile(PublisherWithDominoLogic::class.java.simpleName, coordinatorFactory) {
+        override fun start() {
+            super.start()
+            updateState(DominoTileState.Started)
         }
-        resourceReady.complete(Unit)
-        return resourceReady
+
+        override fun close() {
+            publisher.close()
+            super.close()
+        }
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return dominoTile.withLifecycleLock {
-            publisher?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
-        }
+        return publisher.publishToPartition(records)
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return dominoTile.withLifecycleLock {
-            publisher?.publish(records) ?: throw IllegalStateException("Publisher had not started")
-        }
+        return publisher.publish(records)
     }
 }

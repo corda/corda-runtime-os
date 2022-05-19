@@ -79,12 +79,12 @@ internal class StubMembershipGroupReader(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ::createResources,
+        ::onStart,
         setOf(subscriptionTile),
         setOf(subscriptionTile)
     )
 
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
+    private fun onStart(): CompletableFuture<Unit> {
         return readyFuture
     }
 

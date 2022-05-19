@@ -42,8 +42,7 @@ internal class OutboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-    private val retryThreadPoolFactory: () -> ScheduledExecutorService
-        = { Executors.newSingleThreadScheduledExecutor() },
+    retryThreadPoolFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
     companion object {
@@ -76,22 +75,19 @@ internal class OutboundMessageHandler(
         setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
     )
 
-    override val dominoTile = ComplexDominoTile(
-        this::class.java.simpleName,
+    override val dominoTile = object: ComplexDominoTile(
+        OutboundMessageHandler::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
-        createResources = ::createResources
-    )
-
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        retryThreadPool = retryThreadPoolFactory()
-        resources.keep(AutoClosableExecutorService(retryThreadPool))
-        return CompletableFuture.completedFuture(Unit)
+    ) {
+        override fun close() {
+            retryThreadPool.shutdown()
+            super.close()
+        }
     }
 
-    @Volatile
-    private lateinit var retryThreadPool: ScheduledExecutorService
+    private val retryThreadPool = retryThreadPoolFactory()
 
     override fun onNext(event: Record<String, LinkOutMessage>): CompletableFuture<Unit> {
         return dominoTile.withLifecycleLock {

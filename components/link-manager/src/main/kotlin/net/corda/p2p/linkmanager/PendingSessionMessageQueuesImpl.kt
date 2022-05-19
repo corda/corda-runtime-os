@@ -62,22 +62,20 @@ internal class PendingSessionMessageQueuesImpl(
         groups: LinkManagerGroupPolicyProvider,
         members: LinkManagerMembershipGroupReader,
     ) {
-        publisher.dominoTile.withLifecycleLock {
-            if (!isRunning) {
-                throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
-            }
-            val queuedMessages = queuedMessagesPendingSession[counterparties] ?: return@withLifecycleLock
-            val records = mutableListOf<Record<String, *>>()
-            while (queuedMessages.isNotEmpty()) {
-                val message = queuedMessages.poll()
-                logger.debug {
-                    "Sending queued message ${message.message.header.messageId} " +
-                        "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
-                }
-                records.addAll(sessionManager.recordsForSessionEstablished(groups, members, session, message))
-            }
-            publisher.publish(records)
+        if (!isRunning) {
+            throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
         }
+        val queuedMessages = queuedMessagesPendingSession[counterparties] ?: return
+        val records = mutableListOf<Record<String, *>>()
+        while (queuedMessages.isNotEmpty()) {
+            val message = queuedMessages.poll()
+            logger.debug {
+                "Sending queued message ${message.message.header.messageId} " +
+                        "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
+            }
+            records.addAll(sessionManager.recordsForSessionEstablished(groups, members, session, message))
+        }
+        publisher.publish(records)
     }
 
     override fun destroyQueue(counterparties: SessionManager.SessionCounterparties) {
