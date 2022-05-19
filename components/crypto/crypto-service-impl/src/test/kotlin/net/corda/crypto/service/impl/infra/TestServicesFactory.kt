@@ -11,10 +11,10 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
-import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
-import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
+import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
+import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -32,7 +32,7 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertTrue
 
@@ -53,7 +53,10 @@ class TestServicesFactory {
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
+    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(
+        LifecycleRegistryImpl(),
+        LifecycleCoordinatorSchedulerFactoryImpl()
+    )
 
     val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
