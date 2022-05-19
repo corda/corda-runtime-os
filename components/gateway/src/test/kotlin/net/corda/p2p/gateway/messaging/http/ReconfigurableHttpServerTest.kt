@@ -61,6 +61,7 @@ class ReconfigurableHttpServerTest {
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
+        mock(),
         configurationReaderService,
         listener,
         mock(),

@@ -5,6 +5,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
@@ -22,23 +23,26 @@ class LinkManager(
     publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = LifecycleRegistry::class)
+    lifecycleRegistry: LifecycleRegistry,
     @Reference(service = ConfigurationReadService::class)
     configurationReaderService: ConfigurationReadService,
     configuration: SmartConfig,
     groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
-        lifecycleCoordinatorFactory, subscriptionFactory, configuration
+        lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, configuration
     ),
     members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
-        lifecycleCoordinatorFactory, subscriptionFactory, configuration
+        lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, configuration
     ),
     linkManagerHostingMap: LinkManagerHostingMap =
         StubLinkManagerHostingMap(
             lifecycleCoordinatorFactory,
+            lifecycleRegistry,
             subscriptionFactory,
             configuration,
         ),
     linkManagerCryptoProcessor: CryptoProcessor =
-        StubCryptoProcessor(lifecycleCoordinatorFactory, subscriptionFactory, configuration),
+        StubCryptoProcessor(lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, configuration),
     clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
@@ -50,6 +54,7 @@ class LinkManager(
 
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
+        registry = lifecycleRegistry,
         linkManagerHostingMap = linkManagerHostingMap,
         groups = groups,
         members = members,
@@ -62,6 +67,7 @@ class LinkManager(
     )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
+        registry = lifecycleRegistry,
         commonComponents = commonComponents,
         linkManagerHostingMap = linkManagerHostingMap,
         groups = groups,
@@ -86,6 +92,7 @@ class LinkManager(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        lifecycleRegistry,
         dependentChildren = setOf(
             commonComponents.dominoTile,
             outboundLinkManager.dominoTile,

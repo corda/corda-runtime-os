@@ -31,7 +31,7 @@ class ConnectionConfigReaderTest {
 
     @Test
     fun `configuration handler processes new, valid configuration successfully`() {
-        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, configReadService)
+        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, mock(), configReadService)
         val connectionConfig = ConnectionConfiguration().copy(maxClientConnections = 1)
         val gatewayConfig = GatewayConfiguration("", 1, mock(), connectionConfig)
 
@@ -42,7 +42,7 @@ class ConnectionConfigReaderTest {
 
     @Test
     fun `configuration handler returns no change if configuration is the same as before`() {
-        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, configReadService)
+        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, mock(), configReadService)
         val gatewayConfig = GatewayConfiguration("", 1, mock(), connectionConfigReader.connectionConfig)
 
         val future = configChangeHandler!!.applyNewConfiguration(gatewayConfig, null, mock())

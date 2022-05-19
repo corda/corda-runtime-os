@@ -1,6 +1,5 @@
 package net.corda.lifecycle.domino.logic
 
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus

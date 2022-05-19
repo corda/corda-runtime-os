@@ -103,7 +103,8 @@ class GatewayIntegrationTest : TestBase() {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
 
-        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val lifecycleRegistry = LifecycleRegistryImpl()
+        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
@@ -180,6 +181,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
+                alice.lifecycleRegistry,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
@@ -272,6 +274,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
+                    alice.lifecycleRegistry,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 ).use { gateway ->
                     gateway.start()
@@ -347,6 +350,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
+                alice.lifecycleRegistry,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use {
                 it.startAndWaitForStarted()
@@ -441,6 +445,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
+                alice.lifecycleRegistry,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
@@ -542,6 +547,7 @@ class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
+                    alice.lifecycleRegistry,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 ),
                 Gateway(
@@ -556,6 +562,7 @@ class GatewayIntegrationTest : TestBase() {
                     bob.subscriptionFactory,
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
+                    bob.lifecycleRegistry,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 )
             ).onEach {
@@ -621,6 +628,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
+                alice.lifecycleRegistry,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use { gateway ->
                 val port = getOpenPort()
@@ -748,6 +756,7 @@ class GatewayIntegrationTest : TestBase() {
                 server.subscriptionFactory,
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
+                server.lifecycleRegistry,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
@@ -882,6 +891,7 @@ class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
+                alice.lifecycleRegistry,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
             )
 

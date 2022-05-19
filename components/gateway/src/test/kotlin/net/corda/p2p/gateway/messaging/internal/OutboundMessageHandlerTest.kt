@@ -122,6 +122,7 @@ class OutboundMessageHandlerTest {
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
+        mock(),
         configurationReaderService,
         subscriptionFactory,
         SmartConfigImpl.empty(),

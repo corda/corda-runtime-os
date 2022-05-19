@@ -121,7 +121,8 @@ open class TestBase {
 
     protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
-    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+    protected val lifecycleRegistry = LifecycleRegistryImpl()
+    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
 
     protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
         init {

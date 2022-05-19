@@ -7,9 +7,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -39,6 +38,7 @@ import java.util.concurrent.TimeUnit
 @Suppress("LongParameterList")
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
@@ -50,15 +50,17 @@ internal class OutboundMessageHandler(
         private const val MAX_RETRIES = 1
     }
 
-    private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
+    private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, registry, configurationReaderService)
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
+        registry,
         configurationReaderService
     )
 
     private val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
+        registry,
         subscriptionFactory,
         nodeConfiguration
     )
@@ -78,6 +80,7 @@ internal class OutboundMessageHandler(
     override val dominoTile = object: ComplexDominoTile(
         OutboundMessageHandler::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        registry,
         dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
     ) {

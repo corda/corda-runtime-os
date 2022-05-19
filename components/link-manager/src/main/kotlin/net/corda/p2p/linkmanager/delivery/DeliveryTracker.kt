@@ -7,6 +7,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -35,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Suppress("LongParameterList")
 internal class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     configuration: SmartConfig,
@@ -55,6 +57,7 @@ internal class DeliveryTracker(
     )
     private val replayScheduler = ReplayScheduler(
         coordinatorFactory,
+        registry,
         configReadService,
         true,
         appMessageReplayer::replayMessage,
@@ -82,7 +85,7 @@ internal class DeliveryTracker(
         setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory, registry,
         dependentChildren = setOf(messageTrackerSubscriptionTile),
         managedChildren = setOf(messageTrackerSubscriptionTile)
     )

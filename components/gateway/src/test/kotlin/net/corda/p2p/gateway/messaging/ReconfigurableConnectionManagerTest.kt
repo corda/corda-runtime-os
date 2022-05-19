@@ -56,7 +56,7 @@ class ReconfigurableConnectionManagerTest {
         configHandler = (context.arguments()[5] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
     }
 
-    private val connectionManager = ReconfigurableConnectionManager(factory, service) { _, _ -> manager }
+    private val connectionManager = ReconfigurableConnectionManager(factory, mock(), service) { _, _ -> manager }
 
     @AfterEach
     fun cleanUp() {

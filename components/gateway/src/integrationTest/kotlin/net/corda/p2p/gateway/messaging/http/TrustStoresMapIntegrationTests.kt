@@ -32,6 +32,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
     fun `TrustStoresMap creates correct certificate`() {
         val map = TrustStoresMap(
             lifecycleCoordinatorFactory,
+            lifecycleRegistry,
             subscriptionFactory,
             messagingConfig
         )

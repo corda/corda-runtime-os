@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
@@ -50,6 +52,7 @@ internal class TrustStoresMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        registry,
         onStart = ::onStart,
         managedChildren = listOf(subscriptionTile),
         dependentChildren = listOf(subscriptionTile),

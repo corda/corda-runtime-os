@@ -4,8 +4,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
@@ -41,7 +42,7 @@ class SessionPartitionMapperImpl(
         emptySet()
     )
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources,
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, registry, ::createResources,
         dependentChildren = setOf(sessionPartitionSubscriptionTile),
         managedChildren = setOf(sessionPartitionSubscriptionTile)
     )

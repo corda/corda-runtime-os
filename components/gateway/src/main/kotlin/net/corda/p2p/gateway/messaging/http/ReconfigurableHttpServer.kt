@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
@@ -23,6 +24,7 @@ import kotlin.concurrent.write
 @Suppress("LongParameterList")
 class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
     subscriptionFactory: SubscriptionFactory,
@@ -35,6 +37,7 @@ class ReconfigurableHttpServer(
 
     private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
+        registry,
         subscriptionFactory,
         nodeConfiguration,
     )
@@ -42,6 +45,7 @@ class ReconfigurableHttpServer(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        registry,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
         dependentChildren = listOf(
             dynamicKeyStore.dominoTile,

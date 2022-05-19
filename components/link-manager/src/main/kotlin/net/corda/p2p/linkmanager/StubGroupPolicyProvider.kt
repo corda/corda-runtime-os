@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class StubGroupPolicyProvider(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     configuration: SmartConfig,
 ) : LinkManagerGroupPolicyProvider {
@@ -82,6 +84,7 @@ internal class StubGroupPolicyProvider(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        registry,
         ::onStart,
         setOf(groupSubscriptionTile),
         setOf(groupSubscriptionTile)

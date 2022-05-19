@@ -92,7 +92,7 @@ class StubMembershipGroupReaderTest {
     }
 
     private val members = StubMembershipGroupReader(
-        lifecycleCoordinatorFactory, subscriptionFactory, configuration
+        lifecycleCoordinatorFactory, mock(), subscriptionFactory, configuration
     )
 
     @AfterEach

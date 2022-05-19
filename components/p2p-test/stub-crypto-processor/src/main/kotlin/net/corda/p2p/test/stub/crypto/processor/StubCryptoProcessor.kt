@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class StubCryptoProcessor(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     configuration: SmartConfig
 ) : CryptoProcessor {
@@ -44,6 +46,7 @@ class StubCryptoProcessor(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        registry,
         onStart = ::onStart,
         managedChildren = listOf(subscriptionTile),
         dependentChildren = listOf(subscriptionTile),

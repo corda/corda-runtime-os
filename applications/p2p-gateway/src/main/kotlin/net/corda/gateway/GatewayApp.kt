@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
@@ -30,6 +31,8 @@ class GatewayApp @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = LifecycleRegistry::class)
+    private val lifecycleRegistry: LifecycleRegistry,
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -56,6 +59,7 @@ class GatewayApp @Activate constructor(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
+                lifecycleRegistry,
                 bootConfig,
             ).also { gateway ->
                 gateway.start()

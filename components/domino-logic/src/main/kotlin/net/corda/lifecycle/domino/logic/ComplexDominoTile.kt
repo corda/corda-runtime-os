@@ -22,6 +22,8 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.lifecycle.registry.LifecycleRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -53,6 +55,7 @@ import kotlin.concurrent.write
 open class ComplexDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
+    private val registry: LifecycleRegistry,
     private val onStart: (() -> CompletableFuture<Unit>)? = null,
     final override val dependentChildren: Collection<DominoTile> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
@@ -197,7 +200,15 @@ open class ComplexDominoTile(
                     // The coordinator had started, set the children state map - from
                     // now on we should receive messages of any change
                     latestChildStateMap += dependentChildren.associateWith {
-                        it.state
+                        val status = registry.componentStatus()[it.coordinatorName]?.status
+                        if (status != null) {
+                            status
+                        } else {
+                            coordinator.postEvent(
+                                ErrorEvent(NoCoordinatorException("No registered coordinator with name ${it.coordinatorName}."))
+                            )
+                            LifecycleStatus.DOWN
+                        }
                     }
                 }
                 is StopEvent -> {
@@ -438,6 +449,8 @@ open class ComplexDominoTile(
             }
         }
     }
+
+    private class NoCoordinatorException(override val message: String): CordaRuntimeException(message)
 
     override fun toString(): String {
         return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it.coordinatorName }}, " +

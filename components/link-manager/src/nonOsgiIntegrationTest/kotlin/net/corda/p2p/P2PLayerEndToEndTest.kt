@@ -323,7 +323,8 @@ class P2PLayerEndToEndTest {
             }
             .genKeyPair()
         private val topicService = TopicServiceImpl()
-        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        private val lifecycleRegistry = LifecycleRegistryImpl()
+        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
         private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
@@ -365,6 +366,7 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
+                lifecycleRegistry,
                 configReadService,
                 bootstrapConfig,
             )
@@ -375,6 +377,7 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
+                lifecycleRegistry,
                 bootstrapConfig,
             )
 

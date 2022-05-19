@@ -5,6 +5,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
@@ -15,6 +16,7 @@ import net.corda.utilities.time.Clock
 @Suppress("LongParameterList")
 internal class CommonComponents(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    registry: LifecycleRegistry,
     linkManagerHostingMap: LinkManagerHostingMap,
     groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
@@ -44,6 +46,7 @@ internal class CommonComponents(
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
+        registry,
         configuration,
         inboundAssignmentListener,
         linkManagerHostingMap,
@@ -54,6 +57,7 @@ internal class CommonComponents(
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
+        registry,
         configuration,
     ).also {
         groups.registerListener(it)
@@ -63,6 +67,7 @@ internal class CommonComponents(
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
+        registry,
         configuration,
     ).also {
         linkManagerHostingMap.registerListener(it)
@@ -71,6 +76,7 @@ internal class CommonComponents(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
+        registry,
         dependentChildren = listOf(
             groups.dominoTile,
             members.dominoTile,
