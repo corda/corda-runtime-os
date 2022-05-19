@@ -12,11 +12,6 @@ import org.mockito.Mockito
 
 internal class CpiInfoReadServiceFakeTest {
 
-    // * VirtualInfo vs CpiInfoRead: get, getById different than get
-    // * Implementation of add merging instead of replacing
-    // * Load cpi info from yaml
-    // * Load cpi from file?
-
     private val cpi1 = TestCatalogue.Cpi.createMetadata("CPI1", "CPK1")
     private val cpi2 = TestCatalogue.Cpi.createMetadata("CPI2", "CPK2")
     private val cpi3 = TestCatalogue.Cpi.createMetadata("CPI3", "CPK3")
