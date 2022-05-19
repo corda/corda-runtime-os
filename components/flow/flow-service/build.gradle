@@ -60,6 +60,7 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
+    integrationTestImplementation project(':testing:cpi-info-read-service-fake')
 
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
