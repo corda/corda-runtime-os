@@ -81,6 +81,7 @@ class ChunkDbWriterFactoryImpl(
      * @param entityManagerFactory we use this to write chunks to the database
      * @param statusTopic we write (publish) status changes to this topic
      */
+    @Suppress("LongParameterList")
     private fun createSubscription(
         uploadTopic: String,
         messagingConfig: SmartConfig,
