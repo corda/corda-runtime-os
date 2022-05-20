@@ -7,16 +7,20 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.FetchType
 import javax.persistence.Id
+import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.JoinColumns
 import javax.persistence.ManyToOne
 
+/** Moderately complex entity using a composite key and many-to-one relationship */
 @CordaSerializable
 @Entity
+@IdClass(CatKey::class)
 data class Cat(
     @Id
     @Column
     val id: UUID,
+    @Id
     @Column
     val name: String,
     @Column

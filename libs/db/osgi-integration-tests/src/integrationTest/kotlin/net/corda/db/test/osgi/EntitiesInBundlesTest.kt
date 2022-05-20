@@ -40,6 +40,7 @@ class EntitiesInBundlesTest {
     companion object {
         private const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
         private const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
+        private const val CAT_KEY_CLASS_NAME = "net.corda.testing.bundles.cats.CatKey"
         private const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
 
         private val logger: Logger = LoggerFactory.getLogger("TEST")
@@ -71,6 +72,7 @@ class EntitiesInBundlesTest {
         private val dogClass = dogBundle.loadClass(DOG_CLASS_NAME)
         private val ownerClass = catBundle.loadClass(OWNER_CLASS_NAME)
         private val catClass = catBundle.loadClass(CAT_CLASS_NAME)
+        private val catKeyClass = catBundle.loadClass(CAT_KEY_CLASS_NAME)
 
         private val dogCtor = dogClass.getDeclaredConstructor(
             UUID::class.java,
@@ -81,6 +83,8 @@ class EntitiesInBundlesTest {
         private val ownerCtor = ownerClass.getDeclaredConstructor(UUID::class.java, String::class.java, Int::class.java)
         private val catCtor =
             catClass.getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
+        private val catKeyCtor =
+            catKeyClass.getDeclaredConstructor(UUID::class.java, String::class.java)
 
         private val dogId = UUID.randomUUID()
         private val dog = dogCtor.newInstance(
@@ -92,7 +96,8 @@ class EntitiesInBundlesTest {
         private val ownerId = UUID.randomUUID()
         private val owner = ownerCtor.newInstance(ownerId, "Bob", 26)
         private val catId = UUID.randomUUID()
-        private val cat = catCtor.newInstance(catId, "Stray", "Tabby", owner)
+        private val catName = "Stray"
+        private val cat = catCtor.newInstance(catId, catName, "Tabby", owner)
 
         private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration("pets")
 
@@ -174,8 +179,9 @@ class EntitiesInBundlesTest {
     @Test
     fun `check we can create lazy proxies`() {
         val em = emf.createEntityManager()
+        val catKey = catKeyCtor.newInstance(catId, catName)
         try {
-            val lazyCat = em.getReference(catClass, catId)
+            val lazyCat = em.getReference(catClass, catKey)
             assertNotSame(catClass, lazyCat::class.java)
             assertEquals(cat, lazyCat)
         } finally {
