@@ -1,6 +1,5 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
