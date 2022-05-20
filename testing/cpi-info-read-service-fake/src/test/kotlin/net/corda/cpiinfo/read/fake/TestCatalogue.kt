@@ -10,10 +10,12 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
 
 object TestCatalogue {
     object Cpi {
         fun createMetadata(cpiName: String, cpkName: String): CpiMetadata {
+            val timestamp = Instant.now()
             return CpiMetadata(
                 CpiIdentifier(cpiName, "0.0", SecureHash("ALG", byteArrayOf(0, 0, 0, 0))),
                 SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
@@ -35,10 +37,13 @@ object TestCatalogue {
                         ),
                         CpkType.UNKNOWN,
                         SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
-                        setOf()
+                        setOf(),
+                        timestamp
                     )
                 ),
-                ""
+                "",
+                version = -1,
+                timestamp
             )
         }
     }
