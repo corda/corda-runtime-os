@@ -8,7 +8,6 @@ import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
@@ -21,9 +20,15 @@ val emptyKeyValuePairList = KeyValuePairList(emptyList())
 inline fun <reified CALLER> createWireRequestContext(
     tenantId: String,
     other: KeyValuePairList = emptyKeyValuePairList
+): CryptoRequestContext = createWireRequestContext(CALLER::class.java.simpleName, tenantId, other)
+
+fun createWireRequestContext(
+    caller: String,
+    tenantId: String,
+    other: KeyValuePairList = emptyKeyValuePairList
 ): CryptoRequestContext {
     return CryptoRequestContext(
-        CALLER::class.simpleName,
+        caller,
         Instant.now(),
         UUID.randomUUID().toString(),
         tenantId,

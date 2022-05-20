@@ -1,12 +1,12 @@
 package net.corda.crypto.flow
 
+import net.corda.crypto.impl.createWireRequestContext
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -21,7 +21,6 @@ import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.UUID
 
 /**
  * The crypto operations client to generate messages for flows.
@@ -199,31 +198,15 @@ class CryptoFlowOpsTransformer(
      */
     private fun createRequest(tenantId: String, request: Any): FlowOpsRequest =
         FlowOpsRequest(
-            createWireRequestContext(tenantId, request),
-            request
-        )
-
-    /**
-     * Creates [CryptoRequestContext] for specified tenant and operation
-     */
-    private fun createWireRequestContext(
-        tenantId: String,
-        request: Any
-    ): CryptoRequestContext {
-        return CryptoRequestContext(
-            requestingComponent,
-            Instant.now(),
-            UUID.randomUUID().toString(),
-            tenantId,
-            KeyValuePairList(
+            createWireRequestContext(requestingComponent, tenantId, KeyValuePairList(
                 listOf(
                     KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
                     KeyValuePair(RESPONSE_TOPIC, responseTopic),
                     KeyValuePair(REQUEST_TTL_KEY, requestValidityWindowSeconds.toString())
                 )
-            )
+            )),
+            request
         )
-    }
 
     /**
      * Transforms map to [KeyValuePairList]
