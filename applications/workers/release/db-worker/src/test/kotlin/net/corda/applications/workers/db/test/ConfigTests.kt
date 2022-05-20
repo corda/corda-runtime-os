@@ -11,6 +11,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CPK_WRITE_INTERVAL
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.BOOT_PERMISSION_SUMMARY_INTERVAL
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -49,7 +50,7 @@ class ConfigTests {
             TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            MSG_KEY_ONE,
+            "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
             "$BOOT_DB_PARAMS.$DB_KEY_ONE",
             BOOT_PERMISSION_SUMMARY_INTERVAL,
             BOOT_CPK_WRITE_INTERVAL,
@@ -59,7 +60,7 @@ class ConfigTests {
 
         assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(INSTANCE_ID))
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
-        assertEquals(MSG_VAL_ONE, config.getAnyRef(MSG_KEY_ONE))
+        assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
         assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
 
         assertEquals(
@@ -165,8 +166,8 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = processor.config!!
 
-        assertEquals(MSG_VAL_ONE, config.getAnyRef(MSG_KEY_ONE))
-        assertEquals(MSG_VAL_TWO, config.getAnyRef(MSG_KEY_TWO))
+        assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
+        assertEquals(MSG_VAL_TWO, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_TWO"))
     }
 
     @Test
