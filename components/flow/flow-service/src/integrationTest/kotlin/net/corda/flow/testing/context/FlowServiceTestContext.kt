@@ -24,6 +24,7 @@ import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
+import net.corda.flow.testing.tests.PROTOCOL
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.CordappManifest
 import net.corda.libs.packaging.Cpk
@@ -163,8 +164,8 @@ class FlowServiceTestContext @Activate constructor(
         testConfig[key] = value
     }
 
-    override fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
-        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(getCpiIdentifier(cpiId), initiatingFlowClassName, initiatedFlowClassName)
+    override fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(protocol, initiatingFlowClassName, initiatedFlowClassName)
     }
 
     override fun startFlowEventReceived(
@@ -201,7 +202,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionInit.newBuilder()
-                .setFlowName(FLOW_NAME)
+                .setProtocol(PROTOCOL)
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))

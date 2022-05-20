@@ -8,6 +8,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.session.manager.SessionManager
@@ -70,8 +71,19 @@ class SessionEventHandler @Activate constructor(
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
-        val protocolStore = flowSandboxService.get(initiatedIdentity.toCorda()).protocolStore
-        val initiatedFlow = protocolStore.responderForProtocol(sessionInit.protocol, sessionInit.versions)
+        val protocolStore = try {
+            flowSandboxService.get(initiatedIdentity.toCorda()).protocolStore
+        } catch (e: Exception) {
+            // TODO: We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
+            // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
+            // will get the right failure eventually, so this is fine for now.
+            throw FlowTransientException(
+                "Failed to create the flow sandbox for identity ${context.checkpoint.holdingIdentity.toCorda()}: ${e.message}",
+                context,
+                e
+            )
+        }
+        val initiatedFlow = protocolStore.responderForProtocol(sessionInit.protocol, sessionInit.versions, context)
         val startContext = FlowStartContext.newBuilder()
             .setStatusKey(FlowKey(sessionId, initiatedIdentity))
             .setInitiatorType(FlowInitiatorType.P2P)

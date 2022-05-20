@@ -47,7 +47,7 @@ class FlowEngineImpl @Activate constructor(
 
         log.debug { "Starting sub-flow ('$subFlowClassName')..." }
 
-        getFiberExecutionContext().sandboxDependencyInjector.injectServices(subLogic)
+        getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subLogic)
         getFiberExecutionContext().flowStackService.push(subLogic)
 
         try {

@@ -1,9 +1,10 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 
 class FlowProtocolStoreImplTest {
 
@@ -28,12 +29,12 @@ class FlowProtocolStoreImplTest {
             INITIATING_FLOW_C to makeProtocols(PROTOCOL_2, listOf(1, 2))
         )
         val protocolStore = FlowProtocolStoreImpl(initiatorsToProtocols, mapOf())
-        assertEquals(PROTOCOL_1, protocolStore.protocolsForInitiator(INITIATING_FLOW_A).first)
-        assertEquals(listOf(1, 2, 3), protocolStore.protocolsForInitiator(INITIATING_FLOW_A).second)
-        assertEquals(PROTOCOL_1, protocolStore.protocolsForInitiator(INITIATING_FLOW_B).first)
-        assertEquals(listOf(4), protocolStore.protocolsForInitiator(INITIATING_FLOW_B).second)
-        assertEquals(PROTOCOL_2, protocolStore.protocolsForInitiator(INITIATING_FLOW_C).first)
-        assertEquals(listOf(1, 2), protocolStore.protocolsForInitiator(INITIATING_FLOW_C).second)
+        assertEquals(PROTOCOL_1, protocolStore.protocolsForInitiator(INITIATING_FLOW_A, mock()).first)
+        assertEquals(listOf(1, 2, 3), protocolStore.protocolsForInitiator(INITIATING_FLOW_A, mock()).second)
+        assertEquals(PROTOCOL_1, protocolStore.protocolsForInitiator(INITIATING_FLOW_B, mock()).first)
+        assertEquals(listOf(4), protocolStore.protocolsForInitiator(INITIATING_FLOW_B, mock()).second)
+        assertEquals(PROTOCOL_2, protocolStore.protocolsForInitiator(INITIATING_FLOW_C, mock()).first)
+        assertEquals(listOf(1, 2), protocolStore.protocolsForInitiator(INITIATING_FLOW_C, mock()).second)
     }
 
     @Test
@@ -45,11 +46,11 @@ class FlowProtocolStoreImplTest {
             FlowProtocol(PROTOCOL_2, 1) to RESPONDER_FLOW_C
         )
         val protocolStore = FlowProtocolStoreImpl(mapOf(), protocolsToResponders)
-        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1)))
-        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2)))
-        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3)))
-        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3, 4)))
-        assertEquals(RESPONDER_FLOW_C, protocolStore.responderForProtocol(PROTOCOL_2, listOf(1)))
+        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1), mock()))
+        assertEquals(RESPONDER_FLOW_A, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2), mock()))
+        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3), mock()))
+        assertEquals(RESPONDER_FLOW_B, protocolStore.responderForProtocol(PROTOCOL_1, listOf(1, 2, 3, 4), mock()))
+        assertEquals(RESPONDER_FLOW_C, protocolStore.responderForProtocol(PROTOCOL_2, listOf(1), mock()))
     }
 
     @Test
@@ -59,7 +60,7 @@ class FlowProtocolStoreImplTest {
         )
         val protocolStore = FlowProtocolStoreImpl(initiatorsToProtocols, mapOf())
         assertThrows<FlowProcessingException> {
-            protocolStore.protocolsForInitiator(INITIATING_FLOW_B)
+            protocolStore.protocolsForInitiator(INITIATING_FLOW_B, mock())
         }
     }
 
@@ -72,10 +73,10 @@ class FlowProtocolStoreImplTest {
         )
         val protocolStore = FlowProtocolStoreImpl(mapOf(), protocolsToResponders)
         assertThrows<FlowProcessingException> {
-            protocolStore.responderForProtocol(PROTOCOL_2, listOf(1, 2, 3))
+            protocolStore.responderForProtocol(PROTOCOL_2, listOf(1, 2, 3), mock())
         }
         assertThrows<FlowProcessingException> {
-            protocolStore.responderForProtocol(PROTOCOL_1, listOf(4))
+            protocolStore.responderForProtocol(PROTOCOL_1, listOf(4), mock())
         }
     }
 
@@ -86,7 +87,7 @@ class FlowProtocolStoreImplTest {
         )
         val protocolStore = FlowProtocolStoreImpl(initiatorsToProtocols, mapOf())
         assertThrows<FlowProcessingException> {
-            protocolStore.protocolsForInitiator(INITIATING_FLOW_A)
+            protocolStore.protocolsForInitiator(INITIATING_FLOW_A, mock())
         }
     }
 

@@ -16,13 +16,13 @@ import org.mockito.kotlin.whenever
 
 class MockFlowFiberService : FlowFiberService {
     val flowFiber = mock<FlowFiber<*>>()
-    val sandboxDependencyInjector: SandboxDependencyInjector = mock()
+    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     val flowCheckpoint: FlowCheckpoint = mock()
     val flowStack: FlowStack = mock()
-    val checkpointSerializer: CheckpointSerializer = mock()
+    private val checkpointSerializer = mock<CheckpointSerializer>()
     val sandboxGroupContext: FlowSandboxGroupContext = mock()
     val holdingIdentity: HoldingIdentity =  HoldingIdentity(BOB_X500_NAME.toString(),"group1")
-    val membershipGroupReader: MembershipGroupReader = mock()
+    private val membershipGroupReader: MembershipGroupReader = mock()
     val flowFiberExecutionContext: FlowFiberExecutionContext
 
     init {
@@ -31,11 +31,11 @@ class MockFlowFiberService : FlowFiberService {
          * before we create the instance of the context
          */
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
+        whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
+        whenever(sandboxGroupContext.checkpointSerializer).thenReturn(checkpointSerializer)
 
         flowFiberExecutionContext = FlowFiberExecutionContext(
-            sandboxDependencyInjector,
             flowCheckpoint,
-            checkpointSerializer,
             sandboxGroupContext,
             holdingIdentity,
             membershipGroupReader

@@ -5,7 +5,8 @@ import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -34,9 +35,18 @@ class InitiateFlowRequestHandler @Activate constructor(
 
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
 
-        val protocolStore = flowSandboxService.get(context.checkpoint.holdingIdentity.toCorda()).protocolStore
-        val initiator = checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty")
-        val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator)
+        val protocolStore = try {
+            flowSandboxService.get(context.checkpoint.holdingIdentity.toCorda()).protocolStore
+        } catch (e: Exception) {
+            throw FlowTransientException(
+                "Failed to create the flow sandbox for identity ${context.checkpoint.holdingIdentity.toCorda()}: ${e.message}",
+                context,
+                e
+            )
+        }
+        val initiator =
+            checkpoint.flowStack.peek()?.flowName ?: throw FlowFatalException("Flow stack is empty", context)
+        val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
         checkpoint.putSessionState(
             flowSessionManager.sendInitMessage(
                 checkpoint,

@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.FlowSandboxSerializerTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
@@ -20,7 +19,6 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
-import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
@@ -118,7 +116,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
         val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
-        sandboxGroupContext.putUniqueObject(injectorService)
+        sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR, injectorService)
 
         // Identify singleton services outside the sandbox that may need checkpointing.
         // These services should not overlap with the injectable services, which should
@@ -133,11 +131,14 @@ class FlowSandboxServiceImpl @Activate constructor(
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
             builder.build()
         }
-        sandboxGroupContext.putUniqueObject(checkpointSerializer)
+        sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER, checkpointSerializer)
 
         sandboxGroupContext.putAMQPSerializationEnvironment(cpiMetadata)
 
-        sandboxGroupContext.putUniqueObject(flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata))
+        sandboxGroupContext.putObjectByKey(
+            FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE,
+            flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata)
+        )
 
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
@@ -185,7 +186,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             AMQP_P2P_CONTEXT.withSandboxGroup(sandboxGroup)
         )
 
-        putObjectByKey(FlowSandboxSerializerTypes.AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
+        putObjectByKey(FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
     }
 
     private fun buildCorDappSerializers(

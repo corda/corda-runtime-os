@@ -21,7 +21,7 @@ interface StepSetup {
 
     fun flowConfiguration(key:String, value:Any)
 
-    fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
+    fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
 
     fun startFlowEventReceived(
         flowId: String,
