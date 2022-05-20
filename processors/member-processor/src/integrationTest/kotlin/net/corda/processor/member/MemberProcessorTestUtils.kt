@@ -2,8 +2,6 @@ package net.corda.processor.member
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.time.Duration
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
