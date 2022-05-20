@@ -15,7 +15,6 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation project(":libs:packaging:packaging-avro-converters")
 
     api project(':libs:lifecycle:lifecycle')
     implementation project(":libs:configuration:configuration-core")

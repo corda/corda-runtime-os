@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import net.corda.libs.packaging.CordappManifest
+import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -28,7 +28,7 @@ class FlowProtocolStoreFactoryImplTest {
             listOf(INITIATED_FLOW)
         ))
         val sandboxGroup = makeMockSandboxGroup()
-        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata,)
+        val protocolStore = FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
         assertEquals(Pair(PROTOCOL, listOf(1)), protocolStore.protocolsForInitiator(INITIATING_FLOW, mock()))
         assertEquals(INITIATED_FLOW, protocolStore.responderForProtocol(PROTOCOL, listOf(1), mock()))
     }

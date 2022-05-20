@@ -39,6 +39,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.lang.IllegalStateException
+import java.time.Instant
 import java.util.UUID
 
 class MemberProcessorTestUtils {
@@ -179,6 +180,12 @@ class MemberProcessorTestUtils {
                 }
             }
 
+        fun assertLookupSize(groupReader: MembershipGroupReader, expectedSize: Int) = eventually {
+            groupReader.lookup().also {
+                assertEquals(expectedSize, it.size)
+            }
+        }
+
         fun lookup(groupReader: MembershipGroupReader, holdingIdentity: MemberX500Name) = eventually {
             val lookupResult = groupReader.lookup(holdingIdentity)
             assertNotNull(lookupResult)
@@ -251,7 +258,9 @@ class MemberProcessorTestUtils {
             cpiIdentifier,
             SecureHash.create("SHA-256:0000000000000000"),
             emptyList(),
-            groupPolicy
+            groupPolicy,
+            -1,
+            Instant.now()
         )
 
         private fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService, holdingIdentity: HoldingIdentity) =

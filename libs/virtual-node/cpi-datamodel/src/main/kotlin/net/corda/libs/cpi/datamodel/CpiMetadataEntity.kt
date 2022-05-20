@@ -44,17 +44,17 @@ data class CpiMetadataEntity(
     @Column(name = "signer_summary_hash", nullable = false)
     val signerSummaryHash: String,
     @Column(name = "file_name", nullable = false)
-    val fileName: String,
+    var fileName: String,
     @Column(name = "file_checksum", nullable = false)
-    val fileChecksum: String,
+    var fileChecksum: String,
     @Column(name = "group_policy", nullable = false)
-    val groupPolicy: String,
+    var groupPolicy: String,
     @Column(name = "group_id", nullable = false)
-    val groupId: String,
+    var groupId: String,
     @Column(name = "file_upload_request_id", nullable = false)
-    val fileUploadRequestId: String,
+    var fileUploadRequestId: String,
     @Column(name = "is_deleted", nullable = false)
-    val isDeleted: Boolean
+    var isDeleted: Boolean
 ) {
     companion object {
         fun empty(): CpiMetadataEntity = CpiMetadataEntity(
@@ -65,14 +65,14 @@ data class CpiMetadataEntity(
 
     @Version
     @Column(name = "entity_version", nullable = false)
-    val entityVersion: Int = -1
+    var entityVersion: Int = 0
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")
     val cpks: Set<CpkMetadataEntity> = emptySet()
 
-    // this TS is managed on the DB itself
-    @Column(name = "insert_ts", insertable = false, updatable = false)
-    val insertTimestamp: Instant? = null
+    // Initial population of this TS is managed on the DB itself
+    @Column(name = "insert_ts", insertable = false, updatable = true)
+    var insertTimestamp: Instant? = null
 }
 
 /** The composite primary key for a CpiEntity. */

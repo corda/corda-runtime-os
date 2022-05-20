@@ -1,9 +1,16 @@
 package net.corda.libs.packaging
 
+import net.corda.libs.packaging.core.exception.CordappManifestException
+import net.corda.libs.packaging.core.exception.DependencyMetadataException
+import net.corda.libs.packaging.core.exception.InvalidSignatureException
+import net.corda.libs.packaging.core.exception.LibraryIntegrityException
+import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.PackagingConstants
 import net.corda.libs.packaging.internal.UncloseableInputStream
 import net.corda.libs.packaging.internal.ZipTweaker
 import net.corda.libs.packaging.internal.hash
+import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefault
 import net.corda.libs.packaging.internal.summaryHash
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -196,7 +203,7 @@ class CPKTests {
     fun `Verify hash of cpk file`() {
         val hash = Files.newInputStream(workflowCPKPath).use { computeSHA256Digest(it) }
         Assertions.assertEquals(
-            hash, workflowCPK.metadata.hash,
+            hash, workflowCPK.metadata.fileChecksum,
             "The cpk hash from CPK.Metadata differs from the actual hash of the .cpk file"
         )
     }
@@ -239,7 +246,7 @@ class CPKTests {
     fun `Verify cordapp signature`() {
         Assertions.assertEquals(
             sequenceOf(cordaDevKey).summaryHash(),
-            workflowCPK.metadata.id.signerSummaryHash
+            workflowCPK.metadata.cpkId.signerSummaryHash
         )
     }
 
@@ -259,8 +266,7 @@ class CPKTests {
         tweakCordappJar(modifiedWorkflowCPK, tweaker)
         assertThrows<CordappManifestException> {
             Files.newInputStream(modifiedWorkflowCPK).use {
-                Cpk.Metadata.from(
-                    it,
+                CpkLoader.loadMetadata(it,
                     cpkLocation = modifiedWorkflowCPK.toString(),
                     verifySignature = false
                 )
@@ -288,8 +294,7 @@ class CPKTests {
         }
         tweakCordappJar(modifiedWorkflowCPK, tweaker)
         assertThrows<DependencyMetadataException> {
-            Cpk.Metadata.from(
-                Files.newInputStream(modifiedWorkflowCPK),
+            CpkLoader.loadMetadata(Files.newInputStream(modifiedWorkflowCPK),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -305,8 +310,7 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         Assertions.assertDoesNotThrow {
-            Cpk.Metadata.from(
-                Files.newInputStream(modifiedWorkflowCPK),
+            CpkLoader.loadMetadata(Files.newInputStream(modifiedWorkflowCPK),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -325,8 +329,7 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         assertThrows<DependencyMetadataException> {
-            Cpk.Metadata.from(
-                Files.newInputStream(modifiedWorkflowCPK),
+            CpkLoader.loadMetadata(Files.newInputStream(modifiedWorkflowCPK),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -348,8 +351,7 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         assertThrows<DependencyMetadataException> {
-            Cpk.Metadata.from(
-                Files.newInputStream(modifiedWorkflowCPK),
+            CpkLoader.loadMetadata(Files.newInputStream(modifiedWorkflowCPK),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -381,8 +383,7 @@ class CPKTests {
         |</cpkDependencies>
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
-        val cpk = Cpk.Metadata.from(
-            Files.newInputStream(modifiedWorkflowCPK),
+        val cpk = CpkLoader.loadMetadata(Files.newInputStream(modifiedWorkflowCPK),
             cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
         )
         val dependency = cpk.dependencies.find { it.name == dummyName && it.version == dummyVersion }
@@ -395,7 +396,7 @@ class CPKTests {
         val tamperedCPK = testDir.resolve("tampered.cpk")
         tamperWithLibraries(tamperedCPK)
         Assertions.assertThrows(LibraryIntegrityException::class.java) {
-            Cpk.Metadata.from(Files.newInputStream(tamperedCPK), verifySignature = false)
+            CpkLoader.loadMetadata(Files.newInputStream(tamperedCPK), null, verifySignature = false)
         }
     }
 
@@ -408,14 +409,16 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         Assertions.assertThrows(InvalidSignatureException::class.java) {
-            Cpk.Metadata.from(Files.newInputStream(modifiedWorkflowCPK), verifySignature = true)
+            CpkLoader.loadMetadata(Files.newInputStream(modifiedWorkflowCPK), null, verifySignature = true)
         }
     }
 
     @Test
     fun `throws if archive is not a jar file at all`() {
         assertThrows<PackagingException> {
-            Cpk.Metadata.from(Files.newInputStream(nonJarFile), nonJarFile.toString())
+            CpkLoader.loadMetadata(Files.newInputStream(nonJarFile),
+                nonJarFile.toString(),
+                jarSignatureVerificationEnabledByDefault())
         }
         assertThrows<PackagingException> {
             Cpk.from(Files.newInputStream(nonJarFile), processedWorkflowCPKPath, nonJarFile.toString())
@@ -433,7 +436,7 @@ class CPKTests {
         val md = MessageDigest.getInstance(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name)
         md.update(cordaDevKey.toString().toByteArray())
         val expectedHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, md.digest())
-        Assertions.assertEquals(expectedHash, workflowCPK.metadata.id.signerSummaryHash)
+        Assertions.assertEquals(expectedHash, workflowCPK.metadata.cpkId.signerSummaryHash)
     }
 }
 

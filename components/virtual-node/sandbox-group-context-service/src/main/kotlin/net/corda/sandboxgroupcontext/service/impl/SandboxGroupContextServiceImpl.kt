@@ -80,7 +80,7 @@ class SandboxGroupContextServiceImpl(
             if (cpks.size != virtualNodeContext.cpkIdentifiers.size) {
                 logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
                 logger.error("Wanted all of:  ${virtualNodeContext.cpkIdentifiers}")
-                val receivedIdentifiers = cpks.map { it.metadata.id }
+                val receivedIdentifiers = cpks.map { it.metadata.cpkId }
                 val missing = setOf(virtualNodeContext.cpkIdentifiers) - setOf(receivedIdentifiers)
                 logger.error("Returned:  $receivedIdentifiers")
                 logger.error("Missing:  $missing")

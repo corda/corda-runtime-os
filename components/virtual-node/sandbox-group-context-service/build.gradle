@@ -28,8 +28,6 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-config-schema"
 
-    implementation project(":libs:packaging:packaging-avro-converters")
-
     api project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")

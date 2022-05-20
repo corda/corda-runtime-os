@@ -44,16 +44,16 @@ class SandboxBootstrap @Activate constructor(
 ){
     init {
         securityManager.updatePermissions(listOf(
-            bundleLocationPermission("*", listOf(
+            bundleLocationPermission("*", DENY,
                 ServicePermission(PermissionAdmin::class.java.name, REGISTER)
-            ), DENY),
-            bundleLocationPermission("FLOW/*", listOf(
+            ),
+            bundleLocationPermission("FLOW/*", ALLOW,
                 PackagePermission("net.corda.v5.*", IMPORT),
                 ServicePermission("(location=FLOW/*)", GET),
                 ServicePermission("net.corda.v5.*", GET),
                 RuntimePermission("accessClassInPackage.net.corda.v5.*")
-            ), ALLOW),
-            bundleLocationPermission("FLOW/*", listOf(
+            ),
+            bundleLocationPermission("FLOW/*", DENY,
                 // OSGi permissions.
                 AdminPermission(),
                 ServicePermission("*", GET),
@@ -77,8 +77,8 @@ class SandboxBootstrap @Activate constructor(
                 PropertyPermission("*", "read,write"),
                 SocketPermission("*", "accept,connect,listen"),
                 FilePermission("<<ALL FILES>>", "read,write,execute,delete,readlink")
-            ), DENY),
-            bundleLocationPermission("*", listOf(AllPermission()), ALLOW)
+            ),
+            bundleLocationPermission("*", ALLOW, AllPermission())
         ), clear = true)
 
         val baseDirectory = Paths.get(System.getProperty("app.name", System.getProperty("user.dir", "."))).toAbsolutePath()
@@ -88,7 +88,7 @@ class SandboxBootstrap @Activate constructor(
     /**
      * Creates [ConditionalPermission] with [BundleLocationCondition] and given [permissions]
      */
-    private fun bundleLocationPermission(location: String, permissions: List<Permission>, access: Access) =
+    private fun bundleLocationPermission(location: String, access: Access, vararg permissions: Permission) =
         ConditionalPermission(
             ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(location)),
             permissions.map { PermissionInfo(it::class.java.name, it.name, it.actions) }.toTypedArray(),

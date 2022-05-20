@@ -1,8 +1,8 @@
 package net.corda.libs.packaging.internal
 
-import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.DependencyResolutionException
-import net.corda.libs.packaging.VersionComparator
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.comparator.VersionComparator
+import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import java.util.Collections
 import java.util.NavigableMap
 import java.util.NavigableSet
@@ -11,25 +11,25 @@ import java.util.TreeSet
 internal object CpkDependencyResolver {
 
     @Suppress("NestedBlockDepth", "ComplexMethod", "ThrowsCount")
-    fun resolveDependencies(roots: Iterable<Cpk.Identifier>,
-                            availableIds: NavigableMap<Cpk.Identifier, NavigableSet<Cpk.Identifier>>,
-                            useSignatures : Boolean): NavigableSet<Cpk.Identifier> {
-        val stack = ArrayList<Cpk.Identifier>()
+    fun resolveDependencies(roots: Iterable<CpkIdentifier>,
+                            availableIds: NavigableMap<CpkIdentifier, NavigableSet<CpkIdentifier>>,
+                            useSignatures : Boolean): NavigableSet<CpkIdentifier> {
+        val stack = ArrayList<CpkIdentifier>()
         stack.addAll(roots)
-        val resolvedSet: NavigableSet<Cpk.Identifier> = TreeSet()
-        val requesterMap = HashMap<String, ArrayList<Cpk.Identifier>>()
+        val resolvedSet: NavigableSet<CpkIdentifier> = TreeSet()
+        val requesterMap = HashMap<String, ArrayList<CpkIdentifier>>()
         while (stack.isNotEmpty()) {
             val cpkIdentifier = stack.removeAt(stack.size - 1)
             val dependencyAlreadyResolved = resolvedSet.tailSet(cpkIdentifier).any { it.name == cpkIdentifier.name }
             if (!dependencyAlreadyResolved) {
                 //All CPKs with the required symbolic name and version greater or equal are valid candidates
-                val needle = CpkIdentifierImpl(cpkIdentifier.name, cpkIdentifier.version, null)
+                val needle = CpkIdentifier(cpkIdentifier.name, cpkIdentifier.version, null)
                 val cpkCandidates = availableIds.tailMap(needle).asSequence()
                         .filter { it.key.name == needle.name && (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash) }
                         .toList()
                 when {
                     cpkCandidates.isNotEmpty() -> {
-                        /** Select the last candidate (with the highest [Cpk.Identifier.version]) */
+                        /** Select the last candidate (with the highest [CpkIdentifier.version]) */
                         val resolvedCandidate = cpkCandidates.last()
                         val resolvedVersion = resolvedCandidate.key.version
                         if (VersionComparator.cmp(resolvedVersion, cpkIdentifier.version) < 0) {
