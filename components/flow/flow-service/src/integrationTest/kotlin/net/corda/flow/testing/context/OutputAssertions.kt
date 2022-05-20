@@ -11,6 +11,12 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun sessionInitEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
     fun sessionDataEvents(
         vararg sessionToPayload: Pair<String, ByteArray>,
         initiatingIdentity: HoldingIdentity? = null,
