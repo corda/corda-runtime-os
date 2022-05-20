@@ -18,6 +18,7 @@ interface KeysRpcOps : RpcOps {
      * GET endpoint which returns the list of the schemes in the cluster.
      *
      * @param tenantId The tenant ID.
+     * @param hsmCategory The HSM category.
      * @return A list of scheme names.
      */
     @HttpRpcGET(
@@ -53,6 +54,7 @@ interface KeysRpcOps : RpcOps {
      * @param tenantId The tenant ID.
      * @param alias The key alias.
      * @param hsmCategory The HSM category.
+     * @param scheme The scheme.
      *
      * @return The ID of the newly generated key pair.
      */
