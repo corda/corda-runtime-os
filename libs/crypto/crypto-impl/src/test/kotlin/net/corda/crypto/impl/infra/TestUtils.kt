@@ -35,6 +35,7 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, keySchemeCodeName: Str
     return keyPairGenerator.generateKeyPair()
 }
 
+// we are not expected to deal with hash pre-calculation in the tests in this module
 fun signData(
     schemeMetadata: CipherSchemeMetadata,
     signatureSpec: SignatureSpec,
@@ -46,6 +47,9 @@ fun signData(
         signatureSpec.signatureName,
         schemeMetadata.providers[scheme.providerName]
     )
+    if(signatureSpec.params != null) {
+        signature.setParameter(signatureSpec.params)
+    }
     signature.initSign(keyPair.private, schemeMetadata.secureRandom)
     signature.update(data)
     return signature.sign()

@@ -10,9 +10,6 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
-import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
-import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.bouncycastle.asn1.DERNull
@@ -94,59 +91,8 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
 
-    @Suppress("ComplexMethod")
-    override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? {
-        val scheme = findKeyScheme(publicKey)
-        val normalisedDigestName = digest.name.replace("-", "")
-        return when (scheme) {
-            providerMap.ECDSA_SECP256R1, providerMap.ECDSA_SECP256K1 ->
-                SignatureSpec(
-                    signatureName = "${normalisedDigestName}withECDSA"
-                )
-            providerMap.RSA ->
-                SignatureSpec(
-                    signatureName = "${normalisedDigestName}withRSA"
-                )
-            providerMap.EDDSA_ED25519 -> {
-                if (digest.name.equals("NONE", true)) {
-                    EDDSA_ED25519_NONE_SIGNATURE_SPEC
-                } else {
-                    null
-                }
-            }
-            providerMap.SM2 -> {
-                if (digest.name.equals("SM3", true) ||
-                    digest.name.equals("SHA-256", true) ||
-                    digest.name.equals("SHA-384", true) ||
-                    digest.name.equals("SHA-512", true) ||
-                    digest.name.equals("WHIRLPOOL", true) ||
-                    digest.name.equals("BLAKE2B-256", true) ||
-                    digest.name.equals("BLAKE2B-512", true)
-                ) {
-                    SignatureSpec(
-                        signatureName = "${normalisedDigestName}withSM2"
-                    )
-                } else {
-                    null
-                }
-            }
-            providerMap.GOST3410_GOST3411 -> {
-                if (digest.name.equals("GOST3411", true)) {
-                    GOST3410_GOST3411_SIGNATURE_SPEC
-                } else {
-                    null
-                }
-            }
-            providerMap.SPHINCS256 -> {
-                if (digest.name.equals("SHA-512", true)) {
-                    SPHINCS256_SHA512_SIGNATURE_SPEC
-                } else {
-                    null
-                }
-            }
-            else -> null
-        }
-    }
+    override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
+        providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
 
     @Suppress("UNCHECKED_CAST")
     override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
@@ -166,14 +112,14 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
 
     private val providerMap by lazy(LazyThreadSafetyMode.PUBLICATION) { ProviderMap(this) }
 
-    override val schemes: Array<KeyScheme> = arrayOf(
-        providerMap.RSA,
-        providerMap.ECDSA_SECP256K1,
-        providerMap.ECDSA_SECP256R1,
-        providerMap.EDDSA_ED25519,
-        providerMap.SPHINCS256,
-        providerMap.SM2,
-        providerMap.GOST3410_GOST3411,
+    override val schemes: List<KeyScheme> = listOf(
+        providerMap.RSA.scheme,
+        providerMap.ECDSA_SECP256K1.scheme,
+        providerMap.ECDSA_SECP256R1.scheme,
+        providerMap.EDDSA_ED25519.scheme,
+        providerMap.SPHINCS256.scheme,
+        providerMap.SM2.scheme,
+        providerMap.GOST3410_GOST3411.scheme,
         providerMap.COMPOSITE_KEY
     )
 
@@ -181,7 +127,7 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         scheme.algorithmOIDs.map { identifier -> identifier to scheme }
     }.toMap()
 
-    override val digests: Array<DigestScheme> = providerMap.providers.values
+    override val digests: List<DigestScheme> = providerMap.providers.values
         .flatMap { it.services }
         .filter {
             it.type.equals(MESSAGE_DIGEST_TYPE, true)
@@ -190,7 +136,6 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         }
         .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
         .distinctBy { it.algorithmName }
-        .toTypedArray()
 
     override val providers: Map<String, Provider> get() = providerMap.providers
 

@@ -1,4 +1,4 @@
-package net.corda.crypto.flow
+package net.corda.crypto.flow.infra
 
 import org.assertj.core.api.Assertions.assertThat
 import java.time.Instant

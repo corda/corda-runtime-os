@@ -15,6 +15,7 @@ dependencies {
     api "net.corda:corda-cipher-suite"
     api 'net.corda:corda-serialization'
 
+    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 

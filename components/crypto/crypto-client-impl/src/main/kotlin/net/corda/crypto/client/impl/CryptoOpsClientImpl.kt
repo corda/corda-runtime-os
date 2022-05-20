@@ -2,6 +2,9 @@ package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.impl.createWireRequestContext
+import net.corda.crypto.impl.toMap
+import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -241,7 +244,7 @@ class CryptoOpsClientImpl(
             tenantId,
             SignRpcCommand(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                signatureSpec.toWire(),
+                signatureSpec.toWire(schemeMetadata),
                 ByteBuffer.wrap(data),
                 context.toWire()
             )
@@ -250,7 +253,7 @@ class CryptoOpsClientImpl(
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array(),
-            context = response.context.items.toMap()
+            context = response.context.toMap()
         )
     }
 
@@ -354,17 +357,6 @@ class CryptoOpsClientImpl(
             createWireRequestContext<CryptoOpsClientImpl>(tenantId),
             request
         )
-
-    private fun SignatureSpec.toWire() = CryptoSignatureSpec(
-        signatureName,
-        customDigestName?.name,
-        if (params != null) {
-            val params = schemeMetadata.serialize(params!!)
-            CryptoSignatureParameterSpec(params.clazz, ByteBuffer.wrap(params.bytes))
-        } else {
-            null
-        }
-    )
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <RESPONSE> RpcOpsRequest.execute(

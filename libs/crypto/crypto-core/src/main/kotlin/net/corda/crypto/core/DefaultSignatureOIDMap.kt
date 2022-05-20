@@ -47,31 +47,6 @@ object DefaultSignatureOIDMap {
         GMObjectIdentifiers.sm2p256v1
     )
 
-    val SM3_SHA384 = AlgorithmIdentifier(
-        GMObjectIdentifiers.sm2sign_with_sha384,
-        GMObjectIdentifiers.sm2p256v1
-    )
-
-    val SM3_SHA512 = AlgorithmIdentifier(
-        GMObjectIdentifiers.sm2sign_with_sha512,
-        GMObjectIdentifiers.sm2p256v1
-    )
-
-    val SM3_WHIRPOOL = AlgorithmIdentifier(
-        GMObjectIdentifiers.sm2sign_with_whirlpool,
-        GMObjectIdentifiers.sm2p256v1
-    )
-
-    val SM3_BLAKE2B256 = AlgorithmIdentifier(
-        GMObjectIdentifiers.sm2sign_with_blake2s256,
-        GMObjectIdentifiers.sm2p256v1
-    )
-
-    val SM3_BLAKE2B512 = AlgorithmIdentifier(
-        GMObjectIdentifiers.sm2sign_with_blake2b512,
-        GMObjectIdentifiers.sm2p256v1
-    )
-
     val GOST3410_GOST3411 = AlgorithmIdentifier(
         CryptoProObjectIdentifiers.gostR3410_94, DLSequence(
             arrayOf(
@@ -165,11 +140,6 @@ object DefaultSignatureOIDMap {
             when(signatureSpec.signatureName.uppercase()) {
                 "SM3WITHSM2" -> SM3_SM2
                 "SHA256WITHSM2" -> SM3_SHA256
-                "SHA384WITHSM2" -> SM3_SHA384
-                "SHA512WITHSM2" -> SM3_SHA512
-                "WHIRLPOOLWITHSM2" -> SM3_WHIRPOOL
-                "BLAKE2B256WITHSM2" -> SM3_BLAKE2B256
-                "BLAKE2B512WITHSM2" -> SM3_BLAKE2B512
                 else -> null
             }
         } else if (GOST3410_GOST3411_TEMPLATE.algorithmOIDs.contains(algorithm)) {
