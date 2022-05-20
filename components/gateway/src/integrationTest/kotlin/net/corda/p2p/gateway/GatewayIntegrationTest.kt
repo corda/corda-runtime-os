@@ -47,8 +47,7 @@ import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
-import java.net.http.HttpClient.newBuilder
-import java.net.http.HttpResponse.BodyHandlers as BodyHandlers
+import java.net.http.HttpResponse.BodyHandlers
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.cert.X509Certificate
@@ -61,9 +60,14 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 import kotlin.concurrent.thread
 
 
+//import org.apache.http.impl.client.HttpClients;
 
 
 class GatewayIntegrationTest : TestBase() {
@@ -141,21 +145,26 @@ class GatewayIntegrationTest : TestBase() {
     inner class ClientToGatewayTests {
         @Test
         @Timeout(30)
-        fun `draft`() {
+        fun `gateway response to invalid request`() {
             val port = getOpenPort()
-            val serverAddress = URI.create("http://www.alice.net:$port")
+            val serverAddress = URI.create("https://www.alice.net:$port")
 
-            val client: java.net.http.HttpClient = newBuilder().build()
-            val request: java.net.http.HttpRequest =
-                java.net.http.HttpRequest.newBuilder().uri(serverAddress).build()
+            val tmf = TrustManagerFactory
+                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(truststoreKeyStore);
 
-            val response: java.net.http.HttpResponse<*> = client.send(request, BodyHandlers.ofByteArray())
-            assertThat(response.statusCode()).isEqualTo(200)
+            var myTm: X509TrustManager? = null
+            for (tm in tmf.trustManagers) {
+                if (tm is X509TrustManager) {
+                    myTm = tm
+                    break
+                }
+            }
+
+            val sslContext: SSLContext = SSLContext.getInstance("TLSv1.3")
+            sslContext.init(null, arrayOf<TrustManager>(myTm!!), null)
 
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-
-            val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
-            val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
@@ -171,34 +180,19 @@ class GatewayIntegrationTest : TestBase() {
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
-                HttpClient(
-                    serverInfo,
-                    bobSslConfig,
-                    NioEventLoopGroup(1),
-                    NioEventLoopGroup(1),
-                    ConnectionConfiguration(),
-                ).use { client ->
-                    client.start()
-                    val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
-                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
-                    assertThat(httpResponse.payload).isNotNull
-                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
-                    assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
-                }
-            }
+                val httpClient = java.net.http.HttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .build()
 
-            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
-            assertThat(publishedRecords)
-                .hasSize(1).allSatisfy {
-                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
-                        assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
-                            assertThat(it).isEqualTo(linkInMessage.payload)
-                        }
-                    }
-                }
+                val request = java.net.http.HttpRequest.newBuilder()
+                    .uri(serverAddress)
+                    .build()
+
+                val response: java.net.http.HttpResponse<String> = httpClient.send(request, BodyHandlers.ofString())
+                assertThat(response.statusCode()).isEqualTo(400)
+            }
         }
+
         @Test
         @Timeout(30)
         fun `http client to gateway`() {
