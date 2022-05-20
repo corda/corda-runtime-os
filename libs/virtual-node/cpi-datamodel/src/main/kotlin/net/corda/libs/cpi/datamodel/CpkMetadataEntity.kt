@@ -17,8 +17,8 @@ import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.JoinColumns
 import javax.persistence.ManyToOne
-import javax.persistence.OneToMany
-import javax.persistence.OneToOne
+import javax.persistence.PrimaryKeyJoinColumn
+import javax.persistence.SecondaryTable
 import javax.persistence.Table
 
 /**
@@ -34,6 +34,16 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = "cpi_cpk", schema = DbSchema.CONFIG)
+// TODO remove the second table, no point for 1:1
+@SecondaryTable(
+    name="cpk_cordapp_manifest",
+    schema = DbSchema.CONFIG,
+    pkJoinColumns=[
+        PrimaryKeyJoinColumn(name = "cpi_name", referencedColumnName = "cpi_name"),
+        PrimaryKeyJoinColumn(name = "cpi_version", referencedColumnName = "cpi_version"),
+        PrimaryKeyJoinColumn(name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash"),
+        PrimaryKeyJoinColumn(name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum"),
+    ])
 @IdClass(CpkMetadataEntityKey::class)
 data class CpkMetadataEntity(
     @Id
@@ -82,22 +92,41 @@ data class CpkMetadataEntity(
                 name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash",
                 insertable = false, updatable = false
             ),
-            JoinColumn(
-                name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum",
-                insertable = false, updatable = false
-            )
+            JoinColumn(name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum", insertable = false, updatable = false)
         ]
     )
     @Column(name = "library_name")
-    val cpkLibraries: List<String>
+    val cpkLibraries: Set<String>,
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "cpk_dependency",
+        schema = DbSchema.CONFIG,
+        joinColumns = [
+            JoinColumn(name = "cpi_name", referencedColumnName = "cpi_name", insertable = false, updatable = false),
+            JoinColumn(name = "cpi_version", referencedColumnName = "cpi_version", insertable = false, updatable = false),
+            JoinColumn(
+                name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash",
+                insertable = false, updatable = false
+            ),
+            JoinColumn( name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum", insertable = false, updatable = false)
+        ]
+    )
+    @AttributeOverrides(
+        AttributeOverride(name = "mainBundleName", column = Column(name = "main_bundle_name")),
+        AttributeOverride(name = "mainBundleVersion", column = Column(name = "main_bundle_version")),
+        AttributeOverride(name = "signerSummaryHash", column = Column(name = "signer_summary_hash"))
+    )
+    val cpkDependencies: Set<CpkDependency> = emptySet(),
+    @Embedded
+    @AttributeOverrides(
+        AttributeOverride(name = "bundleSymbolicName", column = Column(name = "bundle_symbolic_name", table = "cpk_cordapp_manifest")),
+        AttributeOverride(name = "bundleVersion", column = Column(name = "bundle_version", table = "cpk_cordapp_manifest")),
+        AttributeOverride(name = "minPlatformVersion", column = Column(name = "min_platform_version", table = "cpk_cordapp_manifest")),
+        AttributeOverride(name = "targetPlatformVersion", column = Column(name = "target_platform_version", table = "cpk_cordapp_manifest"))
+    )
+    val cpkCordappManifest: CpkCordappManifest? = null
     // cordappCertificates TODO To be added as per https://r3-cev.atlassian.net/browse/CORE-4658
 ) {
-    // TODO We need to set the below fetch to be FetchType.EAGER (Currently we are getting a `StackOverflowException`
-    //  that gets fixed with LAZY). as per https://r3-cev.atlassian.net/browse/CORE-4829
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "cpkMetadataEntity")
-    val cpkDependencies: Set<CpkDependencyEntity> = emptySet()
-    @OneToOne(fetch = FetchType.EAGER, mappedBy = "cpkMetadataEntity")
-    val cpkCordappManifest: CpkCordappManifestEntity? = null
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
     val insertTimestamp: Instant? = null
@@ -107,41 +136,12 @@ data class CpkMetadataEntity(
 @Embeddable
 data class CpkMetadataEntityKey(val cpi: CpiMetadataEntity, val cpkFileChecksum: String): Serializable
 
-@Entity
-@IdClass(CpkDependencyEntityKey::class)
-@Table(name = "cpk_dependency", schema = DbSchema.CONFIG)
-data class CpkDependencyEntity(
-    @Id
-    @ManyToOne
-    @JoinColumns(
-        JoinColumn(name = "cpi_name", referencedColumnName = "cpi_name", insertable = false, updatable = false),
-        JoinColumn(name = "cpi_version", referencedColumnName = "cpi_version", insertable = false, updatable = false),
-        JoinColumn(
-            name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash", insertable = false, updatable = false),
-        JoinColumn(
-            name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum", insertable = false, updatable = false)
-    )
-    val cpkMetadataEntity: CpkMetadataEntity,
-
-    // Following 3 properties are CpkIdentifier
-    @Id
-    @Column(name = "main_bundle_name", nullable = false)
-    val mainBundleName: String,
-    @Id
-    @Column(name = "main_bundle_version", nullable = false)
-    val mainBundleVersion: String,
-    @Id
-    @Column(name = "signer_summary_hash", nullable = false)
-    val signerSummaryHash: String
-) : Serializable
-
 @Embeddable
-data class CpkDependencyEntityKey(
-    val cpkMetadataEntity: CpkMetadataEntity,
+data class CpkDependency(
     val mainBundleName: String,
     val mainBundleVersion: String,
     val signerSummaryHash: String
-) : Serializable
+): Serializable
 
 @Embeddable
 data class CpkManifest(
@@ -152,29 +152,11 @@ data class CpkManifest(
 @Embeddable
 data class CpkFormatVersion(val major: Int, val minor: Int)
 
-@Entity
-@Table(name = "cpk_cordapp_manifest", schema = DbSchema.CONFIG)
-data class CpkCordappManifestEntity(
-    @Id
-    @OneToOne
-    @JoinColumns(
-        JoinColumn(name = "cpi_name", referencedColumnName = "cpi_name", insertable = false, updatable = false),
-        JoinColumn(name = "cpi_version", referencedColumnName = "cpi_version", insertable = false, updatable = false),
-        JoinColumn(
-            name = "cpi_signer_summary_hash", referencedColumnName = "cpi_signer_summary_hash",
-            insertable = false, updatable = false
-        ),
-        JoinColumn(name = "cpk_file_checksum", referencedColumnName = "cpk_file_checksum", insertable = false, updatable = false)
-    )
-    val cpkMetadataEntity: CpkMetadataEntity,
-
-    @Column(name = "bundle_symbolic_name", nullable = false)
+@Embeddable
+data class CpkCordappManifest(
     val bundleSymbolicName: String,
-    @Column(name = "bundle_version", nullable = false)
     val bundleVersion: String,
-    @Column(name = "min_platform_version", nullable = false)
     val minPlatformVersion: Int,
-    @Column(name = "target_platform_version", nullable = false)
     val targetPlatformVersion: Int,
     @Embedded
     @AttributeOverrides(
@@ -197,7 +179,33 @@ data class CpkCordappManifestEntity(
     )
     val workflowInfo: ManifestCorDappInfo,
     // attributes TODO To be added as per https://r3-cev.atlassian.net/browse/CORE-4658
-) : Serializable
+) : Serializable {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is CpkCordappManifest) return false
+
+        if (bundleSymbolicName != other.bundleSymbolicName) return false
+        if (bundleVersion != other.bundleVersion) return false
+        if (minPlatformVersion != other.minPlatformVersion) return false
+        if (targetPlatformVersion != other.targetPlatformVersion) return false
+        if (contractInfo != other.contractInfo) return false
+        if (workflowInfo != other.workflowInfo) return false
+
+        return true
+    }
+
+    @Suppress("warnings") // Suppresses unnecessary safe calls for contractInfo and workflowInfo
+    override fun hashCode(): Int {
+        var result = bundleSymbolicName.hashCode()
+        result = 31 * result + bundleVersion.hashCode()
+        result = 31 * result + minPlatformVersion
+        result = 31 * result + targetPlatformVersion
+        result = 31 * result + (contractInfo?.hashCode() ?: 0)
+        result = 31 * result + (workflowInfo?.hashCode() ?: 0)
+        return result
+    }
+}
 
 @Embeddable
 data class ManifestCorDappInfo(
