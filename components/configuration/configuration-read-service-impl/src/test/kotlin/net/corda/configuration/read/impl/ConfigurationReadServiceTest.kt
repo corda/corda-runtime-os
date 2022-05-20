@@ -49,11 +49,15 @@ internal class ConfigurationReadServiceTest {
             verifyIsUp<ConfigurationReadService>()
 
             repeat(5) {
-                bringDependencyDown(subName)
-                verifyIsDown<ConfigurationReadService>()
-
-                bringDependencyUp(subName)
-                verifyIsUp<ConfigurationReadService>()
+                toggleDependency(
+                    subName,
+                    verificationWhenDown = {
+                        verifyIsDown<ConfigurationReadService>()
+                    },
+                    verificationWhenUp = {
+                        verifyIsUp<ConfigurationReadService>()
+                    },
+                )
             }
 
             bringDependenciesDown()
