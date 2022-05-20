@@ -59,12 +59,9 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         @JvmStatic
-        fun flowIORequestsExcludingReceiveAndCloseAndSubFlowFinished(): Stream<Arguments> {
+        fun flowIORequestsThatDoNotWaitForWakeup(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(FlowIORequest.ForceCheckpoint::class.simpleName, FlowIORequest.ForceCheckpoint),
-                Arguments.of(FlowIORequest.InitialCheckpoint::class.simpleName, FlowIORequest.InitialCheckpoint),
-                Arguments.of(FlowIORequest.InitiateFlow::class.simpleName, FlowIORequest.InitiateFlow(BOB_X500_NAME, SESSION_ID_1)),
-                Arguments.of(FlowIORequest.Send::class.simpleName, FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))),
+                Arguments.of(FlowIORequest.InitiateFlow::class.simpleName, FlowIORequest.InitiateFlow(BOB_X500_NAME, SESSION_ID_2))
             )
         }
     }
@@ -140,12 +137,10 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -170,12 +165,10 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -200,12 +193,11 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -390,12 +382,10 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
@@ -443,8 +433,6 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -491,8 +479,6 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -529,12 +515,11 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
@@ -571,12 +556,11 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
@@ -638,25 +622,17 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @ParameterizedTest(name = "Given a flow suspended with {0} receiving a session close event does not resume the flow and sends a session ack")
-    @MethodSource("flowIORequestsExcludingReceiveAndCloseAndSubFlowFinished")
+    @MethodSource("flowIORequestsThatDoNotWaitForWakeup")
     fun `Given a non-close request type receiving a session close event does not resume the flow and sends a session ack`(
         @Suppress("UNUSED_PARAMETER") name: String,
         request: FlowIORequest<*>
     ) {
         given {
-            if (request !is FlowIORequest.InitiateFlow) {
-                startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                    .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
 
-                sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                    .suspendsWith(request)
-            } else {
-                startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                    .suspendsWith(request)
-
-                sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                    .suspendsWith(FlowIORequest.ForceCheckpoint)
-            }
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(request)
         }
 
         `when` {
