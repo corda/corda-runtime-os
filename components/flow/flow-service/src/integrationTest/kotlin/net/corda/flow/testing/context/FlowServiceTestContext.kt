@@ -24,7 +24,6 @@ import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
-import net.corda.flow.testing.tests.PROTOCOL
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -202,6 +201,7 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         cpiId: String,
+        protocol: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -211,7 +211,8 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionInit.newBuilder()
-                .setProtocol(PROTOCOL)
+                .setProtocol(protocol)
+                .setVersions(listOf(1))
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))

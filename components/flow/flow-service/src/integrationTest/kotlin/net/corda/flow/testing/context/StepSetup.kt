@@ -35,6 +35,7 @@ interface StepSetup {
         flowId: String,
         sessionId: String,
         cpiId: String,
+        protocol: String,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
