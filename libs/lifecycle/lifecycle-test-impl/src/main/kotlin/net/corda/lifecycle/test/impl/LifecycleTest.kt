@@ -76,6 +76,18 @@ class LifecycleTest<T : Lifecycle>(
         bringDependencyDown(LifecycleCoordinatorName.forComponent<T>())
     }
 
+    inline fun <reified T> toggleDependency(
+        verificationWhenDown: () -> Unit = {},
+        verificationWhenUp: () -> Unit = {},
+    ) {
+        bringDependencyDown<T>()
+        verifyIsDown<T>()
+        verificationWhenDown.invoke()
+        bringDependencyUp<T>()
+        verifyIsUp<T>()
+        verificationWhenUp.invoke()
+    }
+
     private fun LifecycleCoordinator.bringUp() {
         this.start()
         this.updateStatus(LifecycleStatus.UP)
