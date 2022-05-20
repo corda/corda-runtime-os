@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 interface ChunkDbWriterFactory {
     fun create(
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter

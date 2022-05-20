@@ -50,6 +50,7 @@ class ChunkDbWriterFactoryImpl(
 
     override fun create(
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
@@ -60,6 +61,7 @@ class ChunkDbWriterFactoryImpl(
         val subscription = createSubscription(
             uploadTopic,
             messagingConfig,
+            bootConfig,
             entityManagerFactory,
             statusTopic,
             cpiInfoWriteService
@@ -82,6 +84,7 @@ class ChunkDbWriterFactoryImpl(
     private fun createSubscription(
         uploadTopic: String,
         messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
@@ -89,8 +92,8 @@ class ChunkDbWriterFactoryImpl(
         val persistence = DatabaseChunkPersistence(entityManagerFactory)
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
-        val cpiCacheDir = tempPathProvider.getOrCreate(messagingConfig, CPI_CACHE_DIR)
-        val cpiPartsDir = tempPathProvider.getOrCreate(messagingConfig, CPI_PARTS_DIR)
+        val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
+        val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val validator =
             CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)

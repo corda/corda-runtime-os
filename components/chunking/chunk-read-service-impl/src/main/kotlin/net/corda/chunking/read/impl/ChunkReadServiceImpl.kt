@@ -20,6 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.config.getConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -112,10 +113,11 @@ class ChunkReadServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         log.debug("onConfigChangedEvent")
 
-        val config = event.config.getConfig(MESSAGING_CONFIG)
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val bootConfig = event.config.getConfig(BOOT_CONFIG)
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(config, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
+            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
             .apply { start() }
 
         coordinator.updateStatus(LifecycleStatus.UP)
