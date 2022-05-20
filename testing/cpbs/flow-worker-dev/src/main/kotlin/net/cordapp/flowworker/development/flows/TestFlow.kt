@@ -1,7 +1,7 @@
-package net.corda.flowworker.development.flows
+package net.cordapp.flowworker.development.flows
 
-import net.corda.flowworker.development.messages.TestFlowInput
-import net.corda.flowworker.development.messages.TestFlowOutput
+import net.cordapp.flowworker.development.messages.TestFlowInput
+import net.cordapp.flowworker.development.messages.TestFlowOutput
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.StartableByRPC
