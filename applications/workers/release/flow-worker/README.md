@@ -116,7 +116,7 @@ or it can be run/debugged direct from intelliJ:
 1) Start the flow:
 ```shell
 curl --insecure -u admin:admin -X PUT -d '{ "requestBody": "{\"inputValue\":\"hello\", \"memberInfoLookup\":\"CN=Bob, O=Bob Corp, L=LDN, 
-C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1/net.corda.flowworker.development.flows.TestFlow
+C=GB\", \"throwException\": false }" }' https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1/net.cordapp.flowworker.development.flows.TestFlow
 ```
 The holding ID is taken from the output of the 'create virtual node' step
 

@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.flow.rpcops.FlowRPCOpsService
@@ -64,7 +65,9 @@ class RPCProcessorImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = ConfigMerger::class)
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient
 ) : RPCProcessor {
 
     private companion object {
@@ -82,7 +85,8 @@ class RPCProcessorImpl @Activate constructor(
         ::cpiInfoReadService,
         ::memberOpsClient,
         ::membershipGroupReaderProvider,
-        ::virtualNodeInfoReadService
+        ::virtualNodeInfoReadService,
+        ::cryptoOpsClient,
     )
 
     override fun start(bootConfig: SmartConfig) {
