@@ -17,12 +17,11 @@
       "doc": "id of this request for tracking"
     },
     {
-      "name": "result",
-      "doc": "Result of request",
+      "name": "responseType",
+      "doc": "Result of request, either a success or failure message",
       "type": [
-        "null",
-        "bytes",
-        "net.corda.data.ExceptionEnvelope"
+        "net.corda.data.virtualnode.EntityResponseSuccess",
+        "net.corda.data.virtualnode.EntityResponseFailure"
       ]
     }
   ]
