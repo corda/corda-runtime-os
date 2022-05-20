@@ -36,6 +36,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.aliceHoldin
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.aliceName
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.aliceX500Name
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertGroupPolicy
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertLookupSize
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.assertSecondGroupPolicy
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobHoldingIdentity
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.bobName
@@ -408,7 +409,7 @@ class MemberProcessorIntegrationTest {
             }
         }
 
-        assertEquals(1, aliceGroupReader.lookup().size)
+        assertLookupSize(aliceGroupReader, 1)
 
         val bobResult = getRegistrationResult(registrationProxy, bobHoldingIdentity)
         assertEquals(MembershipRequestRegistrationOutcome.SUBMITTED, bobResult.outcome)
@@ -418,16 +419,19 @@ class MemberProcessorIntegrationTest {
 
         assertEquals(aliceX500Name, aliceMemberInfo.name)
         assertEquals(bobX500Name, bobMemberInfo.name)
-        assertEquals(2, aliceGroupReader.lookup().size)
+        assertLookupSize(aliceGroupReader, 2)
 
         // Charlie is inactive in the sample group policy as only active members are returned by default
         lookupFails(aliceGroupReader, charlieX500Name)
 
         val bobReader = eventually {
-            membershipGroupReaderProvider.getGroupReader(bobHoldingIdentity)
+            membershipGroupReaderProvider.getGroupReader(bobHoldingIdentity).also {
+                assertEquals(bobX500Name, it.owningMember)
+                assertEquals(groupId, it.groupId)
+            }
         }
 
-        assertEquals(2, bobReader.lookup().size)
+        assertLookupSize(bobReader, 2)
 
         assertEquals(aliceMemberInfo, lookUpFromPublicKey(aliceGroupReader, aliceMemberInfo))
         assertEquals(bobMemberInfo, lookUpFromPublicKey(aliceGroupReader, bobMemberInfo))

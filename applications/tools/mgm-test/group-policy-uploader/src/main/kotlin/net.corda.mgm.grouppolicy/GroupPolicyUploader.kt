@@ -33,6 +33,11 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
+import java.io.File
+import java.io.FileInputStream
+import java.time.Instant
+import java.util.*
+import kotlin.random.Random
 
 @Suppress("UNUSED")
 @Component(immediate = true)
@@ -168,7 +173,9 @@ class GroupPolicyUploader @Activate constructor(
         cpiIdentifier,
         hash,
         cpks,
-        groupPolicy
+        groupPolicy,
+        version = -1,
+        Instant.now()
     )
 
     private fun List<VirtualNodeInfo>.toKafkaRecords() =

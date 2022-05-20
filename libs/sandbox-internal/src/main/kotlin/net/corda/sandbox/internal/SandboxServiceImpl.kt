@@ -1,7 +1,6 @@
 @file:JvmName("SandboxServiceUtils")
 package net.corda.sandbox.internal
 
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpk
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxContextService
@@ -151,7 +150,7 @@ internal class SandboxServiceImpl @Activate constructor(
             val sandboxId = UUID.randomUUID()
 
             val mainBundle = installBundle(
-                "${cpk.metadata.id.name}-${cpk.metadata.id.version}/${cpk.metadata.mainBundle}",
+                "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/${cpk.metadata.mainBundle}",
                 // TODO - only pass in metadata and inject in service to get binary
                 cpk.getResourceAsStream(cpk.metadata.mainBundle),
                 sandboxId,
@@ -159,7 +158,7 @@ internal class SandboxServiceImpl @Activate constructor(
             )
             val libraryBundles = cpk.metadata.libraries.mapTo(LinkedHashSet()) { libraryJar ->
                 installBundle(
-                    "${cpk.metadata.id.name}-${cpk.metadata.id.version}/$libraryJar",
+                    "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/$libraryJar",
                     cpk.getResourceAsStream(libraryJar),
                     sandboxId,
                     securityDomain
@@ -170,7 +169,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
             val sandbox = CpkSandboxImpl(
                 sandboxId,
-                CpkMetadata.fromLegacyCpk(cpk),
+                cpk.metadata,
                 mainBundle,
                 libraryBundles)
 

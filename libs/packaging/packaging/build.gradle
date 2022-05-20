@@ -48,6 +48,8 @@ dependencies {
     api "net.corda:corda-crypto"
     api "net.corda:corda-cipher-suite"
 
+    implementation project(":libs:packaging:packaging-core")
+
     testImplementation "org.osgi:osgi.core"
 
     // TODO:  We're pulling in some code (flows) from corda5 dev preview to build test cpks for our tests.

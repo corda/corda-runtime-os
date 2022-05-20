@@ -2,10 +2,15 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.findAllCpiMetadata
+import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,14 +21,13 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.libs.packaging.CordappManifest
-import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.ManifestCordappInfo
+import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
@@ -142,8 +146,8 @@ class CpiInfoDbReader(
                                         else
                                             null
                                     ),
-                                    manifest = Cpk.Manifest.newInstance(
-                                        Cpk.FormatVersion.newInstance(
+                                    manifest = CpkManifest(
+                                        CpkFormatVersion(
                                             cpkMetadataEntity.cpkManifest.cpkFormatVersion.major,
                                             cpkMetadataEntity.cpkManifest.cpkFormatVersion.minor
                                         )
@@ -169,13 +173,13 @@ class CpiInfoDbReader(
                                         bundleVersion = cpkMetadataEntity.cpkCordappManifest!!.bundleVersion,
                                         minPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.minPlatformVersion,
                                         targetPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.targetPlatformVersion,
-                                        contractInfo = ManifestCordappInfo(
+                                        contractInfo = ManifestCorDappInfo(
                                             cpkMetadataEntity.cpkCordappManifest?.contractInfo?.shortName,
                                             cpkMetadataEntity.cpkCordappManifest?.contractInfo?.vendor,
                                             cpkMetadataEntity.cpkCordappManifest?.contractInfo?.versionId,
                                             cpkMetadataEntity.cpkCordappManifest?.contractInfo?.license
                                         ),
-                                        workflowInfo = ManifestCordappInfo(
+                                        workflowInfo = ManifestCorDappInfo(
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.shortName,
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.vendor,
                                             cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.versionId,
@@ -185,17 +189,19 @@ class CpiInfoDbReader(
                                         //  (https://r3-cev.atlassian.net/browse/CORE-4658)
                                         emptyMap()
                                     ),
-                                    type = Cpk.Type.parse(cpkMetadataEntity.cpkType ?: ""),
+                                    type = CpkType.parse(cpkMetadataEntity.cpkType ?: ""),
                                     fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
                                     // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added
                                     //  (https://r3-cev.atlassian.net/browse/CORE-4658)
-                                    cordappCertificates = emptySet()
+                                    cordappCertificates = emptySet(),
+                                    timestamp = cpkMetadataEntity.insertTimestamp.getOrNow()
                                 )
                             )
                         }
                     },
                     groupPolicy = cpiMetadataEntity.groupPolicy,
-                    version = cpiMetadataEntity.entityVersion
+                    version = cpiMetadataEntity.entityVersion,
+                    timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
                 )
 
                 VersionedRecord(
@@ -206,6 +212,10 @@ class CpiInfoDbReader(
                 )
             }
         }
+
+    private fun Instant?.getOrNow(): Instant {
+        return this ?: Instant.now()
+    }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
