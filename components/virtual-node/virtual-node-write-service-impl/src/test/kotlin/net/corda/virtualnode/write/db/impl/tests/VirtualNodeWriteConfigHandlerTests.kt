@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -38,7 +39,7 @@ class VirtualNodeWriteConfigHandlerTests {
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
 
         verify(vnodeWriterFactory).create(config)
         verify(vnodeWriter).start()
@@ -57,7 +58,7 @@ class VirtualNodeWriteConfigHandlerTests {
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
         }
 
         assertEquals(
@@ -79,7 +80,7 @@ class VirtualNodeWriteConfigHandlerTests {
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -97,7 +98,7 @@ class VirtualNodeWriteConfigHandlerTests {
         val configHandler = VirtualNodeWriteConfigHandler(mock(), mock(), vnodeWriterFactory)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock()))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock(), MESSAGING_CONFIG to mock()))
         }
     }
 
@@ -113,7 +114,7 @@ class VirtualNodeWriteConfigHandlerTests {
             whenever(withFallback(any())).thenReturn(this)
         }
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
 
         verify(coordinator).updateStatus(UP)
     }
