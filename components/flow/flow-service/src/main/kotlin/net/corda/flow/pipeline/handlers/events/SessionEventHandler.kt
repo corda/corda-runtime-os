@@ -92,7 +92,8 @@ class SessionEventHandler @Activate constructor(
             .setCreatedTimestamp(Instant.now())
             .build()
 
-        context.checkpoint.initFromNew(sessionInit.flowId, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
+        context.checkpoint.initFromNew(sessionInit.flowId, startContext)
+        context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
     }
 
     private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
