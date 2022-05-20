@@ -7,6 +7,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
@@ -18,6 +20,11 @@ import picocli.CommandLine
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
+
+enum class BusType {
+    KAFKA,
+    DB
+}
 
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
@@ -48,7 +55,8 @@ class WorkerHelpers {
         fun getBootstrapConfig(
             defaultParams: DefaultWorkerParams,
             validator: ConfigurationValidator,
-            extraParams: List<PathAndConfig> = emptyList()
+            extraParams: List<PathAndConfig> = emptyList(),
+            busType: BusType = BusType.KAFKA
         ): SmartConfig {
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
@@ -60,8 +68,14 @@ class WorkerHelpers {
                 ConfigKeys.TEMP_DIR to defaultParams.tempDir
             )
 
+            val messagingParams = if (busType == BusType.KAFKA) {
+                defaultParams.messagingParams.mapKeys { (key, _) -> "$BOOT_KAFKA_COMMON.${key.trim()}" }
+            } else {
+                defaultParams.messagingParams.mapKeys { (key, _) -> "$BOOT_DB.${key.trim()}" }
+            }
+
             val config = ConfigFactory
-                .parseMap(defaultParams.messagingParams + dirsConfig + extraParamsMap)
+                .parseMap(messagingParams + dirsConfig + extraParamsMap)
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
 

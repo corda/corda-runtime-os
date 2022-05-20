@@ -127,15 +127,15 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mkafka.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
+- -mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
 - --topicPrefix={{ .Values.kafka.topicPrefix }}
 {{- if .Values.kafka.tls.enabled }}
-- -mkafka.common.security.protocol=SSL
+- -msecurity.protocol=SSL
 {{- if .Values.kafka.tls.truststore.secretRef.name }}
-- -mkafka.common.ssl.truststore.location=/certs/ca.crt
-- -mkafka.common.ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}
+- -mssl.truststore.location=/certs/ca.crt
+- -mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}
 {{- if .Values.kafka.tls.truststore.password }}
-- -mkafka.common.ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}
+- -mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}
 {{- end }}
 {{- end }}
 {{- end }}

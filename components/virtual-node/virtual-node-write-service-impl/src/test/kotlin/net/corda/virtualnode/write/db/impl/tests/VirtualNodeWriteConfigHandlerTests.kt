@@ -58,7 +58,10 @@ class VirtualNodeWriteConfigHandlerTests {
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+            configHandler.onNewConfiguration(
+                setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            )
         }
 
         assertEquals(
@@ -80,7 +83,10 @@ class VirtualNodeWriteConfigHandlerTests {
         }
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+            configHandler.onNewConfiguration(
+                setOf(RPC_CONFIG),
+                mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
+            )
         }
 
         verify(coordinator).updateStatus(ERROR)
