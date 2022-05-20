@@ -30,7 +30,7 @@
       "properties": {}
     },
     "crypto": {
-      "description": "Configuration options specific to rpc worker.",
+      "description": "Configuration options specific to crypto worker.",
       "type": "object",
       "properties": {}
     },
