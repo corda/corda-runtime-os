@@ -13,9 +13,9 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkCordappManifestEntity
+import net.corda.libs.cpi.datamodel.CpkCordappManifest
 import net.corda.libs.cpi.datamodel.CpkDataEntity
-import net.corda.libs.cpi.datamodel.CpkDependencyEntity
+import net.corda.libs.cpi.datamodel.CpkDependency
 import net.corda.libs.cpi.datamodel.CpkFormatVersion
 import net.corda.libs.cpi.datamodel.CpkManifest
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
@@ -258,42 +258,36 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 ),
                 cpkMainBundle = it.metadata.mainBundle,
                 cpkType = it.metadata.type.name,
-                cpkLibraries = it.metadata.libraries
+                cpkLibraries = it.metadata.libraries.toSortedSet(),
+                cpkDependencies = it.metadata.dependencies.mapTo(LinkedHashSet()) { cpkId ->
+                    CpkDependency(
+                        mainBundleName = cpkId.name,
+                        mainBundleVersion = cpkId.version,
+                        signerSummaryHash = cpkId.signerSummaryHashForDbQuery
+                    )
+                },
+                cpkCordappManifest = it.metadata.cordappManifest.run {
+                    CpkCordappManifest(
+                        bundleSymbolicName = this.bundleSymbolicName,
+                        bundleVersion = this.bundleVersion,
+                        minPlatformVersion = this.minPlatformVersion,
+                        targetPlatformVersion = this.targetPlatformVersion,
+                        contractInfo = ManifestCorDappInfo(
+                            shortName = this.contractInfo.shortName,
+                            vendor = this.contractInfo.vendor,
+                            versionId = this.contractInfo.versionId,
+                            license = this.contractInfo.licence
+                        ),
+                        workflowInfo = ManifestCorDappInfo(
+                            shortName = this.workflowInfo.shortName,
+                            vendor = this.workflowInfo.vendor,
+                            versionId = this.workflowInfo.versionId,
+                            license = this.workflowInfo.licence
+                        )
+                    )
+                }
             )
             em.persist(cpkMetadataEntity)
-
-            it.metadata.dependencies.forEach { cpkIdentifier ->
-                val cpkDependencyEntity = CpkDependencyEntity(
-                    cpkMetadataEntity = cpkMetadataEntity,
-                    mainBundleName = cpkIdentifier.name,
-                    mainBundleVersion = cpkIdentifier.version,
-                    signerSummaryHash = cpkIdentifier.signerSummaryHashForDbQuery
-                )
-                em.persist(cpkDependencyEntity)
-            }
-
-            it.metadata.cordappManifest.run {
-                val cpkCordappManifestEntity = CpkCordappManifestEntity(
-                    cpkMetadataEntity = cpkMetadataEntity,
-                    bundleSymbolicName = this.bundleSymbolicName,
-                    bundleVersion = this.bundleVersion,
-                    minPlatformVersion = this.minPlatformVersion,
-                    targetPlatformVersion = this.targetPlatformVersion,
-                    contractInfo = ManifestCorDappInfo(
-                        shortName = this.contractInfo.shortName,
-                        vendor = this.contractInfo.vendor,
-                        versionId = this.contractInfo.versionId,
-                        license = this.contractInfo.licence
-                    ),
-                    workflowInfo = ManifestCorDappInfo(
-                        shortName = this.workflowInfo.shortName,
-                        vendor = this.workflowInfo.vendor,
-                        versionId = this.workflowInfo.versionId,
-                        license = this.workflowInfo.licence
-                    )
-                )
-                em.persist(cpkCordappManifestEntity)
-            }
         }
     }
 
@@ -310,8 +304,10 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         // Delete CPK metadata in separate transaction, to be reviewed
         entityManagerFactory.createEntityManager().transaction { em ->
             val cpkMetadataStream = em.createQuery(
-                "FROM ${CpkMetadataEntity::class.simpleName} WHERE " +
-                        "cpi_name = :cpi_name AND cpi_version = :cpi_version AND cpi_signer_summary_hash = :cpi_signer_summary_hash",
+                "FROM ${CpkMetadataEntity::class.simpleName} cpk_cpk WHERE " +
+                        "cpk_cpk.cpi.name = :cpi_name AND " +
+                        "cpk_cpk.cpi.version = :cpi_version AND " +
+                        "cpk_cpk.cpi.signerSummaryHash = :cpi_signer_summary_hash",
                 CpkMetadataEntity::class.java
             )
                 .setParameter("cpi_name", cpiId.name)
@@ -323,8 +319,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 stream.forEach { cpkMeta ->
                     // To be reviewed after more changes merged, and we will be able to update the version and timestamp
                     // on CPK metadata
-                    em.remove(em.merge(cpkMeta.cpkCordappManifest))
-                    cpkMeta.cpkDependencies.forEach { em.remove(em.merge(it)) }
                     em.remove(em.merge(cpkMeta))
                 }
             }

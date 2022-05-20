@@ -120,8 +120,12 @@ class CpiInfoDbReader(
     @VisibleForTesting
     internal fun doGetAllVersionedRecords() =
         entityManagerFactory!!.createEntityManager().run {
+            val currentTransaction = transaction
+            currentTransaction.begin()
             findAllCpiMetadata().onClose {
-                // closing em after the stream gets used outside the scope of this method
+                // This class only have access to this em and transaction. This is a read only transaction,
+                // only used for making streaming DB data possible.
+                currentTransaction.rollback()
                 close()
             }.map { cpiMetadataEntity ->
                 val cpiMetadata = CpiMetadata(
@@ -153,7 +157,7 @@ class CpiInfoDbReader(
                                         )
                                     ),
                                     mainBundle = cpkMetadataEntity.cpkMainBundle,
-                                    libraries = cpkMetadataEntity.cpkLibraries,
+                                    libraries = cpkMetadataEntity.cpkLibraries.toList(),
                                     dependencies = mutableListOf<CpkIdentifier>().also { cpkDependenciesList ->
                                         cpkMetadataEntity.cpkDependencies.forEach { cpkDependencyEntity ->
                                             cpkDependenciesList.add(

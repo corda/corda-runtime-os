@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import java.util.stream.Stream
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -41,10 +42,7 @@ class CpiInfoDbReaderTest {
     @Test
     fun `doGetAllVersionedRecords converts db data to version records`() {
         val typeQuery = mock<TypedQuery<CpiMetadataEntity>>()
-        // TODO to be reverted when CpiMetadataEntity.kt EntityManager.findAllCpiMetadata() is fixed (to use a stream again)
-        //  as per https://r3-cev.atlassian.net/browse/CORE-4823.
-        //whenever(typeQuery.resultStream).thenReturn(Stream.of(dummyCpiMetadataEntity))
-        whenever(typeQuery.resultList).thenReturn(listOf(dummyCpiMetadataEntity))
+        whenever(typeQuery.resultStream).thenReturn(Stream.of(dummyCpiMetadataEntity))
         val entityManager = mock<EntityManager>()
         whenever(entityManager.transaction).thenReturn(mock())
         whenever(entityManager.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
