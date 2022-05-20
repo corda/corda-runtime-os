@@ -9,8 +9,8 @@
         <logger name="Console">
             <AppenderRef ref="Console" level="info"/>
         </logger>
-        <root level="info">
-            <AppenderRef ref="Console" level="info"/>
+        <root level="${env:CONSOLE_LOG_LEVEL:-info}">
+            <AppenderRef ref="Console" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
         </root>
     </Loggers>
 </Configuration>
