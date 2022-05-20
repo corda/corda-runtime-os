@@ -136,7 +136,6 @@ class EntityMessageProcessor(
                         holdingIdentity
                     )
                     else -> {
-                        // Flow worker could retry and a *different* db processor that supports the command is used.
                         failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
                     }
                 }
