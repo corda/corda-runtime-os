@@ -12,10 +12,10 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.BOOT_RECONCILIATION
 import net.corda.schema.configuration.ConfigDefaults
+import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -66,11 +66,14 @@ class DBWorker @Activate constructor(
 
     private fun getReconciliationTaskConfigWithDefaults(reconciliationTaskParams: Map<String, String>): PathAndConfig {
         val fallback: MutableMap<String, String> = mutableMapOf(
-            BootConfig.PERMISSION_SUMMARY_INTERVAL to
+            ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to
                     ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS_DEFAULT.toString(),
-            BootConfig.CPK_WRITE_INTERVAL to
-                    ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT.toString()
-        )
+            ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS to
+                    ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT.toString(),
+            ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS to
+                    ConfigDefaults.RECONCILIATION_CPI_INFO_INTERVAL_MS_DEFAULT.toString(),
+
+            )
         fallback.putAll(reconciliationTaskParams)
         return PathAndConfig(BOOT_RECONCILIATION, fallback)
     }

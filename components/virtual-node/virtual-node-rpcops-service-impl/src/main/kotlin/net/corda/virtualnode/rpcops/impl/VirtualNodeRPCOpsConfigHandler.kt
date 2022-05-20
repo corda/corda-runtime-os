@@ -5,7 +5,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.messaging.api.config.getConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
@@ -45,13 +47,15 @@ internal class VirtualNodeRPCOpsConfigHandler(
             "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
         )
 
+        val messagingConfig = configSnapshot.getConfig(MESSAGING_CONFIG)
+
         if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
             val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
             virtualNodeRPCOps.setTimeout(timeoutMillis)
         }
 
         try {
-            virtualNodeRPCOps.createAndStartRpcSender(config)
+            virtualNodeRPCOps.createAndStartRpcSender(messagingConfig)
         } catch (e: Exception) {
             coordinator.updateStatus(ERROR)
             throw VirtualNodeRPCOpsServiceException(

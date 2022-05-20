@@ -150,7 +150,7 @@ internal class PermissionManagementServiceEventHandler(
             .also { it.start() }
     }
 
-    private fun createAndStartRpcSender(kafkaConfig: SmartConfig) {
+    private fun createAndStartRpcSender(messagingConfig: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(
             RPCConfig(
@@ -160,7 +160,7 @@ internal class PermissionManagementServiceEventHandler(
                 PermissionManagementRequest::class.java,
                 PermissionManagementResponse::class.java
             ),
-            kafkaConfig
+            messagingConfig
         ).also { it.start() }
     }
 }
