@@ -27,6 +27,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
 import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
 
@@ -192,13 +193,15 @@ class CpiInfoDbReader(
                                     fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
                                     // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added
                                     //  (https://r3-cev.atlassian.net/browse/CORE-4658)
-                                    cordappCertificates = emptySet()
+                                    cordappCertificates = emptySet(),
+                                    timestamp = cpkMetadataEntity.insertTimestamp.getOrNow()
                                 )
                             )
                         }
                     },
                     groupPolicy = cpiMetadataEntity.groupPolicy,
-                    version = cpiMetadataEntity.entityVersion
+                    version = cpiMetadataEntity.entityVersion,
+                    timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
                 )
 
                 VersionedRecord(
@@ -209,6 +212,10 @@ class CpiInfoDbReader(
                 )
             }
         }
+
+    private fun Instant?.getOrNow(): Instant {
+        return this ?: Instant.now()
+    }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

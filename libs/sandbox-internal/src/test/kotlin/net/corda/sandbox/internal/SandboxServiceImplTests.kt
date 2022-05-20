@@ -29,6 +29,7 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import java.io.ByteArrayInputStream
 import java.nio.file.Paths
+import java.time.Instant
 import kotlin.random.Random.Default.nextBytes
 
 /** Tests of [SandboxServiceImpl]. */
@@ -507,7 +508,8 @@ private data class CpkAndContents(
             },
             type = CpkType.UNKNOWN,
             fileChecksum = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH)),
-            cordappCertificates = emptySet())
+            cordappCertificates = emptySet(),
+            timestamp = Instant.now())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
         override fun close() {}
     }

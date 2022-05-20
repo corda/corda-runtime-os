@@ -5,8 +5,10 @@ import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.time.Instant
 import java.util.stream.Collectors
 import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 /**
  * Represents a CPK file in the cluster
@@ -32,7 +34,8 @@ data class CpkMetadata(
     val type: CpkType,
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
-    val cordappCertificates: Set<Certificate>
+    val cordappCertificates: Set<Certificate>,
+    val timestamp: Instant
 ) {
     companion object {
         fun fromAvro(other: CpkMetadataAvro): CpkMetadata {
@@ -51,8 +54,8 @@ data class CpkMetadata(
                         ByteArrayInputStream(it.array())
                             .use(crtFactory::generateCertificate)
                     }.collect(Collectors.toUnmodifiableSet())
-
-                }
+                },
+                other.timestamp
             )
         }
     }
@@ -66,12 +69,13 @@ data class CpkMetadata(
             dependencies.map { it.toAvro() },
             cordappManifest.toAvro(),
             type.toAvro(),
-            net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
+            AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cordappCertificates.stream()
                 .map(Certificate::getEncoded)
                 .map(ByteBuffer::wrap)
                 .collect(
-                    Collectors.toUnmodifiableList())
+                    Collectors.toUnmodifiableList()),
+            timestamp
         )
     }
 }

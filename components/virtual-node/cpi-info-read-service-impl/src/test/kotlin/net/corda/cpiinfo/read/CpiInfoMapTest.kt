@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -18,6 +19,8 @@ class CpiInfoMapTest {
 
     private val secureHash = SecureHash("algorithm", "1234".toByteArray())
 
+    private val currentTimestamp = Instant.now()
+
     @BeforeEach
     fun beforeEach() {
         map = CpiInfoMap()
@@ -26,7 +29,7 @@ class CpiInfoMapTest {
     @Test
     fun `put one CpiInfo`() {
         val identifier = CpiIdentifier("ghi", "hjk", secureHash)
-        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "")
+        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "", -1, currentTimestamp)
 
         map.put(identifier.toAvro(), metadata.toAvro())
 
@@ -36,12 +39,12 @@ class CpiInfoMapTest {
     @Test
     fun `put two CpiInfo`() {
         val identifier = CpiIdentifier("ghi", "hjk", secureHash)
-        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "")
+        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "", -1, currentTimestamp)
         map.put(identifier.toAvro(), metadata.toAvro())
 
 
         val otherIdentifier = CpiIdentifier("abc", "def", secureHash)
-        val otherMetadata = CpiMetadata(otherIdentifier, secureHash, emptyList(), "")
+        val otherMetadata = CpiMetadata(otherIdentifier, secureHash, emptyList(), "", -1, currentTimestamp)
         map.put(otherIdentifier.toAvro(), otherMetadata.toAvro())
 
         assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro())
@@ -55,7 +58,7 @@ class CpiInfoMapTest {
     fun `putting mismatched CPI Identifiers throws`() {
         val identifier = CpiIdentifier("ghi", "hjk", secureHash)
         val differentIdentifier = CpiIdentifier("abc", "def", secureHash)
-        val metadata = CpiMetadata(differentIdentifier, secureHash, emptyList(), "")
+        val metadata = CpiMetadata(differentIdentifier, secureHash, emptyList(), "", -1, currentTimestamp)
         assertThrows<IllegalArgumentException> {
             map.put(identifier.toAvro(), metadata.toAvro())
         }
@@ -64,7 +67,7 @@ class CpiInfoMapTest {
     @Test
     fun `put one and remove one CpiInfo`() {
         val identifier = CpiIdentifier("ghi", "hjk", secureHash)
-        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "")
+        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "", -1, currentTimestamp)
         map.put(identifier.toAvro(), metadata.toAvro())
 
         assertThat(map.get(identifier.toAvro())).isEqualTo(metadata.toAvro())
@@ -79,7 +82,7 @@ class CpiInfoMapTest {
     @Test
     fun `test get all CpiInfo`() {
         val identifier = CpiIdentifier("ghi", "hjk", secureHash)
-        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "")
+        val metadata = CpiMetadata(identifier, secureHash, emptyList(), "", -1, currentTimestamp)
         map.put(identifier.toAvro(), metadata.toAvro())
 
         var all = map.getAll()
@@ -88,7 +91,7 @@ class CpiInfoMapTest {
         assertThat(map.getAll()[0]).isEqualTo(metadata.toAvro())
 
         val otherIdentifier = CpiIdentifier("abc", "def", secureHash)
-        val otherMetadata = CpiMetadata(otherIdentifier, secureHash, emptyList(), "")
+        val otherMetadata = CpiMetadata(otherIdentifier, secureHash, emptyList(), "", -1, currentTimestamp)
         map.put(otherIdentifier.toAvro(), otherMetadata.toAvro())
 
         all = map.getAll()
@@ -106,7 +109,7 @@ class CpiInfoMapTest {
         // Add a number of CpiInfo objects to the map, and keep a copy of the keys
         for (i in 0..count) {
             val identifier = CpiIdentifier(UUID.randomUUID().toString(), "hjk", secureHash)
-            val metadata = CpiMetadata(identifier, secureHash, emptyList(), "")
+            val metadata = CpiMetadata(identifier, secureHash, emptyList(), "", -1, currentTimestamp)
 
             val key: net.corda.data.packaging.CpiIdentifier = identifier.toAvro()
             keys.add(key)
@@ -123,7 +126,7 @@ class CpiInfoMapTest {
         // GET THE ENTIRE CONTENT OF THE MAP AS CORDA TYPES AND CHECK THAT TOO.
         val allCpiInfos = map.getAllAsCordaObjects()
 
-        allCpiInfos.forEach { (k, v) ->
+        allCpiInfos.forEach { (k: CpiIdentifier, v: CpiMetadata) ->
             assertThat(map.get(k.toAvro())).isNotNull
             assertThat(map.get(k.toAvro())).isEqualTo(v.toAvro())
         }

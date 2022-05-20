@@ -17,6 +17,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 object Helpers {
     private fun mockCpkMetadata(mainBundle: String, name: String, version: String): CpkMetadata
@@ -36,7 +37,8 @@ object Helpers {
             cordappManifest,
             CpkType.CORDA_API,
             hash,
-            emptySet()
+            emptySet(),
+            Instant.now()
         )
     }
 

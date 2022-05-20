@@ -3,19 +3,26 @@ package net.corda.chunking.db.impl.validation
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
 
-class ValidationFunctions(
+internal class ValidationFunctions(
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path
 ) {
+
+    companion object {
+        val log = contextLogger()
+    }
+
     /**
      * Assembles the CPI from chunks in the database, and returns the temporary path
      * that we've stored the recreated binary, plus any filename associated with it.
@@ -26,26 +33,30 @@ class ValidationFunctions(
      */
     fun getFileInfo(persistence: ChunkPersistence, requestId: RequestId): FileInfo {
         var fileName: String? = null
-        var tempPath: Path? = null
-        var checksum: SecureHash? = null
+        lateinit var tempPath: Path
+        lateinit var checksum: SecureHash
+        var localProperties: Map<String, String?>? = null
 
         // Set up chunk reader.  If onComplete is never called, we've failed.
         val reader = ChunkReaderFactory.create(cpiCacheDir).apply {
-            onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash ->
+            onComplete { originalFileName: String, tempPathOfBinary: Path, fileChecksum: SecureHash, properties: Map<String, String?>? ->
                 fileName = originalFileName
                 tempPath = tempPathOfBinary
                 checksum = fileChecksum
+                localProperties = properties
             }
         }
 
         // Now read chunks, and create CPI on local disk
         persistence.forEachChunk(requestId, reader::read)
 
-        if (fileName == null || tempPath == null || checksum == null) {
-            throw ValidationException("Did not combine all chunks to produce file for $requestId")
-        }
+        return with(fileName) {
+            if (this == null) {
+                throw ValidationException("Did not combine all chunks to produce file for $requestId")
+            }
 
-        return FileInfo(fileName!!, tempPath!!, checksum!!)
+            FileInfo(this, tempPath, checksum, localProperties)
+        }
     }
 
     /** Loads, parses, and expands CPI, into cpks and metadata */
@@ -71,7 +82,7 @@ class ValidationFunctions(
      *
      * @throws ValidationException if there is an error
      */
-    @Suppress("ThrowsCount")
+    @Suppress("ThrowsCount", "ComplexMethod")
     fun persistToDatabase(
         chunkPersistence: ChunkPersistence,
         cpi: Cpi,
@@ -85,12 +96,16 @@ class ValidationFunctions(
         try {
             val groupId = getGroupId(cpi)
 
-            if (!chunkPersistence.cpiExists(
-                    cpi.metadata.cpiId.name,
-                    cpi.metadata.cpiId.version,
-                    cpi.metadata.cpiId.signerSummaryHash?.toString() ?: ""
-                )
-            ) {
+            val cpiExists = chunkPersistence.cpiExists(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHashForDbQuery)
+
+            if (cpiExists && fileInfo.forceUpload) {
+                log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
+                chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
+            } else if (!cpiExists) {
+                log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
                 chunkPersistence.persistMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else {
                 throw ValidationException(
@@ -143,7 +158,7 @@ class ValidationFunctions(
         val groupIdInDatabase = persistence.getGroupId(
             cpi.metadata.cpiId.name,
             cpi.metadata.cpiId.version,
-            cpi.metadata.cpiId.signerSummaryHash?.toString() ?: ""
+            cpi.metadata.cpiId.signerSummaryHashForDbQuery
         )
         if (groupIdInDatabase != null) {
             throw ValidationException("CPI already uploaded with groupId = $groupIdInDatabase")

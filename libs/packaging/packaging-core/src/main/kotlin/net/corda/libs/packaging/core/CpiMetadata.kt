@@ -2,6 +2,7 @@ package net.corda.libs.packaging.core
 
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
 data class CpiMetadata(
@@ -9,14 +10,16 @@ data class CpiMetadata(
     val fileChecksum: SecureHash,
     val cpksMetadata: Collection<CpkMetadata>,
     val groupPolicy: String?,
-    val version: Int = -1) {
+    val version: Int = -1,
+    val timestamp: Instant) {
     companion object {
         fun fromAvro(other: CpiMetadataAvro) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),
             SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
-            other.cpks.map{ CpkMetadata.fromAvro(it) },
+            other.cpks.map { CpkMetadata.fromAvro(it) },
             other.groupPolicy,
-            other.version
+            other.version,
+            other.timestamp
         )
     }
 
@@ -26,7 +29,8 @@ data class CpiMetadata(
             net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cpksMetadata.map { it.toAvro() },
             groupPolicy,
-            version
+            version,
+            timestamp
         )
     }
 }

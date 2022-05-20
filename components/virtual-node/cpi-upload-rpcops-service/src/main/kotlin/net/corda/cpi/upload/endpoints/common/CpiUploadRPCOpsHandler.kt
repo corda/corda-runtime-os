@@ -18,7 +18,7 @@ import net.corda.v5.base.util.contextLogger
 /**
  * Monitors the status of [CpiUploadRPCOpsService] so that it can know when [CpiUploadRPCOpsImpl.cpiUploadManager] is ready for use.
  */
-class CpiUploadRPCOpsHandler : LifecycleEventHandler {
+internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
 
     @VisibleForTesting
     internal var cpiUploadRPCOpsServiceRegistrationHandle: RegistrationHandle? = null
