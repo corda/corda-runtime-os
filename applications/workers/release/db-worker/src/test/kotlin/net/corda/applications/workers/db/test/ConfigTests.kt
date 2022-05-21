@@ -9,6 +9,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_CPI_INFO_INTERVAL
 import net.corda.schema.configuration.BootConfig.BOOT_CPK_WRITE_INTERVAL
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
@@ -54,6 +55,7 @@ class ConfigTests {
             "$BOOT_DB_PARAMS.$DB_KEY_ONE",
             BOOT_PERMISSION_SUMMARY_INTERVAL,
             BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -93,6 +95,7 @@ class ConfigTests {
             TEMP_DIR,
             BOOT_PERMISSION_SUMMARY_INTERVAL,
             BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
 
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
@@ -127,6 +130,7 @@ class ConfigTests {
             TEMP_DIR,
             BOOT_PERMISSION_SUMMARY_INTERVAL,
             BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -147,6 +151,7 @@ class ConfigTests {
             TEMP_DIR,
             BOOT_PERMISSION_SUMMARY_INTERVAL,
             BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
