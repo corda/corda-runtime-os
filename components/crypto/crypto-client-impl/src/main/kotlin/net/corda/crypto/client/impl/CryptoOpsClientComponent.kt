@@ -28,6 +28,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -123,8 +124,14 @@ class CryptoOpsClientComponent @Activate constructor(
         digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey =
-        impl.ops.sign(tenantId, publicKey, schemeMetadata.inferSignatureSpec(publicKey, digest), data, context)
+    ): DigitalSignature.WithKey {
+        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
+        require(signatureSpec != null) {
+            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+                    " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
+        }
+        return impl.ops.sign(tenantId, publicKey, signatureSpec, data, context)
+    }
 
     override fun lookup(
         tenantId: String,

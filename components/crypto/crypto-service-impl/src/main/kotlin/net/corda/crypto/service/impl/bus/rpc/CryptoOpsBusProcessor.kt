@@ -1,16 +1,17 @@
 package net.corda.crypto.service.impl.bus.rpc
 
+import net.corda.crypto.impl.toMap
+import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.WireProcessor
-import net.corda.crypto.service.impl.toMap
-import net.corda.crypto.service.impl.toSignatureSpec
+import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -20,7 +21,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
@@ -41,7 +41,6 @@ class CryptoOpsBusProcessor(
             GenerateFreshKeyRpcCommand::class.java to GenerateFreshKeyRpcCommandHandler::class.java,
             GenerateKeyPairCommand::class.java to GenerateKeyPairCommandHandler::class.java,
             GenerateWrappingKeyRpcCommand::class.java to GenerateWrappingKeyRpcCommandHandler::class.java,
-            SignWithSpecRpcCommand::class.java to SignWithSpecRpcCommandHandler::class.java,
             ByIdsRpcQuery::class.java to ByIdsRpcQueryHandler::class.java,
             KeysRpcQuery::class.java to KeysRpcQueryHandler::class.java,
             SupportedSchemesRpcQuery::class.java to SupportedSchemesRpcQueryHandler::class.java,
@@ -83,7 +82,7 @@ class CryptoOpsBusProcessor(
         private val signingService: SigningService
     ) : Handler<SupportedSchemesRpcQuery> {
         override fun handle(context: CryptoRequestContext, request: SupportedSchemesRpcQuery): Any {
-            return CryptoSignatureSchemes(
+            return CryptoKeySchemes(
                 signingService.getSupportedSchemes(context.tenantId, request.category)
             )
         }
@@ -123,7 +122,7 @@ class CryptoOpsBusProcessor(
                 skip = request.skip,
                 take = request.take,
                 orderBy = KeyOrderBy.valueOf(request.orderBy.name),
-                filter = request.filter.items.toMap()
+                filter = request.filter.toMap()
             )
             return CryptoSigningKeys(
                 found.map {
@@ -154,7 +153,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     alias = request.alias,
-                    scheme = request.schemeCodeName,
+                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
@@ -163,7 +162,7 @@ class CryptoOpsBusProcessor(
                     category = request.category,
                     alias = request.alias,
                     externalId = request.externalId,
-                    scheme = request.schemeCodeName,
+                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
@@ -179,7 +178,7 @@ class CryptoOpsBusProcessor(
                 signingService.freshKey(
                     tenantId = context.tenantId,
                     category = request.category,
-                    scheme = request.schemeCodeName,
+                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
@@ -187,7 +186,7 @@ class CryptoOpsBusProcessor(
                     tenantId = context.tenantId,
                     category = request.category,
                     externalId = request.externalId,
-                    scheme = request.schemeCodeName,
+                    scheme = signingService.schemeMetadata.findKeyScheme(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
@@ -219,32 +218,14 @@ class CryptoOpsBusProcessor(
             val signature = signingService.sign(
                 context.tenantId,
                 publicKey,
+                request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
                 request.bytes.array(),
-                request.context.items.toMap()
+                request.context.toMap()
             )
             return CryptoSignatureWithKey(
                 ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes)
-            )
-        }
-    }
-
-    private class SignWithSpecRpcCommandHandler(
-        private val signingService: SigningService
-    ) : Handler<SignWithSpecRpcCommand> {
-        override fun handle(context: CryptoRequestContext, request: SignWithSpecRpcCommand): Any {
-            val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-            val spec = request.signatureSpec.toSignatureSpec(signingService.schemeMetadata)
-            val signature = signingService.sign(
-                context.tenantId,
-                publicKey,
-                spec,
-                request.bytes.array(),
-                request.context.items.toMap()
-            )
-            return CryptoSignatureWithKey(
-                ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes)
+                ByteBuffer.wrap(signature.bytes),
+                signature.context.toWire()
             )
         }
     }

@@ -13,7 +13,6 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
-import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -59,9 +58,9 @@ import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
 import org.junit.jupiter.api.AfterAll
@@ -141,7 +140,7 @@ class PersistenceTests {
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
         fun generateKeyPair(signatureSchemeName: String): KeyPair {
-            val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
+            val scheme = schemeMetadata.findKeyScheme(signatureSchemeName)
             val keyPairGenerator = KeyPairGenerator.getInstance(
                 scheme.algorithmName,
                 schemeMetadata.providers.getValue(scheme.providerName)
@@ -362,7 +361,6 @@ class PersistenceTests {
     }
 
     private fun createHSMCacheImpl() = HSMCacheImpl(
-        config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).hsmPersistence(),
         entityManagerFactory = cryptoEmf
     )
 
@@ -452,7 +450,7 @@ class PersistenceTests {
             externalId = UUID.randomUUID().toString(),
             alias = null,
             category = CryptoConsts.Categories.CI,
-            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
+            signatureScheme = schemeMetadata.findKeyScheme(schemeCodeName),
             associationId = UUID.randomUUID().toString()
         )
     }
@@ -469,7 +467,7 @@ class PersistenceTests {
             ),
             alias = UUID.randomUUID().toString(),
             category = category,
-            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
+            signatureScheme = schemeMetadata.findKeyScheme(schemeCodeName),
             externalId = UUID.randomUUID().toString(),
             associationId = UUID.randomUUID().toString()
         )

@@ -15,6 +15,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoKeySchemes
@@ -45,8 +46,8 @@ import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
@@ -802,7 +803,7 @@ class CryptoOpsClientComponentTests {
             schemeMetadata.encodeAsByteArray(keyPair.public)
         )
         val data = ByteBuffer.wrap(UUID.randomUUID().toString().toByteArray())
-        val signature = signData(schemeMetadata, keyPair, data.array())
+        val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data.array())
         val spec = CryptoSignatureSpec(
             "NONEwithECDSA",
             DigestAlgorithmName.SHA2_256.name,
@@ -831,16 +832,70 @@ class CryptoOpsClientComponentTests {
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
-add test for the overload with digest
+
     @Test
-    fun `Should sign by referencing public key`() {
+    fun `Should throw IllegalArgumentException when signature spec cannot be inferred for the digest`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        assertThrows<IllegalArgumentException> {
+            component.sign(
+                knownTenantId,
+                keyPair.public,
+                DigestAlgorithmName("--NONSENSE--"),
+                UUID.randomUUID().toString().toByteArray()
+            )
+        }
+    }
+
+    @Test
+    fun `Should sign inferring signature spec from digest`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, keyPair, data)
+        val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data)
+        setupCompletedResponse {
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
+                ByteBuffer.wrap(signature),
+                knownOperationContext.toWire()
+            )
+        }
+        val result = sender.act {
+            component.sign(knownTenantId, keyPair.public, DigestAlgorithmName.SHA2_256, data, knownOperationContext)
+        }
+        assertNotNull(result.value)
+        assertEquals(keyPair.public, result.value!!.by)
+        assertArrayEquals(signature, result.value.bytes)
+        assertThat(result.value.context).hasSize(knownOperationContext.size)
+        knownOperationContext.forEach {
+            assertThat(result.value.context).containsEntry(it.key, it.value)
+        }
+        val command = assertOperationType<SignRpcCommand>(result)
+        assertNotNull(command)
+        assertEquals(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, command.signatureSpec.signatureName)
+        assertNull(command.signatureSpec.customDigestName)
+        assertNull(command.signatureSpec.params)
+        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
+        assertArrayEquals(data, command.bytes.array())
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should sign explicitly using signature spec`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val data = UUID.randomUUID().toString().toByteArray()
+        val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data)
         val spec = SignatureSpec(
             signatureName = "NONEwithECDSA",
             customDigestName = DigestAlgorithmName.SHA2_256
@@ -864,47 +919,12 @@ add test for the overload with digest
         }
         val command = assertOperationType<SignRpcCommand>(result)
         assertNotNull(command)
-        assertSame(spec, command.signatureSpec)
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
-        assertArrayEquals(data, command.bytes.array())
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNull(command.signatureSpec.params)
         assertNotNull(command.signatureSpec.customDigestName)
         assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should sign by referencing public key and using custom signature spec with signature params`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, keyPair, data)
-        val spec = RSASSA_PSS_SHA256_SIGNATURE_SPEC
-        setupCompletedResponse {
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
-                ByteBuffer.wrap(signature)
-            )
-        }
-        val result = sender.act {
-            component.sign(knownTenantId, keyPair.public, spec, data, knownOperationContext)
-        }
-        assertNotNull(result.value)
-        assertEquals(keyPair.public, result.value!!.by)
-        assertArrayEquals(signature, result.value.bytes)
-        val command = assertOperationType<SignWithSpecRpcCommand>(result)
-        assertNotNull(command)
+        assertNull(command.signatureSpec.params)
         assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
-        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNotNull(command.signatureSpec.params)
-        assertEquals(PSSParameterSpec::class.java.name, command.signatureSpec.params.className)
-        assertTrue(command.signatureSpec.params.bytes.array().isNotEmpty())
         assertOperationContext(command.context)
         assertRequestContext(result)
     }

@@ -17,6 +17,13 @@ import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider
 
+/**
+ * Defines the [KeyScheme] and which [SignatureSpec]s can be inferred to be used for the schemes using
+ * the digest algorithm.
+ *
+ * See https://www.bouncycastle.org/specifications.html to get list of supported signatures.
+ * Scroll down to "Signature Algorithms" / "Schemes" (or search for "SHA256withECDDSA")
+ */
 abstract class KeySchemeInfo private constructor(
     val scheme: KeyScheme,
     val signatureSpecMap: Map<DigestAlgorithmName, SignatureSpec>

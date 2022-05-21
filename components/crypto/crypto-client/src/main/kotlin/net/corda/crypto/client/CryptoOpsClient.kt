@@ -127,6 +127,10 @@ interface CryptoOpsClient : Lifecycle {
      * Using the provided signing public key internally looks up the matching private key and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
      * The [digest] together with [publicKey] is used to infer the [SignatureSpec].
+     *
+     * @throws IllegalArgumentException if the [SignatureSpec] cannot be inferred from the parameters -
+     * e.g. EdDSA supports only 'NONEwithEdDSA' signatures so if the SHA-256 will be passed as the parameter
+     * that will result in the exception.
      */
     fun sign(
         tenantId: String,
