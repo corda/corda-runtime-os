@@ -51,6 +51,7 @@ class FakeFlowFiberFactory : FlowFiberFactory {
 
         override fun startFlow(flowFiberExecutionContext: FlowFiberExecutionContext): Future<FlowIORequest<*>> {
             startContext = flowFiberExecutionContext
+            flowContinuation = FlowContinuation.Run(Unit)
             return getCompletedFuture()
         }
 
