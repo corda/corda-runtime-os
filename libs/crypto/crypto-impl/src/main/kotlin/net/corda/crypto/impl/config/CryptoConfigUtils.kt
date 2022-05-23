@@ -2,15 +2,16 @@ package net.corda.crypto.impl.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.util.UUID
 import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.aes.AesEncryptor
 import net.corda.crypto.core.aes.AesKey
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
-import java.util.UUID
 
 /*
 {
@@ -83,12 +84,12 @@ fun createDefaultCryptoConfig(
     throw CryptoConfigurationException("Failed to create default crypto config", e)
 }
 
-fun SmartConfig.addDefaultCryptoConfig(
+fun SmartConfig.addDefaultBootCryptoConfig(
     fallbackCryptoRootKey: KeyCredentials,
     fallbackSoftKey: KeyCredentials
 ): SmartConfig {
-    val cryptoLibrary = if(hasPath(CRYPTO_CONFIG)) {
-        getConfig(CRYPTO_CONFIG)
+    val cryptoLibrary = if(hasPath(BOOT_CRYPTO)) {
+        getConfig(BOOT_CRYPTO)
     } else {
         null
     }
@@ -121,7 +122,7 @@ fun SmartConfig.addDefaultCryptoConfig(
     val softKey = KeyCredentials(softKeyPassphrase, softKeySoft)
     return withFallback(
         withValue(
-            CRYPTO_CONFIG,
+            BOOT_CRYPTO,
             ConfigValueFactory.fromMap(
                 factory.createDefaultCryptoConfig(cryptoRootKey, softKey).root().unwrapped()
             )

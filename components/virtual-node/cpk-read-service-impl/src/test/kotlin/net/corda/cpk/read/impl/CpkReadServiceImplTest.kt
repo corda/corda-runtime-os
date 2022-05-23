@@ -80,7 +80,6 @@ class CpkReadServiceImplTest {
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         val messagingConfig = mock<SmartConfig>()
         whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(messagingConfig)
-        whenever(messagingConfig.withFallback(any())).thenReturn(messagingConfig)
 
         cpkReadService.processEvent(ConfigChangedEvent(keys, config), coordinator)
 

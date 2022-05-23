@@ -2,6 +2,12 @@ package net.corda.mgm.grouppolicy
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.io.File
+import java.io.FileInputStream
+import java.time.Instant
+import java.util.Properties
+import java.util.UUID
+import kotlin.random.Random
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -13,10 +19,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -29,11 +35,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine
-import java.io.File
-import java.io.FileInputStream
-import java.time.Instant
-import java.util.*
-import kotlin.random.Random
+
 
 @Suppress("UNUSED")
 @Component(immediate = true)
@@ -46,7 +48,7 @@ class GroupPolicyUploader @Activate constructor(
     companion object {
         val logger = contextLogger()
         const val GROUP_ID = "groupId"
-        const val KAFKA_BOOTSTRAP_SERVER_CONFIG = "bootstrap.servers"
+        const val KAFKA_BOOTSTRAP_SERVERS_CONFIG = "bootstrap.servers"
         const val CLIENT_ID = "group-policy-publisher"
     }
 
@@ -68,8 +70,8 @@ class GroupPolicyUploader @Activate constructor(
             return
         }
         kafkaProperties.load(FileInputStream(kafkaPropertiesFile))
-        if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER_CONFIG)) {
-            logError("No $KAFKA_BOOTSTRAP_SERVER_CONFIG property found in file specified via --kafka!")
+        if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVERS_CONFIG)) {
+            logError("No $KAFKA_BOOTSTRAP_SERVERS_CONFIG property found in file specified via --kafka!")
             shutdown()
             return
         }
@@ -136,8 +138,8 @@ class GroupPolicyUploader @Activate constructor(
     private fun createKafkaConfig(kafkaProperties: Properties): SmartConfig {
         val bootConf = ConfigFactory.empty()
             .withValue(
-                BOOTSTRAP_SERVER,
-                ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER_CONFIG].toString())
+                KAFKA_BOOTSTRAP_SERVERS,
+                ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVERS_CONFIG].toString())
             )
             .withValue(
                 BUS_TYPE,

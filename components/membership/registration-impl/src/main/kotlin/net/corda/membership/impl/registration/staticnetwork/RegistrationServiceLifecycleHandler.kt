@@ -11,7 +11,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
@@ -87,7 +87,7 @@ class RegistrationServiceLifecycleHandler(
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
             PublisherConfig("static-member-registration-service"),
-            event.config.toMessagingConfig()
+            event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
         if(coordinator.status != LifecycleStatus.UP) {

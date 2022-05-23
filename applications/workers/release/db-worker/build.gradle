@@ -12,6 +12,7 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(":components:security-manager")
+    implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:db-processor')
     implementation project(':processors:uniqueness-processor')
     implementation "info.picocli:picocli:$picocliVersion"

@@ -1,16 +1,25 @@
 package net.corda.applications.workers.db.test
 
+import java.io.InputStream
 import net.corda.applications.workers.db.DBWorker
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.validation.ConfigurationValidator
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_CPI_INFO_INTERVAL
+import net.corda.schema.configuration.BootConfig.BOOT_CPK_WRITE_INTERVAL
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
+import net.corda.schema.configuration.BootConfig.BOOT_PERMISSION_SUMMARY_INTERVAL
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigDefaults
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
+import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -27,14 +36,14 @@ class ConfigTests {
     @Suppress("MaxLineLength")
     fun `instance ID, topic prefix, workspace dir, temp dir, messaging params, database params and additional params are passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
             FLAG_TOPIC_PREFIX, VALUE_TOPIC_PREFIX,
             FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
-            FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
-            FLAG_ADDITIONAL_PARAM, "$CUSTOM_KEY_ONE=$CUSTOM_VAL_ONE",
+            FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE"
         )
+
         dbWorker.startup(args)
         val config = dbProcessor.config!!
 
@@ -43,31 +52,34 @@ class ConfigTests {
             TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
-            MSG_KEY_ONE,
-            "${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE",
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
-            )
+            "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
+            "$BOOT_DB_PARAMS.$DB_KEY_ONE",
+            BOOT_PERMISSION_SUMMARY_INTERVAL,
+            BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
+        )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 
         assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(INSTANCE_ID))
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
-        assertEquals(MSG_VAL_ONE, config.getAnyRef(MSG_KEY_ONE))
-        assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
-        assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
+        assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
 
-        assertEquals(ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS,
-            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
-        assertEquals(ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS,
-            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
+        assertEquals(
+            ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS_DEFAULT,
+            config.getLong(BOOT_PERMISSION_SUMMARY_INTERVAL)
+        )
+        assertEquals(
+            ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT,
+            config.getLong(BOOT_CPK_WRITE_INTERVAL)
+        )
     }
 
     @Test
     fun `reconciliation params are passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_RECONCILIATION_TASKS_PARAM,
             "$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS=1234",
@@ -82,23 +94,28 @@ class ConfigTests {
             TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            BOOT_PERMISSION_SUMMARY_INTERVAL,
+            BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
 
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 
-        assertEquals(1234L,
-            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS"))
-        assertEquals(5678L,
-            config.getLong("${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS"))
+        assertEquals(
+            1234L,
+            config.getLong(BOOT_PERMISSION_SUMMARY_INTERVAL)
+        )
+        assertEquals(
+            5678L,
+            config.getLong(BOOT_CPK_WRITE_INTERVAL)
+        )
     }
 
     @Test
     fun `other params are not passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_DISABLE_MONITOR,
             FLAG_MONITOR_PORT, "9999"
@@ -112,8 +129,9 @@ class ConfigTests {
             TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            BOOT_PERMISSION_SUMMARY_INTERVAL,
+            BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -122,7 +140,7 @@ class ConfigTests {
     @Test
     fun `defaults are provided for instance Id, topic prefix, workspace dir, temp dir and reconciliation`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
         val args = arrayOf<String>()
         dbWorker.startup(args)
         val config = dbProcessor.config!!
@@ -132,8 +150,9 @@ class ConfigTests {
             TOPIC_PREFIX,
             WORKSPACE_DIR,
             TEMP_DIR,
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS",
-            "${ConfigKeys.RECONCILIATION_CONFIG}.$RECONCILIATION_CPK_WRITE_INTERVAL_MS",
+            BOOT_PERMISSION_SUMMARY_INTERVAL,
+            BOOT_CPK_WRITE_INTERVAL,
+            BOOT_CPI_INFO_INTERVAL,
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -145,7 +164,7 @@ class ConfigTests {
     @Test
     fun `multiple messaging params can be provided`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
             FLAG_MSG_PARAM, "$MSG_KEY_TWO=$MSG_VAL_TWO"
@@ -153,14 +172,14 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = dbProcessor.config!!
 
-        assertEquals(MSG_VAL_ONE, config.getAnyRef(MSG_KEY_ONE))
-        assertEquals(MSG_VAL_TWO, config.getAnyRef(MSG_KEY_TWO))
+        assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
+        assertEquals(MSG_VAL_TWO, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_TWO"))
     }
 
     @Test
     fun `multiple database params can be provided`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
             FLAG_DB_PARAM, "$DB_KEY_TWO=$DB_VAL_TWO"
@@ -168,23 +187,8 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = dbProcessor.config!!
 
-        assertEquals(DB_VAL_ONE, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_ONE"))
-        assertEquals(DB_VAL_TWO, config.getAnyRef("${ConfigKeys.DB_CONFIG}.$DB_KEY_TWO"))
-    }
-
-    @Test
-    fun `multiple additional params can be provided`() {
-        val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor())
-        val args = arrayOf(
-            FLAG_ADDITIONAL_PARAM, "$CUSTOM_KEY_ONE=$CUSTOM_VAL_ONE",
-            FLAG_ADDITIONAL_PARAM, "$CUSTOM_KEY_TWO=$CUSTOM_VAL_TWO"
-        )
-        dbWorker.startup(args)
-        val config = dbProcessor.config!!
-
-        assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
-        assertEquals(CUSTOM_VAL_TWO, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_TWO"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
+        assertEquals(DB_VAL_TWO, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_TWO"))
     }
 
     /** A [DBProcessor] that stores the passed-in config in [config] for inspection. */
@@ -207,5 +211,16 @@ class ConfigTests {
     private class DummyHealthMonitor : HealthMonitor {
         override fun listen(port: Int) = Unit
         override fun stop() = throw NotImplementedError()
+    }
+
+    private class DummyValidatorFactory : ConfigurationValidatorFactory {
+        override fun createConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
+    }
+
+    private class DummyConfigurationValidator : ConfigurationValidator {
+        override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig =
+            SmartConfigImpl.empty()
+
+        override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = Unit
     }
 }

@@ -8,7 +8,7 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
-import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.messaging.api.exception.CordaAPIConfigException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -255,10 +255,10 @@ class MessageBusConfigResolverTest {
     fun `configuration resolution fails if the bus is the incorrect type`() {
         val messageBusConfig = loadTestConfig(INCORRECT_BUS_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
-        assertThrows<CordaMessageAPIConfigException> {
+        assertThrows<CordaAPIConfigException> {
             resolver.resolve(messageBusConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.DURABLE))
         }
-        assertThrows<CordaMessageAPIConfigException> {
+        assertThrows<CordaAPIConfigException> {
             resolver.resolve(messageBusConfig, ProducerConfig(CLIENT_ID, 1, true, ProducerRoles.DURABLE))
         }
     }

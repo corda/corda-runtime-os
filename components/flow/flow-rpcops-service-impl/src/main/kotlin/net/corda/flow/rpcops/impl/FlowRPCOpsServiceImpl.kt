@@ -15,7 +15,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
@@ -88,7 +88,7 @@ internal class FlowRPCOpsServiceImpl @Activate constructor(
                 )
             }
             is ConfigChangedEvent -> {
-                event.config.toMessagingConfig().apply {
+                event.config.getConfig(MESSAGING_CONFIG).apply {
                     flowRpcOps.initialise(this)
                     flowStatusCacheService.initialise(this)
                 }

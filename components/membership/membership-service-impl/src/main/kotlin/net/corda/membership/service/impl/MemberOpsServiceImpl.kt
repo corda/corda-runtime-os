@@ -16,7 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -127,7 +127,7 @@ class MemberOpsServiceImpl @Activate constructor(
 
     private fun createResources(event: ConfigChangedEvent) {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Membership.MEMBERSHIP_RPC_TOPIC)
-        val messagingConfig = event.config.toMessagingConfig()
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         subscription?.close()
         subscription = subscriptionFactory.createRPCSubscription(

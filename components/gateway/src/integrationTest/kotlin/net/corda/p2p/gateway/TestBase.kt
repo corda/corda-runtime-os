@@ -49,6 +49,12 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random.Default.nextInt
+import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
+import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 
 open class TestBase {
     companion object {
@@ -131,14 +137,18 @@ open class TestBase {
         private val rpcTopicService = RPCTopicServiceImpl()
         private val configPublisherClientId = "config.${UUID.randomUUID().toString().replace("-", "")}"
         private val messagingConfig = SmartConfigImpl.empty()
+        private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
+                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
+                configMerger
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
+                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(nextInt()))
+                    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }
@@ -147,7 +157,7 @@ open class TestBase {
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
                 "p2p.gateway",
-                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1", ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 
