@@ -50,7 +50,7 @@ object DbUtils {
             DbEntityManagerConfiguration(ds, true, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
-            InMemoryEntityManagerConfiguration(inMemoryDbName)
+            TestInMemoryEntityManagerConfiguration(inMemoryDbName)
         }
     }
 

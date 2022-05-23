@@ -13,16 +13,12 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkCordappManifest
 import net.corda.libs.cpi.datamodel.CpkDataEntity
-import net.corda.libs.cpi.datamodel.CpkDependency
-import net.corda.libs.cpi.datamodel.CpkFormatVersion
-import net.corda.libs.cpi.datamodel.CpkManifest
+import net.corda.libs.cpi.datamodel.CpkEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
-import net.corda.libs.cpi.datamodel.ManifestCorDappInfo
-import net.corda.orm.utils.transaction
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.orm.utils.transaction
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -240,54 +236,21 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
         cpks.forEach {
             val cpkChecksum = it.metadata.fileChecksum.toString()
-            // Using `merge` here as exactly the same CPK data may already exist
+            // Using `merge` here as exactly the same CPK may already exist
             em.merge(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
 
-            val cpkMetadataEntity = CpkMetadataEntity(
+            val cpkMetadataEntity = CpkEntity(
                 cpi = cpiMetadataEntity,
-                cpkFileChecksum = cpkChecksum,
+                // TODO - do we need this double/triple conversion or could metadata always exist in the avro schema
+                //  with CpkMetadata just being a proxy for it?
+                // TODO - format version
+                metadata = CpkMetadataEntity(cpkChecksum, "1", it.metadata.toJsonAvro()),
                 cpkFileName = it.originalFileName!!,
-                mainBundleName = it.metadata.cpkId.name,
-                mainBundleVersion = it.metadata.cpkId.version,
-                signerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
-                cpkManifest = CpkManifest(
-                    CpkFormatVersion(
-                        it.metadata.manifest.cpkFormatVersion.major,
-                        it.metadata.manifest.cpkFormatVersion.minor
-                    )
-                ),
-                cpkMainBundle = it.metadata.mainBundle,
-                cpkType = it.metadata.type.name,
-                cpkLibraries = it.metadata.libraries.toSortedSet(),
-                cpkDependencies = it.metadata.dependencies.mapTo(LinkedHashSet()) { cpkId ->
-                    CpkDependency(
-                        mainBundleName = cpkId.name,
-                        mainBundleVersion = cpkId.version,
-                        signerSummaryHash = cpkId.signerSummaryHashForDbQuery
-                    )
-                },
-                cpkCordappManifest = it.metadata.cordappManifest.run {
-                    CpkCordappManifest(
-                        bundleSymbolicName = this.bundleSymbolicName,
-                        bundleVersion = this.bundleVersion,
-                        minPlatformVersion = this.minPlatformVersion,
-                        targetPlatformVersion = this.targetPlatformVersion,
-                        contractInfo = ManifestCorDappInfo(
-                            shortName = this.contractInfo.shortName,
-                            vendor = this.contractInfo.vendor,
-                            versionId = this.contractInfo.versionId,
-                            license = this.contractInfo.licence
-                        ),
-                        workflowInfo = ManifestCorDappInfo(
-                            shortName = this.workflowInfo.shortName,
-                            vendor = this.workflowInfo.vendor,
-                            versionId = this.workflowInfo.versionId,
-                            license = this.workflowInfo.licence
-                        )
-                    )
-                }
+                cpkName = it.metadata.cpkId.name,
+                cpkVersion = it.metadata.cpkId.version,
+                cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
             )
-            em.persist(cpkMetadataEntity)
+            em.merge(cpkMetadataEntity)
         }
     }
 
@@ -304,11 +267,11 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         // Delete CPK metadata in separate transaction, to be reviewed
         entityManagerFactory.createEntityManager().transaction { em ->
             val cpkMetadataStream = em.createQuery(
-                "FROM ${CpkMetadataEntity::class.simpleName} cpk_cpk WHERE " +
+                "FROM ${CpkEntity::class.simpleName} cpk_cpk WHERE " +
                         "cpk_cpk.cpi.name = :cpi_name AND " +
                         "cpk_cpk.cpi.version = :cpi_version AND " +
                         "cpk_cpk.cpi.signerSummaryHash = :cpi_signer_summary_hash",
-                CpkMetadataEntity::class.java
+                CpkEntity::class.java
             )
                 .setParameter("cpi_name", cpiId.name)
                 .setParameter("cpi_version", cpiId.version)

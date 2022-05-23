@@ -5,7 +5,7 @@ import net.corda.db.core.InMemoryDataSourceFactory
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 
-class InMemoryEntityManagerConfiguration(dbName: String) : EntityManagerConfiguration {
+open class InMemoryEntityManagerConfiguration(dbName: String) : EntityManagerConfiguration {
     private val ds by lazy {
         InMemoryDataSourceFactory().create(dbName)
     }

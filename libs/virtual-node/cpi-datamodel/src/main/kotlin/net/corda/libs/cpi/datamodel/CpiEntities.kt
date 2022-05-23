@@ -4,6 +4,7 @@ object CpiEntities {
     val classes = setOf(
         CpiMetadataEntity::class.java,
         CpkDataEntity::class.java,
+        CpkEntity::class.java,
         CpkMetadataEntity::class.java,
     )
 }
