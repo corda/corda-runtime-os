@@ -180,6 +180,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                         AbsoluteUnixPath.get(CONTAINER_LOCATION + subDir.get())
                 )
         List<String> javaArgs = new ArrayList<String>(arguments.get())
+        javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
         javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
 
         if (setEntry.get()) {
@@ -187,18 +188,19 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.setEntrypoint(
                     "/bin/sh",
                     "-c",
-                    "exec java -Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE} ${javaArgs.join(" ")} -jar " +
-                            CONTAINER_LOCATION + entryName + ".jar \$@",
+                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \$@",
                     "\$@"
             )
         }
         if (!environment.get().empty) {
-            environment.get().each {String key, String value ->
+            environment.get().each { String key, String value ->
                 logger.info("Adding Env var $key with value $value")
                 builder.addEnvironmentVariable(key, value)
             }
         }
         builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
+        builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
+        builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 
