@@ -3,7 +3,12 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.crypto.test.certificates.generation.*
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
+import net.corda.crypto.test.certificates.generation.toKeystore
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -21,12 +26,27 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
-import net.corda.p2p.*
+import net.corda.p2p.GatewayTruststore
+import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutHeader
+import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.NetworkType
+import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.gateway.messaging.*
-import net.corda.p2p.gateway.messaging.http.*
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
+import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
+import net.corda.p2p.gateway.messaging.http.HttpRequest
+import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
+import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
@@ -42,11 +62,20 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.fail
 import java.net.ConnectException
+import java.net.HttpURLConnection.HTTP_BAD_REQUEST
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
+import java.net.http.HttpClient as JavaHttpClient
+import java.net.http.HttpRequest as JavaHttpRequest
 import java.net.http.HttpResponse.BodyHandlers
 import java.nio.ByteBuffer
 import java.security.KeyStore
@@ -61,14 +90,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlin.concurrent.thread
-
-
-//import org.apache.http.impl.client.HttpClients;
-
 
 class GatewayIntegrationTest : TestBase() {
     companion object {
@@ -150,19 +174,13 @@ class GatewayIntegrationTest : TestBase() {
             val serverAddress = URI.create("https://www.alice.net:$port")
 
             val tmf = TrustManagerFactory
-                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(truststoreKeyStore);
+                .getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            tmf.init(truststoreKeyStore)
 
-            var myTm: X509TrustManager? = null
-            for (tm in tmf.trustManagers) {
-                if (tm is X509TrustManager) {
-                    myTm = tm
-                    break
-                }
-            }
+            val myTm = tmf.trustManagers.filterIsInstance(X509TrustManager::class.java).first()
 
             val sslContext: SSLContext = SSLContext.getInstance("TLSv1.3")
-            sslContext.init(null, arrayOf<TrustManager>(myTm!!), null)
+            sslContext.init(null, arrayOf(myTm), null)
 
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             Gateway(
@@ -180,16 +198,16 @@ class GatewayIntegrationTest : TestBase() {
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
-                val httpClient = java.net.http.HttpClient.newBuilder()
+                val httpClient = JavaHttpClient.newBuilder()
                     .sslContext(sslContext)
                     .build()
 
-                val request = java.net.http.HttpRequest.newBuilder()
+                val request = JavaHttpRequest.newBuilder()
                     .uri(serverAddress)
                     .build()
 
-                val response: java.net.http.HttpResponse<String> = httpClient.send(request, BodyHandlers.ofString())
-                assertThat(response.statusCode()).isEqualTo(400)
+                val response = httpClient.send(request, BodyHandlers.discarding())
+                assertThat(response.statusCode()).isEqualTo(HTTP_BAD_REQUEST)
             }
         }
 
