@@ -16,6 +16,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 import java.time.Duration
 import java.util.UUID
 
@@ -47,7 +50,13 @@ class FlowEngineImpl @Activate constructor(
 
         log.debug { "Starting sub-flow ('$subFlowClassName')..." }
 
-        getFiberExecutionContext().sandboxDependencyInjector.injectServices(subLogic)
+        try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                getFiberExecutionContext().sandboxDependencyInjector.injectServices(subLogic)
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
         getFiberExecutionContext().flowStackService.push(subLogic)
 
         try {

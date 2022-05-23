@@ -5,7 +5,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.libs.packaging.converters.toCorda
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.util.*
@@ -102,7 +101,7 @@ class CpiInfoReaderProcessor(private val onStatusUpCallback: () -> Unit, private
         }
 
         val currentSnapshot = cpiInfoMap.getAllAsCordaObjects()
-        listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
+        listeners.forEach { it.value.onUpdate(setOf(CpiIdentifier.fromAvro(newRecord.key)), currentSnapshot) }
     }
 
     fun getAll(): List<CpiMetadata> {

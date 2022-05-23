@@ -9,8 +9,6 @@ import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.converters.toAvro
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
@@ -47,8 +45,8 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val virtualNodes = cpiList.flatMap { cpi ->
             x500Identities.map { x500 -> cpi to VirtualNodeInfo(
-                HoldingIdentity(x500, cpi.metadata.id.name),
-                CpiIdentifier.fromLegacy(cpi.metadata.id),
+                HoldingIdentity(x500, cpi.metadata.cpiId.name),
+                cpi.metadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID()
             ) }
@@ -60,7 +58,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         }
 
         cpiList.flatMap { it.cpks }.map { cpk ->
-            val cpkChecksum = cpk.metadata.hash
+            val cpkChecksum = cpk.metadata.fileChecksum
             val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
             chunkWriter.onChunk { chunk ->
                 val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
@@ -73,7 +71,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         val vNodeCpiRecords = virtualNodes.flatMap {
             listOf(
                 Record(VIRTUAL_NODE_INFO_TOPIC, it.second.holdingIdentity.toAvro(), it.second.toAvro()),
-                Record(CPI_INFO_TOPIC, it.first.metadata.id.toAvro(), it.first.metadata.toAvro()))
+                Record(CPI_INFO_TOPIC, it.first.metadata.cpiId.toAvro(), it.first.metadata.toAvro()))
         }
 
         context.publish(vNodeCpiRecords)

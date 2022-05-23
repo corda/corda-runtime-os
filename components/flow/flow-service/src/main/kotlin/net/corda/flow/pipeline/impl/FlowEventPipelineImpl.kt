@@ -69,7 +69,7 @@ data class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
-        val waitingFor = context.checkpoint.waitingFor.value
+        val waitingFor = context.checkpoint.waitingFor?.value
             ?: throw FlowProcessingException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
         val handler = getFlowWaitingForHandler(waitingFor)

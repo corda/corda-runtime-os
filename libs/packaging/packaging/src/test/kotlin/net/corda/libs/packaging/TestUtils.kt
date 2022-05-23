@@ -1,5 +1,7 @@
 package net.corda.libs.packaging
 
+import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.ManifestCorDappInfo
 import org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME
 import org.osgi.framework.Constants.BUNDLE_VERSION
 import java.util.jar.Manifest
@@ -12,9 +14,9 @@ internal object TestUtils {
     internal const val MANIFEST_DUMMY_BUNDLE_VERSION = "DummyBundleVersion"
     internal const val MANIFEST_DUMMY_MIN_PLATFORM_VERSION = "222"
     internal const val MANIFEST_DUMMY_TARGET_PLATFORM_VERSION = "333"
-    internal val MANIFEST_CONTRACT_INFO = ManifestCordappInfo(
+    internal val MANIFEST_CONTRACT_INFO = ManifestCorDappInfo(
             "contractName", "contractVendor", 444, "contractLicence")
-    internal val MANIFEST_WORKFLOW_INFO = ManifestCordappInfo(
+    internal val MANIFEST_WORKFLOW_INFO = ManifestCorDappInfo(
             "workflowName", "workflowVendor", 555, "workflowLicence")
 
     internal const val MANIFEST_DUMMY_CONTRACTS = "contractClassOne, contractClassTwo"
