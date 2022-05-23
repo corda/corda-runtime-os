@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
-import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -44,25 +42,28 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
     }
 
     private fun waitingForSessionInit(context: FlowEventContext<*>, waitingFor: SessionConfirmation): FlowContinuation {
+        val checkpoint = context.checkpoint
         val erroredSessions = flowSessionManager.getSessionsWithStatus(
-            context.checkpoint,
+            checkpoint,
             waitingFor.sessionIds,
             SessionStateType.ERROR
         ).map { it.sessionId }
 
         return when {
-            erroredSessions.isNotEmpty() -> FlowContinuation.Error(
-                CordaRuntimeException("Failed to initiate sessions: $erroredSessions")
-            )
-            hasReceivedSessionAckForInitiatedSession(context, waitingFor) -> FlowContinuation.Run(Unit)
-            else -> FlowContinuation.Continue
+            erroredSessions.isNotEmpty() -> {
+                FlowContinuation.Error(CordaRuntimeException("Failed to initiate sessions: $erroredSessions"))
+            }
+            areAllSessionsConfirmed(checkpoint, waitingFor) -> {
+                FlowContinuation.Run(Unit)
+            }
+            else -> {
+                FlowContinuation.Continue
+            }
         }
     }
 
-    private fun hasReceivedSessionAckForInitiatedSession(context: FlowEventContext<*>, waitingFor: SessionConfirmation): Boolean {
-        return context.inputEventPayload is SessionEvent
-                && context.inputEventPayload.payload is SessionAck
-                && waitingFor.sessionIds == listOf(context.inputEventPayload.sessionId)
+    private fun areAllSessionsConfirmed(checkpoint: FlowCheckpoint, waitingFor: SessionConfirmation): Boolean {
+        return flowSessionManager.doAllSessionsHaveStatus(checkpoint, waitingFor.sessionIds, SessionStateType.CONFIRMED)
     }
 
     private fun waitingForSessionsToClose(context: FlowEventContext<*>, waitingFor: SessionConfirmation): FlowContinuation {

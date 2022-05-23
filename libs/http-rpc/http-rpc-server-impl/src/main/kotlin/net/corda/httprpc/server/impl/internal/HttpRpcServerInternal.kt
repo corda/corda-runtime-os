@@ -291,6 +291,7 @@ internal class HttpRpcServerInternal(
 
     private fun RouteInfo.invokeMethod(): (Context) -> Unit {
         return { ctx ->
+            log.info("Servicing ${ctx.method()} request to '${ctx.path()}")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
             try {

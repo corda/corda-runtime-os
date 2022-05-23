@@ -14,6 +14,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.BOOT_RECONCILIATION
+import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.v5.base.util.contextLogger
@@ -29,6 +30,8 @@ import picocli.CommandLine.Option
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
     private val processor: DBProcessor,
+    @Reference(service = UniquenessProcessor::class)
+    private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -62,6 +65,7 @@ class DBWorker @Activate constructor(
         )
 
         processor.start(config)
+        uniquenessProcessor.start()
     }
 
     private fun getReconciliationTaskConfigWithDefaults(reconciliationTaskParams: Map<String, String>): PathAndConfig {

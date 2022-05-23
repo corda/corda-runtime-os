@@ -134,8 +134,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     @TaskAction
     def updateImage() {
         def outputFiles = sourceTasks.get().collect{ it -> it.getOutputs().files.files }.flatten() as List<File>
-        def buildBaseDir = temporaryDir.toPath();
-        def containerizationDir = Paths.get("$buildBaseDir/containerization/");
+        def buildBaseDir = temporaryDir.toPath()
+        def containerizationDir = Paths.get("$buildBaseDir/containerization/")
 
         String gitRevision = gitTask.flatMap { it.revision }.get()
         def jiraTicket = hasJiraTicket()
@@ -161,8 +161,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             if (imageName.endsWith("-local")) {
                 logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
                 builder = Jib.from(DockerDaemonImage.named(imageName))
-            } else if (imageName.contains("corda-os-cli")) {
-                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from internal remote repo")
+            } else if (imageName.contains("software.r3.com")) {
+                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from internal remote repo")
                 builder = setCredentialsOnBaseImage(builder)
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
@@ -180,6 +180,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                         AbsoluteUnixPath.get(CONTAINER_LOCATION + subDir.get())
                 )
         List<String> javaArgs = new ArrayList<String>(arguments.get())
+        javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
         javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
 
         if (setEntry.get()) {
@@ -187,18 +188,19 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.setEntrypoint(
                     "/bin/sh",
                     "-c",
-                    "exec java -Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE} ${javaArgs.join(" ")} -jar " +
-                            CONTAINER_LOCATION + entryName + ".jar \$@",
+                    "exec java ${javaArgs.join(" ")} -jar " + CONTAINER_LOCATION + entryName + ".jar \$@",
                     "\$@"
             )
         }
         if (!environment.get().empty) {
-            environment.get().each {String key, String value ->
+            environment.get().each { String key, String value ->
                 logger.info("Adding Env var $key with value $value")
                 builder.addEnvironmentVariable(key, value)
             }
         }
         builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
+        builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
+        builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 
@@ -259,7 +261,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
      *  Publish images either to local docker daemon or to the remote repository depending on the
      *  value of remotePublish, CI jobs set this to true by default
      */
-    private JibContainer tagContainer(JibContainerBuilder builder, String tag) {
+    private void tagContainer(JibContainerBuilder builder, String tag) {
         if (remotePublish.get()) {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
@@ -283,11 +285,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/) {
             JiraTicket = (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/)[0][0]
         }
-        if (JiraTicket != null) {
-            return JiraTicket
-        } else {
-            return ""
-        }
+        return (JiraTicket != null) ? JiraTicket : ""
     }
 
     /**

@@ -53,7 +53,8 @@ class SessionConfirmationWaitingForHandlerTest {
     }
 
     @Test
-    fun `Receiving a session ack payload for the session being waited for while waiting for a session confirmation (Initiate) returns a FlowContinuation#Run`() {
+    fun `When the session being waited for is confirmed while waiting for a session confirmation (Initiate) returns a FlowContinuation#Run`() {
+        whenever(flowSessionManager.doAllSessionsHaveStatus(checkpoint, listOf(SESSION_ID), SessionStateType.CONFIRMED)).thenReturn(true)
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
             inputEventPayload = SessionEvent().apply {
@@ -70,7 +71,8 @@ class SessionConfirmationWaitingForHandlerTest {
     }
 
     @Test
-    fun `Receiving a session ack payload for the wrong session being waited for while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
+    fun `When the session being waited for is not-confirmed while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
+        whenever(flowSessionManager.doAllSessionsHaveStatus(checkpoint, listOf(SESSION_ID), SessionStateType.CONFIRMED)).thenReturn(false)
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
             inputEventPayload = SessionEvent().apply {
@@ -111,23 +113,6 @@ class SessionConfirmationWaitingForHandlerTest {
     @Test
     fun `Receiving a non-session event while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
         val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = Wakeup())
-        val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
-            inputContext,
-            SessionConfirmation(listOf(SESSION_ID), SessionConfirmationType.INITIATE)
-        )
-
-        assertEquals(FlowContinuation.Continue, continuation)
-    }
-
-    @Test
-    fun `Receiving a non-session ack payload while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
-        val inputContext = buildFlowEventContext(
-            checkpoint = checkpoint,
-            inputEventPayload = SessionEvent().apply {
-                sessionId = SESSION_ID
-                payload = SessionData()
-            }
-        )
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
             inputContext,
             SessionConfirmation(listOf(SESSION_ID), SessionConfirmationType.INITIATE)

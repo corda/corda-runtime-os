@@ -1,0 +1,26 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Uniqueness checker component implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'net.corda:corda-base'
+    implementation "net.corda:corda-avro-schema"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(":components:uniqueness:uniqueness-checker")
+    implementation project(":libs:utilities")
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":testing:crypto-testkit")
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:uniqueness")
+}
