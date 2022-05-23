@@ -261,7 +261,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
      *  Publish images either to local docker daemon or to the remote repository depending on the
      *  value of remotePublish, CI jobs set this to true by default
      */
-    private JibContainer tagContainer(JibContainerBuilder builder, String tag) {
+    private void tagContainer(JibContainerBuilder builder, String tag) {
         if (remotePublish.get()) {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
@@ -285,11 +285,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/) {
             JiraTicket = (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/)[0][0]
         }
-        if (JiraTicket != null) {
-            return JiraTicket
-        } else {
-            return ""
-        }
+        return (JiraTicket != null) ? JiraTicket : ""
     }
 
     /**
