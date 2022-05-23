@@ -106,9 +106,11 @@ class Create(
             val acls = it.consumers.map { consumer ->
                 "kafka-acls.sh --bootstrap-server $bootstrapAddr --add --allow-principal User:$consumer --operation read --topic $topicName"
             } + it.producers.map { producer ->
+                @Suppress("MaxLineLength")
                 "kafka-acls.sh --bootstrap-server $bootstrapAddr --add --allow-principal User:$producer --operation write --topic $topicName"
             }
             return@flatMap listOf(
+                @Suppress("MaxLineLength")
                 "kafka-topics.sh --bootstrap-server $bootstrapAddr --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName $config &"
             ) + acls
         } + "wait"
