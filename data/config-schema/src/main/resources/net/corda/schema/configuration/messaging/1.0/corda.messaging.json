@@ -50,13 +50,36 @@
               "dbProperties": {
                 "type": "object",
                 "properties": {
+                  "consumer": {
+                    "type": "object",
+                    "properties": {
+                      "maxPollRecords": {
+                        "description": "Max records to poll from db in a single poll.",
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
                   "jdbcUrl": {
                     "description": "The JDBC database URL",
-                    "type": "string"
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
-                  "username": {
+                  "user": {
                     "description": "Cluster admin username to connect to the database with.",
-                    "type": "string"
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "pass": {
+                    "description": "Cluster admin password to connect to the database with.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "additionalProperties": false

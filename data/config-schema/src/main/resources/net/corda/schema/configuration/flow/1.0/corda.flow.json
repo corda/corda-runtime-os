@@ -32,6 +32,7 @@
     "session": {
       "description": "Settings for flow sessions",
       "type": "object",
+      "default": {},
       "properties": {
         "messageResendWindow": {
           "description": "Length of time to wait before resending unacknowledged flow session messages, in milliseconds",

@@ -10,6 +10,11 @@
     {
       "name": "version",
       "type": "string"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "net.corda.data.config.ConfigurationSchemaVersion",
+      "doc": "Schema version for this configuration."
     }
   ]
 }
