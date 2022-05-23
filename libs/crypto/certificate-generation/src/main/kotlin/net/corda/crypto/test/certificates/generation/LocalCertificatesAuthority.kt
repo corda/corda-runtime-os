@@ -1,7 +1,7 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
-import net.corda.v5.crypto.ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
@@ -66,7 +66,7 @@ internal open class LocalCertificatesAuthority(
         )
         val signatureAlgorithm = when (keysFactoryDefinitions.algorithm) {
             Algorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
-            Algorithm.EC -> ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
+            Algorithm.EC -> ECDSA_SHA256_SIGNATURE_SPEC
         }.signatureName
         val signer = JcaContentSignerBuilder(signatureAlgorithm).build(caKeyPair.private)
 
@@ -112,7 +112,7 @@ internal open class LocalCertificatesAuthority(
         val signatureAlgorithm =
             when (privateKeyAndCertificate.privateKey.algorithm) {
                 "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
-                "EC" -> ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC.signatureName
+                "EC" -> ECDSA_SHA256_SIGNATURE_SPEC.signatureName
                 else -> throw InvalidParameterException("Unsupported Algorithm")
             }
         val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)

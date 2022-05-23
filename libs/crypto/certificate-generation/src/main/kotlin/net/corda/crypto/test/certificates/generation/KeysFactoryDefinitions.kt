@@ -1,7 +1,7 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.Algorithm.Companion.toAlgorithm
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
+import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import java.security.InvalidParameterException
 import java.security.spec.AlgorithmParameterSpec
 
@@ -38,9 +38,9 @@ data class KeysFactoryDefinitions(
 )
 
 /**
- * Convert a SignatureSchemeTemplate into a KeysFactoryDefinitions
+ * Convert a [KeySchemeTemplate] into a [KeysFactoryDefinitions]s
  */
-fun SignatureSchemeTemplate.toFactoryDefinitions(): KeysFactoryDefinitions {
+fun KeySchemeTemplate.toFactoryDefinitions(): KeysFactoryDefinitions {
     return KeysFactoryDefinitions(
         this.algorithmName.toAlgorithm(),
         this.keySize,

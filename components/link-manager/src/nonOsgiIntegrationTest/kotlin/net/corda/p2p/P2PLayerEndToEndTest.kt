@@ -73,9 +73,9 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
@@ -115,7 +115,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            RSA_SHA256_TEMPLATE,
+            RSA_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -125,7 +125,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                RSA_SHA256_TEMPLATE,
+                RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -166,7 +166,7 @@ class P2PLayerEndToEndTest {
             "ec_truststore",
             bootstrapConfig,
             false,
-            ECDSA_SECP256R1_SHA256_TEMPLATE,
+            ECDSA_SECP256R1_TEMPLATE,
         ).use { hostA ->
             Host(
                 "www.sender.net",
@@ -176,7 +176,7 @@ class P2PLayerEndToEndTest {
                 "ec_truststore",
                 bootstrapConfig,
                 false,
-                ECDSA_SECP256R1_SHA256_TEMPLATE,
+                ECDSA_SECP256R1_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -217,7 +217,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            RSA_SHA256_TEMPLATE,
+            RSA_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -227,7 +227,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                RSA_SHA256_TEMPLATE,
+                RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -313,16 +313,16 @@ class P2PLayerEndToEndTest {
         trustStoreFileName: String,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
-        signatureTemplate: SignatureSchemeTemplate,
+        keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
 
         private val sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
-        private val keyPair = KeyPairGenerator.getInstance(signatureTemplate.algorithmName, BouncyCastleProvider())
+        private val keyPair = KeyPairGenerator.getInstance(keyTemplate.algorithmName, BouncyCastleProvider())
             .also {
-                if (signatureTemplate.algSpec != null) {
-                    it.initialize(signatureTemplate.algSpec)
+                if (keyTemplate.algSpec != null) {
+                    it.initialize(keyTemplate.algSpec)
                 }
             }
             .genKeyPair()
