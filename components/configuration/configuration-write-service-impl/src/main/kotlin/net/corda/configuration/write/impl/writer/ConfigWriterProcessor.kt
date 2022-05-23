@@ -54,7 +54,11 @@ internal class ConfigWriterProcessor(
         }
     }
 
-    private fun validate(req: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture, applyDefaults: Boolean): Boolean {
+    private fun validate(
+        req: ConfigurationManagementRequest,
+        respFuture: ConfigurationManagementResponseFuture,
+        applyDefaults: Boolean
+    ): Boolean {
         return try {
             val config = smartConfigFactory.create(ConfigFactory.parseString(req.config))
             val updatedConfig = validator.validate(
@@ -103,8 +107,10 @@ internal class ConfigWriterProcessor(
         entity: ConfigEntity,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-        val config = Configuration(entity.config, entity.version.toString(),
-            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor))
+        val config = Configuration(
+            entity.config, entity.version.toString(),
+            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor)
+        )
         val configRecord = Record(CONFIG_TOPIC, entity.section, config)
         // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
         val future = publisher.publish(listOf(configRecord)).first()
