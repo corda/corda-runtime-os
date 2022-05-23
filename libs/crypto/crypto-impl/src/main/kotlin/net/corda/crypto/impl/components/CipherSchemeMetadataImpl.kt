@@ -87,29 +87,6 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         PSSParameterSpec::class.java.name to PSSParameterSpecSerializer()
     )
 
-    override fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
-        algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
-            ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
-
-    override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
-        providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
-
-    @Suppress("UNCHECKED_CAST")
-    override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
-        val clazz = params::class.java.name
-        val serializer = paramSpecSerializers[clazz] as? AlgorithmParameterSpecSerializer<AlgorithmParameterSpec>
-            ?: throw IllegalArgumentException("$clazz is not supported.")
-        return SerializedAlgorithmParameterSpec(
-            clazz = clazz,
-            bytes = serializer.serialize(params)
-        )
-    }
-
-    override fun findKeyScheme(key: PublicKey): KeyScheme {
-        val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
-        return findKeyScheme(keyInfo.algorithm)
-    }
-
     private val providerMap by lazy(LazyThreadSafetyMode.PUBLICATION) { ProviderMap(this) }
 
     override val schemes: List<KeyScheme> = listOf(
@@ -140,6 +117,35 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
     override val providers: Map<String, Provider> get() = providerMap.providers
 
     override val secureRandom: SecureRandom get() = providerMap.secureRandom
+
+    override fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
+        algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
+            ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+
+    override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
+        providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
+
+    override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
+        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.values?.toList() ?: emptyList()
+
+    override fun inferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
+        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.keys?.toList() ?: emptyList()
+
+    @Suppress("UNCHECKED_CAST")
+    override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
+        val clazz = params::class.java.name
+        val serializer = paramSpecSerializers[clazz] as? AlgorithmParameterSpecSerializer<AlgorithmParameterSpec>
+            ?: throw IllegalArgumentException("$clazz is not supported.")
+        return SerializedAlgorithmParameterSpec(
+            clazz = clazz,
+            bytes = serializer.serialize(params)
+        )
+    }
+
+    override fun findKeyScheme(key: PublicKey): KeyScheme {
+        val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
+        return findKeyScheme(keyInfo.algorithm)
+    }
 
     override fun findKeyScheme(codeName: String): KeyScheme =
         schemes.firstOrNull { it.codeName == codeName }

@@ -1,9 +1,9 @@
 package net.corda.crypto.service.impl.bus.configuration
 
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.toMap
 import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.impl.WireProcessor
-import net.corda.crypto.service.impl.toMap
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -112,7 +112,7 @@ class HSMConfigurationBusProcessor(
                 "Illegal tenant id."
             }
             return HSMInfos(
-                hsmService.lookup(request.filter.items.toMap())
+                hsmService.lookup(request.filter.toMap())
             )
         }
     }

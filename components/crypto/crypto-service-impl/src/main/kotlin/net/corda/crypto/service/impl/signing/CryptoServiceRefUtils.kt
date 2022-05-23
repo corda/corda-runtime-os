@@ -48,7 +48,7 @@ fun CryptoServiceRef.toSaveKeyContext(
         is GeneratedPublicKey -> SigningPublicKeySaveContext(
             key = key,
             alias = alias,
-            signatureScheme = scheme,
+            keyScheme = scheme,
             category = category,
             associationId = associationId,
             externalId = externalId,
@@ -58,7 +58,7 @@ fun CryptoServiceRef.toSaveKeyContext(
             masterKeyAlias = masterKeyAlias,
             externalId = externalId,
             alias = alias,
-            signatureScheme = scheme,
+            keyScheme = scheme,
             category = category,
             associationId = associationId,
         )

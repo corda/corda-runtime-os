@@ -9,7 +9,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey

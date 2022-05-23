@@ -12,7 +12,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.BeforeAll
@@ -31,7 +31,7 @@ import kotlin.test.assertSame
 class SoftCryptoServiceGeneralTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata
-        private lateinit var UNSUPPORTED_SIGNATURE_SCHEME: SignatureScheme
+        private lateinit var UNSUPPORTED_SIGNATURE_SCHEME: KeyScheme
 
         @BeforeAll
         @JvmStatic
@@ -125,7 +125,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = null,
-                    signatureScheme = service.supportedSchemes()[0],
+                    keyScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
                 mapOf(
@@ -149,7 +149,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
-                    signatureScheme = UNSUPPORTED_SIGNATURE_SCHEME,
+                    keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
                     secret = null
                 ),
                 mapOf(
@@ -173,7 +173,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
-                    signatureScheme = service.supportedSchemes()[0],
+                    keyScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
                 mapOf(
@@ -200,7 +200,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
-                    signatureScheme = service.supportedSchemes()[0],
+                    keyScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
                 mapOf(
@@ -229,7 +229,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
-                    signatureScheme = service.supportedSchemes()[0],
+                    keyScheme = service.supportedSchemes()[0],
                     secret = null
                 ),
                 mapOf(
@@ -249,13 +249,16 @@ class SoftCryptoServiceGeneralTests {
             schemeMetadata,
             mock()
         )
+        val scheme = service.supportedSchemes().first()
+        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         assertThrows<CryptoServiceBadRequestException> {
             service.sign(
                 SigningWrappedSpec(
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = null,
                     encodingVersion = 1,
-                    signatureScheme = service.supportedSchemes()[0]
+                    keyScheme = scheme,
+                    signatureSpec = signatureSpec
                 ),
                 ByteArray(2),
                 mapOf(
@@ -288,13 +291,16 @@ class SoftCryptoServiceGeneralTests {
             schemeMetadata,
             mock()
         )
+        val scheme = service.supportedSchemes().first()
+        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         assertThrows<CryptoServiceBadRequestException> {
             service.sign(
                 SigningWrappedSpec(
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     encodingVersion = 1,
-                    signatureScheme = service.supportedSchemes()[0]
+                    keyScheme = scheme,
+                    signatureSpec = signatureSpec
                 ),
                 ByteArray(2),
                 mapOf(
@@ -315,13 +321,16 @@ class SoftCryptoServiceGeneralTests {
             schemeMetadata,
             mock()
         )
+        val scheme = service.supportedSchemes().first()
+        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         val thrown = assertThrows<CryptoServiceException> {
             service.sign(
                 SigningWrappedSpec(
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     encodingVersion = 1,
-                    signatureScheme = service.supportedSchemes()[0]
+                    keyScheme = scheme,
+                    signatureSpec = signatureSpec
                 ),
                 ByteArray(2),
                 mapOf(
@@ -344,13 +353,16 @@ class SoftCryptoServiceGeneralTests {
             schemeMetadata,
             mock()
         )
+        val scheme = service.supportedSchemes().first()
+        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         val thrown = assertThrows<CryptoServiceException> {
             service.sign(
                 SigningWrappedSpec(
                     keyMaterial = ByteArray(2),
                     masterKeyAlias = UUID.randomUUID().toString(),
                     encodingVersion = 1,
-                    signatureScheme = service.supportedSchemes()[0]
+                    keyScheme = scheme,
+                    signatureSpec = signatureSpec
                 ),
                 ByteArray(2),
                 mapOf(

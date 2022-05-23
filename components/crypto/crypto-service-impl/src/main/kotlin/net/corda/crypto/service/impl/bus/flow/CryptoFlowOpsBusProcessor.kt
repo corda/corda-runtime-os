@@ -174,7 +174,8 @@ class CryptoFlowOpsBusProcessor(
         override fun handle(context: CryptoRequestContext, request: SignFlowCommand): Any =
             client.signProxy(
                 tenantId = context.tenantId,
-                publicKey = request.publicKey ,
+                publicKey = request.publicKey,
+                signatureSpec = request.signatureSpec,
                 data = request.bytes,
                 context = request.context
             )

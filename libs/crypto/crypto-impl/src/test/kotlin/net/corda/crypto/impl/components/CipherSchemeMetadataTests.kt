@@ -19,6 +19,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureVerificationService
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.ASN1Sequence
@@ -201,28 +202,28 @@ class CipherSchemeMetadataTests {
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find schemes for all supported scheme code names`(
-        signatureScheme: KeyScheme
+        scheme: KeyScheme
     ) {
-        val result = schemeMetadata.findKeyScheme(signatureScheme.codeName)
-        assertEquals(signatureScheme, result)
+        val result = schemeMetadata.findKeyScheme(scheme.codeName)
+        assertEquals(scheme, result)
     }
 
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find schemes for all supported signing algorithms`(
-        signatureScheme: KeyScheme
+        scheme: KeyScheme
     ) {
-        assumeTrue(signatureScheme.algorithmOIDs.isNotEmpty())
-        val result = schemeMetadata.findKeyScheme(signatureScheme.algorithmOIDs[0])
-        assertEquals(signatureScheme, result)
+        assumeTrue(scheme.algorithmOIDs.isNotEmpty())
+        val result = schemeMetadata.findKeyScheme(scheme.algorithmOIDs[0])
+        assertEquals(scheme, result)
     }
 
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find schemes for all supported public keys`(
-        signatureScheme: KeyScheme
+        scheme: KeyScheme
     ) {
-        val publicKey = if (signatureScheme.codeName == COMPOSITE_KEY_CODE_NAME) {
+        val publicKey = if (scheme.codeName == COMPOSITE_KEY_CODE_NAME) {
             val alicePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
             val bobPublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
             val charliePublicKey = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME).public
@@ -235,10 +236,10 @@ class CipherSchemeMetadataTests {
                 .addKey(charliePublicKey, 2)
                 .build(threshold = 3)
         } else {
-            generateKeyPair(schemeMetadata, signatureScheme.codeName).public
+            generateKeyPair(schemeMetadata, scheme.codeName).public
         }
         val result = schemeMetadata.findKeyScheme(publicKey)
-        assertEquals(signatureScheme, result)
+        assertEquals(scheme, result)
     }
 
     @Test
@@ -251,10 +252,10 @@ class CipherSchemeMetadataTests {
     @ParameterizedTest
     @MethodSource("schemes")
     fun `Should find key factories for all supported schemes`(
-        signatureScheme: KeyScheme
+        scheme: KeyScheme
     ) {
-        val factory = schemeMetadata.findKeyFactory(signatureScheme)
-        assertEquals(signatureScheme.providerName, factory.provider.name)
+        val factory = schemeMetadata.findKeyFactory(scheme)
+        assertEquals(scheme.providerName, factory.provider.name)
     }
 
     @ParameterizedTest
@@ -357,7 +358,7 @@ class CipherSchemeMetadataTests {
     }
 
     @Test
-    fun `Should be able to infer SPHINCS256_ signature spec for all supported digests and use it to sign and verify`() {
+    fun `Should be able to infer SPHINCS256 signature spec for all supported digests and use it to sign and verify`() {
         val keyPair = testParams.first {
             schemeMetadata.findKeyScheme((it.get()[0] as KeyPair).public).codeName == SPHINCS256_CODE_NAME
         }.get()[0] as KeyPair
@@ -382,6 +383,122 @@ class CipherSchemeMetadataTests {
             val signature = signData(schemeMetadata, signatureSpec, keyPair, data)
             verifier.verify(keyPair.public, signatureSpec, signature, data)
         }
+    }
+
+    @Test
+    fun `Should be able to get list of supported signature specs for RSA`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(RSA_CODE_NAME))
+        assertThat(list).hasSize(3)
+        assertThat(list).anyMatch { it.signatureName.equals("SHA256withRSA", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SHA384withRSA", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SHA512withRSA", true) }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `Should be able to get list of supported signature specs for ECDSA SECP256R1`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME))
+        assertThat(list).hasSize(3)
+        assertThat(list).anyMatch { it.signatureName.equals("SHA256withECDSA", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SHA384withECDSA", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SHA512withECDSA", true) }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `Should be able to get list of supported signature specs for ECDSA SECP256K1`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(ECDSA_SECP256K1_CODE_NAME))
+        assertThat(list).hasSize(3)
+        assertThat(list).anyMatch { it.signatureName.equals("SHA256withECDSA", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SHA384withECDSA", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SHA512withECDSA", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of supported signature specs for EDDSA`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(EDDSA_ED25519_CODE_NAME))
+        assertThat(list).hasSize(1)
+        assertThat(list).anyMatch { it.signatureName.equals("EdDSA", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of supported signature specs for SM2`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(SM2_CODE_NAME))
+        assertThat(list).hasSize(2)
+        assertThat(list).anyMatch { it.signatureName.equals("SHA256withSM2", true) }
+        assertThat(list).anyMatch { it.signatureName.equals("SM3withSM2", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of supported signature specs for SPHINCS256`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(SPHINCS256_CODE_NAME))
+        assertThat(list).hasSize(1)
+        assertThat(list).anyMatch { it.signatureName.equals("SHA512withSPHINCS256", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of supported signature specs for GOST3410`() {
+        val list = schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(GOST3410_GOST3411_CODE_NAME))
+        assertThat(list).hasSize(1)
+        assertThat(list).anyMatch { it.signatureName.equals("GOST3411withGOST3410", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of inferable Digest Algorithm Names for RSA`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(RSA_CODE_NAME))
+        assertThat(list).hasSize(3)
+        assertThat(list).anyMatch { it.name.equals("SHA-256", true) }
+        assertThat(list).anyMatch { it.name.equals("SHA-384", true) }
+        assertThat(list).anyMatch { it.name.equals("SHA-512", true) }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `Should be able to get list of inferable Digest Algorithm Names for ECDSA SECP256R1`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME))
+        assertThat(list).hasSize(3)
+        assertThat(list).anyMatch { it.name.equals("SHA-256", true) }
+        assertThat(list).anyMatch { it.name.equals("SHA-384", true) }
+        assertThat(list).anyMatch { it.name.equals("SHA-512", true) }
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `Should be able to get list of inferable Digest Algorithm Names for ECDSA SECP256K1`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(ECDSA_SECP256K1_CODE_NAME))
+        assertThat(list).hasSize(3)
+        assertThat(list).anyMatch { it.name.equals("SHA-256", true) }
+        assertThat(list).anyMatch { it.name.equals("SHA-384", true) }
+        assertThat(list).anyMatch { it.name.equals("SHA-512", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of inferable Digest Algorithm Names for EDDSA`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(EDDSA_ED25519_CODE_NAME))
+        assertThat(list).hasSize(1)
+        assertThat(list).anyMatch { it.name.equals("NONE", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of inferable Digest Algorithm Names for SM2`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(SM2_CODE_NAME))
+        assertThat(list).hasSize(2)
+        assertThat(list).anyMatch { it.name.equals("SHA-256", true) }
+        assertThat(list).anyMatch { it.name.equals("SM3", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of inferable Digest Algorithm Names for SPHINCS256`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(SPHINCS256_CODE_NAME))
+        assertThat(list).hasSize(1)
+        assertThat(list).anyMatch { it.name.equals("SHA-512", true) }
+    }
+
+    @Test
+    fun `Should be able to get list of inferable Digest Algorithm Names for GOST3410`() {
+        val list = schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(GOST3410_GOST3411_CODE_NAME))
+        assertThat(list).hasSize(1)
+        assertThat(list).anyMatch { it.name.equals("GOST3411", true) }
     }
 
     @ParameterizedTest

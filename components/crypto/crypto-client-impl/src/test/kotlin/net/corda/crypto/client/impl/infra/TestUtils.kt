@@ -76,8 +76,8 @@ data class SendActResult<REQUEST, RESPONSE>(
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: String): KeyPair {
-    val scheme = schemeMetadata.findKeyScheme(signatureSchemeName)
+fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): KeyPair {
+    val scheme = schemeMetadata.findKeyScheme(schemeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
         scheme.algorithmName,
         schemeMetadata.providers.getValue(scheme.providerName)

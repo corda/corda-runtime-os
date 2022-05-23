@@ -113,7 +113,7 @@ object DefaultSignatureOIDMap {
     private val SHA384_WITH_RSA_AND_MGF1 = "SHA384WITHRSAANDMGF1"
     private val SHA512_WITH_RSA_AND_MGF1 = "SHA512WITHRSAANDMGF1"
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     fun inferSignatureOID(publicKey: PublicKey, signatureSpec: SignatureSpec): AlgorithmIdentifier? {
         if(signatureSpec.precalculateHash) {
             return null
