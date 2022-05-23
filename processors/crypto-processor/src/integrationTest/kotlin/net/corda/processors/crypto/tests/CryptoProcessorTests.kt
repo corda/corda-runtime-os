@@ -2,8 +2,6 @@ package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
 import java.security.PublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -73,12 +71,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
+
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -140,8 +133,6 @@ class CryptoProcessorTests {
             name = "vnode_crypto_$vnodeId",
             schemaName = "vnode_crypto"
         )
-
-        private val schemaVersion = ConfigurationSchemaVersion(1,0)
 
         private val boostrapConfig = makeBootstrapConfig(
             mapOf(
