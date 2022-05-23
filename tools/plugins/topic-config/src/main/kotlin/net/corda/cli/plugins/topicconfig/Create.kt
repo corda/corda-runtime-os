@@ -75,7 +75,6 @@ class Create(
                 .configure(KotlinFeature.StrictNullChecks, false)
                 .build()
         )
-        @Suppress("UNCHECKED_CAST")
         val files: List<URL> = cl.getResources("net/corda/schema").toList().filterNotNull()
         val filesAndContents: Map<String, TopicDefinitions> = files.filter { it.protocol == "jar" }
             .flatMap { file ->

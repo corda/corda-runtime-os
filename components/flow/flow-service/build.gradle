@@ -25,7 +25,6 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:serialization:serialization-amqp")
     implementation project(":libs:serialization:serialization-internal")
-    implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:sandbox-group-context")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -60,6 +59,7 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
+    integrationTestImplementation project(':testing:cpi-info-read-service-fake')
 
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')

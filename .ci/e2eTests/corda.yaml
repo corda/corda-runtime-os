@@ -3,6 +3,11 @@ imagePullSecrets:
 
 kafka:
   bootstrapServers: prereqs-kafka:9092
+  tls:
+    enabled: true
+    truststore:
+      secretRef:
+        name: prereqs-kafka-0-tls
 
 db:
   cluster:

@@ -4,6 +4,16 @@ The test coverage of the flow event pipeline's acceptance tests are documented h
 
 This document should be maintained so that we can ensure that we have quick visibility into our coverage as we are expecting a number of scenarios to be exercised.
 
+## General
+
+- Receiving a non-session init event for a flow that does not exist discards the event ✅
+
+## Wakeup
+
+- Receiving a wakeup event for a flow that does not exist discards the event ✅
+- Receiving a wakeup event for a flow that finished discards the event ✅
+- Receiving a wakeup event for a flow that failed discards the event ✅
+
 ## Sending
 - Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event ✅
 - Calling 'send' on a closed session schedules an error event (not fully implemented, assert CLOSING, CLOSED, WAIT_FOR_FINAL_ACK states)

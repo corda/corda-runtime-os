@@ -45,8 +45,6 @@ class RecreateBinaryTest {
             finibus. 
         """.trimIndent()
 
-    private fun randomFileName(): String = UUID.randomUUID().toString()
-
     companion object {
         // N.B.  We're pulling in the config tables as well.
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
@@ -130,7 +128,7 @@ class RecreateBinaryTest {
         val destDir = fs.getPath("destDir").apply { Files.createDirectories(this) }
 
         val chunkReader = ChunkReaderFactory.create(destDir).apply {
-            this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash ->
+            this.onComplete { originalFileName: String, tempPathOfBinary: Path, _: SecureHash, _ ->
                 actualFileName = originalFileName
                 tempPath = tempPathOfBinary
             }

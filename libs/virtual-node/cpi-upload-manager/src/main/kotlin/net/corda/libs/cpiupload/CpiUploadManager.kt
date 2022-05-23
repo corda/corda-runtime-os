@@ -11,11 +11,8 @@ import java.io.InputStream
 interface CpiUploadManager : AutoCloseable {
     /**
      * Uploads the CPI to Kafka. It returns the [RequestId] (UUID) registered for this CPI upload.
-     *
-     * @throws CpiUploadManagerException
      */
-    fun uploadCpi(cpiFileName: String, cpiContent: InputStream): ChunkWriter.Request
-
+    fun uploadCpi(cpiFileName: String, cpiContent: InputStream, properties: Map<String, String?>? = null): ChunkWriter.Request
 
     /**
      * Return the status of a given upload request
