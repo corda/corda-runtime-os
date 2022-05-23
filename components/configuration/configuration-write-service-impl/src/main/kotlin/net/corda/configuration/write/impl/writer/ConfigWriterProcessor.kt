@@ -49,6 +49,7 @@ internal class ConfigWriterProcessor(
         if (validate(request, respFuture, false)) {
             val configEntity = publishConfigToDB(request, respFuture)
             if (configEntity != null && validate(request, respFuture, true)) {
+                configEntity.config = request.config
                 publishConfigToKafka(configEntity, respFuture)
             }
         }
