@@ -134,8 +134,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     @TaskAction
     def updateImage() {
         def outputFiles = sourceTasks.get().collect{ it -> it.getOutputs().files.files }.flatten() as List<File>
-        def buildBaseDir = temporaryDir.toPath();
-        def containerizationDir = Paths.get("$buildBaseDir/containerization/");
+        def buildBaseDir = temporaryDir.toPath()
+        def containerizationDir = Paths.get("$buildBaseDir/containerization/")
 
         String gitRevision = gitTask.flatMap { it.revision }.get()
         def jiraTicket = hasJiraTicket()
@@ -161,8 +161,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             if (imageName.endsWith("-local")) {
                 logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
                 builder = Jib.from(DockerDaemonImage.named(imageName))
-            } else if (imageName.contains("corda-os-cli")) {
-                logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from internal remote repo")
+            } else if (imageName.contains("software.r3.com")) {
+                logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from internal remote repo")
                 builder = setCredentialsOnBaseImage(builder)
             } else {
                 logger.info("Resolving base image ${baseImageName.get()}: ${baseImageTag.get()} from remote repo")
