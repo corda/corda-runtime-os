@@ -46,22 +46,22 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-        if (validateAndApplyDefaults(request, respFuture)) {
+        if (validate(request, respFuture, false)) {
             val configEntity = publishConfigToDB(request, respFuture)
-            if (configEntity != null) {
+            if (configEntity != null && validate(request, respFuture, true)) {
                 publishConfigToKafka(configEntity, respFuture)
             }
         }
     }
 
-    private fun validateAndApplyDefaults(req: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture): Boolean {
+    private fun validate(req: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture, applyDefaults: Boolean): Boolean {
         return try {
             val config = smartConfigFactory.create(ConfigFactory.parseString(req.config))
             val updatedConfig = validator.validate(
                 req.section,
                 Version(req.schemaVersion.majorVersion, req.schemaVersion.minorVersion),
                 config,
-                true
+                applyDefaults
             )
             req.config = updatedConfig.root().render(ConfigRenderOptions.concise())
             true
