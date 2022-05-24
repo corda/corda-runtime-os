@@ -5,8 +5,7 @@ import net.corda.crypto.persistence.db.impl.tests.infra.TestConfigurationReadSer
 import net.corda.crypto.persistence.db.impl.tests.infra.TestDbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -28,7 +27,7 @@ class SigningKeyCacheProviderTests {
 
     @BeforeEach
     fun setup() {
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         configurationReadService = TestConfigurationReadService(coordinatorFactory).also {
             it.start()
             eventually {
@@ -120,3 +119,4 @@ class SigningKeyCacheProviderTests {
         assertNotSame(instance11, instance21)
     }
 }
+
