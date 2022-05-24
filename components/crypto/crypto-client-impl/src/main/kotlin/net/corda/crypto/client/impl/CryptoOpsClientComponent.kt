@@ -17,7 +17,7 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.getConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig

@@ -1,4 +1,4 @@
-package net.corda.messaging.api.exception
+package net.corda.libs.configuration.helper
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

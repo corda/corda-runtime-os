@@ -24,7 +24,7 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
-import net.corda.messaging.api.config.getConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
