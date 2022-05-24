@@ -10,6 +10,10 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform(project(':corda-api'))
 
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+
     compileOnly 'org.osgi:osgi.annotation'
 }
 

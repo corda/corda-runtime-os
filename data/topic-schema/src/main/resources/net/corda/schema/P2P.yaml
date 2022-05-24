@@ -1,0 +1,41 @@
+topics:
+  P2PInTopic:
+    name: p2p.in
+    consumers:
+    producers:
+    config:
+  P2POutTopic:
+    name: p2p.out
+    consumers:
+    producers:
+    config:
+  P2POutMarkersTopic:
+    name: p2p.out.markers
+    consumers:
+    producers:
+    config:
+  LinkInTopic:
+    name: link.in
+    consumers:
+    producers:
+    config:
+  LinkOutTopic:
+    name: link.out
+    consumers:
+    producers:
+    config:
+  GatewayTLSCertsTopic:
+    name: gateway.tls.certs
+    consumers:
+    producers:
+    config:
+  GatewayTLSTruststoresTopic:
+    name: gateway.tls.truststores
+    consumers:
+    producers:
+    config:
+  SessionOutPartitionsTopic:
+    name: session.out.partitions
+    consumers:
+    producers:
+    config:
