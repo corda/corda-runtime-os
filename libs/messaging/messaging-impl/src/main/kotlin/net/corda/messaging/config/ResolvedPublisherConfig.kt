@@ -1,10 +1,10 @@
 package net.corda.messaging.config
 
+import java.time.Duration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Publisher.CLOSE_TIMEOUT
-import java.time.Duration
 
 /**
  * Class to resolve publisher configuration for the messaging layer.

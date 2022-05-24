@@ -1,5 +1,6 @@
 package net.corda.configuration.rpcops.impl.tests
 
+import java.util.stream.Stream
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
@@ -34,7 +35,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Stream
 
 class LifecycleTestContext {
     val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
@@ -73,7 +73,7 @@ class FlowRPCOpsServiceImplTest {
     private val lifecycleCoordinator = lifecycleTestContext.lifecycleCoordinator
     private var eventHandler = mock<LifecycleEventHandler>()
 
-    private val mergedMessagingConfig = mock<SmartConfig>()
+    private val messagingConfig = mock<SmartConfig>()
 
     private lateinit var configChangeEvent: ConfigChangedEvent
     private lateinit var flowRPCOpsService: FlowRPCOpsService
@@ -91,12 +91,10 @@ class FlowRPCOpsServiceImplTest {
 
         eventHandler = lifecycleTestContext.getEventHandler()
 
-        val messagingConfig: SmartConfig = mock {
-            on(it.withFallback(any())).thenReturn(mergedMessagingConfig)
-        }
+        val bootConfig: SmartConfig = mock()
 
         val configs = mapOf(
-            BOOT_CONFIG to mock(),
+            BOOT_CONFIG to bootConfig,
             MESSAGING_CONFIG to messagingConfig
         )
 
@@ -176,13 +174,13 @@ class FlowRPCOpsServiceImplTest {
     @Test
     fun `Test configuration changes initialise flow status cache service`() {
         eventHandler.processEvent(configChangeEvent, lifecycleCoordinator)
-        verify(flowStatusCacheService).initialise(eq(mergedMessagingConfig))
+        verify(flowStatusCacheService).initialise(eq(messagingConfig))
     }
 
     @Test
     fun `Test configuration changes initialise flow RPC service`() {
         eventHandler.processEvent(configChangeEvent, lifecycleCoordinator)
-        verify(flowRpcOps).initialise(eq(mergedMessagingConfig))
+        verify(flowRpcOps).initialise(eq(messagingConfig))
     }
 
     @Test

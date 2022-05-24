@@ -83,11 +83,14 @@ data class CpiMetadataEntityKey(
     private val signerSummaryHash: String,
 ): Serializable
 
-// Although the following query is currently simple (so maybe it doesn't make sense to be here), however,
-// in subsequent work where we add timestamps this will also take timestamp and maybe then it is worth
-// testing the query, which should happen in this module.
-// TODO the following needs to return a `Stream` as per (https://r3-cev.atlassian.net/browse/CORE-4823). But, It currently throws
-//  org.hibernate.exception.GenericJDBCException: could not advance using next()
-//      Caused by: org.postgresql.util.PSQLException: This ResultSet is closed.
-fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> =
-    createQuery("FROM ${CpiMetadataEntity::class.simpleName}", CpiMetadataEntity::class.java).resultList.stream()
+// TODO The below needs fixing. It currently seems to be producing a select query over Cpi metadata
+//  and one select query per Cpk metadata, as per https://r3-cev.atlassian.net/browse/CORE-4864
+fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
+    return createQuery(
+        "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
+                "left join fetch cpi_.cpks cpks_ " +
+                "left join fetch cpks_.cpkLibraries " +
+                "left join fetch cpks_.cpkDependencies ",
+        CpiMetadataEntity::class.java
+    ).resultStream
+}

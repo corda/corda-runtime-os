@@ -28,6 +28,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
 
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
 

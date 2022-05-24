@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription.consumer.builder
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -23,7 +24,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
 internal class StateAndEventBuilderImpl @Activate constructor(
@@ -49,9 +49,9 @@ internal class StateAndEventBuilderImpl @Activate constructor(
         onStateError: (ByteArray) -> Unit,
         onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
-        val stateConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_STATE)
+        val stateConsumerConfig = ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)
         val stateConsumer = cordaConsumerBuilder.createConsumer(stateConsumerConfig, config.messageBusConfig, kClazz, sClazz, onStateError)
-        val eventConsumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.SAE_EVENT)
+        val eventConsumerConfig = ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
         val eventConsumer = cordaConsumerBuilder.createConsumer(eventConsumerConfig, config.messageBusConfig, kClazz, eClazz, onEventError)
         validateConsumers(config, stateConsumer, eventConsumer)
 

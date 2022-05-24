@@ -10,11 +10,12 @@ import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -81,7 +82,7 @@ class HSMConfigurationClientComponent @Activate constructor(
                     requestType = HSMConfigurationRequest::class.java,
                     responseType = HSMConfigurationResponse::class.java
                 ),
-                event.config.toMessagingConfig()
+                event.config.getConfig(MESSAGING_CONFIG)
             ).also { it.start() }
 
         override val registrar: HSMConfigurationClientImpl = HSMConfigurationClientImpl(sender)

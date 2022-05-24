@@ -3,13 +3,13 @@ package net.corda.gateway
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import kotlin.random.Random
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import picocli.CommandLine
 import picocli.CommandLine.Option
-import kotlin.random.Random
 
 internal class CliArguments {
     companion object {
@@ -55,7 +55,7 @@ internal class CliArguments {
     val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
             .withValue(
-                BOOTSTRAP_SERVER,
+                KAFKA_BOOTSTRAP_SERVERS,
                 ConfigValueFactory.fromAnyRef(kafkaServers)
             )
             .withValue(

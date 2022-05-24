@@ -7,14 +7,31 @@ import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.softPersistence
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.validation.ConfigurationValidator
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.SECRETS_PASSPHRASE
 import net.corda.schema.configuration.ConfigKeys.SECRETS_SALT
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 class CryptoWorkerTests {
+
+    companion object {
+        val validator = mock<ConfigurationValidator>().apply {
+                whenever(validate(any(), any<SmartConfig>(), any(), any())).thenAnswer { it.arguments[2] }
+            }
+
+        val validatorFactoryMock = mock<ConfigurationValidatorFactory>().apply {
+            whenever(createConfigValidator()).thenReturn(validator)
+        }
+    }
+    
     @Test
     fun `Should build default bootstrap config with fallback credentials`() {
         val params = WorkerHelpers.getParams(
@@ -26,8 +43,8 @@ class CryptoWorkerTests {
                 )
             }
         )
-        val config = buildBoostrapConfig(params)
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val config = buildBoostrapConfig(params, validatorFactoryMock)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -51,8 +68,8 @@ class CryptoWorkerTests {
         assertEquals(1000, hsmPersistence.maximumSize)
 
         assertTrue(config.hasPath("dir"))
-        assertTrue(config.hasPath("instance"))
-        assertTrue(config.hasPath("topic"))
+        assertTrue(config.hasPath("instanceId"))
+        assertTrue(config.hasPath("topicPrefix"))
     }
 
     @Test
@@ -72,8 +89,8 @@ class CryptoWorkerTests {
                 )
             }
         )
-        val config = buildBoostrapConfig(params)
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val config = buildBoostrapConfig(params, validatorFactoryMock)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -97,7 +114,7 @@ class CryptoWorkerTests {
         assertEquals(1000, hsmPersistence.maximumSize)
 
         assertTrue(config.hasPath("dir"))
-        assertTrue(config.hasPath("instance"))
-        assertTrue(config.hasPath("topic"))
+        assertTrue(config.hasPath("instanceId"))
+        assertTrue(config.hasPath("topicPrefix"))
     }
 }

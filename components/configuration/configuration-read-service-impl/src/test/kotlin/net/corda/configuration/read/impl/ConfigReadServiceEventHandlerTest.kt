@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -27,6 +29,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.kotlin.any
 import org.mockito.kotlin.capture
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.secondValue
@@ -46,12 +49,12 @@ internal class ConfigReadServiceEventHandlerTest {
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var coordinator: LifecycleCoordinator
     private lateinit var compactedSubscription: CompactedSubscription<String, SmartConfig>
+    private lateinit var configMerger: ConfigMerger
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
     private val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("start" to 1)))
-
     @BeforeEach
     fun setUp() {
         subscriptionFactory = mock()
@@ -60,8 +63,15 @@ internal class ConfigReadServiceEventHandlerTest {
         `when`(subscriptionFactory.createCompactedSubscription<String, SmartConfig>(any(), any(), any())).thenReturn(
             compactedSubscription
         )
+        configMerger  = mock {
+            on { getMessagingConfig(bootConfig, null) } doAnswer { SmartConfigImpl.empty() }
+            on { getRPCConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
+            on { getDbConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
+            on { getReconciliationConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
+            on { getCryptoConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
+        }
 
-        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory)
+        configReadServiceEventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger)
     }
 
     @Test

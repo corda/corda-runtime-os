@@ -26,13 +26,13 @@ internal class VirtualNodeWriterFactory(
     /**
      * Creates a [VirtualNodeWriter].
      *
-     * @param config Config to use for subscribing to Kafka.
+     * @param messagingConfig Config to use for subscribing to Kafka.
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    fun create(config: SmartConfig): VirtualNodeWriter {
-        val vnodePublisher = createPublisher(config)
-        val subscription = createRPCSubscription(config, vnodePublisher)
+    fun create(messagingConfig: SmartConfig): VirtualNodeWriter {
+        val vnodePublisher = createPublisher(messagingConfig)
+        val subscription = createRPCSubscription(messagingConfig, vnodePublisher)
         return VirtualNodeWriter(subscription, vnodePublisher)
     }
 
@@ -48,11 +48,11 @@ internal class VirtualNodeWriterFactory(
 
     /**
      * Creates a [RPCSubscription]<VirtualNodeCreationRequest, VirtualNodeCreationResponse> using the provided
-     * [config]. The subscription is to the [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests using a
+     * [messagingConfig]. The subscription is to the [VIRTUAL_NODE_CREATION_REQUEST_TOPIC] topic, and handles requests using a
      * [VirtualNodeWriterProcessor].
      */
     private fun createRPCSubscription(
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
         vnodePublisher: Publisher,
     ): RPCSubscription<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
@@ -67,6 +67,6 @@ internal class VirtualNodeWriterFactory(
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
         val processor = VirtualNodeWriterProcessor(vnodePublisher, dbConnectionManager, virtualNodeEntityRepository, vnodeDbFactory)
 
-        return subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
+        return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
     }
 }

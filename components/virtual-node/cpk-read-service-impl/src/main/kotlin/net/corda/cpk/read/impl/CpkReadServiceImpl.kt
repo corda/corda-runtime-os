@@ -1,11 +1,13 @@
 package net.corda.cpk.read.impl
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.read.impl.services.CpkChunksKafkaReader
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,12 +20,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.libs.packaging.Cpk
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.WorkspacePathProvider
@@ -34,7 +37,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CpkReadService::class])
 class CpkReadServiceImpl (
@@ -119,7 +121,7 @@ class CpkReadServiceImpl (
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Configuring CPK Read Service")
-        createCpkChunksKafkaReader(event.config.toMessagingConfig())
+        createCpkChunksKafkaReader(event.config.getConfig(MESSAGING_CONFIG), event.config.getConfig(BOOT_CONFIG))
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -137,10 +139,10 @@ class CpkReadServiceImpl (
     override fun get(cpkId: CpkIdentifier): Cpk? =
         cpksById[cpkId]
 
-    private fun createCpkChunksKafkaReader(config: SmartConfig) {
+    private fun createCpkChunksKafkaReader(messagingConfig: SmartConfig, bootConfig: SmartConfig) {
         val (cpkCacheDir, cpkPartsDir) = try {
-            workspacePathProvider.getOrCreate(config, CPK_CACHE_DIR) to
-                    tempPathProvider.getOrCreate(config, CPK_PARTS_DIR)
+            workspacePathProvider.getOrCreate(bootConfig, CPK_CACHE_DIR) to
+                    tempPathProvider.getOrCreate(bootConfig, CPK_PARTS_DIR)
         } catch (e: Exception) {
             logger.error("Error while trying to create directories. Component shuts down.", e)
             closeResources()
@@ -153,7 +155,7 @@ class CpkReadServiceImpl (
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
                 CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, this::onCpkAssembled),
-                config
+                messagingConfig
             ).also { it.start() }
     }
 

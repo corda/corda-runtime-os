@@ -34,12 +34,13 @@ import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
 import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -169,7 +170,7 @@ class DBProcessorImpl @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(ConfigKeys.RECONCILIATION_CPI_INFO_INTERVAL_MS)
+                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(RECONCILIATION_CPI_INFO_INTERVAL_MS)
                     ?.let { cpiInfoReconciliationIntervalMs ->
                         log.info("Cpi info reconciliation interval set to $cpiInfoReconciliationIntervalMs ms")
                         createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs)
@@ -180,7 +181,7 @@ class DBProcessorImpl @Activate constructor(
                 instanceId = event.config.getInt(INSTANCE_ID)
 
                 log.info("Bootstrapping DB connection Manager")
-                dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))
+                dbConnectionManager.bootstrap(event.config.getConfig(BOOT_DB_PARAMS))
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
