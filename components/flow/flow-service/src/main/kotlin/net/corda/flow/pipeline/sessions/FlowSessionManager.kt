@@ -29,6 +29,7 @@ interface FlowSessionManager {
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
      */
+    @Suppress("LongParameterList")
     fun sendInitMessage(
         checkpoint: FlowCheckpoint,
         sessionId: String,

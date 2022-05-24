@@ -22,7 +22,10 @@ internal class CpkSandboxImpl(
     override fun loadClassFromMainBundle(className: String): Class<*> = try {
         mainBundle.loadClass(className).also { clazz ->
             if (!accept(clazz)) {
-                throw SandboxException("The class $className cannot be loaded from bundle $mainBundle in sandbox $id, as the class was not found in the correct bundle.")
+                throw SandboxException(
+                    "The class $className cannot be loaded from bundle $mainBundle in sandbox $id, as " +
+                            "the class was not found in the correct bundle."
+                )
             }
         }
     } catch (e: ClassNotFoundException) {

@@ -23,6 +23,7 @@ class FlowSandboxGroupContextImpl(
         const val CHECKPOINT_SERIALIZER = "CHECKPOINT_SERIALIZER"
         const val FLOW_PROTOCOL_STORE = "FLOW_PROTOCOL_STORE"
 
+        @Suppress("ThrowsCount")
         fun fromContext(sandboxGroupContext: SandboxGroupContext): FlowSandboxGroupContext {
             val dependencyInjector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(DEPENDENCY_INJECTOR)
                 ?: throw FlowProcessingException(
