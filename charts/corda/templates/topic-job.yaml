@@ -4,6 +4,7 @@ metadata:
   name: {{ include "corda.fullname" . }}-create-topics
   labels: &id012
     app: create-topics
+    app.kubernetes.io/instance: corda
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded

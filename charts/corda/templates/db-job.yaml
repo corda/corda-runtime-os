@@ -3,6 +3,8 @@ kind: Job
 {{- if .Values.bootstrap.auto }}
 metadata:
   name: corda-setup-db
+  labels:
+    app.kubernetes.io/instance: corda
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
