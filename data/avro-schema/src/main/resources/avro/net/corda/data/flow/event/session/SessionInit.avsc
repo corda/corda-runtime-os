@@ -5,8 +5,17 @@
   "namespace": "net.corda.data.flow.event.session",
   "fields": [
     {
-      "name": "flowName",
-      "type": "string"
+      "name": "protocol",
+      "type": "string",
+      "doc": "The flow protocol name to initiate on the counterparty side"
+    },
+    {
+      "name": "versions",
+      "type": {
+        "type": "array",
+        "items": "int"
+      },
+      "doc": "The list of protocol versions supported on the initiator side"
     },
     {
       "name": "cpiId",

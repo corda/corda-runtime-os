@@ -1,17 +1,37 @@
 package net.corda.v5.application.flows
 
 import kotlin.annotation.AnnotationTarget.CLASS
-import kotlin.reflect.KClass
 
 /**
- * This annotation is required by any [Flow] that is designed to be initiated by a counterparty flow. The class must have at least a
- * constructor which takes in a single [net.corda.v5.application.identity.Party] parameter which represents the initiating counterparty. The
- * [Flow] that does the initiating is specified by the [value] property and itself must be annotated with [InitiatingFlow].
+ * Mark a flow as initiated, meaning it is started as a consequence of a counterparty requesting a new session.
  *
- * The node on startup scans for [Flow]s which are annotated with this and automatically registers the initiating to initiated flow mapping.
+ * Any flows that participate in flow sessions must declare a protocol name. The platform will use the protocol name to
+ * establish what flow to invoke on the responder side when the initiator side creates a session. For example, to set up
+ * a basic initiator-responder pair, you'd declare the following:
+ *
+ *
+ * ```
+ *   @InitiatingFlow(protocol = "myprotocol")
+ *   class MyFlowInitiator : Flow {
+ *    ...
+ *   }
+ *
+ *   @InitiatedBy(protocol = "myprotocol")
+ *   class MyFlowResponder : Flow {
+ *    ...
+ *   }
+ * ```
+ *
+ * Flows may also optionally declare a range of protocol versions they support. By default, flows support protocol
+ * version 1 only. When initiating a flow, the platform will look for the highest supported protocol version as declared
+ * on the initiating side and start that flow on the responder side. You can use the `FlowInfo` object on the session to
+ * discover what protocol version is currently in operation for the session and switch behaviour accordingly.
+ *
+ * Note that responder flows are not eligible to be started via RPC.
  *
  * @see InitiatingFlow
  */
 @Target(CLASS)
 @MustBeDocumented
-annotation class InitiatedBy(val value: KClass<out Flow<*>>)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class InitiatedBy(val protocol: String, val version: IntArray = [1])
