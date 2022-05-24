@@ -5,9 +5,9 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -75,9 +75,10 @@ internal class ConfigProcessor(
                 }
             }.toMutableMap()
             config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+            //TODO - remove the following three calls when defaulting via reconciliation process is possible
             config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
             config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
-            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
             config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
             config
         } else {
