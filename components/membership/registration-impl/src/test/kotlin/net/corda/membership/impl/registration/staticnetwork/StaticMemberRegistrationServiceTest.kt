@@ -41,10 +41,11 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.schema.Schemas
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -99,7 +100,7 @@ class StaticMemberRegistrationServiceTest {
     @Suppress("UNCHECKED_CAST")
     private val mockPublisher: Publisher = mock {
         on { publish(any()) } doAnswer {
-            publishedList.addAll(it.arguments.first() as List<Record<String, PersistentMemberInfo>>)
+            publishedList.addAll(it.arguments.first() as List<Record<String, Any>>)
             listOf(CompletableFuture.completedFuture(Unit))
         }
     }
@@ -134,7 +135,7 @@ class StaticMemberRegistrationServiceTest {
 
     private val configurationReadService: ConfigurationReadService = mock()
 
-    private val publishedList = mutableListOf<Record<String, PersistentMemberInfo>>()
+    private val publishedList = mutableListOf<Record<String, Any>>()
 
     private var coordinatorIsRunning = false
     private var coordinatorStatus = LifecycleStatus.DOWN
@@ -162,10 +163,6 @@ class StaticMemberRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
 
-    private val digestService: DigestService = mock {
-        on { hash(any<ByteArray>(), any()) } doReturn SecureHash("SHA256", "1234ABCD".toByteArray())
-    }
-
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -173,8 +170,7 @@ class StaticMemberRegistrationServiceTest {
         cryptoOpsClient,
         configurationReadService,
         lifecycleCoordinatorFactory,
-        layeredPropertyMapFactory,
-        digestService
+        layeredPropertyMapFactory
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -203,9 +199,9 @@ class StaticMemberRegistrationServiceTest {
         val registrationResult = registrationService.register(alice)
         registrationService.stop()
 
-        assertEquals(3, publishedList.size)
+        assertEquals(4, publishedList.size)
 
-        publishedList.forEach {
+        publishedList.subList(0,2).forEach {
             assertTrue(it.key.startsWith(alice.id) || it.key.startsWith(bob.id) || it.key.startsWith(charlie.id))
             assertTrue(it.key.endsWith(alice.id))
         }
@@ -234,6 +230,12 @@ class StaticMemberRegistrationServiceTest {
         assertEquals(aliceKey.calculateHash(), memberPublished.identityKeyHashes.first())
         assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
         assertEquals(1, memberPublished.endpoints.size)
+
+        assertEquals("${alice.x500Name}-${alice.groupId}", publishedList.last().key)
+        assertEquals(HOSTED_MAP_TOPIC, publishedList.last().topic)
+        val hostedIdentityPublished = publishedList.last().value as HostedIdentityEntry
+        assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
+        assertEquals(alice.x500Name, hostedIdentityPublished.holdingIdentity.x500Name)
 
         assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
     }
