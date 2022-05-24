@@ -175,7 +175,6 @@ class PubSubSubscriptionIntegrationTest {
         publish(
             Record(topic, "key1", Event("one", 1)),
         )
-        assertThat(processed).isEmpty()
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
         eventually(duration = 1.seconds, waitBetween = 50.millis) {
             assertThat(lastFuture.get()).isNotNull
