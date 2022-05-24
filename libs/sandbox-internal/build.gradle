@@ -31,6 +31,7 @@ dependencies {
     testCompileOnly 'org.osgi:osgi.core'
     testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:crypto-testkit")
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"

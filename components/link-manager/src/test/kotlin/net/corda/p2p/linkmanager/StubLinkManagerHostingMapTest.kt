@@ -10,7 +10,6 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.test.HostedIdentityEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -86,7 +85,7 @@ class StubLinkManagerHostingMapTest {
         )
 
         assertThat(
-            testObject.isHostedLocally(entryOne.holdingIdentity.toHoldingIdentity())
+            testObject.isHostedLocally(entryOne.holdingIdentity)
         ).isTrue
     }
 
@@ -100,7 +99,7 @@ class StubLinkManagerHostingMapTest {
 
         assertThat(
             testObject.isHostedLocally(
-                LinkManagerInternalTypes.HoldingIdentity(
+                HoldingIdentity(
                     "x500", "another group"
                 )
             )
@@ -144,7 +143,7 @@ class StubLinkManagerHostingMapTest {
 
         assertThat(
             testObject.isHostedLocally(
-                LinkManagerInternalTypes.HoldingIdentity(
+                HoldingIdentity(
                     "x500", "group"
                 )
             )
@@ -161,7 +160,7 @@ class StubLinkManagerHostingMapTest {
 
         assertThat(
             testObject.isHostedLocally(
-                LinkManagerInternalTypes.HoldingIdentity(
+                HoldingIdentity(
                     "x500", "group"
                 )
             )
@@ -204,7 +203,7 @@ class StubLinkManagerHostingMapTest {
         )
 
         assertSoftly {
-            it.assertThat(testObject.getInfo(entryOne.holdingIdentity.toHoldingIdentity())).isEqualTo(
+            it.assertThat(testObject.getInfo(entryOne.holdingIdentity)).isEqualTo(
                 HostingMapListener.IdentityInfo(
                     holdingIdentity = entryOne.holdingIdentity,
                     tlsCertificates = listOf("cert1", "cert2"),
@@ -213,7 +212,7 @@ class StubLinkManagerHostingMapTest {
                     sessionPublicKey = publicKeyOne
                 )
             )
-            it.assertThat(testObject.getInfo(LinkManagerInternalTypes.HoldingIdentity("", ""))).isNull()
+            it.assertThat(testObject.getInfo(HoldingIdentity("", ""))).isNull()
         }
     }
 

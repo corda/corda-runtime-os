@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Uniqueness Processor'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:uniqueness:uniqueness-checker')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation 'net.corda:corda-base'
+
+    runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
+
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+}

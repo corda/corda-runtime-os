@@ -2,16 +2,16 @@ package net.corda.p2p.setup
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import kotlin.random.Random
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import kotlin.random.Random
 
 @Command(
     header = ["P2P Setup"],
@@ -48,7 +48,7 @@ class Command {
         return SmartConfigFactory.create(secretsConfig).create(
             ConfigFactory.empty()
                 .withValue(
-                    BOOTSTRAP_SERVER,
+                    KAFKA_BOOTSTRAP_SERVERS,
                     ConfigValueFactory.fromAnyRef(kafkaServers)
                 )
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))

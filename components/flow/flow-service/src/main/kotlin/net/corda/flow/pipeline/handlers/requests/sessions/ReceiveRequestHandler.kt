@@ -5,9 +5,11 @@ import net.corda.data.flow.state.waiting.SessionData
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionMissingException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +30,15 @@ class ReceiveRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Receive): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        return if (flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.toList())) {
+
+        val hasReceivedEvents = try {
+            flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.toList())
+        } catch (e: FlowSessionMissingException) {
+            // TODO CORE-4850 Wakeup with error when session does not exist
+            throw FlowFatalException(e.message, context, e)
+        }
+
+        return if (hasReceivedEvents) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {

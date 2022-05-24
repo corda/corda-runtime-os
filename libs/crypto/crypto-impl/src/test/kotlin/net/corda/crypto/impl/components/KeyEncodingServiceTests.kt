@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.components
 
-import net.corda.crypto.impl.generateKeyPair
-import net.corda.crypto.impl.signData
+import net.corda.crypto.impl.infra.generateKeyPair
+import net.corda.crypto.impl.infra.signData
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME

@@ -16,7 +16,6 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_NETWORK_TEMPLATE
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.types.MemberX500Name
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 
 class TestUtils {
@@ -27,9 +26,9 @@ class TestUtils {
         private const val TEST_ENDPOINT_PROTOCOL = "1"
         private const val TEST_ENDPOINT_URL = "https://dummyurl.corda5.r3.com:10000"
 
-        private val bootConfig: SmartConfig = mock()
-        private val messagingConfig: SmartConfig = mock {
-            on(it.withFallback(any())).thenReturn(mock())
+        private val messagingConfig: SmartConfig = mock()
+        private val bootConfig: SmartConfig = mock {
+            on(it.withFallback(messagingConfig)).thenReturn(messagingConfig)
         }
 
         val configs = mapOf(

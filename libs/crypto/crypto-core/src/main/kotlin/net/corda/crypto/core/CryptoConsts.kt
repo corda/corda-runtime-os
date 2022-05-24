@@ -4,17 +4,30 @@ package net.corda.crypto.core
  * Common crypto constants.
  */
 object CryptoConsts {
-    const val CLUSTER_TENANT_ID = "cluster"
+    const val SOFT_HSM_CONFIG_ID = "soft-hsm-config"
+    const val SOFT_HSM_SERVICE_NAME = "soft"
 
     /**
      * Constants defining HSM categories.
      */
-    object HsmCategories {
-        const val FRESH_KEYS = "FRESH_KEYS"
+    object Categories {
+        const val ACCOUNTS = "ACCOUNTS"
+        const val CI = "CI"
         const val LEDGER = "LEDGER"
         const val NOTARY = "NOTARY"
-        const val SESSION = "SESSION"
+        const val SESSION_INIT = "SESSION_INIT"
         const val TLS = "TLS"
+        const val JWT_KEY = "JWT_KEY"
+
+        val all: Set<String> = setOf(
+            ACCOUNTS,
+            CI,
+            LEDGER,
+            NOTARY,
+            SESSION_INIT,
+            TLS,
+            JWT_KEY
+        )
     }
 
     /**
@@ -55,5 +68,34 @@ object CryptoConsts {
          * Inclusive time before which a key was created.
          */
         const val CREATED_BEFORE_FILTER = "createdBefore"
+    }
+
+    /**
+     * Constants defining keys for the filter in the lookup function of HSM services.
+     */
+    object HSMFilters {
+        /**
+         * The key's signature scheme name.
+         */
+        const val SERVICE_NAME_FILTER = "serviceName"
+    }
+
+    /**
+     * Constants defining keys for the context in the HSM services functions.
+     */
+    object HSMContext {
+        /**
+         * The optional preferred private key policy, accepted values are NONE, ALIASED
+         */
+        const val PREFERRED_PRIVATE_KEY_POLICY_KEY = "preferredPrivateKeyPolicy"
+        const val PREFERRED_PRIVATE_KEY_POLICY_NONE = "NONE"
+        const val PREFERRED_PRIVATE_KEY_POLICY_ALIASED = "ALIASED"
+
+        /**
+         * The optional hint to ignore if the association tenantId/category already exists (but the
+         * master wrapping key generation will still go ahead if the master key is required for that
+         * association). If that is specified then the value should be YES.
+         */
+        const val NOT_FAIL_IF_ASSOCIATION_EXISTS = "notFailIfAssociationExists"
     }
 }

@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX_VALUE
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext

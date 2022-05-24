@@ -2,16 +2,19 @@ package net.corda.crypto.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoPublishResult
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.data.crypto.config.HSMConfig
+import net.corda.data.crypto.wire.hsm.HSMInfo
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
+import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.config.getConfig
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -26,7 +29,7 @@ class HSMRegistrationClientComponent @Activate constructor(
     configurationReadService: ConfigurationReadService
 ) : AbstractConfigurableComponent<HSMRegistrationClientComponent.Impl>(
     coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>(),
+    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
     configurationReadService,
     InactiveImpl(),
     setOf(
@@ -34,7 +37,8 @@ class HSMRegistrationClientComponent @Activate constructor(
     )
 ), HSMRegistrationClient {
     companion object {
-        const val CLIENT_ID = "crypto.registration.hsm"
+        const val GROUP_NAME = "crypto.hsm.registration.client"
+        const val CLIENT_ID = "crypto.hsm.registration.client"
     }
 
     interface Impl : AutoCloseable {
@@ -45,19 +49,14 @@ class HSMRegistrationClientComponent @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(publisherFactory, event)
 
-    override fun putHSM(config: HSMConfig): CryptoPublishResult =
-        impl.registrar.putHSM(config)
+    override fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+        impl.registrar.assignHSM(tenantId, category, context)
 
-    override fun assignHSM(tenantId: String, category: String, defaultSignatureScheme: String): CryptoPublishResult =
-        impl.registrar.assignHSM(tenantId, category, defaultSignatureScheme)
+    override fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo =
+        impl.registrar.assignSoftHSM(tenantId, category, context)
 
-    override fun assignSoftHSM(
-        tenantId: String,
-        category: String,
-        passphrase: String,
-        defaultSignatureScheme: String
-    ): CryptoPublishResult =
-        impl.registrar.assignSoftHSM(tenantId, category, passphrase, defaultSignatureScheme)
+    override fun findHSM(tenantId: String, category: String): HSMInfo? =
+        impl.registrar.findHSM(tenantId, category)
 
     class InactiveImpl : Impl {
         override val registrar: HSMRegistrationClientImpl
@@ -70,13 +69,22 @@ class HSMRegistrationClientComponent @Activate constructor(
         publisherFactory: PublisherFactory,
         event: ConfigChangedEvent
     ) : Impl {
-        private val publisher: Publisher = publisherFactory.createPublisher(
-            PublisherConfig(CLIENT_ID),
-            event.config.toMessagingConfig()
-        )
-        override val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(publisher)
+        private val sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse> =
+            publisherFactory.createRPCSender(
+            RPCConfig(
+                groupName = GROUP_NAME,
+                clientName = CLIENT_ID,
+                requestTopic = Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
+                requestType = HSMRegistrationRequest::class.java,
+                responseType = HSMRegistrationResponse::class.java
+            ),
+            event.config.getConfig(MESSAGING_CONFIG)
+        ).also { it.start() }
+
+        override val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(sender)
+
         override fun close() {
-            publisher.close()
+            sender.close()
         }
     }
 }

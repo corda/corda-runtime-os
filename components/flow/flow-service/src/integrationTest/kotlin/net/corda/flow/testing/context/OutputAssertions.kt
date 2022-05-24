@@ -11,6 +11,12 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun sessionInitEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
     fun sessionDataEvents(
         vararg sessionToPayload: Pair<String, ByteArray>,
         initiatingIdentity: HoldingIdentity? = null,
@@ -23,9 +29,17 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun sessionErrorEvents(
+        vararg sessionIds: String,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
     fun flowDidNotResume()
 
-    fun <T> flowResumedWith(value: T)
+    fun flowResumedWith(value: Any)
+
+    fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
     fun wakeUpEvent()
 
@@ -41,3 +55,5 @@ interface OutputAssertions {
 
     fun markedForDlq()
 }
+
+inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

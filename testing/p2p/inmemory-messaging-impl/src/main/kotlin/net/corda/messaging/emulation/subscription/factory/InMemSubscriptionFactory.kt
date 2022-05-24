@@ -25,7 +25,7 @@ import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.subscription.rpc.RPCSubscriptionImpl
 import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

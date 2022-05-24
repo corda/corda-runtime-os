@@ -6,36 +6,74 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
 
+/**
+ * Wrapping key which can wrap/unwrap other [WrappingKey]s or [PrivateKey]s.
+ */
 class WrappingKey(
     private val key: ManagedKey,
     private val schemeMetadata: CipherSchemeMetadata,
 ) {
     companion object {
+        /**
+         * Derives a new instance of [WrappingKey] using passphrase and salt delegating that to [AesKey].[derive].
+         * The resulting key is deterministic.
+         *
+         * [schemeMetadata] is used to correctly decode a [PrivateKey] when unwrapping it
+         */
+        fun derive(schemeMetadata: CipherSchemeMetadata, credentials: KeyCredentials): WrappingKey =
+            derive(schemeMetadata, credentials.passphrase, credentials.salt)
+
+        /**
+         * Derives a new instance of [WrappingKey] using passphrase and salt delegating that to [AesKey].[derive].
+         * The resulting key is deterministic.
+         *
+         * [schemeMetadata] is used to correctly decode a [PrivateKey] when unwrapping it
+         */
         fun derive(schemeMetadata: CipherSchemeMetadata, passphrase: String, salt: String): WrappingKey =
             WrappingKey(
                 schemeMetadata = schemeMetadata,
                 key = AesKey.derive(passphrase, salt)
             )
 
-        fun createWrappingKey(schemeMetadata: CipherSchemeMetadata): WrappingKey =
+        /**
+         * Generates a new instance of [WrappingKey].
+         * The resulting key is random.
+         */
+        fun generateWrappingKey(schemeMetadata: CipherSchemeMetadata): WrappingKey =
             WrappingKey(
                 schemeMetadata = schemeMetadata,
                 key = AesKey.generate()
             )
     }
 
+    /**
+     * Returns the standard algorithm name for this key.
+     * See the Java Security Standard Algorithm Names document for more information.
+     */
     val algorithm: String = key.algorithm
 
-    fun wrap(key: WrappingKey): ByteArray = this.key.wrapKey(key.key)
+    /**
+     * Encrypts the [other] [WrappingKey].
+     */
+    fun wrap(other: WrappingKey): ByteArray = this.key.wrapKey(other.key)
 
-    fun wrap(key: PrivateKey): ByteArray = this.key.encryptor.encrypt(key.encoded)
+    /**
+     * Encrypts the [other] [PrivateKey].
+     */
+    fun wrap(other: PrivateKey): ByteArray = this.key.encryptor.encrypt(other.encoded)
 
-    fun unwrapWrappingKey(key: ByteArray): WrappingKey = WrappingKey(
+    /**
+     * Decrypts the [other] [WrappingKey].
+     */
+    fun unwrapWrappingKey(other: ByteArray): WrappingKey = WrappingKey(
         schemeMetadata = schemeMetadata,
-        key = this.key.unwrapKey(key)
+        key = this.key.unwrapKey(other)
     )
 
-    fun unwrap(key: ByteArray): PrivateKey = this.key.encryptor.decrypt(key).decodePrivateKey()
+    /**
+     * Decrypts the [other] [PrivateKey].
+     */
+    fun unwrap(other: ByteArray): PrivateKey = this.key.encryptor.decrypt(other).decodePrivateKey()
 
     private fun ByteArray.decodePrivateKey(): PrivateKey {
         val keyInfo = PrivateKeyInfo.getInstance(this)

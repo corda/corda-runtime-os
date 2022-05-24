@@ -1,8 +1,13 @@
 package net.corda.sandboxgroupcontext.impl
 
 import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.CordappManifest
-import net.corda.libs.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash
@@ -12,32 +17,34 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.util.TreeSet
+import java.time.Instant
 
 object Helpers {
-    fun mockCpkMetadata(mainBundle: String, name: String, version: String): Cpk.Metadata
+    private fun mockCpkMetadata(mainBundle: String, name: String, version: String): CpkMetadata
     = mockCpkMetadata(mainBundle, emptyList(), name, version)
 
-    fun mockCpkMetadata(mainBundle: String, dependencies: List<Cpk.Identifier>, name:String, version:String): Cpk.Metadata {
-        val contractInfo = ManifestCordappInfo("", "", 1, "")
-        val workflowInfo = ManifestCordappInfo("", "", 1, "")
+    private fun mockCpkMetadata(mainBundle: String, dependencies: List<CpkIdentifier>, name:String, version:String): CpkMetadata {
+        val contractInfo = ManifestCorDappInfo("", "", 1, "")
+        val workflowInfo = ManifestCorDappInfo("", "", 1, "")
         val cordappManifest = CordappManifest(name, version, 1, 1, contractInfo, workflowInfo, mock())
         val hash = SecureHash("ALGO", "1234567890ABCDEF".toByteArray())
-        return Cpk.Metadata.newInstance(
-            mock(),
+        return CpkMetadata(
+            CpkIdentifier(mainBundle, version, SecureHash.create("SHA-256:0000000000000000")),
+            CpkManifest(CpkFormatVersion(1, 0)),
             mainBundle,
             emptyList(),
-            TreeSet(dependencies),
+            dependencies,
             cordappManifest,
-            Cpk.Type.CORDA_API,
+            CpkType.CORDA_API,
             hash,
-            emptySet()
+            emptySet(),
+            Instant.now()
         )
     }
 
     fun mockTrivialCpk(mainBundle: String, name: String, version: String) = mockCpk(mockCpkMetadata(mainBundle, name, version))
 
-    fun mockCpk(metadata: Cpk.Metadata) = mock<Cpk>().also { doReturn(metadata).whenever(it).metadata }
+    private fun mockCpk(metadata: CpkMetadata) = mock<Cpk>().also { doReturn(metadata).whenever(it).metadata }
 
     /**
      * Create a mock sandbox service that returns a mock sandbox group for each set of cpks.
