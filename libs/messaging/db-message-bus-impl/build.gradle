@@ -19,6 +19,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:configuration:configuration-merger")
     implementation project(':libs:db:db-admin')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')

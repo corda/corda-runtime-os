@@ -9,11 +9,12 @@ import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -50,7 +51,7 @@ class CryptoFlowOpsBusServiceImpl @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating durable subscription for '{}' topic", FLOW_OPS_MESSAGE_TOPIC)
-        val messagingConfig = event.config.toMessagingConfig()
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val processor = CryptoFlowOpsBusProcessor(
             cryptoOpsClient = cryptoOpsClient
         )

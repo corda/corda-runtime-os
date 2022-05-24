@@ -50,12 +50,14 @@ class SessionEventHandler @Activate constructor(
 
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-        val sessionInit = nextSessionEvent?.payload
+        val nextSessionPayload = nextSessionEvent?.payload
 
-        if (!checkpoint.doesExist && sessionInit is SessionInit) {
-            createInitiatedFlowCheckpoint(context, sessionInit, nextSessionEvent)
-        } else if (!checkpoint.doesExist) {
-            throw FlowEventException("Received a session event for flow [${context.inputEvent.flowId}] that does not exist", context)
+        if (!checkpoint.doesExist) {
+            if (nextSessionPayload is SessionInit) {
+                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent)
+            } else {
+                discardSessionEvent(context, sessionEvent)
+            }
         }
 
         checkpoint.putSessionState(updatedSessionState)
@@ -95,6 +97,19 @@ class SessionEventHandler @Activate constructor(
             .setCreatedTimestamp(Instant.now())
             .build()
 
-        context.checkpoint.initFromNew(sessionInit.flowId, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
+        context.checkpoint.initFromNew(sessionInit.flowId, startContext)
+        context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
+    }
+
+    private fun discardSessionEvent(context: FlowEventContext<SessionEvent>, sessionEvent: SessionEvent) {
+        log.info(
+            "Received a ${sessionEvent.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist. " +
+                    "The event will be discarded. ${SessionEvent::class.simpleName}: $sessionEvent"
+        )
+        throw FlowEventException(
+            "Received a ${context.inputEventPayload.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
+                    "does not exist",
+            context
+        )
     }
 }

@@ -16,15 +16,7 @@ class WakeupWaitingForHandler : FlowWaitingForHandler<Wakeup> {
     override val type = Wakeup::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: Wakeup): FlowContinuation {
-        return if (context.inputEventPayload is net.corda.data.flow.event.Wakeup) {
-            log.info("Waking up [${context.checkpoint.flowId}]")
-            FlowContinuation.Run(Unit)
-        } else {
-            log.info(
-                "Not waking up flow [${context.checkpoint.flowId}] as it received a ${context.inputEventPayload!!::class.qualifiedName} " +
-                        "instead of a ${net.corda.data.flow.event.Wakeup::class.qualifiedName} event"
-            )
-            FlowContinuation.Continue
-        }
+        log.info("Waking up [${context.checkpoint.flowId}]")
+        return FlowContinuation.Run(Unit)
     }
 }

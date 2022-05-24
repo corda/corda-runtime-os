@@ -18,7 +18,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -95,7 +95,7 @@ class PermissionValidationCacheService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                createAndStartSubscriptionsAndCache(event.config.toMessagingConfig())
+                createAndStartSubscriptionsAndCache(event.config.getConfig(MESSAGING_CONFIG))
             }
             // Let's set the component as UP when it has received all the snapshots it needs
             is PermissionSummaryTopicSnapshotReceived -> {

@@ -32,4 +32,5 @@ dependencies {
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:configuration:configuration-merger")
 }

@@ -18,7 +18,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.config.getConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -98,7 +101,7 @@ class ChunkReadServiceImpl @Activate constructor(
                 configurationReadService.registerComponentForUpdates(
                     coordinator, setOf(
                         ConfigKeys.BOOT_CONFIG,
-                        //ConfigKeys.MESSAGING_CONFIG,  // TODO - uncomment when 'messaging' is sorted out.
+                        ConfigKeys.MESSAGING_CONFIG
                     )
                 )
         } else {
@@ -110,11 +113,11 @@ class ChunkReadServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         log.debug("onConfigChangedEvent")
 
-        //val config = event.config.toMessagingConfig()  // TODO - uncomment when 'messaging' is sorted out.
-        val config = event.config[ConfigKeys.BOOT_CONFIG]!!
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val bootConfig = event.config.getConfig(BOOT_CONFIG)
         chunkDbWriter?.close()
         chunkDbWriter = chunkDbWriterFactory
-            .create(config, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
+            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
             .apply { start() }
 
         coordinator.updateStatus(LifecycleStatus.UP)

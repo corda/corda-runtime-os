@@ -96,8 +96,7 @@ class FlowSessionImpl(
                 log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
                 throw e
             }
-        }
-            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
     /**

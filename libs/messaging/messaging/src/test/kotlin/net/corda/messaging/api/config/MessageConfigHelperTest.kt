@@ -2,7 +2,7 @@ package net.corda.messaging.api.config
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.messaging.api.exception.CordaAPIConfigException
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,21 +18,16 @@ class MessageConfigHelperTest {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 1, "bar" to 2)))
         val messagingConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 3)))
         val configMap = mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig)
-        val outputConfig = configMap.toMessagingConfig()
-        assertEquals(smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 3, "bar" to 2))), outputConfig)
+        val outputConfig = configMap.getConfig(MESSAGING_CONFIG)
+        assertEquals(smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 3))), outputConfig)
     }
 
     @Test
     fun `error thrown if either section is missing`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 1, "bar" to 2)))
-        val messagingConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf("foo" to 3)))
         val map1 = mapOf(BOOT_CONFIG to bootConfig)
-        val map2 = mapOf(MESSAGING_CONFIG to messagingConfig)
-        assertThrows<CordaMessageAPIConfigException> {
-            map1.toMessagingConfig()
-        }
-        assertThrows<CordaMessageAPIConfigException> {
-            map2.toMessagingConfig()
+        assertThrows<CordaAPIConfigException> {
+            map1.getConfig(MESSAGING_CONFIG)
         }
     }
 }

@@ -66,9 +66,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun createAndStartRPCSender(config: SmartConfig) {
+    override fun createAndStartRPCSender(messagingConfig: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
+        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, messagingConfig).apply { start() }
     }
 
     override fun setTimeout(millis: Int) {

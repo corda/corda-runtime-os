@@ -12,7 +12,9 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(":components:security-manager")
+    implementation project(':libs:configuration:configuration-validation')
     implementation project(':processors:db-processor')
+    implementation project(':processors:uniqueness-processor')
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -23,6 +25,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     testImplementation 'org.osgi:osgi.core'
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'

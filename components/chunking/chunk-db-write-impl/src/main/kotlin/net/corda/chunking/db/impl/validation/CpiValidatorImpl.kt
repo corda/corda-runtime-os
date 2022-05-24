@@ -55,7 +55,8 @@ class CpiValidatorImpl(
             fileInfo.checksum,
             cpi.cpks.map { it.metadata },
             cpi.metadata.groupPolicy,
-            version = -1,
+            // TODO the below version should be populated from the DB as per https://r3-cev.atlassian.net/browse/CORE-4890
+            version = 0,
             timestamp
         )
         cpiInfoWriteService.put(cpiMetadata)

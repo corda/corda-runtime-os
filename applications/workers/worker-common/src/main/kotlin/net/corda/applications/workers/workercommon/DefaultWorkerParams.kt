@@ -1,10 +1,10 @@
 package net.corda.applications.workers.workercommon
 
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 import net.corda.applications.workers.workercommon.internal.HEALTH_MONITOR_PORT
 import net.corda.schema.configuration.ConfigDefaults
 import picocli.CommandLine.Option
-import kotlin.math.absoluteValue
-import kotlin.random.Random
 
 /** The startup parameters handled by all workers. */
 class DefaultWorkerParams {
@@ -47,7 +47,4 @@ class DefaultWorkerParams {
 
     @Option(names = ["--temp-dir"], description = ["Corda temp directory."])
     var tempDir = ConfigDefaults.TEMP_DIR
-
-    @Option(names = ["-c", "--additionalParams"], description = ["Additional parameters for the worker."])
-    var additionalParams = emptyMap<String, String>()
 }

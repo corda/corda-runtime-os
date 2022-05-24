@@ -20,10 +20,12 @@ import net.corda.crypto.service.HSMService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,8 +41,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -82,7 +84,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger
 ) : CryptoProcessor {
     private companion object {
         const val CRYPTO_PROCESSOR_CLIENT_ID = "crypto.processor"
@@ -139,10 +143,10 @@ class CryptoProcessorImpl @Activate constructor(
                 dependentComponents.stopAll()
             }
             is RegistrationStatusChangeEvent -> {
-                if(event.status == LifecycleStatus.UP) {
+                if (event.status == LifecycleStatus.UP) {
                     logger.info("Assigning SOFT HSMs")
                     val failed = temporaryAssociateClusterWithSoftHSM()
-                    if(failed.isNotEmpty()) {
+                    if (failed.isNotEmpty()) {
                         logger.error("Failed to associate: [${failed.joinToString { "${it.first}:${it.second}" }}]")
                         coordinator.updateStatus(
                             LifecycleStatus.ERROR,
@@ -159,7 +163,7 @@ class CryptoProcessorImpl @Activate constructor(
                 configurationReadService.bootstrapConfig(event.config)
 
                 logger.info("Crypto processor bootstrapping {}", dbConnectionManager::class.simpleName)
-                dbConnectionManager.bootstrap(event.config.getConfig(DB_CONFIG))
+                dbConnectionManager.bootstrap(event.config.getConfig(BOOT_DB_PARAMS))
 
                 publishCryptoBootstrapConfig(event)
             }
@@ -170,9 +174,12 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun publishCryptoBootstrapConfig(event: BootConfigEvent) {
-        publisherFactory.createPublisher(PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID), event.config).use {
+        publisherFactory.createPublisher(
+            PublisherConfig(CRYPTO_PROCESSOR_CLIENT_ID),
+            configMerger.getMessagingConfig(event.config, null)
+        ).use {
             it.start()
-            val configValue = if(event.config.hasPath(CRYPTO_CONFIG))  {
+            val configValue = if (event.config.hasPath(CRYPTO_CONFIG)) {
                 event.config.getConfig(CRYPTO_CONFIG)
             } else {
                 event.config.factory.createDefaultCryptoConfig(
@@ -181,7 +188,7 @@ class CryptoProcessorImpl @Activate constructor(
                 )
             }.root().render()
             logger.info("Crypto Worker config\n: {}", configValue)
-            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1"))
+            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1", ConfigurationSchemaVersion(1, 0)))
             it.publish(listOf(record)).forEach { future -> future.get() }
         }
     }
@@ -192,7 +199,7 @@ class CryptoProcessorImpl @Activate constructor(
         val failed = mutableListOf<Pair<String, String>>()
         CryptoConsts.Categories.all.forEach { category ->
             CryptoTenants.allClusterTenants.forEach { tenantId ->
-                if(tryAssignSoftHSM(tenantId, category)) {
+                if (tryAssignSoftHSM(tenantId, category)) {
                     assigned.add(Pair(tenantId, category))
                 } else {
                     failed.add(Pair(tenantId, category))
@@ -209,9 +216,11 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun tryAssignSoftHSM(tenantId: String, category: String): Boolean = try {
         logger.info("Assigning SOFT HSM for $tenantId:$category")
-        hsmService.assignSoftHSM(tenantId, category, mapOf(
-            NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
-        ))
+        hsmService.assignSoftHSM(
+            tenantId, category, mapOf(
+                NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"
+            )
+        )
         logger.info("Assigned SOFT HSM for $tenantId:$category")
         true
     } catch (e: Throwable) {

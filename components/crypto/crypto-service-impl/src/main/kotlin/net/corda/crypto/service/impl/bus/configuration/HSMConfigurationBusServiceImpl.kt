@@ -9,11 +9,12 @@ import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationRequest
 import net.corda.data.crypto.wire.hsm.configuration.HSMConfigurationResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,7 +52,7 @@ class HSMConfigurationBusServiceImpl @Activate constructor(
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl {
         logger.info("Creating RPC subscription for '{}' topic", Schemas.Crypto.RPC_HSM_CONFIGURATION_MESSAGE_TOPIC)
-        val messagingConfig = event.config.toMessagingConfig()
+        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val processor = HSMConfigurationBusProcessor(hsmService)
         return ActiveImpl(
             subscriptionFactory.createRPCSubscription(

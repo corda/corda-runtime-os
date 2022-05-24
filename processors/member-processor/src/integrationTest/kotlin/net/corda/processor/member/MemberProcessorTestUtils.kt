@@ -4,8 +4,9 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultCryptoConfig
+import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -62,7 +63,7 @@ class MemberProcessorTestUtils {
       """
 
         private const val BOOT_CONFIGURATION = """
-        instance.id=1
+        instanceId=1
         bus.busType = INMEMORY
     """
 
@@ -86,7 +87,7 @@ class MemberProcessorTestUtils {
                     .withFallback(
                         ConfigFactory.parseString(BOOT_CONFIGURATION)
                     )
-            ).addDefaultCryptoConfig(
+            ).addDefaultBootCryptoConfig(
                 fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
                 fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
             )
@@ -288,8 +289,9 @@ class MemberProcessorTestUtils {
             )
         }
 
+        private val schemaVersion = ConfigurationSchemaVersion(1,0)
         private fun Publisher.publishConf(configKey: String, conf: String) =
-            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, "1"))
+            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, "1", schemaVersion))
 
         private fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())

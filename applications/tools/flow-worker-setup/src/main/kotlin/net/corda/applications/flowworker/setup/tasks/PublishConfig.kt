@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 
@@ -34,7 +35,7 @@ class PublishConfig(private val context: TaskContext) : Task {
         for (componentKey in configFileConfig.getConfig("corda").root().keys) {
             val componentPath = "corda.${componentKey}"
             val configAsJson = configFileConfig.getConfig(componentPath).root().render(ConfigRenderOptions.concise())
-            val content = Configuration(configAsJson, "5.0")
+            val content = Configuration(configAsJson, "5.0", ConfigurationSchemaVersion(1,0))
             val record = Record(CONFIG_TOPIC, componentPath, content)
 
             context.publish(record)

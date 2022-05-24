@@ -189,12 +189,10 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -219,12 +217,11 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -409,12 +406,10 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
@@ -462,8 +457,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -510,8 +503,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-
-            wakeupEventReceived(FLOW_ID1)
                 .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -670,12 +661,10 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.SubFlowFinished(FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
         }
 
