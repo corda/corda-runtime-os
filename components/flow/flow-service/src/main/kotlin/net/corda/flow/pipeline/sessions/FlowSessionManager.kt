@@ -23,11 +23,21 @@ interface FlowSessionManager {
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
+     * @param protocolName The name of the protocol to use in this session
+     * @param protocolVersions The versions of the protocol supported by the initiating side
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
      */
-    fun sendInitMessage(checkpoint: FlowCheckpoint, sessionId: String, x500Name: MemberX500Name, instant: Instant): SessionState
+    @Suppress("LongParameterList")
+    fun sendInitMessage(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        x500Name: MemberX500Name,
+        protocolName: String,
+        protocolVersions: List<Int>,
+        instant: Instant
+    ): SessionState
 
     /**
      * Queue [SessionData] messages to send to the passed in sessions.
@@ -40,7 +50,11 @@ interface FlowSessionManager {
      *
      * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendDataMessages(checkpoint: FlowCheckpoint, sessionToPayload: Map<String, ByteArray>, instant: Instant): List<SessionState>
+    fun sendDataMessages(
+        checkpoint: FlowCheckpoint,
+        sessionToPayload: Map<String, ByteArray>,
+        instant: Instant
+    ): List<SessionState>
 
     /**
      * Queue [SessionClose] messages to send to the passed in sessions.
@@ -53,7 +67,11 @@ interface FlowSessionManager {
      *
      * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendCloseMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, instant: Instant): List<SessionState>
+    fun sendCloseMessages(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        instant: Instant
+    ): List<SessionState>
 
     /**
      * Queue [SessionError] messages to send to the passed in sessions.

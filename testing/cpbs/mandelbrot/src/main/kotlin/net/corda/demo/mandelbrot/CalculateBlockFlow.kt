@@ -2,14 +2,12 @@ package net.corda.demo.mandelbrot
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.StartableByRPC
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-@InitiatingFlow
 @StartableByRPC
 class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
 

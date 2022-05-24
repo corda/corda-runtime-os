@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.sessions
+package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
@@ -10,7 +10,8 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.sessions.FlowSessionManager
+import net.corda.flow.pipeline.sessions.FlowSessionMissingException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
@@ -31,10 +32,13 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
+        protocolName: String,
+        protocolVersions: List<Int>,
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
-            .setFlowName(checkpoint.flowStack.peek()?.flowName ?: throw FlowProcessingException("Flow stack is empty"))
+            .setProtocol(protocolName)
+            .setVersions(protocolVersions)
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
