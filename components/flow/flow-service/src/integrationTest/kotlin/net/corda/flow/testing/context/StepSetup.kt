@@ -21,7 +21,7 @@ interface StepSetup {
 
     fun flowConfiguration(key:String, value:Any)
 
-    fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
+    fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
 
     fun startFlowEventReceived(
         flowId: String,
@@ -35,6 +35,7 @@ interface StepSetup {
         flowId: String,
         sessionId: String,
         cpiId: String,
+        protocol: String,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup

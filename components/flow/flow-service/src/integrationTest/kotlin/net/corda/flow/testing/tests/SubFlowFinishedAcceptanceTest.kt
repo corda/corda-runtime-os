@@ -68,8 +68,12 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             sandboxCpk(CPK1)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
 
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
+
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
         }
     }
 
@@ -610,11 +614,11 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given an initiated top level flow with an initiated session when it finishes and calls SubFlowFinished a session close event is sent`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME)
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.SubFlowFinished(FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
         }
 
@@ -630,9 +634,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given an initiated top level flow with a closed session when it finishes and calls SubFlowFinished a wakeup event is scheduled and does not send a session close event`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
         }
 
@@ -653,9 +657,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given an initiated top level flow with an errored session when it finishes and calls SubFlowFinished a wakeup event is scheduled and no session close event is sent`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 

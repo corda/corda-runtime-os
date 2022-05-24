@@ -172,8 +172,8 @@ class FlowServiceTestContext @Activate constructor(
         testConfig[key] = value
     }
 
-    override fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
-        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(getCpiIdentifier(cpiId), initiatingFlowClassName, initiatedFlowClassName)
+    override fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(protocol, initiatingFlowClassName, initiatedFlowClassName)
     }
 
     override fun startFlowEventReceived(
@@ -201,6 +201,7 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         cpiId: String,
+        protocol: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -210,7 +211,8 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionInit.newBuilder()
-                .setFlowName(FLOW_NAME)
+                .setProtocol(protocol)
+                .setVersions(listOf(1))
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))

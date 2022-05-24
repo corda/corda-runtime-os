@@ -16,7 +16,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
-@InitiatingFlow
+@InitiatingFlow(protocol = "flowDevProtocol")
 @StartableByRPC
 class MessagingFlow(private val jsonArg: String) : Flow<String> {
 
@@ -65,7 +65,7 @@ class MessagingFlow(private val jsonArg: String) : Flow<String> {
     }
 }
 
-@InitiatedBy(MessagingFlow::class)
+@InitiatedBy(protocol = "flowDevProtocol")
 class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
 
     private companion object {
@@ -130,7 +130,7 @@ class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
     }
 }
 
-@InitiatingFlow
+@InitiatingFlow(protocol = "subFlowDevProtocol")
 class InitiatingSubFlow : Flow<Unit> {
 
     private companion object {
@@ -158,7 +158,7 @@ class InitiatingSubFlow : Flow<Unit> {
     }
 }
 
-@InitiatedBy(InitiatingSubFlow::class)
+@InitiatedBy(protocol = "subFlowDevProtocol")
 class InitiatingSubFlowInitiatedFlow(private val session: FlowSession) : Flow<String> {
 
     private companion object {

@@ -211,10 +211,9 @@ The file should look like the following:
 {
   "linkManagerConfig": {
     "maxMessageSize": 1000000,
-    "messageReplay": {
-      "BasePeriod": 2000,
-      "Cutoff": 10000,
-      "MaxMessages": 100
+    "maxMessages": 100,
+    "ConstantReplayAlgorithm": {
+      "replayPeriod": 2000
     },
     "heartbeatMessagePeriod": 2000,
     "sessionTimeout": 10000,

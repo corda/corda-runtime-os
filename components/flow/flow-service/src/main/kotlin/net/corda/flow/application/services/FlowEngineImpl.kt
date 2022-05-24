@@ -52,7 +52,7 @@ class FlowEngineImpl @Activate constructor(
 
         try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                getFiberExecutionContext().sandboxDependencyInjector.injectServices(subLogic)
+                getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subLogic)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

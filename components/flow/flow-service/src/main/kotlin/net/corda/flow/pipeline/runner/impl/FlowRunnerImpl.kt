@@ -83,7 +83,7 @@ class FlowRunnerImpl @Activate constructor(
         val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow)
         val stackItem = fiberContext.flowStackService.push(flow)
         updateFlowStackItem(stackItem)
-        fiberContext.sandboxDependencyInjector.injectServices(flow)
+        fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow)
 
         return flowFiber.startFlow(fiberContext)
     }

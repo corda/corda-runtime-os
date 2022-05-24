@@ -1,4 +1,4 @@
-package net.corda.flow.pipeline.sessions
+package net.corda.flow.pipeline.sessions.impl
 
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
@@ -11,6 +11,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.pipeline.sessions.FlowSessionMissingException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.session.manager.SessionManager
@@ -40,6 +41,7 @@ class FlowSessionManagerImplTest {
         const val ANOTHER_SESSION_ID = "another session id"
         const val CPI_ID = "cpi id"
         const val INITIATING_FLOW_NAME = "Initiating flow"
+        private const val PROTOCOL = "protocol"
         val X500_NAME = MemberX500Name(
             commonName = "Alice",
             organisation = "Alice Corp",
@@ -107,7 +109,8 @@ class FlowSessionManagerImplTest {
         val instant = Instant.now()
 
         val expectedSessionInit = SessionInit.newBuilder()
-            .setFlowName(INITIATING_FLOW_NAME)
+            .setProtocol(PROTOCOL)
+            .setVersions(listOf(1))
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
@@ -122,7 +125,14 @@ class FlowSessionManagerImplTest {
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
         )
 
-        val sessionState = flowSessionManager.sendInitMessage(checkpoint, SESSION_ID, X500_NAME, instant)
+        val sessionState = flowSessionManager.sendInitMessage(
+            checkpoint,
+            SESSION_ID,
+            X500_NAME,
+            PROTOCOL,
+            listOf(1),
+            instant
+        )
 
         verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(null), any(), eq(instant))
         assertEquals(expectedSessionEvent, sessionState.sendEventsState.undeliveredMessages.single())
