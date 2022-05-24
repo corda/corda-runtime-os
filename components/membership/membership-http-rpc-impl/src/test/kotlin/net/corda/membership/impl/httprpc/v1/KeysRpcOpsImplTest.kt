@@ -410,6 +410,23 @@ class KeysRpcOpsImplTest {
         }
 
         @Test
+        fun `it will not use the email address if not provided`() {
+            val pem = keysOps.generateCsr(
+                holdingIdentityId,
+                keyId,
+                x500Name,
+                null,
+                null,
+                null,
+            )
+
+            assertThat(
+                pem.fromPem()
+                    .getAttributes(PKCSObjectIdentifiers.pkcs_9_at_emailAddress)
+            ).isEmpty()
+        }
+
+        @Test
         fun `it will throw an exception for invalid schema name`() {
             whenever(cipherSchemeMetadata.schemes).doReturn(emptyArray())
 

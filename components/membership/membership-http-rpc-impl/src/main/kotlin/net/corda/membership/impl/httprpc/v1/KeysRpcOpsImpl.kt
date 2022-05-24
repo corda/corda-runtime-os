@@ -102,7 +102,7 @@ class KeysRpcOpsImpl @Activate constructor(
         tenantId: String,
         keyId: String,
         x500name: String,
-        emailAddress: String,
+        emailAddress: String?,
         keyUsageExtension: String?,
         subjectAlternativeNames: Collection<String>?,
     ): String {
@@ -142,8 +142,11 @@ class KeysRpcOpsImpl @Activate constructor(
             X500Principal(x500name), publicKey
         )
 
+        if (emailAddress != null) {
+            p10Builder.addAttribute(pkcs_9_at_emailAddress, DERUTF8String(emailAddress))
+        }
+
         p10Builder
-            .addAttribute(pkcs_9_at_emailAddress, DERUTF8String(emailAddress))
             .addAttribute(pkcs_9_at_extensionRequest, extensionsGenerator.generate())
 
         val csr = p10Builder.build(signer)

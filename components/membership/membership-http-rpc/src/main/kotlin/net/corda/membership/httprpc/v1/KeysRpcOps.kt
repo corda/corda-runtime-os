@@ -4,6 +4,7 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
@@ -102,7 +103,7 @@ interface KeysRpcOps : RpcOps {
     ): String
 
     /**
-     * POST endpoint which Generate a certificate signing request (CSR) for a holding identity.
+     * GET endpoint which Generate a certificate signing request (CSR) for a holding identity.
      *
      * @param tenantId The tenant ID.
      * @param keyId The Key ID.
@@ -123,22 +124,22 @@ interface KeysRpcOps : RpcOps {
         tenantId: String,
         @HttpRpcPathParameter(description = "The Key ID.")
         keyId: String,
-        @HttpRpcRequestBodyParameter(
+        @HttpRpcQueryParameter(
             description = "The X500 name",
             required = true,
         )
         x500name: String,
-        @HttpRpcRequestBodyParameter(
+        @HttpRpcQueryParameter(
             description = "The email address",
-            required = true,
+            required = false,
         )
-        emailAddress: String,
-        @HttpRpcRequestBodyParameter(
+        emailAddress: String? = null,
+        @HttpRpcQueryParameter(
             description = "The key usage extension",
             required = false,
         )
         keyUsageExtension: String? = null,
-        @HttpRpcRequestBodyParameter(
+        @HttpRpcQueryParameter(
             description = "Subject alternative names",
             required = false,
         )
