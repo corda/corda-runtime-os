@@ -104,7 +104,7 @@ class KeysRpcOpsImpl @Activate constructor(
         x500name: String,
         emailAddress: String?,
         keyUsageExtension: String?,
-        subjectAlternativeNames: Collection<String>?,
+        subjectAlternativeNames: List<String>?,
     ): String {
         val key = cryptoOpsClient.lookup(
             tenantId = tenantId,

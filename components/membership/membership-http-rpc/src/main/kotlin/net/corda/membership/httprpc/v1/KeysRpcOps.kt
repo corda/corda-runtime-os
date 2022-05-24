@@ -115,8 +115,8 @@ interface KeysRpcOps : RpcOps {
      * @return The CSR in PEM format.
      */
     @Suppress("LongParameterList")
-    @HttpRpcPOST(
-        path = "{tenantId}/{keyId}",
+    @HttpRpcGET(
+        path = "{tenantId}/{keyId}/{x500Name}",
         description = "Generate certificate signing request (CSR)."
     )
     fun generateCsr(
@@ -124,9 +124,8 @@ interface KeysRpcOps : RpcOps {
         tenantId: String,
         @HttpRpcPathParameter(description = "The Key ID.")
         keyId: String,
-        @HttpRpcQueryParameter(
+        @HttpRpcPathParameter(
             description = "The X500 name",
-            required = true,
         )
         x500name: String,
         @HttpRpcQueryParameter(
@@ -143,6 +142,6 @@ interface KeysRpcOps : RpcOps {
             description = "Subject alternative names",
             required = false,
         )
-        subjectAlternativeNames: Collection<String>?,
+        subjectAlternativeNames: List<String>?,
     ): String
 }
