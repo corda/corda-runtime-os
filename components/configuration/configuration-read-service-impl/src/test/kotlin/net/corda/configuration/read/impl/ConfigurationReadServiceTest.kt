@@ -56,12 +56,13 @@ internal class ConfigurationReadServiceTest {
             whenever(getMessagingConfig(any(), anyOrNull())).thenReturn(messagingConfig)
         }
 
-        LifecycleTest<ConfigurationReadService>().run {
+        LifecycleTest<ConfigurationReadService>{
             addDependency(subName)
 
-            val configReadService = ConfigurationReadServiceImpl(coordinatorFactory, subscriptionFactory, configMerger)
-            configReadService.start()
-            configReadService.bootstrapConfig(bootConfig)
+            ConfigurationReadServiceImpl(coordinatorFactory, subscriptionFactory, configMerger)
+        }.run {
+            testClass.start()
+            testClass.bootstrapConfig(bootConfig)
 
             verifyIsDown(subName)
             verifyIsDown<ConfigurationReadService>()
