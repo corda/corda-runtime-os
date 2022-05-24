@@ -7,7 +7,7 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
