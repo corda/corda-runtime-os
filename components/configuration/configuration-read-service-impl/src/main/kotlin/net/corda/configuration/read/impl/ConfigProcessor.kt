@@ -76,7 +76,8 @@ internal class ConfigProcessor(
             }.toMutableMap()
             config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
             config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
-            //TODO - remove the following three calls when defaulting via reconciliation process is possible
+            //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
+            // exist to preserve defaulting logic present
             config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
             config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
             config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
