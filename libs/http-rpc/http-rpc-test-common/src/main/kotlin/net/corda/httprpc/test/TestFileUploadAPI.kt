@@ -50,6 +50,6 @@ interface TestFileUploadAPI : RpcOps {
 
     @HttpRpcPOST(path = "uploadWithNameInAnnotation")
     fun fileUploadWithNameInAnnotation(
-        @HttpRpcRequestBodyParameter(name = "differentName") file: HttpFileUpload
+        @HttpRpcRequestBodyParameter(name = "differentName", description = "differentDesc") file: HttpFileUpload
     ): String
 }
