@@ -8,11 +8,16 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
 @Suppress("Unused")
 @Component(service = [FlowProtocolStoreFactory::class])
 class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
+
+    companion object {
+        val logger = contextLogger()
+    }
 
     override fun create(
         sandboxGroup: SandboxGroup,
@@ -22,6 +27,7 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
         val protocolToResponder = mutableMapOf<FlowProtocol, String>()
 
         cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.flows }.forEach { flow ->
+            logger.info("Reading flow $flow for protocols")
             val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
             when {
                 flowClass.isAnnotationPresent(InitiatingFlow::class.java) -> {
