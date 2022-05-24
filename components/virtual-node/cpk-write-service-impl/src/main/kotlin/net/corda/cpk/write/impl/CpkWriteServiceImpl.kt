@@ -1,5 +1,7 @@
 package net.corda.cpk.write.impl
 
+import java.io.ByteArrayInputStream
+import java.time.Duration
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
@@ -28,27 +30,27 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.seconds
+import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.io.ByteArrayInputStream
-import java.time.Duration
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 
 // TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")
@@ -130,8 +132,9 @@ class CpkWriteServiceImpl @Activate constructor(
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
-                    ConfigKeys.BOOT_CONFIG,
-                    ConfigKeys.MESSAGING_CONFIG
+                    BOOT_CONFIG,
+                    MESSAGING_CONFIG,
+                    RECONCILIATION_CONFIG,
                 )
             )
         } else {
@@ -147,14 +150,12 @@ class CpkWriteServiceImpl @Activate constructor(
      * We've received a config event that we care about, we can now write cpks
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.toMessagingConfig()
-        val reconciliationConfig = event.config[RECONCILIATION_CONFIG]?.withFallback(config) ?: config
+        val config = event.config.getConfig(MESSAGING_CONFIG)
+        val reconciliationConfig = event.config.getConfig(RECONCILIATION_CONFIG)
         // TODO fill the following with configuration once we know where they lie?
         timeout = 20.seconds
 
-        timerEventIntervalMs = reconciliationConfig
-            .getConfig(RECONCILIATION_CONFIG)
-            .getLong(ConfigKeys.RECONCILIATION_CPK_WRITE_INTERVAL_MS)
+        timerEventIntervalMs = reconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)
         logger.info("CPK write reconciliation interval set to $timerEventIntervalMs ms.")
 
         try {

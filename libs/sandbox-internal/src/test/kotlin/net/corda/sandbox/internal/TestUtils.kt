@@ -1,14 +1,13 @@
 package net.corda.sandbox.internal
 
+import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
-import java.security.MessageDigest
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.random.Random.Default.nextLong
@@ -20,14 +19,6 @@ const val CPK_LIBRARY_BUNDLE_NAME = "cpk_library_bundle_symbolic_name"
 const val CPK_MAIN_BUNDLE_NAME = "cpk_main_bundle_symbolic_name"
 
 val random = Random(0)
-
-/** Generates a random [SecureHash]. */
-fun randomSecureHash(): SecureHash {
-    val allowedChars = '0'..'9'
-    val randomBytes = (1..16).map { allowedChars.random() }.joinToString("").toByteArray()
-    val digest = MessageDigest.getInstance(HASH_ALGORITHM)
-    return SecureHash(digest.algorithm, digest.digest(randomBytes))
-}
 
 /** Generates a mock [Bundle] with [bundleSymbolicName] and [bundleLocation] that contains the given [klass]. */
 fun mockBundle(

@@ -8,9 +8,9 @@ description 'Combined Worker'
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-validation')
     implementation project(":components:security-manager")
     implementation project(':processors:crypto-processor')
     implementation project(':processors:db-processor')
@@ -18,7 +18,9 @@ dependencies {
     implementation project(':processors:member-processor')
     implementation project(':processors:rpc-processor')
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

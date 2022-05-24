@@ -2,6 +2,7 @@ package net.corda.configuration.write.impl.writer
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
+import java.time.Clock
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
@@ -15,7 +16,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.versioning.Version
-import java.time.Clock
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -46,22 +46,27 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-        if (validateAndApplyDefaults(request, respFuture)) {
+        if (validate(request, respFuture, false)) {
             val configEntity = publishConfigToDB(request, respFuture)
-            if (configEntity != null) {
+            if (configEntity != null && validate(request, respFuture, true)) {
+                configEntity.config = request.config
                 publishConfigToKafka(configEntity, respFuture)
             }
         }
     }
 
-    private fun validateAndApplyDefaults(req: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture): Boolean {
+    private fun validate(
+        req: ConfigurationManagementRequest,
+        respFuture: ConfigurationManagementResponseFuture,
+        applyDefaults: Boolean
+    ): Boolean {
         return try {
             val config = smartConfigFactory.create(ConfigFactory.parseString(req.config))
             val updatedConfig = validator.validate(
                 req.section,
                 Version(req.schemaVersion.majorVersion, req.schemaVersion.minorVersion),
                 config,
-                true
+                applyDefaults
             )
             req.config = updatedConfig.root().render(ConfigRenderOptions.concise())
             true
@@ -103,7 +108,10 @@ internal class ConfigWriterProcessor(
         entity: ConfigEntity,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-        val config = Configuration(entity.config, entity.version.toString())
+        val config = Configuration(
+            entity.config, entity.version.toString(),
+            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor)
+        )
         val configRecord = Record(CONFIG_TOPIC, entity.section, config)
         // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
         val future = publisher.publish(listOf(configRecord)).first()

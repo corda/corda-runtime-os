@@ -3,6 +3,7 @@ package net.corda.configuration.read.impl
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -21,7 +22,8 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 internal class ConfigReadServiceEventHandler(
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    private val configMerger: ConfigMerger
 ) : LifecycleEventHandler {
 
     private var bootstrapConfig: SmartConfig? = null
@@ -102,8 +104,8 @@ internal class ConfigReadServiceEventHandler(
         // defined. May also be relevant for secret service configuration in the processor.
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP, CONFIG_TOPIC),
-            ConfigProcessor(coordinator, config.factory, config),
-            config
+            ConfigProcessor(coordinator, config.factory, config, configMerger),
+            configMerger.getMessagingConfig(config, null)
         )
         subReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
         subscription = sub

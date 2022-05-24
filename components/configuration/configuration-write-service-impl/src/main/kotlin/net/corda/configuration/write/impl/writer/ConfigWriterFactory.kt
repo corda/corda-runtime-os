@@ -23,14 +23,14 @@ internal class ConfigWriterFactory(
     /**
      * Creates a [ConfigWriter].
      *
-     * @param config Config to be used by the subscription.
+     * @param messagingConfig Config to be used by the subscription.
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    internal fun create(config: SmartConfig): ConfigWriter {
-        val publisher = createPublisher(config)
+    internal fun create(messagingConfig: SmartConfig): ConfigWriter {
+        val publisher = createPublisher(messagingConfig)
         val validator = configValidatorFactory.createConfigValidator()
-        val subscription = createRPCSubscription(config, publisher, validator)
+        val subscription = createRPCSubscription(messagingConfig, publisher, validator)
         return ConfigWriter(subscription, publisher)
     }
 
@@ -45,14 +45,14 @@ internal class ConfigWriterFactory(
     }
 
     /**
-     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config].
-     * @param config messaging config to create the subscription
+     * Creates a [ConfigurationManagementRPCSubscription] using the provided [messagingConfig].
+     * @param messagingConfig messaging config to create the subscription
      * @param publisher Used to write config to the topic
      * @param validator New configs received will be validated by the config [validator] with defaults applied.
      * @return RPC subscription for the [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
      */
     private fun createRPCSubscription(
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
         publisher: Publisher,
         validator: ConfigurationValidator
     ): ConfigurationManagementRPCSubscription {
@@ -67,6 +67,6 @@ internal class ConfigWriterFactory(
         val configEntityWriter = ConfigEntityWriter(dbConnectionManager)
         val processor = ConfigWriterProcessor(publisher, configEntityWriter, validator)
 
-        return subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
+        return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
     }
 }

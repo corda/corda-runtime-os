@@ -13,11 +13,12 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -52,7 +53,7 @@ class FlowExecutor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }
-                val messagingConfig = config.toMessagingConfig()
+                val messagingConfig = config.getConfig(MESSAGING_CONFIG)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     // TODO Needs to be reviewed as part of CORE-3780, using temporary config for FLOW_CONFIG until then

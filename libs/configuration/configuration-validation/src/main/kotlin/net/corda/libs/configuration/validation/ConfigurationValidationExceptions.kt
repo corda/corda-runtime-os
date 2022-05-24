@@ -14,7 +14,7 @@ import net.corda.v5.base.versioning.Version
  */
 class ConfigurationValidationException(
     val key: String,
-    val schemaVersion: Version,
+    val schemaVersion: Version?,
     val config: SmartConfig,
     val errors: Set<String>
 ) : RuntimeException(

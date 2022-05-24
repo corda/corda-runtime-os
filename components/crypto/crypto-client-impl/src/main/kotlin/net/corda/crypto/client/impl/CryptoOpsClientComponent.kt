@@ -1,5 +1,7 @@
 package net.corda.crypto.client.impl
 
+import java.nio.ByteBuffer
+import java.security.PublicKey
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -15,19 +17,18 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 @Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
@@ -195,7 +196,7 @@ class CryptoOpsClientComponent @Activate constructor(
                 requestType = RpcOpsRequest::class.java,
                 responseType = RpcOpsResponse::class.java
             ),
-            event.config.toMessagingConfig()
+            event.config.getConfig(MESSAGING_CONFIG)
         ).also { it.start() }
 
         override val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(

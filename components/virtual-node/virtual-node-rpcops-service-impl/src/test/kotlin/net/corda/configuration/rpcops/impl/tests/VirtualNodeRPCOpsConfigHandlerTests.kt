@@ -5,9 +5,10 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.virtualnode.rpcops.VirtualNodeRPCOpsServiceException
 import net.corda.virtualnode.rpcops.impl.VirtualNodeRPCOpsConfigHandler
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsInternal
@@ -46,7 +47,7 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
 
         verify(configRPCOps).setTimeout(timeout)
     }
@@ -60,7 +61,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to
+                    config))
         }
     }
 
@@ -68,13 +70,13 @@ class VirtualNodeRPCOpsConfigHandlerTests {
     fun `creates RPC sender if RPC config is provided`() {
         val configRPCOps = mock<VirtualNodeRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
+            whenever(hasPath(KAFKA_BOOTSTRAP_SERVERS)).thenReturn(true)
             whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to config))
 
-        verify(configRPCOps).createAndStartRpcSender(config)
+        verify(configRPCOps).createAndStartRpcSender(any())
     }
 
     @Test
@@ -84,13 +86,14 @@ class VirtualNodeRPCOpsConfigHandlerTests {
             whenever(createAndStartRpcSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(BOOTSTRAP_SERVER)).thenReturn(true)
+            whenever(hasPath(KAFKA_BOOTSTRAP_SERVERS)).thenReturn(true)
             whenever(withFallback(any())).thenReturn(this)
         }
         val configHandler = VirtualNodeRPCOpsConfigHandler(coordinator, configRPCOps)
 
         val e = assertThrows<VirtualNodeRPCOpsServiceException> {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config,BOOT_CONFIG to
+                    config))
         }
 
         verify(coordinator).updateStatus(ERROR)
@@ -109,7 +112,8 @@ class VirtualNodeRPCOpsConfigHandlerTests {
         val configHandler = VirtualNodeRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, MESSAGING_CONFIG to config, BOOT_CONFIG to
+                    config))
         }
     }
 

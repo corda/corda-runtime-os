@@ -1,6 +1,10 @@
 package net.corda.processor.member
 
 import com.typesafe.config.ConfigRenderOptions
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
@@ -57,7 +61,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.startAndWai
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.stopAndWait
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
@@ -72,10 +76,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -161,7 +161,7 @@ class MemberProcessorIntegrationTest {
 
         private val boostrapConfig = makeBootstrapConfig(
             mapOf(
-                ConfigKeys.DB_CONFIG to clusterDb.config
+                BOOT_DB_PARAMS to clusterDb.config
             )
         )
 

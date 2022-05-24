@@ -2,22 +2,19 @@ package net.corda.processors.crypto.tests.infra
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.time.Instant
+import java.util.UUID
+import kotlin.random.Random
 import net.corda.crypto.core.aes.KeyCredentials
-import net.corda.crypto.impl.config.addDefaultCryptoConfig
+import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.CryptoProcessorTests
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.Assertions.assertTrue
-import java.time.Instant
-import java.util.UUID
-import kotlin.random.Random
 
 const val RESPONSE_TOPIC = "test.response"
 
@@ -39,7 +36,8 @@ private const val MESSAGING_CONFIGURATION_VALUE: String = """
       """
 
 private const val BOOT_CONFIGURATION = """
-        instance.id=1
+        instanceId=1
+        topicPrefix=""
         bus.busType = INMEMORY
     """
 
@@ -82,7 +80,7 @@ fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
             .withFallback(
                 ConfigFactory.parseString(BOOT_CONFIGURATION)
             )
-    ).addDefaultCryptoConfig(
+    ).addDefaultBootCryptoConfig(
         fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
         fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
     )

@@ -1,5 +1,11 @@
 package net.corda.membership.impl.client
 
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
@@ -39,12 +45,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class MemberOpsClientTest {
     companion object {
@@ -82,10 +82,8 @@ class MemberOpsClientTest {
 
     private lateinit var memberOpsClient: MemberOpsClientImpl
 
-    private val bootConfig: SmartConfig = mock()
-    private val messagingConfig: SmartConfig = mock {
-        on(it.withFallback(any())).thenReturn(mock())
-    }
+    private val messagingConfig: SmartConfig = mock()
+    private val bootConfig: SmartConfig = mock ()
 
     private val configs = mapOf(
         ConfigKeys.BOOT_CONFIG to bootConfig,

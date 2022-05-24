@@ -2,11 +2,14 @@ package net.corda.crypto.impl.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.util.UUID
+import kotlin.test.assertEquals
 import net.corda.crypto.core.aes.AesEncryptor
 import net.corda.crypto.core.aes.AesKey
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
@@ -16,8 +19,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.util.UUID
-import kotlin.test.assertEquals
 
 class CryptoConfigUtilsTests {
     companion object {
@@ -259,15 +260,15 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
-                    "corda.cryptoLibrary" to emptyMap<String, Any>()
+                    "instanceId" to 123,
+                    BOOT_CRYPTO to emptyMap<String, Any>()
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -290,7 +291,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -298,8 +299,8 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    "instanceId" to 123,
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "rootKey.salt" to "s1",
                         "softPersistence.passphrase" to "p2",
@@ -307,11 +308,11 @@ class CryptoConfigUtilsTests {
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -334,7 +335,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -342,18 +343,18 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    "instanceId" to 123,
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.salt" to "s1",
                         "softPersistence.salt" to "s2"
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -376,7 +377,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -384,18 +385,18 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    "instanceId" to 123,
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "softPersistence.passphrase" to "p2"
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -418,7 +419,7 @@ class CryptoConfigUtilsTests {
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
         assertEquals(3, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 
     @Test
@@ -426,8 +427,8 @@ class CryptoConfigUtilsTests {
         val config = configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "instance" to 123,
-                    "corda.cryptoLibrary" to mapOf(
+                    "instanceId" to 123,
+                    BOOT_CRYPTO to mapOf(
                         "rootKey.passphrase" to "p1",
                         "rootKey.salt" to "s1",
                         "softPersistence.passphrase" to "p2",
@@ -440,11 +441,11 @@ class CryptoConfigUtilsTests {
                     )
                 )
             )
-        ).addDefaultCryptoConfig(
+        ).addDefaultBootCryptoConfig(
             fallbackCryptoRootKey = KeyCredentials("root-passphrase", "root-salt"),
             fallbackSoftKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
-        val cryptoConfig = config.getConfig(CRYPTO_CONFIG)
+        val cryptoConfig = config.getConfig(BOOT_CRYPTO)
         val encryptorFromConfig = cryptoConfig.rootEncryptor()
         val testEncryptor = AesEncryptor(
             AesKey.derive(
@@ -467,6 +468,6 @@ class CryptoConfigUtilsTests {
         assertEquals(11, hsmPersistence.expireAfterAccessMins)
         assertEquals(222, hsmPersistence.maximumSize)
         assertEquals(17, hsmPersistence.downstreamRetries)
-        assertTrue(config.hasPath("instance"))
+        assertTrue(config.hasPath("instanceId"))
     }
 }
