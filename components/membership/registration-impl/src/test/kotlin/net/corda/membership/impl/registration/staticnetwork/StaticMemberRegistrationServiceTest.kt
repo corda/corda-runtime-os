@@ -52,13 +52,16 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
+import org.mockito.Captor
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import java.security.PublicKey
-import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -98,12 +101,7 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private val mockPublisher: Publisher = mock {
-        on { publish(any()) } doAnswer {
-            publishedList.addAll(it.arguments.first() as List<Record<String, Any>>)
-            listOf(CompletableFuture.completedFuture(Unit))
-        }
-    }
+    private val mockPublisher: Publisher = mock()
 
     private val publisherFactory: PublisherFactory = mock {
         on { createPublisher(any(), any()) } doReturn mockPublisher
@@ -134,8 +132,6 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
-
-    private val publishedList = mutableListOf<Record<String, Any>>()
 
     private var coordinatorIsRunning = false
     private var coordinatorStatus = LifecycleStatus.DOWN
@@ -175,8 +171,6 @@ class StaticMemberRegistrationServiceTest {
 
     @Suppress("UNCHECKED_CAST")
     private fun setUpPublisher() {
-        // clears the list before the test runs as we are using one list for the test cases
-        publishedList.clear()
         // kicks off the MessagingConfigurationReceived event to be able to mock the Publisher
         registrationServiceLifecycleHandler?.processEvent(
             ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
@@ -196,17 +190,23 @@ class StaticMemberRegistrationServiceTest {
     fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
         setUpPublisher()
         registrationService.start()
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         val registrationResult = registrationService.register(alice)
+        Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         registrationService.stop()
 
-        assertEquals(4, publishedList.size)
+        val memberList = capturedPublishedList.firstValue
+        assertEquals(3, memberList.size)
 
-        publishedList.subList(0,2).forEach {
+        val hostedIdentityList = capturedPublishedList.secondValue
+        assertEquals(1, hostedIdentityList.size)
+
+        memberList.forEach {
             assertTrue(it.key.startsWith(alice.id) || it.key.startsWith(bob.id) || it.key.startsWith(charlie.id))
             assertTrue(it.key.endsWith(alice.id))
         }
 
-        val publishedInfo = publishedList.first()
+        val publishedInfo = memberList.first()
 
         assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
         val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
@@ -231,9 +231,11 @@ class StaticMemberRegistrationServiceTest {
         assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
         assertEquals(1, memberPublished.endpoints.size)
 
-        assertEquals("${alice.x500Name}-${alice.groupId}", publishedList.last().key)
-        assertEquals(HOSTED_MAP_TOPIC, publishedList.last().topic)
-        val hostedIdentityPublished = publishedList.last().value as HostedIdentityEntry
+        val publishedHostedIdentity = hostedIdentityList.first()
+
+        assertEquals("${alice.x500Name}-${alice.groupId}", publishedHostedIdentity.key)
+        assertEquals(HOSTED_MAP_TOPIC, publishedHostedIdentity.topic)
+        val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
         assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
         assertEquals(alice.x500Name, hostedIdentityPublished.holdingIdentity.x500Name)
 

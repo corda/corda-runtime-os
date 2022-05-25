@@ -12,7 +12,6 @@ import net.corda.layeredpropertymap.toWire
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.GroupPolicy
-import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
@@ -108,7 +107,7 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         try {
-            val groupPolicy = getGroupPolicy(member)
+            val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
             val membershipUpdates = lifecycleHandler.publisher.publish(parseMemberTemplate(member, groupPolicy))
             membershipUpdates.forEach { it.get() }
             val hostedIdentityUpdates = lifecycleHandler.publisher.publish(listOf(createHostedIdentity(member, groupPolicy)))
@@ -127,17 +126,6 @@ class StaticMemberRegistrationService @Activate constructor(
         }
         return MembershipRequestRegistrationResult(SUBMITTED)
     }
-
-    /**
-     * Retrieves the [GroupPolicy] object for a given member based on the member's holding identity.
-     */
-    private fun getGroupPolicy(registeringMember: HoldingIdentity): GroupPolicy =
-        try {
-            groupPolicyProvider.getGroupPolicy(registeringMember)
-        } catch (e: BadGroupPolicyException) {
-            logger.error("Group policy file could not be found for holding identity.")
-            throw e
-        }
 
     /**
      * Parses the static member list template, creates the MemberInfo for the registering member and the records for the
