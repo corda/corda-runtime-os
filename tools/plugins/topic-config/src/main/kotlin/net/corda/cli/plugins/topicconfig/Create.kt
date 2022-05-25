@@ -27,9 +27,13 @@ data class TopicDefinitions(
     val topics: Map<String, TopicConfig>
 )
 
+class NoValidBootstrapAddress(address: String?) : Exception("No valid bootstrap address was specified - got '$address'")
+
 @CommandLine.Command(name = "create", description = ["Generates schema scripts for kafka topics"])
 class Create(
     private val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
+    private val cl: ClassLoader = Topic.classLoader,
+    private val resourceGetter: (String) -> List<URL> = { path -> cl.getResources(path).toList().filterNotNull() }
 ) : Runnable {
     @CommandLine.Option(
         names = ["-r", "--replicas"],
@@ -51,7 +55,7 @@ class Create(
         description = ["Bootstrap server address for topic create"],
         required = true
     )
-    var bootstrapAddr: String? = null
+    var bootstrapAddress: String? = null
 
     @CommandLine.Option(
         names = ["-l", "--location"],
@@ -63,70 +67,64 @@ class Create(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    override fun run() {
-        val cl = Topic.classLoader
-        val mapper = ObjectMapper(YAMLFactory()).registerModule(
-            KotlinModule.Builder()
-                .withReflectionCacheSize(512)
-                .configure(KotlinFeature.NullToEmptyCollection, true)
-                .configure(KotlinFeature.NullToEmptyMap, true)
-                .configure(KotlinFeature.NullIsSameAsDefault, false)
-                .configure(KotlinFeature.SingletonSupport, false)
-                .configure(KotlinFeature.StrictNullChecks, false)
-                .build()
-        )
-        val files: List<URL> = cl.getResources("net/corda/schema").toList().filterNotNull()
-        val filesAndContents: Map<String, TopicDefinitions> = files.filter { it.protocol == "jar" }
-            .flatMap { file ->
-                val jarPath = file.path.substringAfter("file:").substringBeforeLast("!")
-                val jar = JarFile(URLDecoder.decode(jarPath, Charset.defaultCharset()))
-                val yamlFiles = jar.entries().toList().map { entry ->
-                    entry
-                }.filter { it.name.endsWith(".yml") || it.name.endsWith(".yaml") }
+    private val mapper: ObjectMapper = ObjectMapper(YAMLFactory()).registerModule(
+        KotlinModule.Builder()
+            .withReflectionCacheSize(512)
+            .configure(KotlinFeature.NullToEmptyCollection, true)
+            .configure(KotlinFeature.NullToEmptyMap, true)
+            .configure(KotlinFeature.NullIsSameAsDefault, false)
+            .configure(KotlinFeature.SingletonSupport, false)
+            .configure(KotlinFeature.StrictNullChecks, false)
+            .build()
+    )
 
-                return@flatMap yamlFiles.map { entry: JarEntry ->
-                    val data: String = jar.getInputStream(entry)
-                        .bufferedReader(Charset.defaultCharset()).use { it.readText() }
-                    val parsedData: TopicDefinitions = mapper.readValue(data)
-                    return@map entry.name to parsedData
-                }
-            }.toMap()
-        val topics = filesAndContents.values.flatMap {
-            it.topics.values
-        }.flatMap {
-            val topicConfig = it
-            // Add support for prefixed topic names
-            val topicPrefix = topicPrefix ?: ""
-            val topicName = if (topicPrefix.isEmpty()) topicConfig.name else "$topicPrefix-${topicConfig.name}"
-            // Global partition count override
-            val partitions = partitionOverride ?: 1
-            // Global replica count override
-            val replicas = replicaOverride ?: 1
-            val config = createConfigString(topicConfig.config)
-            val acls = it.consumers.map { consumer ->
-                "kafka-acls.sh --bootstrap-server $bootstrapAddr --add --allow-principal User:$consumer --operation read --topic $topicName"
-            } + it.producers.map { producer ->
-                @Suppress("MaxLineLength")
-                "kafka-acls.sh --bootstrap-server $bootstrapAddr --add --allow-principal User:$producer --operation write --topic $topicName"
+    fun collectJars(
+        files: List<URL>,
+        jarFactory: (String) -> JarFile = ::JarFile
+    ): List<JarFile> {
+        return files
+            .filter { it.protocol == "jar" }
+            .map {
+                val jarPath = it.path.substringAfter("file:").substringBeforeLast("!")
+                jarFactory(URLDecoder.decode(jarPath, Charset.defaultCharset()))
             }
-            return@flatMap listOf(
-                @Suppress("MaxLineLength")
-                "kafka-topics.sh --bootstrap-server $bootstrapAddr --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName $config &"
-            ) + acls
-        } + "wait"
-
-        if (outputLocation != null) {
-            println("Wrote to path $outputLocation")
-            val writer = writerFactory(outputLocation!!)
-            writer.write(topics.joinToString(System.lineSeparator()))
-            writer.flush()
-            writer.close()
-        } else {
-            println(topics.joinToString(System.lineSeparator()))
-        }
     }
 
-    private fun createConfigString(config: Map<String, String>): String {
+    fun extractResourcesFromJars(
+        files: List<URL>,
+        extensions: List<String>,
+        jars: List<JarFile> = collectJars(files),
+        getEntries: (JarFile) -> List<JarEntry> = { jar: JarFile -> jar.entries().toList() }
+    ): Map<String, *> {
+        return jars.flatMap { jar: JarFile ->
+            val yamlFiles = getEntries(jar)
+                .map { entry ->
+                    entry
+                }.filter {
+                    extensions.contains(it.name.substringAfterLast("."))
+                }
+
+            return@flatMap yamlFiles.map { entry: JarEntry ->
+                val data: String = jar.getInputStream(entry)
+                    .bufferedReader(Charset.defaultCharset()).use { it.readText() }
+                val parsedData: TopicDefinitions = mapper.readValue(data)
+                return@map entry.name to parsedData
+            }
+        }.toMap()
+    }
+
+    fun createTopicScripts(
+        topicName: String,
+        partitions: Int,
+        replicas: Int,
+        config: Map<String, String>
+    ): List<String> {
+        val address = bootstrapAddress ?: throw NoValidBootstrapAddress(bootstrapAddress)
+        @Suppress("MaxLineLength")
+        return listOf("kafka-topics.sh --bootstrap-server $address --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName ${createConfigString(config)} &")
+    }
+
+    fun createConfigString(config: Map<String, String>): String {
         if (config.entries.isNotEmpty()) {
             val values = config.entries.map { configEntry ->
                 return@map "--config \"${configEntry.key}=${configEntry.value}\""
@@ -134,6 +132,53 @@ class Create(
             return values
         } else {
             return ""
+        }
+    }
+
+    fun createACLs(topic: String, consumers: List<String>, producers: List<String>): List<String> {
+        val address = bootstrapAddress ?: throw NoValidBootstrapAddress(bootstrapAddress)
+        val readACLs = consumers.map { consumer ->
+            "kafka-acls.sh --bootstrap-server $address --add --allow-principal User:$consumer --operation read --topic $topic"
+        }
+        val writeACLs = producers.map { producer ->
+            @Suppress("MaxLineLength")
+            "kafka-acls.sh --bootstrap-server $address --add --allow-principal User:$producer --operation write --topic $topic"
+        }
+
+        return readACLs + writeACLs
+    }
+
+    override fun run() {
+        val files: List<URL> = resourceGetter("net/corda/schema")
+
+        @Suppress("UNCHECKED_CAST")
+        val topicDefinitions: List<TopicDefinitions> =
+            extractResourcesFromJars(files, listOf("yml", "yaml")).values.toList() as List<TopicDefinitions>
+        val topicConfigs = topicDefinitions.flatMap { it: TopicDefinitions ->
+            it.topics.values
+        }
+        val topics = topicConfigs.flatMap { topicConfig: TopicConfig ->
+            // Add support for prefixed topic names
+            val topicPrefix = topicPrefix ?: ""
+            val topicName = if (topicPrefix.isEmpty()) topicConfig.name else "$topicPrefix-${topicConfig.name}"
+            // Global partition count override
+            val partitions = partitionOverride ?: 1
+            // Global replica count override
+            val replicas = replicaOverride ?: 1
+            val config = topicConfig.config
+            val topicScripts = createTopicScripts(topicName, partitions, replicas, config)
+            val acls = createACLs(topicName, topicConfig.consumers, topicConfig.producers)
+            return@flatMap topicScripts + acls
+        } + "wait"
+
+        if (outputLocation != null) {
+            logger.info("Wrote to path $outputLocation")
+            val writer = writerFactory(outputLocation!!)
+            writer.write(topics.joinToString(System.lineSeparator()))
+            writer.flush()
+            writer.close()
+        } else {
+            println(topics.joinToString(System.lineSeparator()))
         }
     }
 }
