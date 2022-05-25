@@ -1,24 +1,26 @@
 package net.corda.crypto.flow
 
+import net.corda.crypto.impl.createWireRequestContext
+import net.corda.crypto.impl.toMap
+import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
-import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
-import net.corda.data.crypto.wire.ops.flow.commands.SignWithSpecFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
+import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.UUID
 
 /**
  * The crypto operations client to generate messages for flows.
@@ -35,6 +37,7 @@ import java.util.UUID
  */
 @Suppress("TooManyFunctions")
 class CryptoFlowOpsTransformer(
+    private val serializer: AlgorithmParameterSpecEncodingService,
     private val requestingComponent: String,
     private val responseTopic: String,
     private val keyEncodingService: KeyEncodingService,
@@ -99,6 +102,7 @@ class CryptoFlowOpsTransformer(
     fun createSign(
         tenantId: String,
         publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): FlowOpsRequest {
@@ -106,6 +110,7 @@ class CryptoFlowOpsTransformer(
             tenantId,
             SignFlowCommand(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
+                signatureSpec.toWire(serializer),
                 ByteBuffer.wrap(data),
                 context.toWire()
             )
@@ -116,11 +121,10 @@ class CryptoFlowOpsTransformer(
      * Returns request's type.
      *
      * @throws [IllegalArgumentException] if the request type is not one of
-     * [SignWithSpecFlowCommand], [SignFlowCommand], [GenerateFreshKeyFlowCommand], [FilterMyKeysFlowQuery]
+     * [SignFlowCommand], [GenerateFreshKeyFlowCommand], [FilterMyKeysFlowQuery]
      */
     fun inferRequestType(response: FlowOpsResponse): Class<*>? {
         return when (response.getContextValue(REQUEST_OP_KEY)) {
-            SignWithSpecFlowCommand::class.java.simpleName -> SignWithSpecFlowCommand::class.java
             SignFlowCommand::class.java.simpleName -> SignFlowCommand::class.java
             GenerateFreshKeyFlowCommand::class.java.simpleName -> GenerateFreshKeyFlowCommand::class.java
             FilterMyKeysFlowQuery::class.java.simpleName -> FilterMyKeysFlowQuery::class.java
@@ -151,7 +155,6 @@ class CryptoFlowOpsTransformer(
             throw IllegalStateException("Response is no longer valid, expired at $expireAt")
         }
         return when (inferRequestType(response)) {
-            SignWithSpecFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
             SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
             GenerateFreshKeyFlowCommand::class.java -> transformCryptoPublicKey(response)
             FilterMyKeysFlowQuery::class.java -> transformCryptoSigningKeys(response)
@@ -185,7 +188,8 @@ class CryptoFlowOpsTransformer(
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
             by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
-            bytes = resp.bytes.array()
+            bytes = resp.bytes.array(),
+            context = resp.context.toMap()
         )
     }
 
@@ -194,31 +198,15 @@ class CryptoFlowOpsTransformer(
      */
     private fun createRequest(tenantId: String, request: Any): FlowOpsRequest =
         FlowOpsRequest(
-            createWireRequestContext(tenantId, request),
-            request
-        )
-
-    /**
-     * Creates [CryptoRequestContext] for specified tenant and operation
-     */
-    private fun createWireRequestContext(
-        tenantId: String,
-        request: Any
-    ): CryptoRequestContext {
-        return CryptoRequestContext(
-            requestingComponent,
-            Instant.now(),
-            UUID.randomUUID().toString(),
-            tenantId,
-            KeyValuePairList(
+            createWireRequestContext(requestingComponent, tenantId, KeyValuePairList(
                 listOf(
                     KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
                     KeyValuePair(RESPONSE_TOPIC, responseTopic),
                     KeyValuePair(REQUEST_TTL_KEY, requestValidityWindowSeconds.toString())
                 )
-            )
+            )),
+            request
         )
-    }
 
     /**
      * Transforms map to [KeyValuePairList]

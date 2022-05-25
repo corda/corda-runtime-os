@@ -5,7 +5,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -21,7 +21,7 @@ class AuthenticationProtocolFailureTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance(ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName, provider)
+    private val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -74,7 +74,7 @@ class AuthenticationProtocolFailureTest {
         )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                modifiedInitiatorHandshakeMessage, partyAIdentityKey.public, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+                modifiedInitiatorHandshakeMessage, partyAIdentityKey.public, ECDSA_SHA256_SIGNATURE_SPEC
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -104,7 +104,7 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, partyAIdentityKey.public, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+                initiatorHandshakeMessage, partyAIdentityKey.public, ECDSA_SHA256_SIGNATURE_SPEC
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -135,7 +135,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, wrongPublicKey, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+                initiatorHandshakeMessage, wrongPublicKey, ECDSA_SHA256_SIGNATURE_SPEC
             )
         }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
@@ -166,7 +166,7 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
             partyAIdentityKey.public,
-            ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC,
+            ECDSA_SHA256_SIGNATURE_SPEC,
         )
 
         // Step 4: responder creating different signature than the one expected.
@@ -179,7 +179,7 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, partyBIdentityKey.public, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
+                responderHandshakeMessage, partyBIdentityKey.public, ECDSA_SHA256_SIGNATURE_SPEC
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)

@@ -4,6 +4,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
@@ -111,13 +112,13 @@ interface CryptoOpsClient : Lifecycle {
     ): PublicKey
 
     /**
-     * Using the provided signing public key internally looks up the matching private key information and signs the data.
+     * Using the provided signing public key internally looks up the matching private key and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
-     * Default signature scheme for the key scheme is used.
      */
     fun sign(
         tenantId: String,
         publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
@@ -125,12 +126,16 @@ interface CryptoOpsClient : Lifecycle {
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
-     * The [signatureSpec] is used to override the default signature scheme
+     * The [digest] together with [publicKey] is used to infer the [SignatureSpec].
+     *
+     * @throws IllegalArgumentException if the [SignatureSpec] cannot be inferred from the parameters -
+     * e.g. EdDSA supports only 'NONEwithEdDSA' signatures so if the SHA-256 will be passed as the parameter
+     * that will result in the exception.
      */
     fun sign(
         tenantId: String,
         publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey

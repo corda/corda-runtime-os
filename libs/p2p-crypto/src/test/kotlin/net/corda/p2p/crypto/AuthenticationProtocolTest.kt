@@ -3,8 +3,8 @@ package net.corda.p2p.crypto
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -28,12 +28,12 @@ class AuthenticationProtocolTest {
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {
-        val signature = Signature.getInstance(ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName, provider)
+        val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyAIdentityKey = keyPairGenerator.generateKeyPair()
         val partyBIdentityKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC)
+        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, ECDSA_SHA256_SIGNATURE_SPEC)
     }
 
     @Test
@@ -48,12 +48,12 @@ class AuthenticationProtocolTest {
 
     @Test
     fun `authentication protocol methods are idempotent`() {
-        val signature = Signature.getInstance(ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC.signatureName, provider)
+        val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyAIdentityKey = keyPairGenerator.generateKeyPair()
         val partyBIdentityKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, ECDSA_SECP256K1_SHA256_SIGNATURE_SPEC, true)
+        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, ECDSA_SHA256_SIGNATURE_SPEC, true)
     }
 
     private fun executeProtocol(partyAIdentityKey: KeyPair,

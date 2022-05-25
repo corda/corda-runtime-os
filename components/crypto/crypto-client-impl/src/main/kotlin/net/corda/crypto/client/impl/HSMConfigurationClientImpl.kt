@@ -1,6 +1,8 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.createWireRequestContext
+import net.corda.crypto.impl.toWire
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoStringResult
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
