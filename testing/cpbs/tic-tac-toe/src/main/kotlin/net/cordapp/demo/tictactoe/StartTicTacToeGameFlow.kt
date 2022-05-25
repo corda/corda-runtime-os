@@ -1,4 +1,4 @@
-package net.corda.demo.tictactoe
+package net.cordapp.demo.tictactoe
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow

@@ -1,4 +1,4 @@
-package net.corda.demo.tictactoe
+package net.cordapp.demo.tictactoe
 
 class StartGameMessage {
     var opponentX500Name: String? = null

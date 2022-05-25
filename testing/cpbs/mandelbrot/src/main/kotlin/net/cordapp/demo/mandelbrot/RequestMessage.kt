@@ -1,4 +1,4 @@
-package net.corda.demo.mandelbrot
+package net.cordapp.demo.mandelbrot
 
 class RequestMessage {
     var startX: Double? = null
