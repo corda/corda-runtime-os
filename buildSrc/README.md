@@ -130,6 +130,26 @@ The application logs in a single flow according the time of generations all even
 or the code bootstrapping and controlling Felix.
 
 
+### Change the log level
+
+By default `log4j2-console.xml` configures log4j with a console appender outputting logs at `info` level but this can be overridden by setting environment variable `CONSOLE_LOG_LEVEL` on the container at startup.
+
+`DeployableContainerBuilder.groovy` sets this on the JibContainerBuilder.
+
+```groovy
+builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
+```
+
+### Enabling Log4j2 debug mode
+
+Log4j2 debug mode can be enabled by setting environment variable `ENABLE_LOG4J2_DEBUG` on the container at startup.
+
+`DeployableContainerBuilder.groovy` sets this on the JibContainerBuilder.
+
+```groovy
+builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
+```
+
 ### How to define the entry point of an application
 
 Just one class must implement the `net.corda.osgi.api.Application` interface. This class must be an OSGi component to

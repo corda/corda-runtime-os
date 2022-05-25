@@ -1,7 +1,7 @@
 package net.corda.libs.packaging.versioning
 
-import net.corda.libs.packaging.VersionComparator
-import net.corda.libs.packaging.VersionComparator.Companion.toVersionParts
+import net.corda.libs.packaging.core.comparator.VersionComparator
+import net.corda.libs.packaging.core.comparator.VersionComparator.Companion.toVersionParts
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 

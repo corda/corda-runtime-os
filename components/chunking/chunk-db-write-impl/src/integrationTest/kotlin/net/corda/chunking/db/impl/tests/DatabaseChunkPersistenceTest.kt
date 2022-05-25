@@ -15,10 +15,19 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDataEntity
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.orm.utils.transaction
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.ManifestCorDappInfo
+import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
+import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -160,7 +169,37 @@ internal class DatabaseChunkPersistenceTest {
     }
 
     private fun mockCpk(hash: SecureHash, name: String) = mock<Cpk>().also { cpk ->
-        val metadata = mock<Cpk.Metadata>().also { whenever(it.hash).thenReturn(hash) }
+        val cpkId = mock<CpkIdentifier>().also {
+            whenever(it.name).thenReturn("cpk-name")
+            whenever(it.version).thenReturn("cpk-version")
+            whenever(it.signerSummaryHash).thenReturn(hash)
+        }
+
+        val cpkManifest = mock<CpkManifest>().also {
+            val cpkFormatError = mock<CpkFormatVersion>().also { cpkFormatVersion ->
+                whenever(cpkFormatVersion.major).thenReturn(1)
+                whenever(cpkFormatVersion.minor).thenReturn(0)
+            }
+            whenever(it.cpkFormatVersion).thenReturn(cpkFormatError)
+        }
+
+        val cordappManifest = CordappManifest(
+            "", "", -1, -1,
+            ManifestCorDappInfo(null, null, null, null),
+            ManifestCorDappInfo(null, null, null, null),
+            emptyMap()
+        )
+
+        val metadata = mock<CpkMetadata>().also {
+            whenever(it.cpkId).thenReturn(cpkId)
+            whenever(it.manifest).thenReturn(cpkManifest)
+            whenever(it.mainBundle).thenReturn("main-bundle")
+            whenever(it.libraries).thenReturn(emptyList())
+            whenever(it.dependencies).thenReturn(emptyList())
+            whenever(it.cordappManifest).thenReturn(cordappManifest)
+            whenever(it.type).thenReturn(CpkType.UNKNOWN)
+            whenever(it.fileChecksum).thenReturn(hash)
+        }
         whenever(cpk.path).thenReturn(mockCpkContent.writeToPath())
         whenever(cpk.originalFileName).thenReturn(name)
         whenever(cpk.metadata).thenReturn(metadata)
@@ -169,14 +208,14 @@ internal class DatabaseChunkPersistenceTest {
     private fun mockCpi(cpks: Collection<Cpk>): Cpi {
         // We need a random name here as the database primary key is (name, version, signerSummaryHash)
         // and we'd end up trying to insert the same mock cpi.
-        val id = mock<Cpi.Identifier>().also {
+        val id = mock<CpiIdentifier>().also {
             whenever(it.name).thenReturn("test " + UUID.randomUUID().toString())
             whenever(it.version).thenReturn("1.0")
             whenever(it.signerSummaryHash).thenReturn(SecureHash("SHA-256", ByteArray(12)))
         }
 
-        val metadata = mock<Cpi.Metadata>().also {
-            whenever(it.id).thenReturn(id)
+        val metadata = mock<CpiMetadata>().also {
+            whenever(it.cpiId).thenReturn(id)
             whenever(it.groupPolicy).thenReturn("{}")
         }
 

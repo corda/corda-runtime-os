@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -281,11 +280,11 @@ class ConfigRPCOpsImplTests {
         }
         val validator = mock<ConfigurationValidator>().apply {
             if (failValidation) {
-                whenever(validate(any(), any(), any(), any())).doAnswer {
+                whenever(validate(any(), any<Version>(), any(), any())).thenAnswer {
                     throw ConfigurationValidationException("key", Version(1, 0), SmartConfigImpl.empty(), setOf(invalidConfigError) )
                 }
             } else {
-                whenever(validate(any(), any(), any(), any())).thenAnswer { it.arguments[2] }
+                whenever(validate(any(),  any<Version>(), any(), any())).thenAnswer { it.arguments[2] }
             }
         }
         val validatorFactory = mock<ConfigurationValidatorFactory>().apply {

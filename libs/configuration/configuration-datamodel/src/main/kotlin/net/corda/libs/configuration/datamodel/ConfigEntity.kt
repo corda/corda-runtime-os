@@ -1,13 +1,13 @@
 package net.corda.libs.configuration.datamodel
 
-import net.corda.db.schema.DbSchema.CONFIG
-import net.corda.db.schema.DbSchema.CONFIG_TABLE
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
+import net.corda.db.schema.DbSchema.CONFIG
+import net.corda.db.schema.DbSchema.CONFIG_TABLE
 
 /**
  * The entity for the current cluster configuration in the cluster database.
@@ -45,7 +45,7 @@ data class ConfigEntity(
     /** Updates the classes fields to match those of the [configEntity]. */
     fun update(configEntity: ConfigEntity) {
         config = configEntity.config
-        schemaVersionMajor = configEntity.schemaVersionMinor
+        schemaVersionMajor = configEntity.schemaVersionMajor
         schemaVersionMinor = configEntity.schemaVersionMinor
         updateTimestamp = configEntity.updateTimestamp
         updateActor = configEntity.updateActor

@@ -7,14 +7,12 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
+import net.corda.flow.pipeline.exceptions.FlowEventException
+import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -52,9 +50,13 @@ class SessionEventHandler @Activate constructor(
 
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-        when (val sessionInit = nextSessionEvent?.payload) {
-            is SessionInit -> {
-                createInitiatedFlowCheckpoint(context, sessionInit,nextSessionEvent)
+        val nextSessionPayload = nextSessionEvent?.payload
+
+        if (!checkpoint.doesExist) {
+            if (nextSessionPayload is SessionInit) {
+                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent)
+            } else {
+                discardSessionEvent(context, sessionEvent)
             }
         }
 
@@ -71,11 +73,19 @@ class SessionEventHandler @Activate constructor(
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
-        val initiatingToInitiatedFlows = getInitiatingToInitiatedFlowsFromSandbox(initiatingIdentity.toCorda())
-        val initiatedFlow = initiatingToInitiatedFlows[sessionInit.cpiId to sessionInit.flowName]
-                ?: throw FlowProcessingException(
-                    "No initiated flow found for initiating flow: ${sessionInit.flowName} in cpi: ${sessionInit.cpiId}"
-                )
+        val protocolStore = try {
+            flowSandboxService.get(initiatedIdentity.toCorda()).protocolStore
+        } catch (e: Exception) {
+            // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
+            // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
+            // will get the right failure eventually, so this is fine for now.
+            throw FlowTransientException(
+                "Failed to create the flow sandbox: ${e.message}",
+                context,
+                e
+            )
+        }
+        val initiatedFlow = protocolStore.responderForProtocol(sessionInit.protocol, sessionInit.versions, context)
         val startContext = FlowStartContext.newBuilder()
             .setStatusKey(FlowKey(sessionId, initiatedIdentity))
             .setInitiatorType(FlowInitiatorType.P2P)
@@ -87,11 +97,19 @@ class SessionEventHandler @Activate constructor(
             .setCreatedTimestamp(Instant.now())
             .build()
 
-        context.checkpoint.initFromNew(sessionInit.flowId, startContext, WaitingFor(WaitingForSessionInit(sessionId)))
+        context.checkpoint.initFromNew(sessionInit.flowId, startContext)
+        context.checkpoint.waitingFor = WaitingFor(WaitingForSessionInit(sessionId))
     }
 
-    private fun getInitiatingToInitiatedFlowsFromSandbox(initiatedIdentity: HoldingIdentity): Map<Pair<String, String>, String> {
-        return flowSandboxService.get(initiatedIdentity).getObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS)
-            ?: throw FlowProcessingException("Sandbox for identity: $initiatedIdentity has not been initialised correctly")
+    private fun discardSessionEvent(context: FlowEventContext<SessionEvent>, sessionEvent: SessionEvent) {
+        log.info(
+            "Received a ${sessionEvent.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that does not exist. " +
+                    "The event will be discarded. ${SessionEvent::class.simpleName}: $sessionEvent"
+        )
+        throw FlowEventException(
+            "Received a ${context.inputEventPayload.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
+                    "does not exist",
+            context
+        )
     }
 }

@@ -621,4 +621,46 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
         assertEquals(""""Completed foo"""", helloResponse.body)
     }
+
+    @Test
+    fun `test api that returns null object `() {
+
+        val fullUrl = "health/apireturningnullobject"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("""null""", helloResponse.body)
+    }
+
+    @Test
+    fun `test api that returns null string`() {
+
+        val fullUrl = "health/apireturningnullstring"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("""null""", helloResponse.body)
+    }
+
+    @Test
+    fun `test api that returns object wrapping a null string`() {
+
+        val fullUrl = "health/apireturningobjectwithnullablestringinside"
+        val helloResponse = client.call(
+            POST, WebRequest<Any>(
+                fullUrl
+            ),
+            userName, password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("""{"str":null}""", helloResponse.body)
+    }
 }

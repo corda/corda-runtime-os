@@ -1,6 +1,7 @@
 package net.corda.p2p.setup
 
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
 import net.corda.messagebus.kafka.producer.builder.KafkaCordaProducerBuilderImpl
@@ -25,7 +26,7 @@ class Setup(
         val serializationFactory = CordaAvroSerializationFactoryImpl(registry)
         val consumerBuilder = CordaKafkaConsumerBuilderImpl(registry)
         val producerBuilder = KafkaCordaProducerBuilderImpl(registry)
-        val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         CordaPublisherFactory(
             serializationFactory,
             producerBuilder,

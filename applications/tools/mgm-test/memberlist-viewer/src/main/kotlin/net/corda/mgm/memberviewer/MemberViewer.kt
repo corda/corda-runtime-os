@@ -2,6 +2,10 @@ package net.corda.mgm.memberviewer
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.io.File
+import java.io.FileInputStream
+import java.util.*
+import kotlin.random.Random
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
@@ -12,9 +16,8 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -29,10 +32,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import picocli.CommandLine
-import java.io.File
-import java.io.FileInputStream
-import java.util.*
-import kotlin.random.Random
 
 @Component(immediate = true)
 @Suppress("LongParameterList")
@@ -45,7 +44,7 @@ class MemberViewer @Activate constructor(
 
     private companion object {
         private val logger: Logger = contextLogger()
-        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
+        const val KAFKA_BOOTSTRAP_SERVERS = "bootstrap.servers"
     }
 
     @Suppress("SpreadOperator")
@@ -66,8 +65,8 @@ class MemberViewer @Activate constructor(
                 return
             }
             kafkaProperties.load(FileInputStream(kafkaPropertiesFile))
-            if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER)) {
-                logError("No $KAFKA_BOOTSTRAP_SERVER property found in file specified via --kafka")
+            if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVERS)) {
+                logError("No $KAFKA_BOOTSTRAP_SERVERS property found in file specified via --kafka")
                 shutdown()
                 return
             }
@@ -90,8 +89,8 @@ class MemberViewer @Activate constructor(
             val secretsConfig = ConfigFactory.empty()
             val bootConfig = ConfigFactory.empty()
                 .withValue(
-                    BOOTSTRAP_SERVER,
-                    ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString())
+                    KAFKA_BOOTSTRAP_SERVERS,
+                    ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVERS].toString())
                 )
                 .withValue(
                     BUS_TYPE,

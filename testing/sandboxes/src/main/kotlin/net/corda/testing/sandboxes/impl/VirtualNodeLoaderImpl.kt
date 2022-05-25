@@ -35,15 +35,15 @@ class VirtualNodeLoaderImpl @Activate constructor(
         // TODO - refactor this when CPI loader code moves from api to runtime-os
         val cpi = cpiResources.computeIfAbsent(resourceName) { key ->
             cpiLoader.loadCPI(key).also { cpi ->
-                resourcesLookup[CpiIdentifier.fromLegacy(cpi.metadata.id)] = key
+                resourcesLookup[cpi.metadata.cpiId] = key
             }
         }
         return VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier(
-                cpi.metadata.id.name,
-                cpi.metadata.id.version,
-                cpi.metadata.id.signerSummaryHash),
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHash),
             null, UUID.randomUUID(), null, UUID.randomUUID(), null
         ).also(::put)
     }

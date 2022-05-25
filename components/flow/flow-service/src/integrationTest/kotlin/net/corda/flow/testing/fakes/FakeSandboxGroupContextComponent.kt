@@ -1,9 +1,9 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
+import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
+import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -25,20 +25,25 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<CpkIdentifier>()
+    private var initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>> = mapOf()
 
-    fun putCpk(cpk: CpkIdentifier){
+    fun putCpk(cpk: CpkIdentifier) {
         availableCpk.add(cpk)
     }
 
-    fun reset(){
+    fun reset() {
         availableCpk.clear()
+    }
+
+    fun initiatingToInitiatedFlowPair(protocolName: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        initiatingToInitiatedFlowsMap = mapOf(protocolName to Pair(initiatingFlowClassName, initiatedFlowClassName))
     }
 
     override fun getOrCreate(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
-        return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(mapOf()))
+        return FakeSandboxGroupContext(virtualNodeContext, FakeSandboxGroup(mapOf()), initiatingToInitiatedFlowsMap)
     }
 
     override fun registerMetadataServices(
@@ -73,20 +78,32 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     class FakeSandboxGroupContext(
         override val virtualNodeContext: VirtualNodeContext,
-        override val sandboxGroup: SandboxGroup
+        override val sandboxGroup: SandboxGroup,
+        private val initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>>
     ) :SandboxGroupContext{
-        private val serviceMap = mapOf(
-            DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
-            CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
-            AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
-            )
+        private val cache = mapOf(
+            FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
+            FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
+            FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
+            FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE to makeProtocolStore()
+        )
 
         override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
-            return serviceMap[key]?.let(valueType::cast)
+            return cache[key]?.let(valueType::cast)
+        }
+
+        private fun makeProtocolStore() : FakeFlowProtocolStore {
+            val initiatingMap = initiatingToInitiatedFlowsMap.map {
+                Pair(it.value.first, Pair(it.key, listOf(1)))
+            }.toMap()
+            val responderMap = initiatingToInitiatedFlowsMap.map {
+                Pair(it.key, it.value.second)
+            }.toMap()
+            return FakeFlowProtocolStore(initiatingMap, responderMap)
         }
     }
 
-    class FakeSandboxDependencyInjector:SandboxDependencyInjector{
+    class FakeSandboxDependencyInjector : SandboxDependencyInjector {
         override fun injectServices(flow: Flow<*>) {
         }
 
@@ -98,7 +115,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeCheckpointSerializer:CheckpointSerializer{
+    class FakeCheckpointSerializer : CheckpointSerializer {
         override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
@@ -108,7 +125,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSerializationService:SerializationService{
+    class FakeSerializationService : SerializationService {
         override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
@@ -122,7 +139,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSandboxGroup(override val metadata: Map<Bundle, CpkMetadata>) :SandboxGroup{
+    class FakeSandboxGroup(override val metadata: Map<Bundle, CpkMetadata>) : SandboxGroup {
         override fun loadClassFromMainBundles(className: String): Class<*> {
             TODO("Not yet implemented")
         }
@@ -141,6 +158,19 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
         override fun getClass(className: String, serialisedClassTag: String): Class<*> {
             TODO("Not yet implemented")
+        }
+    }
+
+    class FakeFlowProtocolStore(
+        private val protocolForInitiator: Map<String, Pair<String, List<Int>>>,
+        private val responderForProtocol: Map<String, String>
+    ) : FlowProtocolStore {
+        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): String {
+            return responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
+        }
+
+        override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
+            return protocolForInitiator[initiator] ?: throw IllegalArgumentException("No protocol configured for $initiator")
         }
     }
 }

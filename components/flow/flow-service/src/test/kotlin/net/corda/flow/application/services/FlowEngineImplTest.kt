@@ -18,7 +18,7 @@ import org.mockito.kotlin.whenever
 class FlowEngineImplTest {
     private val flowFiberService = MockFlowFiberService()
     private val flowStack = flowFiberService.flowStack
-    private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxDependencyInjector
+    private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxGroupContext.dependencyInjector
     private val flowFiber = flowFiberService.flowFiber
     private val flowStackItem = FlowStackItem()
     private val subFlow = mock<Flow<String>>()
@@ -44,7 +44,7 @@ class FlowEngineImplTest {
 
         assertThat(flowEngine.subFlow(subFlow)).isEqualTo(result)
 
-        // verify unordered calls
+        // verify unordered calls.
         verify(sandboxDependencyInjector).injectServices(subFlow)
         verify(flowStack).push(subFlow)
 
@@ -88,7 +88,7 @@ class FlowEngineImplTest {
             argumentCaptor<FlowIORequest.SubFlowFailed>().apply {
                 verify(flowFiber).suspend(capture())
 
-                assertThat(firstValue.exception).isEqualTo(error)
+                assertThat(firstValue.throwable).isEqualTo(error)
                 assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
             }
         }

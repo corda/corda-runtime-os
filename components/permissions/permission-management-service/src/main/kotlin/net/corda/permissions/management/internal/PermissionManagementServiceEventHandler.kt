@@ -18,7 +18,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -104,7 +104,7 @@ internal class PermissionManagementServiceEventHandler(
             }
             is ConfigChangedEvent -> {
                 log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
-                val messagingConfig = event.config.toMessagingConfig()
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
                 val rpcConfig = event.config[RPC_CONFIG]!!
                 createPermissionManager(rpcConfig)
@@ -150,7 +150,7 @@ internal class PermissionManagementServiceEventHandler(
             .also { it.start() }
     }
 
-    private fun createAndStartRpcSender(kafkaConfig: SmartConfig) {
+    private fun createAndStartRpcSender(messagingConfig: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(
             RPCConfig(
@@ -160,7 +160,7 @@ internal class PermissionManagementServiceEventHandler(
                 PermissionManagementRequest::class.java,
                 PermissionManagementResponse::class.java
             ),
-            kafkaConfig
+            messagingConfig
         ).also { it.start() }
     }
 }

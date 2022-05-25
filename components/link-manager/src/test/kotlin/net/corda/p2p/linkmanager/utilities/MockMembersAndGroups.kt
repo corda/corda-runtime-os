@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.utilities
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
@@ -7,7 +8,6 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.GroupPolicyListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.mockito.kotlin.mock
@@ -15,19 +15,19 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 
 fun mockMembersAndGroups(
-    vararg members: LinkManagerInternalTypes.HoldingIdentity
+    vararg members: HoldingIdentity
 ): Pair<LinkManagerMembershipGroupReader, LinkManagerGroupPolicyProvider> {
     return mockMembers(members.toList()) to mockGroups(members.map { it.groupId })
 }
-fun mockMembers(members: Collection<LinkManagerInternalTypes.HoldingIdentity>): LinkManagerMembershipGroupReader {
-    val endpoint = LinkManagerInternalTypes.EndPoint("http://10.0.0.1/")
+fun mockMembers(members: Collection<HoldingIdentity>): LinkManagerMembershipGroupReader {
+    val endpoint = "http://10.0.0.1/"
 
     val provider = BouncyCastleProvider()
     val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
     val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
     val identities = members.associateWith {
         val keyPair = keyPairGenerator.generateKeyPair()
-        LinkManagerInternalTypes.MemberInfo(
+        LinkManagerMembershipGroupReader.MemberInfo(
             it,
             keyPair.public,
             KeyAlgorithm.ECDSA,
@@ -44,7 +44,7 @@ fun mockMembers(members: Collection<LinkManagerInternalTypes.HoldingIdentity>): 
         (publicKeyHash to it.holdingIdentity.groupId)
     }
     return object : LinkManagerMembershipGroupReader {
-        override fun getMemberInfo(holdingIdentity: LinkManagerInternalTypes.HoldingIdentity) = identities[holdingIdentity]
+        override fun getMemberInfo(holdingIdentity: HoldingIdentity) = identities[holdingIdentity]
 
         override fun getMemberInfo(hash: ByteArray, groupId: String) = hashToInfo[hash to groupId]
 

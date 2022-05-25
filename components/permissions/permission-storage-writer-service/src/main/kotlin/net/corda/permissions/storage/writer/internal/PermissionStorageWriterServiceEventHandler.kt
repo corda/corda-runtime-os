@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.writer.internal
 
+import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
@@ -13,7 +14,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -23,7 +24,6 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
-import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 class PermissionStorageWriterServiceEventHandler(
@@ -73,7 +73,7 @@ class PermissionStorageWriterServiceEventHandler(
                 }
             }
             is ConfigChangedEvent -> {
-                onConfigurationUpdated(event.config.toMessagingConfig())
+                onConfigurationUpdated(event.config.getConfig(MESSAGING_CONFIG))
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {

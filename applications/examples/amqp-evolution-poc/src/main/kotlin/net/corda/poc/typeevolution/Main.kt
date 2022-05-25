@@ -4,7 +4,7 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.sandbox.SandboxCreationService
@@ -17,10 +17,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.util.Hashtable
+import kotlin.io.path.inputStream
 
 
 @Component
@@ -62,11 +62,11 @@ class Main @Activate constructor(
             )
         )
 
-        val outputStream = ByteArrayOutputStream()
-        Cpi.assemble(outputStream, "cpi", "1.0", listOf(cpk))
+        val cpks = listOf(cpk).map { cpkPath ->
+            cpkPath.inputStream(StandardOpenOption.READ).use { inputStream -> Cpk.from(inputStream, Path.of(tmpDir)) }
+        }
 
-        val loadCpb: Cpi = cpkReadServiceLoader.load(ByteArrayInputStream(outputStream.toByteArray()))
-        val sandboxGroup = sandboxCreationService.createSandboxGroup(loadCpb.cpks)
+        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks)
 
         val factory = SerializerFactoryBuilder.build(sandboxGroup)
 

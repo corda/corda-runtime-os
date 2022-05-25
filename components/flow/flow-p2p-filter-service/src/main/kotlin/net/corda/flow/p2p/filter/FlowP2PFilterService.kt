@@ -14,7 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -89,7 +89,7 @@ class FlowP2PFilterService @Activate constructor(
      * Recreate the Flow P2P Filter service in response to new config [event]
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
-        val messagingConfig = event.config.toMessagingConfig()
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
         durableSub?.close()
 

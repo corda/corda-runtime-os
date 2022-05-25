@@ -6,9 +6,9 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.concurrent.getOrThrow
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
@@ -30,7 +30,7 @@ class TaskContext(
         val bootConfig = SmartConfigImpl.empty()
             .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(startArgs.instanceId))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(startArgs.topicPrefix))
-            .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(startArgs.bootstrapServer))
+            .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(startArgs.bootstrapServer))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
         publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup", false), bootConfig)
     }

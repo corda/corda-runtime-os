@@ -41,13 +41,14 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     api platform("net.corda:corda-api:$cordaApiVersion")
 
     api "net.corda:corda-base"
     api "net.corda:corda-crypto"
     api "net.corda:corda-cipher-suite"
+
+    implementation project(":libs:packaging:packaging-core")
 
     testImplementation "org.osgi:osgi.core"
 

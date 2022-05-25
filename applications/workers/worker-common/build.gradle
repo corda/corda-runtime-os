@@ -11,6 +11,9 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:messaging:message-bus')
+
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:lifecycle:registry')
     implementation project(':osgi-framework-api')

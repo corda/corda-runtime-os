@@ -13,7 +13,8 @@ internal fun net.corda.libs.packaging.core.CpiMetadata.toEndpointType() =
         this.cpiId.toEndpointType(),
         this.fileChecksum.toHexString(),
         this.cpksMetadata.map { cpkMetadata -> cpkMetadata.toEndpointType() },
-        this.groupPolicy
+        this.groupPolicy,
+        this.timestamp
     )
 
 internal fun net.corda.libs.packaging.core.CpkIdentifier.toEndpointType() =
@@ -26,5 +27,6 @@ internal fun net.corda.libs.packaging.core.CpkMetadata.toEndpointType() =
         this.libraries,
         this.dependencies.map { cpkIdentifier -> cpkIdentifier.toEndpointType() },
         this.type.toString(),
-        this.fileChecksum.toString()
+        this.fileChecksum.toString(),
+        this.timestamp
     )

@@ -85,7 +85,7 @@ class CpkChunksKafkaReader(
             val cpk = Files.newInputStream(it).use { inStream ->
                 Cpk.from(inStream, cpkPartsDir)
             }
-            onCpkAssembled(CpkIdentifier.fromLegacy(cpk.metadata.id), cpk)
+            onCpkAssembled(cpk.metadata.cpkId, cpk)
         } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
         receivedCpkChunksCache.remove(cpkChecksum)
     }
