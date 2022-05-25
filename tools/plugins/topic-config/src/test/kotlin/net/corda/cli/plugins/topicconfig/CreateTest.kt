@@ -35,10 +35,13 @@ class CreateTest {
         plugin.bootstrapAddress = "address"
 
         val create1 = plugin.createTopicScripts("topic", 1, 1, emptyMap())
+        @Suppress("MaxLineLength")
         assertThat(create1).containsExactly("kafka-topics.sh --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic  &")
         val create2 = plugin.createTopicScripts("topic", 1, 1, mapOf("test.key" to "test.val"))
+        @Suppress("MaxLineLength")
         assertThat(create2).containsExactly("kafka-topics.sh --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic --config \"test.key=test.val\" &")
         val create3 = plugin.createTopicScripts("topic", 1, 1, mapOf("test.key" to "test.val", "something" to "else"))
+        @Suppress("MaxLineLength")
         assertThat(create3).containsExactly("kafka-topics.sh --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic --config \"test.key=test.val\" --config \"something=else\" &")
     }
 
@@ -96,7 +99,6 @@ class CreateTest {
         }
         val mockEntries: (JarFile) -> List<JarEntry> = { listOf(mockEntry) }
 
-        @Suppress("UNCHECKED_CAST")
         val jar = mock<JarFile>()
 
         val resources = plugin.extractResourcesFromJars(emptyList(), emptyList(), jars=listOf(jar), getEntries=mockEntries)
