@@ -102,7 +102,7 @@ class CpiEntitiesIntegrationTest {
                     "test-cpk.cpk",
                     "test-cpk",
                     "1.2.3",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
+                    randomChecksumString(),
                 )
 
             em.transaction {
@@ -162,7 +162,7 @@ class CpiEntitiesIntegrationTest {
                 "test-cpk.cpk",
                 "test-cpk",
                 "1.2.3",
-                "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
+                randomChecksumString(),
             )
 
         emFactory.use { em ->
@@ -200,7 +200,7 @@ class CpiEntitiesIntegrationTest {
                 "test-cpk2.cpk",
                 "test-cpk2",
                 "2.2.3",
-                "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
+                randomChecksumString(),
             )
 
             em.transaction {
@@ -221,12 +221,7 @@ class CpiEntitiesIntegrationTest {
 
     @Test
     fun `on findCpkChecksumsNotIn an empty set returns all results`() {
-        cleanUpDb()
-        val cpkChecksums = listOf(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC"
-        )
+        val cpkChecksums = List(3) { randomChecksumString() }
 
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit",
@@ -246,12 +241,7 @@ class CpiEntitiesIntegrationTest {
 
     @Test
     fun `on findCpkChecksumsNotIn a checksum set returns all but this set`() {
-        cleanUpDb()
-        val cpkChecksums = listOf(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC"
-        )
+        val cpkChecksums = List(3) { randomChecksumString() }
 
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit",
@@ -263,20 +253,16 @@ class CpiEntitiesIntegrationTest {
 
         val fetchedCpkChecksums =
             emFactory.transaction {
-                it.findCpkChecksumsNotIn(listOf(
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB"
-                ))
+                it.findCpkChecksumsNotIn(cpkChecksums.take(2))
             }
 
-        assertThat(fetchedCpkChecksums).containsExactly(cpkChecksums[2])
+        assertThat(fetchedCpkChecksums).contains(cpkChecksums[2])
     }
 
     @Test
     fun `finds CPK data entity`() {
-        cleanUpDb()
         val cpkChecksums = listOf(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
+            randomChecksumString()
         )
 
         val emFactory = EntityManagerFactoryFactoryImpl().create(
@@ -297,7 +283,6 @@ class CpiEntitiesIntegrationTest {
 
     @Test
     fun `findAllCpiMetadata properly streams through DB data`() {
-        cleanUpDb()
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit",
             CpiEntities.classes.toList(),
@@ -316,7 +301,7 @@ class CpiEntitiesIntegrationTest {
                     "test-cpk.cpk$i",
                     "test-cpk$i",
                     "$i.2.3",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
+                    randomChecksumString(),
                 )
 
             emFactory.use { em ->
@@ -357,19 +342,10 @@ class CpiEntitiesIntegrationTest {
         }
     }
 
-    private fun cleanUpDb() {
-        val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        )
-
-        emFactory.transaction {
-            it.createQuery("DELETE FROM ${CpkEntity::class.simpleName}").executeUpdate()
-            it.createQuery("DELETE FROM ${CpkMetadataEntity::class.simpleName}").executeUpdate()
-            it.createQuery("DELETE FROM ${CpkDataEntity::class.simpleName}").executeUpdate()
-            it.createQuery("DELETE FROM ${CpiMetadataEntity::class.simpleName}").executeUpdate()
-        }
+    private fun randomChecksumString(): String {
+        return "SHA-256:" + List(64) {
+            (('a'..'z') + ('A'..'Z') + ('0'..'9')).random()
+        }.joinToString("")
     }
 
     private fun insertCpkChecksums(cpkChecksums: List<String>, emFactory: EntityManagerFactory):
