@@ -46,13 +46,9 @@ import net.corda.schema.Schemas
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
-import org.mockito.Captor
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -120,15 +116,12 @@ class StaticMemberRegistrationServiceTest {
         on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
 
-    private val signature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), ByteArray(1), emptyMap())
-
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
         on { generateKeyPair(any(), any(), eq("alice-alias"), any(), any<Map<String, String>>()) } doReturn aliceKey
         // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
         on { generateKeyPair(any(), any(), eq(bob.id), any(), any<Map<String, String>>()) } doReturn bobKey
         on { generateKeyPair(any(), any(), eq(charlie.id), any(), any<Map<String, String>>()) } doReturn charlieKey
-        on { sign(any(), any<PublicKey>(), any<SignatureSpec>(), any<ByteArray>(), any()) } doReturn signature
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
