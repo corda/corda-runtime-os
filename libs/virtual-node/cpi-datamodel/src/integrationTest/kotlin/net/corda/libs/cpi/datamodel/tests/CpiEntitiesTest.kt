@@ -419,10 +419,13 @@ private object CpkEntityFactory {
         signerSummaryHash: String,
     ) = CpkEntity(
         cpiMetadataEntity,
-        CpkMetadataEntity(cpkFileChecksum, "1.0", "{}"),
+        CpkMetadataEntity(
+            cpkFileChecksum,
+            name,
+            version,
+            signerSummaryHash,
+            "1.0",
+            "{}"),
         cpkFileName,
-        name,
-        version,
-        signerSummaryHash
     )
 }

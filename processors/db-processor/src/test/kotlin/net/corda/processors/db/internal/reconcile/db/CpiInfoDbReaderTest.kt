@@ -80,11 +80,11 @@ class CpiInfoDbReaderTest {
 
     private val dummyCpk =
         mock<CpkEntity>() {
-            whenever(it.cpkName).then { "test-cpk" }
-            whenever(it.cpkVersion).then { "2.3.4" }
-            whenever(it.cpkSignerSummaryHash).then { "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90" }
             whenever(it.metadata).then {
                 CpkMetadataEntity(
+                    "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
+                    "test-cpk",
+                    "2.3.4",
                     "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
                     "1.0",
                     dummyCpkMetadata.toJsonAvro(),

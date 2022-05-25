@@ -244,11 +244,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 // TODO - do we need this double/triple conversion or could metadata always exist in the avro schema
                 //  with CpkMetadata just being a proxy for it?
                 // TODO - format version
-                metadata = CpkMetadataEntity(cpkChecksum, "1", it.metadata.toJsonAvro()),
+                metadata = CpkMetadataEntity(
+                    cpkChecksum,
+                    cpkName = it.metadata.cpkId.name,
+                    cpkVersion = it.metadata.cpkId.version,
+                    cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
+                    formatVersion = "1",
+                    serializedMetadata = it.metadata.toJsonAvro()),
                 cpkFileName = it.originalFileName!!,
-                cpkName = it.metadata.cpkId.name,
-                cpkVersion = it.metadata.cpkId.version,
-                cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
             )
             em.merge(cpkMetadataEntity)
         }

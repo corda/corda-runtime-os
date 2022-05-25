@@ -52,12 +52,6 @@ data class CpkEntity(
 
     @Column(name = "cpk_file_name", nullable = false)
     val cpkFileName: String,
-    @Column(name = "cpk_name", nullable = false)
-    val cpkName: String,
-    @Column(name = "cpk_version", nullable = false)
-    val cpkVersion: String,
-    @Column(name = "cpk_signer_summary_hash", nullable = false)
-    val cpkSignerSummaryHash: String,
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 ) {
@@ -80,6 +74,12 @@ data class CpkMetadataEntity(
     @Id
     @Column(name = "file_checksum", nullable = false)
     val cpkFileChecksum: String,
+    @Column(name = "cpk_name", nullable = false)
+    val cpkName: String,
+    @Column(name = "cpk_version", nullable = false)
+    val cpkVersion: String,
+    @Column(name = "cpk_signer_summary_hash", nullable = false)
+    val cpkSignerSummaryHash: String,
     @Column(name = "format_version", nullable = false)
     val formatVersion: String,
     @Column(name = "metadata", nullable = false)
