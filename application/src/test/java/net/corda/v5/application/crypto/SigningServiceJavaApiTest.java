@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.security.PublicKey;
+import java.util.HashMap;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -15,12 +16,16 @@ class SigningServiceJavaApiTest {
 
     private final SigningService signingService = mock(SigningService.class);
     private final PublicKey publicKey = mock(PublicKey.class);
-    private final SignatureSpec spec = new SignatureSpec("mock", null, null , null);
+    private final SignatureSpec spec = new SignatureSpec("mock", null, null);
 
     @Test
-    void signWithByteArrayTest() {
-        final DigitalSignature.WithKey signatureWithKey = new DigitalSignature.WithKey(publicKey, "test".getBytes());
-        Mockito.when(signingService.sign((byte[]) any(), any(), any())).thenReturn(signatureWithKey);
+    void signWithByteArrayAndSignatureSpecTest() {
+        final DigitalSignature.WithKey signatureWithKey = new DigitalSignature.WithKey(
+            publicKey,
+            "test".getBytes(),
+            new HashMap<>()
+        );
+        Mockito.when(signingService.sign(any(), any(), any(SignatureSpec.class))).thenReturn(signatureWithKey);
 
         Assertions.assertThat(signingService.sign("test".getBytes(), publicKey, spec)).isNotNull();
         Assertions

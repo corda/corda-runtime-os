@@ -4,7 +4,6 @@ import net.corda.v5.crypto.mocks.DigestServiceMock
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -30,7 +29,6 @@ class DigestServiceUtilsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should create instance out of proper formatted string with algorithm, delimiter and HEX representation of digest`() {
         val str = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         val expectedBytes = byteArrayOf(
@@ -43,7 +41,6 @@ class DigestServiceUtilsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should throw IllegalArgumentException when create does not have input with correct delimiter`() {
         val str = "SHA-384!BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         assertFailsWith(IllegalArgumentException::class) {
@@ -52,7 +49,6 @@ class DigestServiceUtilsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should throw IllegalArgumentException when create does not have input with known algorithm`() {
         val str = "ABCXYZ-42:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         assertFailsWith(IllegalArgumentException::class) {
@@ -61,7 +57,6 @@ class DigestServiceUtilsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should throw IllegalArgumentException when create does not have input with correct length`() {
         val str = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E"
         assertFailsWith(IllegalArgumentException::class) {
@@ -70,7 +65,6 @@ class DigestServiceUtilsTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should throw IllegalArgumentException when create does not have input with digets`() {
         val str = "SHA-384:"
         assertFailsWith(IllegalArgumentException::class) {
@@ -80,7 +74,6 @@ class DigestServiceUtilsTests {
 
     @ParameterizedTest
     @MethodSource("algorithms")
-    @Timeout(5)
     fun `Should return expected getZeroHash for digest length`(algorithm: DigestAlgorithmName, expectedLength: Int) {
         val hash = digestService.getZeroHash(algorithm)
         assertEquals(algorithm.name, hash.algorithm)
@@ -89,7 +82,6 @@ class DigestServiceUtilsTests {
 
     @ParameterizedTest
     @MethodSource("algorithms")
-    @Timeout(5)
     fun `Should return expected getAllOnesHash for digest length`(algorithm: DigestAlgorithmName, expectedLength: Int) {
         val hash = digestService.getAllOnesHash(algorithm)
         assertEquals(algorithm.name, hash.algorithm)

@@ -3,7 +3,6 @@ package net.corda.v5.crypto;
 import net.corda.v5.crypto.mocks.DigestServiceMock;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,6 @@ public class MerkleTreeJavaApiTest {
     }
 
     @Test
-    @Timeout(5)
     public void shouldCreateMerkleTree() {
         var merkle = MerkleTree.getMerkleTree(oneLeaf(DigestAlgorithmName.SHA2_256), DigestAlgorithmName.SHA2_256, digestService);
         assertTrue(merkle instanceof MerkleTree.Node);

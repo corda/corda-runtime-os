@@ -3,7 +3,6 @@ package net.corda.v5.crypto;
 import net.corda.v5.crypto.mocks.DigestServiceMock;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.util.Arrays;
 
@@ -19,7 +18,6 @@ public class DigestServiceUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(5)
     public void shouldCreateInstance() {
         var str = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A";
         var expectedBytes = new byte[]{
@@ -32,7 +30,6 @@ public class DigestServiceUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(5)
     public void ShouldReturnExpectedZeroHash() {
         var hash = DigestServiceUtils.getZeroHash(digestService, new DigestAlgorithmName("SHA-512"));
         assertEquals("SHA-512", hash.getAlgorithm());
@@ -41,6 +38,7 @@ public class DigestServiceUtilsJavaApiTest {
         assertArrayEquals(expectedBytes, hash.getBytes());
     }
 
+    @Test
     public void ShouldReturnExpectedAllOnesHash() {
         var hash = DigestServiceUtils.getAllOnesHash(digestService, new DigestAlgorithmName("SHA-512"));
         assertEquals("SHA-512", hash.getAlgorithm());

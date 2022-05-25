@@ -1,13 +1,11 @@
 package net.corda.v5.crypto;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class CordaOIDJavaApiTest {
     @Test
-    @Timeout(5)
     public void constantTests() {
         assertNotNull(CordaOID.OID_R3_ROOT);
         assertNotNull(CordaOID.OID_CORDA_PLATFORM);

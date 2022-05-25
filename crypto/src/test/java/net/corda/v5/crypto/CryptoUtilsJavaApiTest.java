@@ -3,12 +3,12 @@ package net.corda.v5.crypto;
 import net.corda.v5.base.util.EncodingUtils;
 import net.corda.v5.crypto.mocks.CryptoTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CryptoUtilsJavaApiTest {
     @Test
-    @Timeout(10)
     public void ShouldComputeCorrectlySHA25forGivenByteArray() {
         var hash = CryptoUtils.sha256Bytes("42".getBytes(StandardCharsets.UTF_8));
         var expected = new byte[]{
@@ -27,7 +26,6 @@ public class CryptoUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(10)
     public void ShouldComputeCorrectlySHA25forGivenPublicKey() throws Exception {
         var key = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         var hash = CryptoUtils.sha256Bytes(key);
@@ -36,7 +34,6 @@ public class CryptoUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(10)
     public void toStringShortShouldReturnBase58WithDLPrefixOfSHA256forGivenPublicKey() throws Exception {
         var key = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         var str = CryptoUtils.toStringShort(key);
@@ -46,7 +43,6 @@ public class CryptoUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(10)
     public void keysShouldReturnCollectionConsistingOfItselfForGivenPublicKey() {
         var key = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         var result = CryptoUtils.getKeys(key);
@@ -55,14 +51,12 @@ public class CryptoUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(10)
     public void sFulfilledByOverloadWithSingleKeyShouldReturnTrueIfKeysAreMatchingForGivenPublicKey() {
         var key = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         assertTrue(CryptoUtils.isFulfilledBy(key, key));
     }
 
     @Test
-    @Timeout(10)
     public void isFulfilledByOverloadWithCollectionShouldReturnTrueIfKeysMatchingAtLeastOneGivenPublicKey() {
         var key = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         var list = new ArrayList<PublicKey>();
@@ -72,7 +66,6 @@ public class CryptoUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(10)
     public void containsAnyShouldReturnTrueIfKeyIsInCollection() {
         var key = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         var list = new ArrayList<PublicKey>();
@@ -82,15 +75,16 @@ public class CryptoUtilsJavaApiTest {
     }
 
     @Test
-    @Timeout(10)
     public void byKeysShouldReturnSetOfAllPublicKeysOfDigitalSignatureWithKeyCollection() {
         var signature1 = new DigitalSignature.WithKey(
             CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic(),
-            "abc".getBytes()
+            "abc".getBytes(),
+            new HashMap<>()
         );
         var signature2 = new DigitalSignature.WithKey(
             CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic(),
-            "abc".getBytes()
+            "abc".getBytes(),
+            new HashMap<>()
         );
         var signatures = new ArrayList<DigitalSignature.WithKey>();
         signatures.add(signature1);

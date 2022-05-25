@@ -40,9 +40,9 @@ class CompositeKeyTests {
             alicePublicKey = generateKeyPair(ECDSA_SECP256K1_SPEC).public
             bobPublicKey = generateKeyPair(ECDSA_SECP256R1_SPEC).public
             charliePublicKey = generateKeyPair(EDDSA_ED25519_SPEC).public
-            aliceSignature = DigitalSignature.WithKey(alicePublicKey, ByteArray(5) { 255.toByte() })
-            bobSignature = DigitalSignature.WithKey(bobPublicKey, ByteArray(5) { 255.toByte() })
-            charlieSignature = DigitalSignature.WithKey(charliePublicKey, ByteArray(5) { 255.toByte() })
+            aliceSignature = DigitalSignature.WithKey(alicePublicKey, ByteArray(5) { 255.toByte() }, emptyMap())
+            bobSignature = DigitalSignature.WithKey(bobPublicKey, ByteArray(5) { 255.toByte() }, emptyMap())
+            charlieSignature = DigitalSignature.WithKey(charliePublicKey, ByteArray(5) { 255.toByte() }, emptyMap())
         }
     }
 
@@ -264,11 +264,11 @@ class CompositeKeyTests {
         val publicKeyEd1 = charliePublicKey
         val publicKeyEd2 = generateKeyPair(EDDSA_ED25519_SPEC).public
 
-        val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() })
-        val k1Signature = DigitalSignature.WithKey(publicKeyK1, ByteArray(5) { 255.toByte() })
-        val r1Signature = DigitalSignature.WithKey(publicKeyR1, ByteArray(5) { 255.toByte() })
-        val edSignature1 = DigitalSignature.WithKey(publicKeyEd1, ByteArray(5) { 255.toByte() })
-        val edSignature2 = DigitalSignature.WithKey(publicKeyEd2, ByteArray(5) { 255.toByte() })
+        val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() }, emptyMap())
+        val k1Signature = DigitalSignature.WithKey(publicKeyK1, ByteArray(5) { 255.toByte() }, emptyMap())
+        val r1Signature = DigitalSignature.WithKey(publicKeyR1, ByteArray(5) { 255.toByte() }, emptyMap())
+        val edSignature1 = DigitalSignature.WithKey(publicKeyEd1, ByteArray(5) { 255.toByte() }, emptyMap())
+        val edSignature2 = DigitalSignature.WithKey(publicKeyEd2, ByteArray(5) { 255.toByte() }, emptyMap())
 
         val compositeKey =
             CompositeKey.Builder().addKeys(publicKeyRSA, publicKeyK1, publicKeyR1, publicKeyEd1, publicKeyEd2).build() as CompositeKey
@@ -306,11 +306,11 @@ class CompositeKeyTests {
         val publicKeyEd1 = charliePublicKey
         val publicKeyEd2 = generateKeyPair(EDDSA_ED25519_SPEC).public
 
-        val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() })
-        val k1Signature = DigitalSignature.WithKey(publicKeyK1, ByteArray(5) { 255.toByte() })
-        val r1Signature = DigitalSignature.WithKey(publicKeyR1, ByteArray(5) { 255.toByte() })
-        val edSignature1 = DigitalSignature.WithKey(publicKeyEd1, ByteArray(5) { 255.toByte() })
-        val edSignature2 = DigitalSignature.WithKey(publicKeyEd2, ByteArray(5) { 255.toByte() })
+        val rsaSignature = DigitalSignature.WithKey(publicKeyRSA, ByteArray(5) { 255.toByte() }, emptyMap())
+        val k1Signature = DigitalSignature.WithKey(publicKeyK1, ByteArray(5) { 255.toByte() }, emptyMap())
+        val r1Signature = DigitalSignature.WithKey(publicKeyR1, ByteArray(5) { 255.toByte() }, emptyMap())
+        val edSignature1 = DigitalSignature.WithKey(publicKeyEd1, ByteArray(5) { 255.toByte() }, emptyMap())
+        val edSignature2 = DigitalSignature.WithKey(publicKeyEd2, ByteArray(5) { 255.toByte() }, emptyMap())
 
         val compositeKey =
             CompositeKey.Builder().addKeys(publicKeyRSA, publicKeyK1, publicKeyR1, publicKeyEd1, publicKeyEd2).build() as CompositeKey

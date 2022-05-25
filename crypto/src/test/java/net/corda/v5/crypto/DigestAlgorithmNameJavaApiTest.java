@@ -1,13 +1,11 @@
 package net.corda.v5.crypto;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DigestAlgorithmNameJavaApiTest {
     @Test
-    @Timeout(5)
     public void constantsTests() {
         assertEquals(8, DigestAlgorithmName.NONCE_SIZE);
         assertEquals("SHA-256", DigestAlgorithmName.SHA2_256.getName());

@@ -125,7 +125,7 @@ public class WireTransactionJavaApiTest {
     public void checkSignature() {
         final DigitalSignatureAndMetadata digitalSignatureAndMetadata =
                 new DigitalSignatureAndMetadata(
-                        new DigitalSignature.WithKey(publicKey, "test".getBytes()),
+                        new DigitalSignature.WithKey(publicKey, "test".getBytes(), new HashMap<>()),
                         new DigitalSignatureMetadata(Instant.MIN, new HashMap<>())
                 );
         final DigitalSignatureVerificationService digitalSignatureVerificationService = mock(DigitalSignatureVerificationService.class);

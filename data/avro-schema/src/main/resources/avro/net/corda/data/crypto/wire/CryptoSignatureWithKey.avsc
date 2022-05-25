@@ -13,6 +13,11 @@
       "name": "bytes",
       "type": "bytes",
       "doc": "Byte array of the signature, exactly as returned by crypto signing operations"
+    },
+    {
+      "name": "context",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The optional key/value operation specific context."
     }
   ]
 }

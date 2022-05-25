@@ -3,7 +3,6 @@ package net.corda.v5.crypto
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import java.security.MessageDigest
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -11,7 +10,6 @@ import kotlin.test.assertNotEquals
 
 class SecureHashTests {
     @Test
-    @Timeout(5)
     fun `toHexString Should HEX representation of digest`() {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
@@ -24,7 +22,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `toString Should output string with algorithm name, delimiter and HEX representation of digest`() {
         val data = "Hello World!".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
@@ -40,7 +37,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `prefixChars should output request first N characters of HEX representation of digest`() {
         val data = "def".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
@@ -53,7 +49,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should create instance out of proper formatted string with algorithm, delimiter and HEX representation of digest`() {
         val str = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         val expectedBytes = byteArrayOf(
@@ -66,7 +61,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Should throw IllegalArgumentException when create does not have input with correct delimiter`() {
         val str = "SHA-384!BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         assertFailsWith(IllegalArgumentException::class) {
@@ -75,7 +69,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Two instances created from same digests should be equal`() {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
@@ -93,7 +86,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Two instances created from different digests should not be equal`() {
         val data1 = "abc".toByteArray()
         val data2 = "def".toByteArray()
@@ -112,7 +104,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Two instances created from same digests but different algorithm should not be equal`() {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name
@@ -130,7 +121,6 @@ class SecureHashTests {
     }
 
     @Test
-    @Timeout(5)
     fun `Comparing to other type than SecureHash should not be equal`() {
         val data = "abc".toByteArray()
         val algorithm = DigestAlgorithmName.SHA2_384.name

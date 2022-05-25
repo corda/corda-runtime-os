@@ -25,7 +25,7 @@ public class TransactionWithSignaturesJavaApiTest {
     @Test
     public void getSigs() {
         final List<DigitalSignatureAndMetadata> digitalSignatureAndMetadata = List.of(new DigitalSignatureAndMetadata(
-                new DigitalSignature.WithKey(publicKey, new byte[1998]),
+                new DigitalSignature.WithKey(publicKey, new byte[1998], new HashMap<>()),
                 digitalSignatureMetadata
         ));
         when(transactionWithSignatures.getSigs()).thenReturn(digitalSignatureAndMetadata);

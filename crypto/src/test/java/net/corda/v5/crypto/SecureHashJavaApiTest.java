@@ -1,14 +1,12 @@
 package net.corda.v5.crypto;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SecureHashJavaApiTest {
     @Test
-    @Timeout(5)
     public void shouldCreateInstance() {
         var str = "SHA-384:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A";
         var expectedBytes = new byte[]{

@@ -29,7 +29,7 @@ public class TransactionServiceJavaApiTest {
     private final PublicKey publicKey = mock(PublicKey.class);
     private final DigitalSignatureMetadata digitalSignatureMetadata = new DigitalSignatureMetadata(Instant.MIN, new HashMap<>());
     private final DigitalSignatureAndMetadata digitalSignatureAndMetadata = new DigitalSignatureAndMetadata(
-            new DigitalSignature.WithKey(publicKey, new byte[]{101}), digitalSignatureMetadata);
+            new DigitalSignature.WithKey(publicKey, new byte[]{101}, new HashMap<>()), digitalSignatureMetadata);
     private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
 
     @Test

@@ -3,21 +3,17 @@ package net.corda.v5.crypto;
 import net.corda.v5.crypto.mocks.CryptoTestUtils;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CompositeKeyJavaApiTest {
     @Test
-    @Timeout(5)
     public void keyAlgorithmConstantTest() {
         assertEquals("COMPOSITE", CompositeKey.KEY_ALGORITHM);
     }
 
     @Test
-    @Timeout(10)
     public void getInstanceTest() throws IOException {
         var alicePublicKey = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256K1_SPEC()).getPublic();
         var bobPublicKey = CryptoTestUtils.generateKeyPair(CryptoTestUtils.getECDSA_SECP256R1_SPEC()).getPublic();

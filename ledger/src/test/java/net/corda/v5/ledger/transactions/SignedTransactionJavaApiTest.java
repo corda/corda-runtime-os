@@ -34,7 +34,7 @@ public class SignedTransactionJavaApiTest {
     private final Party party = mock(Party.class);
     private final DigitalSignatureMetadata digitalSignatureMetadata = new DigitalSignatureMetadata(Instant.MIN, new HashMap<>());
     private final DigitalSignatureAndMetadata digitalSignatureAndMetadata = new DigitalSignatureAndMetadata(
-            new DigitalSignature.WithKey(publicKey, bytes),
+            new DigitalSignature.WithKey(publicKey, bytes, new HashMap<>()),
             digitalSignatureMetadata
     );
 

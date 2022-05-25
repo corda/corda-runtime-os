@@ -22,7 +22,7 @@ public class SignedTransactionDigestJavaApiTest {
     private final PublicKey publicKey = mock(PublicKey.class);
     private final DigitalSignatureMetadata digitalSignatureMetadata = new DigitalSignatureMetadata(Instant.MIN, new HashMap<>());
     private final List<DigitalSignatureAndMetadata> digitalSignatureAndMetadata = List.of(new DigitalSignatureAndMetadata(
-            new DigitalSignature.WithKey(publicKey, new byte[1998]),
+            new DigitalSignature.WithKey(publicKey, new byte[1998], new HashMap<>()),
             digitalSignatureMetadata
     ));
     private final SignedTransactionDigest signedTransactionDigestA = new SignedTransactionDigest(secureHash, stringListA, digitalSignatureAndMetadata);

@@ -17,9 +17,9 @@ import kotlin.test.assertTrue
 class PublicKeyHashTests {
     companion object {
         @JvmStatic
-        fun publicKeys(): Array<PublicKey> = specs.values.map {
+        fun publicKeys(): List<PublicKey> = specs.values.map {
             generateKeyPair(it).public
-        }.toTypedArray()
+        }
     }
 
     @Test

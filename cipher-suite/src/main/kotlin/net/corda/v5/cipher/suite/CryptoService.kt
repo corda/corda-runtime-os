@@ -1,6 +1,6 @@
 package net.corda.v5.cipher.suite
 
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 
@@ -10,10 +10,12 @@ import net.corda.v5.crypto.exceptions.CryptoServiceException
  * Note about key aliases. Corda always uses single alias to identify a key pair however some HSMs need separate
  * aliases for public and private keys, in such cases their names have to be derived from the single key pair alias.
  * It could be suffixes or whatever internal naming scheme is used.
+ * Also note that's not required to keep a public
+ * key in the HSM as that will be kept by the upstream Crypto Services.
  */
 interface CryptoService {
     /**
-     * Returns true if the createWrappingKey operation is required.
+     * Returns true if the createWrappingKey operation is required and the HSM supports key wrapping.
      * The wrapping key may not be required in situations when HSM supports the wrapped keys natively or
      * wrapping key is global.
      */
@@ -22,7 +24,7 @@ interface CryptoService {
     /**
      * Signature schemes which this implementation of [CryptoService] supports.
      * */
-    fun supportedSchemes(): Array<SignatureScheme>
+    fun supportedSchemes(): List<KeyScheme>
 
     /**
      * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of
@@ -45,15 +47,16 @@ interface CryptoService {
     )
 
     /**
-     * Generate and optionally store an asymmetric key pair.
+     * Generates and optionally stores an asymmetric key pair.
      *
      * @param spec parameters to generate key pair.
      * @param context the optional key/value operation context. The context will have at least two variables defined -
      * 'tenantId' and 'category'.
      *
      * Returns information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
+     * depending on the generated key type.
      *
-     * @throws [CryptoServiceBadRequestException] if the [SignatureScheme] is not supported.
+     * @throws [CryptoServiceBadRequestException] if the [KeyScheme] is not supported.
      * @throws [CryptoServiceException] for general cryptographic exceptions.
      */
     fun generateKeyPair(

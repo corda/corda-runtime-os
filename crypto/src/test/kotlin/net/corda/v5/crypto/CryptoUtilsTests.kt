@@ -26,9 +26,9 @@ class CryptoUtilsTests {
         private val secureRandom = SecureRandom()
 
         @JvmStatic
-        fun publicKeys(): Array<PublicKey> = specs.values.map {
+        fun publicKeys(): List<PublicKey> = specs.values.map {
             generateKeyPair(it).public
-        }.toTypedArray()
+        }
 
         private fun generateSecret(): ByteArray {
             val bytes = ByteArray(32)
@@ -288,10 +288,18 @@ class CryptoUtilsTests {
 
     @Test
     fun `byKeys should return the set of all public keys of the DigitalSignature WithKey collection`() {
-        val signature1 = DigitalSignature.WithKey(generateKeyPair(RSA_SPEC).public, ByteArray(5) { 255.toByte() })
-        val signature2 = DigitalSignature.WithKey(generateKeyPair(ECDSA_SECP256R1_SPEC).public, ByteArray(5) { 255.toByte() })
-        val signature3 = DigitalSignature.WithKey(generateKeyPair(EDDSA_ED25519_SPEC).public, ByteArray(5) { 255.toByte() })
-        val duplicateSignature = DigitalSignature.WithKey(generateKeyPair(ECDSA_SECP256K1_SPEC).public, ByteArray(5) { 255.toByte() })
+        val signature1 = DigitalSignature.WithKey(
+            generateKeyPair(RSA_SPEC).public, ByteArray(5) { 255.toByte() }, emptyMap()
+        )
+        val signature2 = DigitalSignature.WithKey(
+            generateKeyPair(ECDSA_SECP256R1_SPEC).public, ByteArray(5) { 255.toByte() }, emptyMap()
+        )
+        val signature3 = DigitalSignature.WithKey(
+            generateKeyPair(EDDSA_ED25519_SPEC).public, ByteArray(5) { 255.toByte() }, emptyMap()
+        )
+        val duplicateSignature = DigitalSignature.WithKey(
+            generateKeyPair(ECDSA_SECP256K1_SPEC).public, ByteArray(5) { 255.toByte() }, emptyMap()
+        )
         val signatures = listOf(signature1, duplicateSignature, signature2, duplicateSignature, signature3)
         val result = signatures.byKeys()
         assertEquals(4, result.size)

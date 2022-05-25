@@ -17,7 +17,7 @@
         "net.corda.data.crypto.wire.CryptoSigningKeys",
         "net.corda.data.crypto.wire.CryptoSignature",
         "net.corda.data.crypto.wire.CryptoSignatureWithKey",
-        "net.corda.data.crypto.wire.CryptoSignatureSchemes"
+        "net.corda.data.crypto.wire.CryptoKeySchemes"
       ],
       "doc": "Response's payload, depends on the requested operation"
     }
