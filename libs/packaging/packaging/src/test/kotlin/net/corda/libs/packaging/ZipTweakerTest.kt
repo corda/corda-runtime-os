@@ -1,6 +1,5 @@
-package net.corda.libs.packaging.internal
+package net.corda.libs.packaging
 
-import net.corda.libs.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll

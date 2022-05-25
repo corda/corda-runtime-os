@@ -2,7 +2,6 @@ package net.corda.libs.packaging
 
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.internal.CpkLoader
-import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefault
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path

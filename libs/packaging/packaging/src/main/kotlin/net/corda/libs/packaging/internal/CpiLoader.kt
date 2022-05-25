@@ -2,13 +2,15 @@ package net.corda.libs.packaging.internal
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
+import net.corda.libs.packaging.PackagingConstants.CPI_NAME_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPI_VERSION_ATTRIBUTE
+import net.corda.libs.packaging.UncloseableInputStream
+import net.corda.libs.packaging.certSummaryHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.libs.packaging.internal.PackagingConstants.CPI_NAME_ATTRIBUTE
-import net.corda.libs.packaging.internal.PackagingConstants.CPI_VERSION_ATTRIBUTE
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream

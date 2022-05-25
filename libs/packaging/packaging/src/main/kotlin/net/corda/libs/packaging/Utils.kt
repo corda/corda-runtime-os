@@ -1,19 +1,20 @@
-package net.corda.libs.packaging.internal
+package net.corda.libs.packaging
 
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestAlgorithmName.Companion.DEFAULT_ALGORITHM_NAME
 import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.util.Arrays
 
-internal val secureHashComparator = Comparator.nullsFirst(
+val secureHashComparator = Comparator.nullsFirst(
     Comparator.comparing(SecureHash::algorithm)
         .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
 
 /**
  * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
  */
-internal fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME) : SecureHash {
+fun ByteArray.hash(algo : DigestAlgorithmName = DEFAULT_ALGORITHM_NAME) : SecureHash {
     val md = MessageDigest.getInstance(algo.name)
     md.update(this)
     return SecureHash(algo.name, md.digest())
@@ -26,13 +27,16 @@ internal fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.DEF
  * [MessageDigest.update] with the data that needs to be hashed
  * @return the resulting [SecureHash]
  */
-internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.DEFAULT_ALGORITHM_NAME, withDigestAction : (MessageDigest) -> Unit) : SecureHash {
+inline fun hash(
+    algorithm : DigestAlgorithmName = DEFAULT_ALGORITHM_NAME,
+    withDigestAction : (MessageDigest) -> Unit
+) : SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
     withDigestAction(md)
     return SecureHash(algorithm.name, md.digest())
 }
 
-internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
+fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     var counter = 0
     return hash {
         this.onEach { ++counter }
@@ -43,7 +47,7 @@ internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
     }.takeIf { counter > 0 }
 }
 
-internal fun Sequence<Certificate>.certSummaryHash() : SecureHash? = map { it.publicKey.encoded.hash() }.summaryHash()
+fun Sequence<Certificate>.certSummaryHash() : SecureHash? = map { it.publicKey.encoded.hash() }.summaryHash()
 
 private const val DEFAULT_VERIFY_JAR_SIGNATURES_KEY = "net.corda.packaging.jarSignatureVerification"
-internal fun jarSignatureVerificationEnabledByDefault() = System.getProperty(DEFAULT_VERIFY_JAR_SIGNATURES_KEY)?.toBoolean() ?: true
+fun jarSignatureVerificationEnabledByDefault() = System.getProperty(DEFAULT_VERIFY_JAR_SIGNATURES_KEY)?.toBoolean() ?: true

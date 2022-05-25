@@ -3,7 +3,6 @@ package net.corda.libs.packaging
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.internal.CpiLoader
-import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefault
 import java.io.InputStream
 import java.nio.file.Path
 

@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.internal
+package net.corda.libs.packaging
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -14,16 +14,16 @@ import java.util.zip.ZipOutputStream
  * Helper class to ease the creation of a copy of zip archive,
  * editing some of its [ZipEntry]
  */
-internal open class ZipTweaker {
+open class ZipTweaker {
 
     protected enum class AfterTweakAction {
         WRITE_ORIGINAL_ENTRY, DO_NOTHING
     }
 
     protected open fun tweakEntry(inputStream : ZipInputStream,
-                        outputStream : ZipOutputStream,
-                        currentEntry: ZipEntry,
-                        buffer : ByteArray) : AfterTweakAction = AfterTweakAction.WRITE_ORIGINAL_ENTRY
+                                  outputStream : ZipOutputStream,
+                                  currentEntry: ZipEntry,
+                                  buffer : ByteArray) : AfterTweakAction = AfterTweakAction.WRITE_ORIGINAL_ENTRY
 
     @Suppress("NestedBlockDepth", "ComplexMethod")
     fun run(source : InputStream, destination : OutputStream) {
@@ -47,9 +47,9 @@ internal open class ZipTweaker {
 
     companion object {
         private fun computeSizeAndCrc32(
-                zipEntry: ZipEntry,
-                inputStream: InputStream,
-                buffer: ByteArray) {
+            zipEntry: ZipEntry,
+            inputStream: InputStream,
+            buffer: ByteArray) {
             val crc32 = CRC32()
             var sz = 0L
             while (true) {
@@ -76,11 +76,11 @@ internal open class ZipTweaker {
 
         @JvmStatic
         fun writeZipEntry(
-                zip: ZipOutputStream,
-                source: () -> InputStream,
-                destinationFileName: String,
-                buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE),
-                compressionMethod: Int = ZipEntry.DEFLATED) {
+            zip: ZipOutputStream,
+            source: () -> InputStream,
+            destinationFileName: String,
+            buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE),
+            compressionMethod: Int = ZipEntry.DEFLATED) {
             val zipEntry = ZipEntry(destinationFileName).apply {
                 val ze = this
                 method = compressionMethod
@@ -111,7 +111,9 @@ internal open class ZipTweaker {
             @Suppress("TooGenericExceptionCaught")
             try {
                 object : ZipTweaker() {
-                    override fun tweakEntry(inputStream: ZipInputStream, outputStream: ZipOutputStream, currentEntry: ZipEntry, buffer: ByteArray): AfterTweakAction {
+                    override fun tweakEntry(
+                        inputStream: ZipInputStream, outputStream: ZipOutputStream, currentEntry: ZipEntry, buffer: ByteArray
+                    ): AfterTweakAction {
                         return if(currentEntry.name.startsWith("META-INF/") && currentEntry.name.uppercase().endsWith(".SF"))
                             AfterTweakAction.DO_NOTHING
                         else

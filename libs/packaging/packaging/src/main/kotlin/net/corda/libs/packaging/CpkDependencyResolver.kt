@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.internal
+package net.corda.libs.packaging
 
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.comparator.VersionComparator
@@ -8,7 +8,7 @@ import java.util.NavigableMap
 import java.util.NavigableSet
 import java.util.TreeSet
 
-internal object CpkDependencyResolver {
+object CpkDependencyResolver {
 
     @Suppress("NestedBlockDepth", "ComplexMethod", "ThrowsCount")
     fun resolveDependencies(roots: Iterable<CpkIdentifier>,
@@ -25,22 +25,26 @@ internal object CpkDependencyResolver {
                 //All CPKs with the required symbolic name and version greater or equal are valid candidates
                 val needle = CpkIdentifier(cpkIdentifier.name, cpkIdentifier.version, null)
                 val cpkCandidates = availableIds.tailMap(needle).asSequence()
-                        .filter { it.key.name == needle.name && (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash) }
-                        .toList()
+                    .filter { it.key.name == needle.name
+                            && (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash) }
+                    .toList()
                 when {
                     cpkCandidates.isNotEmpty() -> {
                         /** Select the last candidate (with the highest [CpkIdentifier.version]) */
                         val resolvedCandidate = cpkCandidates.last()
                         val resolvedVersion = resolvedCandidate.key.version
                         if (VersionComparator.cmp(resolvedVersion, cpkIdentifier.version) < 0) {
-                            throw DependencyResolutionException("Version '${cpkIdentifier.name}' of CPK " +
-                                    "'${cpkIdentifier.name}' was required, but the highest available version is '$resolvedVersion'")
+                            throw DependencyResolutionException(
+                                "Version '${cpkIdentifier.name}' of CPK '${cpkIdentifier.name}' was required," +
+                                        " but the highest available version is '$resolvedVersion'")
                         }
-                        /** Raise an error if there are multiple CPKs with the same name and version that satisfy the signature requirements */
+                        /** Raise an error if there are multiple CPKs with the same name and version that satisfy the
+                         *  signature requirements */
                         val ambiguousCandidates = cpkCandidates.filter { it.key.version == resolvedVersion }
                         if(ambiguousCandidates.size > 1) {
-                            throw DependencyResolutionException("CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, " +
-                                "is ambiguous as it can be provided by multiple candidates: ${ambiguousCandidates.map { it.key }}")
+                            throw DependencyResolutionException(
+                                "CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, " +
+                                        "is ambiguous as it can be provided by multiple candidates: ${ambiguousCandidates.map { it.key }}")
                         }
                         resolvedSet.add(resolvedCandidate.key)
                         resolvedCandidate.value.forEach { dependency ->
@@ -48,7 +52,8 @@ internal object CpkDependencyResolver {
                             stack.add(dependency)
                         }
                     }
-                    else -> throw DependencyResolutionException("CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, was not found")
+                    else -> throw DependencyResolutionException(
+                        "CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, was not found")
                 }
             }
         }

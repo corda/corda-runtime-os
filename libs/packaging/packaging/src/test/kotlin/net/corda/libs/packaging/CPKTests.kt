@@ -6,12 +6,6 @@ import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.libs.packaging.core.exception.LibraryIntegrityException
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.CpkLoader
-import net.corda.libs.packaging.internal.PackagingConstants
-import net.corda.libs.packaging.internal.UncloseableInputStream
-import net.corda.libs.packaging.internal.ZipTweaker
-import net.corda.libs.packaging.internal.hash
-import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefault
-import net.corda.libs.packaging.internal.summaryHash
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterAll
