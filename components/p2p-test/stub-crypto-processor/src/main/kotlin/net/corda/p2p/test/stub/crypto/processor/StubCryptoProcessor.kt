@@ -2,6 +2,7 @@ package net.corda.p2p.test.stub.crypto.processor
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -43,18 +44,18 @@ class StubCryptoProcessor(
         emptyList(),
         emptyList(),
     )
+    private val blockingDominoTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        readyFuture
+    )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
-        onStart = ::onStart,
-        managedChildren = listOf(subscriptionTile),
-        dependentChildren = listOf(subscriptionTile),
+        managedChildren = listOf(subscriptionTile, blockingDominoTile),
+        dependentChildren = listOf(subscriptionTile, blockingDominoTile),
     )
-
-    private fun onStart(): CompletableFuture<Unit> {
-        return readyFuture
-    }
 
     override fun sign(
         tenantId: String,

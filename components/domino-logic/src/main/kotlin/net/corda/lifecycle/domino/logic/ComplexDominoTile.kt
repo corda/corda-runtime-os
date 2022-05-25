@@ -43,8 +43,7 @@ import kotlin.concurrent.write
  * - once they have started, [onStart] will be invoked, if specified.
  * - once resources are created and configuration has been applied successfully, the component will be fully started.
  *
- * @param onStart the callback method used to start any resources needed by the tile.
- *  When the tile stops, these resources will be stopped. If there are no resources, it can be left undefined.
+ * @param onStart the callback method used to signal some external component when the tile starts.
  * @param managedChildren the children tiles this tile is responsible for starting when it starts.
  * @param dependentChildren the children tiles this component requires in order to function properly.
  *  If one of them goes down, this tile will also go down.
@@ -56,7 +55,7 @@ open class ComplexDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val registry: LifecycleRegistry,
-    private val onStart: (() -> CompletableFuture<Unit>)? = null,
+    private val onStart: (() -> Unit)? = null,
     final override val dependentChildren: Collection<DominoTile> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
@@ -69,7 +68,6 @@ open class ComplexDominoTile(
     private object StopTile : LifecycleEvent
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
     private data class NewConfig(val config: Config) : LifecycleEvent
-    private object ResourcesCreated : LifecycleEvent
 
     final override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
@@ -129,8 +127,6 @@ open class ComplexDominoTile(
     @Volatile
     private var configReady = false
     @Volatile
-    private var resourcesReady = false
-    @Volatile
     private var configRegistration: AutoCloseable? = null
 
     private sealed class ConfigUpdateResult {
@@ -141,14 +137,6 @@ open class ComplexDominoTile(
 
     private fun configApplied(configUpdateResult: ConfigUpdateResult) {
         coordinator.postEvent(ConfigApplied(configUpdateResult))
-    }
-
-    private fun resourcesStarted(error: Throwable? = null) {
-        if (error != null) {
-            coordinator.postEvent(ErrorEvent(error))
-        } else {
-            coordinator.postEvent(ResourcesCreated)
-        }
     }
 
     private inner class Handler(private val configurationChangeHandler: ConfigurationChangeHandler<*>) : ConfigurationHandler {
@@ -238,17 +226,13 @@ open class ComplexDominoTile(
                         }
                         LifecycleStatus.DOWN -> {
                             logger.info("Status change: child ${child.coordinatorName} went down.")
-                            handleChildDown()
+                            handleChildDownOrError()
                         }
                         LifecycleStatus.ERROR -> {
                             logger.info("Status change: child ${child.coordinatorName} errored.")
-                            handleChildDown()
+                            handleChildDownOrError()
                         }
                     }
-                }
-                is ResourcesCreated -> {
-                    resourcesReady = true
-                    setStartedIfCan()
                 }
                 is ConfigApplied -> {
                     when (event.configUpdateResult) {
@@ -328,7 +312,7 @@ open class ComplexDominoTile(
         }
     }
 
-    private fun handleChildDown() {
+    private fun handleChildDownOrError() {
         stopResources()
         stopListeningForConfig()
         updateState(StoppedDueToChildStopped)
@@ -355,25 +339,14 @@ open class ComplexDominoTile(
         return configurationChangeHandler == null || configReady
     }
 
-    private fun shouldNotWaitForResource(): Boolean {
-        return onStart == null || resourcesReady
-    }
-
     private fun shouldNotWaitForChildren(): Boolean {
         return dependentChildren.all { latestChildStateMap[it] == LifecycleStatus.UP }
     }
 
     private fun createResourcesAndStart() {
-        if (onStart != null && !resourcesReady) {
+        if (onStart != null) {
             logger.info("Starting resources")
-            val future = onStart.invoke()
-            future.whenComplete { _, exception ->
-                if (exception != null) {
-                    resourcesStarted(exception)
-                } else {
-                    resourcesStarted()
-                }
-            }
+            onStart.invoke()
         }
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config updates.")
@@ -387,7 +360,7 @@ open class ComplexDominoTile(
     }
 
     private fun setStartedIfCan() {
-        if (shouldNotWaitForResource() && shouldNotWaitForConfig() && shouldNotWaitForChildren()) {
+        if (shouldNotWaitForConfig() && shouldNotWaitForChildren()) {
             updateState(Started)
         }
     }
@@ -400,7 +373,6 @@ open class ComplexDominoTile(
 
     private fun stopResources() {
         logger.info("Stopping resources")
-        resourcesReady = false
         configResources.close()
     }
 

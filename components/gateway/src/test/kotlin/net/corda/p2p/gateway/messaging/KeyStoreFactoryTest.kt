@@ -11,6 +11,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyStore
+import java.util.concurrent.CompletableFuture
 
 class KeyStoreFactoryTest {
     private val keyStore = mock<KeyStore>()
@@ -32,6 +33,22 @@ class KeyStoreFactoryTest {
     @AfterEach
     fun cleanUp() {
         mockKeyStore.close()
+    }
+
+    @Test
+    fun `silly test`() {
+        val future = CompletableFuture<Unit>()
+        future.complete(Unit)
+        future.whenComplete { _, exception ->
+            if (exception == null) {
+                println("Completed")
+            }
+        }
+        future.whenComplete { _, exception ->
+            if (exception == null) {
+                println("Completed 1")
+            }
+        }
     }
 
     @Test

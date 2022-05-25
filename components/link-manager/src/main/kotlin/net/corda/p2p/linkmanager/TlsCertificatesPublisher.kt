@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -73,7 +74,7 @@ internal class TlsCertificatesPublisher(
 
     override fun identityAdded(identityInfo: HostingMapListener.IdentityInfo) {
         toPublish.offer(identityInfo)
-        publishQueueIfPossible()
+        if (dominoTile.isRunning) publishQueue()
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {
@@ -86,7 +87,6 @@ internal class TlsCertificatesPublisher(
                 }
             )
             ready.complete(Unit)
-            publishQueueIfPossible()
         }
 
         override fun onNext(
@@ -113,6 +113,11 @@ internal class TlsCertificatesPublisher(
         emptyList(),
         emptyList(),
     )
+    private val blockingDominoTile = BlockingDominoTile(
+        this.javaClass.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
 
     override val dominoTile = ComplexDominoTile(
         this.javaClass.simpleName,
@@ -122,20 +127,21 @@ internal class TlsCertificatesPublisher(
         managedChildren = listOf(
             publisher.dominoTile,
             subscriptionDominoTile,
+            blockingDominoTile
         ),
         dependentChildren = listOf(
             publisher.dominoTile,
             subscriptionDominoTile,
+            blockingDominoTile
         )
     )
 
-    private fun onStart(): CompletableFuture<Unit> {
-        publishQueueIfPossible()
-        return ready
+    private fun onStart() {
+        publishQueue()
     }
 
-    private fun publishQueueIfPossible() {
-        while ((publisher.isRunning) && (ready.isDone)) {
+    private fun publishQueue() {
+        while (true) {
             val identityInfo = toPublish.poll() ?: return
             publishIfNeeded(identityInfo)
         }

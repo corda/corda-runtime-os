@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
@@ -49,13 +50,18 @@ internal class TrustStoresMap(
             ?.trustStore
             ?: throw IllegalArgumentException("Unknown trust store: $groupId")
 
+    private val blockingDominoTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
-        onStart = ::onStart,
-        managedChildren = listOf(subscriptionTile),
-        dependentChildren = listOf(subscriptionTile),
+        managedChildren = listOf(subscriptionTile, blockingDominoTile),
+        dependentChildren = listOf(subscriptionTile, blockingDominoTile),
     )
 
     class TrustedCertificates(
@@ -74,10 +80,6 @@ internal class TrustStoresMap(
                 }
             }
         }
-    }
-
-    private fun onStart(): CompletableFuture<Unit> {
-        return ready
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {

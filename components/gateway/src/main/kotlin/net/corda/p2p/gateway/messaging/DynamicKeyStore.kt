@@ -6,6 +6,7 @@ import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
@@ -56,6 +57,8 @@ internal class DynamicKeyStore(
         emptyList(),
     )
 
+    private val ready = CompletableFuture<Unit>()
+
     private val signer = StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         registry,
@@ -63,16 +66,19 @@ internal class DynamicKeyStore(
         nodeConfiguration,
     )
 
+    private val blockingDominoTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
-        onStart = ::onStart,
-        managedChildren = listOf(subscriptionTile, signer.dominoTile),
-        dependentChildren = listOf(subscriptionTile, signer.dominoTile),
+        managedChildren = listOf(subscriptionTile, signer.dominoTile, blockingDominoTile),
+        dependentChildren = listOf(subscriptionTile, signer.dominoTile, blockingDominoTile),
     )
-
-    private val ready = CompletableFuture<Unit>()
 
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {
         override val keyClass = String::class.java
@@ -120,10 +126,6 @@ internal class DynamicKeyStore(
                 }
             }
         }
-    }
-
-    private fun onStart(): CompletableFuture<Unit> {
-        return ready
     }
 
     override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {

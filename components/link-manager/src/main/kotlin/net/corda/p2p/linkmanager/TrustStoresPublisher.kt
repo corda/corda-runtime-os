@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -55,10 +56,15 @@ internal class TrustStoresPublisher(
         emptyList(),
         emptyList(),
     )
+    private val blockingDominoTile = BlockingDominoTile(
+        this.javaClass.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
 
     override fun groupAdded(groupInfo: GroupPolicyListener.GroupInfo) {
         toPublish.offer(groupInfo)
-        publishQueueIfPossible()
+        if (dominoTile.isRunning) publishQueue()
     }
 
     override val dominoTile = ComplexDominoTile(
@@ -68,11 +74,13 @@ internal class TrustStoresPublisher(
         onStart = ::onStart,
         managedChildren = listOf(
             publisher.dominoTile,
-            subscriptionTile
+            subscriptionTile,
+            blockingDominoTile
         ),
         dependentChildren = listOf(
             publisher.dominoTile,
-            subscriptionTile
+            subscriptionTile,
+            blockingDominoTile
         )
     )
 
@@ -86,7 +94,6 @@ internal class TrustStoresPublisher(
                 }
             )
             ready.complete(Unit)
-            publishQueueIfPossible()
         }
 
         override fun onNext(
@@ -104,12 +111,12 @@ internal class TrustStoresPublisher(
     }
 
     private fun onStart(): CompletableFuture<Unit> {
-        publishQueueIfPossible()
-        return ready
+        publishQueue()
+        return CompletableFuture.completedFuture(Unit)
     }
 
-    private fun publishQueueIfPossible() {
-        while ((publisher.isRunning) && (ready.isDone)) {
+    private fun publishQueue() {
+        while (true) {
             val groupInfo = toPublish.poll() ?: return
             val groupId = groupInfo.groupId
             val certificates = groupInfo.trustedCertificates

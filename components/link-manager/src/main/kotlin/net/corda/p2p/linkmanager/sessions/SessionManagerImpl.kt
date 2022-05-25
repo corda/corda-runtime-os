@@ -273,7 +273,7 @@ internal class SessionManagerImpl(
         }
     }
 
-    private fun onTileStart(): CompletableFuture<Unit> {
+    private fun onTileStart() {
         inboundAssignmentListener.registerCallbackForTopic { partitions ->
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
@@ -281,7 +281,6 @@ internal class SessionManagerImpl(
             }
             if (records.isNotEmpty()) publisher.publish(records)
         }
-        return CompletableFuture.completedFuture(Unit)
     }
 
     private fun refreshOutboundSession(counterparties: SessionCounterparties, sessionId: String) {

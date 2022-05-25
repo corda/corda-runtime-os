@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -49,19 +50,16 @@ internal class StubLinkManagerHostingMap(
         emptyList(),
         emptyList(),
     )
+    private val blockingTile = BlockingDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ready)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
-        ::onStart,
-        setOf(subscriptionTile),
-        setOf(subscriptionTile)
+        managedChildren = setOf(subscriptionTile, blockingTile),
+        dependentChildren = setOf(subscriptionTile, blockingTile)
     )
 
-    private fun onStart(): CompletableFuture<Unit> {
-        return ready
-    }
 
     override fun isHostedLocally(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo.containsKey(identity)

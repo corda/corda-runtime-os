@@ -77,19 +77,19 @@ class SimpleDominoTileTest {
     }
 
     @Test
-    fun `update status invoke postCustomEventToFollowers when status had changed`() {
+    fun `update status invoke updateStatus when status had changed`() {
         tile.updateState(DominoTileState.StoppedByParent)
 
-        verify(coordinator).postCustomEventToFollowers(StatusChangeEvent(DominoTileState.StoppedByParent))
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test
-    fun `update status won't invoke postCustomEventToFollowers when status had not changed`() {
+    fun `update status won't invoke updateStatus when status had not changed`() {
         tile.updateState(DominoTileState.StoppedDueToChildStopped)
         tile.updateState(DominoTileState.StoppedDueToChildStopped)
         tile.updateState(DominoTileState.StoppedDueToChildStopped)
 
-        verify(coordinator, times(1)).postCustomEventToFollowers(StatusChangeEvent(DominoTileState.StoppedDueToChildStopped))
+        verify(coordinator, times(1)).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test

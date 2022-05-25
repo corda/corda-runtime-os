@@ -2,7 +2,9 @@ package net.corda.p2p.gateway.messaging.session
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -12,6 +14,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
+import net.corda.v5.base.annotations.VisibleForTesting
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -28,7 +31,8 @@ class SessionPartitionMapperImpl(
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
     private val processor = SessionPartitionProcessor()
-    private val future = CompletableFuture<Unit>()
+    @VisibleForTesting
+    internal val future = CompletableFuture<Unit>()
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
@@ -41,10 +45,11 @@ class SessionPartitionMapperImpl(
         emptySet(),
         emptySet()
     )
+    private val blockingDominoTile = BlockingDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, future)
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, registry, ::createResources,
-        dependentChildren = setOf(sessionPartitionSubscriptionTile),
-        managedChildren = setOf(sessionPartitionSubscriptionTile)
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, registry,
+        dependentChildren = setOf(sessionPartitionSubscriptionTile, blockingDominoTile),
+        managedChildren = setOf(sessionPartitionSubscriptionTile, blockingDominoTile)
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {
@@ -78,9 +83,5 @@ class SessionPartitionMapperImpl(
                 sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
         }
-    }
-
-    fun createResources(): CompletableFuture<Unit> {
-        return future
     }
 }

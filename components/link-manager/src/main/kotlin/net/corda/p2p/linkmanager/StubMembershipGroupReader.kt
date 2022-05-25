@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -76,14 +77,15 @@ internal class StubMembershipGroupReader(
         emptySet()
     )
     private val readyFuture = CompletableFuture<Unit>()
+    private val blockingTile = BlockingDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, readyFuture)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
         ::onStart,
-        setOf(subscriptionTile),
-        setOf(subscriptionTile)
+        setOf(subscriptionTile, blockingTile),
+        setOf(subscriptionTile, blockingTile)
     )
 
     private fun onStart(): CompletableFuture<Unit> {
