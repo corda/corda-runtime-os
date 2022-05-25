@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import kotlin.random.Random
-import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig
@@ -54,7 +54,7 @@ internal class CliArguments {
 
     val bootConfiguration: Config by lazy {
         ConfigFactory.empty()
-            .withValue("${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers", ConfigValueFactory.fromAnyRef(kafkaServers))
+            .withValue("$BOOT_KAFKA_COMMON.bootstrap.servers", ConfigValueFactory.fromAnyRef(kafkaServers))
             .withValue(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(topicPrefix)
