@@ -13,6 +13,7 @@ import net.corda.layeredpropertymap.toWire
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.GroupPolicyParser.MGM.Companion.mgmInfo
+import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -222,7 +223,6 @@ internal class VirtualNodeWriterProcessor(
             val groupPolicy = parse(groupPolicyJson)
             buildMgmMemberInfo(groupPolicy.mgmInfo, groupPolicy.groupId)
         }
-        println("$holdingIdentity$mgmMemberInfo")
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
             holdingIdentity,
@@ -232,7 +232,12 @@ internal class VirtualNodeWriterProcessor(
                 mgmMemberInfo.mgmProvidedContext.toWire()
             )
         )
-        vnodePublisher.publish(listOf(mgmRecord))
+        try {
+            vnodePublisher.publish(listOf(mgmRecord))
+        } catch (e: Exception) {
+            throw VirtualNodeWriteServiceException(
+                "MGM member info for Group ID: ${mgmMemberInfo.groupId} could not be published. Cause: $e", e)
+        }
     }
 
     private fun sendSuccessfulResponse(

@@ -5,18 +5,15 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.MemberInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
-import java.time.Instant
 
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParser @Activate constructor(
@@ -69,7 +66,7 @@ class GroupPolicyParser @Activate constructor(
         val keys = mgm.keyList.map {
             keyEncodingService.decodePublicKey(it)
         }
-        val now = Instant.now().toString()
+        val now = UTCClock().instant().toString()
         return MemberInfoImpl(
             memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                 sortedMapOf(
@@ -77,8 +74,8 @@ class GroupPolicyParser @Activate constructor(
                     MemberInfoExtension.PARTY_OWNING_KEY to mgm.sessionKey,
                     MemberInfoExtension.ECDH_KEY to mgm.ecdhKey,
                     MemberInfoExtension.GROUP_ID to groupId,
-                    *generateIdentityKeys(mgm.keyList).toTypedArray(),
-                    *generateIdentityKeyHashes(keys).toTypedArray(),
+                    *convertKeys(mgm.keyList).toTypedArray(),
+                    *generateKeyHashes(keys).toTypedArray(),
                     *convertEndpoints(mgm[MGM.ENDPOINTS] as List<Map<String, Any>>).toTypedArray(),
                     *convertCertificates(mgm.certificate).toTypedArray(),
                     MemberInfoExtension.SOFTWARE_VERSION to mgm.softwareVersion,
@@ -98,9 +95,13 @@ class GroupPolicyParser @Activate constructor(
 
     }
 
-    private fun generateIdentityKeys(
+    /**
+     * Mapping keys from JSON format to the keys expected in [MemberInfo].
+     */
+    private fun convertKeys(
         keys: List<String>
     ): List<Pair<String, String>> {
+        require(keys.isNotEmpty()) { "List of MGM keys cannot be empty." }
         return keys.mapIndexed { index, identityKey ->
             String.format(
                 MemberInfoExtension.IDENTITY_KEYS_KEY,
@@ -109,7 +110,10 @@ class GroupPolicyParser @Activate constructor(
         }
     }
 
-    private fun generateIdentityKeyHashes(
+    /**
+     * Generates key hashes from MGM keys.
+     */
+    private fun generateKeyHashes(
         keys: List<PublicKey>
     ): List<Pair<String, String>> {
         return keys.mapIndexed { index, identityKey ->
@@ -121,7 +125,11 @@ class GroupPolicyParser @Activate constructor(
         }
     }
 
+    /**
+     * Mapping certificates from JSON format to the certificates expected in [MemberInfo].
+     */
     private fun convertCertificates(certificates: List<String>): List<Pair<String, String>> {
+        require(certificates.isNotEmpty()) { "List of MGM certificates cannot be empty." }
         val result = mutableListOf<Pair<String, String>>()
         for (index in certificates.indices) {
             result.add(
@@ -135,9 +143,10 @@ class GroupPolicyParser @Activate constructor(
     }
 
     /**
-     * Mapping the keys from json format to the keys expected in the [MemberInfo].
+     * Mapping endpoints from JSON format to the endpoints expected in [MemberInfo].
      */
     private fun convertEndpoints(endpoints: List<Map<String, Any>>): List<Pair<String, String>> {
+        require(endpoints.isNotEmpty()) { "List of MGM endpoints cannot be empty." }
         val result = mutableListOf<Pair<String, String>>()
         for (index in endpoints.indices) {
             result.add(
@@ -200,32 +209,29 @@ class GroupPolicyParser @Activate constructor(
                     MGM(emptyMap())
                 }
         }
-        val name: String?
-            get() = getStringValue(NAME)
+        val name: String
+            get() = getStringValue(NAME)!!
 
-        val sessionKey: String?
-            get() = getStringValue(SESSION_KEY)
+        val sessionKey: String
+            get() = getStringValue(SESSION_KEY)!!
 
         val certificate: List<String>
             get() = getListValue(CERTIFICATE)
 
-        val ecdhKey: String?
-            get() = getStringValue(ECDH_KEY)
+        val ecdhKey: String
+            get() = getStringValue(ECDH_KEY)!!
 
         val keyList: List<String>
             get() = getListValue(KEYS)
 
-//    val endpoints: List<String>?
-//        get() = getStringValue(MGMGroupPolicyExtension.ENDPOINTS)
+        val platformVersion: String
+            get() = getIntValueAsString(PLATFORM_VERSION)!!
 
-        val platformVersion: String?
-            get() = getIntValueAsString(PLATFORM_VERSION)
+        val softwareVersion: String
+            get() = getStringValue(SOFTWARE_VERSION)!!
 
-        val softwareVersion: String?
-            get() = getStringValue(SOFTWARE_VERSION)
-
-        val serial: String?
-            get() = getIntValueAsString(SERIAL)
+        val serial: String
+            get() = getIntValueAsString(SERIAL)!!
 
         private fun getStringValue(key: String, default: String? = null): String? =
             mgmData[key] as String? ?: default
