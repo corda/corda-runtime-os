@@ -1,5 +1,7 @@
 package net.corda.p2p.gateway.messaging.session
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -12,13 +14,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig
+    messagingConfiguration: SmartConfig
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
 
     companion object {
@@ -32,7 +32,7 @@ class SessionPartitionMapperImpl(
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
         processor,
-        nodeConfiguration
+        messagingConfiguration
     )
     private val sessionPartitionSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
