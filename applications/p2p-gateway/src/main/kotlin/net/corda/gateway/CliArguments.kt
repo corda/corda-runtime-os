@@ -4,10 +4,9 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import kotlin.random.Random
+import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import picocli.CommandLine
 import picocli.CommandLine.Option
 
@@ -52,16 +51,9 @@ internal class CliArguments {
     )
     var instanceId = System.getenv("INSTANCE_ID")?.toInt() ?: Random.nextInt()
 
-    val kafkaNodeConfiguration: Config by lazy {
+    val bootConfiguration: Config by lazy {
         ConfigFactory.empty()
-            .withValue(
-                KAFKA_BOOTSTRAP_SERVERS,
-                ConfigValueFactory.fromAnyRef(kafkaServers)
-            )
-            .withValue(
-                BUS_TYPE,
-                ConfigValueFactory.fromAnyRef("KAFKA")
-            )
+            .withValue("$BOOT_KAFKA_COMMON.bootstrap.servers", ConfigValueFactory.fromAnyRef(kafkaServers))
             .withValue(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(topicPrefix)
