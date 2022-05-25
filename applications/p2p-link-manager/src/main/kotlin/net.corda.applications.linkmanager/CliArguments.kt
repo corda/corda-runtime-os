@@ -62,14 +62,7 @@ internal class CliArguments {
                 MessagingConfig.Bus.BUS_TYPE,
                 ConfigValueFactory.fromAnyRef("KAFKA")
             )
-            //This is not longer supported. you will need to set this in the messaging config posted to kafka
-            /*.withValue(
-                // The default value of poll timeout is quite high (6 seconds), so setting it to something lower.
-                // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
-                // leading to slow syncing upon startup. See: https://r3-cev.atlassian.net/browse/CORE-3163
-                POLL_TIMEOUT,
-                ConfigValueFactory.fromAnyRef(100)
-            )*/.withValue(
+            .withValue(
                 INSTANCE_ID,
                 ConfigValueFactory.fromAnyRef(instanceId)
             )

@@ -1,8 +1,10 @@
 package net.corda.applications.linkmanager
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import kotlin.concurrent.thread
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,6 +13,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -55,12 +58,13 @@ class LinkManagerApp @Activate constructor(
             configurationReadService.bootstrapConfig(bootConfig)
 
             consoleLogger.info("Starting link manager")
+            val messagingConfig = getMessagingConfig(bootConfig)
             linkManager = LinkManager(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configurationReadService,
-                configMerger.getMessagingConfig(bootConfig)
+                messagingConfig
             ).also { linkmanager ->
                 linkmanager.start()
 
@@ -73,6 +77,16 @@ class LinkManagerApp @Activate constructor(
                 }
             }
         }
+    }
+
+    private fun getMessagingConfig(bootConfig: SmartConfig): SmartConfig {
+        return configMerger.getMessagingConfig(bootConfig).withValue(
+            // The default value of poll timeout is quite high (6 seconds), so setting it to something lower.
+            // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
+            // leading to slow syncing upon startup. See: https://r3-cev.atlassian.net/browse/CORE-3163
+            POLL_TIMEOUT,
+            ConfigValueFactory.fromAnyRef(100)
+        )
     }
 
     override fun shutdown() {
