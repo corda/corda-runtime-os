@@ -1,7 +1,8 @@
 {
   "type": "record",
   "name": "DeleteEntity",
-  "namespace": "net.corda.data.virtualnode",
+  "doc": "Delete a specific entity.  See also {@link EntityRequest#request}",
+  "namespace": "net.corda.data.persistence",
   "fields": [
     {
       "name": "entity",

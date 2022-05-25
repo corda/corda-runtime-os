@@ -1,7 +1,8 @@
 {
   "type": "record",
   "name": "EntityResponseFailure",
-  "namespace": "net.corda.data.virtualnode",
+  "doc": "The response when an {@link EntityRequest} has failed.  The failure type may be further categorised by the {@link Error} enumeration. See also:  {@link EntityResponseSuccess} and {@link EntityResponse}",
+  "namespace": "net.corda.data.persistence",
   "fields": [
     {
       "name": "errorType",

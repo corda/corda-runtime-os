@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "EntityResponseSuccess",
+  "doc": "An {@link EntityRequest} has been successful.  A return type of `null` can be considered success and/or no results.  See also:  {@link EntityResponseFailure} and {@link EntityResponse}",
+  "namespace": "net.corda.data.persistence",
+  "fields": [
+    {
+      "name": "result",
+      "doc": "Result of request, either null (success or no results), or (amqp) serialized bytes",
+      "type": [
+        "null",
+        "bytes"
+      ]
+    }
+  ]
+}

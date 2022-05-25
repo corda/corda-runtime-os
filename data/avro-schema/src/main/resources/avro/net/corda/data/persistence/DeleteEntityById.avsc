@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "DeleteEntityById",
+  "doc": "Delete an entity by its id.  See also {@link EntityRequest#request}",
+  "namespace": "net.corda.data.persistence",
+  "fields": [
+    {
+      "name": "entityClassName",
+      "type": "string",
+      "doc": "the fully qualified entity class name"
+    },
+    {
+      "name": "id",
+      "type": "bytes",
+      "doc": "id of the entity to delete"
+    }
+  ]
+}

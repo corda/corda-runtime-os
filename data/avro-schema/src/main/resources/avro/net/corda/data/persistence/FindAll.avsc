@@ -1,17 +1,13 @@
 {
   "type": "record",
-  "name": "FindEntity",
-  "namespace": "net.corda.data.virtualnode",
+  "name": "FindAll",
+  "doc": "Find all entities for the given class name.  See also {@link EntityRequest#request}",
+  "namespace": "net.corda.data.persistence",
   "fields": [
     {
       "name": "entityClassName",
       "type": "string",
       "doc": "the fully qualified entity class name"
-    },
-    {
-      "name": "primaryKey",
-      "type": "bytes",
-      "doc": "the primary key"
     }
   ]
 }
