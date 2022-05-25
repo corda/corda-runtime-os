@@ -28,22 +28,21 @@ class SessionDataWaitingForHandler @Activate constructor(
 
         return try {
             val receivedSessionDataEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
+            val receivedSessions = receivedSessionDataEvents.map { (session, _) -> session.sessionId }
 
             val erroredSessions = flowSessionManager.getSessionsWithStatus(
                 checkpoint,
-                waitingFor.sessionIds,
+                waitingFor.sessionIds - receivedSessions,
                 SessionStateType.ERROR
             ).map { it.sessionId }
 
+            val closingSessions = flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                waitingFor.sessionIds - receivedSessions,
+                SessionStateType.CLOSING
+            ).map { it.sessionId }
+
             when {
-                erroredSessions.isNotEmpty() -> {
-                    if (haveAllSessionsErroredOrReceivedData(waitingFor, erroredSessions, receivedSessionDataEvents)) {
-                        flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
-                        FlowContinuation.Error(CordaRuntimeException("Failed to receive due to errors from sessions: $erroredSessions"))
-                    } else {
-                        FlowContinuation.Continue
-                    }
-                }
                 receivedSessionDataEvents.size == waitingFor.sessionIds.size -> {
                     try {
                         val payloads = convertToIncomingPayloads(receivedSessionDataEvents)
@@ -53,6 +52,24 @@ class SessionDataWaitingForHandler @Activate constructor(
                         FlowContinuation.Error(e)
                     }
                 }
+                erroredSessions.isNotEmpty() -> {
+                    resumeWithErrorIfAllSessionsReceivedEvents(
+                        waitingFor,
+                        erroredSessions,
+                        closingSessions,
+                        receivedSessionDataEvents,
+                        message = "Failed to receive due to receiving errors from sessions: $erroredSessions"
+                    )
+                }
+                closingSessions.isNotEmpty() -> {
+                    resumeWithErrorIfAllSessionsReceivedEvents(
+                        waitingFor,
+                        erroredSessions,
+                        closingSessions,
+                        receivedSessionDataEvents,
+                        message = "Failed to receive due to receiving closes from sessions: $closingSessions"
+                    )
+                }
                 else -> FlowContinuation.Continue
             }
         } catch (e: FlowSessionMissingException) {
@@ -61,13 +78,29 @@ class SessionDataWaitingForHandler @Activate constructor(
         }
     }
 
-    private fun haveAllSessionsErroredOrReceivedData(
+    private fun resumeWithErrorIfAllSessionsReceivedEvents(
         waitingFor: SessionData,
         erroredSessions: List<String>,
-        receivedDataEvents: List<Pair<SessionState, SessionEvent>>
+        closingSessions: List<String>,
+        receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>,
+        message: String
+    ): FlowContinuation {
+        return if (haveAllSessionsReceivedEvents(waitingFor, erroredSessions, closingSessions, receivedSessionDataEvents)) {
+            flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
+            FlowContinuation.Error(CordaRuntimeException(message))
+        } else {
+            FlowContinuation.Continue
+        }
+    }
+
+    private fun haveAllSessionsReceivedEvents(
+        waitingFor: SessionData,
+        erroredSessions: List<String>,
+        closingSessions: List<String>,
+        receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>
     ): Boolean {
-        val receivedEventSessionIds = receivedDataEvents.map { (sessionState, _) -> sessionState.sessionId }
-        return waitingFor.sessionIds.toSet() == (receivedEventSessionIds + erroredSessions).toSet()
+        val receivedEventSessionIds = receivedSessionDataEvents.map { (sessionState, _) -> sessionState.sessionId }
+        return waitingFor.sessionIds.toSet() == (receivedEventSessionIds + erroredSessions + closingSessions).toSet()
     }
 
     private fun convertToIncomingPayloads(receivedEvents: List<Pair<SessionState, SessionEvent>>): Map<String, ByteArray> {
