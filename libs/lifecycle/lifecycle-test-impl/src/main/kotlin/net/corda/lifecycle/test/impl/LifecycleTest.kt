@@ -74,22 +74,6 @@ class LifecycleTest<T : Lifecycle>(
     }
 
     /**
-     * Verify a component is in the [LifecycleStatus.ERROR] state
-     *
-     * @param coordinatorName the name of the coordinator to verify
-     */
-    fun verifyIsError(coordinatorName: LifecycleCoordinatorName) {
-        assertThat(registry.getCoordinator(coordinatorName).status).isEqualTo(LifecycleStatus.ERROR)
-    }
-
-    /**
-     * Verify a component is in the [LifecycleStatus.ERROR] state
-     */
-    inline fun <reified D> verifyIsError() {
-        verifyIsError(LifecycleCoordinatorName.forComponent<D>())
-    }
-
-    /**
      * Verify a component is in the [LifecycleStatus.UP] state
      *
      * @param coordinatorName the name of the coordinator to verify
@@ -186,13 +170,6 @@ class LifecycleTest<T : Lifecycle>(
         val coordinator = registry.getCoordinator(coordinatorName)
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.ERROR)
-    }
-
-    /**
-     * Change the given dependency to the [LifecycleStatus.ERROR] state.
-     */
-    inline fun <reified D> setDependencyToError() {
-        setDependencyToError(LifecycleCoordinatorName.forComponent<D>())
     }
 
     /**
