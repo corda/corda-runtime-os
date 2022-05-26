@@ -1,4 +1,4 @@
-package net.corda.demo.connectfour
+package net.cordapp.demo.connectfour
 
 class StartGameMessage {
     var opponentX500Name: String? = null

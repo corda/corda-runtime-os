@@ -1,4 +1,4 @@
-package net.corda.testing.calculator
+package net.cordapp.testing.calculator
 
 class InputMessage{
     var a: Int? = null

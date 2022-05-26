@@ -1,4 +1,4 @@
-package net.corda.demo.mandelbrot
+package net.cordapp.demo.mandelbrot
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow

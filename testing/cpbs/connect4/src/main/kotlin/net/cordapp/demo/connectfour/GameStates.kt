@@ -1,4 +1,4 @@
-package net.corda.demo.tictactoe
+package net.cordapp.demo.connectfour
 
 enum class GameStates {
     Playing

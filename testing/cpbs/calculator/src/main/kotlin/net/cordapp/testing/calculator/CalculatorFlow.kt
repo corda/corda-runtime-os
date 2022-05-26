@@ -1,4 +1,4 @@
-package net.corda.testing.calculator
+package net.cordapp.testing.calculator
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow

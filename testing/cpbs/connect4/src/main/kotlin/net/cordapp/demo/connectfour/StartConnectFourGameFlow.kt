@@ -1,4 +1,4 @@
-package net.corda.demo.connectfour
+package net.cordapp.demo.connectfour
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow

@@ -1,4 +1,4 @@
-package net.corda.demo.connectfour
+package net.cordapp.demo.connectfour
 
 data class GameStateMessage(
     val gameStatus: GameStates,

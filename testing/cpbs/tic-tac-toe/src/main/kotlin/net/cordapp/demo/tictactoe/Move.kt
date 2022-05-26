@@ -1,4 +1,4 @@
-package net.corda.demo.tictactoe
+package net.cordapp.demo.tictactoe
 
 data class Move(
     val playerX500Name: String,
