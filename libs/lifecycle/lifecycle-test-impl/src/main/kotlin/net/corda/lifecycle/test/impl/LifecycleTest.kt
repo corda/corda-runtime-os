@@ -22,8 +22,21 @@ class LifecycleTest<T : Lifecycle>(
     private val configKeys = argumentCaptor<Set<String>>()
 
 
+    /**
+     * This is the coordinator factory which the component under test can use to create it's coordinator.
+     *
+     * This will replace the OSGi injected factory.
+     */
     val coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+
+    /**
+     * This mock can be used to verify the usage of the config handles by components.
+     */
     var lastConfigHandle = mock<AutoCloseable>()
+
+    /**
+     * This mock will replace the OSGi injected config read service.
+     */
     val configReadService = mock<ConfigurationReadService>().apply {
         whenever(registerComponentForUpdates(configCoordinator.capture(), configKeys.capture())).thenAnswer {
             coordinatorToConfigKeys[configCoordinator.lastValue] = configKeys.lastValue
@@ -36,12 +49,26 @@ class LifecycleTest<T : Lifecycle>(
         get() = coordinatorFactory.registry
 
     // Must go after all the initialization above as those classes may be used by the lambda
+    /**
+     * This is the actual instantiation of the component to be tested.  It is made available here
+     * for use by test code later.
+     */
     val testClass = initializer.invoke(this)
 
+    /**
+     * Registers the given class as a dependency of the component under test.  This allows for bringing
+     * each dependency UP/DOWN as needed.
+     */
     inline fun <reified D> addDependency(): LifecycleCoordinator {
         return addDependency(LifecycleCoordinatorName.forComponent<D>())
     }
 
+    /**
+     * Registers the given class as a dependency of the component under test.  This allows for bringing
+     * each dependency UP/DOWN as needed.
+     *
+     * @param name the coordinator name of the dependency
+     */
     fun addDependency(name: LifecycleCoordinatorName): LifecycleCoordinator {
         dependencies.add(name)
         return coordinatorFactory.createCoordinator(name, mock())
