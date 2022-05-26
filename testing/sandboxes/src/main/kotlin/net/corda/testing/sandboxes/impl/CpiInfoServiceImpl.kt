@@ -25,12 +25,12 @@ class CpiInfoServiceImpl @Activate constructor(
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
         getAll().stream().map {
-            VersionedRecord(
-                version = it.version,
-                isDeleted = false,
-                key = it.cpiId,
-                value = it
-            )
+            object : VersionedRecord<CpiIdentifier, CpiMetadata> {
+                override val version = it.version
+                override val isDeleted = false
+                override val key = it.cpiId
+                override val value = it
+            }
         }
 
     override val isRunning: Boolean
