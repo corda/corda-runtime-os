@@ -11,11 +11,10 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_TEMPLATE
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.DEROctetString
@@ -41,18 +40,18 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
+import java.security.spec.ECGenParameterSpec
 
 class KeysRpcOpsImplTest {
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val keyEncodingService = mock<KeyEncodingService>()
     private val coordinator = mock<LifecycleCoordinator>()
     private val handler = argumentCaptor<LifecycleEventHandler>()
-    private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
 
-    private val keysOps = KeysRpcOpsImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory, cipherSchemeMetadata)
+    private val keysOps = KeysRpcOpsImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory)
 
     @Nested
     inner class BasicApiTests {
@@ -184,10 +183,9 @@ class KeysRpcOpsImplTest {
         private val x500Name = "CN=Alice"
         private val role = "TLS"
         private val publicKeyBytes = "123".toByteArray()
-        private val schema = ECDSA_SECP256K1_SHA256_TEMPLATE.makeScheme("Test")
         private val key = mock<CryptoSigningKey> {
             on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
-            on { schemeCodeName } doReturn schema.codeName
+            on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
             on { tenantId } doReturn holdingIdentityId
         }
         private val publicKey = KeyPairGenerator.getInstance("EC").let { keyPairGenerator ->
@@ -197,7 +195,7 @@ class KeysRpcOpsImplTest {
                     array.fill(106)
                 }
             }
-            keyPairGenerator.initialize(571, rnd)
+            keyPairGenerator.initialize(ECGenParameterSpec("secp256r1"), rnd)
             keyPairGenerator.generateKeyPair().public
         }
 
@@ -206,17 +204,22 @@ class KeysRpcOpsImplTest {
             whenever(cryptoOpsClient.lookup(holdingIdentityId, listOf(keyId))).doReturn(listOf(key))
             whenever(
                 cryptoOpsClient.sign(
-                    eq(holdingIdentityId), eq(publicKey), any(), eq(emptyMap())
+                    eq(holdingIdentityId),
+                    eq(publicKey),
+                    eq(SignatureSpec("SHA512withECDSA")),
+                    any(),
+                    eq(emptyMap())
                 )
             ).doReturn(
                 DigitalSignature.WithKey(
                     publicKey,
-                    byteArrayOf(1)
+                    byteArrayOf(1),
+                    emptyMap()
                 )
             )
             whenever(keyEncodingService.decodePublicKey(publicKeyBytes)).doReturn(publicKey)
-            whenever(cipherSchemeMetadata.schemes).doReturn(arrayOf(schema))
         }
+
         @Test
         fun `it throws exception if key is not available`() {
             whenever(cryptoOpsClient.lookup(any(), any())).doReturn(emptyList())
@@ -227,6 +230,7 @@ class KeysRpcOpsImplTest {
                     keyId,
                     x500Name,
                     role,
+                    null,
                     null,
                     null
                 )
@@ -241,10 +245,17 @@ class KeysRpcOpsImplTest {
                 x500Name,
                 role,
                 null,
+                null,
                 null
             )
 
-            verify(cryptoOpsClient).sign(eq(holdingIdentityId), eq(publicKey), any(), eq(emptyMap()))
+            verify(cryptoOpsClient).sign(
+                eq(holdingIdentityId),
+                eq(publicKey),
+                eq(SignatureSpec("SHA512withECDSA")),
+                any(),
+                eq(emptyMap())
+            )
         }
 
         @Test
@@ -255,7 +266,8 @@ class KeysRpcOpsImplTest {
                 x500Name,
                 role,
                 null,
-                null
+                null,
+                null,
             )
 
             assertThat(pem.fromPem().signature).isEqualTo(byteArrayOf(1))
@@ -269,6 +281,7 @@ class KeysRpcOpsImplTest {
                 x500Name,
                 role,
                 listOf("www.alice.net", "alice.net"),
+                null,
                 null,
             )
 
@@ -301,6 +314,7 @@ class KeysRpcOpsImplTest {
                 role,
                 null,
                 null,
+                null,
             )
 
             assertThat(
@@ -318,6 +332,7 @@ class KeysRpcOpsImplTest {
                 x500Name,
                 role,
                 null,
+                null,
                 emptyMap(),
             )
 
@@ -328,43 +343,7 @@ class KeysRpcOpsImplTest {
         }
 
         @Test
-        fun `it will throw an exception for invalid schema name`() {
-            whenever(cipherSchemeMetadata.schemes).doReturn(emptyArray())
-
-            assertThrows<ResourceNotFoundException> {
-                keysOps.generateCsr(
-                    holdingIdentityId,
-                    keyId,
-                    x500Name,
-                    role,
-                    null,
-                    null,
-                )
-            }
-        }
-
-        @Test
-        fun `it will throw an exception for schema without algorithm identifier`() {
-            val schema = COMPOSITE_KEY_TEMPLATE.makeScheme("TEST")
-            whenever(cipherSchemeMetadata.schemes).doReturn(arrayOf(schema))
-            whenever(key.schemeCodeName).doReturn(schema.codeName)
-
-            assertThrows<ResourceNotFoundException> {
-                keysOps.generateCsr(
-                    holdingIdentityId,
-                    keyId,
-                    x500Name,
-                    role,
-                    null,
-                    null,
-                )
-            }
-        }
-
-        @Test
         fun `it will throw an exception for invalid contextMap`() {
-            whenever(cipherSchemeMetadata.schemes).doReturn(emptyArray())
-
             assertThrows<InvalidInputDataException> {
                 keysOps.generateCsr(
                     holdingIdentityId,
@@ -372,7 +351,40 @@ class KeysRpcOpsImplTest {
                     x500Name,
                     role,
                     null,
+                    null,
                     mapOf("key" to "value"),
+                )
+            }
+        }
+
+        @Test
+        fun `it throws exception if Signature OID can not be inferred`() {
+            assertThrows<ResourceNotFoundException> {
+                keysOps.generateCsr(
+                    holdingIdentityId,
+                    keyId,
+                    x500Name,
+                    role,
+                    null,
+                    "Nop",
+                    null
+                )
+            }
+        }
+
+        @Test
+        fun `it throws exception if key code name is invalid`() {
+            whenever(key.schemeCodeName).doReturn("Nop")
+
+            assertThrows<ResourceNotFoundException> {
+                keysOps.generateCsr(
+                    holdingIdentityId,
+                    keyId,
+                    x500Name,
+                    role,
+                    null,
+                    null,
+                    null
                 )
             }
         }

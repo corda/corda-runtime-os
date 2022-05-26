@@ -24,6 +24,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:crypto:crypto-core")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

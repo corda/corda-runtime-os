@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
@@ -13,8 +14,20 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.KeysRpcOps
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
+import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
+import net.corda.v5.crypto.SM2_CODE_NAME
+import net.corda.v5.crypto.SM2_SM3_SIGNATURE_SPEC
+import net.corda.v5.crypto.SPHINCS256_CODE_NAME
+import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -45,9 +58,32 @@ class KeysRpcOpsImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CipherSchemeMetadata::class)
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
 ) : KeysRpcOps, PluggableRPCOps<KeysRpcOps>, Lifecycle {
+
+    private companion object {
+        private val defaultCodeNameToSpec = mapOf(
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
+            EDDSA_ED25519_TEMPLATE to EDDSA_ED25519_NONE_SIGNATURE_SPEC,
+            GOST3410_GOST3411_TEMPLATE to GOST3410_GOST3411_SIGNATURE_SPEC,
+            RSA_CODE_NAME to RSA_SHA512_SIGNATURE_SPEC,
+            SM2_CODE_NAME to SM2_SM3_SIGNATURE_SPEC,
+            SPHINCS256_CODE_NAME to SPHINCS256_SHA512_SIGNATURE_SPEC,
+        )
+
+        fun getSignatureSpec(
+            key: CryptoSigningKey,
+            defaultSpec: String?
+        ): SignatureSpec {
+            if (defaultSpec != null) {
+                return SignatureSpec(defaultSpec)
+            }
+
+            return defaultCodeNameToSpec[key.schemeCodeName]
+                ?: throw ResourceNotFoundException("Can not find any spec for ${key.schemeCodeName}. Use signatureSpec explicitly")
+        }
+    }
+
     override fun listSchemes(
         tenantId: String,
         hsmCategory: String,
@@ -99,6 +135,7 @@ class KeysRpcOpsImpl @Activate constructor(
         x500name: String,
         certificateRole: String,
         subjectAlternativeNames: List<String>?,
+        signatureSpec: String?,
         contextMap: Map<String, String?>?,
     ): String {
         if (contextMap != null && contextMap.isNotEmpty()) {
@@ -120,7 +157,9 @@ class KeysRpcOpsImpl @Activate constructor(
             extensionsGenerator.addExtension(subjectAlternativeName, true, subjectAltName)
         }
 
-        val signer = CsrContentSigner(key, publicKey)
+        val spec = getSignatureSpec(key, signatureSpec)
+
+        val signer = CsrContentSigner(spec, publicKey, tenantId)
 
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
             X500Principal(x500name), publicKey
@@ -179,25 +218,25 @@ class KeysRpcOpsImpl @Activate constructor(
     }
 
     private inner class CsrContentSigner(
-        private val cryptoSigningKey: CryptoSigningKey,
+        private val signatureSpec: SignatureSpec,
         private val publicKey: PublicKey,
+        private val tenantId: String,
     ) : ContentSigner {
         private val outputStream = ByteArrayOutputStream()
+
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier {
-            val scheme = cipherSchemeMetadata.schemes.firstOrNull {
-                it.codeName == cryptoSigningKey.schemeCodeName
-            } ?: throw ResourceNotFoundException("Can not find any schema ${cryptoSigningKey.schemeCodeName}")
-            return scheme.signatureSpec.signatureOID
-                ?: throw ResourceNotFoundException("Can not find algorithm identifier for ${scheme.signatureSpec.signatureName}")
+            return DefaultSignatureOIDMap.inferSignatureOID(publicKey, signatureSpec)
+                ?: throw ResourceNotFoundException("Can not find algorithm identifier for ${signatureSpec.signatureName}")
         }
 
         override fun getOutputStream() = outputStream
 
         override fun getSignature(): ByteArray {
             return cryptoOpsClient.sign(
-                tenantId = cryptoSigningKey.tenantId,
+                tenantId = tenantId,
                 publicKey = publicKey,
-                outputStream.toByteArray()
+                signatureSpec = signatureSpec,
+                outputStream.toByteArray(),
             ).bytes
         }
     }

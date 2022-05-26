@@ -109,7 +109,8 @@ interface KeysRpcOps : RpcOps {
      * @param x500name A valid X500 name.
      * @param certificateRole - The certificate role
      * @param subjectAlternativeNames - list of subject alternative DNS names
-     * @param contextMap - Any additional atttributes to add to the CSR.
+     * @param signatureSpec - Optional signature spec.
+     * @param contextMap - Any additional attributes to add to the CSR.
      *
      * @return The CSR in PEM format.
      */
@@ -138,6 +139,11 @@ interface KeysRpcOps : RpcOps {
             required = false,
         )
         subjectAlternativeNames: List<String>?,
+        @HttpRpcRequestBodyParameter(
+            description = "Signature spec (SHA512withECDSA, SHA384withRSA...)",
+            required = false,
+        )
+        signatureSpec: String?,
         @HttpRpcRequestBodyParameter(
             description = "Context Map",
             required = false,
