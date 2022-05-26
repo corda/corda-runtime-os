@@ -68,17 +68,9 @@ class FlowFiberImpl<R>(
                 is String -> FlowIORequest.FlowFinished(result)
                 else -> throw IllegalStateException("The flow result has to be a string.")
             }
-        } catch (t: Throwable) {
-            log.error("Flow failed", t)
-            if (t.isUnrecoverable()) {
-                errorAndTerminate(
-                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
-                            "resources open, and most likely will.",
-                    t
-                )
-            }
-
-            FlowIORequest.FlowFailed(t)
+        } catch (e: Exception) {
+            log.error("Flow failed", e)
+            FlowIORequest.FlowFailed(e)
         }
 
         try {
