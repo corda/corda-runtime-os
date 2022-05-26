@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,17 +11,13 @@ import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 @Suppress("LongParameterList")
 class LinkManager(
-    @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
     configurationReaderService: ConfigurationReadService,
     messagingConfiguration: SmartConfig,
     groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
