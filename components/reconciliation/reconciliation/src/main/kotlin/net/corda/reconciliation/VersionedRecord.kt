@@ -5,9 +5,9 @@ package net.corda.reconciliation
  * means Kafka records with deleted values (null`ed values) are filtered out and cannot be returned by
  * [ReconcilerReader]s.
  */
-data class VersionedRecord<K, V>(
-    val version: Int,
-    val isDeleted: Boolean,
-    val key: K,
-    val value: V,
-)
+interface VersionedRecord<K, V> {
+    val version: Int
+    val isDeleted: Boolean
+    val key: K
+    val value: V
+}
