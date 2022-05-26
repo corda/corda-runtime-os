@@ -73,6 +73,7 @@ class CryptoTCKImpl : CryptoTCK {
         logger.info("EXECUTING COMPLIANCE TESTS: $version")
         logger.info("${options::serviceName.name}=${options.serviceName}")
         logger.info("${options::tests.name}=${options.tests.joinToString()}")
+        logger.info("${options::testResultsDirectory.name}=${options.testResultsDirectory}")
         logger.info("--------------------------")
     }
 

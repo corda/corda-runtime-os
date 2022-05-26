@@ -1,5 +1,6 @@
 package net.corda.crypto.tck.testing
 
+import net.corda.crypto.tck.testing.hsms.AllWrappedKeysHSMProvider
 import net.corda.v5.crypto.tck.CryptoTCK
 import net.corda.v5.crypto.tck.ExecutionOptions
 import org.junit.jupiter.api.Test
@@ -17,10 +18,10 @@ class CryptoTCKTests {
     }
 
     @Test
-    fun execute() {
+    fun `TCK should be able to test AllWrappedKeysHSM`() {
         tck.run(ExecutionOptions(
-            serviceName = "test",
-            testResultsDirectory = Path.of("")
+            serviceName = AllWrappedKeysHSMProvider.NAME,
+            testResultsDirectory = Path.of("", AllWrappedKeysHSMProvider::class.simpleName).toAbsolutePath()
         ))
     }
 }
