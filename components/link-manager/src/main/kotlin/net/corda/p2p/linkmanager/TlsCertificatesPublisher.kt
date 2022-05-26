@@ -41,6 +41,7 @@ internal class TlsCertificatesPublisher(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
+        registry,
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
         configuration,
     )

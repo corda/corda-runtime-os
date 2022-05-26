@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -19,6 +20,7 @@ import java.util.Queue
 
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
+    lifecycleRegistry: LifecycleRegistry,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig
 ) : PendingSessionMessageQueues {
@@ -33,6 +35,7 @@ internal class PendingSessionMessageQueuesImpl(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
+        lifecycleRegistry,
         PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, false),
         configuration
     )
@@ -62,20 +65,22 @@ internal class PendingSessionMessageQueuesImpl(
         groups: LinkManagerGroupPolicyProvider,
         members: LinkManagerMembershipGroupReader,
     ) {
-        if (!isRunning) {
-            throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
-        }
-        val queuedMessages = queuedMessagesPendingSession[counterparties] ?: return
-        val records = mutableListOf<Record<String, *>>()
-        while (queuedMessages.isNotEmpty()) {
-            val message = queuedMessages.poll()
-            logger.debug {
-                "Sending queued message ${message.message.header.messageId} " +
-                        "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
+        publisher.dominoTile.withLifecycleLock {
+            if (!isRunning) {
+                throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
             }
-            records.addAll(sessionManager.recordsForSessionEstablished(groups, members, session, message))
+            val queuedMessages = queuedMessagesPendingSession[counterparties] ?: return@withLifecycleLock
+            val records = mutableListOf<Record<String, *>>()
+            while (queuedMessages.isNotEmpty()) {
+                val message = queuedMessages.poll()
+                logger.debug {
+                    "Sending queued message ${message.message.header.messageId} " +
+                        "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
+                }
+                records.addAll(sessionManager.recordsForSessionEstablished(groups, members, session, message))
+            }
+            publisher.publish(records)
         }
-        publisher.publish(records)
     }
 
     override fun destroyQueue(counterparties: SessionManager.SessionCounterparties) {

@@ -34,6 +34,7 @@ internal class CommonComponents(
 
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
+        registry,
         lifecycleCoordinatorFactory,
         configuration
     )

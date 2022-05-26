@@ -23,9 +23,7 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.registry.LifecycleRegistry
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -44,6 +42,7 @@ import kotlin.concurrent.write
  * - once resources are created and configuration has been applied successfully, the component will be fully started.
  *
  * @param onStart the callback method used to signal some external component when the tile starts.
+ * @param onClose the callback method used to signal some external component when the tile is closed.
  * @param managedChildren the children tiles this tile is responsible for starting when it starts.
  * @param dependentChildren the children tiles this component requires in order to function properly.
  *  If one of them goes down, this tile will also go down.
@@ -51,12 +50,13 @@ import kotlin.concurrent.write
  * If no configuration is needed, it can be left undefined.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
-open class ComplexDominoTile(
+class ComplexDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val registry: LifecycleRegistry,
     private val onStart: (() -> Unit)? = null,
-    final override val dependentChildren: Collection<DominoTile> = emptySet(),
+    private val onClose: (() -> Unit)? = null,
+    override val dependentChildren: Collection<DominoTile> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : DominoTile {
@@ -69,7 +69,7 @@ open class ComplexDominoTile(
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
     private data class NewConfig(val config: Config) : LifecycleEvent
 
-    final override val coordinatorName: LifecycleCoordinatorName by lazy {
+    override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
             componentName,
             instancesIndex.compute(componentName) { _, last ->
@@ -180,6 +180,7 @@ open class ComplexDominoTile(
         private fun handleControlEvent(event: LifecycleEvent) {
             when (event) {
                 is ErrorEvent -> {
+                    logger.error("An error occurred : ${event.cause.message}.", event.cause)
                     stopResources()
                     stopListeningForConfig()
                     updateState(StoppedDueToError)
@@ -195,7 +196,7 @@ open class ComplexDominoTile(
                             coordinator.postEvent(
                                 ErrorEvent(NoCoordinatorException("No registered coordinator with name ${it.coordinatorName}."))
                             )
-                            LifecycleStatus.DOWN
+                            LifecycleStatus.ERROR
                         }
                     }
                 }
@@ -217,8 +218,14 @@ open class ComplexDominoTile(
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
-                    val child = registrationToChildMap[event.registration] ?: return
+                    val child = registrationToChildMap[event.registration]
+                    if (child == null) {
+                        logger.warn("Registration status change event received from registration (${event.registration}) that didn't map" +
+                            " to a component.")
+                        return
+                    }
                     latestChildStateMap[child] = event.status
+
                     when (event.status) {
                          LifecycleStatus.UP -> {
                             logger.info("Status change: child ${child.coordinatorName} went up.")
@@ -412,6 +419,7 @@ open class ComplexDominoTile(
                 logger.debug("Could not close coordinator", e)
             }
         }
+        onClose?.invoke()
         managedChildren.forEach {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -422,7 +430,7 @@ open class ComplexDominoTile(
         }
     }
 
-    private class NoCoordinatorException(override val message: String): CordaRuntimeException(message)
+    private class NoCoordinatorException(override val message: String): IllegalStateException(message)
 
     override fun toString(): String {
         return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it.coordinatorName }}, " +

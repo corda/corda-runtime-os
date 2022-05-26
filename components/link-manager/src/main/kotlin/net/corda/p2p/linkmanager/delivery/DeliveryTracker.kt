@@ -51,6 +51,7 @@ internal class DeliveryTracker(
 
     private val appMessageReplayer = AppMessageReplayer(
         coordinatorFactory,
+        registry,
         publisherFactory,
         configuration,
         processAuthenticatedMessage
@@ -92,6 +93,7 @@ internal class DeliveryTracker(
 
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,
+        registry: LifecycleRegistry,
         publisherFactory: PublisherFactory,
         configuration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
@@ -105,6 +107,7 @@ internal class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
+            registry,
             PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
             configuration
         )

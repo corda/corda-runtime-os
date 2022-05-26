@@ -84,8 +84,8 @@ internal class StubMembershipGroupReader(
         lifecycleCoordinatorFactory,
         registry,
         ::onStart,
-        setOf(subscriptionTile, blockingTile),
-        setOf(subscriptionTile, blockingTile)
+        dependentChildren = setOf(subscriptionTile, blockingTile),
+        managedChildren = setOf(subscriptionTile, blockingTile)
     )
 
     private fun onStart(): CompletableFuture<Unit> {

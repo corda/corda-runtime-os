@@ -15,7 +15,6 @@ import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor

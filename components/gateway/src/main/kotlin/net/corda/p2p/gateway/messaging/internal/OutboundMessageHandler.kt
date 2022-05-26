@@ -77,18 +77,14 @@ internal class OutboundMessageHandler(
         setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
     )
 
-    override val dominoTile = object: ComplexDominoTile(
-        OutboundMessageHandler::class.java.simpleName,
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
+        onClose = { retryThreadPool.shutdown() },
         dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
-    ) {
-        override fun close() {
-            retryThreadPool.shutdown()
-            super.close()
-        }
-    }
+    )
 
     private val retryThreadPool = retryThreadPoolFactory()
 

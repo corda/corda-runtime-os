@@ -317,7 +317,6 @@ class ComplexDominoTileTest {
             val called = AtomicInteger(0)
             val tile = ComplexDominoTile(TILE_NAME, factory, mock(), onStart = {
                 called.incrementAndGet()
-                CompletableFuture()
             })
 
             tile.start()
@@ -672,7 +671,6 @@ class ComplexDominoTileTest {
                 configurationChangeHandler = TileConfigurationChangeHandler(),
                 onStart = {
                     resourceCreated.incrementAndGet()
-                    CompletableFuture()
                 }
             )
             tile.start()

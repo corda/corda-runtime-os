@@ -1,5 +1,5 @@
 import net.corda.data.identity.HoldingIdentity
-import net.corda.lifecycle.domino.logic.SimpleDominoTile
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -43,7 +43,7 @@ class PendingSessionMessageQueuesImplTest {
     private val sessionManager = mock<SessionManager>()
     private val publisherWithDominoLogic = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
-        val dominoTile = mock<SimpleDominoTile> {
+        val dominoTile = mock<ComplexDominoTile> {
             on { isRunning } doReturn true
         }
         whenever(mock.dominoTile).doReturn(dominoTile)
@@ -70,7 +70,7 @@ class PendingSessionMessageQueuesImplTest {
         )
     }
 
-    private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
+    private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock(), mock())
 
     @AfterEach
     fun cleanUp() {

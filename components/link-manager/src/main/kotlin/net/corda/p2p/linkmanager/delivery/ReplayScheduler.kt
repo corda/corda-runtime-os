@@ -36,17 +36,13 @@ internal class ReplayScheduler<M>(
     private val clock: Clock
     ) : LifecycleWithDominoTile {
 
-    override val dominoTile = object: ComplexDominoTile(
-        ReplayScheduler::class.java.simpleName,
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
         coordinatorFactory,
         registry,
+        onClose = { executorService.shutdownNow() },
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
-    ) {
-        override fun close() {
-            executorService.shutdownNow()
-            super.close()
-        }
-    }
+    )
 
     private val executorService = executorServiceFactory()
 

@@ -6,12 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.domino.logic.DominoTileState.Created
-import net.corda.lifecycle.domino.logic.DominoTileState.Started
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -50,7 +44,7 @@ open class SimpleDominoTile(
     }
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
-    private val currentState = AtomicReference(Created)
+    private val currentState = AtomicReference(LifecycleStatus.DOWN)
 
     override val state: LifecycleStatus
         get() = coordinator.status
@@ -61,16 +55,10 @@ open class SimpleDominoTile(
     override val dependentChildren: Collection<DominoTile> = emptyList()
     override val managedChildren: Collection<DominoTile> = emptyList()
 
-    fun updateState(newState: DominoTileState) {
+    fun updateState(newState: LifecycleStatus) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
-            val status = when (newState) {
-                Started -> LifecycleStatus.UP
-                StoppedDueToBadConfig, StoppedByParent, StoppedDueToChildStopped -> LifecycleStatus.DOWN
-                StoppedDueToError -> LifecycleStatus.ERROR
-                Created -> null
-            }
-            status?.let { coordinator.updateStatus(it) }
+            coordinator.updateStatus(newState)
             logger.info("State updated from $oldState to $newState")
         }
     }
@@ -80,7 +68,7 @@ open class SimpleDominoTile(
     }
 
     override fun stop() {
-        updateState(StoppedByParent)
+        updateState(LifecycleStatus.DOWN)
     }
 
     override fun close() {

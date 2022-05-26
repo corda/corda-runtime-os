@@ -137,6 +137,7 @@ internal class SessionManagerImpl(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
+        registry,
         PublisherConfig(SESSION_MANAGER_CLIENT_ID, false),
         configuration
     )
@@ -728,23 +729,20 @@ internal class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
+            registry,
             PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, false),
             configuration
         )
 
-        override val dominoTile = object: ComplexDominoTile(
-            HeartbeatManager::class.java.simpleName,
+        override val dominoTile = ComplexDominoTile(
+            this::class.java.simpleName,
             coordinatorFactory,
             registry,
+            onClose = { executorService.shutdownNow() },
             dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
             managedChildren = setOf(publisher.dominoTile),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
-        ) {
-            override fun close() {
-                executorService.shutdownNow()
-                super.close()
-            }
-        }
+        )
 
         /**
          * Calculates a weight for a Session.

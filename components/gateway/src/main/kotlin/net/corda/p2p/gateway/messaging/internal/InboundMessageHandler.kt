@@ -51,6 +51,7 @@ internal class InboundMessageHandler(
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
+        registry,
         PublisherConfig("inbound-message-handler", false),
         nodeConfiguration
     )

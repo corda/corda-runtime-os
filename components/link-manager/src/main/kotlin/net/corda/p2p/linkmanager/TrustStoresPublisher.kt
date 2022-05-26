@@ -42,6 +42,7 @@ internal class TrustStoresPublisher(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
+        registry,
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
         configuration,
     )

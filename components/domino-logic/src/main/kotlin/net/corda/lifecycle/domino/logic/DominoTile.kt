@@ -32,12 +32,3 @@ interface DominoTile: Lifecycle {
      */
     val managedChildren: Collection<DominoTile>
 }
-
-enum class DominoTileState {
-    Created,
-    Started,
-    StoppedDueToError,
-    StoppedDueToBadConfig,
-    StoppedDueToChildStopped,
-    StoppedByParent
-}
