@@ -255,18 +255,7 @@ class FlowCheckpointImpl(
         }
 
         private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            var current: Class<in Flow<*>> = this.javaClass
-
-            while (true) {
-                val annotation = current.getDeclaredAnnotation(InitiatingFlow::class.java)
-                if (annotation != null) {
-                    require(annotation.version > 0) { "Flow versions have to be greater or equal to 1" }
-                    return true
-                }
-
-                current = current.superclass
-                    ?: return false
-            }
+            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

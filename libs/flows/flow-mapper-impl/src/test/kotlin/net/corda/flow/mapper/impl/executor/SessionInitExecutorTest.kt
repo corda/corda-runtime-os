@@ -27,7 +27,7 @@ class SessionInitExecutorTest {
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
 
         val flowId = "id1"
-        val sessionInit = SessionInit("", "", flowId, null)
+        val sessionInit = SessionInit("", listOf(1), "", flowId, null)
         val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
         val result = SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer).execute()
         val state = result.flowMapperState
@@ -48,7 +48,7 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Inbound session init creates new state and forwards to flow event`() {
-        val sessionInit = SessionInit("", "", null, null)
+        val sessionInit = SessionInit("", listOf(1), "", null, null)
         val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, sessionInit)
         val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, null, sessionEventSerializer).execute()
 
@@ -70,7 +70,7 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Session init with non null state ignored`() {
-        val sessionInit = SessionInit("", "", null, null)
+        val sessionInit = SessionInit("", listOf(1), "", null, null)
         val payload = buildSessionEvent(MessageDirection.INBOUND, "", 1, sessionInit)
         val result = SessionInitExecutor("sessionId-INITIATED", payload, sessionInit, FlowMapperState(), sessionEventSerializer).execute()
 

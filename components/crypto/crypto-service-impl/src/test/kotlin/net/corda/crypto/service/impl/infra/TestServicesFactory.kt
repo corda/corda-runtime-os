@@ -11,15 +11,14 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
-import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
-import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
+import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
+import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -27,11 +26,11 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import java.security.PublicKey
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertTrue
 
@@ -52,7 +51,7 @@ class TestServicesFactory {
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
 
-    val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+    val coordinatorFactory: LifecycleCoordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
 
     val digest: DigestService by lazy {
         DigestServiceImpl(schemeMetadata, null)
@@ -275,7 +274,7 @@ class TestServicesFactory {
             return impl.sign(spec, data, context)
         }
 
-        override fun supportedSchemes(): Array<SignatureScheme> =
+        override fun supportedSchemes(): List<KeyScheme> =
             impl.supportedSchemes()
     }
 }

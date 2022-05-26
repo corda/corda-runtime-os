@@ -38,12 +38,13 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":libs:serialization:serialization-amqp")
-    implementation project(":libs:serialization:serialization-internal")
+    implementation project(':libs:serialization:serialization-amqp')
+    implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:utilities')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'
-    implementation "net.corda:corda-application"
+    implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
@@ -54,7 +55,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(':libs:db:db-orm-impl')
-    testImplementation project(":libs:messaging:messaging")
+    testImplementation project(':libs:messaging:messaging')
     testImplementation project(':testing:db-testkit')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -87,7 +88,7 @@ dependencies {
 
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
-    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

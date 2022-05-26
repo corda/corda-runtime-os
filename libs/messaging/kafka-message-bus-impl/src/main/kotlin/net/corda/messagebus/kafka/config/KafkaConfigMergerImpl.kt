@@ -4,9 +4,8 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messagebus.api.configuration.BusConfigMerger
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
-import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.v5.base.util.contextLogger
@@ -22,7 +21,10 @@ class KafkaConfigMergerImpl : BusConfigMerger {
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
         logger.debug ("Merging boot config into messaging config")
-        var updatedMessagingConfig = messagingConfig?: getBaseKafkaMessagingConfig(bootConfig)
+        var updatedMessagingConfig = (messagingConfig?: getBaseKafkaMessagingConfig())
+            .withValue(BootConfig.INSTANCE_ID, ConfigValueFactory.fromAnyRef(bootConfig.getString(BootConfig.INSTANCE_ID)))
+            .withValue(BootConfig.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(bootConfig.getString(BootConfig.TOPIC_PREFIX)))
+
         val kafkaBootConfig = bootConfig.getConfig(BOOT_KAFKA_COMMON).entrySet()
         logger.debug("Looping through kafka boot config")
         kafkaBootConfig.forEach { entry ->
@@ -36,11 +38,8 @@ class KafkaConfigMergerImpl : BusConfigMerger {
         return updatedMessagingConfig
     }
 
-    private fun getBaseKafkaMessagingConfig(bootConfig: SmartConfig): SmartConfig {
+    private fun getBaseKafkaMessagingConfig(): SmartConfig {
         return SmartConfigImpl.empty()
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
-            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(bootConfig.getString(INSTANCE_ID)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(bootConfig.getString(TOPIC_PREFIX)))
-
     }
 }

@@ -8,10 +8,17 @@ description "Test Lifecycle Coordinator implementation"
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle-impl")
+    implementation project(":libs:lifecycle:registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.assertj:assertj-core:$assertjVersion"
+    implementation "org.mockito:mockito-core:$mockitoVersion"
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
 }

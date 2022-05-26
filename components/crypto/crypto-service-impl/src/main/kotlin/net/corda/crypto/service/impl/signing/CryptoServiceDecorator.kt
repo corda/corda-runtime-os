@@ -6,7 +6,7 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.time.Duration
@@ -62,7 +62,7 @@ class CryptoServiceDecorator(
         }
     }
 
-    override fun supportedSchemes(): Array<SignatureScheme> {
+    override fun supportedSchemes(): List<KeyScheme> {
         try {
             return cryptoService.supportedSchemes()
         } catch (e: CryptoServiceException) {

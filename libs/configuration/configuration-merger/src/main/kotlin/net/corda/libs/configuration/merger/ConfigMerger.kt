@@ -17,6 +17,17 @@ interface ConfigMerger {
     fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig? = null) : SmartConfig
 
     /**
+     * Merge values from the [bootConfig] into the [dbConfig] received from the config topic and return the resulting db
+     * config.
+     * @param bootConfig boot config created on startup
+     * @param dbConfig db config taken from the topic
+     * @return DB config with boot config values merged into it.
+     */
+    fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig
+
+    //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
+    // exist to preserve defaulting logic present
+    /**
      * Merge values from the [bootConfig] into the [rpcConfig] received from the config topic and return the resulting rpc
      * config.
      * @param bootConfig boot config created on startup
@@ -33,15 +44,6 @@ interface ConfigMerger {
      * @return Reconciliation config with boot config values merged into it.
      */
     fun getReconciliationConfig(bootConfig: SmartConfig, reconciliation: SmartConfig?) : SmartConfig
-
-    /**
-     * Merge values from the [bootConfig] into the [dbConfig] received from the config topic and return the resulting db
-     * config.
-     * @param bootConfig boot config created on startup
-     * @param dbConfig db config taken from the topic
-     * @return DB config with boot config values merged into it.
-     */
-    fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig
 
     /**
      * Merge values from the [bootConfig] into the [cryptoConfig] received from the config topic and return the resulting crypto

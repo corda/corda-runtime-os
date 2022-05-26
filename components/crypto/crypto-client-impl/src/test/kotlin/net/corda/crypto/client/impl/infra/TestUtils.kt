@@ -4,6 +4,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
@@ -75,8 +76,8 @@ data class SendActResult<REQUEST, RESPONSE>(
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: String): KeyPair {
-    val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
+fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): KeyPair {
+    val scheme = schemeMetadata.findKeyScheme(schemeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
         scheme.algorithmName,
         schemeMetadata.providers.getValue(scheme.providerName)
@@ -89,10 +90,15 @@ fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: S
     return keyPairGenerator.generateKeyPair()
 }
 
-fun signData(schemeMetadata: CipherSchemeMetadata, keyPair: KeyPair, data: ByteArray): ByteArray {
-    val scheme = schemeMetadata.findSignatureScheme(keyPair.public)
+fun signData(
+    schemeMetadata: CipherSchemeMetadata,
+    signatureSpec: SignatureSpec,
+    keyPair: KeyPair,
+    data: ByteArray
+): ByteArray {
+    val scheme = schemeMetadata.findKeyScheme(keyPair.public)
     val signature = Signature.getInstance(
-        scheme.signatureSpec.signatureName,
+        signatureSpec.signatureName,
         schemeMetadata.providers[scheme.providerName]
     )
     signature.initSign(keyPair.private, schemeMetadata.secureRandom)

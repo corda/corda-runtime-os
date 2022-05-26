@@ -1,5 +1,10 @@
 package net.corda.p2p.gateway.messaging.http
 
+import java.io.ByteArrayInputStream
+import java.security.KeyStore
+import java.security.cert.CertificateFactory
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -12,16 +17,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas
-import java.io.ByteArrayInputStream
-import java.security.KeyStore
-import java.security.cert.CertificateFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) :
     LifecycleWithDominoTile {
@@ -33,7 +33,7 @@ internal class TrustStoresMap(
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES),
         Processor(),
-        nodeConfiguration
+        messagingConfiguration
     )
     private val groupIdToTrustRoots = ConcurrentHashMap<String, TrustedCertificates>()
     private val subscriptionTile = SubscriptionDominoTile(

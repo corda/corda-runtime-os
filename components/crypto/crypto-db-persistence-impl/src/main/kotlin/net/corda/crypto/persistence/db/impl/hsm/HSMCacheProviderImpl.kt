@@ -3,15 +3,12 @@ package net.corda.crypto.persistence.db.impl.hsm
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.impl.config.hsmPersistence
-import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.hsm.HSMCache
 import net.corda.crypto.persistence.hsm.HSMCacheProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
@@ -46,7 +43,7 @@ class HSMCacheProviderImpl @Activate constructor(
         fun getInstance(): HSMCache
     }
 
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(event, dbConnectionManager)
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(dbConnectionManager)
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
 
@@ -60,18 +57,10 @@ class HSMCacheProviderImpl @Activate constructor(
     }
 
     class ActiveImpl(
-        event: ConfigChangedEvent,
         private val dbConnectionOps: DbConnectionOps
     ) : Impl {
-        private val config: SmartConfig
-
-        init {
-            config = event.config.toCryptoConfig()
-        }
-
         private val instance by lazy(LazyThreadSafetyMode.PUBLICATION) {
             HSMCacheImpl(
-                config = config.hsmPersistence(),
                 entityManagerFactory = dbConnectionOps.getOrCreateEntityManagerFactory(
                     CordaDb.Crypto,
                     DbPrivilege.DML

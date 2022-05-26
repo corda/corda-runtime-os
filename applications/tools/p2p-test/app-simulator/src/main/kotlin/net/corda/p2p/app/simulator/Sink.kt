@@ -37,14 +37,14 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
     fun start() {
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", APP_RECEIVED_MESSAGES_TOPIC)
-            val kafkaConfig = SmartConfigImpl.empty()
+            val messagingConfig = SmartConfigImpl.empty()
                 .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
             val processor = DBSinkProcessor()
             resources.add(processor)
-            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, processor, kafkaConfig, null)
+            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, processor, messagingConfig, null)
             subscription.start()
             resources.add(subscription)
         }

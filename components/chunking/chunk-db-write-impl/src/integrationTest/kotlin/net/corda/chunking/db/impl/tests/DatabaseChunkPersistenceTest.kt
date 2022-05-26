@@ -14,6 +14,8 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -28,6 +30,7 @@ import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -42,6 +45,8 @@ import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.time.Instant
+import java.util.Random
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import javax.persistence.NoResultException
@@ -92,6 +97,8 @@ internal class DatabaseChunkPersistenceTest {
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
     }
+
+    private val random = Random(0)
 
     @Suppress("Unused")
     @AfterAll
@@ -169,19 +176,13 @@ internal class DatabaseChunkPersistenceTest {
     }
 
     private fun mockCpk(hash: SecureHash, name: String) = mock<Cpk>().also { cpk ->
-        val cpkId = mock<CpkIdentifier>().also {
-            whenever(it.name).thenReturn("cpk-name")
-            whenever(it.version).thenReturn("cpk-version")
-            whenever(it.signerSummaryHash).thenReturn(hash)
-        }
+        val cpkId = CpkIdentifier(
+            name = "cpk-name",
+            version = "cpk-version",
+            signerSummaryHash = hash,
+        )
 
-        val cpkManifest = mock<CpkManifest>().also {
-            val cpkFormatError = mock<CpkFormatVersion>().also { cpkFormatVersion ->
-                whenever(cpkFormatVersion.major).thenReturn(1)
-                whenever(cpkFormatVersion.minor).thenReturn(0)
-            }
-            whenever(it.cpkFormatVersion).thenReturn(cpkFormatError)
-        }
+        val cpkManifest = CpkManifest(CpkFormatVersion(1,0))
 
         val cordappManifest = CordappManifest(
             "", "", -1, -1,
@@ -190,16 +191,18 @@ internal class DatabaseChunkPersistenceTest {
             emptyMap()
         )
 
-        val metadata = mock<CpkMetadata>().also {
-            whenever(it.cpkId).thenReturn(cpkId)
-            whenever(it.manifest).thenReturn(cpkManifest)
-            whenever(it.mainBundle).thenReturn("main-bundle")
-            whenever(it.libraries).thenReturn(emptyList())
-            whenever(it.dependencies).thenReturn(emptyList())
-            whenever(it.cordappManifest).thenReturn(cordappManifest)
-            whenever(it.type).thenReturn(CpkType.UNKNOWN)
-            whenever(it.fileChecksum).thenReturn(hash)
-        }
+        val metadata = CpkMetadata(
+            cpkId = cpkId,
+            manifest = cpkManifest,
+            mainBundle = "main-bundle",
+            libraries = emptyList(),
+            dependencies = emptyList(),
+            cordappManifest = cordappManifest,
+            type = CpkType.UNKNOWN,
+            fileChecksum = hash,
+            cordappCertificates = emptySet(),
+            timestamp = Instant.now(),
+        )
         whenever(cpk.path).thenReturn(mockCpkContent.writeToPath())
         whenever(cpk.originalFileName).thenReturn(name)
         whenever(cpk.metadata).thenReturn(metadata)
@@ -208,14 +211,20 @@ internal class DatabaseChunkPersistenceTest {
     private fun mockCpi(cpks: Collection<Cpk>): Cpi {
         // We need a random name here as the database primary key is (name, version, signerSummaryHash)
         // and we'd end up trying to insert the same mock cpi.
-        val id = mock<CpiIdentifier>().also {
+        val id = mock<CpiIdentifier> {
             whenever(it.name).thenReturn("test " + UUID.randomUUID().toString())
             whenever(it.version).thenReturn("1.0")
             whenever(it.signerSummaryHash).thenReturn(SecureHash("SHA-256", ByteArray(12)))
         }
 
+        return mockCpiWithId(cpks, id)
+    }
+
+
+
+    private fun mockCpiWithId(cpks: Collection<Cpk>, cpiId: CpiIdentifier): Cpi {
         val metadata = mock<CpiMetadata>().also {
-            whenever(it.cpiId).thenReturn(id)
+            whenever(it.cpiId).thenReturn(cpiId)
             whenever(it.groupPolicy).thenReturn("{}")
         }
 
@@ -432,5 +441,34 @@ internal class DatabaseChunkPersistenceTest {
         assertThrows<PersistenceException> {
             persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
         }
+    }
+
+    @Test
+    fun `database chunk persistence can force update a CPI`() {
+        val cpiChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        val cpkChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        val cpk1 = mockCpk(cpkChecksum, "1.cpk")
+        val cpks = listOf(cpk1)
+        val cpi = mockCpi(cpks)
+
+        persistence.persistMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+
+        val updatedCpiChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        val updatedCpkChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        val updatedCpks = listOf(cpk1, mockCpk(updatedCpkChecksum, "2.cpk"))
+        // cpi with different CPKs but same ID
+        val updatedCpi = mockCpiWithId(updatedCpks, cpi.metadata.cpiId)
+
+        persistence.updateMetadataAndCpks(updatedCpi, "test.cpi", updatedCpiChecksum, UUID.randomUUID().toString(), "abcdef")
+
+        val loadedCpi = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                updatedCpi.metadata.cpiId.name,
+                updatedCpi.metadata.cpiId.version,
+                updatedCpi.metadata.cpiId.signerSummaryHash.toString(),
+            ))
+        }!!
+
+        assertThat(loadedCpi.cpks.size).isEqualTo(2)
     }
 }

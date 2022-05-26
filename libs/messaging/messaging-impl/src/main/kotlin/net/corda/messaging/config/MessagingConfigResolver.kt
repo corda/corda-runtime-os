@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messaging.api.exception.CordaAPIConfigException
+import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
@@ -46,7 +46,7 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
             ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, counter)
         } catch (e: ConfigException) {
             logger.error("Failed to resolve subscription config $subscriptionConfig: ${e.message}")
-            throw CordaAPIConfigException(
+            throw CordaMessageAPIConfigException(
                 "Failed to resolve subscription config $subscriptionConfig: ${e.message}",
                 e
             )
@@ -69,7 +69,7 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
             ResolvedPublisherConfig.merge(publisherConfig, config)
         } catch (e: ConfigException) {
             logger.error("Failed to resolve publisher config $publisherConfig: ${e.message}")
-            throw CordaAPIConfigException("Failed to resolve publisher config $publisherConfig: ${e.message}", e)
+            throw CordaMessageAPIConfigException("Failed to resolve publisher config $publisherConfig: ${e.message}", e)
         }
     }
 
@@ -77,7 +77,7 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
         val bundle = FrameworkUtil.getBundle(this::class.java)
         val url = bundle?.getResource(resource)
             ?: this::class.java.classLoader.getResource(resource)
-            ?: throw CordaAPIConfigException(
+            ?: throw CordaMessageAPIConfigException(
                 "Failed to get resource $resource from Kafka bus implementation bundle"
             )
         val config = ConfigFactory.parseURL(url)

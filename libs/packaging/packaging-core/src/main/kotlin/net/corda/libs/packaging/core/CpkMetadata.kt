@@ -1,14 +1,20 @@
 package net.corda.libs.packaging.core
 
 import net.corda.v5.crypto.SecureHash
+import org.apache.avro.io.DecoderFactory
+import org.apache.avro.io.EncoderFactory
+import org.apache.avro.specific.SpecificDatumReader
+import org.apache.avro.specific.SpecificDatumWriter
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.time.Instant
 import java.util.stream.Collectors
-import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
 import net.corda.data.crypto.SecureHash as AvroSecureHash
+import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
+
 
 /**
  * Represents a CPK file in the cluster
@@ -58,8 +64,15 @@ data class CpkMetadata(
                 other.timestamp
             )
         }
+
+        fun fromJsonAvro(payload: String): CpkMetadata {
+            val decoder = DecoderFactory.get().jsonDecoder(CpkMetadataAvro.`SCHEMA$`, payload)
+            val avroObj = SpecificDatumReader<CpkMetadataAvro>(CpkMetadataAvro.`SCHEMA$`).read(null, decoder)
+            return fromAvro(avroObj)
+        }
     }
 
+    // TODO - should we do these conversions back/forth or could this just be a proxy to the AVRO object itself?
     fun toAvro(): CpkMetadataAvro {
         return CpkMetadataAvro(
             cpkId.toAvro(),
@@ -77,5 +90,18 @@ data class CpkMetadata(
                     Collectors.toUnmodifiableList()),
             timestamp
         )
+    }
+
+    fun toJsonAvro(): String {
+        val avro = this.toAvro()
+        // This is fairly generic and could be moved out if there is a usecase for it elsewhere
+        SpecificDatumWriter<CpkMetadataAvro>(avro.schema).also { writer ->
+            ByteArrayOutputStream().use { out ->
+                val encoder = EncoderFactory.get().jsonEncoder(avro.schema, out)
+                writer.write(avro, encoder)
+                encoder.flush()
+                return out.toString(Charsets.UTF_8)
+            }
+        }
     }
 }

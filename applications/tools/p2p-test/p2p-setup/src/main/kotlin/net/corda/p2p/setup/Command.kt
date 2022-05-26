@@ -43,7 +43,7 @@ class Command {
     )
     private var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
-    internal fun nodeConfiguration(): SmartConfig {
+    internal fun messagingConfiguration(): SmartConfig {
         val secretsConfig = ConfigFactory.empty()
         return SmartConfigFactory.create(secretsConfig).create(
             ConfigFactory.empty()

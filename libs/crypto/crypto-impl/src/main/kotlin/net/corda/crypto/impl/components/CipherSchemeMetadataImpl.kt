@@ -6,9 +6,11 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.AlgorithmParameterSpecSerializer
 import net.corda.v5.cipher.suite.schemes.DigestScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -85,9 +87,49 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         PSSParameterSpec::class.java.name to PSSParameterSpecSerializer()
     )
 
-    override fun findSignatureScheme(algorithm: AlgorithmIdentifier): SignatureScheme =
+    private val providerMap by lazy(LazyThreadSafetyMode.PUBLICATION) { ProviderMap(this) }
+
+    override val schemes: List<KeyScheme> = listOf(
+        providerMap.RSA.scheme,
+        providerMap.ECDSA_SECP256K1.scheme,
+        providerMap.ECDSA_SECP256R1.scheme,
+        providerMap.EDDSA_ED25519.scheme,
+        providerMap.SPHINCS256.scheme,
+        providerMap.SM2.scheme,
+        providerMap.GOST3410_GOST3411.scheme,
+        providerMap.COMPOSITE_KEY
+    )
+
+    private val algorithmMap: Map<AlgorithmIdentifier, KeyScheme> = schemes.flatMap { scheme ->
+        scheme.algorithmOIDs.map { identifier -> identifier to scheme }
+    }.toMap()
+
+    override val digests: List<DigestScheme> = providerMap.providers.values
+        .flatMap { it.services }
+        .filter {
+            it.type.equals(MESSAGE_DIGEST_TYPE, true)
+                    && !CipherSchemeMetadata.BANNED_DIGESTS.contains(it.algorithm)
+                    && DIGEST_CANDIDATES.contains(it.algorithm)
+        }
+        .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
+        .distinctBy { it.algorithmName }
+
+    override val providers: Map<String, Provider> get() = providerMap.providers
+
+    override val secureRandom: SecureRandom get() = providerMap.secureRandom
+
+    override fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+
+    override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
+        providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
+
+    override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
+        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.values?.toList() ?: emptyList()
+
+    override fun inferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
+        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.keys?.toList() ?: emptyList()
 
     @Suppress("UNCHECKED_CAST")
     override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
@@ -100,52 +142,20 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         )
     }
 
-    override fun findSignatureScheme(key: PublicKey): SignatureScheme {
+    override fun findKeyScheme(key: PublicKey): KeyScheme {
         val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
-        return findSignatureScheme(keyInfo.algorithm)
+        return findKeyScheme(keyInfo.algorithm)
     }
 
-    private val providerMap by lazy(LazyThreadSafetyMode.PUBLICATION) { ProviderMap(this) }
-
-    override val schemes: Array<SignatureScheme> = arrayOf(
-        providerMap.RSA_SHA256,
-        providerMap.ECDSA_SECP256K1_SHA256,
-        providerMap.ECDSA_SECP256R1_SHA256,
-        providerMap.EDDSA_ED25519_NONE,
-        providerMap.SPHINCS256_SHA512,
-        providerMap.SM2_SM3,
-        providerMap.GOST3410_GOST3411,
-        providerMap.COMPOSITE_KEY
-    )
-
-    private val algorithmMap: Map<AlgorithmIdentifier, SignatureScheme> = schemes.flatMap { scheme ->
-        scheme.algorithmOIDs.map { identifier -> identifier to scheme }
-    }.toMap()
-
-    override val digests: Array<DigestScheme> = providerMap.providers.values
-        .flatMap { it.services }
-        .filter {
-            it.type.equals(MESSAGE_DIGEST_TYPE, true)
-                    && !CipherSchemeMetadata.BANNED_DIGESTS.contains(it.algorithm)
-                    && DIGEST_CANDIDATES.contains(it.algorithm)
-        }
-        .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
-        .distinctBy { it.algorithmName }
-        .toTypedArray()
-
-    override val providers: Map<String, Provider> get() = providerMap.providers
-
-    override val secureRandom: SecureRandom get() = providerMap.secureRandom
-
-    override fun findSignatureScheme(codeName: String): SignatureScheme =
+    override fun findKeyScheme(codeName: String): KeyScheme =
         schemes.firstOrNull { it.codeName == codeName }
             ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
 
-    override fun findKeyFactory(scheme: SignatureScheme): KeyFactory = providerMap.keyFactories[scheme]
+    override fun findKeyFactory(scheme: KeyScheme): KeyFactory = providerMap.keyFactories[scheme]
 
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-        val scheme = findSignatureScheme(subjectPublicKeyInfo.algorithm)
+        val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
         val keyFactory = providerMap.keyFactories[scheme]
         keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
     } catch (e: CryptoServiceLibraryException) {
@@ -189,7 +199,7 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
     }
 
     private fun getJcaPEMKeyConverter(publicKeyInfo: SubjectPublicKeyInfo): JcaPEMKeyConverter {
-        val scheme = findSignatureScheme(publicKeyInfo.algorithm)
+        val scheme = findKeyScheme(publicKeyInfo.algorithm)
         val converter = JcaPEMKeyConverter()
         converter.setProvider(providers[scheme.providerName])
         return converter

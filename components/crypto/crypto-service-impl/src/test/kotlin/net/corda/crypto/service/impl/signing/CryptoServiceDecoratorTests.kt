@@ -7,8 +7,8 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import org.junit.jupiter.api.BeforeEach
@@ -84,7 +84,7 @@ class CryptoServiceDecoratorTests {
     @Test
     fun `Should execute supportedSchemes`() {
         val circuitBreaker = createCircuitBreaker()
-        val expected = arrayOf<SignatureScheme>()
+        val expected = listOf<KeyScheme>()
         whenever(
             cryptoService.supportedSchemes()
         ).thenReturn(expected)
@@ -184,7 +184,7 @@ class CryptoServiceDecoratorTests {
         val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
         val expectedMasterKeyAlias = UUID.randomUUID().toString()
-        val scheme = RSA_SHA256_TEMPLATE.makeScheme(
+        val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
         val aliasSecret = ByteArray(1)
@@ -196,7 +196,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = expectedAlias,
             masterKeyAlias = expectedMasterKeyAlias,
-            signatureScheme = scheme,
+            keyScheme = scheme,
             secret = aliasSecret
         )
         whenever(
@@ -207,7 +207,7 @@ class CryptoServiceDecoratorTests {
         assertSame(expected, circuitBreaker.generateKeyPair(spec, context))
         Mockito.verify(cryptoService, times(1)).generateKeyPair(
             argThat {
-                signatureScheme == scheme &&
+                keyScheme == scheme &&
                         alias == expectedAlias &&
                         masterKeyAlias == expectedMasterKeyAlias &&
                         secret.contentEquals(aliasSecret)
@@ -225,7 +225,7 @@ class CryptoServiceDecoratorTests {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
+        val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
         val expected = CryptoServiceException("")
@@ -233,7 +233,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            signatureScheme = signatureScheme,
+            keyScheme = scheme,
             secret = null
         )
         whenever(
@@ -250,7 +250,7 @@ class CryptoServiceDecoratorTests {
         val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
+        val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
         val expected = RuntimeException()
@@ -258,7 +258,7 @@ class CryptoServiceDecoratorTests {
         val spec = KeyGenerationSpec(
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            signatureScheme = signatureScheme,
+            keyScheme = scheme,
             secret = null
         )
         whenever(

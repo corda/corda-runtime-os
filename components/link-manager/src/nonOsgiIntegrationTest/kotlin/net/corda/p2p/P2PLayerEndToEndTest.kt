@@ -30,6 +30,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.messaging.api.processor.DurableProcessor
@@ -72,9 +73,9 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
@@ -114,7 +115,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            RSA_SHA256_TEMPLATE,
+            RSA_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -124,7 +125,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                RSA_SHA256_TEMPLATE,
+                RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -165,7 +166,7 @@ class P2PLayerEndToEndTest {
             "ec_truststore",
             bootstrapConfig,
             false,
-            ECDSA_SECP256R1_SHA256_TEMPLATE,
+            ECDSA_SECP256R1_TEMPLATE,
         ).use { hostA ->
             Host(
                 "www.sender.net",
@@ -175,7 +176,7 @@ class P2PLayerEndToEndTest {
                 "ec_truststore",
                 bootstrapConfig,
                 false,
-                ECDSA_SECP256R1_SHA256_TEMPLATE,
+                ECDSA_SECP256R1_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -216,7 +217,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            RSA_SHA256_TEMPLATE,
+            RSA_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -226,7 +227,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                RSA_SHA256_TEMPLATE,
+                RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -312,21 +313,21 @@ class P2PLayerEndToEndTest {
         trustStoreFileName: String,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
-        signatureTemplate: SignatureSchemeTemplate,
+        keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
 
         private val sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
-        private val keyPair = KeyPairGenerator.getInstance(signatureTemplate.algorithmName, BouncyCastleProvider())
+        private val keyPair = KeyPairGenerator.getInstance(keyTemplate.algorithmName, BouncyCastleProvider())
             .also {
-                if (signatureTemplate.algSpec != null) {
-                    it.initialize(signatureTemplate.algSpec)
+                if (keyTemplate.algSpec != null) {
+                    it.initialize(keyTemplate.algSpec)
                 }
             }
             .genKeyPair()
         private val topicService = TopicServiceImpl()
-        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())

@@ -16,7 +16,7 @@ internal class InboundLinkManager(
     groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
     subscriptionFactory: SubscriptionFactory,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     clock: Clock,
 ) : LifecycleWithDominoTile {
     companion object {
@@ -31,7 +31,7 @@ internal class InboundLinkManager(
             commonComponents.inboundAssignmentListener,
             clock
         ),
-        configuration,
+        messagingConfiguration,
         partitionAssignmentListener = commonComponents.inboundAssignmentListener
     )
 

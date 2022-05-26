@@ -15,13 +15,20 @@ import java.util.UUID
  */
 object SandboxHelper {
     const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
+    const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
+    const val CAT_KEY_CLASS_NAME = "net.corda.testing.bundles.cats.CatKey"
+
 
     fun SandboxGroup.getDogClass(): Class<*> {
         return this.loadClassFromMainBundles(DOG_CLASS_NAME)
     }
 
+    fun SandboxGroup.getCatKeyClass(): Class<*> {
+        return this.loadClassFromMainBundles(CAT_KEY_CLASS_NAME)
+    }
+
     fun SandboxGroup.getCatClass(): Class<*> {
-        return this.loadClassFromMainBundles("net.corda.testing.bundles.cats.Cat")
+        return this.loadClassFromMainBundles(CAT_CLASS_NAME)
     }
 
     fun SandboxGroup.getOwnerClass(): Class<*> {
@@ -31,6 +38,11 @@ object SandboxHelper {
     fun SandboxGroupContext.createDogInstance(id: UUID, name: String, date: Instant, owner: String): Any {
         val dogCtor = this.sandboxGroup.getDogClass().getDeclaredConstructor(UUID::class.java, String::class.java, Instant::class.java, String::class.java)
         return dogCtor.newInstance(id, name, date, owner)
+    }
+
+    fun SandboxGroupContext.createCatKeyInstance(id: UUID, name: String): Any {
+        val keyCtor = this.sandboxGroup.getCatKeyClass().getDeclaredConstructor(UUID::class.java, String::class.java)
+        return keyCtor.newInstance(id, name)
     }
 
     fun SandboxGroupContext.createCatInstance(id: UUID, name: String, colour: String, ownerId: UUID, ownerName: String, ownerAge: Int): Any {
