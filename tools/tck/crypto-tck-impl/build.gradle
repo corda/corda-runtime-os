@@ -1,0 +1,37 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description 'Crypto TCK'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-cipher-suite"
+
+    api project(":tools:tck:crypto-tck")
+
+    implementation project(":components:crypto:crypto-service")
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-impl')
+    implementation project(':libs:crypto:crypto-serialization-impl')
+
+    implementation "org.assertj:assertj-core:$assertjVersion"
+    implementation "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    implementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    implementation "org.junit.platform:junit-platform-reporting:$junitPlatformVersion"
+    implementation "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+    implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+
+

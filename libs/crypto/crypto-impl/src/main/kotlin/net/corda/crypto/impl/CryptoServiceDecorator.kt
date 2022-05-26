@@ -1,8 +1,14 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.impl
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
@@ -21,6 +27,27 @@ class CryptoServiceDecorator(
 ) : CryptoService, AutoCloseable {
     companion object {
         private val logger = contextLogger()
+
+        private val jsonMapper = JsonMapper
+            .builder()
+            .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
+            .build()
+        private val objectMapper = jsonMapper
+            .registerModule(JavaTimeModule())
+            .registerModule(KotlinModule.Builder().build())
+            .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
+        fun create(
+            provider: CryptoServiceProvider<Any>,
+            serviceConfig: ByteArray,
+            retries: Int,
+            timeout: Duration
+        ): CryptoService = CryptoServiceDecorator(
+            cryptoService = provider.getInstance(objectMapper.readValue(serviceConfig, provider.configType)),
+            timeout = timeout,
+            retries = retries
+        )
     }
 
     @Suppress("ThrowsCount")
