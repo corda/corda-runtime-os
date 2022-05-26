@@ -4,5 +4,154 @@
   "title": "Corda Crypto Library Configuration Schema",
   "description": "Configuration schema for the crypto library subsection.",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "rootKey": {
+      "description": "Encryptor parameters (salt/passphrase) which are used to encrypt the HSM configurations.",
+      "type": "object",
+      "properties": {
+        "salt": {
+          "type": "string"
+        },
+        "passphrase": {
+          "description": "Secret value with Encryptor's passphrase.",
+          "type": "object",
+          "properties": {
+            "configSecret": {
+              "type": "object",
+              "properties": {
+                "encryptedSecret": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "encryptedSecret"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "configSecret"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "salt",
+        "passphrase"
+      ]
+    },
+    "softPersistence": {
+      "description": "Settings used by SOFT HSM.",
+      "type": "object",
+      "properties": {
+        "expireAfterAccessMins": {
+          "description": "Item's expiration time in minutes after accessing it in the wrapping key cache.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 60
+        },
+        "maximumSize": {
+          "description": "Maximum number of items in the wrapping key cache.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 100
+        },
+        "retries": {
+          "description": "Number of retries if call to the SOFT HSM fails, that value is copied to the corresponding HSM configuration.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "timeoutMills": {
+          "description": "Timeout in milliseconds when calling the SOFT HSM, it should be kept fairly big as RSA key generation may take a few seconds in a shared computing environment, that value is copied to the corresponding HSM configuration.",
+          "type": "integer",
+          "minimum": 2000,
+          "default": 20000
+        },
+        "salt": {
+          "description": "Salt to be used to derive the global master key to encrypt all other wrapping key used by SOFT HSM.",
+          "type": "string"
+        },
+        "passphrase": {
+          "description": "Secret value with passphrase to be used to derive the global master key to encrypt all other wrapping key used by SOFT HSM.",
+          "type": "object",
+          "properties": {
+            "configSecret": {
+              "type": "object",
+              "properties": {
+                "encryptedSecret": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "encryptedSecret"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "configSecret"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "salt",
+        "passphrase"
+      ]
+    },
+    "signingPersistence": {
+      "description": "Settings used by signing service persistence layer.",
+      "type": "object",
+      "properties": {
+        "expireAfterAccessMins": {
+          "description": "Item's expiration time in minutes after accessing it in the key metadata cache, the cache is created per tenant.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 60
+        },
+        "maximumSize": {
+          "description": "Maximum number of items in the key metadata cache, the cache is created per tenant.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 100
+        }
+      },
+      "additionalProperties": false
+    },
+    "hsmPersistence": {
+      "description": "Settings used by HSM configuration persistence layer.",
+      "type": "object",
+      "properties": {
+        "expireAfterAccessMins": {
+          "description": "Item's expiration time in minutes after accessing it in the cache.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 60
+        },
+        "maximumSize": {
+          "description": "Maximum number of items in the cache.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 100
+        },
+        "downstreamRetries": {
+          "description": "Number of retries when calling downstream services, like creating wrapping key on configuring new HSM.",
+          "type": "integer",
+          "minimum": 3,
+          "default": 3
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "rootKey",
+    "softPersistence",
+    "signingPersistence",
+    "hsmPersistence"
+  ]
 }
