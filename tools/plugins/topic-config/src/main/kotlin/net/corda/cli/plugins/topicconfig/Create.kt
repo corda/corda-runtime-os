@@ -97,18 +97,15 @@ class Create(
         getEntries: (JarFile) -> List<JarEntry> = { jar: JarFile -> jar.entries().toList() }
     ): Map<String, *> {
         return jars.flatMap { jar: JarFile ->
-            val yamlFiles = getEntries(jar)
-                .map { entry ->
-                    entry
-                }.filter {
+            val yamlFiles = getEntries(jar).filter {
                     extensions.contains(it.name.substringAfterLast("."))
                 }
 
-            return@flatMap yamlFiles.map { entry: JarEntry ->
+            yamlFiles.map { entry: JarEntry ->
                 val data: String = jar.getInputStream(entry)
                     .bufferedReader(Charset.defaultCharset()).use { it.readText() }
                 val parsedData: TopicDefinitions = mapper.readValue(data)
-                return@map entry.name to parsedData
+                entry.name to parsedData
             }
         }.toMap()
     }
@@ -127,7 +124,7 @@ class Create(
     fun createConfigString(config: Map<String, String>): String {
         if (config.entries.isNotEmpty()) {
             val values = config.entries.map { configEntry ->
-                return@map "--config \"${configEntry.key}=${configEntry.value}\""
+                "--config \"${configEntry.key}=${configEntry.value}\""
             }.joinToString(" ")
             return values
         } else {
@@ -168,7 +165,7 @@ class Create(
             val config = topicConfig.config
             val topicScripts = createTopicScripts(topicName, partitions, replicas, config)
             val acls = createACLs(topicName, topicConfig.consumers, topicConfig.producers)
-            return@flatMap topicScripts + acls
+            topicScripts + acls
         } + "wait"
 
         if (outputLocation != null) {
