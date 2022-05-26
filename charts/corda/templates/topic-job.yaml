@@ -28,21 +28,21 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
-            { { - if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name } }
+            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
             - mountPath: "/certs"
               name: certs
               readOnly: true
-            { { - end } }
+            {{- end }}
       volumes:
         - name: working-volume
           emptyDir: {}
-        { { - if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name } }
+        {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
         - name: certs
           secret:
             secretName: { { .Values.kafka.tls.truststore.secretRef.name | quote } }
             items:
               - key: { { .Values.kafka.tls.truststore.secretRef.key | quote } }
                 path: ca.crt
-        { { - end } }
+        {{- end }}
       restartPolicy: Never
   backoffLimit: 0
