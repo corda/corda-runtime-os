@@ -17,7 +17,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig

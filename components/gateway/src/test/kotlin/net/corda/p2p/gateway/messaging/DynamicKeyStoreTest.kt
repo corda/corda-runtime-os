@@ -2,8 +2,8 @@ package net.corda.p2p.gateway.messaging
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -45,13 +45,14 @@ class DynamicKeyStoreTest {
         on { createCompactedSubscription(any(), processor.capture(), eq(nodeConfiguration)) } doReturn subscription
     }
     private val certificateFactory = mock<CertificateFactory>()
-    private var createResources: ((ResourcesHolder) -> CompletableFuture<Unit>)? = null
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
-        @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as? ((ResourcesHolder) -> CompletableFuture<Unit>)
-    }
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java)
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val signer = mockConstruction(StubCryptoProcessor::class.java)
+    private var future: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        future = context.arguments()[2] as CompletableFuture<Unit>
+    }
 
     private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
@@ -66,23 +67,19 @@ class DynamicKeyStoreTest {
         subscriptionDominoTile.close()
         dominoTile.close()
         signer.close()
+        blockingDominoTile.close()
     }
 
     @Nested
     inner class CreateResourcesTest {
-        private val resourcesHolder = ResourcesHolder()
 
         @Test
         fun `create resources will not complete without snapshots`() {
-            val future = createResources?.invoke(resourcesHolder)
-
             assertThat(future).isNotCompleted
         }
 
         @Test
         fun `create resources will complete with snapshots`() {
-            val future = createResources?.invoke(resourcesHolder)
-
             processor.firstValue.onSnapshot(emptyMap())
 
             assertThat(future).isCompleted

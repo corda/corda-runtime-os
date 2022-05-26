@@ -2,9 +2,9 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,7 +29,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class TrustStoresPublisherTest {
     private val processor = argumentCaptor<CompactedProcessor<String, GatewayTruststore>>()
@@ -44,10 +43,13 @@ class TrustStoresPublisherTest {
         } doReturn subscription
     }
     private val publishedRecords = argumentCaptor<List<Record<String, GatewayTruststore>>>()
-    private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
-    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
+        ready = context.arguments()[2] as CompletableFuture<Unit>
+    }
+    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
+        whenever(mock.isRunning).doReturn(true)
     }
     private val mockPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
@@ -77,6 +79,7 @@ class TrustStoresPublisherTest {
     @AfterEach
     fun cleanUp() {
         mockDominoTile.close()
+        blockingDominoTile.close()
         mockPublisher.close()
         subscriptionDominoTile.close()
     }
@@ -87,7 +90,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `groupAdded will publish unpublished group`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
 
             trustStoresPublisher.groupAdded(groupInfo)
@@ -100,7 +102,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `groupAdded will not republish certificates`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             trustStoresPublisher.groupAdded(groupInfo)
 
@@ -112,7 +113,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `groupAdded will not republish certificates in different order`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             trustStoresPublisher.groupAdded(groupInfo)
 
@@ -128,7 +128,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `groupAdded will republish new certificates`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             trustStoresPublisher.groupAdded(groupInfo)
             val certificatesTwo = listOf("two", "three")
@@ -148,7 +147,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `publishGroupIfNeeded will wait for certificates to be published`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(emptyMap())
             val future = mock<CompletableFuture<Unit>>()
             whenever(mockPublisher.constructed().first().publish(any())).doReturn(listOf(future))
@@ -159,29 +157,8 @@ class TrustStoresPublisherTest {
         }
 
         @Test
-        fun `groupAdded will not publish before the subscription started`() {
-            trustStoresPublisher.groupAdded(groupInfo)
-
-            verify(mockPublisher.constructed().first(), never()).publish(any())
-        }
-
-        @Test
-        fun `groupAdded will not publish before it has the snapshots`() {
-            trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
-
-            trustStoresPublisher.groupAdded(groupInfo)
-
-            verify(mockPublisher.constructed().first(), never()).publish(any())
-        }
-
-        @Test
-        fun `groupAdded will not publish before the publisher is ready`() {
-            trustStoresPublisher.start()
-            whenever(mockPublisher.constructed().first().isRunning).doReturn(false)
-            creteResources.get().invoke(ResourcesHolder())
-            processor.firstValue.onSnapshot(emptyMap())
-
+        fun `groupAdded will not publish before the domino tile is started`() {
+            whenever(mockDominoTile.constructed().single().isRunning).doReturn(false)
             trustStoresPublisher.groupAdded(groupInfo)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())
@@ -191,7 +168,6 @@ class TrustStoresPublisherTest {
         fun `groupAdded will publish after it has the snapshot`() {
             trustStoresPublisher.groupAdded(groupInfo)
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onSnapshot(emptyMap())
             processor.firstValue.onSnapshot(emptyMap())
@@ -205,17 +181,15 @@ class TrustStoresPublisherTest {
         @Test
         fun `onSnapshot mark the publisher as ready`() {
             trustStoresPublisher.start()
-            val future = creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onSnapshot(emptyMap())
 
-            assertThat(future.isDone).isTrue
+            assertThat(ready!!.isDone).isTrue
         }
 
         @Test
         fun `onSnapshot save the data correctly`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onSnapshot(
                 mapOf(
@@ -233,7 +207,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `onNext remove item from published stores`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
             processor.firstValue.onSnapshot(
                 mapOf(
                     groupInfo.groupId to GatewayTruststore(
@@ -258,7 +231,6 @@ class TrustStoresPublisherTest {
         @Test
         fun `onNext add item to published stores`() {
             trustStoresPublisher.start()
-            creteResources.get().invoke(ResourcesHolder())
 
             processor.firstValue.onNext(
                 Record(
@@ -279,9 +251,7 @@ class TrustStoresPublisherTest {
     inner class CreateResourcesTests {
         @Test
         fun `createResources will not complete before the snapshot is ready`() {
-            val future = creteResources.get().invoke(ResourcesHolder())
-
-            assertThat(future.isDone).isFalse
+            assertThat(ready!!.isDone).isFalse
         }
     }
 }

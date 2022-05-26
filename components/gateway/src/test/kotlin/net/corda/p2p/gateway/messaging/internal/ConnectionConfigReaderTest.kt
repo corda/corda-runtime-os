@@ -19,7 +19,7 @@ class ConnectionConfigReaderTest {
 
     private val domino = mockConstruction(ComplexDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        configChangeHandler = context.arguments()[5] as ConfigurationChangeHandler<GatewayConfiguration>?
+        configChangeHandler = context.arguments()[7] as ConfigurationChangeHandler<GatewayConfiguration>?
     }
     private val coordinatorFactory = mock(LifecycleCoordinatorFactory::class.java)
     private val configReadService = mock(ConfigurationReadService::class.java)

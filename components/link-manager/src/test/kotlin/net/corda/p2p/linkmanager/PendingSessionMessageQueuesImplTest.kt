@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -45,6 +46,8 @@ class PendingSessionMessageQueuesImplTest {
         whenever(mock.isRunning).doReturn(true)
         val dominoTile = mock<ComplexDominoTile> {
             on { isRunning } doReturn true
+            @Suppress("UNCHECKED_CAST")
+            on { withLifecycleLock(any<() -> Any>()) } doAnswer { (it.arguments.first() as () -> Any).invoke() }
         }
         whenever(mock.dominoTile).doReturn(dominoTile)
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())

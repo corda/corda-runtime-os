@@ -2,8 +2,8 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -34,11 +34,12 @@ class StubGroupPolicyProviderTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), eq(configuration)) } doReturn mock()
     }
-    private lateinit var ready: CompletableFuture<Unit>
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        val createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
-        ready = createResources.invoke(mock())
+        ready = context.arguments()[2] as CompletableFuture<Unit>
+    }
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
     }
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
@@ -69,6 +70,7 @@ class StubGroupPolicyProviderTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
+        blockingDominoTile.close()
     }
 
     @Test

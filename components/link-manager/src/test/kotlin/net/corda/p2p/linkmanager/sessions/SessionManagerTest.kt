@@ -139,27 +139,21 @@ class SessionManagerTest {
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
     private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
-    private var createResourcesCallbacks = mutableMapOf<String, ((resources: ResourcesHolder) -> CompletableFuture<Unit>)>()
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        if (context.arguments()[5] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-            configHandler = context.arguments()[5] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        if (context.arguments()[7] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
+            configHandler = context.arguments()[7] as SessionManagerImpl.SessionManagerConfigChangeHandler
         }
-        if (context.arguments()[5] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[5] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
-        }
-        if (context.arguments()[2] != null) {
-            @Suppress("UNCHECKED_CAST")
-            createResourcesCallbacks[context.arguments()[0] as String] =
-                context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+        if (context.arguments()[7] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[7] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
         }
     }
     private val publisherWithDominoLogicByClientId = mutableMapOf<String, MutableList<PublisherWithDominoLogic>>()
     private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, context ->
-        publisherWithDominoLogicByClientId.compute((context.arguments()[2] as PublisherConfig).clientId) { _, map ->
+        publisherWithDominoLogicByClientId.compute((context.arguments()[3] as PublisherConfig).clientId) { _, map ->
             map?.apply { this.add(mock) } ?: mutableListOf(mock)
         }
     }
@@ -1049,8 +1043,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourceHolder) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(resourceHolder) }
         }
         sessionManager.start()
 
@@ -1100,8 +1092,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourceHolder) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(resourceHolder) }
         }
         sessionManager.start()
 
@@ -1172,7 +1162,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1233,7 +1222,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1293,7 +1281,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1360,7 +1347,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { invocation ->
@@ -1428,7 +1414,6 @@ class SessionManagerTest {
                 mock(),
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
             whenever(it.publish(any())).doAnswer { publish() }

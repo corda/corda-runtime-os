@@ -3,8 +3,8 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -40,11 +40,12 @@ class StubLinkManagerHostingMapTest {
         } doReturn subscription
     }
     private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
-    private var createResources: ((ResourcesHolder) -> CompletableFuture<Unit>)? = null
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as? ((ResourcesHolder) -> CompletableFuture<Unit>)
+        ready = context.arguments()[2] as CompletableFuture<Unit>
     }
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java)
     private val publicKeyOne = mock<PublicKey> {
         on { encoded } doReturn byteArrayOf(0, 1, 2)
     }
@@ -72,6 +73,7 @@ class StubLinkManagerHostingMapTest {
     @AfterEach
     fun cleanUp() {
         subscriptionTile.close()
+        blockingDominoTile.close()
         dominoTile.close()
         publicKeyReader.close()
         keyHasher.close()
@@ -109,23 +111,18 @@ class StubLinkManagerHostingMapTest {
 
     @Test
     fun `onSnapshot complete the future`() {
-        val resourceHolder = ResourcesHolder()
-        val future = createResources?.invoke(resourceHolder)
         processor.firstValue.onSnapshot(
             mapOf(
                 "key" to entryOne
             )
         )
 
-        assertThat(future).isCompleted
+        assertThat(ready).isCompleted
     }
 
     @Test
     fun `future will not complete before onSnapshot`() {
-        val resourceHolder = ResourcesHolder()
-        val future = createResources?.invoke(resourceHolder)
-
-        assertThat(future).isNotCompleted
+        assertThat(ready).isNotCompleted
     }
 
     @Test

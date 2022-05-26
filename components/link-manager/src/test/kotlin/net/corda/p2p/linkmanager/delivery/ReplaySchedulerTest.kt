@@ -52,7 +52,7 @@ class ReplaySchedulerTest {
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        configHandler = context.arguments()[5] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
+        configHandler = context.arguments()[7] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
 

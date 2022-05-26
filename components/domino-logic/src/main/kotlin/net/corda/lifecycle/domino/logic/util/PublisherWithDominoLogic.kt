@@ -32,10 +32,22 @@ class PublisherWithDominoLogic(
     )
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return publisher.publishToPartition(records)
+        return dominoTile.withLifecycleLock {
+            if (dominoTile.isRunning) {
+                publisher.publishToPartition(records)
+            } else {
+                throw IllegalStateException("Publisher had not started")
+            }
+        }
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return publisher.publish(records)
+        return dominoTile.withLifecycleLock {
+            if (dominoTile.isRunning) {
+                publisher.publish(records)
+            } else {
+                throw IllegalStateException("Publisher had not started")
+            }
+        }
     }
 }

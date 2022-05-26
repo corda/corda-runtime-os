@@ -73,7 +73,13 @@ class DependenciesVerifierTest {
     private fun tile(name: String,
                      dependentChildren: Collection<ComplexDominoTile> = emptyList(),
                      managedChildren: Collection<ComplexDominoTile> = emptyList()): ComplexDominoTile {
-        return ComplexDominoTile(name, lifecycleCoordinatorFactory, mock(),null, dependentChildren, managedChildren, null)
+        return ComplexDominoTile(
+            name,
+            lifecycleCoordinatorFactory,
+            mock(),
+            dependentChildren =  dependentChildren,
+            managedChildren = managedChildren
+        )
     }
 
 }

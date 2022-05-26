@@ -23,9 +23,12 @@ class PublisherWithDominoLogicTest {
 
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
+        var currentStatus: LifecycleStatus = LifecycleStatus.DOWN
         on { postEvent(any()) } doAnswer {
             handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
+        on { updateStatus(any(), any()) } doAnswer { currentStatus =  it.getArgument(0) }
+        on { status } doAnswer { currentStatus }
     }
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
@@ -36,7 +39,7 @@ class PublisherWithDominoLogicTest {
         on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
     }
 
-    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig(""), messagingConfig)
+    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, mock(), PublisherConfig(""), messagingConfig)
 
     @Test
     fun `createResources will start the publisher`() {
@@ -53,9 +56,9 @@ class PublisherWithDominoLogicTest {
     }
 
     @Test
-    fun `createResources will remember to close the publisher`() {
+    fun `close will remember to close the publisher`() {
         wrapper.start()
-        wrapper.stop()
+        wrapper.close()
 
         verify(publisher).close()
     }

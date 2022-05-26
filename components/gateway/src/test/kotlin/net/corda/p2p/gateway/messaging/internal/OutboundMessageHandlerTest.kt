@@ -11,8 +11,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.Record
@@ -42,7 +40,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -52,6 +49,7 @@ import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.ScheduledExecutorService
 
 class OutboundMessageHandlerTest {
     companion object {
@@ -103,17 +101,13 @@ class OutboundMessageHandlerTest {
     }
 
     private var handlerStarted = true
-    private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var future: CompletableFuture<Unit>
+    private var onClose: (() -> Unit)? = null
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doAnswer { handlerStarted }
-        if (context.arguments()[2] != null) {
-            @Suppress("UNCHECKED_CAST")
-            val createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-            future = createResources(resourcesHolder)
-        }
+        @Suppress("UNCHECKED_CAST")
+        onClose = context.arguments()[4] as? (() -> Unit)
     }
     private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
     private val connectionConfigReader = mockConstruction(ConnectionConfigReader::class.java) { mock, _ ->
@@ -138,13 +132,17 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
-        verify(resourcesHolder).keep(isA<AutoClosableExecutorService>())
-    }
-
-    @Test
-    fun `on createResource the ReplayScheduler completes the future`() {
-        assertThat(future).isCompletedWithValue(Unit)
+    fun `onClose closes the scheduled executor service`() {
+        val mockExecutorService = mock<ScheduledExecutorService>()
+        OutboundMessageHandler(
+            lifecycleCoordinatorFactory,
+            mock(),
+            configurationReaderService,
+            subscriptionFactory,
+            SmartConfigImpl.empty(),
+        ) { mockExecutorService }
+        onClose!!.invoke()
+        verify(mockExecutorService).shutdown()
     }
 
     @Test
