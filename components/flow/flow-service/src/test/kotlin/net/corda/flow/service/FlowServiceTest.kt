@@ -53,7 +53,7 @@ class FlowServiceTest {
     }
 
     @Test
-    fun `configuration service update registration once all all dependent components up`() {
+    fun `configuration service event registration once all dependent components are up`() {
         val context = getFlowServiceTestContext()
         val flowServiceCoordinator = context.getCoordinatorFor<FlowService>()
         context.run {
