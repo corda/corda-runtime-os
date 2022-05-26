@@ -3,6 +3,7 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,15 +19,10 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.DEROctetString
-import org.bouncycastle.asn1.DERUTF8String
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.Extension
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralNames
-import org.bouncycastle.asn1.x509.KeyPurposeId.id_kp_emailProtection
-import org.bouncycastle.asn1.x509.KeyPurposeId.id_kp_serverAuth
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.junit.jupiter.api.BeforeEach
@@ -186,7 +182,7 @@ class KeysRpcOpsImplTest {
         private val holdingIdentityId = "id"
         private val keyId = "keyId"
         private val x500Name = "CN=Alice"
-        private val email = "name@r3.com"
+        private val role = "TLS"
         private val publicKeyBytes = "123".toByteArray()
         private val schema = ECDSA_SECP256K1_SHA256_TEMPLATE.makeScheme("Test")
         private val key = mock<CryptoSigningKey> {
@@ -230,7 +226,7 @@ class KeysRpcOpsImplTest {
                     holdingIdentityId,
                     keyId,
                     x500Name,
-                    email,
+                    role,
                     null,
                     null
                 )
@@ -243,7 +239,7 @@ class KeysRpcOpsImplTest {
                 holdingIdentityId,
                 keyId,
                 x500Name,
-                email,
+                role,
                 null,
                 null
             )
@@ -257,7 +253,7 @@ class KeysRpcOpsImplTest {
                 holdingIdentityId,
                 keyId,
                 x500Name,
-                email,
+                role,
                 null,
                 null
             )
@@ -266,74 +262,14 @@ class KeysRpcOpsImplTest {
         }
 
         @Test
-        fun `it adds server auth as extended usage if non had been specify`() {
-            val pem = keysOps.generateCsr(
-                holdingIdentityId,
-                keyId,
-                x500Name,
-                email,
-                null,
-                null
-            )
-
-            assertThat(
-                pem.fromPem()
-                    .requestedExtensions
-                    .getExtension(Extension.extendedKeyUsage)
-            ).isEqualTo(
-                Extension(
-                    Extension.extendedKeyUsage,
-                    true,
-                    DEROctetString(
-                        ExtendedKeyUsage(
-                            arrayOf(
-                                id_kp_serverAuth
-                            )
-                        )
-                    )
-                )
-            )
-        }
-
-        @Test
-        fun `it adds explicit purpose when one is provided`() {
-            val pem = keysOps.generateCsr(
-                holdingIdentityId,
-                keyId,
-                x500Name,
-                email,
-                "1.3.6.1.5.5.7.3.4",
-                null
-            )
-
-            assertThat(
-                pem.fromPem()
-                    .requestedExtensions
-                    .getExtension(Extension.extendedKeyUsage)
-            ).isEqualTo(
-                Extension(
-                    Extension.extendedKeyUsage,
-                    true,
-                    DEROctetString(
-                        ExtendedKeyUsage(
-                            arrayOf(
-                                id_kp_emailProtection
-                            )
-                        )
-                    )
-                )
-            )
-        }
-
-        @Test
         fun `it adds alternative subject names when some are provided`() {
             val pem = keysOps.generateCsr(
                 holdingIdentityId,
                 keyId,
                 x500Name,
-                email,
+                role,
+                listOf("www.alice.net", "alice.net"),
                 null,
-                listOf("www.alice.net", "alice.net")
             )
 
             assertThat(
@@ -362,7 +298,7 @@ class KeysRpcOpsImplTest {
                 holdingIdentityId,
                 keyId,
                 x500Name,
-                email,
+                role,
                 null,
                 null,
             )
@@ -380,50 +316,15 @@ class KeysRpcOpsImplTest {
                 holdingIdentityId,
                 keyId,
                 x500Name,
-                email,
+                role,
                 null,
-                null,
+                emptyMap(),
             )
 
             assertThat(
                 pem.fromPem()
                     .subject
             ).isEqualTo(X500Name(x500Name))
-        }
-
-        @Test
-        fun `it will use the correct email address`() {
-            val pem = keysOps.generateCsr(
-                holdingIdentityId,
-                keyId,
-                x500Name,
-                email,
-                null,
-                null,
-            )
-
-            assertThat(
-                pem.fromPem()
-                    .getAttributes(PKCSObjectIdentifiers.pkcs_9_at_emailAddress).flatMap { it.attributeValues.toList() }
-            ).hasSize(1)
-                .contains(DERUTF8String(email))
-        }
-
-        @Test
-        fun `it will not use the email address if not provided`() {
-            val pem = keysOps.generateCsr(
-                holdingIdentityId,
-                keyId,
-                x500Name,
-                null,
-                null,
-                null,
-            )
-
-            assertThat(
-                pem.fromPem()
-                    .getAttributes(PKCSObjectIdentifiers.pkcs_9_at_emailAddress)
-            ).isEmpty()
         }
 
         @Test
@@ -435,7 +336,7 @@ class KeysRpcOpsImplTest {
                     holdingIdentityId,
                     keyId,
                     x500Name,
-                    email,
+                    role,
                     null,
                     null,
                 )
@@ -453,9 +354,25 @@ class KeysRpcOpsImplTest {
                     holdingIdentityId,
                     keyId,
                     x500Name,
-                    email,
+                    role,
                     null,
                     null,
+                )
+            }
+        }
+
+        @Test
+        fun `it will throw an exception for invalid contextMap`() {
+            whenever(cipherSchemeMetadata.schemes).doReturn(emptyArray())
+
+            assertThrows<InvalidInputDataException> {
+                keysOps.generateCsr(
+                    holdingIdentityId,
+                    keyId,
+                    x500Name,
+                    role,
+                    null,
+                    mapOf("key" to "value"),
                 )
             }
         }

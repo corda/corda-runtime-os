@@ -4,6 +4,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,20 +16,14 @@ import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
-import org.bouncycastle.asn1.ASN1ObjectIdentifier
-import org.bouncycastle.asn1.DERUTF8String
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_emailAddress
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.pkcs_9_at_extensionRequest
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.Extension
-import org.bouncycastle.asn1.x509.Extension.extendedKeyUsage
 import org.bouncycastle.asn1.x509.Extension.subjectAlternativeName
 import org.bouncycastle.asn1.x509.ExtensionsGenerator
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralName.dNSName
 import org.bouncycastle.asn1.x509.GeneralNames
-import org.bouncycastle.asn1.x509.KeyPurposeId
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.jce.X509KeyUsage.digitalSignature
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
@@ -102,10 +97,13 @@ class KeysRpcOpsImpl @Activate constructor(
         tenantId: String,
         keyId: String,
         x500name: String,
-        emailAddress: String?,
-        keyUsageExtension: String?,
+        certificateRole: String,
         subjectAlternativeNames: List<String>?,
+        contextMap: Map<String, String?>?,
     ): String {
+        if (contextMap != null && contextMap.isNotEmpty()) {
+            throw InvalidInputDataException("contextMap for $certificateRole can not hold any content")
+        }
         val key = cryptoOpsClient.lookup(
             tenantId = tenantId,
             ids = listOf(keyId)
@@ -115,20 +113,6 @@ class KeysRpcOpsImpl @Activate constructor(
         val extensionsGenerator = ExtensionsGenerator()
         extensionsGenerator.addExtension(
             Extension.keyUsage, true, KeyUsage(digitalSignature)
-        )
-        val purpose = if (keyUsageExtension == null) {
-            KeyPurposeId.id_kp_serverAuth
-        } else {
-            KeyPurposeId.getInstance(ASN1ObjectIdentifier(keyUsageExtension))
-        }
-        extensionsGenerator.addExtension(
-            extendedKeyUsage,
-            true,
-            ExtendedKeyUsage(
-                arrayOf(
-                    purpose
-                )
-            )
         )
         subjectAlternativeNames?.forEach { name ->
             val altName = GeneralName(dNSName, name)
@@ -141,10 +125,6 @@ class KeysRpcOpsImpl @Activate constructor(
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
             X500Principal(x500name), publicKey
         )
-
-        if (emailAddress != null) {
-            p10Builder.addAttribute(pkcs_9_at_emailAddress, DERUTF8String(emailAddress))
-        }
 
         p10Builder
             .addAttribute(pkcs_9_at_extensionRequest, extensionsGenerator.generate())

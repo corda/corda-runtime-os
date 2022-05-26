@@ -4,7 +4,6 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
@@ -103,20 +102,20 @@ interface KeysRpcOps : RpcOps {
     ): String
 
     /**
-     * GET endpoint which Generate a certificate signing request (CSR) for a holding identity.
+     * POST endpoint which Generate a certificate signing request (CSR) for a holding identity.
      *
      * @param tenantId The tenant ID.
      * @param keyId The Key ID.
      * @param x500name A valid X500 name.
-     * @param emailAddress The email address.
-     * @param keyUsageExtension - OID to a valid key usage extension (default to server auth).
+     * @param certificateRole - The certificate role
      * @param subjectAlternativeNames - list of subject alternative DNS names
+     * @param contextMap - Any additional atttributes to add to the CSR.
      *
      * @return The CSR in PEM format.
      */
     @Suppress("LongParameterList")
-    @HttpRpcGET(
-        path = "{tenantId}/{keyId}/{x500Name}",
+    @HttpRpcPOST(
+        path = "{tenantId}/{keyId}/csr",
         description = "Generate certificate signing request (CSR)."
     )
     fun generateCsr(
@@ -124,24 +123,25 @@ interface KeysRpcOps : RpcOps {
         tenantId: String,
         @HttpRpcPathParameter(description = "The Key ID.")
         keyId: String,
-        @HttpRpcPathParameter(
+        @HttpRpcRequestBodyParameter(
             description = "The X500 name",
+            required = true,
         )
         x500name: String,
-        @HttpRpcQueryParameter(
-            description = "The email address",
-            required = false,
+        @HttpRpcRequestBodyParameter(
+            description = "Certificate role. For example: TLS, SESSION_INIT, ...",
+            required = true,
         )
-        emailAddress: String? = null,
-        @HttpRpcQueryParameter(
-            description = "The key usage extension",
-            required = false,
-        )
-        keyUsageExtension: String? = null,
-        @HttpRpcQueryParameter(
+        certificateRole: String,
+        @HttpRpcRequestBodyParameter(
             description = "Subject alternative names",
             required = false,
         )
         subjectAlternativeNames: List<String>?,
+        @HttpRpcRequestBodyParameter(
+            description = "Context Map",
+            required = false,
+        )
+        contextMap: Map<String, String?>?,
     ): String
 }
