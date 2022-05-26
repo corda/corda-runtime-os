@@ -68,7 +68,7 @@ data class CpiMetadataEntity(
     var entityVersion: Int = 0
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")
-    val cpks: Set<CpkMetadataEntity> = emptySet()
+    val cpks: Set<CpkEntity> = emptySet()
 
     // Initial population of this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = true)
@@ -88,9 +88,7 @@ data class CpiMetadataEntityKey(
 fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
     return createQuery(
         "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
-                "left join fetch cpi_.cpks cpks_ " +
-                "left join fetch cpks_.cpkLibraries " +
-                "left join fetch cpks_.cpkDependencies ",
+                "left join fetch cpi_.cpks cpks_ ",
         CpiMetadataEntity::class.java
     ).resultStream
 }
