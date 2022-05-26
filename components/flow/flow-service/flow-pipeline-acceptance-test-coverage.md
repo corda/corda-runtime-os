@@ -56,7 +56,8 @@ This document should be maintained so that we can ensure that we have quick visi
 - Given two sessions receiving a session data event for one and a session error event for the other resumes the flow with an error ✅
 - Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error ✅
 - Given two sessions receiving a session data event for one session and a session close event for the other resumes the flow with an error ✅
-- Given two sessions receiving session data events for both sessions resumes the flow with an error ✅
+- Given two sessions receiving session close events for both sessions resumes the flow with an error ✅
+- Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow  ✅
 
 ## Closing
 
