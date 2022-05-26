@@ -39,9 +39,9 @@ spec:
         {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
         - name: certs
           secret:
-            secretName: { { .Values.kafka.tls.truststore.secretRef.name | quote } }
+            secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
             items:
-              - key: { { .Values.kafka.tls.truststore.secretRef.key | quote } }
+              - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
                 path: ca.crt
         {{- end }}
       restartPolicy: Never
