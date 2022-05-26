@@ -36,6 +36,7 @@
             <column name="file_upload_request_id" type="VARCHAR(255)">
                 <constraints nullable="true"/>
             </column>
+            <!-- audit -->
             <column name="entity_version" type="INT">
                 <constraints nullable="false"/>
             </column>
@@ -58,8 +59,14 @@
             <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <!-- TODO: bin data type for postgres -->
             <column name="data" type="BLOB">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
             <column name="insert_ts" type="TIMESTAMP"
@@ -71,6 +78,80 @@
         <addPrimaryKey tableName="cpk" columnNames="file_checksum" constraintName="cpk_pk"
                        schemaName="${schema.name}"/>
 
+        <createTable tableName="cpk_metadata" schemaName="${schema.name}">
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="format_version" type="VARCHAR(12)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- This could change to JSONB for postgres for easier querying but may not add much benefit -->
+            <column name="metadata" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_metadata" columnNames="file_checksum" constraintName="cpk_metadata_pk"
+                       schemaName="${schema.name}"/>
+
+        <addForeignKeyConstraint baseTableName="cpk_metadata" baseColumnNames="file_checksum"
+                                 referencedTableName="cpk" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpk_metadata_cpk"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+
+        <createTable tableName="cpk_db_change_log" schemaName="${schema.name}">
+            <column name="cpk_file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_path" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_db_change_log" columnNames="cpk_file_checksum, file_path" constraintName="cpk_db_change_log_pk"
+                       schemaName="${schema.name}"/>
+
+        <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
+                                 referencedTableName="cpk" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpk_db_change_log_cpk"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+
         <createTable tableName="cpi_cpk" schemaName="${schema.name}">
             <column name="cpi_name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -81,33 +162,18 @@
             <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="cpk_file_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
             <column name="cpk_file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="cpk_main_bundle_name" type="VARCHAR(255)">
+            <column name="cpk_file_name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="cpk_main_bundle_version" type="VARCHAR(255)">
+            <!-- audit -->
+            <column name="entity_version" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
+            <column name="is_deleted" type="BOOLEAN">
                 <constraints nullable="false"/>
-            </column>
-            <column name="cpk_manifest_major_version" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_manifest_minor_version" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <!-- duplicate with cpk_main_bundle_name? -->
-            <column name="cpk_main_bundle" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_type" type="VARCHAR(255)">
-                <constraints nullable="true"/>
             </column>
             <column name="insert_ts" type="TIMESTAMP"
                     defaultValueComputed="CURRENT_TIMESTAMP">
@@ -130,135 +196,5 @@
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
-        <createTable tableName="cpk_library" schemaName="${schema.name}">
-            <column name="cpi_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_file_checksum" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="library_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-
-        <addPrimaryKey tableName="cpk_library"
-                       columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum, library_name"
-                       constraintName="cpk_library_pk"
-                       schemaName="${schema.name}"/>
-
-        <addForeignKeyConstraint baseTableName="cpk_library" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                                 referencedTableName="cpi_cpk" referencedColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                                 constraintName="FK_cpk_library_cpi_cpk"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-
-        <createTable tableName="cpk_dependency" schemaName="${schema.name}">
-            <column name="cpi_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_file_checksum" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="main_bundle_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="main_bundle_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-
-        <addPrimaryKey tableName="cpk_dependency"
-                       columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum, main_bundle_name, main_bundle_version, signer_summary_hash"
-                       constraintName="cpk_dependency_pk"
-                       schemaName="${schema.name}"/>
-
-        <addForeignKeyConstraint baseTableName="cpk_dependency" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                                 referencedTableName="cpi_cpk" referencedColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                                 constraintName="FK_cpk_dependency_cpi_cpk"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
-
-        <createTable tableName="cpk_cordapp_manifest" schemaName="${schema.name}">
-            <column name="cpi_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpi_signer_summary_hash" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="cpk_file_checksum" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <!-- Check if we could rename this to main_bundle_name -->
-            <column name="bundle_symbolic_name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <!-- Check if we could rename this to main_bundle_version -->
-            <column name="bundle_version" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="min_platform_version" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="target_platform_version" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="contract_info_short_name" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="contract_info_vendor" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="contract_info_version_id" type="INT">
-                <constraints nullable="true"/>
-            </column>
-            <column name="contract_info_license" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="work_flow_info_short_name" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="work_flow_info_vendor" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="work_flow_info_version_id" type="INT">
-                <constraints nullable="true"/>
-            </column>
-            <column name="work_flow_info_license" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-        </createTable>
-
-        <addPrimaryKey tableName="cpk_cordapp_manifest"
-                       columnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum, bundle_symbolic_name, bundle_version, min_platform_version, target_platform_version"
-                       constraintName="cpk_cordapp_manifest_pk"
-                       schemaName="${schema.name}"/>
-
-        <addForeignKeyConstraint baseTableName="cpk_cordapp_manifest" baseColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                                 referencedTableName="cpi_cpk" referencedColumnNames="cpi_name, cpi_version, cpi_signer_summary_hash, cpk_file_checksum"
-                                 constraintName="FK_cpk_cordapp_manifest_cpi_cpk"
-                                 onDelete="CASCADE"
-                                 baseTableSchemaName="${schema.name}"
-                                 referencedTableSchemaName="${schema.name}"/>
     </changeSet>
 </databaseChangeLog>
