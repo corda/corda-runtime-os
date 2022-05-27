@@ -3,7 +3,6 @@ package net.corda.crypto.tck.impl
 import net.corda.crypto.tck.ComplianceTestType
 import net.corda.crypto.tck.CryptoTCK
 import net.corda.crypto.tck.ExecutionOptions
-import net.corda.crypto.tck.ExecutionOptionsExtension
 import net.corda.crypto.tck.impl.compliance.CryptoServiceCompliance
 import net.corda.crypto.tck.impl.compliance.SessionInactivityCompliance
 import net.corda.v5.base.util.contextLogger
@@ -50,19 +49,21 @@ class CryptoTCKImpl : CryptoTCK {
     override fun run(options: ExecutionOptions) = try {
         val summaryListener = SummaryGeneratingListener()
 
-        val out = PrintWriter(System.out)
+        val spec = buildComplianceSpec(options)
 
-        val request = buildTestRequest(options)
+        val request = buildTestRequest(spec)
+
+        val out = PrintWriter(System.out)
 
         val launcher = buildTestLauncher(options, summaryListener, out)
 
-        printCaption(options)
+        printCaption(spec)
 
         launcher.execute(request)
 
         summaryListener.printReport(out)
 
-        ExecutionOptionsExtension.unregister(options)
+        ComplianceSpecExtension.unregister(spec)
 
         assertTrue(summaryListener.summary.isSuccess(), "TCK SUITE FAILED.")
     } catch (e: Throwable) {
@@ -70,23 +71,40 @@ class CryptoTCKImpl : CryptoTCK {
         throw e
     }
 
-    private fun printCaption(options: ExecutionOptions) {
-        logger.info("EXECUTING COMPLIANCE TESTS: $version")
-        logger.info("${options::serviceName.name}=${options.serviceName}")
-        logger.info("${options::tests.name}=${options.tests.joinToString()}")
-        logger.info("${options::testResultsDirectory.name}=${options.testResultsDirectory}")
-        logger.info("--------------------------")
+    private fun buildComplianceSpec(options: ExecutionOptions): ComplianceSpec {
+        return ComplianceSpec(
+            options = options,
+            signatureSpecs = options.proposedSignatureSpecs
+        )
     }
 
-    private fun buildTestRequest(options: ExecutionOptions): LauncherDiscoveryRequest {
+    private fun printCaption(spec: ComplianceSpec) {
+        logger.info("EXECUTING COMPLIANCE TESTS: $version")
+        logger.info("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
+        logger.info("options.${spec.options::tests.name}=${spec.options.tests.joinToString()}")
+        logger.info("options.${spec.options::testResultsDirectory.name}=${spec.options.testResultsDirectory}")
+        logger.info("options.${spec.options::proposedSignatureSpecs.name}:")
+        spec.options.proposedSignatureSpecs.forEach {
+            logger.info("options.${spec.options::proposedSignatureSpecs.name}:${it.key}=" +
+                    "[${it.value.joinToString { v -> v.signatureName }}]")
+        }
+        logger.info("${spec::signatureSpecs.name}:")
+        spec.signatureSpecs.forEach {
+            logger.info("${spec::signatureSpecs.name}:${it.key}=" +
+                    "[${it.value.joinToString { v -> v.signatureName }}]")
+        }
+        logger.info("==========================")
+    }
+
+    private fun buildTestRequest(spec: ComplianceSpec): LauncherDiscoveryRequest {
         val request = LauncherDiscoveryRequestBuilder.request()
-        if (options.tests.contains(ComplianceTestType.CRYPTO_SERVICE)) {
+        if (spec.options.tests.contains(ComplianceTestType.CRYPTO_SERVICE)) {
             request.selectors(DiscoverySelectors.selectClass(CryptoServiceCompliance::class.java))
         }
-        if (options.tests.contains(ComplianceTestType.SESSION_INACTIVITY)) {
+        if (spec.options.tests.contains(ComplianceTestType.SESSION_INACTIVITY)) {
             request.selectors(DiscoverySelectors.selectClass(SessionInactivityCompliance::class.java))
         }
-        ExecutionOptionsExtension.register(request, options)
+        ComplianceSpecExtension.register(request, spec)
         return request.build()
     }
 

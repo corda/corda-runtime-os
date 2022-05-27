@@ -18,7 +18,8 @@ class CryptoServiceProviderMap @Activate constructor (
 ) {
     private val map = cryptoServiceProviders.associateBy { it.name }
 
-    fun get(name: String) = map.getValue(name)
+    @Suppress("UNCHECKED_CAST")
+    fun get(name: String): CryptoServiceProvider<Any> = map.getValue(name) as CryptoServiceProvider<Any>
 
     fun all() = map.values.toList()
 }

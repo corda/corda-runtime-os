@@ -19,7 +19,11 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')
+    implementation project(':testing:test-utilities')
 
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.assertj:assertj-core:$assertjVersion"
     implementation "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     implementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"

@@ -2,11 +2,15 @@ package net.corda.crypto.tck
 
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.file.Path
+import java.time.Duration
 
 class ExecutionOptions(
     val serviceName: String,
+    val serviceConfig: Any,
+    val proposedSignatureSpecs: Map<String, List<SignatureSpec>>,
     val testResultsDirectory: Path,
-    val schemeSpec: Map<String, List<SignatureSpec>>,
+    val retries: Int = 2,
+    val timeout: Duration = Duration.ofSeconds(10),
     val tests: List<ComplianceTestType> = listOf(
         ComplianceTestType.CRYPTO_SERVICE
     )

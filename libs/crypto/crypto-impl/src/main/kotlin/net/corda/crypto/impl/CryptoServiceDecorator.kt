@@ -32,7 +32,7 @@ class CryptoServiceDecorator(
             .builder()
             .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
             .build()
-        private val objectMapper = jsonMapper
+        val objectMapper = jsonMapper
             .registerModule(JavaTimeModule())
             .registerModule(KotlinModule.Builder().build())
             .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)

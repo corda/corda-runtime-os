@@ -19,7 +19,7 @@ class AllWrappedKeysHSMProvider @Activate constructor(
     class Configuration(val userName: String)
 
     companion object {
-        const val NAME = "AllWrappedKeysHSMProvider"
+        const val NAME = "AllWrappedKeysHSM"
     }
 
     override val configType: Class<Configuration> = Configuration::class.java
