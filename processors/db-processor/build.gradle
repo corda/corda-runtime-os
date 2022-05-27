@@ -11,6 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:chunking:chunk-read-service')
+    implementation project(':components:configuration:configuration-publish-service')
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':components:db:db-connection-manager')
@@ -43,6 +44,7 @@ dependencies {
 
     runtimeOnly project(':components:chunking:chunk-read-service-impl')
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
+    runtimeOnly project(':components:configuration:configuration-publish-service-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')

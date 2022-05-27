@@ -11,8 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':components:configuration:configuration-publish-service')
-    // The following is temporary - to be removed
-    implementation project(':components:configuration:configuration-publish-service-impl')
     implementation project(':components:db:db-connection-manager')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')

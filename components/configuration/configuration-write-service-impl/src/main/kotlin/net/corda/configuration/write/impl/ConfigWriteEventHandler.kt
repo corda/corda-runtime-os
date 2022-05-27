@@ -1,19 +1,35 @@
 package net.corda.configuration.write.impl
 
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.configuration.write.ConfigWriteServiceException
-import net.corda.configuration.write.impl.writer.ConfigWriter
-import net.corda.configuration.write.impl.writer.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.ConfigurationManagementRPCSubscription
+import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus.DOWN
-import net.corda.lifecycle.LifecycleStatus.ERROR
-import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.v5.base.util.contextLogger
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-internal class ConfigWriteEventHandler(private val configWriterFactory: ConfigWriterFactory) : LifecycleEventHandler {
-    private var configWriter: ConfigWriter? = null
+internal class ConfigWriteEventHandler(
+    private val rpcSubscriptionFactory: RPCSubscriptionFactory,
+    private val configMerger: ConfigMerger) : LifecycleEventHandler {
+    companion object {
+        val logger = contextLogger()
+    }
+
+    private var rpcSubscription: ConfigurationManagementRPCSubscription? = null
+
+    private var registration: RegistrationHandle? = null
+
+    private var bootStrapConfig: SmartConfig? = null
 
     /**
      * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
@@ -24,27 +40,37 @@ internal class ConfigWriteEventHandler(private val configWriterFactory: ConfigWr
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartProcessingEvent -> {
-                if (configWriter != null) {
-                    throw ConfigWriteServiceException("An attempt was made to start processing twice.")
+            is BootstrapConfigEvent -> {
+                logger.info("Bootstrap config provided")
+                bootStrapConfig = event.bootConfig
+                registration = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                        LifecycleCoordinatorName.forComponent<ConfigPublishService>()
+                    )
+                )
+            }
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    logger.info("Switching to ${event.status}")
+                    if (rpcSubscription == null) {
+                        // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
+                        //  against Kafka topic.
+                        rpcSubscription =
+                            rpcSubscriptionFactory.create(configMerger.getMessagingConfig(bootStrapConfig!!))
+                                .apply { start() }
+                        coordinator.updateStatus(LifecycleStatus.UP)
+                    }
+                } else {
+                    logger.warn("Switching to ${event.status}")
+                    coordinator.updateStatus(event.status)
                 }
-
-                try {
-                    // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
-                    //  against Kafka topic.
-                    configWriter = configWriterFactory.create(event.config).apply { start() }
-                } catch (e: Exception) {
-                    coordinator.updateStatus(ERROR)
-                    throw ConfigWriteServiceException("Could not subscribe to config management requests.", e)
-                }
-
-                coordinator.updateStatus(UP)
             }
 
             is StopEvent -> {
-                configWriter?.stop()
-                configWriter = null
-                coordinator.updateStatus(DOWN)
+                rpcSubscription?.stop()
+                rpcSubscription = null
+                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }

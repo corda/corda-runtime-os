@@ -1,6 +1,5 @@
 package net.corda.configuration.write
 
-import javax.persistence.EntityManagerFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 
@@ -13,5 +12,5 @@ interface ConfigWriteService : Lifecycle {
      * @param bootConfig Config to be used by the subscription.
      * @param entityManagerFactory The factory for creating entity managers for interacting with the cluster database.
      */
-    fun startProcessing(bootConfig: SmartConfig, entityManagerFactory: EntityManagerFactory)
+    fun bootstrapConfig(bootConfig: SmartConfig)
 }

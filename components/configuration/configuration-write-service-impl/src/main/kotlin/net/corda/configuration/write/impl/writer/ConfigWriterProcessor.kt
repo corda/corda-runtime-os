@@ -3,7 +3,7 @@ package net.corda.configuration.write.impl.writer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import java.time.Clock
-import net.corda.configuration.publish.impl.ConfigPublishServiceImpl
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -13,7 +13,6 @@ import net.corda.libs.configuration.dto.ConfigurationDto
 import net.corda.libs.configuration.dto.ConfigurationSchemaVersionDto
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.versioning.Version
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -29,7 +28,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
  * @property clock Controls how the current instant is determined, so it can be injected during testing.
  */
 internal class ConfigWriterProcessor(
-    private val publisher: Publisher,
+    private val configPublishService: ConfigPublishService,
     private val configEntityWriter: ConfigEntityWriter,
     private val validator: ConfigurationValidator,
     private val clock: Clock = Clock.systemUTC()
@@ -112,8 +111,6 @@ internal class ConfigWriterProcessor(
         configDto: ConfigurationDto,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-        // TODO - kyriakos - temporary to not break API. To be removed.
-        val configPublishService = ConfigPublishServiceImpl(publisher)
         try {
             configPublishService.put(configDto)
         } catch (e: Exception) {

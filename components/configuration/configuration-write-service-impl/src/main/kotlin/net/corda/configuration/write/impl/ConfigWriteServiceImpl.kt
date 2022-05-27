@@ -1,15 +1,15 @@
 package net.corda.configuration.write.impl
 
 import javax.persistence.EntityManagerFactory
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.configuration.write.ConfigWriteService
-import net.corda.configuration.write.impl.writer.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -24,14 +24,14 @@ internal class ConfigWriteServiceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    publisherFactory: PublisherFactory,
     @Reference(service = DbConnectionManager::class)
     dbConnectionManager: DbConnectionManager,
     @Reference(service = ConfigurationValidatorFactory::class)
     configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = ConfigPublishService::class)
+    configPublishService: ConfigPublishService,
     @Reference(service = ConfigMerger::class)
-    private val configMerger: ConfigMerger
+    configMerger: ConfigMerger
 ) : ConfigWriteService {
 
     companion object {
@@ -39,15 +39,18 @@ internal class ConfigWriteServiceImpl @Activate constructor(
     }
 
     private val coordinator = let {
-        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, publisherFactory, configurationValidatorFactory,
-            dbConnectionManager)
-        val eventHandler = ConfigWriteEventHandler(configWriterFactory)
+        val configWriterFactory = RPCSubscriptionFactory(
+            subscriptionFactory,
+            configurationValidatorFactory,
+            dbConnectionManager,
+            configPublishService
+        )
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory, configMerger)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 
-    override fun startProcessing(bootConfig: SmartConfig, entityManagerFactory: EntityManagerFactory) {
-        val startProcessingEvent = StartProcessingEvent(configMerger.getMessagingConfig(bootConfig))
-        coordinator.postEvent(startProcessingEvent)
+    override fun bootstrapConfig(bootConfig: SmartConfig) {
+        coordinator.postEvent(BootstrapConfigEvent(bootConfig))
     }
 
     override val isRunning get() = coordinator.isRunning
