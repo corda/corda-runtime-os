@@ -4,6 +4,7 @@ import net.corda.v5.crypto.SignatureSpec
 import java.nio.file.Path
 import java.time.Duration
 
+@Suppress("LongParameterList")
 class ExecutionOptions(
     val serviceName: String,
     val serviceConfig: Any,

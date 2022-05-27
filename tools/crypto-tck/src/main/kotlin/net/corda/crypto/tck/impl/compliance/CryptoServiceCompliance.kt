@@ -63,6 +63,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 @ExtendWith(ServiceExtension::class, ComplianceSpecExtension::class)
+@Suppress("TooManyFunctions")
 class CryptoServiceCompliance {
     companion object {
         private val logger = contextLogger()
