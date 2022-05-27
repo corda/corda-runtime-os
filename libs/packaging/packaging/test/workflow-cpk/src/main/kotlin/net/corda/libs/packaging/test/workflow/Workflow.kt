@@ -3,12 +3,12 @@ package net.corda.libs.packaging.test.workflow
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 
 @InitiatingFlow(protocol = "packaging-test")
-@StartableByRPC
+@RPCStartableFlow
 class PackagingTestFlow : Flow<Unit> {
 
     @Suspendable

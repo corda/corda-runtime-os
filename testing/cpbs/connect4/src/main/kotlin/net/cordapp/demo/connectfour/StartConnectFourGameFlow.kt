@@ -3,13 +3,13 @@ package net.cordapp.demo.connectfour
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-@StartableByRPC
+@RPCStartableFlow
 class StartConnectFourGameFlow(private val jsonArg: String) : Flow<String> {
 
     private companion object {

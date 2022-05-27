@@ -5,7 +5,7 @@ import net.cordapp.flowworker.development.messages.TestFlowOutput
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -18,7 +18,7 @@ import net.corda.v5.base.util.contextLogger
  * is used as a basic flow worker smoke test.
  */
 @Suppress("unused")
-@StartableByRPC
+@RPCStartableFlow
 class TestFlow(private val jsonArg: String) : Flow<String> {
 
     private companion object {
