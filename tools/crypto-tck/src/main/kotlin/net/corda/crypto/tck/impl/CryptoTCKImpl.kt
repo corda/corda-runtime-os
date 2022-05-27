@@ -72,18 +72,37 @@ class CryptoTCKImpl : CryptoTCK {
     }
 
     private fun buildComplianceSpec(options: ExecutionOptions): ComplianceSpec {
+        if (options.tests.contains(ComplianceTestType.SESSION_INACTIVITY)) {
+            require(options.sessionComplianceSpec != null) {
+                "Please specify the ${options::sessionComplianceSpec.name}"
+            }
+        }
         return ComplianceSpec(options = options)
     }
 
     private fun printCaption(spec: ComplianceSpec) {
         logger.info("EXECUTING COMPLIANCE TESTS: $version")
         logger.info("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
+        logger.info("options.${spec.options::retries.name}=${spec.options.retries}")
+        logger.info("options.${spec.options::timeout.name}=${spec.options.timeout}")
+        if (spec.options.sessionComplianceSpec != null) {
+            logger.info(
+                "options.${spec.options::sessionComplianceTimeout.name}=" +
+                        "${spec.options.sessionComplianceTimeout}"
+            )
+            logger.info(
+                "options.${spec.options::sessionComplianceSpec.name}=[" +
+                        "${spec.options.sessionComplianceSpec.first},${spec.options.sessionComplianceSpec.second}]"
+            )
+        }
+
         logger.info("options.${spec.options::tests.name}=${spec.options.tests.joinToString()}")
         logger.info("options.${spec.options::testResultsDirectory.name}=${spec.options.testResultsDirectory}")
         logger.info("options.${spec.options::signatureSpecs.name}:")
         spec.options.signatureSpecs.forEach {
             logger.info("options.${spec.options::signatureSpecs.name}:${it.key}=" +
-                    "[${it.value.joinToString { v -> v.signatureName }}]")
+                    "[${it.value.joinToString { v -> v.signatureName }}]"
+            )
         }
         logger.info("==========================")
     }

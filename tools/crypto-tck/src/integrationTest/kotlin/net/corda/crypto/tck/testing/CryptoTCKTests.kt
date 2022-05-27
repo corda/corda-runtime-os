@@ -1,5 +1,6 @@
 package net.corda.crypto.tck.testing
 
+import net.corda.crypto.tck.ComplianceTestType
 import net.corda.crypto.tck.testing.hsms.AllWrappedKeysHSMProvider
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
+import java.time.Duration
 
 
 @ExtendWith(ServiceExtension::class)
@@ -46,6 +48,12 @@ class CryptoTCKTests {
                 serviceName = AllWrappedKeysHSMProvider.NAME,
                 serviceConfig = AllWrappedKeysHSMProvider.Configuration("corda"),
                 testResultsDirectory = Path.of("", AllWrappedKeysHSMProvider::class.simpleName).toAbsolutePath(),
+                tests = listOf(
+                    ComplianceTestType.CRYPTO_SERVICE,
+                    ComplianceTestType.SESSION_INACTIVITY,
+                ),
+                sessionComplianceSpec = Pair(EDDSA_ED25519_CODE_NAME, EDDSA_ED25519_NONE_SIGNATURE_SPEC),
+                sessionComplianceTimeout = Duration.ofSeconds(1),
                 signatureSpecs = mapOf(
                     RSA_CODE_NAME to listOf(
                         RSA_SHA256_SIGNATURE_SPEC,
@@ -90,6 +98,12 @@ class CryptoTCKTests {
                 serviceName = AllAliasedKeysHSMProvider.NAME,
                 serviceConfig = AllAliasedKeysHSMProvider.Configuration("corda"),
                 testResultsDirectory = Path.of("", AllAliasedKeysHSMProvider::class.simpleName).toAbsolutePath(),
+                tests = listOf(
+                    ComplianceTestType.CRYPTO_SERVICE,
+                    ComplianceTestType.SESSION_INACTIVITY,
+                ),
+                sessionComplianceSpec = Pair(EDDSA_ED25519_CODE_NAME, EDDSA_ED25519_NONE_SIGNATURE_SPEC),
+                sessionComplianceTimeout = Duration.ofSeconds(1),
                 signatureSpecs = mapOf(
                     RSA_CODE_NAME to listOf(
                         RSA_SHA256_SIGNATURE_SPEC

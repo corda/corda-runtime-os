@@ -5,20 +5,13 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
-import net.corda.v5.base.util.contextLogger
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.SigningAliasSpec
-import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
@@ -37,9 +30,7 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -61,13 +52,12 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
+import java.util.concurrent.ConcurrentLinkedQueue
 
 @ExtendWith(ServiceExtension::class, ComplianceSpecExtension::class)
 @Suppress("TooManyFunctions")
-class CryptoServiceCompliance {
+class CryptoServiceCompliance : AbstractCompliance() {
     companion object {
-        private val logger = contextLogger()
-
         private const val THREAD_COUNT = 10
 
         @InjectService(timeout = 10000L)
@@ -80,27 +70,12 @@ class CryptoServiceCompliance {
         lateinit var verifier: SignatureVerificationService
     }
 
-    private lateinit var compliance: ComplianceSpec
-    private lateinit var service: CryptoService
-    private lateinit var tenantId: String
     private lateinit var schemesAndSignatureSpecs: List<Pair<String, SignatureSpec>>
-    private var masterKeyAlias: String? = null
 
     @BeforeEach
     fun setup(spec: ComplianceSpec) {
-        compliance = spec
-        service = compliance.createService(providers)
-        logger.info("serviceName=${compliance.options.serviceName}")
-        tenantId = compliance.generateRandomIdentifier()
+        super.setup(spec, providers)
         schemesAndSignatureSpecs = compliance.getFlattenedSchemesAndSignatureSpecs()
-        if (service.requiresWrappingKey()) {
-            masterKeyAlias = compliance.generateRandomIdentifier()
-            service.createWrappingKey(
-                masterKeyAlias!!, true, mapOf(
-                    CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
-                )
-            )
-        }
     }
 
     @Test
@@ -132,6 +107,7 @@ class CryptoServiceCompliance {
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to generate key pair with suggested alias then endcode & decode public key and then sign and verify`() {
+        val generatedPublicKeys = ConcurrentLinkedQueue<PublicKey>()
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
@@ -144,13 +120,20 @@ class CryptoServiceCompliance {
                     `Should be able to persist and then load public key from key store`(key.publicKey)
                 }
                 `Should be able to sign and verify signature`(key, keyScheme, signatureSpec)
+                generatedPublicKeys.add(key.publicKey)
             }.runAndValidate()
         }
+        assertEquals(
+            generatedPublicKeys.size,
+            generatedPublicKeys.distinct().size,
+            "All generated keys must be distinct"
+        )
     }
 
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to generate key pair without suggested alias, suggesting wrapped key, then endcode & decode public key and then sign and verify`() {
+        val generatedPublicKeys = ConcurrentLinkedQueue<PublicKey>()
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
@@ -162,8 +145,14 @@ class CryptoServiceCompliance {
                     `Should be able to persist and then load public key from key store`(key.publicKey)
                 }
                 `Should be able to sign and verify signature`(key, keyScheme, signatureSpec)
+                generatedPublicKeys.add(key.publicKey)
             }.runAndValidate()
         }
+        assertEquals(
+            generatedPublicKeys.size,
+            generatedPublicKeys.distinct().size,
+            "All generated keys must be distinct"
+        )
     }
 
     @Test
@@ -208,27 +197,6 @@ class CryptoServiceCompliance {
                 )
             )
         }
-    }
-
-    private fun `Should generate key with expected key scheme`(
-        alias: String?,
-        masterKeyAlias: String?,
-        keyScheme: KeyScheme
-    ): GeneratedKey {
-        val key = service.generateKeyPair(
-            spec = KeyGenerationSpec(
-                keyScheme = keyScheme,
-                alias = alias,
-                masterKeyAlias = masterKeyAlias,
-                secret = compliance.generateRandomIdentifier().toByteArray()
-            ),
-            context = mapOf(
-                CRYPTO_TENANT_ID to tenantId,
-                CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
-            )
-        )
-        validateGeneratedKey(key, alias, keyScheme)
-        return key
     }
 
     private fun `Should be able to encode and then decode public key as byte array`(publicKey: PublicKey) {
@@ -292,87 +260,10 @@ class CryptoServiceCompliance {
         )
     }
 
-    private fun `Should be able to sign and verify signature`(
-        key: GeneratedKey,
-        keyScheme: KeyScheme,
-        signatureSpec: SignatureSpec
-    ) {
-        val spec = if (key is GeneratedWrappedKey) {
-            SigningWrappedSpec(
-                keyMaterial = key.keyMaterial,
-                masterKeyAlias = masterKeyAlias,
-                encodingVersion = key.encodingVersion,
-                keyScheme = keyScheme,
-                signatureSpec = signatureSpec
-            )
-        } else {
-            key as GeneratedPublicKey
-            val spec = SigningAliasSpec(
-                hsmAlias = key.hsmAlias,
-                keyScheme = keyScheme,
-                signatureSpec = signatureSpec
-            )
-            assertThrows<CryptoServiceException>(
-                "Should throw CryptoServiceException when HSM alias is not known."
-            ) {
-                service.sign(
-                    SigningAliasSpec(
-                        hsmAlias = compliance.generateRandomIdentifier(),
-                        keyScheme = keyScheme,
-                        signatureSpec = signatureSpec
-                    ),
-                    compliance.generateRandomIdentifier().toByteArray(),
-                    mapOf(CRYPTO_TENANT_ID to tenantId)
-                )
-            }
-            spec
-        }
-        listOf(
-            compliance.generateRandomIdentifier(1).toByteArray(),
-            compliance.generateRandomIdentifier(5).toByteArray(),
-            ByteArray(97).also { schemeMetadata.secureRandom.nextBytes(it) },
-            ByteArray(1673).also { schemeMetadata.secureRandom.nextBytes(it) }
-        ).forEach { data ->
-            val signature = service.sign(spec, data, mapOf(CRYPTO_TENANT_ID to tenantId))
-            assertTrue(
-                verifier.isValid(
-                    publicKey = key.publicKey,
-                    signatureSpec = signatureSpec,
-                    signatureData = signature,
-                    clearData = data
-                ),
-                "Signature validation failed."
-            )
-        }
-    }
-
     private fun canBeUsedInCert(keyScheme: KeyScheme): Boolean =
         RSA_TEMPLATE.algorithmOIDs.intersect(keyScheme.algorithmOIDs.toSet()).isNotEmpty() ||
                 ECDSA_SECP256R1_TEMPLATE.algorithmOIDs.intersect(keyScheme.algorithmOIDs.toSet()).isNotEmpty() ||
                 EDDSA_ED25519_TEMPLATE.algorithmOIDs.intersect(keyScheme.algorithmOIDs.toSet()).isNotEmpty()
-
-    private fun validateGeneratedKey(key: GeneratedKey, alias: String?, expected: KeyScheme) {
-        val keyScheme = try {
-            schemeMetadata.findKeyScheme(key.publicKey)
-        } catch (e: Throwable) {
-            fail("The public key (algorithm=${key.publicKey.algorithm}) must be recognisable by scheme metadata.")
-        }
-        assertEquals(expected, keyScheme, "The public key scheme must match ${expected.codeName}")
-        when (key) {
-            is GeneratedWrappedKey -> {
-                assertTrue(key.keyMaterial.isNotEmpty(), "The generated key must have keyMaterial.")
-            }
-            is GeneratedPublicKey -> {
-                assertTrue(key.hsmAlias.isNotBlank(), "The alias generated by HSM must not be blank.")
-                if (!alias.isNullOrBlank()) {
-                    assertNotEquals(key.hsmAlias, alias, "The alias used by HSM must not match the passed.")
-                }
-            }
-            else -> {
-                fail("Unexpected type of the generated key '${key::class.java.name}'")
-            }
-        }
-    }
 
     private fun generateCAKeyPair(): KeyPair {
         val scheme = schemeMetadata.findKeyScheme(EDDSA_ED25519_CODE_NAME)

@@ -10,6 +10,8 @@ class ExecutionOptions(
     val serviceConfig: Any,
     val signatureSpecs: Map<String, List<SignatureSpec>>,
     val testResultsDirectory: Path,
+    val sessionComplianceSpec: Pair<String, SignatureSpec>? = null,
+    val sessionComplianceTimeout: Duration = Duration.ofMinutes(20),
     val retries: Int = 2,
     val timeout: Duration = Duration.ofSeconds(10),
     val tests: List<ComplianceTestType> = listOf(
