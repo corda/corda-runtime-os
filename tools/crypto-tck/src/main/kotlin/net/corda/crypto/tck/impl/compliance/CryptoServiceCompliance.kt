@@ -29,6 +29,7 @@ import org.bouncycastle.asn1.x509.Time
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -76,6 +77,11 @@ class CryptoServiceCompliance : AbstractCompliance() {
     fun setup(spec: ComplianceSpec) {
         super.setup(spec, providers)
         schemesAndSignatureSpecs = compliance.getFlattenedSchemesAndSignatureSpecs()
+    }
+
+    @AfterEach
+    fun clenup() {
+        cleanupKeys()
     }
 
     @Test

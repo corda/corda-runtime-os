@@ -5,8 +5,12 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_WRAPPING
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -19,6 +23,7 @@ import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.assertThrows
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentLinkedQueue
 
 abstract class AbstractCompliance {
     protected val logger = LoggerFactory.getLogger(this::class.java)
@@ -28,7 +33,9 @@ abstract class AbstractCompliance {
     protected lateinit var tenantId: String
     protected var masterKeyAlias: String? = null
 
-    fun setup(spec: ComplianceSpec, providers: CryptoServiceProviderMap) {
+    private val generatedAliases = ConcurrentLinkedQueue<String>()
+
+    protected fun setup(spec: ComplianceSpec, providers: CryptoServiceProviderMap) {
         compliance = spec
         service = compliance.createService(providers)
         logger.info("serviceName=${compliance.options.serviceName}")
@@ -41,6 +48,28 @@ abstract class AbstractCompliance {
                 )
             )
         }
+    }
+
+    protected fun cleanupKeys() {
+        if(masterKeyAlias != null) {
+            deleteKey(masterKeyAlias!!, mapOf(
+                CRYPTO_TENANT_ID to tenantId,
+                CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_WRAPPING
+            ))
+        }
+        generatedAliases.forEach {
+            deleteKey(it, mapOf(
+                CRYPTO_TENANT_ID to tenantId,
+                CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
+            ))
+        }
+        generatedAliases.clear()
+    }
+
+    private fun deleteKey(alias: String, context: Map<String, String>) = try {
+        (service as? CryptoServiceDeleteOps)?.delete(alias, context)
+    } catch (e: Throwable) {
+        logger.warn("Failed to delete a ky with alias=$alias", e)
     }
 
     protected fun `Should generate key with expected key scheme`(
@@ -60,6 +89,9 @@ abstract class AbstractCompliance {
                 CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
             )
         )
+        if(key is GeneratedPublicKey && key.hsmAlias.isNotBlank()) {
+            generatedAliases.add(key.hsmAlias)
+        }
         validateGeneratedKey(key, alias, keyScheme)
         return key
     }

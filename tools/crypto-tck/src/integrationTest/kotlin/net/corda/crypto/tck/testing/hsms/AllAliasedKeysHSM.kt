@@ -1,9 +1,12 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
@@ -41,7 +44,7 @@ class AllAliasedKeysHSM(
         SM2_CODE_NAME,
         GOST3410_GOST3411_CODE_NAME
     )
-) : AbstractHSM(supportedSchemeCodes, schemeMetadata, digestService), CryptoService {
+) : AbstractHSM(supportedSchemeCodes, schemeMetadata, digestService), CryptoService, CryptoServiceDeleteOps {
     companion object {
         private val logger = contextLogger()
     }
@@ -122,4 +125,10 @@ class AllAliasedKeysHSM(
     private fun isSupported(scheme: KeyScheme): Boolean = supportedSchemes.any { it.codeName == scheme.codeName }
 
     private fun provider(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
+
+    override fun delete(alias: String, context: Map<String, String>) {
+        if(context.any { it.key == CRYPTO_KEY_TYPE && it.value == CRYPTO_KEY_TYPE_KEYPAIR }) {
+            keyPairs.remove(alias)
+        }
+    }
 }

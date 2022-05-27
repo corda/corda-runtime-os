@@ -4,6 +4,7 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
@@ -36,7 +37,7 @@ class AllWrappedKeysHSM(
         SM2_CODE_NAME,
         GOST3410_GOST3411_CODE_NAME
     )
-) : AbstractHSM(supportedSchemeCodes, schemeMetadata, digestService), CryptoService {
+) : AbstractHSM(supportedSchemeCodes, schemeMetadata, digestService), CryptoService, CryptoServiceDeleteOps {
     companion object {
         private val logger = contextLogger()
     }
@@ -136,4 +137,8 @@ class AllWrappedKeysHSM(
     private fun isSupported(scheme: KeyScheme): Boolean = supportedSchemes.any { it.codeName == scheme.codeName }
 
     private fun provider(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
+
+    override fun delete(alias: String, context: Map<String, String>) {
+        throw NotImplementedError("Just to test that the tests will not break.")
+    }
 }

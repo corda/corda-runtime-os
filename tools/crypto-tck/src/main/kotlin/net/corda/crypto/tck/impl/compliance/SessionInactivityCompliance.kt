@@ -3,6 +3,7 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,6 +21,11 @@ class SessionInactivityCompliance : AbstractCompliance() {
     @BeforeEach
     fun setup(spec: ComplianceSpec) {
         super.setup(spec, providers)
+    }
+
+    @AfterEach
+    fun clenup() {
+        cleanupKeys()
     }
 
     @Test
