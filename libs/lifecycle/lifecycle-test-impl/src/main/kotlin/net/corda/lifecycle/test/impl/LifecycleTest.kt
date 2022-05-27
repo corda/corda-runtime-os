@@ -21,7 +21,6 @@ class LifecycleTest<T : Lifecycle>(
     private val configCoordinator = argumentCaptor<LifecycleCoordinator>()
     private val configKeys = argumentCaptor<Set<String>>()
 
-
     /**
      * This is the coordinator factory which the component under test can use to create it's coordinator.
      *
@@ -160,6 +159,31 @@ class LifecycleTest<T : Lifecycle>(
      */
     inline fun <reified D> bringDependencyDown() {
         bringDependencyDown(LifecycleCoordinatorName.forComponent<D>())
+    }
+
+    /**
+     * Change the given dependency to the [LifecycleStatus.ERROR] state.
+     *
+     * @param coordinatorName the name of the dependency to bring down
+     */
+    fun setDependencyToError(coordinatorName: LifecycleCoordinatorName) {
+        val coordinator = registry.getCoordinator(coordinatorName)
+        coordinator.start()
+        coordinator.updateStatus(LifecycleStatus.ERROR)
+    }
+
+    /**
+     * Get the current coordinator by name
+     */
+    fun getCoordinatorFor(coordinatorName: LifecycleCoordinatorName): LifecycleCoordinator {
+        return registry.getCoordinator(coordinatorName)
+    }
+
+    /**
+     * Get the current coordinator by type
+     */
+    inline fun <reified D> getCoordinatorFor(): LifecycleCoordinator {
+        return getCoordinatorFor(LifecycleCoordinatorName.forComponent<D>())
     }
 
     /**
