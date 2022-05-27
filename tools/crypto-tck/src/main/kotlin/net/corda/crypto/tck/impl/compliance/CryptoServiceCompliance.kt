@@ -19,6 +19,7 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
+import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -26,6 +27,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -38,8 +40,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -113,10 +117,10 @@ class CryptoServiceCompliance {
         assertTrue(supported.isNotEmpty(), "The service must support at least one key scheme.")
         assertEquals(
             supported.size,
-            compliance.signatureSpecs.size,
+            compliance.options.signatureSpecs.size,
             "Not all supported schemes are configured for the ${CryptoServiceCompliance::class.simpleName} tests."
         )
-        compliance.signatureSpecs.keys.forEach {
+        compliance.options.signatureSpecs.keys.forEach {
             assertTrue(
                 supported.any { s -> s.codeName == it },
                 "The key scheme $it is not among supported."
@@ -135,7 +139,7 @@ class CryptoServiceCompliance {
                 val key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
                 `Should be able to encode and then decode public key as byte array`(key.publicKey)
                 `Should be able to encode and then decode public key as PEM`(key.publicKey)
-                if(canBeUsedInCert(keyScheme)) {
+                if (canBeUsedInCert(keyScheme)) {
                     `Should be able to persist and then load public key from key store`(key.publicKey)
                 }
                 `Should be able to sign and verify signature`(key, keyScheme, signatureSpec)
@@ -158,6 +162,50 @@ class CryptoServiceCompliance {
                 }
                 `Should be able to sign and verify signature`(key, keyScheme, signatureSpec)
             }.runAndValidate()
+        }
+    }
+
+    @Test
+    fun `Should throw CryptoServiceException when wrapping key is required and already exists`() {
+        assumeTrue(!masterKeyAlias.isNullOrBlank())
+        assertThrows<CryptoServiceException> {
+            service.createWrappingKey(
+                masterKeyAlias!!, true, mapOf(
+                    CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `Should throw CryptoServiceException when key scheme is not supported`() {
+        assertThrows<CryptoServiceException> {
+            service.generateKeyPair(
+                KeyGenerationSpec(
+                    keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
+                    alias = compliance.generateRandomIdentifier(),
+                    masterKeyAlias = masterKeyAlias,
+                    secret = compliance.generateRandomIdentifier().toByteArray()
+                ),
+                context = mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
+            )
+        }
+        assertThrows<CryptoServiceException> {
+            service.generateKeyPair(
+                KeyGenerationSpec(
+                    keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
+                    alias = null,
+                    masterKeyAlias = masterKeyAlias,
+                    secret = compliance.generateRandomIdentifier().toByteArray()
+                ),
+                context = mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+                )
+            )
         }
     }
 
@@ -258,11 +306,25 @@ class CryptoServiceCompliance {
             )
         } else {
             key as GeneratedPublicKey
-            SigningAliasSpec(
+            val spec = SigningAliasSpec(
                 hsmAlias = key.hsmAlias,
                 keyScheme = keyScheme,
                 signatureSpec = signatureSpec
             )
+            assertThrows<CryptoServiceException>(
+                "Should throw CryptoServiceException when HSM alias is not known."
+            ) {
+                service.sign(
+                    SigningAliasSpec(
+                        hsmAlias = compliance.generateRandomIdentifier(),
+                        keyScheme = keyScheme,
+                        signatureSpec = signatureSpec
+                    ),
+                    compliance.generateRandomIdentifier().toByteArray(),
+                    mapOf(CRYPTO_TENANT_ID to tenantId)
+                )
+            }
+            spec
         }
         listOf(
             compliance.generateRandomIdentifier(1).toByteArray(),

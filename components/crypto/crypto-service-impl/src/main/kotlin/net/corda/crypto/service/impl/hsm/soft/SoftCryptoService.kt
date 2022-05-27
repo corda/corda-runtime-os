@@ -138,7 +138,7 @@ open class SoftCryptoService(
             throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
         }
         logger.debug(
-            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.keyScheme={})",
+            "sign(masterKeyAlias={}, keyScheme={})",
             spec.masterKeyAlias,
             spec.keyScheme.codeName
         )

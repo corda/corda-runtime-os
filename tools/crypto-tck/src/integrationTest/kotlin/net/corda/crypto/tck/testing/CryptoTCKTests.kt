@@ -10,6 +10,7 @@ import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.crypto.tck.CryptoTCK
 import net.corda.crypto.tck.ExecutionOptions
+import net.corda.crypto.tck.testing.hsms.AllAliasedKeysHSMProvider
 import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.ECDSA_SHA384_SIGNATURE_SPEC
 import net.corda.v5.crypto.ECDSA_SHA512_SIGNATURE_SPEC
@@ -45,7 +46,7 @@ class CryptoTCKTests {
                 serviceName = AllWrappedKeysHSMProvider.NAME,
                 serviceConfig = AllWrappedKeysHSMProvider.Configuration("corda"),
                 testResultsDirectory = Path.of("", AllWrappedKeysHSMProvider::class.simpleName).toAbsolutePath(),
-                proposedSignatureSpecs = mapOf(
+                signatureSpecs = mapOf(
                     RSA_CODE_NAME to listOf(
                         RSA_SHA256_SIGNATURE_SPEC,
                         RSA_SHA384_SIGNATURE_SPEC,
@@ -63,6 +64,41 @@ class CryptoTCKTests {
                         ECDSA_SHA256_SIGNATURE_SPEC,
                         ECDSA_SHA384_SIGNATURE_SPEC,
                         ECDSA_SHA512_SIGNATURE_SPEC
+                    ),
+                    EDDSA_ED25519_CODE_NAME to listOf(
+                        EDDSA_ED25519_NONE_SIGNATURE_SPEC
+                    ),
+                    SPHINCS256_CODE_NAME to listOf(
+                        SPHINCS256_SHA512_SIGNATURE_SPEC
+                    ),
+                    SM2_CODE_NAME to listOf(
+                        SM2_SM3_SIGNATURE_SPEC,
+                        SignatureSpec("SHA256withSM2")
+                    ),
+                    GOST3410_GOST3411_CODE_NAME to listOf(
+                        GOST3410_GOST3411_SIGNATURE_SPEC
+                    ),
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `TCK should be able to test AllAliasedKeysHSM`() {
+        tck.run(
+            ExecutionOptions(
+                serviceName = AllAliasedKeysHSMProvider.NAME,
+                serviceConfig = AllAliasedKeysHSMProvider.Configuration("corda"),
+                testResultsDirectory = Path.of("", AllAliasedKeysHSMProvider::class.simpleName).toAbsolutePath(),
+                signatureSpecs = mapOf(
+                    RSA_CODE_NAME to listOf(
+                        RSA_SHA256_SIGNATURE_SPEC
+                    ),
+                    ECDSA_SECP256K1_CODE_NAME to listOf(
+                        ECDSA_SHA256_SIGNATURE_SPEC
+                    ),
+                    ECDSA_SECP256R1_CODE_NAME to listOf(
+                        ECDSA_SHA256_SIGNATURE_SPEC
                     ),
                     EDDSA_ED25519_CODE_NAME to listOf(
                         EDDSA_ED25519_NONE_SIGNATURE_SPEC

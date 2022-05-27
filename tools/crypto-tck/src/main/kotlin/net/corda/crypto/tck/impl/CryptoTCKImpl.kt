@@ -72,10 +72,7 @@ class CryptoTCKImpl : CryptoTCK {
     }
 
     private fun buildComplianceSpec(options: ExecutionOptions): ComplianceSpec {
-        return ComplianceSpec(
-            options = options,
-            signatureSpecs = options.proposedSignatureSpecs
-        )
+        return ComplianceSpec(options = options)
     }
 
     private fun printCaption(spec: ComplianceSpec) {
@@ -83,14 +80,9 @@ class CryptoTCKImpl : CryptoTCK {
         logger.info("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
         logger.info("options.${spec.options::tests.name}=${spec.options.tests.joinToString()}")
         logger.info("options.${spec.options::testResultsDirectory.name}=${spec.options.testResultsDirectory}")
-        logger.info("options.${spec.options::proposedSignatureSpecs.name}:")
-        spec.options.proposedSignatureSpecs.forEach {
-            logger.info("options.${spec.options::proposedSignatureSpecs.name}:${it.key}=" +
-                    "[${it.value.joinToString { v -> v.signatureName }}]")
-        }
-        logger.info("${spec::signatureSpecs.name}:")
-        spec.signatureSpecs.forEach {
-            logger.info("${spec::signatureSpecs.name}:${it.key}=" +
+        logger.info("options.${spec.options::signatureSpecs.name}:")
+        spec.options.signatureSpecs.forEach {
+            logger.info("options.${spec.options::signatureSpecs.name}:${it.key}=" +
                     "[${it.value.joinToString { v -> v.signatureName }}]")
         }
         logger.info("==========================")

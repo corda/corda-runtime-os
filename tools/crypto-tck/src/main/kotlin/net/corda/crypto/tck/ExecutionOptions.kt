@@ -7,7 +7,7 @@ import java.time.Duration
 class ExecutionOptions(
     val serviceName: String,
     val serviceConfig: Any,
-    val proposedSignatureSpecs: Map<String, List<SignatureSpec>>,
+    val signatureSpecs: Map<String, List<SignatureSpec>>,
     val testResultsDirectory: Path,
     val retries: Int = 2,
     val timeout: Duration = Duration.ofSeconds(10),
