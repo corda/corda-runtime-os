@@ -1,0 +1,6 @@
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
+(java.net.URLPermission "http://*:*" "*:*")
+(java.net.URLPermission "https://*:*" "*:*")
+(java.net.SocketPermission "*:1-" "accept,listen,connect,resolve")
+} "deny HTTP connection"

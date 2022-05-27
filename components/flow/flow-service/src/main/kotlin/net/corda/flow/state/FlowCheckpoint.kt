@@ -26,7 +26,7 @@ interface FlowCheckpoint : NonSerializable {
 
     var suspendedOn: String?
 
-    var waitingFor: WaitingFor
+    var waitingFor: WaitingFor?
 
     val flowStack: FlowStack
 
@@ -42,7 +42,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val retryEvent: FlowEvent
 
-    fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor)
+    fun initFromNew(flowId: String, flowStartContext: FlowStartContext)
 
     fun getSessionState(sessionId: String): SessionState?
 
@@ -55,6 +55,8 @@ interface FlowCheckpoint : NonSerializable {
     fun markForRetry(flowEvent: FlowEvent, exception: Exception)
 
     fun markRetrySuccess()
+
+    fun setFlowSleepDuration(sleepTimeMs: Int)
 
     fun toAvro(): Checkpoint?
 }

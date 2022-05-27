@@ -1,9 +1,12 @@
 package net.corda.crypto.service
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
+import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.security.KeyPair
 import java.security.PublicKey
 
@@ -67,12 +70,38 @@ interface SigningService {
     ): Collection<SigningKeyInfo>
 
     /**
+     * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of
+     * the wrapping key in such cases the implementation should do nothing (note that requiresWrappingKey
+     * in CryptoService should return false for such implementations).
+     *
+     * @param configId the HSM's configuration id which the key is generated in.
+     * @param failIfExists a flag indicating whether the method should fail if a key already exists under
+     * the provided alias or return normally without overriding the key.
+     * @param context the optional key/value operation context.
+     *
+     * @throws [CryptoServiceBadRequestException] if a key already exists under this alias
+     * and [failIfExists] is set to true.
+     * @throws [CryptoServiceException] for general cryptographic exceptions.
+     */
+    fun createWrappingKey(
+        configId: String,
+        failIfExists: Boolean,
+        masterKeyAlias: String,
+        context: Map<String, String>
+    )
+
+    /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as TLS, LEDGER, FRESH_KEY, etc.
+     * @param category The HSM category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     *
+     * The [tenantId] and [category] are used to find which HSM is being used to persist the actual key. After the key
+     * is generated that information is stored alongside with other metadata so it wil be possible to find the HSM
+     * storing the private key.
      *
      * @return The public part of the pair.
      */
@@ -80,6 +109,7 @@ interface SigningService {
         tenantId: String,
         category: String,
         alias: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -87,18 +117,25 @@ interface SigningService {
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
-     * @param category The HSM category, such as TLS, LEDGER, FRESH_KEY, etc.
+     * @param category The HSM category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
      * @param externalId the external id to be associated with the key.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     *
+     * The [tenantId] and [category] are used to find which HSM is being used to persist the actual key. After the key
+     * is generated that information is stored alongside with other metadata so it wil be possible to find the HSM
+     * storing the private key.
      *
      * @return The public part of the pair.
      */
+    @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
         externalId: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -106,37 +143,38 @@ interface SigningService {
      * Generates a new random [KeyPair] and adds it to the internal key storage.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
+     * @param category The HSM category, such as ACCOUNTS, CI, etc.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
-    fun freshKey(tenantId: String, context: Map<String, String> = EMPTY_CONTEXT): PublicKey
+    fun freshKey(
+        tenantId: String,
+        category: String,
+        scheme: KeyScheme,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): PublicKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
      * an external id.
      *
      * @param tenantId the tenant's id which the key pair is generated for.
+     * @param category The HSM category, such as ACCOUNTS, CI, etc.
      * @param externalId the external id to be associated with the key.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
-    fun freshKey(tenantId: String, externalId: String, context: Map<String, String> = EMPTY_CONTEXT): PublicKey
-
-    /**
-     * Using the provided signing public key internally looks up the matching private key information and signs the data.
-     * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
-     * Default signature scheme for the key scheme is used.
-     *
-     * @param tenantId the tenant's id which the key belongs to.
-     */
-    fun sign(
+    fun freshKey(
         tenantId: String,
-        publicKey: PublicKey,
-        data: ByteArray,
+        category: String,
+        externalId: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
-    ): DigitalSignature.WithKey
+    ): PublicKey
 
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.

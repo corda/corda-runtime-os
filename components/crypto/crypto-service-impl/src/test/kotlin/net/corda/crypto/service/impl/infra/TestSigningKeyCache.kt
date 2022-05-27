@@ -1,21 +1,22 @@
 package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyCache
-import net.corda.crypto.persistence.SigningKeyCacheActions
-import net.corda.crypto.persistence.SigningKeyCacheProvider
-import net.corda.crypto.persistence.SigningKeyFilterMapImpl
-import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeySaveContext
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.alias
-import net.corda.crypto.persistence.category
-import net.corda.crypto.persistence.createdAfter
-import net.corda.crypto.persistence.createdBefore
-import net.corda.crypto.persistence.masterKeyAlias
-import net.corda.crypto.persistence.schemeCodeName
+import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyCache
+import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
+import net.corda.crypto.persistence.signing.SigningKeyFilterMapImpl
+import net.corda.crypto.persistence.signing.SigningKeyOrderBy
+import net.corda.crypto.persistence.signing.SigningKeySaveContext
+import net.corda.crypto.persistence.signing.SigningKeyStatus
+import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.signing.alias
+import net.corda.crypto.persistence.signing.category
+import net.corda.crypto.persistence.signing.createdAfter
+import net.corda.crypto.persistence.signing.createdBefore
+import net.corda.crypto.persistence.signing.masterKeyAlias
+import net.corda.crypto.persistence.signing.schemeCodeName
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -81,11 +82,13 @@ class TestSigningKeyCacheActions(
                     hsmAlias = context.key.hsmAlias,
                     publicKey = encodedKey,
                     keyMaterial = null,
-                    schemeCodeName = context.signatureScheme.codeName,
+                    schemeCodeName = context.keyScheme.codeName,
                     masterKeyAlias = null,
                     externalId = null,
                     encodingVersion = null,
-                    created = now
+                    timestamp = now,
+                    associationId = context.associationId,
+                    status = SigningKeyStatus.NORMAL
                 )
             }
             is SigningWrappedKeySaveContext -> {
@@ -98,11 +101,13 @@ class TestSigningKeyCacheActions(
                     hsmAlias = null,
                     publicKey = encodedKey,
                     keyMaterial = context.key.keyMaterial,
-                    schemeCodeName = context.signatureScheme.codeName,
+                    schemeCodeName = context.keyScheme.codeName,
                     masterKeyAlias = context.masterKeyAlias,
                     externalId = context.externalId,
                     encodingVersion = context.key.encodingVersion,
-                    created = now
+                    timestamp = now,
+                    associationId = context.associationId,
+                    status = SigningKeyStatus.NORMAL
                 )
             }
             else -> throw  IllegalArgumentException("Unknown type ${context::class.java.name}")
@@ -135,20 +140,20 @@ class TestSigningKeyCacheActions(
                 false
             } else if(map.masterKeyAlias != null && it.masterKeyAlias != map.masterKeyAlias) {
                 false
-            } else if(map.createdAfter != null && it.created < map.createdAfter) {
+            } else if(map.createdAfter != null && it.timestamp < map.createdAfter) {
                 false
-            } else !(map.createdBefore != null && it.created > map.createdBefore)
+            } else !(map.createdBefore != null && it.timestamp > map.createdBefore)
         }
         return when(orderBy) {
             SigningKeyOrderBy.NONE -> filtered
             SigningKeyOrderBy.ID -> filtered.sortedBy { it.id }
-            SigningKeyOrderBy.CREATED -> filtered.sortedBy { it.created }
+            SigningKeyOrderBy.TIMESTAMP -> filtered.sortedBy { it.timestamp }
             SigningKeyOrderBy.CATEGORY -> filtered.sortedBy { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME -> filtered.sortedBy { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS -> filtered.sortedBy { it.alias }
             SigningKeyOrderBy.MASTER_KEY_ALIAS -> filtered.sortedBy { it.masterKeyAlias }
             SigningKeyOrderBy.EXTERNAL_ID -> filtered.sortedBy { it.externalId }
-            SigningKeyOrderBy.CREATED_DESC -> filtered.sortedByDescending { it.created }
+            SigningKeyOrderBy.TIMESTAMP_DESC -> filtered.sortedByDescending { it.timestamp }
             SigningKeyOrderBy.CATEGORY_DESC -> filtered.sortedByDescending { it.category }
             SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> filtered.sortedByDescending { it.schemeCodeName }
             SigningKeyOrderBy.ALIAS_DESC -> filtered.sortedByDescending { it.alias }

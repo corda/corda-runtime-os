@@ -1,22 +1,28 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.SigningWrappedKeySaveContext
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
+import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyStatus
+import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
@@ -32,18 +38,28 @@ import kotlin.test.assertEquals
 import kotlin.test.assertSame
 
 class CryptoServiceRefUtilsTests {
+    companion object {
+        private lateinit var schemeMetadata: CipherSchemeMetadata
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            schemeMetadata = CipherSchemeMetadataImpl()
+        }
+    }
+
     @Test
     fun `Should return supported schemes`() {
-        val expectedResult = arrayOf(
-            ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
-            RSA_SHA256_TEMPLATE.makeScheme("BC"),
+        val expectedResult = listOf(
+            ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"),
+            RSA_TEMPLATE.makeScheme("BC"),
         )
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = expectedResult[0],
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { supportedSchemes() } doReturn expectedResult
             }
@@ -55,78 +71,59 @@ class CryptoServiceRefUtilsTests {
     }
 
     @Test
-    fun `Should create wrapping key`() {
-        val ref = CryptoServiceRef(
-            tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
-            masterKeyAlias = UUID.randomUUID().toString(),
-            aliasSecret = UUID.randomUUID().toString().toByteArray(),
-            instance = mock()
-        )
-        ref.createWrappingKey(true)
-        Mockito.verify(ref.instance, times(1)).createWrappingKey(
-            eq(ref.masterKeyAlias!!),
-            eq(true),
-            argThat { isEmpty() }
-        )
-    }
-
-    @Test
-    fun `Should throw IllegalArgumentException when creating wrapping key and master key alias is null`() {
-        val ref = CryptoServiceRef(
-            tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
-            masterKeyAlias = null,
-            aliasSecret = UUID.randomUUID().toString().toByteArray(),
-            instance = mock()
-        )
-        assertThrows<IllegalArgumentException> {
-            ref.createWrappingKey(true)
-        }
-    }
-
-    @Test
     fun `Should generate key`() {
         val expectedResult = mock<GeneratedKey>()
         val expectedAlias = UUID.randomUUID().toString()
-        val context = emptyMap<String, String>()
+        val context = mapOf(
+            "customKey" to "customValue"
+        )
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { generateKeyPair(any(), any()) } doReturn expectedResult
             }
         )
-        val result = ref.generateKeyPair(expectedAlias, context)
+        val result = ref.generateKeyPair(
+            alias = expectedAlias,
+            scheme = scheme,
+            context = context
+        )
         assertSame(expectedResult, result)
         Mockito.verify(ref.instance, times(1)).generateKeyPair(
             argThat {
-                            tenantId == ref.tenantId &&
-                            signatureScheme == ref.signatureScheme &&
+                            keyScheme == scheme &&
                             alias == expectedAlias &&
                             masterKeyAlias == ref.masterKeyAlias &&
                             secret.contentEquals(ref.aliasSecret)
             },
-            eq(context)
+            argThat {
+                size == 3 &&
+                this[CRYPTO_TENANT_ID] == ref.tenantId &&
+                this[CRYPTO_CATEGORY] == ref.category &&
+                this["customKey"] == "customValue"
+            }
         )
     }
 
     @Test
     fun `Should sign using key material when it's not null`() {
         val expectedResult = UUID.randomUUID().toString().toByteArray()
-        val context = emptyMap<String, String>()
+        val context = mapOf(
+            "customKey" to "customValue"
+        )
         val data = UUID.randomUUID().toString().toByteArray()
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -134,30 +131,35 @@ class CryptoServiceRefUtilsTests {
         val record = SigningCachedKey(
             id = "123",
             tenantId = ref.tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = null,
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
-            schemeCodeName = ref.signatureScheme.codeName,
+            schemeCodeName = scheme.codeName,
             masterKeyAlias = ref.masterKeyAlias,
             externalId = null,
             encodingVersion = 11,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
-        val result = ref.sign(record, ref.signatureScheme, data, context)
+        val result = ref.sign(record, scheme, schemeMetadata.supportedSignatureSpec(scheme).first(), data, context)
         assertSame(expectedResult, result)
         Mockito.verify(ref.instance, times(1)).sign(
             argThat {
                 this as SigningWrappedSpec
-                tenantId == ref.tenantId &&
-                        signatureScheme == ref.signatureScheme &&
+                        keyScheme == scheme &&
                         keyMaterial.contentEquals(record.keyMaterial) &&
                         masterKeyAlias == ref.masterKeyAlias &&
                         encodingVersion == record.encodingVersion
             },
             eq(data),
-            eq(context)
+            argThat {
+                        size == 2 &&
+                        this[CRYPTO_TENANT_ID] == ref.tenantId &&
+                        this["customKey"] == "customValue"
+            }
         )
     }
 
@@ -166,12 +168,13 @@ class CryptoServiceRefUtilsTests {
         val expectedResult = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val data = UUID.randomUUID().toString().toByteArray()
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -179,19 +182,21 @@ class CryptoServiceRefUtilsTests {
         val record = SigningCachedKey(
             id = "123",
             tenantId = ref.tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = null,
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = ByteArray(0),
-            schemeCodeName = ref.signatureScheme.codeName,
+            schemeCodeName = scheme.codeName,
             masterKeyAlias = ref.masterKeyAlias,
             externalId = null,
             encodingVersion = 11,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         assertThrows<IllegalArgumentException> {
-            ref.sign(record, ref.signatureScheme, data, context)
+            ref.sign(record, scheme, schemeMetadata.supportedSignatureSpec(scheme).first(), data, context)
         }
     }
 
@@ -200,12 +205,13 @@ class CryptoServiceRefUtilsTests {
         val expectedResult = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val data = UUID.randomUUID().toString().toByteArray()
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -213,33 +219,38 @@ class CryptoServiceRefUtilsTests {
         val record = SigningCachedKey(
             id = "123",
             tenantId = ref.tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = null,
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
-            schemeCodeName = ref.signatureScheme.codeName,
+            schemeCodeName = scheme.codeName,
             masterKeyAlias = ref.masterKeyAlias,
             externalId = null,
             encodingVersion = null,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         assertThrows<IllegalArgumentException> {
-            ref.sign(record, ref.signatureScheme, data, context)
+            ref.sign(record, scheme, schemeMetadata.supportedSignatureSpec(scheme).first(), data, context)
         }
     }
 
     @Test
     fun `Should sign using alias when it's not null`() {
         val expectedResult = UUID.randomUUID().toString().toByteArray()
-        val context = emptyMap<String, String>()
+        val context = mapOf(
+            "customKey" to "customValue"
+        )
         val data = UUID.randomUUID().toString().toByteArray()
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -247,28 +258,33 @@ class CryptoServiceRefUtilsTests {
         val record = SigningCachedKey(
             id = "123",
             tenantId = ref.tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = UUID.randomUUID().toString(),
             hsmAlias = UUID.randomUUID().toString(),
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = null,
-            schemeCodeName = ref.signatureScheme.codeName,
+            schemeCodeName = scheme.codeName,
             masterKeyAlias = null,
             externalId = null,
             encodingVersion = null,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
-        val result = ref.sign(record, ref.signatureScheme, data, context)
+        val result = ref.sign(record, scheme, schemeMetadata.supportedSignatureSpec(scheme).first(), data, context)
         assertSame(expectedResult, result)
         Mockito.verify(ref.instance, times(1)).sign(
             argThat {
                 this as SigningAliasSpec
-                tenantId == ref.tenantId &&
-                        signatureScheme == ref.signatureScheme &&
+                        keyScheme ==scheme &&
                         hsmAlias == record.hsmAlias
             },
             eq(data),
-            eq(context)
+            argThat {
+                size == 2 &&
+                this[CRYPTO_TENANT_ID] == ref.tenantId &&
+                this["customKey"] == "customValue"
+            }
         )
     }
 
@@ -277,12 +293,13 @@ class CryptoServiceRefUtilsTests {
         val expectedResult = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val data = UUID.randomUUID().toString().toByteArray()
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { sign(any(), any(), any()) } doReturn expectedResult
             }
@@ -290,30 +307,33 @@ class CryptoServiceRefUtilsTests {
         val record = SigningCachedKey(
             id = "123",
             tenantId = ref.tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = UUID.randomUUID().toString(),
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = null,
-            schemeCodeName = ref.signatureScheme.codeName,
+            schemeCodeName = scheme.codeName,
             masterKeyAlias = null,
             externalId = null,
             encodingVersion = null,
-            created = Instant.now()
+            associationId = ref.associationId,
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         assertThrows<IllegalArgumentException> {
-            ref.sign(record, ref.signatureScheme, data, context)
+            ref.sign(record, scheme, schemeMetadata.supportedSignatureSpec(scheme).first(), data, context)
         }
     }
 
     @Test
     fun `Should convert to SigningPublicKeySaveContext`() {
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedPublicKey(
@@ -321,23 +341,25 @@ class CryptoServiceRefUtilsTests {
             hsmAlias = UUID.randomUUID().toString()
         )
         val alias = UUID.randomUUID().toString()
-        val result = ref.toSaveKeyContext(generatedKey, alias, null)
+        val result = ref.toSaveKeyContext(generatedKey, alias, scheme, null)
         assertInstanceOf(SigningPublicKeySaveContext::class.java, result)
         result as SigningPublicKeySaveContext
         assertSame(generatedKey, result.key)
         assertEquals(alias, result.alias)
-        assertEquals(ref.signatureScheme, result.signatureScheme)
+        assertEquals(scheme, result.keyScheme)
         assertEquals(ref.category, result.category)
+        assertEquals(ref.associationId, result.associationId)
     }
 
     @Test
     fun `Should convert to SigningWrappedKeySaveContext`() {
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedWrappedKey(
@@ -347,32 +369,34 @@ class CryptoServiceRefUtilsTests {
         )
         val alias = UUID.randomUUID().toString()
         val externalId = UUID.randomUUID().toString()
-        val result = ref.toSaveKeyContext(generatedKey, alias, externalId)
+        val result = ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
         assertInstanceOf(SigningWrappedKeySaveContext::class.java, result)
         result as SigningWrappedKeySaveContext
         assertSame(generatedKey, result.key)
         assertEquals(alias, result.alias)
-        assertEquals(ref.signatureScheme, result.signatureScheme)
+        assertEquals(scheme, result.keyScheme)
         assertEquals(ref.category, result.category)
         assertEquals(ref.masterKeyAlias, result.masterKeyAlias)
+        assertEquals(ref.associationId, result.associationId)
         assertEquals(externalId, result.externalId)
     }
 
     @Test
     fun `Should throw CryptoServiceException when converting unknown key generation result`() {
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = mock<GeneratedKey>()
         val alias = UUID.randomUUID().toString()
         val externalId = UUID.randomUUID().toString()
         assertThrows<CryptoServiceException> {
-            ref.toSaveKeyContext(generatedKey, alias, externalId)
+            ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
         }
     }
 }

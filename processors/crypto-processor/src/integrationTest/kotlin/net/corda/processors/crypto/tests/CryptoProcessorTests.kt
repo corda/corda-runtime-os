@@ -1,25 +1,31 @@
 package net.corda.processors.crypto.tests
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.ConfigRenderOptions
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -30,31 +36,29 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.infra.BOOT_CONFIGURATION
-import net.corda.processors.crypto.tests.infra.CRYPTO_CONFIGURATION_VALUE
+import net.corda.processors.crypto.tests.infra.DependenciesTracker
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
-import net.corda.processors.crypto.tests.infra.MESSAGING_CONFIGURATION_VALUE
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
-import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
+import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
+import net.corda.processors.crypto.tests.infra.randomTenantId
 import net.corda.processors.crypto.tests.infra.startAndWait
-import net.corda.processors.crypto.tests.infra.stopAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.MessagingConfig
-import net.corda.v5.base.types.toHexString
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.publicKeyId
-import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -67,12 +71,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.PublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.time.Duration
-import java.util.*
-import java.util.stream.Stream
+
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -101,10 +100,7 @@ class CryptoProcessorTests {
         lateinit var verifier: SignatureVerificationService
 
         @InjectService(timeout = 5000L)
-        lateinit var keyEncodingService: KeyEncodingService
-
-        @InjectService(timeout = 5000)
-        lateinit var dbConnectionManager: DbConnectionManager
+        lateinit var schemeMetadata: CipherSchemeMetadata
 
         @InjectService(timeout = 5000)
         lateinit var entitiesRegistry: JpaEntitiesRegistry
@@ -112,11 +108,11 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
-        @InjectService(timeout = 5000)
-        lateinit var lbm: LiquibaseSchemaMigrator
+        @InjectService(timeout = 5000L)
+        lateinit var hsmRegistrationClient: HSMRegistrationClient
 
         @InjectService(timeout = 5000)
-        lateinit var softCryptoServiceProvider: SoftCryptoServiceProvider
+        lateinit var lbm: LiquibaseSchemaMigrator
 
         private lateinit var publisher: Publisher
 
@@ -124,9 +120,7 @@ class CryptoProcessorTests {
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
-        private lateinit var testDependencies: TestDependenciesTracker
-
-        private val vnodeId: String = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
+        private val vnodeId: String = randomTenantId()
 
         private val clusterDb = TestDbInfo.createConfig()
 
@@ -140,113 +134,58 @@ class CryptoProcessorTests {
             schemaName = "vnode_crypto"
         )
 
+        private val boostrapConfig = makeBootstrapConfig(
+            mapOf(
+                BOOT_DB_PARAMS to clusterDb.config
+            )
+        )
+
+        private val messagingConfig = makeMessagingConfig(boostrapConfig)
+
         @JvmStatic
         @BeforeAll
         fun setup() {
             setupPrerequisites()
-            setupMessagingAndCryptoConfigs()
             setupDatabases()
             startDependencies()
-            testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
-            // temporary hack as the DbAdmin doesn't support HSQL
-            addDbConnectionConfigs(cryptoDb, vnodeDb)
-            // temporary hack to create wrapping key
-            softCryptoServiceProvider.getInstance(
-                SoftCryptoServiceConfig(
-                    passphrase = "PASSPHRASE",
-                    salt = "SALT"
-                )
-            ).createWrappingKey("wrapping-key", false, emptyMap())
+            assignHSMs()
         }
 
         @JvmStatic
         @AfterAll
         fun cleanup() {
-            if (::testDependencies.isInitialized) {
-                testDependencies.stopAndWait()
-            }
             if (::flowOpsResponses.isInitialized) {
                 flowOpsResponses.close()
-            }
-            if (::opsClient.isInitialized) {
-                opsClient.stopAndWait()
             }
         }
 
         private fun setupPrerequisites() {
-            flowOpsResponses = FlowOpsResponses(subscriptionFactory)
+            flowOpsResponses = FlowOpsResponses(messagingConfig, subscriptionFactory)
             transformer = CryptoFlowOpsTransformer(
+                serializer = schemeMetadata,
                 requestingComponent = "test",
                 responseTopic = RESPONSE_TOPIC,
-                keyEncodingService = keyEncodingService
+                keyEncodingService = schemeMetadata
             )
-            publisher = publisherFactory.createPublisher(
-                PublisherConfig(CLIENT_ID),
-                SmartConfigFactory.create(ConfigFactory.empty())
-                    .create(
-                        ConfigFactory.empty()
-                            .withValue(MessagingConfig.Boot.INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-                            .withValue(MessagingConfig.Bus.BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
-                    )
-            )
-        }
-
-        private fun addDbConnectionConfigs(vararg dbs: TestDbInfo) {
-            dbs.forEach { db ->
-                dbConnectionManager.putConnection(
-                    name = db.name,
-                    privilege = DbPrivilege.DML,
-                    config = db.config,
-                    description = null,
-                    updateActor = "sa"
-                )
-            }
-        }
-
-        private fun startDependencies() {
-            val boostrapConfig = makeBootstrapConfig(
-                BOOT_CONFIGURATION, mapOf(
-                    ConfigKeys.DB_CONFIG to clusterDb.config
-                )
-            )
-            opsClient.startAndWait()
-            cryptoProcessor.startAndWait(boostrapConfig)
-            testDependencies = TestDependenciesTracker(
-                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
-                coordinatorFactory,
-                lifecycleRegistry,
-                setOf(
-                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-                    LifecycleCoordinatorName.forComponent<CryptoProcessor>()
-                )
-            ).also { it.startAndWait() }
-        }
-
-        private fun setupMessagingAndCryptoConfigs() {
-            with(publisher) {
-                publish(
-                    listOf(
-                        Record(
-                            CONFIG_TOPIC,
-                            MESSAGING_CONFIG,
-                            Configuration(MESSAGING_CONFIGURATION_VALUE, "1")
-                        ),
-                        Record(
-                            CONFIG_TOPIC,
-                            CRYPTO_CONFIG,
-                            Configuration(CRYPTO_CONFIGURATION_VALUE, "1")
-                        )
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
+            publisher.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        MESSAGING_CONFIG,
+                        Configuration(messagingConfig.root().render(), "1", ConfigurationSchemaVersion(1, 0))
                     )
                 )
-            }
+            )
         }
 
         private fun setupDatabases() {
             val databaseInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
-            databaseInstaller.setupClusterDatabase(
+            val configEmf = databaseInstaller.setupClusterDatabase(
                 clusterDb,
-                "config"
-            ).close()
+                "config",
+                ConfigurationEntities.classes
+            )
             databaseInstaller.setupDatabase(
                 cryptoDb,
                 "crypto"
@@ -256,22 +195,75 @@ class CryptoProcessorTests {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
+            addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
+            configEmf.close()
+        }
+
+        private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo) {
+            dbs.forEach { db ->
+                val configAsString = db.config.root().render(ConfigRenderOptions.concise())
+                configEmf.transaction {
+                    val existing = it.createQuery("""
+                        SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
+                    """.trimIndent())
+                        .setParameter("name", db.name)
+                        .setParameter("privilege", DbPrivilege.DML)
+                        .resultList
+                    if(existing.isEmpty()) {
+                        val record = DbConnectionConfig(
+                            UUID.randomUUID(),
+                            db.name,
+                            DbPrivilege.DML,
+                            Instant.now(),
+                            "sa",
+                            "Test ${db.name}",
+                            configAsString
+                        )
+                        it.persist(record)
+                    }
+                }
+            }
+        }
+
+        private fun startDependencies() {
+            hsmRegistrationClient.startAndWait()
+            cryptoProcessor.startAndWait(boostrapConfig)
+            val tracker = DependenciesTracker(
+                LifecycleCoordinatorName.forComponent<CryptoProcessorTests>(),
+                coordinatorFactory,
+                lifecycleRegistry,
+                setOf(
+                    LifecycleCoordinatorName.forComponent<CryptoProcessor>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
+                )
+            ).also { it.startAndWait() }
+            tracker.waitUntilAllUp(Duration.ofSeconds(60))
+            tracker.stop()
+        }
+
+        private fun assignHSMs() {
+            CryptoConsts.Categories.all.forEach {
+                // cluster is assigned in the crypto processor
+                if(hsmRegistrationClient.findHSM(vnodeId, it) == null) {
+                    hsmRegistrationClient.assignSoftHSM(vnodeId, it, emptyMap())
+                }
+            }
         }
 
         @JvmStatic
         fun testCategories(): Stream<Arguments> = Stream.of(
-            Arguments.of(CryptoConsts.HsmCategories.LEDGER, vnodeId),
-            Arguments.of(CryptoConsts.HsmCategories.TLS, vnodeId),
-            Arguments.of(CryptoConsts.HsmCategories.SESSION, vnodeId),
-            Arguments.of(CryptoConsts.HsmCategories.LEDGER, CryptoConsts.CLUSTER_TENANT_ID),
-            Arguments.of(CryptoConsts.HsmCategories.TLS, CryptoConsts.CLUSTER_TENANT_ID),
-            Arguments.of(CryptoConsts.HsmCategories.SESSION, CryptoConsts.CLUSTER_TENANT_ID)
+            Arguments.of(CryptoConsts.Categories.LEDGER, vnodeId),
+            Arguments.of(CryptoConsts.Categories.TLS, vnodeId),
+            Arguments.of(CryptoConsts.Categories.SESSION_INIT, vnodeId),
+            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.RPC_API),
+            Arguments.of(CryptoConsts.Categories.TLS, CryptoTenants.P2P)
         )
 
         @JvmStatic
         fun testTenants(): Stream<Arguments> = Stream.of(
             Arguments.of(vnodeId),
-            Arguments.of(CryptoConsts.CLUSTER_TENANT_ID),
+            Arguments.of(CryptoTenants.P2P),
+            Arguments.of(CryptoTenants.RPC_API)
         )
     }
 
@@ -325,18 +317,23 @@ class CryptoProcessorTests {
         val original = opsClient.generateKeyPair(
             tenantId = tenantId,
             category = category,
-            alias = alias
+            alias = alias,
+            scheme = ECDSA_SECP256R1_CODE_NAME
         )
 
         `Should find existing public key by its id`(tenantId, alias, original, category, null)
 
         `Should find existing public key by its alias`(tenantId, alias, original, category)
 
-        `Should be able to sign`(tenantId, original)
+        `Should be able to sign and verify`(tenantId, original)
+
+        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
 
         `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(tenantId, original)
+        `Should be able to sign by flow ops and verify`(tenantId, original)
+
+        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
     @ParameterizedTest
@@ -348,7 +345,9 @@ class CryptoProcessorTests {
 
         val original = opsClient.freshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
             externalId = externalId,
+            scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
@@ -356,15 +355,19 @@ class CryptoProcessorTests {
             tenantId,
             null,
             original,
-            CryptoConsts.HsmCategories.FRESH_KEYS,
+            CryptoConsts.Categories.CI,
             externalId
         )
 
-        `Should be able to sign`(tenantId, original)
+        `Should be able to sign and verify`(tenantId, original)
+
+        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
 
         `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(tenantId, original)
+        `Should be able to sign by flow ops and verify`(tenantId, original)
+
+        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
     @ParameterizedTest
@@ -374,6 +377,8 @@ class CryptoProcessorTests {
     ) {
         val original = opsClient.freshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
+            scheme = ECDSA_SECP256R1_CODE_NAME,
             context = CryptoOpsClient.EMPTY_CONTEXT
         )
 
@@ -381,15 +386,19 @@ class CryptoProcessorTests {
             tenantId,
             null,
             original,
-            CryptoConsts.HsmCategories.FRESH_KEYS,
+            CryptoConsts.Categories.CI,
             null
         )
 
-        `Should be able to sign`(tenantId, original)
+        `Should be able to sign and verify`(tenantId, original)
+
+        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
 
         `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(tenantId, original)
+        `Should be able to sign by flow ops and verify`(tenantId, original)
+
+        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
     @ParameterizedTest
@@ -399,7 +408,9 @@ class CryptoProcessorTests {
     ) {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
-            tenantId = tenantId
+            tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
+            scheme = RSA_CODE_NAME
         )
         publisher.publish(
             listOf(
@@ -413,11 +424,15 @@ class CryptoProcessorTests {
         val response = flowOpsResponses.waitForResponse(key)
         val original = transformer.transform(response) as PublicKey
 
-        `Should be able to sign`(tenantId, original)
+        `Should be able to sign and verify`(tenantId, original)
+
+        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
 
         `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(tenantId, original)
+        `Should be able to sign by flow ops and verify`(tenantId, original)
+
+        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
     @ParameterizedTest
@@ -429,6 +444,8 @@ class CryptoProcessorTests {
         val key = UUID.randomUUID().toString()
         val event = transformer.createFreshKey(
             tenantId = tenantId,
+            category = CryptoConsts.Categories.CI,
+            scheme = RSA_CODE_NAME,
             externalId = externalId
         )
         publisher.publish(
@@ -443,11 +460,15 @@ class CryptoProcessorTests {
         val response = flowOpsResponses.waitForResponse(key)
         val original = transformer.transform(response) as PublicKey
 
-        `Should be able to sign`(tenantId, original)
+        `Should be able to sign and verify`(tenantId, original)
+
+        `Should be able to sign and verify by inferring signtaure spec`(tenantId, original)
 
         `Should be able to sign using custom signature spec`(tenantId, original)
 
-        `Should be able to sign by flow ops`(tenantId, original)
+        `Should be able to sign by flow ops and verify`(tenantId, original)
+
+        `Should be able to sign by flow ops and verify bu inferring signature spec`(tenantId, original)
     }
 
     private fun `Should find existing public key by its id`(
@@ -508,23 +529,50 @@ class CryptoProcessorTests {
         assertNull(found[0].hsmAlias)
     }
 
-    private fun `Should be able to sign`(
+    private fun `Should be able to sign and verify`(
         tenantId: String,
         publicKey: PublicKey
     ) {
-        val data = randomDataByteArray()
-        val signature = opsClient.sign(
-            tenantId = tenantId,
-            publicKey = publicKey,
-            data = data
-        )
-        assertEquals(publicKey, signature.by)
-        assertTrue(signature.bytes.isNotEmpty())
-        verifier.verify(
-            publicKey = publicKey,
-            signatureData = signature.bytes,
-            clearData = data
-        )
+        schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
+            val data = randomDataByteArray()
+            val signature = opsClient.sign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = spec,
+                data = data
+            )
+            assertEquals(publicKey, signature.by)
+            assertTrue(signature.bytes.isNotEmpty())
+            verifier.verify(
+                publicKey = publicKey,
+                signatureSpec = spec,
+                signatureData = signature.bytes,
+                clearData = data
+            )
+        }
+    }
+
+    private fun `Should be able to sign and verify by inferring signtaure spec`(
+        tenantId: String,
+        publicKey: PublicKey
+    ) {
+        schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
+            val data = randomDataByteArray()
+            val signature = opsClient.sign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!,
+                data = data
+            )
+            assertEquals(publicKey, signature.by)
+            assertTrue(signature.bytes.isNotEmpty())
+            verifier.verify(
+                publicKey = publicKey,
+                digest = digest,
+                signatureData = signature.bytes,
+                clearData = data
+            )
+        }
     }
 
     private fun `Should be able to sign using custom signature spec`(
@@ -534,16 +582,7 @@ class CryptoProcessorTests {
         val data = randomDataByteArray()
         val signatureSpec = when (publicKey.algorithm) {
             "EC" -> SignatureSpec("SHA512withECDSA")
-            "RSA" -> SignatureSpec(
-                "RSASSA-PSS",
-                params = PSSParameterSpec(
-                    "SHA-256",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA256,
-                    32,
-                    1
-                )
-            )
+            "RSA" -> RSASSA_PSS_SHA256_SIGNATURE_SPEC
             else -> throw IllegalArgumentException("Test supports only RSA or ECDSA")
         }
         val signature = opsClient.sign(
@@ -562,34 +601,73 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign by flow ops`(
+    private fun `Should be able to sign by flow ops and verify`(
         tenantId: String,
         publicKey: PublicKey
     ) {
-        val data = randomDataByteArray()
-        val key = UUID.randomUUID().toString()
-        val event = transformer.createSign(
-            tenantId = tenantId,
-            publicKey = publicKey,
-            data = data
-        )
-        publisher.publish(
-            listOf(
-                Record(
-                    topic = FLOW_OPS_MESSAGE_TOPIC,
-                    key = key,
-                    value = event
-                )
+        schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
+            val data = randomDataByteArray()
+            val key = UUID.randomUUID().toString()
+            val event = transformer.createSign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = spec,
+                data = data
             )
-        ).forEach { it.get() }
-        val response = flowOpsResponses.waitForResponse(key)
-        val signature = transformer.transform(response) as DigitalSignature.WithKey
-        assertEquals(publicKey, signature.by)
-        assertTrue(signature.bytes.isNotEmpty())
-        verifier.verify(
-            publicKey = publicKey,
-            signatureData = signature.bytes,
-            clearData = data
-        )
+            publisher.publish(
+                listOf(
+                    Record(
+                        topic = FLOW_OPS_MESSAGE_TOPIC,
+                        key = key,
+                        value = event
+                    )
+                )
+            ).forEach { it.get() }
+            val response = flowOpsResponses.waitForResponse(key)
+            val signature = transformer.transform(response) as DigitalSignature.WithKey
+            assertEquals(publicKey, signature.by)
+            assertTrue(signature.bytes.isNotEmpty())
+            verifier.verify(
+                publicKey = publicKey,
+                signatureSpec = spec,
+                signatureData = signature.bytes,
+                clearData = data
+            )
+        }
+    }
+
+    private fun `Should be able to sign by flow ops and verify bu inferring signature spec`(
+        tenantId: String,
+        publicKey: PublicKey
+    ) {
+        schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
+            val data = randomDataByteArray()
+            val key = UUID.randomUUID().toString()
+            val event = transformer.createSign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!,
+                data = data
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        topic = FLOW_OPS_MESSAGE_TOPIC,
+                        key = key,
+                        value = event
+                    )
+                )
+            ).forEach { it.get() }
+            val response = flowOpsResponses.waitForResponse(key)
+            val signature = transformer.transform(response) as DigitalSignature.WithKey
+            assertEquals(publicKey, signature.by)
+            assertTrue(signature.bytes.isNotEmpty())
+            verifier.verify(
+                publicKey = publicKey,
+                digest = digest,
+                signatureData = signature.bytes,
+                clearData = data
+            )
+        }
     }
 }

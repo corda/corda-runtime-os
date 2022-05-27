@@ -80,7 +80,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         verify(configReadService).registerComponentForUpdates(
             coordinator,
             setOf(
-//                ConfigKeys.MESSAGING_CONFIG,
+                ConfigKeys.MESSAGING_CONFIG,
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.RPC_CONFIG
             )
@@ -108,12 +108,10 @@ class CpiUploadRPCOpsServiceHandlerTest {
     @Test
     fun `on ConfigChangedEvent creates new RPCSender and CpiUploadManager and updates coordinator to UP`() {
         val config = mock<Map<String, SmartConfig>>()
-        // uncomment when we add ConfigKeys.MESSAGING_CONFIG back into the code.
-        //whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.RPC_CONFIG]).thenReturn(mock())
-        // uncomment when we add ConfigKeys.MESSAGING_CONFIG back into the code.
-        //whenever(config.toMessagingConfig()).thenReturn(mock())
 
         val publisher = mock<Publisher>()
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)

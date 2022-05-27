@@ -1,5 +1,8 @@
 package net.corda.p2p.linkmanager
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -17,9 +20,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
@@ -27,7 +27,7 @@ internal class TrustStoresPublisher(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     registry: LifecycleRegistry,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile, GroupPolicyListener {
 
     companion object {
@@ -44,12 +44,12 @@ internal class TrustStoresPublisher(
         lifecycleCoordinatorFactory,
         registry,
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
-        configuration,
+        messagingConfiguration,
     )
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_TRUSTSTORES),
         Processor(),
-        configuration,
+        messagingConfiguration,
     )
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,

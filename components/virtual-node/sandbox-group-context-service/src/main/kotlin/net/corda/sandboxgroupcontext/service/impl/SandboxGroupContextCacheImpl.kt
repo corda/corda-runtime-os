@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.util.loggerFor
+import java.util.concurrent.ForkJoinPool
 
 internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): SandboxGroupContextCache {
     private companion object {
@@ -12,6 +13,12 @@ internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): Sandb
     }
     private val contexts: Cache<VirtualNodeContext, CloseableSandboxGroupContext> = Caffeine.newBuilder()
         .maximumSize(cacheSize)
+        .executor(ForkJoinPool(
+            Runtime.getRuntime().availableProcessors(),
+            SandboxForkJoinWorkerThreadFactory(),
+            null,
+            false
+        ))
         .removalListener<VirtualNodeContext, CloseableSandboxGroupContext> { key, value, cause ->
             logger.info("Evicting ${key!!.sandboxGroupType} sandbox for: ${key.holdingIdentity.x500Name} [${cause.name}]")
             value?.close()

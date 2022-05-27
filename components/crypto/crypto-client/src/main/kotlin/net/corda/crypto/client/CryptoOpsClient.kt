@@ -1,10 +1,10 @@
 package net.corda.crypto.client
 
-import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
@@ -37,9 +37,9 @@ interface CryptoOpsClient : Lifecycle {
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId The tenant owning the key.
-     * @param category The key category, such as TLS, LEDGER, etc. Don't use FRESH_KEY category as there is separate API
-     * for the fresh keys which is base around wrapped keys.
+     * @param category The key category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The public part of the pair.
@@ -48,6 +48,7 @@ interface CryptoOpsClient : Lifecycle {
         tenantId: String,
         category: String,
         alias: String,
+        scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -55,19 +56,21 @@ interface CryptoOpsClient : Lifecycle {
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
      * @param tenantId The tenant owning the key.
-     * @param category The key category, such as TLS, LEDGER, etc. Don't use FRESH_KEY category as there is separate API
-     * for the fresh keys which is base around wrapped keys.
+     * @param category The key category, such as TLS, LEDGER, etc.
      * @param alias the tenant defined key alias for the key pair to be generated.
      * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The public part of the pair.
      */
+    @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
         category: String,
         alias: String,
         externalId: String,
+        scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -75,36 +78,47 @@ interface CryptoOpsClient : Lifecycle {
      * Generates a new random [KeyPair] and adds it to the internal key storage.
      *
      * @param tenantId The tenant owning the key.
-     * @param context the optional key/value operation context.
-     *
-     * @return The [PublicKey] of the generated [KeyPair].
-     */
-    fun freshKey(tenantId: String, context: Map<String, String> = EMPTY_CONTEXT): PublicKey
-
-    /**
-     * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
-     * an external id.
-     *
-     * @param tenantId The tenant owning the key.
-     * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
+     * @param category The key category, such as ACCOUNTS, CI, etc.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      *
      * @return The [PublicKey] of the generated [KeyPair].
      */
     fun freshKey(
         tenantId: String,
-        externalId: String,
+        category: String,
+        scheme: String,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
     /**
-     * Using the provided signing public key internally looks up the matching private key information and signs the data.
+     * Generates a new random [KeyPair] and adds it to the internal key storage. Associates the public key to
+     * an external id.
+     *
+     * @param tenantId The tenant owning the key.
+     * @param category The key category, such as ACCOUNTS, CI, etc.
+     * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
+     * @param scheme the key's scheme code name describing which type of the key to generate.
+     * @param context the optional key/value operation context.
+     *
+     * @return The [PublicKey] of the generated [KeyPair].
+     */
+    fun freshKey(
+        tenantId: String,
+        category: String,
+        externalId: String,
+        scheme: String,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): PublicKey
+
+    /**
+     * Using the provided signing public key internally looks up the matching private key and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
-     * Default signature scheme for the key scheme is used.
      */
     fun sign(
         tenantId: String,
         publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
@@ -112,12 +126,16 @@ interface CryptoOpsClient : Lifecycle {
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
-     * The [signatureSpec] is used to override the default signature scheme
+     * The [digest] together with [publicKey] is used to infer the [SignatureSpec].
+     *
+     * @throws IllegalArgumentException if the [SignatureSpec] cannot be inferred from the parameters -
+     * e.g. EdDSA supports only 'NONEwithEdDSA' signatures so if the SHA-256 will be passed as the parameter
+     * that will result in the exception.
      */
     fun sign(
         tenantId: String,
         publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
+        digest: DigestAlgorithmName,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
@@ -130,7 +148,7 @@ interface CryptoOpsClient : Lifecycle {
      * requested.
      * @param orderBy the order by.
      * @param tenantId the tenant's id which the keys belong to.
-     * @param filter the layered property map of the filter parameters such as
+     * @param filter the optional layered property map of the filter parameters such as
      * category (the HSM's category which handles the keys),
      * schemeCodeName (the key's signature scheme name),
      * alias (the alias which is assigned by the tenant),
@@ -156,11 +174,4 @@ interface CryptoOpsClient : Lifecycle {
      * @throws IllegalArgumentException if the number of ids exceeds 20.
      */
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey>
-
-    /**
-     * Looks up information about the assigned HSM.
-     *
-     * @return The HSM's info if it's assigned otherwise null.
-     */
-    fun findHSM(tenantId: String, category: String) : HSMInfo?
 }

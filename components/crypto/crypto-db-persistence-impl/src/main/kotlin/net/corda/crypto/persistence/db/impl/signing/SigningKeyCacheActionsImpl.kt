@@ -2,22 +2,25 @@ package net.corda.crypto.persistence.db.impl.signing
 
 import com.github.benmanes.caffeine.cache.Cache
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyCacheActions
-import net.corda.crypto.persistence.SigningKeyFilterMapImpl
-import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeySaveContext
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
-import net.corda.crypto.persistence.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.alias
-import net.corda.crypto.persistence.category
-import net.corda.crypto.persistence.createdAfter
-import net.corda.crypto.persistence.createdBefore
+import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyFilterMapImpl
+import net.corda.crypto.persistence.signing.SigningKeyOrderBy
+import net.corda.crypto.persistence.signing.SigningKeySaveContext
+import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
+import net.corda.crypto.persistence.signing.alias
+import net.corda.crypto.persistence.signing.category
+import net.corda.crypto.persistence.signing.createdAfter
+import net.corda.crypto.persistence.signing.createdBefore
+import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.SigningKeyEntity
 import net.corda.crypto.persistence.db.model.SigningKeyEntityPrimaryKey
-import net.corda.crypto.persistence.externalId
-import net.corda.crypto.persistence.masterKeyAlias
-import net.corda.crypto.persistence.schemeCodeName
+import net.corda.crypto.persistence.db.model.SigningKeyEntityStatus
+import net.corda.crypto.persistence.signing.SigningKeyStatus
+import net.corda.crypto.persistence.signing.externalId
+import net.corda.crypto.persistence.signing.masterKeyAlias
+import net.corda.crypto.persistence.signing.schemeCodeName
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -26,8 +29,6 @@ import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 import java.time.Instant
 import javax.persistence.EntityManager
-import javax.persistence.EntityTransaction
-import javax.persistence.PersistenceException
 import javax.persistence.TypedQuery
 import javax.persistence.criteria.Predicate
 import kotlin.reflect.KProperty
@@ -53,16 +54,18 @@ class SigningKeyCacheActionsImpl(
                 SigningKeyEntity(
                     tenantId = tenantId,
                     keyId = publicKeyIdFromBytes(publicKeyBytes),
-                    created = Instant.now(),
+                    timestamp = Instant.now(),
                     category = context.category,
-                    schemeCodeName = context.signatureScheme.codeName,
+                    schemeCodeName = context.keyScheme.codeName,
                     publicKey = publicKeyBytes,
                     keyMaterial = null,
                     encodingVersion = null,
                     masterKeyAlias = null,
                     alias = context.alias,
                     hsmAlias = context.key.hsmAlias,
-                    externalId = context.externalId
+                    externalId = context.externalId,
+                    associationId = context.associationId,
+                    status = SigningKeyEntityStatus.NORMAL
                 )
             }
             is SigningWrappedKeySaveContext -> {
@@ -70,31 +73,24 @@ class SigningKeyCacheActionsImpl(
                 SigningKeyEntity(
                     tenantId = tenantId,
                     keyId = publicKeyIdFromBytes(publicKeyBytes),
-                    created = Instant.now(),
+                    timestamp = Instant.now(),
                     category = context.category,
-                    schemeCodeName = context.signatureScheme.codeName,
+                    schemeCodeName = context.keyScheme.codeName,
                     publicKey = publicKeyBytes,
                     keyMaterial = context.key.keyMaterial,
                     encodingVersion = context.key.encodingVersion,
                     masterKeyAlias = context.masterKeyAlias,
                     alias = context.alias,
                     hsmAlias = null,
-                    externalId = context.externalId
+                    externalId = context.externalId,
+                    associationId = context.associationId,
+                    status = SigningKeyEntityStatus.NORMAL
                 )
             }
             else -> throw IllegalArgumentException("Unknown context type: ${context::class.java.name}")
         }
-        val trx = entityManager.transaction
-        trx.begin()
-        try {
+        entityManager.doInTransaction {
             entityManager.persist(entity)
-            trx.commit()
-        } catch (e: PersistenceException) {
-            safelyRollback(trx)
-            throw e
-        } catch (e: Throwable) {
-            safelyRollback(trx)
-            throw PersistenceException("Failed to save", e)
         }
     }
 
@@ -133,8 +129,8 @@ class SigningKeyCacheActionsImpl(
         builder.equal(SigningKeyEntity::alias, map.alias)
         builder.equal(SigningKeyEntity::masterKeyAlias, map.masterKeyAlias)
         builder.equal(SigningKeyEntity::externalId, map.externalId)
-        builder.greaterThanOrEqualTo(SigningKeyEntity::created, map.createdAfter)
-        builder.lessThanOrEqualTo(SigningKeyEntity::created, map.createdBefore)
+        builder.greaterThanOrEqualTo(SigningKeyEntity::timestamp, map.createdAfter)
+        builder.lessThanOrEqualTo(SigningKeyEntity::timestamp, map.createdBefore)
         return builder.build(skip, take, orderBy).resultList.map {
             it.toSigningCachedKey()
         }
@@ -158,14 +154,6 @@ class SigningKeyCacheActionsImpl(
 
     override fun close() {
         entityManager.close()
-    }
-
-    private fun safelyRollback(trx: EntityTransaction) {
-        try {
-            trx.rollback()
-        } catch (e: Throwable) {
-            // intentional
-        }
     }
 
     private fun findByIds(ids: Collection<String>): Collection<SigningKeyEntity> {
@@ -200,7 +188,9 @@ class SigningKeyCacheActionsImpl(
             masterKeyAlias = masterKeyAlias,
             externalId = externalId,
             encodingVersion = encodingVersion,
-            created = created
+            timestamp = timestamp,
+            associationId = associationId,
+            status = SigningKeyStatus.valueOf(status.name)
         )
 
     private class LookupBuilder(
@@ -239,13 +229,13 @@ class SigningKeyCacheActionsImpl(
             when (orderBy) {
                 SigningKeyOrderBy.NONE -> Unit
                 SigningKeyOrderBy.ID -> ascOrderBy(SigningKeyEntity::keyId)
-                SigningKeyOrderBy.CREATED -> ascOrderBy(SigningKeyEntity::created)
+                SigningKeyOrderBy.TIMESTAMP -> ascOrderBy(SigningKeyEntity::timestamp)
                 SigningKeyOrderBy.CATEGORY -> ascOrderBy(SigningKeyEntity::category)
                 SigningKeyOrderBy.SCHEME_CODE_NAME -> ascOrderBy(SigningKeyEntity::schemeCodeName)
                 SigningKeyOrderBy.ALIAS -> ascOrderBy(SigningKeyEntity::alias)
                 SigningKeyOrderBy.MASTER_KEY_ALIAS -> ascOrderBy(SigningKeyEntity::masterKeyAlias)
                 SigningKeyOrderBy.EXTERNAL_ID -> ascOrderBy(SigningKeyEntity::externalId)
-                SigningKeyOrderBy.CREATED_DESC -> descOrderBy(SigningKeyEntity::created)
+                SigningKeyOrderBy.TIMESTAMP_DESC -> descOrderBy(SigningKeyEntity::timestamp)
                 SigningKeyOrderBy.CATEGORY_DESC -> descOrderBy(SigningKeyEntity::category)
                 SigningKeyOrderBy.SCHEME_CODE_NAME_DESC -> descOrderBy(SigningKeyEntity::schemeCodeName)
                 SigningKeyOrderBy.ALIAS_DESC -> descOrderBy(SigningKeyEntity::alias)

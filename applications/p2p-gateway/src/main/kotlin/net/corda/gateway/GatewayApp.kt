@@ -1,8 +1,10 @@
 package net.corda.gateway
 
 import com.typesafe.config.ConfigFactory
+import kotlin.concurrent.thread
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -16,7 +18,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import kotlin.concurrent.thread
 
 @Component
 @Suppress("LongParameterList")
@@ -33,6 +34,8 @@ class GatewayApp @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger,
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -49,7 +52,7 @@ class GatewayApp @Activate constructor(
             // TODO - move to common worker and pick up secrets params
             consoleLogger.info("Starting the configuration service")
             val secretsConfig = ConfigFactory.empty()
-            val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.kafkaNodeConfiguration)
+            val bootConfig = SmartConfigFactory.create(secretsConfig).create(arguments.bootConfiguration)
             configurationReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
@@ -60,7 +63,7 @@ class GatewayApp @Activate constructor(
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 lifecycleRegistry,
-                bootConfig,
+                configMerger.getMessagingConfig(bootConfig)
             ).also { gateway ->
                 gateway.start()
 

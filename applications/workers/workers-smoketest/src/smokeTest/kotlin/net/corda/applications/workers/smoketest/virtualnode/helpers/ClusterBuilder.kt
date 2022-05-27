@@ -39,6 +39,10 @@ class ClusterBuilder {
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
+    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+    fun forceCpiUpload(resourceName: String, groupId: String) =
+        uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload/", resourceName, groupId)
+
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
 

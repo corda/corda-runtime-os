@@ -4,6 +4,8 @@ import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkWriteCallback
 import net.corda.chunking.ChunkWriter
 import net.corda.chunking.toAvro
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -15,10 +17,16 @@ import java.util.UUID
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
-internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
+internal class ChunkWriterImpl(val chunkSize: Int, private val properties: Map<String, String?>? = null) : ChunkWriter {
     companion object {
         const val KB = 1024
         const val MB = 1024 * KB
+
+        private fun Map<String, String?>.toAvro(): KeyValuePairList {
+            return KeyValuePairList.newBuilder().setItems(
+                map { KeyValuePair(it.key, it.value) }
+            ).build()
+        }
     }
 
     var chunkWriteCallback: ChunkWriteCallback? = null
@@ -86,6 +94,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
             it.data = ByteBuffer.wrap(ByteArray(0))
             it.offset = offset
             it.checksum = checksum.toAvro()
+            it.properties = properties?.toAvro()
         }
     )
 
@@ -102,6 +111,7 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
             it.partNumber = chunkNumber
             it.data = byteBuffer
             it.offset = offset
+            it.properties = properties?.toAvro()
         }
     )
 
@@ -112,3 +122,5 @@ internal class ChunkWriterImpl(val chunkSize: Int) : ChunkWriter {
         chunkWriteCallback = onChunkWriteCallback
     }
 }
+
+

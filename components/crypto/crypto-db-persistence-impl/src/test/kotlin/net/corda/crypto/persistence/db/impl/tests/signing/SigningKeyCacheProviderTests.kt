@@ -1,16 +1,11 @@
 package net.corda.crypto.persistence.db.impl.tests.signing
 
-import com.typesafe.config.ConfigFactory
 import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheProviderImpl
 import net.corda.crypto.persistence.db.impl.tests.infra.TestConfigurationReadService
 import net.corda.crypto.persistence.db.impl.tests.infra.TestDbConnectionManager
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -25,7 +20,6 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class SigningKeyCacheProviderTests {
-    private lateinit var emptyConfig: SmartConfig
     private lateinit var configurationReadService: TestConfigurationReadService
     private lateinit var dbConnectionManager: TestDbConnectionManager
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
@@ -33,15 +27,8 @@ class SigningKeyCacheProviderTests {
 
     @BeforeEach
     fun setup() {
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-        emptyConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
-        configurationReadService = TestConfigurationReadService(
-            coordinatorFactory,
-            listOf(
-                ConfigKeys.BOOT_CONFIG to emptyConfig,
-                ConfigKeys.MESSAGING_CONFIG to emptyConfig
-            )
-        ).also {
+        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
+        configurationReadService = TestConfigurationReadService(coordinatorFactory).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
@@ -66,7 +53,7 @@ class SigningKeyCacheProviderTests {
     private fun act() = component.impl.getInstance()
 
     @Test
-    fun `Should create subscription only after the component is up`() {
+    fun `Should create ActiveImpl only after the component is up`() {
         assertFalse(component.isRunning)
         assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
@@ -80,7 +67,7 @@ class SigningKeyCacheProviderTests {
     }
 
     @Test
-    fun `Should close subscription when component is stopped`() {
+    fun `Should use InactiveImpl when component is stopped`() {
         assertFalse(component.isRunning)
         assertInstanceOf(SigningKeyCacheProviderImpl.InactiveImpl::class.java, component.impl)
         assertThrows<IllegalStateException> { act() }
@@ -132,3 +119,4 @@ class SigningKeyCacheProviderTests {
         assertNotSame(instance11, instance21)
     }
 }
+

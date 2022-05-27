@@ -12,15 +12,17 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
+import net.corda.crypto.impl.toWire
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.config.HSMInfo
+import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoResponseContext
-import net.corda.data.crypto.wire.CryptoSignatureSchemes
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -28,26 +30,28 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.queries.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -66,10 +70,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -88,7 +90,7 @@ class CryptoOpsClientComponentTests {
 
     @BeforeEach
     fun setup() {
-        knownTenantId = UUID.randomUUID().toString()
+        knownTenantId = UUID.randomUUID().toString().toByteArray().sha256Bytes().toHex().take(12)
         knownAlias = UUID.randomUUID().toString()
         knownOperationContext = mapOf(
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
@@ -100,7 +102,7 @@ class CryptoOpsClientComponentTests {
         )
         schemeMetadata = CipherSchemeMetadataImpl()
         sender = mock()
-        coordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        coordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
         publisherFactory = mock {
             on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
         }
@@ -142,9 +144,9 @@ class CryptoOpsClientComponentTests {
         }
     }
 
-    private fun assertRequestContext(result: SendActResult<RpcOpsRequest, *>) {
+    private fun assertRequestContext(result: SendActResult<RpcOpsRequest, *>, tenantId: String = knownTenantId) {
         val context = result.firstRequest.context
-        kotlin.test.assertEquals(knownTenantId, context.tenantId)
+        kotlin.test.assertEquals(tenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         kotlin.test.assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items).isEmpty()
@@ -171,12 +173,12 @@ class CryptoOpsClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         setupCompletedResponse {
-            CryptoSignatureSchemes(
+            CryptoKeySchemes(
                 schemeMetadata.schemes.map { it.codeName }
             )
         }
         val result = sender.act {
-            component.getSupportedSchemes(knownTenantId, CryptoConsts.HsmCategories.LEDGER)
+            component.getSupportedSchemes(knownTenantId, CryptoConsts.Categories.LEDGER)
         }
         assertNotNull(result.value)
         assertEquals(schemeMetadata.schemes.size, result.value!!.size)
@@ -184,7 +186,7 @@ class CryptoOpsClientComponentTests {
             assertTrue(result.value.contains(it.codeName))
         }
         val query = assertOperationType<SupportedSchemesRpcQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, query.category)
         assertRequestContext(result)
     }
 
@@ -202,7 +204,7 @@ class CryptoOpsClientComponentTests {
                     CryptoSigningKey(
                         keyPair.public.publicKeyId(),
                         knownTenantId,
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         "alias1",
                         "hsmAlias1",
                         ByteBuffer.wrap(keyPair.public.encoded),
@@ -222,7 +224,7 @@ class CryptoOpsClientComponentTests {
                 take = 10,
                 orderBy = CryptoKeyOrderBy.ALIAS_DESC,
                 filter = mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.TLS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.TLS,
                     ALIAS_FILTER to "alias1",
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
                     MASTER_KEY_ALIAS_FILTER to "master-key",
@@ -235,7 +237,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, result.value!!.size)
         assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, result.value[0].category)
+        assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
         assertEquals("alias1", result.value[0].alias)
         assertEquals("hsmAlias1", result.value[0].hsmAlias)
         assertArrayEquals(keyPair.public.encoded, result.value[0].publicKey.array())
@@ -247,7 +249,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
         assertEquals(CryptoKeyOrderBy.ALIAS_DESC, query.orderBy)
-        assertEquals(CryptoConsts.HsmCategories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
+        assertEquals(CryptoConsts.Categories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, query.filter.items.first { it.key == SCHEME_CODE_NAME_FILTER }.value)
         assertEquals("alias1", query.filter.items.first { it.key == ALIAS_FILTER }.value)
         assertEquals("master-key", query.filter.items.first { it.key == MASTER_KEY_ALIAS_FILTER }.value)
@@ -279,7 +281,7 @@ class CryptoOpsClientComponentTests {
                 take = 10,
                 orderBy = CryptoKeyOrderBy.ALIAS_DESC,
                 filter = mapOf(
-                    CATEGORY_FILTER to CryptoConsts.HsmCategories.TLS,
+                    CATEGORY_FILTER to CryptoConsts.Categories.TLS,
                     ALIAS_FILTER to "alias1",
                     SCHEME_CODE_NAME_FILTER to ECDSA_SECP256R1_CODE_NAME,
                     MASTER_KEY_ALIAS_FILTER to "master-key",
@@ -293,7 +295,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(20, query.skip)
         assertEquals(10, query.take)
         assertEquals(CryptoKeyOrderBy.ALIAS_DESC, query.orderBy)
-        assertEquals(CryptoConsts.HsmCategories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
+        assertEquals(CryptoConsts.Categories.TLS, query.filter.items.first { it.key == CATEGORY_FILTER }.value)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, query.filter.items.first { it.key == SCHEME_CODE_NAME_FILTER }.value)
         assertEquals("alias1", query.filter.items.first { it.key == ALIAS_FILTER }.value)
         assertEquals("master-key", query.filter.items.first { it.key == MASTER_KEY_ALIAS_FILTER }.value)
@@ -322,7 +324,7 @@ class CryptoOpsClientComponentTests {
                     CryptoSigningKey(
                         keyPair.public.publicKeyId(),
                         knownTenantId,
-                        CryptoConsts.HsmCategories.LEDGER,
+                        CryptoConsts.Categories.LEDGER,
                         "alias1",
                         "hsmAlias1",
                         ByteBuffer.wrap(keyPair.public.encoded),
@@ -346,7 +348,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, result.value!!.size)
         assertEquals(keyPair.public.publicKeyId(), result.value[0].id)
         assertEquals(knownTenantId, result.value[0].tenantId)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, result.value[0].category)
+        assertEquals(CryptoConsts.Categories.LEDGER, result.value[0].category)
         assertEquals("alias1", result.value[0].alias)
         assertEquals("hsmAlias1", result.value[0].hsmAlias)
         assertArrayEquals(keyPair.public.encoded, result.value[0].publicKey.array())
@@ -358,6 +360,39 @@ class CryptoOpsClientComponentTests {
         assertEquals(1, query.keys.size)
         assertEquals(keyPair.public.publicKeyId(), query.keys[0])
         assertRequestContext(result)
+    }
+
+    @Test
+    fun `lookup should throw IllegalArgumentException when number of ids exceeds the limit`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val now = Instant.now()
+        setupCompletedResponse {
+            CryptoSigningKeys(
+                listOf(
+                    CryptoSigningKey(
+                        keyPair.public.publicKeyId(),
+                        knownTenantId,
+                        CryptoConsts.Categories.LEDGER,
+                        "alias1",
+                        "hsmAlias1",
+                        ByteBuffer.wrap(keyPair.public.encoded),
+                        ECDSA_SECP256R1_CODE_NAME,
+                        "master-key",
+                        1,
+                        "external-id",
+                        now
+                    )
+                )
+            )
+        }
+        val ids = (0..KEY_LOOKUP_INPUT_ITEMS_LIMIT).map {
+            keyPair.public.publicKeyId()
+        }
+        assertThrows<IllegalArgumentException> { component.lookup(knownTenantId, ids) }
     }
 
     @Test
@@ -550,17 +585,19 @@ class CryptoOpsClientComponentTests {
         val result = sender.act {
             component.generateKeyPair(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = knownAlias,
+                scheme = ECDSA_SECP256R1_CODE_NAME,
                 context = knownOperationContext
             )
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateKeyPairCommand>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertNull(command.externalId)
         assertEquals(knownAlias, command.alias)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -581,18 +618,20 @@ class CryptoOpsClientComponentTests {
         val result = sender.act {
             component.generateKeyPair(
                 tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = knownAlias,
                 externalId = externalId,
+                scheme = ECDSA_SECP256R1_CODE_NAME,
                 context = knownOperationContext
             )
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateKeyPairCommand>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, command.category)
+        assertEquals(CryptoConsts.Categories.LEDGER, command.category)
         assertEquals(externalId, command.externalId)
         assertEquals(knownAlias, command.alias)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -610,12 +649,19 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.freshKey(knownTenantId, knownOperationContext)
+            component.freshKey(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownOperationContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -633,12 +679,19 @@ class CryptoOpsClientComponentTests {
             CryptoPublicKey(publicKey)
         }
         val result = sender.act {
-            component.freshKeyProxy(knownTenantId, knownRawOperationContext)
+            component.freshKeyProxy(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownRawOperationContext
+            )
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -657,13 +710,21 @@ class CryptoOpsClientComponentTests {
             )
         }
         val result = sender.act {
-            component.freshKey(knownTenantId, externalId, knownOperationContext)
+            component.freshKey(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                externalId,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownOperationContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value)
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(externalId, command.externalId)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
@@ -682,44 +743,51 @@ class CryptoOpsClientComponentTests {
             CryptoPublicKey(publicKey)
         }
         val result = sender.act {
-            component.freshKeyProxy(knownTenantId, externalId, knownRawOperationContext)
+            component.freshKeyProxy(
+                knownTenantId,
+                CryptoConsts.Categories.CI,
+                externalId,
+                ECDSA_SECP256R1_CODE_NAME,
+                knownRawOperationContext
+            )
         }
         assertNotNull(result.value)
         assertArrayEquals(result.value!!.key.array(), publicKey.array())
         val command = assertOperationType<GenerateFreshKeyRpcCommand>(result)
         assertNotNull(command.externalId)
+        assertEquals(CryptoConsts.Categories.CI, command.category)
         assertEquals(externalId, command.externalId)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, command.schemeCodeName)
         assertOperationContext(command.context)
         assertRequestContext(result)
     }
 
     @Test
-    fun `Should sign by referencing public key`() {
+    fun `Should generate wrapping key`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, keyPair, data)
+        val configId = UUID.randomUUID().toString()
+        val masterKeyAlias = UUID.randomUUID().toString()
         setupCompletedResponse {
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
-                ByteBuffer.wrap(signature)
-            )
+            CryptoNoContentValue()
         }
         val result = sender.act {
-            component.sign(knownTenantId, keyPair.public, data, knownOperationContext)
+            component.createWrappingKey(
+                configId = configId,
+                failIfExists = true,
+                masterKeyAlias = masterKeyAlias,
+                context = knownOperationContext
+            )
         }
         assertNotNull(result.value)
-        assertEquals(keyPair.public, result.value!!.by)
-        assertArrayEquals(signature, result.value.bytes)
-        val command = assertOperationType<SignRpcCommand>(result)
-        assertNotNull(command)
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
-        assertArrayEquals(data, command.bytes.array())
+        val command = assertOperationType<GenerateWrappingKeyRpcCommand>(result)
+        assertEquals(configId, command.configId)
+        assertEquals(masterKeyAlias, command.masterKeyAlias)
+        assertTrue(command.failIfExists)
         assertOperationContext(command.context)
-        assertRequestContext(result)
+        assertRequestContext(result, CryptoTenants.CRYPTO)
     }
 
     @Test
@@ -733,21 +801,30 @@ class CryptoOpsClientComponentTests {
             schemeMetadata.encodeAsByteArray(keyPair.public)
         )
         val data = ByteBuffer.wrap(UUID.randomUUID().toString().toByteArray())
-        val signature = signData(schemeMetadata, keyPair, data.array())
+        val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data.array())
+        val spec = CryptoSignatureSpec(
+            "NONEwithECDSA",
+            DigestAlgorithmName.SHA2_256.name,
+            null
+        )
+        val opCtx = knownOperationContext.toWire()
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 publicKey,
-                ByteBuffer.wrap(signature)
+                ByteBuffer.wrap(signature),
+                opCtx
             )
         }
         val result = sender.act {
-            component.signProxy(knownTenantId, publicKey, data, knownRawOperationContext)
+            component.signProxy(knownTenantId, publicKey, spec, data, knownRawOperationContext)
         }
         assertNotNull(result.value)
         assertArrayEquals(publicKey.array(), result.value!!.publicKey.array())
         assertArrayEquals(signature, result.value.bytes.array())
+        assertSame(opCtx, result.value.context)
         val command = assertOperationType<SignRpcCommand>(result)
         assertNotNull(command)
+        assertSame(spec, command.signatureSpec)
         assertArrayEquals(publicKey.array(), command.publicKey.array())
         assertArrayEquals(data.array(), command.bytes.array())
         assertOperationContext(command.context)
@@ -755,14 +832,68 @@ class CryptoOpsClientComponentTests {
     }
 
     @Test
-    fun `Should sign by referencing public key and using custom signature spec`() {
+    fun `Should throw IllegalArgumentException when signature spec cannot be inferred for the digest`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        assertThrows<IllegalArgumentException> {
+            component.sign(
+                knownTenantId,
+                keyPair.public,
+                DigestAlgorithmName("--NONSENSE--"),
+                UUID.randomUUID().toString().toByteArray()
+            )
+        }
+    }
+
+    @Test
+    fun `Should sign inferring signature spec from digest`() {
         component.start()
         eventually {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, keyPair, data)
+        val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data)
+        setupCompletedResponse {
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
+                ByteBuffer.wrap(signature),
+                knownOperationContext.toWire()
+            )
+        }
+        val result = sender.act {
+            component.sign(knownTenantId, keyPair.public, DigestAlgorithmName.SHA2_256, data, knownOperationContext)
+        }
+        assertNotNull(result.value)
+        assertEquals(keyPair.public, result.value!!.by)
+        assertArrayEquals(signature, result.value.bytes)
+        assertThat(result.value.context).hasSize(knownOperationContext.size)
+        knownOperationContext.forEach {
+            assertThat(result.value.context).containsEntry(it.key, it.value)
+        }
+        val command = assertOperationType<SignRpcCommand>(result)
+        assertNotNull(command)
+        assertEquals(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, command.signatureSpec.signatureName)
+        assertNull(command.signatureSpec.customDigestName)
+        assertNull(command.signatureSpec.params)
+        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
+        assertArrayEquals(data, command.bytes.array())
+        assertOperationContext(command.context)
+        assertRequestContext(result)
+    }
+
+    @Test
+    fun `Should sign explicitly using signature spec`() {
+        component.start()
+        eventually {
+            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
+        }
+        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
+        val data = UUID.randomUUID().toString().toByteArray()
+        val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data)
         val spec = SignatureSpec(
             signatureName = "NONEwithECDSA",
             customDigestName = DigestAlgorithmName.SHA2_256
@@ -770,7 +901,8 @@ class CryptoOpsClientComponentTests {
         setupCompletedResponse {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
-                ByteBuffer.wrap(signature)
+                ByteBuffer.wrap(signature),
+                knownOperationContext.toWire()
             )
         }
         val result = sender.act {
@@ -779,102 +911,19 @@ class CryptoOpsClientComponentTests {
         assertNotNull(result.value)
         assertEquals(keyPair.public, result.value!!.by)
         assertArrayEquals(signature, result.value.bytes)
-        val command = assertOperationType<SignWithSpecRpcCommand>(result)
+        assertThat(result.value.context).hasSize(knownOperationContext.size)
+        knownOperationContext.forEach {
+            assertThat(result.value.context).containsEntry(it.key, it.value)
+        }
+        val command = assertOperationType<SignRpcCommand>(result)
         assertNotNull(command)
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
-        assertArrayEquals(data, command.bytes.array())
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNull(command.signatureSpec.params)
         assertNotNull(command.signatureSpec.customDigestName)
         assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
-        assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should sign by referencing public key and using custom signature spec with signature params`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
-        val signature = signData(schemeMetadata, keyPair, data)
-        val spec = SignatureSpec(
-            signatureName = "RSASSA-PSS",
-            params = PSSParameterSpec(
-                "SHA-256",
-                "MGF1",
-                MGF1ParameterSpec.SHA256,
-                32,
-                1
-            )
-        )
-        setupCompletedResponse {
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public)),
-                ByteBuffer.wrap(signature)
-            )
-        }
-        val result = sender.act {
-            component.sign(knownTenantId, keyPair.public, spec, data, knownOperationContext)
-        }
-        assertNotNull(result.value)
-        assertEquals(keyPair.public, result.value!!.by)
-        assertArrayEquals(signature, result.value.bytes)
-        val command = assertOperationType<SignWithSpecRpcCommand>(result)
-        assertNotNull(command)
+        assertNull(command.signatureSpec.params)
         assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
-        assertEquals(spec.signatureName, command.signatureSpec.signatureName)
-        assertNotNull(command.signatureSpec.params)
-        assertEquals(PSSParameterSpec::class.java.name, command.signatureSpec.params.className)
-        assertTrue(command.signatureSpec.params.bytes.array().isNotEmpty())
         assertOperationContext(command.context)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should find hsm details`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        val expectedValue = HSMInfo()
-        setupCompletedResponse {
-            expectedValue
-        }
-        val result = sender.act {
-            component.findHSM(
-                tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
-            )
-        }
-        assertNotNull(result.value)
-        assertEquals(expectedValue, result.value)
-        val query = assertOperationType<AssignedHSMRpcQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
-        assertRequestContext(result)
-    }
-
-    @Test
-    fun `Should return null for hsm details when it is not found`() {
-        component.start()
-        eventually {
-            assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
-        }
-        setupCompletedResponse {
-            CryptoNoContentValue()
-        }
-        val result = sender.act {
-            component.findHSM(
-                tenantId = knownTenantId,
-                category = CryptoConsts.HsmCategories.LEDGER
-            )
-        }
-        assertNull(result.value)
-        val query = assertOperationType<AssignedHSMRpcQuery>(result)
-        assertEquals(CryptoConsts.HsmCategories.LEDGER, query.category)
         assertRequestContext(result)
     }
 

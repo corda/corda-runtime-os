@@ -26,7 +26,7 @@ internal class OutboundLinkManager(
     linkManagerCryptoProcessor: CryptoProcessor,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     clock: Clock,
 ) : LifecycleWithDominoTile {
     companion object {
@@ -46,7 +46,7 @@ internal class OutboundLinkManager(
         registry,
         configurationReaderService,
         publisherFactory,
-        configuration,
+        messagingConfiguration,
         subscriptionFactory,
         groups,
         members,
@@ -58,7 +58,7 @@ internal class OutboundLinkManager(
     private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC),
         outboundMessageProcessor,
-        configuration,
+        messagingConfiguration,
         partitionAssignmentListener = null
     )
 

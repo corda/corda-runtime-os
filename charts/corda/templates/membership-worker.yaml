@@ -31,6 +31,8 @@ spec:
         {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
+        volumeMounts:
+        {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:
         {{- if .Values.workers.membership.debug.enabled }}
           - name: debug
@@ -52,6 +54,8 @@ spec:
           periodSeconds: 10
           failureThreshold: 5
         {{- end }}
+      volumes:
+      {{- include "corda.workerVolumes" . | nindent 8 }}
       nodeSelector:
         kubernetes.io/os: linux
         kubernetes.io/arch: amd64

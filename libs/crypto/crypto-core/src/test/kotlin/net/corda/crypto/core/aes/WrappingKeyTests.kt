@@ -1,8 +1,8 @@
 package net.corda.crypto.core.aes
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -34,13 +34,13 @@ class WrappingKeyTests {
             provider = BouncyCastleProvider()
             schemeMetadata = mock {
                 on { findKeyFactory(any()) } doAnswer {
-                    val scheme = it.getArgument<SignatureScheme>(0)
+                    val scheme = it.getArgument<KeyScheme>(0)
                     KeyFactory.getInstance(scheme.algorithmName, provider)
                 }
-                on { findSignatureScheme(any<AlgorithmIdentifier>()) } doAnswer {
+                on { findKeyScheme(any<AlgorithmIdentifier>()) } doAnswer {
                     val id = it.getArgument<AlgorithmIdentifier>(0)
-                    if(ECDSA_SECP256R1_SHA256_TEMPLATE.algorithmOIDs.contains(id)) {
-                        ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC")
+                    if(ECDSA_SECP256R1_TEMPLATE.algorithmOIDs.contains(id)) {
+                        ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
                     } else {
                         @Suppress("TooGenericExceptionThrown")
                         throw Exception()
@@ -120,9 +120,18 @@ class WrappingKeyTests {
 
     @Test
     fun `Should generate different keys`() {
-        val key1 = WrappingKey.createWrappingKey(schemeMetadata)
-        val key2 = WrappingKey.createWrappingKey(schemeMetadata)
+        val key1 = WrappingKey.generateWrappingKey(schemeMetadata)
+        val key2 = WrappingKey.generateWrappingKey(schemeMetadata)
         assertNotEquals(key1, key2)
+    }
+
+    @Test
+    fun `Should derive same keys for the same passphrases and salts`() {
+        val passphrase = UUID.randomUUID().toString()
+        val salt = UUID.randomUUID().toString()
+        val key1 = WrappingKey.derive(schemeMetadata, KeyCredentials(passphrase, salt))
+        val key2 = WrappingKey.derive(schemeMetadata, passphrase, salt)
+        assertEquals(key1, key2)
     }
 
     @Test

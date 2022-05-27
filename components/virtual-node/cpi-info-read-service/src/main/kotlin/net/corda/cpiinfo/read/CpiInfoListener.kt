@@ -1,10 +1,11 @@
 package net.corda.cpiinfo.read
 
-import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 
 /**
- * Functional interface that notifies us of any changes to a [Cpi.Identifier] and its [Cpi.Metadata]
+ * Functional interface that notifies us of any changes to a [CpiIdentifier] and its [CpiMetadata]
  */
 fun interface CpiInfoListener {
-    fun onUpdate(changedKeys: Set<Cpi.Identifier>, currentSnapshot: Map<Cpi.Identifier, Cpi.Metadata>)
+    fun onUpdate(changedKeys: Set<CpiIdentifier>, currentSnapshot: Map<CpiIdentifier, CpiMetadata>)
 }

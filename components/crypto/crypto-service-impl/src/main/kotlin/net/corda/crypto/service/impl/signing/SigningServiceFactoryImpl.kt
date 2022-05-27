@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.crypto.persistence.SigningKeyCacheProvider
+import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory

@@ -1,17 +1,20 @@
 package net.corda.libs.packaging.core
 
-import net.corda.libs.packaging.CordappManifest
-import net.corda.libs.packaging.Cpk
-import net.corda.libs.packaging.converters.toAvro
-import net.corda.libs.packaging.converters.toCorda
 import net.corda.v5.crypto.SecureHash
+import org.apache.avro.io.DecoderFactory
+import org.apache.avro.io.EncoderFactory
+import org.apache.avro.specific.SpecificDatumReader
+import org.apache.avro.specific.SpecificDatumWriter
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.time.Instant
 import java.util.stream.Collectors
+import net.corda.data.crypto.SecureHash as AvroSecureHash
+import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
 
-// TODO - clean up CPI/CPK in net.corda.packaging
 
 /**
  * Represents a CPK file in the cluster
@@ -29,26 +32,27 @@ import java.util.stream.Collectors
  */
 data class CpkMetadata(
     val cpkId: CpkIdentifier,
-    val manifest: Cpk.Manifest,
+    val manifest: CpkManifest,
     val mainBundle: String,
     val libraries: List<String>,
     val dependencies: List<CpkIdentifier>,
     val cordappManifest: CordappManifest,
-    val type: Cpk.Type,
+    val type: CpkType,
     val fileChecksum: SecureHash,
     // TODO - is this needed here?
-    val cordappCertificates: Set<Certificate>
+    val cordappCertificates: Set<Certificate>,
+    val timestamp: Instant
 ) {
     companion object {
-        fun fromAvro(other: net.corda.data.packaging.CpkMetadata): CpkMetadata {
+        fun fromAvro(other: CpkMetadataAvro): CpkMetadata {
             return CpkMetadata(
                 CpkIdentifier.fromAvro(other.id),
-                other.manifest.toCorda(),
+                CpkManifest.fromAvro(other.manifest),
                 other.mainBundle,
                 other.libraries,
                 other.dependencies.map { CpkIdentifier.fromAvro(it) },
-                other.corDappManifest.toCorda(),
-                other.type.toCorda(),
+                CordappManifest.fromAvro(other.corDappManifest),
+                CpkType.fromAvro(other.type),
                 SecureHash(other.hash.algorithm, other.hash.serverHash.array()),
                 let {
                     val crtFactory = CertificateFactory.getInstance("X.509")
@@ -56,31 +60,21 @@ data class CpkMetadata(
                         ByteArrayInputStream(it.array())
                             .use(crtFactory::generateCertificate)
                     }.collect(Collectors.toUnmodifiableSet())
-
-                }
+                },
+                other.timestamp
             )
         }
 
-        // TODO - remove when refactoring complete
-        fun fromLegacyCpk(cpk: Cpk): CpkMetadata {
-            return CpkMetadata(
-                CpkIdentifier(cpk.metadata.id.name, cpk.metadata.id.version, cpk.metadata.id.signerSummaryHash),
-                cpk.metadata.manifest,
-                cpk.metadata.mainBundle,
-                cpk.metadata.libraries,
-                cpk.metadata.dependencies.map {
-                    CpkIdentifier(it.name, it.version, it.signerSummaryHash)
-                },
-                cpk.metadata.cordappManifest,
-                cpk.metadata.type,
-                cpk.metadata.hash,
-                cpk.metadata.cordappCertificates
-            )
+        fun fromJsonAvro(payload: String): CpkMetadata {
+            val decoder = DecoderFactory.get().jsonDecoder(CpkMetadataAvro.`SCHEMA$`, payload)
+            val avroObj = SpecificDatumReader<CpkMetadataAvro>(CpkMetadataAvro.`SCHEMA$`).read(null, decoder)
+            return fromAvro(avroObj)
         }
     }
 
-    fun toAvro(): net.corda.data.packaging.CpkMetadata {
-        return net.corda.data.packaging.CpkMetadata(
+    // TODO - should we do these conversions back/forth or could this just be a proxy to the AVRO object itself?
+    fun toAvro(): CpkMetadataAvro {
+        return CpkMetadataAvro(
             cpkId.toAvro(),
             manifest.toAvro(),
             mainBundle,
@@ -88,12 +82,26 @@ data class CpkMetadata(
             dependencies.map { it.toAvro() },
             cordappManifest.toAvro(),
             type.toAvro(),
-            net.corda.data.crypto.SecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
+            AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)),
             cordappCertificates.stream()
                 .map(Certificate::getEncoded)
                 .map(ByteBuffer::wrap)
                 .collect(
-                    Collectors.toUnmodifiableList())
+                    Collectors.toUnmodifiableList()),
+            timestamp
         )
+    }
+
+    fun toJsonAvro(): String {
+        val avro = this.toAvro()
+        // This is fairly generic and could be moved out if there is a usecase for it elsewhere
+        SpecificDatumWriter<CpkMetadataAvro>(avro.schema).also { writer ->
+            ByteArrayOutputStream().use { out ->
+                val encoder = EncoderFactory.get().jsonEncoder(avro.schema, out)
+                writer.write(avro, encoder)
+                encoder.flush()
+                return out.toString(Charsets.UTF_8)
+            }
+        }
     }
 }

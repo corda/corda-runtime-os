@@ -13,6 +13,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -36,7 +37,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.TestSchema
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
@@ -49,6 +49,12 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random.Default.nextInt
+import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
+import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 
 open class TestBase {
     companion object {
@@ -122,7 +128,10 @@ open class TestBase {
     protected val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     protected val lifecycleRegistry = LifecycleRegistryImpl()
-    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
+    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(
+        lifecycleRegistry,
+        LifecycleCoordinatorSchedulerFactoryImpl()
+    )
 
     protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
         init {
@@ -132,14 +141,18 @@ open class TestBase {
         private val rpcTopicService = RPCTopicServiceImpl()
         private val configPublisherClientId = "config.${UUID.randomUUID().toString().replace("-", "")}"
         private val messagingConfig = SmartConfigImpl.empty()
+        private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!)
+                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
+                configMerger
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
+                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(nextInt()))
+                    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }
@@ -148,7 +161,7 @@ open class TestBase {
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
                 "p2p.gateway",
-                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1", ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 

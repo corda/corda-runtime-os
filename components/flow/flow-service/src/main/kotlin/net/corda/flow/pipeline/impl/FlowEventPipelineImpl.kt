@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventPipeline
-import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
@@ -69,7 +68,7 @@ data class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
-        val waitingFor = context.checkpoint.waitingFor.value
+        val waitingFor = context.checkpoint.waitingFor?.value
             ?: throw FlowProcessingException("Flow [${context.checkpoint.flowId}] waiting for is null")
 
         val handler = getFlowWaitingForHandler(waitingFor)
@@ -149,7 +148,7 @@ data class FlowEventPipelineImpl(
                 copy(output = flowResult.output)
             }
             is FlowIORequest.FlowFailed -> {
-                copy(output = null)
+                copy(output = flowResult)
             }
             else -> throw FlowProcessingException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
         }

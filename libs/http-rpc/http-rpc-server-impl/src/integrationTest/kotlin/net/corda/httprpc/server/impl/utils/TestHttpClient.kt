@@ -19,7 +19,7 @@ data class TestClientFileUpload(val fileContent: InputStream, val fileName: Stri
 data class WebRequest<T>(
     val path: String,
     val body: T? = null,
-    val queryParameters: Map<String, Any>? = null,
+    val queryParameters: Map<String, Any?>? = null,
     val formParameters: Map<String, String>? = null,
     val files: Map<String, List<TestClientFileUpload>>? = null
 )

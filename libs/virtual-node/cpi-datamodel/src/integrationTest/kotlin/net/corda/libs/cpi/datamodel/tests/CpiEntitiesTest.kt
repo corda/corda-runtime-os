@@ -7,9 +7,11 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDataEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.cpi.datamodel.CpkEntity
+import net.corda.libs.cpi.datamodel.CpkEntityKey
+import net.corda.libs.cpi.datamodel.findAllCpiMetadata
 import net.corda.libs.cpi.datamodel.findCpkChecksumsNotIn
 import net.corda.libs.cpi.datamodel.findCpkDataEntity
 import net.corda.orm.EntityManagerConfiguration
@@ -18,23 +20,17 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
+import kotlin.streams.toList
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
-    private val dbConfig: EntityManagerConfiguration
+    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")
 
     init {
-        // comment this out if you want to run the test against a real postgres
-        //  NOTE: the blob storage doesn't work in HSQL, hence skipping the majority of the test.
-        // System.setProperty("postgresPort", "5432")
-        dbConfig = DbUtils.getEntityManagerConfiguration("cpi_db")
-
         val dbChange = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
@@ -65,7 +61,8 @@ class CpiEntitiesIntegrationTest {
             "test-cpi.cpi-$cpiId-hash",
             "{group-policy-json}",
             "group-id",
-            "file-upload-request-id-$cpiId"
+            "file-upload-request-id-$cpiId",
+            false
         )
 
         EntityManagerFactoryFactoryImpl().create(
@@ -79,65 +76,66 @@ class CpiEntitiesIntegrationTest {
             }
         }
 
-        val loadedCpi = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use {
-            it.find(CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash))
-        }
-
-        assertThat(loadedCpi).isEqualTo(cpi)
-
-        // HSQL doesn't support the blob storage, so skipping from here.
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping the rest of this test when run against in-memory DB.")
-
-
-        // CREATE a new CPK, data & entity
-        val cpkId = UUID.randomUUID()
-        val cpk = CpkDataEntity(
-            "cpk-checksum-$cpkId",
-            ByteArray(2000),
-        )
-        val cpkEntity = CpkMetadataEntity(
-            cpi,
-            cpk.fileChecksum,
-            "test-cpk.cpk",
-        )
-
         EntityManagerFactoryFactoryImpl().create(
             "test_unit",
             CpiEntities.classes.toList(),
             dbConfig
         ).use { em ->
+            val loadedCpi = em.find(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+            )
+
+
+            assertThat(loadedCpi).isEqualTo(cpi)
+
+            // CREATE a new CPK, data & entity
+            val cpkId = UUID.randomUUID()
+            val cpkData = CpkDataEntity(
+                "cpk-checksum-$cpkId",
+                ByteArray(2000),
+            )
+            val cpk =
+                CpkEntityFactory.create(
+                    loadedCpi,
+                    cpkData.fileChecksum,
+                    "test-cpk.cpk",
+                    "test-cpk",
+                    "1.2.3",
+                    randomChecksumString(),
+                )
+
             em.transaction {
-                it.merge(cpk)
-                it.merge(cpkEntity)
+                it.merge(cpkData)
+                it.persist(cpk)
                 it.flush()
             }
-        }
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use {
-            val loadedCpkEntity = it.find(CpkMetadataEntity::class.java, CpkMetadataEntityKey(
-                cpi,
-                cpkEntity.cpkFileChecksum))
-            val loadedCpkDataEntity = it.find(CpkDataEntity::class.java, cpk.fileChecksum)
+            EntityManagerFactoryFactoryImpl().create(
+                "test_unit",
+                CpiEntities.classes.toList(),
+                dbConfig
+            ).use {
+                val loadedCpkEntity = it.find(
+                    CpkEntity::class.java,
+                    CpkEntityKey(cpi, cpk.metadata)
+                )
+                val loadedCpkDataEntity = it.find(CpkDataEntity::class.java, cpkData.fileChecksum)
 
-            assertThat(loadedCpkEntity).isEqualTo(cpkEntity)
-            assertThat(loadedCpkEntity.cpi).isEqualTo(cpi)
-            assertThat(loadedCpkDataEntity).isEqualTo(cpk)
+                assertThat(loadedCpkEntity).isEqualTo(cpk)
+                assertThat(loadedCpkEntity.cpi).isEqualTo(cpi)
+                assertThat(loadedCpkDataEntity).isEqualTo(cpkData)
+            }
         }
     }
 
     @Test
     fun `can add cpk to cpi`() {
-        // HSQL doesn't support the blob storage, so skipping from here.
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val emFactory = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        )
 
         // Create CPI First
         val cpiId = UUID.randomUUID()
@@ -149,27 +147,28 @@ class CpiEntitiesIntegrationTest {
             "test-cpi.cpi-$cpiId-hash",
             "{group-policy-json}",
             "group-id",
-            "file-upload-request-id-$cpiId"
+            "file-upload-request-id-$cpiId",
+            false
         )
         val cpkId = UUID.randomUUID()
-        val cpk = CpkDataEntity(
+        val cpkData = CpkDataEntity(
             "cpk-checksum-$cpkId",
             ByteArray(2000),
         )
-        val cpkEntity = CpkMetadataEntity(
-            cpi,
-            cpk.fileChecksum,
-            "test-cpk.cpk",
-        )
+        val cpkEntity =
+            CpkEntityFactory.create(
+                cpi,
+                cpkData.fileChecksum,
+                "test-cpk.cpk",
+                "test-cpk",
+                "1.2.3",
+                randomChecksumString(),
+            )
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
+        emFactory.use { em ->
             em.transaction {
                 // saving cpk should also save related cpi
-                it.persist(cpk)
+                it.persist(cpkData)
                 it.persist(cpkEntity)
                 it.flush()
             }
@@ -181,11 +180,7 @@ class CpiEntitiesIntegrationTest {
             ByteArray(2000),
         )
 
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
+        emFactory.use { em ->
             em.transaction {
                 it.persist(cpk2)
                 it.flush()
@@ -193,72 +188,40 @@ class CpiEntitiesIntegrationTest {
         }
 
         // add it to the existing CPI
-        val cpkEntity2 = CpkMetadataEntity(
-            cpi,
-            cpk2.fileChecksum,
-            "test-cpk2.cpk"
-        )
-        EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use { em ->
+        val expectedMeta = emFactory.use { em ->
+            val loadedCpi = em.find(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+            )
+
+            val cpkMetadataEntity2 = CpkEntityFactory.create(
+                loadedCpi,
+                cpk2.fileChecksum,
+                "test-cpk2.cpk",
+                "test-cpk2",
+                "2.2.3",
+                randomChecksumString(),
+            )
+
             em.transaction {
-                it.merge(cpkEntity2)
+                it.persist(cpkMetadataEntity2)
                 it.flush()
             }
+            cpkMetadataEntity2
         }
 
-        val loadedCpi = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        ).use {
+        val loadedCpi = emFactory.use {
             it.find(CpiMetadataEntity::class.java,
                 CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash))
         }
 
-        // check cpks meta is eagerly loaded
-        assertThat(loadedCpi.cpks).containsExactlyInAnyOrder(
-            cpkEntity, cpkEntity2
-        )
-    }
-
-    private fun cleanUpDb() {
-        val emFactory = EntityManagerFactoryFactoryImpl().create(
-            "test_unit",
-            CpiEntities.classes.toList(),
-            dbConfig
-        )
-
-        emFactory.transaction {
-            it.createQuery("DELETE FROM ${CpkMetadataEntity::class.simpleName}").executeUpdate()
-
-            it.createQuery("DELETE FROM ${CpkDataEntity::class.simpleName}").executeUpdate()
-        }
-    }
-
-    private fun insertCpkChecksums(cpkChecksums: List<String>, emFactory: EntityManagerFactory) {
-        emFactory.transaction {
-            cpkChecksums.forEach { cpkChecksum ->
-                it.persist(
-                    CpkDataEntity(
-                        cpkChecksum,
-                        byteArrayOf(0x01, 0x02, 0x03)
-                    )
-                )
-            }
-        }
+        // assert the added one has been fetched eagerly.
+        assertThat(loadedCpi.cpks).contains(expectedMeta)
     }
 
     @Test
-    fun ` on findCpkChecksumsNotIn an empty set returns all results`() {
-        cleanUpDb()
-        val cpkChecksums = listOf(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC"
-        )
+    fun `on findCpkChecksumsNotIn an empty set returns all results`() {
+        val cpkChecksums = List(3) { randomChecksumString() }
 
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit",
@@ -273,19 +236,12 @@ class CpiEntitiesIntegrationTest {
             it.findCpkChecksumsNotIn(emptyList())
         }
 
-        assertEquals(cpkChecksums[0], fetchedCpkChecksums[0])
-        assertEquals(cpkChecksums[1], fetchedCpkChecksums[1])
-        assertEquals(cpkChecksums[2], fetchedCpkChecksums[2])
+        assertThat(fetchedCpkChecksums).containsAll(cpkChecksums)
     }
 
     @Test
-    fun ` on findCpkChecksumsNotIn a checksum set returns all but this set`() {
-        cleanUpDb()
-        val cpkChecksums = listOf(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB",
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FC"
-        )
+    fun `on findCpkChecksumsNotIn a checksum set returns all but this set`() {
+        val cpkChecksums = List(3) { randomChecksumString() }
 
         val emFactory = EntityManagerFactoryFactoryImpl().create(
             "test_unit",
@@ -297,20 +253,16 @@ class CpiEntitiesIntegrationTest {
 
         val fetchedCpkChecksums =
             emFactory.transaction {
-                it.findCpkChecksumsNotIn(listOf(
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FB"
-                ))
+                it.findCpkChecksumsNotIn(cpkChecksums.take(2))
             }
 
-        assertEquals(cpkChecksums[2], fetchedCpkChecksums[0])
+        assertThat(fetchedCpkChecksums).contains(cpkChecksums[2])
     }
 
     @Test
     fun `finds CPK data entity`() {
-        cleanUpDb()
         val cpkChecksums = listOf(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
+            randomChecksumString()
         )
 
         val emFactory = EntityManagerFactoryFactoryImpl().create(
@@ -319,17 +271,137 @@ class CpiEntitiesIntegrationTest {
             dbConfig
         )
 
-        insertCpkChecksums(cpkChecksums, emFactory)
+        val insertedCpks = insertCpkChecksums(cpkChecksums, emFactory)
 
         val cpkDataEntity =
             emFactory.transaction {
                 it.findCpkDataEntity(cpkChecksums[0])
             }
 
-        val expectedCpkDataEntity = CpkDataEntity(
-            "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-            byteArrayOf(0x01, 0x02, 0x03)
-        )
-        assertEquals(expectedCpkDataEntity, cpkDataEntity)
+        assertThat(cpkDataEntity).isEqualTo(insertedCpks[0])
     }
+
+    @Test
+    fun `findAllCpiMetadata properly streams through DB data`() {
+        val emFactory = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        )
+
+        // Create CPIs First
+        for (i in 0..1) {
+            val cpiId = UUID.randomUUID()
+            val cpi = CpiMetadataEntityFactory.create(cpiId)
+            val cpkId = UUID.randomUUID()
+            val cpk = CpkDataEntityFactory.create(cpkId)
+            val cpkMetadataEntity =
+                CpkEntityFactory.create(
+                    cpi, cpk.fileChecksum,
+                    "test-cpk.cpk$i",
+                    "test-cpk$i",
+                    "$i.2.3",
+                    randomChecksumString(),
+                )
+
+            emFactory.use { em ->
+                em.transaction {
+                    it.persist(cpk)
+                    // saving cpk metadata should also save related cpi
+                    it.persist(cpkMetadataEntity)
+                    it.flush()
+                }
+            }
+        }
+
+        // Find all - fetches eagerly
+        val cpisEagerlyLoaded = emFactory.use { em ->
+            em.transaction {
+                em.findAllCpiMetadata().toList() // toList here materialises the stream.
+            }
+            // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
+        }
+
+        cpisEagerlyLoaded.forEach {
+            it.cpks.forEach { cpkMetadataEntity ->
+                assertThat(cpkMetadataEntity.metadata).isNotNull
+            }
+        }
+
+        // Repeat the above, but consume from stream
+        emFactory.use { em ->
+            em.transaction {
+                val cpisLazyLoaded = em.findAllCpiMetadata()
+
+                cpisLazyLoaded.forEach {
+                    it.cpks.forEach { cpkMetadataEntity ->
+                        assertThat(cpkMetadataEntity.metadata).isNotNull
+                    }
+                }
+            }
+        }
+    }
+
+    private fun randomChecksumString(): String {
+        return "SHA-256:" + List(64) {
+            (('a'..'z') + ('A'..'Z') + ('0'..'9')).random()
+        }.joinToString("")
+    }
+
+    private fun insertCpkChecksums(cpkChecksums: List<String>, emFactory: EntityManagerFactory):
+            List<CpkDataEntity> {
+        val cpkData = cpkChecksums.map { CpkDataEntity(it, byteArrayOf(0x01, 0x02, 0x03)) }
+        emFactory.transaction { em ->
+            cpkData.forEach {
+                em.persist(it)
+            }
+        }
+        return cpkData
+    }
+}
+
+private object CpiMetadataEntityFactory {
+    fun create(
+        cpiId: UUID
+    ) =
+        CpiMetadataEntity(
+            "test-cpi-$cpiId",
+            "1.0",
+            "test-cpi-hash",
+            "test-cpi-$cpiId.cpi",
+            "test-cpi.cpi-$cpiId-hash",
+            "{group-policy-json}",
+            "group-id",
+            "file-upload-request-id-$cpiId",
+            false
+        )
+}
+
+private object CpkDataEntityFactory {
+    fun create(cpkId: UUID) =
+        CpkDataEntity(
+            "cpk-checksum-$cpkId",
+            ByteArray(2000),
+        )
+}
+
+private object CpkEntityFactory {
+    fun create(
+        cpiMetadataEntity: CpiMetadataEntity,
+        cpkFileChecksum: String,
+        cpkFileName: String,
+        name: String,
+        version: String,
+        signerSummaryHash: String,
+    ) = CpkEntity(
+        cpiMetadataEntity,
+        CpkMetadataEntity(
+            cpkFileChecksum,
+            name,
+            version,
+            signerSummaryHash,
+            "1.0",
+            "{}"),
+        cpkFileName,
+    )
 }

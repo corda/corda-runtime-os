@@ -5,6 +5,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
+import java.io.Closeable
+import java.sql.Timestamp
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -12,13 +14,11 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.v5.base.util.contextLogger
-import java.io.Closeable
-import java.sql.Timestamp
 
 class Sink(private val subscriptionFactory: SubscriptionFactory,
            private val dbParams: DBParams,
@@ -37,14 +37,14 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
     fun start() {
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", APP_RECEIVED_MESSAGES_TOPIC)
-            val kafkaConfig = SmartConfigImpl.empty()
-                .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaServers))
+            val messagingConfig = SmartConfigImpl.empty()
+                .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
             val processor = DBSinkProcessor()
             resources.add(processor)
-            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, processor, kafkaConfig, null)
+            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, processor, messagingConfig, null)
             subscription.start()
             resources.add(subscription)
         }

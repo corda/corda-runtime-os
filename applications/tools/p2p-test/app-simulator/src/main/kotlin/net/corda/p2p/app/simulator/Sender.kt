@@ -4,6 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
+import java.io.Closeable
+import java.nio.ByteBuffer
+import java.time.Duration
+import java.time.Instant
+import java.util.Random
+import java.util.UUID
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.thread
+import kotlin.concurrent.write
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -12,23 +23,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
-import java.io.Closeable
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.thread
-import kotlin.concurrent.write
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
@@ -67,13 +68,13 @@ class Sender(private val publisherFactory: PublisherFactory,
                     null
                 }
                 var messagesSent = 0
-                val kafkaConfig = SmartConfigImpl.empty()
-                    .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaServers))
+                val messagingConfig = SmartConfigImpl.empty()
+                    .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(kafkaServers))
                     .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                     .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                     .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                     .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
-                val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), kafkaConfig)
+                val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator", false), messagingConfig)
                 publisher.use {
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
                         val messageWithIds = (1..loadGenParams.batchSize).map {

@@ -6,8 +6,8 @@ import net.corda.lifecycle.Lifecycle
 
 /** Extends [ConfigRPCOps] with methods to set up the RPC sender for handling incoming requests. */
 internal interface ConfigRPCOpsInternal : ConfigRPCOps, Lifecycle {
-    /** Starts the RPC sender that handles incoming HTTP RPC requests using the given [config]. */
-    fun createAndStartRPCSender(config: SmartConfig)
+    /** Starts the RPC sender that handles incoming HTTP RPC requests using the given [messagingConfig]. */
+    fun createAndStartRPCSender(messagingConfig: SmartConfig)
 
     /** Sets the timeout for incoming HTTP RPC requests to [millis]. */
     fun setTimeout(millis: Int)

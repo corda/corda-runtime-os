@@ -9,17 +9,19 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
-import net.corda.crypto.persistence.SigningCachedKey
-import net.corda.crypto.persistence.SigningKeyCache
-import net.corda.crypto.persistence.SigningKeyCacheActions
-import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
+import net.corda.crypto.persistence.signing.SigningCachedKey
+import net.corda.crypto.persistence.signing.SigningKeyCache
+import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyOrderBy
+import net.corda.crypto.persistence.signing.SigningKeyStatus
+import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.BeforeAll
@@ -86,6 +88,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
+                signatureSpec = SignatureSpec("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
@@ -111,58 +114,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
-                data = ByteArray(2),
-                context = emptyMap()
-            )
-        }
-        assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
-    }
-
-    @Test
-    fun `Should re-throw same CryptoServiceException when failing signing with explicit signature scheme`() {
-        val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            cache = cache,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            signingService.sign(
-                tenantId = UUID.randomUUID().toString(),
-                publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-                },
-                signatureSpec = schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256R1_CODE_NAME }.signatureSpec,
-                data = ByteArray(2),
-                context = emptyMap()
-            )
-        }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
-    }
-
-    @Test
-    fun `Should wrap in CryptoServiceException when failing signing with explicit signature scheme`() {
-        val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
-        }
-        val signingService = SigningServiceImpl(
-            cache = cache,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            signingService.sign(
-                tenantId = UUID.randomUUID().toString(),
-                publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-                },
-                signatureSpec = schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256R1_CODE_NAME }.signatureSpec,
+                signatureSpec = SignatureSpec("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
@@ -191,34 +143,7 @@ class SigningServiceGeneralTests {
                 publicKey = mock {
                     on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
                 },
-                data = ByteArray(2),
-                context = emptyMap()
-            )
-        }
-    }
-
-    @Test
-    @Suppress("MaxLineLength")
-    fun `Should throw CryptoServiceBadRequestException when key is not found for signing with explicit signature scheme`() {
-        val actions = mock<SigningKeyCacheActions> {
-            on { find(any<PublicKey>()) } doReturn null
-        }
-        val cache = mock<SigningKeyCache> {
-            on { act(any()) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
-        }
-        val signingService = SigningServiceImpl(
-            cache = cache,
-            cryptoServiceFactory = mock(),
-            schemeMetadata = schemeMetadata
-        )
-        assertThrows<CryptoServiceBadRequestException> {
-            signingService.sign(
-                tenantId = UUID.randomUUID().toString(),
-                publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
-                },
-                signatureSpec = schemeMetadata.schemes.first { it.codeName == ECDSA_SECP256R1_CODE_NAME }.signatureSpec,
+                signatureSpec = SignatureSpec("NONE"),
                 data = ByteArray(2),
                 context = emptyMap()
             )
@@ -230,7 +155,7 @@ class SigningServiceGeneralTests {
         val existingKey = SigningCachedKey(
             id = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             alias = "alias1",
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
@@ -239,7 +164,9 @@ class SigningServiceGeneralTests {
             externalId = null,
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
             encodingVersion = 1,
-            created = Instant.now()
+            associationId = UUID.randomUUID().toString(),
+            timestamp = Instant.now(),
+            status = SigningKeyStatus.NORMAL
         )
         val actions = mock<SigningKeyCacheActions> {
             on { find(any<String>()) } doReturn existingKey
@@ -256,17 +183,19 @@ class SigningServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = "alias1",
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 context = emptyMap()
             )
         }
         assertThrows<CryptoServiceBadRequestException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = "alias1",
                 externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 context = emptyMap()
             )
         }
@@ -286,8 +215,9 @@ class SigningServiceGeneralTests {
         var thrown = assertThrows<CryptoServiceException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 context = emptyMap()
             )
         }
@@ -295,9 +225,10 @@ class SigningServiceGeneralTests {
         thrown = assertThrows {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = UUID.randomUUID().toString(),
                 externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 context = emptyMap()
             )
         }
@@ -319,8 +250,9 @@ class SigningServiceGeneralTests {
         var thrown = assertThrows<CryptoServiceException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 context = emptyMap()
             )
         }
@@ -328,9 +260,10 @@ class SigningServiceGeneralTests {
         thrown = assertThrows {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
-                category = CryptoConsts.HsmCategories.LEDGER,
+                category = CryptoConsts.Categories.LEDGER,
                 alias = UUID.randomUUID().toString(),
                 externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
                 context = emptyMap()
             )
         }
@@ -351,7 +284,9 @@ class SigningServiceGeneralTests {
         )
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
-                tenantId = UUID.randomUUID().toString()
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.CI,
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
         assertSame(exception, thrown)
@@ -371,7 +306,9 @@ class SigningServiceGeneralTests {
         )
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
-                tenantId = UUID.randomUUID().toString()
+                tenantId = UUID.randomUUID().toString(),
+                category = CryptoConsts.Categories.CI,
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
         assertSame(exception, thrown.cause)
@@ -392,7 +329,9 @@ class SigningServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
-                externalId = UUID.randomUUID().toString()
+                category = CryptoConsts.Categories.CI,
+                externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
         assertSame(exception, thrown)
@@ -413,7 +352,9 @@ class SigningServiceGeneralTests {
         val thrown = assertThrows<CryptoServiceException> {
             signingService.freshKey(
                 tenantId = UUID.randomUUID().toString(),
-                externalId = UUID.randomUUID().toString()
+                category = CryptoConsts.Categories.CI,
+                externalId = UUID.randomUUID().toString(),
+                scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
         assertSame(exception, thrown.cause)
@@ -426,7 +367,7 @@ class SigningServiceGeneralTests {
         val take = 21
         val orderBy: KeyOrderBy = KeyOrderBy.ALIAS
         val tenantId: String = UUID.randomUUID().toString()
-        val category: String = CryptoConsts.HsmCategories.TLS
+        val category: String = CryptoConsts.Categories.TLS
         val schemeCodeName: String = UUID.randomUUID().toString()
         val alias: String = UUID.randomUUID().toString()
         val masterKeyAlias: String = UUID.randomUUID().toString()
@@ -503,6 +444,7 @@ class SigningServiceGeneralTests {
     }
 
     @Test
+    @Suppress("ComplexMethod")
     fun `Should save generated key with alias`() {
         val generatedKey = GeneratedPublicKey(
             publicKey = mock(),
@@ -515,12 +457,13 @@ class SigningServiceGeneralTests {
             on { act(tenantId) } doReturn actions
             on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
         }
+        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
-            category = CryptoConsts.HsmCategories.LEDGER,
-            signatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme("BC"),
+            category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
+            associationId = UUID.randomUUID().toString(),
             instance = mock {
                 on { generateKeyPair(any(), any()) } doReturn generatedKey
             }
@@ -528,21 +471,23 @@ class SigningServiceGeneralTests {
         val signingService = SigningServiceImpl(
             cache = cache,
             cryptoServiceFactory = mock {
-                on { this.getInstance(tenantId, CryptoConsts.HsmCategories.LEDGER) } doReturn ref
+                on { this.getInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },
             schemeMetadata = schemeMetadata
         )
         var result = signingService.generateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
+            scheme = scheme,
             alias = expectedAlias
         )
         assertSame(generatedKey.publicKey, result)
         val expectedExternalId = UUID.randomUUID().toString()
         result = signingService.generateKeyPair(
             tenantId = tenantId,
-            category = CryptoConsts.HsmCategories.LEDGER,
+            category = CryptoConsts.Categories.LEDGER,
             externalId = expectedExternalId,
+            scheme = scheme,
             alias = expectedAlias
         )
         assertSame(generatedKey.publicKey, result)
@@ -552,7 +497,8 @@ class SigningServiceGeneralTests {
                 key == generatedKey &&
                         alias == expectedAlias &&
                         externalId == null &&
-                        signatureScheme == ref.signatureScheme &&
+                        keyScheme == scheme &&
+                        associationId == ref.associationId &&
                         category == ref.category
             }
         )
@@ -562,7 +508,8 @@ class SigningServiceGeneralTests {
                 key == generatedKey &&
                         alias == expectedAlias &&
                         externalId == expectedExternalId &&
-                        signatureScheme == ref.signatureScheme &&
+                        keyScheme == scheme &&
+                        associationId == ref.associationId &&
                         category == ref.category
             }
         )

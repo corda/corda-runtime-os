@@ -1,11 +1,14 @@
 package net.corda.crypto.service.impl.signing
 
+import net.corda.crypto.core.CryptoConsts
+import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import org.junit.jupiter.api.BeforeEach
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.internal.stubbing.answers.AnswersWithDelay
 import org.mockito.internal.stubbing.answers.Returns
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -80,7 +84,7 @@ class CryptoServiceDecoratorTests {
     @Test
     fun `Should execute supportedSchemes`() {
         val circuitBreaker = createCircuitBreaker()
-        val expected = arrayOf<SignatureScheme>()
+        val expected = listOf<KeyScheme>()
         whenever(
             cryptoService.supportedSchemes()
         ).thenReturn(expected)
@@ -178,19 +182,22 @@ class CryptoServiceDecoratorTests {
     fun `Should execute generateKeyPair`() {
         val circuitBreaker = createCircuitBreaker()
         val tenantId = UUID.randomUUID().toString()
-        val alias = UUID.randomUUID().toString()
-        val masterKeyAlias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
+        val expectedAlias = UUID.randomUUID().toString()
+        val expectedMasterKeyAlias = UUID.randomUUID().toString()
+        val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
+        val aliasSecret = ByteArray(1)
         val expected = mock<GeneratedKey>()
-        val context = emptyMap<String, String>()
+        val context = mapOf(
+            CRYPTO_TENANT_ID to tenantId,
+            CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
+        )
         val spec = KeyGenerationSpec(
-            tenantId = tenantId,
-            alias = alias,
-            masterKeyAlias = masterKeyAlias,
-            signatureScheme = signatureScheme,
-            secret = null
+            alias = expectedAlias,
+            masterKeyAlias = expectedMasterKeyAlias,
+            keyScheme = scheme,
+            secret = aliasSecret
         )
         whenever(
             cryptoService.generateKeyPair(
@@ -198,24 +205,35 @@ class CryptoServiceDecoratorTests {
                 context)
         ).thenReturn(expected)
         assertSame(expected, circuitBreaker.generateKeyPair(spec, context))
+        Mockito.verify(cryptoService, times(1)).generateKeyPair(
+            argThat {
+                keyScheme == scheme &&
+                        alias == expectedAlias &&
+                        masterKeyAlias == expectedMasterKeyAlias &&
+                        secret.contentEquals(aliasSecret)
+            },
+            argThat {
+                size == 2 &&
+                this[CRYPTO_TENANT_ID] == tenantId &&
+                this[CRYPTO_CATEGORY] == CryptoConsts.Categories.LEDGER
+            }
+        )
     }
 
     @Test
     fun `Should throw same CryptoServiceException from wrapped service when executing generateKeyPair`() {
         val circuitBreaker = createCircuitBreaker()
-        val tenantId = UUID.randomUUID().toString()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
+        val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
         val expected = CryptoServiceException("")
         val context = emptyMap<String, String>()
         val spec = KeyGenerationSpec(
-            tenantId = tenantId,
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            signatureScheme = signatureScheme,
+            keyScheme = scheme,
             secret = null
         )
         whenever(
@@ -230,19 +248,17 @@ class CryptoServiceDecoratorTests {
     @Test
     fun `Should throw exception wrapped in CryptoServiceException when executing generateKeyPair`() {
         val circuitBreaker = createCircuitBreaker()
-        val tenantId = UUID.randomUUID().toString()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
+        val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
         val expected = RuntimeException()
         val context = emptyMap<String, String>()
         val spec = KeyGenerationSpec(
-            tenantId = tenantId,
             alias = alias,
             masterKeyAlias = masterKeyAlias,
-            signatureScheme = signatureScheme,
+            keyScheme = scheme,
             secret = null
         )
         whenever(

@@ -4,11 +4,24 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import java.io.StringWriter
+import java.nio.ByteBuffer
+import java.security.Key
+import java.security.KeyFactory
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.spec.PKCS8EncodedKeySpec
+import java.time.Duration
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
@@ -17,7 +30,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -54,29 +69,18 @@ import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import java.io.StringWriter
-import java.nio.ByteBuffer
-import java.security.Key
-import java.security.KeyFactory
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.spec.PKCS8EncodedKeySpec
-import java.time.Duration
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
 
 class P2PLayerEndToEndTest {
 
@@ -111,7 +115,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            RSA_SHA256_TEMPLATE,
+            RSA_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -121,7 +125,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                RSA_SHA256_TEMPLATE,
+                RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -162,7 +166,7 @@ class P2PLayerEndToEndTest {
             "ec_truststore",
             bootstrapConfig,
             false,
-            ECDSA_SECP256R1_SHA256_TEMPLATE,
+            ECDSA_SECP256R1_TEMPLATE,
         ).use { hostA ->
             Host(
                 "www.sender.net",
@@ -172,7 +176,7 @@ class P2PLayerEndToEndTest {
                 "ec_truststore",
                 bootstrapConfig,
                 false,
-                ECDSA_SECP256R1_SHA256_TEMPLATE,
+                ECDSA_SECP256R1_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -213,7 +217,7 @@ class P2PLayerEndToEndTest {
             "truststore",
             bootstrapConfig,
             true,
-            RSA_SHA256_TEMPLATE,
+            RSA_TEMPLATE,
         ).use { hostA ->
             Host(
                 "chip.net",
@@ -223,7 +227,7 @@ class P2PLayerEndToEndTest {
                 "truststore",
                 bootstrapConfig,
                 true,
-                RSA_SHA256_TEMPLATE,
+                RSA_TEMPLATE,
             ).use { hostB ->
                 hostA.startWith(hostB)
                 hostB.startWith(hostA)
@@ -309,25 +313,26 @@ class P2PLayerEndToEndTest {
         trustStoreFileName: String,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
-        signatureTemplate: SignatureSchemeTemplate,
+        keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
 
         private val sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF)
         )
-        private val keyPair = KeyPairGenerator.getInstance(signatureTemplate.algorithmName, BouncyCastleProvider())
+        private val keyPair = KeyPairGenerator.getInstance(keyTemplate.algorithmName, BouncyCastleProvider())
             .also {
-                if (signatureTemplate.algSpec != null) {
-                    it.initialize(signatureTemplate.algSpec)
+                if (keyTemplate.algSpec != null) {
+                    it.initialize(keyTemplate.algSpec)
                 }
             }
             .genKeyPair()
         private val topicService = TopicServiceImpl()
         private val lifecycleRegistry = LifecycleRegistryImpl()
-        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
+        private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry, LifecycleCoordinatorSchedulerFactoryImpl())
         private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory)
+        private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
+        private val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, subscriptionFactory, configMerger)
         private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val tlsTenantId by lazy {
@@ -385,7 +390,7 @@ class P2PLayerEndToEndTest {
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
                 key,
-                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1", ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 

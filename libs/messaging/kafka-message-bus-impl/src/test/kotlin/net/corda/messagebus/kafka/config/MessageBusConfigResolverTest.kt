@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
+import java.util.Properties
+import java.util.stream.Stream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
@@ -15,8 +17,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.*
-import java.util.stream.Stream
 
 class MessageBusConfigResolverTest {
 

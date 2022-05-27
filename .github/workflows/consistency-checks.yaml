@@ -1,0 +1,21 @@
+# fast adhoc checks of the sources
+
+name: Consistency checks
+
+on:
+  push:
+    branches: [ release/os/5.0 ]
+  pull_request:
+    branches: [ release/os/5.0 ]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: corda/check-correct-publish-plugin-is-in-use-action@v1

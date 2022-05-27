@@ -2,9 +2,11 @@ package net.corda.applications.workers.smoketest.virtualnode
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
 import net.corda.applications.workers.smoketest.virtualnode.helpers.SimpleResponse
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -12,9 +14,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.net.URI
 import java.time.Duration
+import java.time.Instant
 
-// The CPI we're using in this test
-const val CALCULATOR_CPI = "/META-INF/calculator.cpb"
+// The CPB we're using in this test
+const val CALCULATOR_CPB = "/META-INF/calculator.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
 fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
@@ -47,6 +50,10 @@ class VirtualNodeRpcTest {
         // BUG:  https://r3-cev.atlassian.net/browse/CORE-3966 and https://r3-cev.atlassian.net/browse/CORE-3968
         // Max wait duration CPI to arrive for flow - arbitrarily picked.
         private val FLOW_WAIT_DURATION = Duration.ofSeconds(60)
+
+        private fun JsonNode.toInstant(): Instant {
+            return Instant.parse(this.asText())
+        }
     }
 
     private val clusterUri = URI(System.getProperty("rpcHost"))
@@ -66,7 +73,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(clusterUri, username, password)
 
-            val requestId = cpiUpload(CALCULATOR_CPI, groupId).let { it.toJson()["id"].textValue() }
+            val requestId = cpiUpload(CALCULATOR_CPB, groupId).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             // BUG:  returning "OK" feels 'weakly' typed
@@ -107,7 +114,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(clusterUri, username, password)
 
-            val requestId = cpbUpload(CALCULATOR_CPI).let { it.toJson()["id"].textValue() }
+            val requestId = cpbUpload(CALCULATOR_CPB).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             val json = assertWithRetry {
@@ -125,7 +132,7 @@ class VirtualNodeRpcTest {
     fun `cannot upload same CPI`() {
         cluster {
             endpoint(clusterUri, username, password)
-            val requestId = cpiUpload(CALCULATOR_CPI, groupId).let { it.toJson()["id"].textValue() }
+            val requestId = cpiUpload(CALCULATOR_CPB, groupId).let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             val json = assertWithRetry {
@@ -139,6 +146,7 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(33)
     fun `list cpis`() {
         cluster {
             endpoint(clusterUri, username, password)
@@ -153,6 +161,7 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(37)
     fun `list cpis and check group id matches value in group policy file`() {
         cluster {
             endpoint(clusterUri, username, password)
@@ -232,7 +241,7 @@ class VirtualNodeRpcTest {
             Thread.sleep(FLOW_WAIT_DURATION.toMillis())
 
             // Depends on the flows in the cpi
-            val className = "net.corda.testing.calculator.CalculatorFlow"
+            val className = "net.cordapp.testing.calculator.CalculatorFlow"
             assertWithRetry {
                 command { flowStart(id, 1, className, requestBody) }
                 condition { it.code == 200 }
@@ -247,6 +256,42 @@ class VirtualNodeRpcTest {
             // Depends on the keys in the test cpi
             val resultJson = ObjectMapper().readTree(json["flowResult"].textValue())
             assertThat(resultJson["result"].intValue()).isEqualTo(a + b)
+        }
+    }
+
+    @Test
+    @Order(80)
+    fun `can force upload same CPI`() {
+
+        fun ClusterBuilder.getCpkTimestamp(): Instant {
+            val cpis = cpiList().toJson()["cpis"]
+            val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == "calculator" }
+            val cpksJson = cpiJson["cpks"].toList()
+            return cpksJson.first()["timestamp"].toInstant()
+        }
+
+        cluster {
+            endpoint(clusterUri, username, password)
+
+            // Note CPI/CPK timestamp
+            val initialCpkTimeStamp = getCpkTimestamp()
+
+            // Perform force upload of the CPI
+            val requestId = forceCpiUpload(CALCULATOR_CPB, groupId).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            // BUG:  returning "OK" feels 'weakly' typed
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+            }
+
+            // Check that timestamp for CPK been updated
+            // Cannot use `assertWithRetry` as there is a strict type `Instant`
+            // Allow ample time for CPI upload to be propagated through the system
+            eventually(Duration.ofSeconds(20)) {
+                assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
+            }
         }
     }
 }

@@ -49,7 +49,7 @@ class CpkReadServiceImpl @Activate constructor(
         get() = cpis.values.flatMap(Cpi::cpks)
 
     private val cpksMeta: Collection<CpkMetadata>
-        get() = cpks.map(CpkMetadata::fromLegacyCpk)
+        get() = cpks.map {it.metadata}
 
     override val isRunning: Boolean get() = true
 
@@ -66,7 +66,7 @@ class CpkReadServiceImpl @Activate constructor(
         return getInputStream(resourceName).buffered().use { input ->
             Cpi.from(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
-            val cpiId = CpiIdentifier.fromLegacy(newCpi.metadata.id)
+            val cpiId = newCpi.metadata.cpiId
             cpis.putIfAbsent(cpiId, newCpi)?.also {
                 newCpi.close()
             } ?: newCpi
@@ -74,7 +74,7 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun unloadCPI(cpi: Cpi) {
-        removeCpiMetadata(CpiIdentifier.fromLegacy(cpi.metadata.id))
+        removeCpiMetadata(cpi.metadata.cpiId)
     }
 
     override fun removeCpiMetadata(id: CpiIdentifier) {
@@ -83,21 +83,21 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>> {
-        val cpiList = cpis.values.map(CpiMetadata::fromLegacy)
+        val cpiList = cpis.values.map { it.metadata }
         return CompletableFuture.completedFuture(cpiList)
     }
 
     override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
         val legacyCpi: Cpi? = cpis[id]
-        val cpi: CpiMetadata? = legacyCpi?.let(CpiMetadata::fromLegacy)
+        val cpi: CpiMetadata? = legacyCpi?.metadata
         return CompletableFuture.completedFuture(cpi)
     }
 
     override fun get(cpkId: CpkIdentifier): Cpk? {
         val cpk = cpks.firstOrNull {
-            it.metadata.id.name == cpkId.name &&
-                    it.metadata.id.version == cpkId.version &&
-                    it.metadata.id.signerSummaryHash == cpkId.signerSummaryHash }
+            it.metadata.cpkId.name == cpkId.name &&
+                    it.metadata.cpkId.version == cpkId.version &&
+                    it.metadata.cpkId.signerSummaryHash == cpkId.signerSummaryHash }
 
         return cpk
     }

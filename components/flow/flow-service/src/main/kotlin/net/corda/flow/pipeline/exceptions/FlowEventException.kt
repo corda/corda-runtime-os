@@ -10,5 +10,5 @@ import net.corda.flow.pipeline.FlowEventContext
  * A Session Event is received and updates the session to an error state, in this case we want to abort further
  * processing but still output the updated state.
  */
-class FlowEventException(message: String, flowEventContext: FlowEventContext<Any>, cause: Throwable? = null) :
+class FlowEventException(message: String, flowEventContext: FlowEventContext<*>, cause: Throwable? = null) :
     FlowProcessingException(message, flowEventContext, cause)

@@ -1,5 +1,8 @@
 package net.corda.p2p.linkmanager
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,9 +20,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 
 @Suppress("LongParameterList")
 internal class TlsCertificatesPublisher(
@@ -27,7 +27,7 @@ internal class TlsCertificatesPublisher(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     registry: LifecycleRegistry,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile, HostingMapListener {
 
     companion object {
@@ -43,7 +43,7 @@ internal class TlsCertificatesPublisher(
         lifecycleCoordinatorFactory,
         registry,
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
-        configuration,
+        messagingConfiguration,
     )
 
     private fun HoldingIdentity.asString(): String {
@@ -106,7 +106,7 @@ internal class TlsCertificatesPublisher(
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_CERTIFICATES),
         Processor(),
-        configuration,
+        messagingConfiguration,
     )
     private val subscriptionDominoTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,

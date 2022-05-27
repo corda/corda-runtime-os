@@ -1,5 +1,11 @@
 package net.corda.p2p.gateway.messaging
 
+import java.io.ByteArrayInputStream
+import java.security.InvalidKeyException
+import java.security.PublicKey
+import java.security.cert.CertificateFactory
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.delegated.signing.Alias
 import net.corda.crypto.delegated.signing.CertificateChain
 import net.corda.crypto.delegated.signing.DelegatedCertificateStore
@@ -19,18 +25,12 @@ import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
 import net.corda.v5.crypto.SignatureSpec
-import java.io.ByteArrayInputStream
-import java.security.InvalidKeyException
-import java.security.PublicKey
-import java.security.cert.CertificateFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 
 internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
     companion object {
@@ -47,7 +47,7 @@ internal class DynamicKeyStore(
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES),
         Processor(),
-        nodeConfiguration
+        messagingConfiguration
     )
 
     private val subscriptionTile = SubscriptionDominoTile(
@@ -63,7 +63,7 @@ internal class DynamicKeyStore(
         lifecycleCoordinatorFactory,
         registry,
         subscriptionFactory,
-        nodeConfiguration,
+        messagingConfiguration,
     )
 
     private val blockingDominoTile = BlockingDominoTile(

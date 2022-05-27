@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>SpacingAroundColon:net.corda.uniqueness.checker.UniquenessChecker.kt:14</ID>
+  </CurrentIssues>
+</SmellBaseline>

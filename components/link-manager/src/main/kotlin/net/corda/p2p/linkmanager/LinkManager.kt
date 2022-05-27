@@ -12,37 +12,31 @@ import net.corda.p2p.test.stub.crypto.processor.CryptoProcessor
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 
 @Suppress("LongParameterList")
 class LinkManager(
-    @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = LifecycleRegistry::class)
     lifecycleRegistry: LifecycleRegistry,
-    @Reference(service = ConfigurationReadService::class)
     configurationReaderService: ConfigurationReadService,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     groups: LinkManagerGroupPolicyProvider = StubGroupPolicyProvider(
-        lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, configuration
+        lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, messagingConfiguration
     ),
     members: LinkManagerMembershipGroupReader = StubMembershipGroupReader(
-        lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, configuration
+        lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, messagingConfiguration
     ),
     linkManagerHostingMap: LinkManagerHostingMap =
         StubLinkManagerHostingMap(
             lifecycleCoordinatorFactory,
             lifecycleRegistry,
             subscriptionFactory,
-            configuration,
+            messagingConfiguration,
         ),
     linkManagerCryptoProcessor: CryptoProcessor =
-        StubCryptoProcessor(lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, configuration),
+        StubCryptoProcessor(lifecycleCoordinatorFactory, lifecycleRegistry, subscriptionFactory, messagingConfiguration),
     clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
 
@@ -62,7 +56,7 @@ class LinkManager(
         linkManagerCryptoProcessor = linkManagerCryptoProcessor,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
-        configuration = configuration,
+        messagingConfiguration = messagingConfiguration,
         clock = clock,
     )
     private val outboundLinkManager = OutboundLinkManager(
@@ -76,7 +70,7 @@ class LinkManager(
         linkManagerCryptoProcessor = linkManagerCryptoProcessor,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
-        configuration = configuration,
+        messagingConfiguration = messagingConfiguration,
         clock = clock,
     )
     private val inboundLinkManager = InboundLinkManager(
@@ -85,7 +79,7 @@ class LinkManager(
         groups = groups,
         members = members,
         subscriptionFactory = subscriptionFactory,
-        configuration = configuration,
+        messagingConfiguration = messagingConfiguration,
         clock = clock,
     )
 

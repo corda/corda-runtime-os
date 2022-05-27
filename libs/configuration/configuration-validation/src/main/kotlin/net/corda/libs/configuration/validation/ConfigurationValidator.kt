@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.validation
 
+import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.versioning.Version
 
@@ -33,4 +34,24 @@ interface ConfigurationValidator {
      * to the defaults defined in the schema for this config [key]
      */
     fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean = false) : SmartConfig
+
+    /**
+     * Validate some configuration data for a given schema
+     *
+     * If this function returns, then validation was successful. A [ConfigurationValidationException] is thrown if the
+     * configuration fails to validate, which contains information about what errors were encountered with the data.
+     *
+     * @param key The configuration key being validated
+     * @param config The configuration data to validate
+     * @param schemaInput The schema file inputstream to validate against
+     * @param applyDefaults Insert defaults into the config for fields which are not set. If a value is explicitly set to null in the
+     * config defaults are not applied.
+     *
+     * @throws ConfigurationValidationException If the configuration fails to validate
+     * @throws ConfigurationSchemaFetchException If some or all of the requested schema does not exist. This is most
+     *                                           likely to happen due to an incorrect version being provided
+     * @return The config returned as a SmartConfig. If [applyDefaults] is set to true, the returned config will have any empty fields set
+     * to the defaults defined in the schema for this config [key]
+     */
+    fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean = false)
 }

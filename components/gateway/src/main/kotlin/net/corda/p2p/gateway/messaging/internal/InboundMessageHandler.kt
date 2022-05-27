@@ -1,6 +1,8 @@
 package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
+import java.nio.ByteBuffer
+import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
@@ -28,8 +30,6 @@ import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
-import java.nio.ByteBuffer
-import java.util.*
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -41,7 +41,7 @@ internal class InboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig,
+    messagingConfiguration: SmartConfig,
 ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
@@ -53,13 +53,13 @@ internal class InboundMessageHandler(
         lifecycleCoordinatorFactory,
         registry,
         PublisherConfig("inbound-message-handler", false),
-        nodeConfiguration
+        messagingConfiguration
     )
     private val sessionPartitionMapper = SessionPartitionMapperImpl(
         lifecycleCoordinatorFactory,
         registry,
         subscriptionFactory,
-        nodeConfiguration
+        messagingConfiguration
     )
 
     private val server = ReconfigurableHttpServer(
@@ -68,7 +68,7 @@ internal class InboundMessageHandler(
         configurationReaderService,
         this,
         subscriptionFactory,
-        nodeConfiguration,
+        messagingConfiguration,
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

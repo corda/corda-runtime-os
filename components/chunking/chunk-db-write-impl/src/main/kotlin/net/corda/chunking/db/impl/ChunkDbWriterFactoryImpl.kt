@@ -1,5 +1,6 @@
 package net.corda.chunking.db.impl
 
+import javax.persistence.EntityManagerFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.ChunkDbWriter
 import net.corda.chunking.db.ChunkDbWriterFactory
@@ -22,7 +23,6 @@ import net.corda.utilities.TempPathProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import javax.persistence.EntityManagerFactory
 
 @Suppress("UNUSED")
 @Component(service = [ChunkDbWriterFactory::class])
@@ -49,7 +49,8 @@ class ChunkDbWriterFactoryImpl(
     }
 
     override fun create(
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService
     ): ChunkDbWriter {
@@ -59,7 +60,8 @@ class ChunkDbWriterFactoryImpl(
 
         val subscription = createSubscription(
             uploadTopic,
-            config,
+            messagingConfig,
+            bootConfig,
             entityManagerFactory,
             statusTopic,
             cpiInfoWriteService
@@ -75,28 +77,30 @@ class ChunkDbWriterFactoryImpl(
 
     /**
      * @param uploadTopic we read (subscribe) chunks from this topic
-     * @param config
+     * @param messagingConfig
      * @param entityManagerFactory we use this to write chunks to the database
      * @param statusTopic we write (publish) status changes to this topic
      */
+    @Suppress("LongParameterList")
     private fun createSubscription(
         uploadTopic: String,
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
+        bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService
     ): Subscription<RequestId, Chunk> {
         val persistence = DatabaseChunkPersistence(entityManagerFactory)
-        val publisher = createPublisher(config)
+        val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
-        val cpiCacheDir = tempPathProvider.getOrCreate(config, CPI_CACHE_DIR)
-        val cpiPartsDir = tempPathProvider.getOrCreate(config, CPI_PARTS_DIR)
+        val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
+        val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val validator =
             CpiValidatorImpl(statusPublisher, persistence, cpiInfoWriteService, cpiCacheDir, cpiPartsDir)
         val processor = ChunkWriteToDbProcessor(statusPublisher, persistence, validator)
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, uploadTopic)
         return try {
-            subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, config, null)
+            subscriptionFactory.createDurableSubscription(subscriptionConfig, processor, messagingConfig, null)
         } catch (e: Exception) {
              throw ChunkWriteException("Could not create subscription to process configuration update requests.", e)
         }

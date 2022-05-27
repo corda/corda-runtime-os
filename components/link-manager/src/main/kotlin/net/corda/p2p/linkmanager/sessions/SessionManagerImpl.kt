@@ -83,7 +83,7 @@ internal class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     registry: LifecycleRegistry,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
@@ -93,7 +93,7 @@ internal class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         registry,
-        configuration,
+        messagingConfiguration,
         groups,
         members,
         clock,
@@ -125,7 +125,7 @@ internal class SessionManagerImpl(
         configurationReaderService,
         coordinatorFactory,
         registry,
-        configuration,
+        messagingConfiguration,
         groups,
         members,
         ::refreshOutboundSession,
@@ -139,7 +139,7 @@ internal class SessionManagerImpl(
         coordinatorFactory,
         registry,
         PublisherConfig(SESSION_MANAGER_CLIENT_ID, false),
-        configuration
+        messagingConfiguration
     )
 
     override val dominoTile = ComplexDominoTile(

@@ -37,7 +37,7 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
         flowFiberExecutionContext: FlowFiberExecutionContext,
         suspensionOutcome: FlowContinuation
     ): Future<FlowIORequest<*>> {
-        return flowFiberExecutionContext.checkpointSerializer.deserialize(
+        return flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
             flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
             FlowFiberImpl::class.java
         ).resume(flowFiberExecutionContext,suspensionOutcome, currentScheduler)

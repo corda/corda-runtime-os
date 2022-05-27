@@ -47,6 +47,9 @@ dependencies {
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestImplementation project(":libs:configuration:configuration-core")
+    integrationTestImplementation project(":libs:configuration:configuration-merger")
+    integrationTestImplementation project(':libs:messaging:message-bus')
+    integrationTestImplementation project(':libs:messaging:db-message-bus-impl')
     integrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
     integrationTestImplementation 'net.corda:corda-cipher-suite'
 }

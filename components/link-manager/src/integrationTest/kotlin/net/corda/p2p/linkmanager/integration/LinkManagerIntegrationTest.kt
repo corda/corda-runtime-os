@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
@@ -25,7 +26,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -79,13 +81,14 @@ class LinkManagerIntegrationTest {
         .create(ConfigFactory.empty()
             .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         )
 
     private fun Publisher.publishLinkManagerConfig(config: Config) {
         this.publish(listOf(Record(
             Schemas.Config.CONFIG_TOPIC,
             "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
-            Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1")
+            Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1", ConfigurationSchemaVersion(1, 0))
         ))).forEach { it.get() }
     }
 

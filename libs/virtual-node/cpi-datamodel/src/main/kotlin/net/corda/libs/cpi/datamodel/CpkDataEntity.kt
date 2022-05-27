@@ -8,10 +8,11 @@ import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.Table
 import javax.persistence.EntityManager
+import javax.persistence.Version
 
 /**
  * Cpk binary data
- * NOTE: CPK binary is separate from the [CpkMetadataEntity] as it is possible a CPK is contained in
+ * NOTE: CPK binary is separate from the [CpkEntity] as it is possible a CPK is contained in
  * multiple CPIs. This is why the file checksum is the key.
  *
  * @property fileChecksum for the binary data
@@ -27,7 +28,12 @@ data class CpkDataEntity(
     @Lob
     @Column(name = "data", nullable = false)
     val data: ByteArray,
+    @Column(name = "is_deleted", nullable = false)
+    var isDeleted: Boolean = false
 ) {
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    var entityVersion: Int = 0
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
     val insertTimestamp: Instant? = null
