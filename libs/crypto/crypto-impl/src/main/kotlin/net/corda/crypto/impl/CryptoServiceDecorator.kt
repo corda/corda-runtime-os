@@ -56,7 +56,7 @@ class CryptoServiceDecorator(
         val num = UUID.randomUUID()
         while (true) {
             try {
-                logger.info("Submitting crypto task for execution (num={})...", num)
+                logger.debug("Submitting crypto task for execution (num={})...", num)
                 val result = CompletableFuture.supplyAsync(func).getOrThrow(timeout)
                 logger.debug("Crypto task completed on time (num={})...", num)
                 return result
