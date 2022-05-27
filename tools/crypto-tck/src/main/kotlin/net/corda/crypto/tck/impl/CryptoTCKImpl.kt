@@ -57,11 +57,11 @@ class CryptoTCKImpl : CryptoTCK {
 
         val launcher = buildTestLauncher(options, summaryListener, out)
 
-        printCaption(spec)
+        logger.info("EXECUTING COMPLIANCE TESTS: $version")
 
         launcher.execute(request)
 
-        summaryListener.printReport(out)
+        summaryListener.printReport(spec, out)
 
         ComplianceSpecExtension.unregister(spec)
 
@@ -72,39 +72,7 @@ class CryptoTCKImpl : CryptoTCK {
     }
 
     private fun buildComplianceSpec(options: ExecutionOptions): ComplianceSpec {
-        if (options.tests.contains(ComplianceTestType.SESSION_INACTIVITY)) {
-            require(options.sessionComplianceSpec != null) {
-                "Please specify the ${options::sessionComplianceSpec.name}"
-            }
-        }
         return ComplianceSpec(options = options)
-    }
-
-    private fun printCaption(spec: ComplianceSpec) {
-        logger.info("EXECUTING COMPLIANCE TESTS: $version")
-        logger.info("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
-        logger.info("options.${spec.options::retries.name}=${spec.options.retries}")
-        logger.info("options.${spec.options::timeout.name}=${spec.options.timeout}")
-        if (spec.options.sessionComplianceSpec != null) {
-            logger.info(
-                "options.${spec.options::sessionComplianceTimeout.name}=" +
-                        "${spec.options.sessionComplianceTimeout}"
-            )
-            logger.info(
-                "options.${spec.options::sessionComplianceSpec.name}=[" +
-                        "${spec.options.sessionComplianceSpec.first},${spec.options.sessionComplianceSpec.second}]"
-            )
-        }
-
-        logger.info("options.${spec.options::tests.name}=${spec.options.tests.joinToString()}")
-        logger.info("options.${spec.options::testResultsDirectory.name}=${spec.options.testResultsDirectory}")
-        logger.info("options.${spec.options::signatureSpecs.name}:")
-        spec.options.signatureSpecs.forEach {
-            logger.info("options.${spec.options::signatureSpecs.name}:${it.key}=" +
-                    "[${it.value.joinToString { v -> v.signatureName }}]"
-            )
-        }
-        logger.info("==========================")
     }
 
     private fun buildTestRequest(spec: ComplianceSpec): LauncherDiscoveryRequest {
@@ -148,7 +116,31 @@ class CryptoTCKImpl : CryptoTCK {
             }
         }
 
-    private fun SummaryGeneratingListener.printReport(out: PrintWriter) {
+    private fun SummaryGeneratingListener.printReport(spec: ComplianceSpec, out: PrintWriter) {
+        out.println("==========================")
+        out.println("COMPLETED COMPLIANCE TESTS: $version")
+        out.println("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
+        out.println("options.${spec.options::retries.name}=${spec.options.retries}")
+        out.println("options.${spec.options::timeout.name}=${spec.options.timeout}")
+        if (spec.options.sessionComplianceSpec != null) {
+            out.println(
+                "options.${spec.options::sessionComplianceTimeout.name}=" +
+                        "${spec.options.sessionComplianceTimeout}"
+            )
+            out.println(
+                "options.${spec.options::sessionComplianceSpec.name}=[" +
+                        "${spec.options.sessionComplianceSpec.first},${spec.options.sessionComplianceSpec.second}]"
+            )
+        }
+        out.println("options.${spec.options::tests.name}=${spec.options.tests.joinToString()}")
+        out.println("options.${spec.options::testResultsDirectory.name}=${spec.options.testResultsDirectory}")
+        out.println("options.${spec.options::signatureSpecs.name}:")
+        spec.options.signatureSpecs.forEach {
+            out.println("options.${spec.options::signatureSpecs.name}:${it.key}=" +
+                    "[${it.value.joinToString { v -> v.signatureName }}]"
+            )
+        }
+        out.println("==========================")
         when (summary.isSuccess()) {
             true -> out.println("${System.lineSeparator()}TESTS WERE SUCCESSFUL!")
             else -> out.println("${System.lineSeparator()}TESTS HAVE FAILED!!!")

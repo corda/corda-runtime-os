@@ -6,7 +6,6 @@ import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.sha256Bytes
-import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
 
 class ComplianceSpec(
@@ -23,7 +22,6 @@ class ComplianceSpec(
     fun getFlattenedSchemesAndSignatureSpecs(): List<Pair<String, SignatureSpec>> {
         val list = mutableListOf<Pair<String, SignatureSpec>>()
         options.signatureSpecs.forEach {
-            assertTrue(it.value.isNotEmpty(), "There must be at least one signatures spec for ${it.key}")
             it.value.forEach { s -> list.add(Pair(it.key, s)) }
         }
         return list
