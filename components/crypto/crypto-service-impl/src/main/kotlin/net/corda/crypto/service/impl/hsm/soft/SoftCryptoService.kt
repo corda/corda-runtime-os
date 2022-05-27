@@ -68,6 +68,7 @@ open class SoftCryptoService(
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
+        val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
         cache.act {
             if (it.findWrappingKey(masterKeyAlias) != null) {
                 if (failIfExists) {
@@ -81,7 +82,6 @@ open class SoftCryptoService(
                     )
                 }
             } else {
-                val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
                 it.saveWrappingKey(masterKeyAlias, wrappingKey, failIfExists)
             }
         }

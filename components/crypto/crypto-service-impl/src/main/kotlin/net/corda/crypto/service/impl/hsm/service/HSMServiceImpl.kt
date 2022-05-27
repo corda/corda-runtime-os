@@ -56,11 +56,12 @@ class HSMServiceImpl(
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
         validatePutHSMConfig(info)
+        val encryptedServiceConfig = encryptor.encrypt(serviceConfig)
         val id = hsmCache.act {
             if (info.id.isNullOrBlank()) {
-                it.add(info, encryptor.encrypt(serviceConfig))
+                it.add(info, encryptedServiceConfig)
             } else if (it.findConfig(info.id) != null) {
-                it.merge(info, encryptor.encrypt(serviceConfig))
+                it.merge(info, encryptedServiceConfig)
                 info.id
             } else {
                 throw CryptoServiceLibraryException(

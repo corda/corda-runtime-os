@@ -159,22 +159,22 @@ open class SigningServiceImpl(
         context: Map<String, String>
     ): DigitalSignature.WithKey =
         try {
-            cache.act(tenantId) {
-                val record = getKeyRecord(tenantId, it, publicKey)
-                logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
-                val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
-                val cryptoService = cryptoServiceFactory.getInstance(
-                    tenantId = tenantId,
-                    category = record.second.category,
-                    associationId = record.second.associationId
-                )
-                val signedBytes = cryptoService.sign(record.second, scheme, signatureSpec, data, context)
-                DigitalSignature.WithKey(
-                    by = record.first,
-                    bytes = signedBytes,
-                    context = context
-                )
+            val record = cache.act(tenantId) {
+                getKeyRecord(tenantId, it, publicKey)
             }
+            logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
+            val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
+            val cryptoService = cryptoServiceFactory.getInstance(
+                tenantId = tenantId,
+                category = record.second.category,
+                associationId = record.second.associationId
+            )
+            val signedBytes = cryptoService.sign(record.second, scheme, signatureSpec, data, context)
+            DigitalSignature.WithKey(
+                by = record.first,
+                bytes = signedBytes,
+                context = context
+            )
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
@@ -202,10 +202,12 @@ open class SigningServiceImpl(
                         "The key with alias $alias already exist for tenant $tenantId"
                     )
                 }
-                val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
-                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
-                generatedKey.publicKey
             }
+            val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
+            cache.act(tenantId) {
+                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
+            }
+            generatedKey.publicKey
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
