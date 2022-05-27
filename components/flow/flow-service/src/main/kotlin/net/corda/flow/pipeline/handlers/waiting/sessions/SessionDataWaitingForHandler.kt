@@ -28,30 +28,28 @@ class SessionDataWaitingForHandler @Activate constructor(
 
         return try {
             val receivedSessionDataEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
+            val receivedSessions = receivedSessionDataEvents.map { (session, _) -> session.sessionId }
 
             val erroredSessions = flowSessionManager.getSessionsWithStatus(
                 checkpoint,
-                waitingFor.sessionIds,
+                waitingFor.sessionIds - receivedSessions,
                 SessionStateType.ERROR
-            ).map { it.sessionId }
+            )
+
+            val closingSessions = flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                waitingFor.sessionIds - receivedSessions,
+                SessionStateType.CLOSING
+            )
+
+            val terminatedSessions = erroredSessions + closingSessions
 
             when {
-                erroredSessions.isNotEmpty() -> {
-                    if (haveAllSessionsErroredOrReceivedData(waitingFor, erroredSessions, receivedSessionDataEvents)) {
-                        flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
-                        FlowContinuation.Error(CordaRuntimeException("Failed to receive due to errors from sessions: $erroredSessions"))
-                    } else {
-                        FlowContinuation.Continue
-                    }
-                }
                 receivedSessionDataEvents.size == waitingFor.sessionIds.size -> {
-                    try {
-                        val payloads = convertToIncomingPayloads(receivedSessionDataEvents)
-                        flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
-                        FlowContinuation.Run(payloads)
-                    } catch (e: IllegalStateException) {
-                        FlowContinuation.Error(e)
-                    }
+                    resumeWithIncomingPayloads(receivedSessionDataEvents)
+                }
+                terminatedSessions.isNotEmpty() -> {
+                    resumeWithErrorIfAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionDataEvents)
                 }
                 else -> FlowContinuation.Continue
             }
@@ -61,17 +59,18 @@ class SessionDataWaitingForHandler @Activate constructor(
         }
     }
 
-    private fun haveAllSessionsErroredOrReceivedData(
-        waitingFor: SessionData,
-        erroredSessions: List<String>,
-        receivedDataEvents: List<Pair<SessionState, SessionEvent>>
-    ): Boolean {
-        val receivedEventSessionIds = receivedDataEvents.map { (sessionState, _) -> sessionState.sessionId }
-        return waitingFor.sessionIds.toSet() == (receivedEventSessionIds + erroredSessions).toSet()
+    private fun resumeWithIncomingPayloads(receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>): FlowContinuation {
+        return try {
+            val payloads = convertToIncomingPayloads(receivedSessionDataEvents)
+            flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
+            FlowContinuation.Run(payloads)
+        } catch (e: IllegalStateException) {
+            FlowContinuation.Error(e)
+        }
     }
 
-    private fun convertToIncomingPayloads(receivedEvents: List<Pair<SessionState, SessionEvent>>): Map<String, ByteArray> {
-        return receivedEvents.associate { (_, event) ->
+    private fun convertToIncomingPayloads(receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>): Map<String, ByteArray> {
+        return receivedSessionDataEvents.associate { (_, event) ->
             when (val sessionPayload = event.payload) {
                 is net.corda.data.flow.event.session.SessionData -> Pair(event.sessionId, sessionPayload.payload.array())
                 else -> throw IllegalStateException(
@@ -79,5 +78,31 @@ class SessionDataWaitingForHandler @Activate constructor(
                 )
             }
         }
+    }
+
+    private fun resumeWithErrorIfAllSessionsReceivedEvents(
+        waitingFor: SessionData,
+        terminatedSessions: List<SessionState>,
+        receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>,
+    ): FlowContinuation {
+        return if (haveAllSessionsReceivedEvents(waitingFor, terminatedSessions, receivedSessionDataEvents)) {
+            flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
+            val sessionIdsToStatuses = terminatedSessions.map { "${it.sessionId} - ${it.status}" }
+            FlowContinuation.Error(
+                CordaRuntimeException("Failed to receive due to sessions with terminated statuses: $sessionIdsToStatuses")
+            )
+        } else {
+            FlowContinuation.Continue
+        }
+    }
+
+    private fun haveAllSessionsReceivedEvents(
+        waitingFor: SessionData,
+        terminatedSessions: List<SessionState>,
+        receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>
+    ): Boolean {
+        val receivedEventSessionIds = receivedSessionDataEvents.map { (sessionState, _) -> sessionState.sessionId }
+        val terminatedSessionIds = terminatedSessions.map { it.sessionId }
+        return waitingFor.sessionIds.toSet() == (receivedEventSessionIds + terminatedSessionIds).toSet()
     }
 }
