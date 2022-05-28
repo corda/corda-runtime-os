@@ -37,12 +37,8 @@ class AllAliasedKeysHSM(
     digestService: DigestService,
     supportedSchemeCodes: List<String> = listOf(
         RSA_CODE_NAME,
-        ECDSA_SECP256K1_CODE_NAME,
         ECDSA_SECP256R1_CODE_NAME,
-        EDDSA_ED25519_CODE_NAME,
-        SPHINCS256_CODE_NAME,
-        SM2_CODE_NAME,
-        GOST3410_GOST3411_CODE_NAME
+        EDDSA_ED25519_CODE_NAME
     )
 ) : AbstractHSM(supportedSchemeCodes, schemeMetadata, digestService), CryptoService, CryptoServiceDeleteOps {
     companion object {
