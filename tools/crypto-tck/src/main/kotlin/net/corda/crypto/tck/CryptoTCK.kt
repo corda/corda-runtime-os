@@ -1,8 +1,12 @@
 package net.corda.crypto.tck
 
+import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
+
 /**
  * Crypto Technical Compliance Kit provider. It's an OSGi component.
  * Use the junit capability to run OSGi tests.
+ *
+ * If the service supports [CryptoServiceDeleteOps] then the tests will do the best to delete the generated keys.
  *
  * Example (Kotlin):
  *  @ExtendWith(ServiceExtension::class)
