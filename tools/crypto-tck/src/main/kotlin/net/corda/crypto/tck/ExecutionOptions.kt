@@ -11,6 +11,8 @@ import java.time.Duration
  * @property serviceConfig the CryptoService implementation service configuration.
  * @property signatureSpecs map of the SignatureSpec(s) which should be used for signing when running the tests.
  * @property testResultsDirectory path where to output the test results.
+ * @property concurrency number of threads to execute, together with the number of SignatureSpecs defined in
+ * [signatureSpecs] has direct impact on number of generated keys. The recommended value is 20, the minimum is 4.
  * @property sessionComplianceSpec the spec that should be used for the session inactivity test suite.
  * @property sessionComplianceTimeout the session timeout to test, must exceed the login session timeout.
  * @property retries number of retries when the call to the HSM fails.
@@ -23,6 +25,7 @@ class ExecutionOptions(
     val serviceConfig: Any,
     val signatureSpecs: Map<String, List<SignatureSpec>>,
     val testResultsDirectory: Path,
+    val concurrency: Int = 20,
     val sessionComplianceSpec: Pair<String, SignatureSpec>? = null,
     val sessionComplianceTimeout: Duration = Duration.ofMinutes(20),
     val retries: Int = 2,
@@ -37,6 +40,9 @@ class ExecutionOptions(
         }
         require(tests.isNotEmpty()) {
             "Define at least compliance test suite."
+        }
+        require(concurrency >= 4) {
+            "The minimum value of concurrency is 4, you submitted $concurrency"
         }
         if (tests.contains(ComplianceTestType.SESSION_INACTIVITY)) {
             require(sessionComplianceSpec != null) {

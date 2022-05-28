@@ -10,6 +10,7 @@ import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
@@ -59,8 +60,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @Suppress("TooManyFunctions")
 class CryptoServiceCompliance : AbstractCompliance() {
     companion object {
-        private const val THREAD_COUNT = 10
-
         @InjectService(timeout = 10000L)
         lateinit var providers: CryptoServiceProviderMap
 
@@ -80,8 +79,10 @@ class CryptoServiceCompliance : AbstractCompliance() {
     }
 
     @AfterEach
-    fun clenup() {
-        cleanupKeys()
+    fun cleanup() {
+        if(masterKeyAlias != null) {
+            deleteWrappingKey(masterKeyAlias!!)
+        }
     }
 
     @Test
@@ -113,52 +114,50 @@ class CryptoServiceCompliance : AbstractCompliance() {
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to generate key pair with suggested alias then endcode & decode public key and then sign and verify`() {
-        val generatedPublicKeys = ConcurrentLinkedQueue<PublicKey>()
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
-            (0 until THREAD_COUNT).createTestCase {
-                val alias = compliance.generateRandomIdentifier()
-                val key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
-                `Should be able to encode and then decode public key as byte array`(key.publicKey)
-                `Should be able to encode and then decode public key as PEM`(key.publicKey)
-                if (canBeUsedInCert(keyScheme)) {
-                    `Should be able to persist and then load public key from key store`(key.publicKey)
-                }
-                `Should be able to sign and verify signature`(key, keyScheme, signatureSpec)
-                generatedPublicKeys.add(key.publicKey)
-            }.runAndValidate()
+            val generatedKeys = ConcurrentLinkedQueue<PublicKey>()
+            val experiments = ConcurrentLinkedQueue<Experiment>()
+            try {
+                (0 until compliance.options.concurrency).createTestCase {
+                    val alias = compliance.generateRandomIdentifier()
+                    val key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
+                    generatedKeys.add(key.publicKey)
+                    experiments.addAll(
+                        `Should be able to sign`(key, keyScheme, signatureSpec)
+                    )
+                }.runAndValidate()
+            } catch (e: Throwable) {
+                experiments.cleanupKeyPairs()
+                throw e
+            }
+            experiments.validateAndCleanupKeys(generatedKeys)
         }
-        assertEquals(
-            generatedPublicKeys.size,
-            generatedPublicKeys.distinct().size,
-            "All generated keys must be distinct"
-        )
     }
 
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to generate key pair without suggested alias, suggesting wrapped key, then endcode & decode public key and then sign and verify`() {
-        val generatedPublicKeys = ConcurrentLinkedQueue<PublicKey>()
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
-            (0 until THREAD_COUNT).createTestCase {
-                val key = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
-                `Should be able to encode and then decode public key as byte array`(key.publicKey)
-                `Should be able to encode and then decode public key as PEM`(key.publicKey)
-                if (canBeUsedInCert(keyScheme)) {
-                    `Should be able to persist and then load public key from key store`(key.publicKey)
-                }
-                `Should be able to sign and verify signature`(key, keyScheme, signatureSpec)
-                generatedPublicKeys.add(key.publicKey)
-            }.runAndValidate()
+            val generatedKeys = ConcurrentLinkedQueue<PublicKey>()
+            val experiments = ConcurrentLinkedQueue<Experiment>()
+            try {
+                (0 until compliance.options.concurrency).createTestCase {
+                    val key = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
+                    generatedKeys.add(key.publicKey)
+                    experiments.addAll(
+                        `Should be able to sign`(key, keyScheme, signatureSpec)
+                    )
+                }.runAndValidate()
+            } catch (e: Throwable) {
+                experiments.cleanupKeyPairs()
+                throw e
+            }
+            experiments.validateAndCleanupKeys(generatedKeys)
         }
-        assertEquals(
-            generatedPublicKeys.size,
-            generatedPublicKeys.distinct().size,
-            "All generated keys must be distinct"
-        )
     }
 
     @Test
@@ -202,6 +201,42 @@ class CryptoServiceCompliance : AbstractCompliance() {
                     CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
                 )
             )
+        }
+    }
+
+    private fun Collection<Experiment>.validateAndCleanupKeys(generatedKeys: ConcurrentLinkedQueue<PublicKey>) {
+        try {
+            forEach {
+                `Should be able to encode and then decode public key as byte array`(it.key.publicKey)
+                `Should be able to encode and then decode public key as PEM`(it.key.publicKey)
+                if (canBeUsedInCert(it.keyScheme)) {
+                    `Should be able to persist and then load public key from key store`(it.key.publicKey)
+                }
+                assertTrue(
+                    verifier.isValid(
+                        publicKey = it.key.publicKey,
+                        signatureSpec = it.signatureSpec,
+                        signatureData = it.signature,
+                        clearData = it.clearData
+                    ),
+                    "Signature validation failed."
+                )
+            }
+            assertEquals(
+                generatedKeys.size,
+                generatedKeys.distinct().size,
+                "All generated keys must be distinct"
+            )
+        } finally {
+            cleanupKeyPairs()
+        }
+    }
+
+    private fun Collection<Experiment>.cleanupKeyPairs() {
+        map {
+            (it.key as? GeneratedPublicKey)?.hsmAlias
+        }.filter { !it.isNullOrBlank() }.distinct().forEach {
+            deleteKeyPair(it!!)
         }
     }
 

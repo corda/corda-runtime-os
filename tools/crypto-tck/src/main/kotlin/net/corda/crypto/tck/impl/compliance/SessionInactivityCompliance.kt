@@ -3,6 +3,8 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
+import net.corda.v5.cipher.suite.GeneratedKey
+import net.corda.v5.cipher.suite.GeneratedPublicKey
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
@@ -24,58 +26,91 @@ class SessionInactivityCompliance : AbstractCompliance() {
     }
 
     @AfterEach
-    fun clenup() {
-        cleanupKeys()
+    fun cleanup() {
+        if (masterKeyAlias != null) {
+            deleteWrappingKey(masterKeyAlias!!)
+        }
     }
 
     @Test
     fun `Should be able to sign after specified session timeout`() {
-        logger.info("scheme=${compliance.options.sessionComplianceSpec!!.first}," +
-                "signatureSpec=${compliance.options.sessionComplianceSpec!!.second.signatureName}")
+        logger.info(
+            "scheme=${compliance.options.sessionComplianceSpec!!.first}," +
+                    "signatureSpec=${compliance.options.sessionComplianceSpec!!.second.signatureName}"
+        )
         val keyScheme = CryptoServiceCompliance.schemeMetadata.findKeyScheme(
             compliance.options.sessionComplianceSpec!!.first
         )
         val alias = compliance.generateRandomIdentifier()
-        val key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
-        logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
-        Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
-        logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
-        `Should be able to sign and verify signature`(
-            key,
-            keyScheme,
-            compliance.options.sessionComplianceSpec!!.second
-        )
+        var key: GeneratedKey? = null
+        try {
+            key = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
+            logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
+            Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
+            logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
+            `Should be able to sign`(
+                key,
+                keyScheme,
+                compliance.options.sessionComplianceSpec!!.second
+            )
+        } finally {
+            cleanupKeyPair(key)
+        }
     }
 
     @Test
     fun `Should be able to generate key pair with suggested alias again after specified session timeout`() {
-        logger.info("scheme=${compliance.options.sessionComplianceSpec!!.first}," +
-                "signatureSpec=${compliance.options.sessionComplianceSpec!!.second.signatureName}")
+        logger.info(
+            "scheme=${compliance.options.sessionComplianceSpec!!.first}," +
+                    "signatureSpec=${compliance.options.sessionComplianceSpec!!.second.signatureName}"
+        )
         val keyScheme = CryptoServiceCompliance.schemeMetadata.findKeyScheme(
             compliance.options.sessionComplianceSpec!!.first
         )
-        val alias = compliance.generateRandomIdentifier()
-        val key1 = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
-        logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
-        Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
-        logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
-        val key2 = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
-        assertNotEquals(key1.publicKey, key2.publicKey, "Generated keys must be distinct.")
+        var key1: GeneratedKey? = null
+        var key2: GeneratedKey? = null
+        try {
+            val alias = compliance.generateRandomIdentifier()
+            key1 = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
+            logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
+            Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
+            logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
+            key2 = `Should generate key with expected key scheme`(alias, masterKeyAlias, keyScheme)
+            assertNotEquals(key1.publicKey, key2.publicKey, "Generated keys must be distinct.")
+        } finally {
+            cleanupKeyPair(key1)
+            cleanupKeyPair(key2)
+        }
     }
 
     @Test
     @Suppress("MaxLineLength")
     fun `Should be able to generate key pair without suggested alias, suggesting wrapped key, again after specified session timeout`() {
-        logger.info("scheme=${compliance.options.sessionComplianceSpec!!.first}," +
-                "signatureSpec=${compliance.options.sessionComplianceSpec!!.second.signatureName}")
+        logger.info(
+            "scheme=${compliance.options.sessionComplianceSpec!!.first}," +
+                    "signatureSpec=${compliance.options.sessionComplianceSpec!!.second.signatureName}"
+        )
         val keyScheme = CryptoServiceCompliance.schemeMetadata.findKeyScheme(
             compliance.options.sessionComplianceSpec!!.first
         )
-        val key1 = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
-        logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
-        Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
-        logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
-        val key2 = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
-        assertNotEquals(key1.publicKey, key2.publicKey, "Generated keys must be distinct.")
+        var key1: GeneratedKey? = null
+        var key2: GeneratedKey? = null
+        try {
+            key1 = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
+            logger.info("Sleeping for ${compliance.options.sessionComplianceTimeout}")
+            Thread.sleep(compliance.options.sessionComplianceTimeout.toMillis())
+            logger.info("Woke up after ${compliance.options.sessionComplianceTimeout}")
+            key2 = `Should generate key with expected key scheme`(null, masterKeyAlias, keyScheme)
+            assertNotEquals(key1.publicKey, key2.publicKey, "Generated keys must be distinct.")
+        } finally {
+            cleanupKeyPair(key1)
+            cleanupKeyPair(key2)
+        }
+    }
+
+    private fun cleanupKeyPair(key: GeneratedKey?) {
+        if (key is GeneratedPublicKey && key.hsmAlias.isNotBlank()) {
+            deleteKeyPair(key.hsmAlias)
+        }
     }
 }

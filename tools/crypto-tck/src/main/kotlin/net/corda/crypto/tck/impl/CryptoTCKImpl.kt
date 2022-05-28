@@ -120,6 +120,7 @@ class CryptoTCKImpl : CryptoTCK {
         out.println("==========================")
         out.println("COMPLETED COMPLIANCE TESTS: $version")
         out.println("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
+        out.println("options.${spec.options::concurrency.name}=${spec.options.concurrency}")
         out.println("options.${spec.options::retries.name}=${spec.options.retries}")
         out.println("options.${spec.options::timeout.name}=${spec.options.timeout}")
         if (spec.options.sessionComplianceSpec != null) {
