@@ -9,10 +9,12 @@ import java.time.Duration
  *
  * @property serviceName which implementation of CryptoService to execute, must match the CryptoServiceProvider.name property.
  * @property serviceConfig the CryptoService implementation service configuration.
- * @property signatureSpecs map of the SignatureSpec(s) which should be used for signing when running the tests.
+ * @property signatureSpecs map of the SignatureSpec(s) which should be used for signing when running the tests. You
+ * have to specify at least one [SignatureSpec] for all supported by the service key schemes.
  * @property testResultsDirectory path where to output the test results.
- * @property concurrency number of threads to execute, together with the number of SignatureSpecs defined in
- * [signatureSpecs] has direct impact on number of generated keys. The recommended value is 20, the minimum is 4.
+ * @property concurrency number of threads to use for Crypto Service compliance test suite,
+ * together with the number of SignatureSpecs defined in [signatureSpecs] has direct impact on number of generated keys.
+ * The recommended value is 20, the minimum is 4.
  * @property sessionComplianceSpec the spec that should be used for the session inactivity test suite.
  * @property sessionComplianceTimeout the session timeout to test, must exceed the login session timeout.
  * @property retries number of retries when the call to the HSM fails.

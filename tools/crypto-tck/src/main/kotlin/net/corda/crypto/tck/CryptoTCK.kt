@@ -1,5 +1,6 @@
 package net.corda.crypto.tck
 
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 
 /**
@@ -44,6 +45,17 @@ import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
  *  }
  */
 interface CryptoTCK {
+    /**
+     * The service that can be used to introspect what key schemes are supported and some other aspects of the
+     * current cipher suite.
+     */
+    val schemeMetadata: CipherSchemeMetadata
+
+    /**
+     * returns a new instance of [ExecutionBuilder] to build the test options and run the tests.
+     */
+    fun builder(serviceName: String, serviceConfig: Any): ExecutionBuilder
+
     /**
      * Executes the compliance tests.
      */
