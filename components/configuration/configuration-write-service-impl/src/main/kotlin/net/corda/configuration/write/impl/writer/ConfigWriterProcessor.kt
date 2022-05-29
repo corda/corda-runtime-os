@@ -3,7 +3,7 @@ package net.corda.configuration.write.impl.writer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import java.time.Clock
-import net.corda.configuration.publish.ConfigPublishService
+import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse

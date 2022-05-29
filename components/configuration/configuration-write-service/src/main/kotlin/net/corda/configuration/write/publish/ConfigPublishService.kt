@@ -1,4 +1,4 @@
-package net.corda.configuration.publish
+package net.corda.configuration.write.publish
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.dto.ConfigurationDto

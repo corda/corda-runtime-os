@@ -1,9 +1,7 @@
-package net.corda.configuration.publish.impl
+package net.corda.configuration.write.impl.publish
 
+import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.libs.configuration.dto.ConfigurationDto
-import net.corda.configuration.publish.ConfigPublishService
-import net.corda.configuration.publish.impl.handler.BootstrapConfigEvent
-import net.corda.configuration.publish.impl.handler.ConfigPublishServiceHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory

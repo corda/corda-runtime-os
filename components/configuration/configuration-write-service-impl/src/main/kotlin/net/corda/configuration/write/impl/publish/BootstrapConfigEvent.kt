@@ -1,4 +1,4 @@
-package net.corda.configuration.publish.impl.handler
+package net.corda.configuration.write.impl.publish
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleEvent

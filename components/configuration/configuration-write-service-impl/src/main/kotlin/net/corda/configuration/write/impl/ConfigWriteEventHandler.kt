@@ -1,9 +1,9 @@
 package net.corda.configuration.write.impl
 
-import net.corda.configuration.publish.ConfigPublishService
 import net.corda.configuration.write.ConfigWriteServiceException
 import net.corda.configuration.write.impl.writer.ConfigurationManagementRPCSubscription
 import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
+import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger

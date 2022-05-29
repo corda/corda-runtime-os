@@ -1,6 +1,6 @@
 package net.corda.configuration.write.impl.writer
 
-import net.corda.configuration.publish.ConfigPublishService
+import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.db.connection.manager.DbConnectionManager
