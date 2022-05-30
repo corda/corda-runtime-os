@@ -30,8 +30,10 @@ class ConfigPublishServiceImpl @Activate constructor(
 
     private val handler = ConfigPublishServiceHandler(publisherFactory, configMerger)
 
+    override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<ConfigPublishService>()
+
     private val coordinator = coordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName.forComponent<ConfigPublishService>(),
+        lifecycleCoordinatorName,
         handler
     )
 
@@ -51,6 +53,10 @@ class ConfigPublishServiceImpl @Activate constructor(
 
     override fun bootstrapConfig(bootConfig: SmartConfig) {
         coordinator.postEvent(BootstrapConfigEvent(bootConfig))
+    }
+
+    override fun remove(record: ConfigurationDto) {
+        TODO("Not yet implemented")
     }
 
     override val isRunning get() = coordinator.isRunning

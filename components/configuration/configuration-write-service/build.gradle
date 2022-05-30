@@ -15,4 +15,6 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    api project(":components:reconciliation:reconciliation")
 }
