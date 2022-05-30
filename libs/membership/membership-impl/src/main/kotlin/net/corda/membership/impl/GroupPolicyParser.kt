@@ -93,7 +93,7 @@ class GroupPolicyParser @Activate constructor(
                         MemberInfoExtension.CREATED_TIME to now,
                         MemberInfoExtension.MODIFIED_TIME to now,
                         MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                        MemberInfoExtension.MGM_KEY to "true"
+                        MemberInfoExtension.IS_MGM to "true"
                     )
                 )
             )

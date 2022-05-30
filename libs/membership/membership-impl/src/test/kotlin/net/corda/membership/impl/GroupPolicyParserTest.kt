@@ -7,7 +7,7 @@ import net.corda.membership.impl.GroupPolicyParser.MGM.Companion.mgmInfo
 import net.corda.membership.impl.MemberInfoExtension.Companion.certificate
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
-import net.corda.membership.impl.MemberInfoExtension.Companion.mgm
+import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
@@ -185,7 +185,7 @@ class GroupPolicyParserTest {
         assertEquals(mgmInfo.softwareVersion, "5.0.0")
         assertEquals(mgmInfo.serial, 1)
         assertTrue(mgmInfo.isActive)
-        assertEquals(mgmInfo.mgm, true)
+        assertEquals(mgmInfo.isMgm, true)
     }
 
     private fun getSampleGroupPolicy(): String {
