@@ -102,14 +102,14 @@ data class CpiMetadataEntity(
                 fileUploadRequestId,
                 cpks = cpks.map {
                     CpiCpkEntity(
-                        CpiCpkKey(
+                        id = CpiCpkKey(
                             name,
                             version,
                             signerSummaryHash,
                             it.second.cpkFileChecksum,
                         ),
-                        it.first,
-                        it.second,
+                        cpkFileName = it.first,
+                        metadata = it.second,
                     )
                 }.toSet()
             )
@@ -137,14 +137,14 @@ data class CpiMetadataEntity(
             fileChecksum = fileChecksum,
             cpks = cpks.map {
                 CpiCpkEntity(
-                    CpiCpkKey(
+                    id = CpiCpkKey(
                         name,
                         version,
                         signerSummaryHash,
                         it.second.cpkFileChecksum,
                     ),
-                    it.first,
-                    it.second,
+                    cpkFileName = it.first,
+                    metadata = it.second,
                 )
             }.toSet(),
         )

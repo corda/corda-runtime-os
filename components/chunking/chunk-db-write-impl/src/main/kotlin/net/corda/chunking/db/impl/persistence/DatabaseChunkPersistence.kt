@@ -228,7 +228,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             // persist file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
-                // Using `merge` here as exactly the same CPK may already exist
                 em.persist(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
             }
         }

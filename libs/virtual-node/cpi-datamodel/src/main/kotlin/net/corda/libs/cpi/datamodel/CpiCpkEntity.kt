@@ -23,7 +23,7 @@ import javax.persistence.Version
 @Table(name = "cpi_cpk", schema = DbSchema.CONFIG)
 data class CpiCpkEntity(
     @EmbeddedId
-    private val Id: CpiCpkKey,
+    private val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
     val cpkFileName: String,
     @OneToOne(cascade = [CascadeType.MERGE, CascadeType.PERSIST])
@@ -55,11 +55,11 @@ data class CpiCpkEntity(
 @Embeddable
 data class CpiCpkKey(
     @Column(name = "cpi_name")
-    private val name: String,
+    private val cpiName: String,
     @Column(name = "cpi_version")
-    private val version: String,
+    private val cpiVersion: String,
     @Column(name = "cpi_signer_summary_hash")
-    private val signerSummaryHash: String,
+    private val cpiSignerSummaryHash: String,
     @Column(name = "cpk_file_checksum")
     private val cpkFileChecksum: String,
 ): Serializable
