@@ -11,7 +11,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyStore
-import java.util.concurrent.CompletableFuture
 
 class KeyStoreFactoryTest {
     private val keyStore = mock<KeyStore>()
