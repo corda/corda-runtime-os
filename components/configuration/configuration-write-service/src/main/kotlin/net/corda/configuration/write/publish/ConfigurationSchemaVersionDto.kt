@@ -1,4 +1,4 @@
-package net.corda.libs.configuration.dto
+package net.corda.configuration.write.publish
 
 import net.corda.data.config.ConfigurationSchemaVersion as ConfigurationSchemaVersionAvro
 

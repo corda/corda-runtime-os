@@ -9,8 +9,8 @@ import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.dto.ConfigurationDto
-import net.corda.libs.configuration.dto.ConfigurationSchemaVersionDto
+import net.corda.configuration.write.publish.ConfigurationDto
+import net.corda.configuration.write.publish.ConfigurationSchemaVersionDto
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC

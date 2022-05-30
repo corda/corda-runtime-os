@@ -1,7 +1,6 @@
 package net.corda.configuration.write.publish
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.dto.ConfigurationDto
 import net.corda.lifecycle.Lifecycle
 
 interface ConfigPublishService : Lifecycle {
