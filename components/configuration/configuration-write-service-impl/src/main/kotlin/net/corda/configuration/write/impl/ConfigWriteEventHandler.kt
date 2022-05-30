@@ -32,8 +32,8 @@ internal class ConfigWriteEventHandler(
     private var bootStrapConfig: SmartConfig? = null
 
     /**
-     * Upon [BootstrapConfigEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
-     * them.
+     * Upon [BootstrapConfigEvent], populates boot config and waits on dependent components. On components being ready,
+     * it starts processing cluster configuration updates. Upon [StopEvent], stops processing them.
      *
      * @throws ConfigWriteServiceException If multiple [BootstrapConfigEvent]s are received, or if the creation of the
      *  subscription fails.
