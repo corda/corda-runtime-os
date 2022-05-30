@@ -16,7 +16,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -408,7 +408,7 @@ internal class DatabaseChunkPersistenceTest {
         persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "abcdef")
 
         val cpkDataEntity = entityManagerFactory.createEntityManager().transaction {
-            it.find(CpkDataEntity::class.java, checksum.toString())
+            it.find(CpkFileEntity::class.java, checksum.toString())
         }!!
 
         assertThat(cpkDataEntity.data).isEqualTo(mockCpkContent.toByteArray())

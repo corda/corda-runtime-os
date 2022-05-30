@@ -13,8 +13,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDataEntity
-import net.corda.libs.cpi.datamodel.CpkEntity
+import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -206,7 +205,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      */
     override fun cpkExists(cpkChecksum: SecureHash): Boolean {
         val entity = entityManagerFactory.createEntityManager().transaction {
-            it.find(CpkDataEntity::class.java, cpkChecksum.toString())
+            it.find(CpkFileEntity::class.java, cpkChecksum.toString())
         }
 
         return entity != null
@@ -224,36 +223,13 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
+            // persist metadata
             em.persist(cpiMetadataEntity)
-            storeCpkContentInTransaction(cpi.cpks, em, cpiMetadataEntity)
-        }
-    }
-
-    private fun storeCpkContentInTransaction(
-        cpks: Collection<Cpk>,
-        em: EntityManager,
-        cpiMetadataEntity: CpiMetadataEntity
-    ) {
-        cpks.forEach {
-            val cpkChecksum = it.metadata.fileChecksum.toString()
-            // Using `merge` here as exactly the same CPK may already exist
-            em.merge(CpkDataEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
-
-            val cpkMetadataEntity = CpkEntity(
-                cpi = cpiMetadataEntity,
-                // TODO - do we need this double/triple conversion or could metadata always exist in the avro schema
-                //  with CpkMetadata just being a proxy for it?
-                // TODO - format version
-                metadata = CpkMetadataEntity(
-                    cpkChecksum,
-                    cpkName = it.metadata.cpkId.name,
-                    cpkVersion = it.metadata.cpkId.version,
-                    cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
-                    formatVersion = "1",
-                    serializedMetadata = it.metadata.toJsonAvro()),
-                cpkFileName = it.originalFileName!!,
-            )
-            em.merge(cpkMetadataEntity)
+            // persist file data
+            cpi.cpks.forEach {
+                val cpkChecksum = it.metadata.fileChecksum.toString()
+                em.persist(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+            }
         }
     }
 
@@ -266,29 +242,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ) {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
-
-        // Delete CPK metadata in separate transaction, to be reviewed
-        entityManagerFactory.createEntityManager().transaction { em ->
-            val cpkMetadataStream = em.createQuery(
-                "FROM ${CpkEntity::class.simpleName} cpk_cpk WHERE " +
-                        "cpk_cpk.cpi.name = :cpi_name AND " +
-                        "cpk_cpk.cpi.version = :cpi_version AND " +
-                        "cpk_cpk.cpi.signerSummaryHash = :cpi_signer_summary_hash",
-                CpkEntity::class.java
-            )
-                .setParameter("cpi_name", cpiId.name)
-                .setParameter("cpi_version", cpiId.version)
-                .setParameter("cpi_signer_summary_hash", cpiId.signerSummaryHashForDbQuery)
-                .resultStream
-
-            cpkMetadataStream.use { stream ->
-                stream.forEach { cpkMeta ->
-                    // To be reviewed after more changes merged, and we will be able to update the version and timestamp
-                    // on CPK metadata
-                    em.remove(em.merge(cpkMeta))
-                }
-            }
-        }
 
         // Perform update of CPI and store CPK along with its metadata
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -304,19 +257,22 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
 
-            existingMetadataEntity.entityVersion++
-            existingMetadataEntity.fileUploadRequestId = requestId
-            existingMetadataEntity.insertTimestamp = Instant.now()
-            existingMetadataEntity.fileName = cpiFileName
-            existingMetadataEntity.fileChecksum = checksum.toString()
-            existingMetadataEntity.groupPolicy = cpi.metadata.groupPolicy!!
-            existingMetadataEntity.groupId = groupId
+            val updatedMetadata = existingMetadataEntity.createUpdated(
+                fileUploadRequestId = requestId,
+                fileName = cpiFileName,
+                fileChecksum = checksum.toString(),
+                cpks = createCpkMetadata(cpi.cpks),
+            )
 
             // Perform update
-            em.merge(existingMetadataEntity)
-
-            // Store CPK data
-            storeCpkContentInTransaction(cpi.cpks, em, existingMetadataEntity)
+            //  update metadata
+            em.merge(updatedMetadata)
+            //  update file data
+            cpi.cpks.forEach {
+                val cpkChecksum = it.metadata.fileChecksum.toString()
+                // Using `merge` here as exactly the same CPK may already exist
+                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+            }
         }
     }
 
@@ -361,7 +317,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     ): CpiMetadataEntity {
         val cpiMetadata = cpi.metadata
 
-        return CpiMetadataEntity(
+        return CpiMetadataEntity.create(
             name = cpiMetadata.cpiId.name,
             version = cpiMetadata.cpiId.version,
             signerSummaryHash = cpiMetadata.cpiId.signerSummaryHashForDbQuery,
@@ -370,7 +326,29 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             groupPolicy = cpi.metadata.groupPolicy!!,
             groupId = groupId,
             fileUploadRequestId = requestId,
-            isDeleted = false
+            cpks = createCpkMetadata(cpi.cpks)
         )
+    }
+
+    /**
+     * For a given list of CPKs, create the metadata and returns as list of Pairs with the filename.
+     *
+     * @param cpks
+     */
+    private fun createCpkMetadata(cpks: Collection<Cpk>): List<Pair<String, CpkMetadataEntity>> {
+        return cpks.map {
+            val cpkChecksum = it.metadata.fileChecksum.toString()
+            val cpkMetadataEntity =
+                // TODO - format version
+                CpkMetadataEntity(
+                    cpkChecksum,
+                    cpkName = it.metadata.cpkId.name,
+                    cpkVersion = it.metadata.cpkId.version,
+                    cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
+                    formatVersion = "1",
+                    serializedMetadata = it.metadata.toJsonAvro()
+                )
+            Pair(it.originalFileName!!, cpkMetadataEntity)
+        }
     }
 }

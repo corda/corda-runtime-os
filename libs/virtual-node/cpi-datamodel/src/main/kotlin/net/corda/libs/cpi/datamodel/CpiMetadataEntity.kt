@@ -4,6 +4,7 @@ import net.corda.db.schema.DbSchema
 import java.io.Serializable
 import java.time.Instant
 import java.util.stream.Stream
+import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
@@ -11,7 +12,10 @@ import javax.persistence.EntityManager
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
+import javax.persistence.JoinColumn
+import javax.persistence.JoinColumns
 import javax.persistence.OneToMany
+import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
 
@@ -53,26 +57,97 @@ data class CpiMetadataEntity(
     var groupId: String,
     @Column(name = "file_upload_request_id", nullable = false)
     var fileUploadRequestId: String,
+    @OneToMany(
+        fetch = FetchType.EAGER,
+        cascade = [CascadeType.PERSIST, CascadeType.MERGE]
+    )
+    @JoinColumns(
+        JoinColumn(name = "cpi_name", referencedColumnName = "name", insertable = false, updatable = false),
+        JoinColumn(name = "cpi_version", referencedColumnName = "version", insertable = false, updatable = false),
+        JoinColumn(
+            name = "cpi_signer_summary_hash",
+            referencedColumnName = "signer_summary_hash",
+            insertable = false,
+            updatable = false
+        ),
+    )
+    val cpks: Set<CpiCpkEntity>,
+    // Initial population of this TS is managed on the DB itself
+    @Column(name = "insert_ts", insertable = false, updatable = true)
+    var insertTimestamp: Instant? = null,
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean
+    var isDeleted: Boolean = false
 ) {
     companion object {
-        fun empty(): CpiMetadataEntity = CpiMetadataEntity(
-            "", "", "", "", "",
-            "", "", "",false
-        )
+        // Create a [CpiMetadataEntity] with CPKs as filename/metadata pairs
+        fun create(
+            name: String,
+            version: String,
+            signerSummaryHash: String,
+            fileName: String,
+            fileChecksum: String,
+            groupPolicy: String,
+            groupId: String,
+            fileUploadRequestId: String,
+            cpks: List<Pair<String, CpkMetadataEntity>>
+        ): CpiMetadataEntity {
+            return CpiMetadataEntity(
+                name,
+                version,
+                signerSummaryHash,
+                fileName,
+                fileChecksum,
+                groupPolicy,
+                groupId,
+                fileUploadRequestId,
+                cpks = cpks.map {
+                    CpiCpkEntity(
+                        id = CpiCpkKey(
+                            name,
+                            version,
+                            signerSummaryHash,
+                            it.second.cpkFileChecksum,
+                        ),
+                        cpkFileName = it.first,
+                        metadata = it.second,
+                    )
+                }.toSet()
+            )
+        }
     }
 
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy="cpi")
-    val cpks: Set<CpkEntity> = emptySet()
+    @PreUpdate
+    fun onUpdate() {
+        insertTimestamp = Instant.now()
+    }
 
-    // Initial population of this TS is managed on the DB itself
-    @Column(name = "insert_ts", insertable = false, updatable = true)
-    var insertTimestamp: Instant? = null
+    // return a clone of this object with the updated properties
+    fun createUpdated(
+        fileUploadRequestId: String,
+        fileName: String,
+        fileChecksum: String,
+        cpks: List<Pair<String, CpkMetadataEntity>>) =
+        this.copy(
+            fileUploadRequestId = fileUploadRequestId,
+            fileName = fileName,
+            fileChecksum = fileChecksum,
+            cpks = cpks.map {
+                CpiCpkEntity(
+                    id = CpiCpkKey(
+                        name,
+                        version,
+                        signerSummaryHash,
+                        it.second.cpkFileChecksum,
+                    ),
+                    cpkFileName = it.first,
+                    metadata = it.second,
+                )
+            }.toSet(),
+        )
 }
 
 /** The composite primary key for a CpiEntity. */
@@ -81,14 +156,14 @@ data class CpiMetadataEntityKey(
     private val name: String,
     private val version: String,
     private val signerSummaryHash: String,
-): Serializable
+) : Serializable
 
-// TODO The below needs fixing. It currently seems to be producing a select query over Cpi metadata
-//  and one select query per Cpk metadata, as per https://r3-cev.atlassian.net/browse/CORE-4864
 fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
+    // Joining the other tables to ensure all data is fetched eagerly
     return createQuery(
         "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
-                "left join fetch cpi_.cpks cpks_ ",
+                "INNER JOIN FETCH cpi_.cpks cpk_ " +
+                "INNER JOIN FETCH cpk_.metadata cpk_meta_",
         CpiMetadataEntity::class.java
     ).resultStream
 }

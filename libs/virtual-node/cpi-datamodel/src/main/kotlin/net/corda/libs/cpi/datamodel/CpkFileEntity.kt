@@ -12,7 +12,7 @@ import javax.persistence.Version
 
 /**
  * Cpk binary data
- * NOTE: CPK binary is separate from the [CpkEntity] as it is possible a CPK is contained in
+ * NOTE: CPK binary is separate from the [CpkMetadataEntity] as it is possible a CPK is contained in
  * multiple CPIs. This is why the file checksum is the key.
  *
  * @property fileChecksum for the binary data
@@ -20,8 +20,8 @@ import javax.persistence.Version
  * @property insertTimestamp when the CPK Data was inserted.
  */
 @Entity
-@Table(name = "cpk", schema = DbSchema.CONFIG)
-data class CpkDataEntity(
+@Table(name = "cpk_file", schema = DbSchema.CONFIG)
+data class CpkFileEntity(
     @Id
     @Column(name = "file_checksum", nullable = false)
     val fileChecksum: String,
@@ -42,7 +42,7 @@ data class CpkDataEntity(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as CpkDataEntity
+        other as CpkFileEntity
 
         if (fileChecksum != other.fileChecksum) return false
         if (!data.contentEquals(other.data)) return false
@@ -59,7 +59,7 @@ data class CpkDataEntity(
 
 fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
     return createQuery(
-        "SELECT cpk.fileChecksum FROM ${CpkDataEntity::class.simpleName} cpk " +
+        "SELECT cpk.fileChecksum FROM ${CpkFileEntity::class.simpleName} cpk " +
                 "WHERE cpk.fileChecksum NOT IN (:checksums)",
         String::class.java
     )
@@ -69,7 +69,7 @@ fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
         .resultList
 }
 
-fun EntityManager.findCpkDataEntity(checksum: String): CpkDataEntity? = find(
-    CpkDataEntity::class.java,
+fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = find(
+    CpkFileEntity::class.java,
     checksum
 )
