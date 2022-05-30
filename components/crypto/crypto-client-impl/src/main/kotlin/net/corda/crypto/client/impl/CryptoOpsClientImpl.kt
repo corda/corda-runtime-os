@@ -26,6 +26,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.toBase58
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
@@ -313,15 +314,10 @@ class CryptoOpsClientImpl(
         orderBy: CryptoKeyOrderBy,
         filter: Map<String, String>
     ): List<CryptoSigningKey> {
-        logger.debug(
-            "Sending '{}'({}, {}, {}, {}, [{}])",
-            KeysRpcQuery::class.java.simpleName,
-            tenantId,
-            skip,
-            take,
-            orderBy,
-            filter.map { it }.joinToString { "${it.key}=${it.value}" }
-        )
+        logger.debug {
+            "Sending '${KeysRpcQuery::class.java.simpleName}'($tenantId, $skip, $take, $orderBy," +
+                    " [${filter.map { it }.joinToString { "${it.key}=${it.value}" }}])"
+        }
         val request = createRequest(
             tenantId,
             KeysRpcQuery(
@@ -335,12 +331,9 @@ class CryptoOpsClientImpl(
     }
 
     fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
-        logger.debug(
-            "Sending '{}'(tenant={}, ids=[{}])",
-            ByIdsRpcQuery::class.java.simpleName,
-            tenantId,
-            ids.joinToString()
-        )
+        logger.debug {
+            "Sending '${ByIdsRpcQuery::class.java.simpleName}'(tenant=$tenantId, ids=[${ids.joinToString()}])"
+        }
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
@@ -374,18 +367,18 @@ class CryptoOpsClientImpl(
                         " ${response.context.requestingComponent} component"
             }
             if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
-                logger.debug(
-                    "Received empty response for {} for tenant {}",
-                    request::class.java.name,
-                    context.tenantId
-                )
+                logger.debug {
+                    "Received empty response for ${request::class.java.name} for tenant ${context.tenantId}"
+                }
                 return null
             }
             require(response.response != null && (response.response::class.java == respClazz)) {
                 "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
                         "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
             }
-            logger.debug("Received response {} for tenant {}", respClazz.name, context.tenantId)
+            logger.debug {
+                "Received response ${respClazz.name} for tenant ${context.tenantId}"
+            }
             return response.response as RESPONSE
         } catch (e: CryptoServiceLibraryException) {
             logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)

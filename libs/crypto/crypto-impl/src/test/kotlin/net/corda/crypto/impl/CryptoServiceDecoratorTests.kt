@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.impl
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
