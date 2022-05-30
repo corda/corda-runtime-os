@@ -1,6 +1,7 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
@@ -105,11 +106,9 @@ class AllAliasedKeysHSM(
         if (spec.hsmAlias.isBlank()) {
             throw CryptoServiceBadRequestException("The hsmAlias is not specified")
         }
-        logger.debug(
-            "sign(hsmAlias={}, keyScheme={})",
-            spec.hsmAlias,
-            spec.keyScheme.codeName
-        )
+        logger.debug {
+            "sign(hsmAlias=${spec.hsmAlias}, keyScheme=${spec.keyScheme.codeName})"
+        }
         val privateKey = keyPairs.getValue(spec.hsmAlias).private
         sign(spec, privateKey, data)
     } catch (e: CryptoServiceException) {

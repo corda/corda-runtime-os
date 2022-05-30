@@ -25,6 +25,7 @@ import net.corda.data.crypto.wire.hsm.MasterKeyPolicy
 import net.corda.data.crypto.wire.hsm.PrivateKeyPolicy
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -133,34 +134,35 @@ class HSMServiceImpl(
     }
 
     fun getLinkedCategories(configId: String): List<HSMCategoryInfo> {
-        logger.debug("getLinkedCategories(configId={})", configId)
+        logger.debug { "getLinkedCategories(configId=$configId)" }
         return hsmCache.act {
             it.getLinkedCategories(configId)
         }
     }
 
     fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
-        logger.debug("findAssignedHSM(tenant={}, category={})", tenantId, category)
+        logger.debug { "findAssignedHSM(tenant=$tenantId, category=$category)"  }
         return hsmCache.act {
             it.findTenantAssociation(tenantId, category)
         }
     }
 
     fun findAssociation(associationId: String): HSMTenantAssociation? {
-        logger.debug("findAssociation(associationId={})", associationId)
+        logger.debug {"findAssociation(associationId=$associationId)" }
         return hsmCache.act {
             it.findTenantAssociation(associationId)
         }
     }
 
     fun findHSMConfig(configId: String): HSMConfig? {
-        logger.debug("getPrivateHSMConfig(configId={})", configId)
+        logger.debug { "getPrivateHSMConfig(configId=$configId)"  }
         return hsmCache.act {
             it.findConfig(configId)
         }
     }
 
     fun lookup(filter: Map<String, String>): List<HSMInfo> {
+        logger.debug { "lookup(filter=${filter.keys.joinToString()})"  }
         return hsmCache.act { it.lookup(filter) }
     }
 

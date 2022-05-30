@@ -8,6 +8,7 @@ import net.corda.crypto.component.impl.AbstractComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
@@ -66,7 +67,7 @@ class SigningServiceFactoryImpl @Activate constructor(
 
         override fun getInstance(): SigningService {
             return try {
-                logger.debug("Getting the signing service.")
+                logger.debug { "Getting the signing service." }
                 if(signingService != null) {
                     signingService!!
                 } else {

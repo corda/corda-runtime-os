@@ -9,6 +9,7 @@ import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -32,7 +33,7 @@ open class SigningServiceImpl(
     }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        logger.debug("getSupportedSchemes(tenant={}, category={})", tenantId, category)
+        logger.debug {"getSupportedSchemes(tenant=$tenantId, category=$category)" }
         return cryptoServiceFactory.getInstance(tenantId = tenantId, category = category).getSupportedSchemes()
     }
 
@@ -43,10 +44,9 @@ open class SigningServiceImpl(
         orderBy: KeyOrderBy,
         filter: Map<String, String>
     ): Collection<SigningKeyInfo> {
-        logger.debug(
-            "lookup(tenantId={}, skip={}, take={}, orderBy={}, filter=[{}]",
-            skip, take, orderBy, tenantId, filter.map { it }.joinToString { "${it.key}=${it.value}" }
-        )
+        logger.debug {
+            "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
+        }
         return cache.act(tenantId) {
             it.lookup(
                 skip,
@@ -58,7 +58,7 @@ open class SigningServiceImpl(
     }
 
     override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
-        logger.debug("lookup(tenantId={}, ids=[{}])", tenantId, ids.joinToString())
+        logger.debug {"lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
@@ -73,13 +73,10 @@ open class SigningServiceImpl(
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
-        logger.debug(
-            "createWrappingKey(configId={},masterKeyAlias={},failIfExists={},onBehalf={})",
-            configId,
-            masterKeyAlias,
-            failIfExists,
-            context[CRYPTO_TENANT_ID]
-        )
+        logger.debug {
+            "createWrappingKey(configId=$configId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
+                    "onBehalf=${context[CRYPTO_TENANT_ID]})"
+        }
         cryptoServiceFactory.getInstance(configId).createWrappingKey(
             masterKeyAlias = masterKeyAlias,
             failIfExists = failIfExists,

@@ -16,6 +16,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.crypto.exceptions.CryptoServiceException
@@ -111,10 +112,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val encryptor = event.config.toCryptoConfig().rootEncryptor()
 
         override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.debug(
-                "Getting the crypto service for tenantId={}, category={})",
-                tenantId, category
-            )
+            logger.debug {
+                "Getting the crypto service for tenantId=$tenantId, category=$category)"
+            }
             return cryptoRefs.computeIfAbsent(tenantId to category) {
                 try {
                     val association = hsmRegistrar.findAssignedHSM(tenantId, category)
@@ -130,10 +130,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         override fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef {
-            logger.debug(
-                "Getting the crypto service for tenantId={}, category={}, associationId={})",
-                tenantId, category, associationId
-            )
+            logger.debug {
+                "Getting the crypto service for tenantId=$tenantId, category=$category, associationId=$associationId)"
+            }
             return cryptoAssociations.computeIfAbsent(associationId) {
                 try {
                     val association = hsmRegistrar.findAssignedHSM(tenantId, category)
@@ -156,7 +155,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         override fun getInstance(configId: String): CryptoService {
-            logger.debug("Getting the crypto service for configId={})", configId)
+            logger.debug {"Getting the crypto service for configId=$configId)" }
             val config = hsmRegistrar.findHSMConfig(configId)
                 ?: throw CryptoServiceException("The config=$configId is not found.")
             return getInstance(config.info, config.serviceConfig)

@@ -2,6 +2,7 @@ package net.corda.crypto.impl.components
 
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -35,7 +36,9 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureData: ByteArray,
         clearData: ByteArray
     ) {
-        logger.debug("verify(publicKey={},signatureSpec={})", publicKey.publicKeyId(), signatureSpec.signatureName)
+        logger.debug {
+            "verify(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
+        }
         if (!isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)) {
             throw SignatureException("Signature Verification failed!")
         }
@@ -47,7 +50,9 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureData: ByteArray,
         clearData: ByteArray
     ) {
-        logger.debug("verify(publicKey={},digest={})", publicKey.publicKeyId(), digest.name)
+        logger.debug {
+            "verify(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
+        }
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
@@ -64,7 +69,9 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureData: ByteArray,
         clearData: ByteArray
     ): Boolean {
-        logger.debug("isValid(publicKey={},signatureSpec={})", publicKey.publicKeyId(), signatureSpec.signatureName)
+        logger.debug {
+            "isValid(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
+        }
         return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
     }
 
@@ -74,7 +81,9 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureData: ByteArray,
         clearData: ByteArray
     ): Boolean {
-        logger.debug("isValid(publicKey={},digest={})", publicKey.publicKeyId(), digest.name)
+        logger.debug {
+            "isValid(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
+        }
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +

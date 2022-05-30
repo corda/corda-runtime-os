@@ -4,6 +4,7 @@ import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
@@ -137,11 +138,9 @@ open class SoftCryptoService(
         if (spec.masterKeyAlias.isNullOrBlank()) {
             throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
         }
-        logger.debug(
-            "sign(masterKeyAlias={}, keyScheme={})",
-            spec.masterKeyAlias,
-            spec.keyScheme.codeName
-        )
+        logger.debug {
+            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName})"
+        }
         val wrappingKey = cache.act { it.findWrappingKey(spec.masterKeyAlias!!) }
             ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
         val privateKey = wrappingKey.unwrap(spec.keyMaterial)

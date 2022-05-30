@@ -2,6 +2,7 @@ package net.corda.crypto.tck.testing.hsms
 
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
@@ -119,11 +120,9 @@ class AllWrappedKeysHSM(
         if (spec.masterKeyAlias.isNullOrBlank()) {
             throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
         }
-        logger.debug(
-            "sign(masterKeyAlias={}, keyScheme={})",
-            spec.masterKeyAlias,
-            spec.keyScheme.codeName
-        )
+        logger.debug {
+            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName})"
+        }
         val wrappingKey = masterKeys[spec.masterKeyAlias!!]
             ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
         val privateKey = wrappingKey.unwrap(spec.keyMaterial)

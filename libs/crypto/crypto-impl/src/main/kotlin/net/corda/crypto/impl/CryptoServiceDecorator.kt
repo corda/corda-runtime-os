@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
@@ -56,9 +57,9 @@ class CryptoServiceDecorator(
         val num = UUID.randomUUID()
         while (true) {
             try {
-                logger.debug("Submitting crypto task for execution (num={})...", num)
+                logger.debug {"Submitting crypto task for execution (num=$num)..." }
                 val result = CompletableFuture.supplyAsync(func).getOrThrow(timeout)
-                logger.debug("Crypto task completed on time (num={})...", num)
+                logger.debug {"Crypto task completed on time (num=$num)..." }
                 return result
             } catch (e: TimeoutException) {
                 retry--
