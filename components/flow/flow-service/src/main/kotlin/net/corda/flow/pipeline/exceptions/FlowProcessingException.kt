@@ -6,7 +6,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 // need to refactor and remove this once all types of flow exception have been implemented
 open class FlowProcessingException(
     message: String?,
-    val flowEventContext: FlowEventContext<Any>? = null,
+    val flowEventContext: FlowEventContext<*>? = null,
     cause: Throwable? = null
 ) : CordaRuntimeException(message, cause)
 

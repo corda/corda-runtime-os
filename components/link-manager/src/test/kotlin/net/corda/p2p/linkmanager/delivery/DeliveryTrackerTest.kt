@@ -14,7 +14,6 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
@@ -186,7 +185,7 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source, dest))
             )
         tracker.stop()
     }
@@ -206,7 +205,7 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source, dest))
             )
         tracker.stop()
     }
@@ -226,13 +225,13 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source, dest))
             )
 
         listener.onPostCommit(mapOf(messageId to null))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source, dest))
         tracker.stop()
     }
 
@@ -250,13 +249,13 @@ class DeliveryTrackerTest {
                 any(),
                 eq(messageId),
                 eq(messageAndKey),
-                eq(SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+                eq(SessionManager.SessionCounterparties(source, dest))
             )
 
         listener.onPartitionLost(mapOf(messageId to state))
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
-            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source.toHoldingIdentity(), dest.toHoldingIdentity()))
+            .removeFromReplay(messageId, SessionManager.SessionCounterparties(source, dest))
         tracker.stop()
     }
 }

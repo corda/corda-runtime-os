@@ -1,0 +1,4 @@
+DENY {
+[org.osgi.service.condpermadmin.BundleLocationCondition "FLOW/*"]
+(java.lang.RuntimePermission "getenv.*" "")
+} "deny retrieving environment properties"

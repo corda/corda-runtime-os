@@ -25,6 +25,7 @@ dependencies {
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:db:db-connection-manager")
     implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
 
@@ -34,8 +35,11 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":testing:test-utilities")
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation 'net.corda:corda-base'
     integrationTestImplementation 'net.corda:corda-db-schema'
@@ -58,7 +62,6 @@ dependencies {
     integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":components:db:db-connection-manager-impl")

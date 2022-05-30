@@ -5,10 +5,13 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.sessions.FlowSessionMissingException
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -87,5 +90,13 @@ class SendAndReceiveRequestHandlerTest {
         )
 
         assertThat(outputContext.outputRecords).hasSize(0)
+    }
+
+    @Test
+    fun `Throws exception when session does not exist within checkpoint`() {
+        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any()))
+            .thenThrow(FlowSessionMissingException("Session does not exist"))
+
+        assertThrows<FlowFatalException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
     }
 }

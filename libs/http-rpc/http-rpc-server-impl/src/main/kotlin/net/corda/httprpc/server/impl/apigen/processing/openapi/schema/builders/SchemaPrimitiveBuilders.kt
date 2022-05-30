@@ -108,7 +108,7 @@ internal class SchemaHttpFileUploadBuilder : SchemaBuilder {
         SchemaModel(
             DataType.STRING,
             DataFormat.BINARY
-        )
+        ).apply { description = "A file to upload." }
 }
 
 internal class SchemaInputStreamBuilder : SchemaBuilder {
@@ -118,7 +118,7 @@ internal class SchemaInputStreamBuilder : SchemaBuilder {
         SchemaModel(
             DataType.STRING,
             DataFormat.BINARY
-        )
+        ).apply { description = "A file to upload." }
 }
 
 internal class SchemaDateBuilder : SchemaBuilder {

@@ -15,9 +15,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -76,7 +77,7 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             is ConfigChangedEvent -> {
                 flowPersistenceProcessor?.stop()
                 val newFlowPersisenceProcessor = flowEventProcessorFactory.create(
-                    event.config.toMessagingConfig()
+                    event.config.getConfig(MESSAGING_CONFIG)
                 )
                 logger.debug("Starting FlowPersistenceProcessor.")
                 newFlowPersisenceProcessor.start()

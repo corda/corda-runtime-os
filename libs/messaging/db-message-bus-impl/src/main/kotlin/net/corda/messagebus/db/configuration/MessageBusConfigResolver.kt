@@ -3,6 +3,7 @@ package net.corda.messagebus.db.configuration
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.configuration.getStringOrDefault
@@ -11,11 +12,11 @@ import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.MessagingConfig.Bus.AUTO_OFFSET_RESET
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.DB_MAX_POLL_RECORDS
 import net.corda.schema.configuration.MessagingConfig.Bus.DB_PROPERTIES
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_PASS
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.JDBC_USER
-import net.corda.schema.configuration.MessagingConfig.Bus.MAX_POLL_RECORDS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
@@ -31,8 +32,10 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         private const val ENFORCED_CONFIG_FILE = "messaging-enforced.conf"
         private const val DEFAULT_CONFIG_FILE = "messaging-defaults.conf"
 
-        private val EXPECTED_BUS_TYPES = listOf("DATABASE", "INMEMORY")
+        private const val DATABASE_BUS_TYPE = "DATABASE"
+        private const val INMEMORY_BUS_TYPE = "INMEMORY"
 
+        private val EXPECTED_BUS_TYPES = listOf(DATABASE_BUS_TYPE, INMEMORY_BUS_TYPE)
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
         private const val INSTANCE_ID_PATH = "instanceId"
@@ -53,7 +56,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      *                     required configuration provided to the builders.
      * @return DB properties to be used for the given role type based on the bus config and config params
      */
-    private fun resolve(messageBusConfig: SmartConfig, rolePath: String, configParams: SmartConfig): SmartConfig {
+    private fun resolve(messageBusConfig: SmartConfig, rolePath: String, configParams: SmartConfig): Pair<SmartConfig, DbAccessProperties> {
         val busType = messageBusConfig.getString(BUS_TYPE)
         if (busType !in EXPECTED_BUS_TYPES) {
             throw CordaMessageAPIConfigException(
@@ -64,7 +67,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val dbParams = if (messageBusConfig.hasPath(DB_PROPERTIES)) {
             messageBusConfig.getConfig(DB_PROPERTIES)
         } else {
-            ConfigFactory.empty()
+            SmartConfigImpl.empty()
         }
         val resolvedConfig = enforced
             .withFallback(dbParams)
@@ -72,10 +75,24 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
+        val jdbcProperties = if(busType == DATABASE_BUS_TYPE) {
+            DbAccessProperties(
+                dbParams.getStringOrNull(JDBC_URL),
+                dbParams.getStringOrDefault(JDBC_USER, ""),
+                dbParams.getStringOrDefault(JDBC_PASS, "")
+            )
+        } else {
+            DbAccessProperties(
+                null,
+                "",
+                ""
+            )
+        }
+
         logger.debug { "Resolved DB configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
 
         // Trim down to just the DB config for the specified role.
-        return resolvedConfig.getConfig("roles.$rolePath")
+        return resolvedConfig.getConfig("roles.$rolePath") to jdbcProperties
     }
 
     /**
@@ -88,15 +105,15 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved user configurable consumer values to be used for the given role type
      */
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): ResolvedConsumerConfig {
-        val dbProperties = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
+        val (dbProperties, jdbcProperties) = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
         return ResolvedConsumerConfig(
             consumerConfig.group,
             consumerConfig.clientId,
-            dbProperties.getInt(MAX_POLL_RECORDS),
+            dbProperties.getInt(DB_MAX_POLL_RECORDS),
             CordaOffsetResetStrategy.valueOf(dbProperties.getString(AUTO_OFFSET_RESET).uppercase()),
-            dbProperties.getStringOrNull(JDBC_URL),
-            dbProperties.getStringOrDefault(JDBC_USER, ""),
-            dbProperties.getStringOrDefault(JDBC_PASS, "")
+            jdbcProperties.jdbcUrl,
+            jdbcProperties.username,
+            jdbcProperties.password
         )
     }
 
@@ -110,12 +127,12 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved user configurable DB values to be used for the given role type
      */
     fun resolve(messageBusConfig: SmartConfig, producerConfig: ProducerConfig): ResolvedProducerConfig {
-        val dbProperties = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
+        val (_, jdbcProperties) = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
         return ResolvedProducerConfig(
             producerConfig.clientId,
-            dbProperties.getStringOrNull(JDBC_URL),
-            dbProperties.getStringOrDefault(JDBC_USER, ""),
-            dbProperties.getStringOrDefault(JDBC_PASS, "")
+            jdbcProperties.jdbcUrl,
+            jdbcProperties.username,
+            jdbcProperties.password
         )
     }
 
@@ -160,4 +177,10 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             )
         )
     }
+
+    data class DbAccessProperties(
+        val jdbcUrl: String?,
+        val username: String,
+        val password: String,
+    )
 }

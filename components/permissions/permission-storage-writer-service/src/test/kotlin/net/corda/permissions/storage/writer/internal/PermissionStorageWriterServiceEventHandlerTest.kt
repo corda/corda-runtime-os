@@ -2,6 +2,7 @@ package net.corda.permissions.storage.writer.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
@@ -11,12 +12,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
+import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_PASS
 import net.corda.schema.configuration.ConfigKeys.DB_USER
 import net.corda.schema.configuration.ConfigKeys.JDBC_URL
@@ -29,7 +30,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import javax.persistence.EntityManagerFactory
 
 class PermissionStorageWriterServiceEventHandlerTest {
 
@@ -61,7 +61,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
     private val config = configFactory.create(
         ConfigFactory.empty()
             .withValue(
-                DB_CONFIG,
+                BOOT_DB_PARAMS,
                 ConfigValueFactory.fromMap(
                     mapOf(
                         JDBC_URL to "dbUrl",
@@ -72,7 +72,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
             )
     )
 
-    private val bootstrapConfig = mapOf(
+    private val configMap = mapOf(
         BOOT_CONFIG to config,
         MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty())
     )
@@ -82,7 +82,7 @@ class PermissionStorageWriterServiceEventHandlerTest {
         handler.processEvent(StartEvent(), mock())
         assertNull(handler.subscription)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
-        handler.onConfigurationUpdated(bootstrapConfig.toMessagingConfig())
+        handler.onConfigurationUpdated(configMap.getConfig(MESSAGING_CONFIG))
 
         assertNotNull(handler.subscription)
         verify(subscription).start()

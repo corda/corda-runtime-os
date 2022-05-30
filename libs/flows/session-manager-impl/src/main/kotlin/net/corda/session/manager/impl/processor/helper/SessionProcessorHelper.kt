@@ -41,6 +41,7 @@ fun generateErrorEvent(
  * @param sessionState Session state to build error for
  * @param initiatingIdentity initiating identity
  * @param initiatedIdentity initiated identity
+ * @param errorMessage The error message to provide along with this session error
  * @param errorType Error type
  * @param instant timestamp for SessionEvent
  * @return SessionEvent with SessionError payload.

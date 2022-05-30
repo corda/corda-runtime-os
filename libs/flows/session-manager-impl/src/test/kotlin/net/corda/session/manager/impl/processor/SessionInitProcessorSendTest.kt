@@ -17,7 +17,7 @@ class SessionInitProcessorSendTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            SessionInit("flow", "cpiId", "flowId1", null)
+            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
         )
 
         val sessionState = buildSessionState(SessionStateType.CREATED, 0, listOf(), 1, listOf(sessionInit))
@@ -35,7 +35,7 @@ class SessionInitProcessorSendTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            SessionInit("flow", "cpiId", "flowId1", null)
+            SessionInit("flow", listOf(1), "cpiId", "flowId1", null)
         )
         val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
 

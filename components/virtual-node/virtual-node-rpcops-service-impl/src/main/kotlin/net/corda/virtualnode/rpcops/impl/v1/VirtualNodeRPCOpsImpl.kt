@@ -1,5 +1,6 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
+import java.time.Duration
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.httprpc.PluggableRPCOps
@@ -26,7 +27,6 @@ import net.corda.virtualnode.rpcops.impl.GROUP_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 /** An implementation of [VirtualNodeRPCOpsInternal]. */
 @Suppress("Unused")
@@ -62,9 +62,9 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun createAndStartRpcSender(config: SmartConfig) {
+    override fun createAndStartRpcSender(messagingConfig: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
+        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, messagingConfig).apply { start() }
     }
 
     override fun setTimeout(millis: Int) {

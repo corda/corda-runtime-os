@@ -3,10 +3,10 @@ package net.corda.flow.pipeline.sessions
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -23,11 +23,21 @@ interface FlowSessionManager {
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
+     * @param protocolName The name of the protocol to use in this session
+     * @param protocolVersions The versions of the protocol supported by the initiating side
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
      */
-    fun sendInitMessage(checkpoint: FlowCheckpoint, sessionId: String, x500Name: MemberX500Name, instant: Instant): SessionState
+    @Suppress("LongParameterList")
+    fun sendInitMessage(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        x500Name: MemberX500Name,
+        protocolName: String,
+        protocolVersions: List<Int>,
+        instant: Instant
+    ): SessionState
 
     /**
      * Queue [SessionData] messages to send to the passed in sessions.
@@ -38,9 +48,13 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionData] messages to send.
      *
-     * @throws FlowProcessingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendDataMessages(checkpoint: FlowCheckpoint, sessionToPayload: Map<String, ByteArray>, instant: Instant): List<SessionState>
+    fun sendDataMessages(
+        checkpoint: FlowCheckpoint,
+        sessionToPayload: Map<String, ByteArray>,
+        instant: Instant
+    ): List<SessionState>
 
     /**
      * Queue [SessionClose] messages to send to the passed in sessions.
@@ -51,9 +65,26 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionClose] messages to send.
      *
-     * @throws FlowProcessingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendCloseMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, instant: Instant): List<SessionState>
+    fun sendCloseMessages(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        instant: Instant
+    ): List<SessionState>
+
+    /**
+     * Queue [SessionError] messages to send to the passed in sessions.
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The sessions ids to error.
+     * @param instant The [Instant] used within the created [SessionEvent].
+     *
+     * @return Updated [SessionState] containing [SessionError] messages to send.
+     *
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     */
+    fun sendErrorMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, throwable: Throwable, instant: Instant): List<SessionState>
 
     /**
      * Gets the next received session event for each passed in session id.
@@ -65,7 +96,7 @@ interface FlowSessionManager {
      *
      * @return A list of [SessionState]s to [SessionEvent]s. Sessions without session events are not contained in this list.
      *
-     * @throws FlowProcessingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun getReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): List<Pair<SessionState, SessionEvent>>
 
@@ -84,12 +115,25 @@ interface FlowSessionManager {
      *
      * @return `true`, if all sessions have received their next session event, `false` otherwise.
      *
-     * @throws FlowProcessingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun hasReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): Boolean
 
     /**
-     * Are all the specified sessions have a [SessionStateType] contained in [statuses]?
+     * Gets the sessions with the passed in [status].
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to check the status of.
+     * @param status The acceptable status the sessions can have.
+     *
+     * @return A list of [SessionState]s that have a [SessionState.status] of [status].
+     *
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     */
+    fun getSessionsWithStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): List<SessionState>
+
+    /**
+     * Are all the specified sessions have a [SessionStateType] of [status]?
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionIds The session ids to check the status of.
@@ -97,7 +141,7 @@ interface FlowSessionManager {
      *
      * @return `true`, if all sessions have status [status], `false` otherwise.
      *
-     * @throws FlowProcessingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
 }

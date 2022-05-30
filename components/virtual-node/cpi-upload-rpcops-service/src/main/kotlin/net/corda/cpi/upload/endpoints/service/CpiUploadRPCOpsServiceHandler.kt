@@ -13,9 +13,12 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
@@ -79,9 +82,9 @@ class CpiUploadRPCOpsServiceHandler(
             configSubscription = configReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(
-                    //ConfigKeys.MESSAGING_CONFIG,  //  uncomment when MESSAGING key is used
-                    ConfigKeys.BOOT_CONFIG,
-                    ConfigKeys.RPC_CONFIG
+                    MESSAGING_CONFIG,
+                    BOOT_CONFIG,
+                    RPC_CONFIG
                 )
             )
         } else {
@@ -97,9 +100,7 @@ class CpiUploadRPCOpsServiceHandler(
         coordinator: LifecycleCoordinator
     ) {
         log.info("CPI Upload RPCOpsServiceHandler event - config changed")
-
-        // val messagingConfig = event.config.toMessagingConfig()  //  uncomment when MESSAGING key is used
-        val messagingConfig = event.config[ConfigKeys.BOOT_CONFIG]!!
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         cpiUploadManager?.close()
         cpiUploadManager = cpiUploadManagerFactory.create(
             messagingConfig,

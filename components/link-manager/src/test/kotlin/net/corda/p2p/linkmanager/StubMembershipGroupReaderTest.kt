@@ -9,7 +9,7 @@ import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.LinkManagerInternalTypes.toHoldingIdentity
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.schema.TestSchema
 import org.assertj.core.api.Assertions.assertThat
@@ -124,37 +124,37 @@ class StubMembershipGroupReaderTest {
         processor.firstValue.onSnapshot(membersToPublish)
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    alice.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    alice.holdingIdentity,
                     alicePublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA,
-                    LinkManagerInternalTypes.EndPoint(alice.address),
+                    KeyAlgorithm.ECDSA,
+                    alice.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isNull()
             it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    alice.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    alice.holdingIdentity,
                     alicePublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA,
-                    LinkManagerInternalTypes.EndPoint(alice.address),
+                    KeyAlgorithm.ECDSA,
+                    alice.address,
                 )
             )
             it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
             it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
@@ -176,23 +176,23 @@ class StubMembershipGroupReaderTest {
         )
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isNull()
             it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
             it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
             it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
@@ -218,23 +218,23 @@ class StubMembershipGroupReaderTest {
         )
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isNull()
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isNull()
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isNull()
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isNull()
             it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isNull()
             it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
             it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isNull()
@@ -259,52 +259,52 @@ class StubMembershipGroupReaderTest {
         )
 
         assertSoftly {
-            it.assertThat(members.getMemberInfo(alice.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    alice.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(alice.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    alice.holdingIdentity,
                     alicePublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA,
-                    LinkManagerInternalTypes.EndPoint(alice.address),
+                    KeyAlgorithm.ECDSA,
+                    alice.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(bob.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(bob.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
-            it.assertThat(members.getMemberInfo(carol.holdingIdentity.toHoldingIdentity())).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    carol.holdingIdentity.toHoldingIdentity(),
+            it.assertThat(members.getMemberInfo(carol.holdingIdentity)).isEqualTo(
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    carol.holdingIdentity,
                     carolPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(carol.address),
+                    KeyAlgorithm.RSA,
+                    carol.address,
                 )
             )
             it.assertThat(members.getMemberInfo(aliceHash, alice.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    alice.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    alice.holdingIdentity,
                     alicePublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.ECDSA,
-                    LinkManagerInternalTypes.EndPoint(alice.address),
+                    KeyAlgorithm.ECDSA,
+                    alice.address,
                 )
             )
             it.assertThat(members.getMemberInfo(bobHash, bob.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    bob.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    bob.holdingIdentity,
                     bobPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(bob.address),
+                    KeyAlgorithm.RSA,
+                    bob.address,
                 )
             )
             it.assertThat(members.getMemberInfo(carolHash, carol.holdingIdentity.groupId)).isEqualTo(
-                LinkManagerInternalTypes.MemberInfo(
-                    carol.holdingIdentity.toHoldingIdentity(),
+                LinkManagerMembershipGroupReader.MemberInfo(
+                    carol.holdingIdentity,
                     carolPublicKey,
-                    net.corda.p2p.crypto.protocol.api.KeyAlgorithm.RSA,
-                    LinkManagerInternalTypes.EndPoint(carol.address),
+                    KeyAlgorithm.RSA,
+                    carol.address,
                 )
             )
         }

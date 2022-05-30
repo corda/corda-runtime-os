@@ -6,6 +6,9 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.virtualnode.DeleteEntity
 import net.corda.data.virtualnode.EntityRequest
 import net.corda.data.virtualnode.EntityResponse
+import net.corda.data.virtualnode.EntityResponseFailure
+import net.corda.data.virtualnode.EntityResponseSuccess
+import net.corda.data.virtualnode.Error
 import net.corda.data.virtualnode.FindEntity
 import net.corda.data.virtualnode.MergeEntity
 import net.corda.data.virtualnode.PersistEntity
@@ -15,7 +18,11 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
+import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
+import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
+import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
+import net.corda.entityprocessor.impl.tests.fake.FakeCpiInfoReadService
 import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.DOG_CLASS_NAME
@@ -25,6 +32,8 @@ import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getCatClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getDogClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -34,7 +43,6 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -56,6 +64,7 @@ import java.nio.file.Path
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -67,6 +76,9 @@ import javax.persistence.EntityManagerFactory
  *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
  *
  *     gradlew integrationTest -PpostgresPort=5432
+ *
+ * Rather than creating a new serializer in these tests from scratch,
+ * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
  */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -122,7 +134,9 @@ class PersistenceServiceInternalTests {
         val dogId = UUID.randomUUID()
         logger.info("Persisting $dogId/rover")
 
-        val persistenceService = PersistenceServiceInternal(entitySandboxService)
+        val requestId = UUID.randomUUID().toString()
+
+        val persistenceService = PersistenceServiceInternal(entitySandboxService::getClass, requestId)
         val dog = sandbox.createDogInstance(dogId, "Rover", Instant.now(), "me")
         val payload = PersistEntity(
             ByteBuffer.wrap(sandbox.getSerializer().serialize(dog).bytes)
@@ -133,7 +147,6 @@ class PersistenceServiceInternalTests {
         persistenceService.persist(sandbox.getSerializer(), entityManager, payload)
 
         Mockito.verify(entityManager).persist(Mockito.any())
-
     }
 
     @Test
@@ -164,7 +177,7 @@ class PersistenceServiceInternalTests {
     }
 
     @Test
-    fun `persist using two different sandboxes`() {
+    fun `persist using two different sandboxes captures exception in response`() {
         val virtualNodeInfoOne = virtualNode.load(Resources.EXTENDABLE_CPB)
         val virtualNodeInfoTwo = virtualNode.load(Resources.CALCULATOR_CPB)
 
@@ -195,12 +208,23 @@ class PersistenceServiceInternalTests {
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
 
+        // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(records)
 
+        // And check the results
+
+        // It's a failure
         assertThat(responses.size).isEqualTo(1)
-        assertThat((responses[0].value as EntityResponse).result).isInstanceOf(ExceptionEnvelope::class.java)
-        // TODO - error types should not be string but categories of errors
-        assertThat(((responses[0].value as EntityResponse).result as ExceptionEnvelope).errorType).contains("NotSerializableException")
+        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+
+        // The failure is correctly categorised - serialization fails within the database path of the code.
+        // It can never succeed on retry, therefore, it's fatal.
+        assertThat(responseFailure.errorType).isEqualTo(Error.FATAL)
+
+        // The failure also captures the exception name.
+        assertThat(responseFailure.exception.errorType).contains("NotSerializableException")
     }
 
     @Test
@@ -209,7 +233,12 @@ class PersistenceServiceInternalTests {
 
         // request persist - cats & dogs are in different CPKs/bundles
         val dogId = UUID.randomUUID()
-        val dog = ctx.sandbox.createDogInstance(dogId, "Pluto", Instant.now(), "me")
+        val dog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Pluto",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
         val dogRequest = createRequest(
             ctx.virtualNodeInfo.holdingIdentity, PersistEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(dog).bytes)))
         val catId = UUID.randomUUID()
@@ -236,7 +265,6 @@ class PersistenceServiceInternalTests {
         // assert persisted
         assertThat(responses.size).isEqualTo(2)
 
-
         val findDog = ctx.findDog(dogId)
         assertThat(findDog).isEqualTo(dog)
         logger.info("Woof $findDog")
@@ -252,7 +280,12 @@ class PersistenceServiceInternalTests {
 
         // save a dog
         val dogId = UUID.randomUUID()
-        val dog = ctx.sandbox.createDogInstance(dogId, "Basil", Instant.now(), "me")
+        val dog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Basil",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
         ctx.persist(dog)
 
         // use API to find it
@@ -266,7 +299,10 @@ class PersistenceServiceInternalTests {
 
         // assert it's the dog
         assertThat(responses.size).isEqualTo(1)
-        val bytes = (responses[0].value as EntityResponse).result as ByteBuffer
+        val entityResponse = responses[0].value as EntityResponse
+        assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
+        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
+        val bytes = entityResponseSuccess.result as ByteBuffer
         val result = ctx.sandbox.getSerializer().deserialize(bytes.array(), Any::class.java)
         assertThat(result).isEqualTo(dog)
     }
@@ -281,7 +317,12 @@ class PersistenceServiceInternalTests {
         ctx.persist(dog)
 
         // change the dog's name
-        val bellaTheDog = ctx.sandbox.createDogInstance(dogId, "Bella", Instant.now(), "me")
+        val bellaTheDog = ctx.sandbox.createDogInstance(
+            dogId,
+            "Bella",
+            // Truncating to millis as nanos get lost in Windows JDBC driver.
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "me")
 
         // use API to find it
         val mergeEntity = MergeEntity(ByteBuffer.wrap(ctx.sandbox.getSerializer().serialize(bellaTheDog).bytes))
@@ -295,7 +336,11 @@ class PersistenceServiceInternalTests {
         assertThat(responses.size).isEqualTo(1)
 
         // assert that Bella has been returned
-        val bytes = (responses[0].value as EntityResponse).result as ByteBuffer
+
+        val entityResponse = responses[0].value as EntityResponse
+        assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
+        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
+        val bytes = entityResponseSuccess.result as ByteBuffer
         val responseEntity = ctx.sandbox.getSerializer().deserialize(bytes.array(), Any::class.java)
         assertThat(responseEntity).isEqualTo(bellaTheDog)
 
@@ -330,6 +375,142 @@ class PersistenceServiceInternalTests {
 
         val actual = ctx.findDog(dogId)
         assertThat(actual).isNull()
+    }
+
+    @Test
+    fun `exception raised when cpks not present`() {
+        val (dbConnectionManager, request) = setupExceptionHandlingTests()
+
+        // But we need a "broken" service to throw the exception to trigger the new handler.
+        // Emulate the throw that occurs if we don't have the cpks
+        val brokenCpiInfoReadService = object : FakeCpiInfoReadService() {
+            override fun get(identifier: CpiIdentifier): CpiMetadata? {
+                throw NotReadyException("Not ready!")
+            }
+        }
+
+        val brokenEntitySandboxService =
+            EntitySandboxServiceImpl(
+                virtualNode.sandboxGroupContextComponent,
+                brokenCpiInfoReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager,
+                BasicMocks.componentContext()
+            )
+
+        val processor = EntityMessageProcessor(brokenEntitySandboxService)
+
+        // Now "send" the request for processing and "receive" the responses.
+        val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request)))
+
+        assertThat(responses.size).isEqualTo(1)
+        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+        // The failure is correctly categorised.
+        assertThat(responseFailure.errorType).isEqualTo(Error.NOT_READY)
+
+        // The failure also captures the exception name.
+        assertThat(responseFailure.exception.errorType).contains("NotReadyException")
+    }
+    @Test
+    fun `exception raised when vnode cannot be found`() {
+        val (dbConnectionManager, request) = setupExceptionHandlingTests()
+
+        // But we need a "broken" service to throw the exception to trigger the new handler.
+        // Emulate the throw that occurs if we don't have the cpks
+        val brokenCpiInfoReadService = object : FakeCpiInfoReadService() {
+            override fun get(identifier: CpiIdentifier): CpiMetadata? {
+                throw VirtualNodeException("Placeholder")
+            }
+        }
+
+        val brokenEntitySandboxService =
+            EntitySandboxServiceImpl(
+                virtualNode.sandboxGroupContextComponent,
+                brokenCpiInfoReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager,
+                BasicMocks.componentContext()
+            )
+
+        val processor = EntityMessageProcessor(brokenEntitySandboxService)
+
+        // Now "send" the request for processing and "receive" the responses.
+        val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request)))
+
+        assertThat(responses.size).isEqualTo(1)
+        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+
+        // The failure is correctly categorised.
+        assertThat(responseFailure.errorType).isEqualTo(Error.VIRTUAL_NODE)
+
+        // The failure also captures the exception name.
+        assertThat(responseFailure.exception.errorType).contains("VirtualNodeException")
+    }
+
+    @Test
+    fun `exception raised when sent a missing command`() {
+        val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
+        val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
+        val badRequest =  EntityRequest(Instant.now(), oldRequest.flowKey, unknownCommand)
+
+        val entitySandboxService =
+            EntitySandboxServiceImpl(
+                virtualNode.sandboxGroupContextComponent,
+                cpiInfoReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager,
+                BasicMocks.componentContext()
+            )
+
+        val processor = EntityMessageProcessor(entitySandboxService)
+
+        // Now "send" the request for processing and "receive" the responses.
+        val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
+
+        assertThat(responses.size).isEqualTo(1)
+        assertThat((responses[0].value as EntityResponse).responseType).isInstanceOf(EntityResponseFailure::class.java)
+
+        val responseFailure = (responses[0].value as EntityResponse).responseType as EntityResponseFailure
+
+        // The failure is correctly categorised.
+        assertThat(responseFailure.errorType).isEqualTo(Error.FATAL)
+
+        // The failure also captures the exception name.
+        assertThat(responseFailure.exception.errorType).contains("CordaRuntimeException")
+    }
+
+    /**
+     * Create a simple request and return it, and the (fake) db connection manager.
+     */
+    private fun setupExceptionHandlingTests(): Pair<FakeDbConnectionManager, EntityRequest> {
+        val virtualNodeInfoOne = virtualNode.load(Resources.EXTENDABLE_CPB)
+        val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
+        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection))
+
+        // We need a 'working' service to set up the test
+        val entitySandboxService =
+            EntitySandboxServiceImpl(
+                virtualNode.sandboxGroupContextComponent,
+                cpiInfoReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager,
+                BasicMocks.componentContext()
+            )
+
+        val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
+
+        // create dog using dog-aware sandbox
+        val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
+        val serialisedDog = sandboxOne.getSerializer().serialize(dog).bytes
+
+        // create persist request for the sandbox that isn't dog-aware
+        val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro())
+        val request = EntityRequest(Instant.now(), flowKey, PersistEntity(ByteBuffer.wrap(serialisedDog)))
+        return Pair(dbConnectionManager, request)
     }
 
     private data class DbTestContext(

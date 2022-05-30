@@ -1,5 +1,7 @@
 package net.corda.membership.impl.client
 
+import java.time.Instant
+import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
@@ -22,12 +24,13 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
-import net.corda.messaging.api.config.toMessagingConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -35,8 +38,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.time.Instant
-import java.util.UUID
 
 @Component(service = [MemberOpsClient::class])
 class MemberOpsClientImpl @Activate constructor(
@@ -138,7 +139,7 @@ class MemberOpsClientImpl @Activate constructor(
                             requestType = MembershipRpcRequest::class.java,
                             responseType = MembershipRpcResponse::class.java
                         ),
-                        event.config.toMessagingConfig()
+                        event.config.getConfig(MESSAGING_CONFIG)
                     ).also {
                         it.start()
                     }

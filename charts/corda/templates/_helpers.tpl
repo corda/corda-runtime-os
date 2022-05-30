@@ -127,9 +127,18 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mbus.kafkaProperties.common.bootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
-- -mbus.busType=KAFKA
+- -mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
 - --topicPrefix={{ .Values.kafka.topicPrefix }}
+{{- if .Values.kafka.tls.enabled }}
+- -msecurity.protocol=SSL
+{{- if .Values.kafka.tls.truststore.secretRef.name }}
+- -mssl.truststore.location=/certs/ca.crt
+- -mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}
+{{- if .Values.kafka.tls.truststore.password }}
+- -mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}
+{{- end }}
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -154,7 +163,32 @@ resources:
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
   {{- end }} 
-{{- end }} 
+{{- end }}
+
+{{/*
+Volume mounts for corda workers
+*/}}
+{{- define "corda.workerVolumeMounts" }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+- mountPath: "/certs"
+  name: "certs"
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{/*
+Volume mounts for corda workers
+*/}}
+{{- define "corda.workerVolumes" }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+- name: certs
+  secret:
+    secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
+    items:
+      - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
+        path: "ca.crt"
+{{- end }}
+{{- end }}
 
 {{/*
 Cluster DB type

@@ -18,7 +18,6 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation project(":libs:packaging:packaging")
-    implementation project(":libs:packaging:packaging-avro-converters")
 
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:chunking:chunking-core')
@@ -35,6 +34,8 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":components:reconciliation:reconciliation")
 
     testImplementation project(':libs:db:db-admin')
     testImplementation project(':libs:db:db-admin-impl')

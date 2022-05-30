@@ -10,6 +10,7 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import java.util.Collections.unmodifiableMap
 
@@ -28,6 +29,10 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
 
+    companion object {
+        val logger = contextLogger()
+    }
+
     override val metadata: Map<Bundle, CpkMetadata> = unmodifiableMap(cpkSandboxes.associate { cpk ->
         cpk.mainBundle to cpk.cpkMetadata
     })
@@ -37,6 +42,7 @@ internal class SandboxGroupImpl(
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
+                logger.info("Could not load class $className from sandbox ${sandbox.cpkMetadata.mainBundle}: ${e.message}")
                 null
             }
         }.singleOrNull()

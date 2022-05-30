@@ -12,6 +12,7 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:messaging:messaging')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -24,7 +25,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")

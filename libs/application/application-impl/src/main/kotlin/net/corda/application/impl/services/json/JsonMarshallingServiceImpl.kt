@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.utilities.security.doWithPrivileges
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
 /**
  * Simple implementation, requires alignment with other serialization such as that used
@@ -37,20 +39,32 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
     }
 
     override fun formatJson(input: Any): String {
-        return doWithPrivileges {
-            mapper.writeValueAsString(input)
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                mapper.writeValueAsString(input)
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
         }
     }
 
     override fun <T> parseJson(input: String, clazz: Class<T>): T {
-        return doWithPrivileges {
-            mapper.readValue(input, clazz)
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                mapper.readValue(input, clazz)
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
         }
     }
 
     override fun <T> parseJsonList(input: String, clazz: Class<T>): List<T> {
-        return doWithPrivileges {
-            mapper.readValue(input, mapper.typeFactory.constructCollectionType(List::class.java, clazz))
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                mapper.readValue(input, mapper.typeFactory.constructCollectionType(List::class.java, clazz))
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
         }
     }
 }

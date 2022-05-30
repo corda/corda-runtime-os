@@ -107,7 +107,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return flowEventContextConverter.convert(exception.getFlowContext())
     }
 
-    private fun FlowProcessingException.getFlowContext(): FlowEventContext<Any> {
+    private fun FlowProcessingException.getFlowContext(): FlowEventContext<*> {
         /** Hack: the !! is temporary , for now we are leaving the FlowProcessingException with an optional flow event
          *  context this can be changed once all the exception handling is implemented.
          */

@@ -28,8 +28,6 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-config-schema"
 
-    implementation project(":libs:packaging:packaging-avro-converters")
-
     api project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
@@ -62,14 +60,20 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation 'net.corda:corda-application'
+    integrationTestImplementation project(':components:security-manager')
+    integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
 
     // Gather locations of CPIs to add into `resources`
     cpis project(path: ':testing:cpbs:crypto-custom-digest-one-consumer', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:crypto-custom-digest-two-consumer', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:sandbox-security-manager-one', configuration: 'cordaCPB')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

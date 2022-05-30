@@ -114,7 +114,7 @@ class RegistrationTest {
     @Test
     fun `closing a registration when coordinator is closed does not throw`() {
         val coordinatorName = LifecycleCoordinatorName("test", "1")
-        val coordinator = LifecycleCoordinatorImpl(coordinatorName, 1, mock(), mock())
+        val coordinator = LifecycleCoordinatorImpl(coordinatorName, 1, mock(), mock(), mock())
         val listeningMock = mock<LifecycleCoordinator>()
         val registration = Registration(setOf(coordinator), listeningMock)
         coordinator.close()

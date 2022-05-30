@@ -5,9 +5,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.libs.configuration.helper.getConfig
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 
@@ -26,11 +27,9 @@ internal class VirtualNodeWriteConfigHandler(
      *  be created or started.
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        // TODO
-        // val msgConfig = config[MESSAGING_CONFIG] ?: return
-        val msgConfig = config[RPC_CONFIG]?.withFallback(config[BOOT_CONFIG]) ?: return
+        val msgConfig = config.getConfig(MESSAGING_CONFIG)
 
-        if (msgConfig.hasPath(BOOTSTRAP_SERVER)) {
+        if (msgConfig.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {
             if (eventHandler.virtualNodeWriter != null) throw VirtualNodeWriteServiceException(
                 "An attempt was made to initialise the virtual node writer twice."
             )

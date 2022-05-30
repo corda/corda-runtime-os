@@ -1,6 +1,8 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
+import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -11,25 +13,28 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
-import net.corda.flow.testing.fakes.FakeCpiInfoReadService
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.packaging.CordappManifest
-import net.corda.libs.packaging.ManifestCordappInfo
+import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.messaging.api.records.Record
-import net.corda.libs.packaging.Cpk
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -45,15 +50,15 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
     @Reference(service = VirtualNodeInfoReadServiceFake::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
-    @Reference(service = FakeCpiInfoReadService::class)
-    val cpiInfoReadService: FakeCpiInfoReadService,
+    @Reference(service = CpiInfoReadServiceFake::class)
+    val cpiInfoReadService: CpiInfoReadServiceFake,
     @Reference(service = FakeSandboxGroupContextComponent::class)
     val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
     @Reference(service = FakeMembershipGroupReaderProvider::class)
@@ -82,10 +87,12 @@ class FlowServiceTestContext @Activate constructor(
     private var sessionInitiatingIdentity: HoldingIdentity? = null
     private var sessionInitiatedIdentity: HoldingIdentity? = null
 
-
     fun start() {
         virtualNodeInfoReadService.start()
+        cpiInfoReadService.start()
+
         virtualNodeInfoReadService.waitUntilRunning()
+        cpiInfoReadService.waitUntilRunning()
     }
 
     override val initiatedIdentityMemberName: MemberX500Name
@@ -107,7 +114,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun cpkMetadata(cpiId: String, cpkId: String) {
-        val manifestCordAppInfo = ManifestCordappInfo(null, null, null, null)
+        val manifestCordAppInfo = ManifestCorDappInfo(null, null, null, null)
 
         val cordAppManifest = CordappManifest(
             "",
@@ -119,26 +126,30 @@ class FlowServiceTestContext @Activate constructor(
             mapOf()
         )
 
+        val timestamp = Instant.now()
         val cpkMeta = CpkMetadata(
             getCpkIdentifier(cpkId),
-            Cpk.Manifest.newInstance(Cpk.FormatVersion.newInstance(0, 0)),
+            CpkManifest(CpkFormatVersion(0, 0)),
             "",
             listOf(),
             listOf(),
             cordAppManifest,
-            Cpk.Type.UNKNOWN,
+            CpkType.UNKNOWN,
             getSecureHash(),
-            setOf()
+            setOf(),
+            timestamp
         )
 
         val cpiMeta = CpiMetadata(
             getCpiIdentifier(cpiId),
             getSecureHash(),
             listOf(cpkMeta),
-            ""
+            "",
+            -1,
+            timestamp
         )
 
-        cpiInfoReadService.add(cpiMeta)
+        cpiInfoReadService.addOrUpdate(cpiMeta)
     }
 
     override fun sandboxCpk(cpkId: String) {
@@ -159,6 +170,10 @@ class FlowServiceTestContext @Activate constructor(
 
     override fun flowConfiguration(key: String, value: Any) {
         testConfig[key] = value
+    }
+
+    override fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(protocol, initiatingFlowClassName, initiatedFlowClassName)
     }
 
     override fun startFlowEventReceived(
@@ -182,12 +197,37 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
+    override fun sessionInitEventReceived(
+        flowId: String,
+        sessionId: String,
+        cpiId: String,
+        protocol: String,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            initiatingIdentity,
+            initiatedIdentity,
+            SessionInit.newBuilder()
+                .setProtocol(protocol)
+                .setVersions(listOf(1))
+                .setFlowId(flowId)
+                .setCpiId(cpiId)
+                .setPayload(ByteBuffer.wrap(byteArrayOf()))
+                .build(),
+            sequenceNum = 0,
+            receivedSequenceNum = 1,
+        )
+    }
+
     override fun sessionAckEventReceived(
         flowId: String,
         sessionId: String,
         receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -234,6 +274,25 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionClose(),
+            sequenceNum,
+            receivedSequenceNum,
+        )
+    }
+
+    override fun sessionErrorEventReceived(
+        flowId: String,
+        sessionId: String,
+        sequenceNum: Int,
+        receivedSequenceNum: Int,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            initiatingIdentity,
+            initiatedIdentity,
+            SessionError(ExceptionEnvelope(RuntimeException::class.qualifiedName, "Something went wrong!")),
             sequenceNum,
             receivedSequenceNum,
         )

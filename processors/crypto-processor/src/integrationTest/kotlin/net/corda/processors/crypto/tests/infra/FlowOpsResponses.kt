@@ -1,8 +1,7 @@
 package net.corda.processors.crypto.tests.infra
 
-import com.typesafe.config.ConfigFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
@@ -10,9 +9,11 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 class FlowOpsResponses(
+    messagingConfig: SmartConfig,
     subscriptionFactory: SubscriptionFactory
 ) : DurableProcessor<String, FlowOpsResponse>, AutoCloseable {
 
@@ -23,10 +24,7 @@ class FlowOpsResponses(
                 eventTopic = RESPONSE_TOPIC
             ),
             processor = this,
-            messagingConfig = SmartConfigFactory.create(
-                ConfigFactory.empty()).create(ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
-                .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
-            ),
+            messagingConfig = messagingConfig,
             partitionAssignmentListener = null
         ).also { it.start() }
 
@@ -44,7 +42,7 @@ class FlowOpsResponses(
     }
 
     fun waitForResponse(key: String): FlowOpsResponse =
-        eventually {
+        eventually(duration = Duration.ofSeconds(20)) {
             val event = receivedEvents[key]
             Assertions.assertNotNull(event)
             event!!

@@ -7,6 +7,9 @@ import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
 @Component(service = [FlowSessionFactory::class])
 class FlowSessionFactoryImpl @Activate constructor(
@@ -15,6 +18,12 @@ class FlowSessionFactoryImpl @Activate constructor(
 ) : FlowSessionFactory {
 
     override fun create(sessionId: String, x500Name: MemberX500Name, initiated: Boolean): FlowSession {
-        return FlowSessionImpl(counterparty = x500Name, sessionId, flowFiberService, initiated)
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                FlowSessionImpl(counterparty = x500Name, sessionId, flowFiberService, initiated)
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
     }
 }

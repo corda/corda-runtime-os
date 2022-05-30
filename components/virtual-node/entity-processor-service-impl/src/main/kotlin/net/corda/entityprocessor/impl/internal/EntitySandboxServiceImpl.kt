@@ -5,6 +5,8 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
+import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
+import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -22,7 +24,6 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.InternalCustomSerializer
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -36,15 +37,14 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicy
 
-/** It's a sandbox service, that's internal to this component!
+/** This is a sandbox service that is internal to this component.
  *
- * It gets/creates a per-sandbox with:
+ * It gets/creates a sandbox with a per-sandbox:
  *
  *   * serializer
  *   * entity manager factory
  *
- *
- * */
+ */
 @Suppress("LongParameterList")
 @Component(
     service = [EntitySandboxService::class],
@@ -57,7 +57,7 @@ import org.osgi.service.component.annotations.ReferencePolicy
         )
     ]
 )
-class EntitySandboxServiceImpl @Activate constructor (
+class EntitySandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
     @Reference
@@ -83,39 +83,41 @@ class EntitySandboxServiceImpl @Activate constructor (
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
     override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
-        // TODO - error handling (CORE-4783)
+        // We're throwing internal exceptions so that we can relay some information back to the flow worker
+        // on how to proceed with any request to us that fails.
         val virtualNode = virtualNodeInfoService.get(holdingIdentity)
-            ?: throw CordaRuntimeException("Could not get virtual node for $holdingIdentity")
+            ?: throw VirtualNodeException("Could not get virtual node for $holdingIdentity")
 
         val cpks = cpiInfoService.get(virtualNode.cpiIdentifier)?.cpksMetadata
-            ?: throw CordaRuntimeException("Could not get list of CPKs for ${virtualNode.cpiIdentifier}")
+            ?: throw VirtualNodeException("Could not get list of CPKs for ${virtualNode.cpiIdentifier}")
 
         val cpkIds = cpks.map { it.cpkId }.toSet()
-        if(!sandboxService.hasCpks(cpkIds))
-            throw CordaRuntimeException("CPKs not available (yet): $cpkIds")
+        if (!sandboxService.hasCpks(cpkIds))
+            throw NotReadyException("CPKs not available (yet): $cpkIds")
 
         return sandboxService.getOrCreate(getVirtualNodeContext(virtualNode, cpks)) { _, ctx ->
-            initializeSandbox(
-                cpks,
-                virtualNode,
-                ctx
-            )
+            initializeSandbox(cpks, virtualNode, ctx)
         }
     }
 
     private fun initializeSandbox(
         cpks: Collection<CpkMetadata>,
         virtualNode: VirtualNodeInfo,
-        ctx: MutableSandboxGroupContext): AutoCloseable {
+        ctx: MutableSandboxGroupContext
+    ): AutoCloseable {
         val serializerCloseable = putSerializer(ctx, cpks, virtualNode)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
 
-        logger.info("Initialising DB Sandbox for ${virtualNode.holdingIdentity}/" +
-                "${virtualNode.cpiIdentifier.name}[${virtualNode.cpiIdentifier.version}]")
+        logger.info(
+            "Initialising DB Sandbox for ${virtualNode.holdingIdentity}/" +
+                    "${virtualNode.cpiIdentifier.name}[${virtualNode.cpiIdentifier.version}]"
+        )
 
         return AutoCloseable {
-            logger.info("Closing DB Sandbox for ${virtualNode.holdingIdentity}/" +
-                    "${virtualNode.cpiIdentifier.name}[${virtualNode.cpiIdentifier.version}]")
+            logger.info(
+                "Closing DB Sandbox for ${virtualNode.holdingIdentity}/" +
+                        "${virtualNode.cpiIdentifier.name}[${virtualNode.cpiIdentifier.version}]"
+            )
             serializerCloseable.close()
             emfCloseable.close()
         }
@@ -129,15 +131,16 @@ class EntitySandboxServiceImpl @Activate constructor (
     ): AutoCloseable {
         // Get all the entity class names from the cpk metadata, and then map to their types
         // This bit is quite important - we've bnd-scanned the **CPKS** (not jars!) and written the list
-        // of classes annotated with @Entity to the CPK manifest.  We now use them and convert to types
-        // so that we can correctly construct an entity manager factory per sandbox.
+        // of classes annotated with @Entity and @CordaSerializable to the CPK manifest.
+        // We now use them and convert them to types so that we can correctly construct an
+        // entity manager factory per sandbox.
 
         // TODO - add general vault entities
         val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
             try {
                 ctx.sandboxGroup.loadClassFromMainBundles(it)
             } catch (e: SandboxException) {
-                throw e // TODO - correct error handling
+                throw e
             }
         }.toSet()
 
@@ -152,8 +155,8 @@ class EntitySandboxServiceImpl @Activate constructor (
 
         // Create the per-sandbox EMF for all the entities
         // NOTE: this is create and not getOrCreate as the dbConnectionManager does not cache vault EMFs.
-        //  This is because sandboxes themselves are caches, so the EMF will be cached and cleaned up
-        //  as part of that.
+        // This is because sandboxes themselves are caches, so the EMF will be cached and cleaned up
+        // as part of that.
         val entityManagerFactory = dbConnectionManager.createEntityManagerFactory(
             virtualNode.vaultDmlConnectionId,
             entitiesSet
@@ -187,8 +190,9 @@ class EntitySandboxServiceImpl @Activate constructor (
             cpkSerializers
         )
 
-        logger.debug("Creating SerializationService for DB Sandbox (${virtualNode.holdingIdentity}) with " +
-                cpkSerializers.joinToString(",")
+        logger.debug(
+            "Creating SerializationService for DB Sandbox (${virtualNode.holdingIdentity}) with " +
+                    cpkSerializers.joinToString(",")
         )
 
         customSerializers.forEach { factory.registerExternal(it, factory) }

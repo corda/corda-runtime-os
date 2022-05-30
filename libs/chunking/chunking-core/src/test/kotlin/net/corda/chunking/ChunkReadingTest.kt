@@ -17,7 +17,7 @@ import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 class ChunkReadingTest {
-    lateinit var fs: FileSystem
+    private lateinit var fs: FileSystem
 
     @BeforeEach
     private fun beforeEach() {
@@ -47,7 +47,7 @@ class ChunkReadingTest {
         var actualFileName: String? = null
         var actualPath: Path? = null
         val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempBinaryPath, _ ->
+            onComplete { originalFileName, tempBinaryPath, _, _ ->
                 actualFileName = originalFileName
                 actualPath = tempBinaryPath
             }
@@ -62,7 +62,7 @@ class ChunkReadingTest {
         writer.write(ourFileName, Files.newInputStream(path))
 
         assertThat(ourFileName).isEqualTo(actualFileName.toString())
-        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath))
+        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath!!))
     }
 
     @Test
@@ -71,7 +71,7 @@ class ChunkReadingTest {
 
         var readCompleted = false
         val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _ -> readCompleted = true }
+            onComplete { _, _, _, _ -> readCompleted = true }
         }
 
         val chunkCount = 5
@@ -106,7 +106,7 @@ class ChunkReadingTest {
         var actualPath: Path? = null
         var readCompleted = false
         val reader = ChunkReaderFactory.create(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempBinaryPath, _ ->
+            onComplete { originalFileName, tempBinaryPath, _, _ ->
                 actualFileName = originalFileName
                 actualPath = tempBinaryPath
                 readCompleted = true
@@ -134,8 +134,8 @@ class ChunkReadingTest {
 
         assertThat(readCompleted).isTrue
         // "cast away" the underlying filesystem (otherwise we get jimfs vs unix paths)
-        assertThat(ourFileName.toString()).isEqualTo(actualFileName.toString())
-        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath))
+        assertThat(ourFileName).isEqualTo(actualFileName.toString())
+        assertThat(Files.size(path)).isEqualTo(Files.size(actualPath!!))
     }
 
     @Test
@@ -149,7 +149,7 @@ class ChunkReadingTest {
         var completionCount = 0
 
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { _, _, _ -> completionCount++ }
+            onComplete { _, _, _, _ -> completionCount++ }
         }
 
         val fileCount = 5
@@ -208,7 +208,7 @@ class ChunkReadingTest {
         lateinit var actualPath: Path
         lateinit var actualFileName: String
         val reader = ChunkReaderImpl(Files.createDirectory(fs.getPath("temp"))).apply {
-            onComplete { originalFileName, tempPathOfBinary, _ ->
+            onComplete { originalFileName, tempPathOfBinary, _, _ ->
                 actualPath = tempPathOfBinary
                 actualFileName = originalFileName
             }
@@ -219,7 +219,7 @@ class ChunkReadingTest {
         chunks.forEach(reader::read)
 
         // "cast away" the underlying filesystem (otherwise we get jimfs vs unix paths)
-        assertThat(ourFileName.toString()).isEqualTo(actualFileName.toString())
+        assertThat(ourFileName).isEqualTo(actualFileName)
 
         val expectedFileContent = Files.newBufferedReader(expectedPath).use {
             it.readLines().joinToString("\n")

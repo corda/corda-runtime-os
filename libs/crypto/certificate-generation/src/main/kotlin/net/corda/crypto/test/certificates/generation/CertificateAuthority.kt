@@ -1,5 +1,6 @@
 package net.corda.crypto.test.certificates.generation
 
+import java.security.PublicKey
 import java.security.cert.Certificate
 
 /**
@@ -34,4 +35,13 @@ interface CertificateAuthority {
      * @return A private key and certificate.
      */
     fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate
+
+    /**
+     * Generate a certificate from a [publicKey] with a list of hosts names.
+     *
+     * @param publicKey -
+     * @param hosts - the list of hosts.
+     * @return The generated certificate.
+     */
+    fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate
 }

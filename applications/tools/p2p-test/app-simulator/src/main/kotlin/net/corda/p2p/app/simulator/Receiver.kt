@@ -14,9 +14,9 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.schema.configuration.MessagingConfig.Boot.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.Boot.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.BOOTSTRAP_SERVER
+import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
@@ -43,7 +43,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, )
             val kafkaConfig = SmartConfigImpl.empty()
-                .withValue(BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaServers))
+                .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
                 .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
                 .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))

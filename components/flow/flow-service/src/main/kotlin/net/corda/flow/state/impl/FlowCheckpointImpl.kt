@@ -38,11 +38,12 @@ class FlowCheckpointImpl(
             checkpoint.flowStackItems = checkpoint.flowStackItems ?: mutableListOf()
             nullableCheckpoint = checkpoint
 
-            validateAndAddSessions()
-            validateAndAddFlowStack()
+            validateAndAddAll()
         }
     }
 
+    private var nullableSuspendOn: String? = null
+    private var nullableWaitingFor: WaitingFor? = null
     private var nullableSessionsMap: MutableMap<String, SessionState>? = null
     private var nullableFlowStack: FlowStackImpl? = null
 
@@ -67,15 +68,15 @@ class FlowCheckpointImpl(
         get() = checkpoint.flowStartContext.identity
 
     override var suspendedOn: String?
-        get() = checkpoint.flowState.suspendedOn
+        get() = nullableSuspendOn
         set(value) {
-            checkpoint.flowState.suspendedOn = value
+            nullableSuspendOn = value
         }
 
-    override var waitingFor: WaitingFor
-        get() = checkpoint.flowState.waitingFor
+    override var waitingFor: WaitingFor?
+        get() = nullableWaitingFor
         set(value) {
-            checkpoint.flowState.waitingFor = value
+            nullableWaitingFor = value
         }
 
     override val flowStack: FlowStack
@@ -105,7 +106,7 @@ class FlowCheckpointImpl(
         { "Attempt to access null retry state while. inRetryState must be tested before accessing retry fields" }
             .failedEvent
 
-    override fun initFromNew(flowId: String, flowStartContext: FlowStartContext, waitingFor: WaitingFor) {
+    override fun initFromNew(flowId: String, flowStartContext: FlowStartContext) {
         if (nullableCheckpoint != null) {
             val key = flowStartContext.statusKey
             throw IllegalStateException(
@@ -117,7 +118,7 @@ class FlowCheckpointImpl(
         val state = StateMachineState.newBuilder()
             .setSuspendCount(0)
             .setIsKilled(false)
-            .setWaitingFor(waitingFor)
+            .setWaitingFor(null)
             .setSuspendedOn(null)
             .build()
 
@@ -131,8 +132,7 @@ class FlowCheckpointImpl(
             .setMaxFlowSleepDuration(config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION))
             .build()
 
-        validateAndAddSessions()
-        validateAndAddFlowStack()
+        validateAndAddAll()
     }
 
     override fun getSessionState(sessionId: String): SessionState? {
@@ -148,9 +148,7 @@ class FlowCheckpointImpl(
     }
 
     override fun rollback() {
-        // Reset the sessions and flow stack to their original checkpoint states
-        validateAndAddSessions()
-        validateAndAddFlowStack()
+        validateAndAddAll()
     }
 
     override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
@@ -178,9 +176,22 @@ class FlowCheckpointImpl(
             return null
         }
 
+        checkpoint.flowState.suspendedOn = nullableSuspendOn
+        checkpoint.flowState.waitingFor = nullableWaitingFor
         checkpoint.sessions = sessionMap.values.toList()
         checkpoint.flowStackItems = nullableFlowStack?.flowStackItems ?: emptyList()
         return checkpoint
+    }
+
+    private fun validateAndAddAll() {
+        validateAndAddStateFields()
+        validateAndAddSessions()
+        validateAndAddFlowStack()
+    }
+
+    private fun validateAndAddStateFields() {
+        nullableSuspendOn = checkpoint.flowState.suspendedOn
+        nullableWaitingFor = checkpoint.flowState.waitingFor
     }
 
     private fun validateAndAddSessions() {
@@ -244,18 +255,7 @@ class FlowCheckpointImpl(
         }
 
         private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            var current: Class<in Flow<*>> = this.javaClass
-
-            while (true) {
-                val annotation = current.getDeclaredAnnotation(InitiatingFlow::class.java)
-                if (annotation != null) {
-                    require(annotation.version > 0) { "Flow versions have to be greater or equal to 1" }
-                    return true
-                }
-
-                current = current.superclass
-                    ?: return false
-            }
+            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

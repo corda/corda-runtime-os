@@ -10,7 +10,7 @@ import javax.crypto.spec.PBEKeySpec
  * Supports HMAC calculation.
  */
 class ManagedSecret(
-    internal val secret: ByteArray
+    val secret: ByteArray
 ) {
     companion object {
         const val SECRET_DEFAULT_LENGTH = 32 // in bytes
@@ -18,7 +18,7 @@ class ManagedSecret(
         const val DERIVE_ALGORITHM = "PBKDF2WithHmacSHA256"
 
         /**
-         * Creates an instance of [ManagedSecret] by generating a new AES key.
+         * Creates an instance of [ManagedSecret] by generating a new sequence of bytes using RNG.
          */
         fun generate(size: Int = SECRET_DEFAULT_LENGTH): ManagedSecret =
             ManagedSecret(ByteArray(size).apply { secureRandom.nextBytes(this) })

@@ -3,6 +3,7 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.media.ComposedSchema
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
@@ -24,6 +25,7 @@ import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.httprpc.test.TestFileUploadImpl
 
@@ -138,6 +140,35 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertNotNull(field)
             assertEquals("string", field.type)
         }
+
+        with(openAPI.paths["/health/apireturningnullobject"]) {
+            assertNotNull(this)
+            val post = openAPI.paths["/health/apireturningnullobject"]!!.post
+            assertNotNull(post)
+            val successResponse = post.responses["200"]
+            assertNotNull(successResponse)
+            val content = successResponse.content["application/json"]
+            assertNotNull(content)
+            val schema = content.schema as ComposedSchema
+            assertTrue(schema.nullable, "The schema should have the nullable property")
+            assertEquals(1, schema.allOf.size)
+            val wrappedObject = schema.allOf[0]
+            assertNull(wrappedObject.nullable, "The wrapped object itself shouldn't be nullable")
+            assertEquals("#/components/schemas/SomeTestNullableType", wrappedObject.`$ref`)
+        }
+
+        with(openAPI.paths["/health/apireturningnullstring"]) {
+            assertNotNull(this)
+            val post = openAPI.paths["/health/apireturningnullstring"]!!.post
+            assertNotNull(post)
+            val successResponse = post.responses["200"]
+            assertNotNull(successResponse)
+            val content = successResponse.content["application/json"]
+            assertNotNull(content)
+            val schema = content.schema
+            assertTrue(schema.nullable, "The schema should have the nullable property")
+            assertEquals("string", schema.type)
+        }
     }
 
     @Test
@@ -164,6 +195,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type, "Multipart file type should be a string.")
             assertEquals("binary", file.format, "Multipart file format should be binary.")
             assertFalse(file.nullable)
+            assertEquals("A file to upload.", file.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/uploadwithname"]) {
@@ -181,6 +213,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type, "Multipart file type should be a string.")
             assertEquals("binary", file.format, "Multipart file format should be binary.")
             assertFalse(file.nullable)
+            assertEquals("A file to upload.", file.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/uploadwithoutparameterannotations"]) {
@@ -198,6 +231,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type, "Multipart file type should be a string.")
             assertEquals("binary", file.format, "Multipart file format should be binary.")
             assertFalse(file.nullable)
+            assertEquals("A file to upload.", file.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/fileuploadobject"]) {
@@ -211,6 +245,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type, "Multipart file type should be a string.")
             assertEquals("binary", file.format, "Multipart file format should be binary.")
             assertFalse(file.nullable)
+            assertEquals("A file to upload.", file.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/multifileuploadobject"]) {
@@ -224,11 +259,13 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file1.type, "Multipart file type should be a string.")
             assertEquals("binary", file1.format, "Multipart file format should be binary.")
             assertFalse(file1.nullable)
+            assertEquals("A file to upload.", file1.description, "File upload should have a description.")
             val file2 = multipartFormData.schema.properties["file2"]
             assertNotNull(file2)
             assertEquals("string", file2.type, "Multipart file type should be a string.")
             assertEquals("binary", file2.format, "Multipart file format should be binary.")
             assertFalse(file2.nullable)
+            assertEquals("A file to upload.", file2.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/multiinputstreamfileupload"]) {
@@ -242,11 +279,13 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file1.type, "Multipart file type should be a string.")
             assertEquals("binary", file1.format, "Multipart file format should be binary.")
             assertFalse(file1.nullable)
+            assertEquals("A file to upload.", file1.description, "File upload should have a description.")
             val file2 = multipartFormData.schema.properties["file2"]
             assertNotNull(file2)
             assertEquals("string", file2.type, "Multipart file type should be a string.")
             assertEquals("binary", file2.format, "Multipart file format should be binary.")
             assertFalse(file2.nullable)
+            assertEquals("A file to upload.", file2.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/fileuploadobjectlist"]) {
@@ -278,6 +317,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type)
             assertEquals("binary", file.format)
             assertFalse(file.nullable)
+            assertEquals("A file to upload.", file.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/uploadwithpathparam/{tenant}"]) {
@@ -294,6 +334,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type)
             assertEquals("binary", file.format)
             assertFalse(file.nullable)
+            assertEquals("A file to upload.", file.description, "File upload should have a description.")
         }
 
         with(openAPI.paths["/fileupload/uploadwithnameinannotation"]) {
@@ -307,6 +348,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("string", file.type)
             assertEquals("binary", file.format)
             assertFalse(file.nullable)
+            assertEquals("differentDesc", file.description, "File upload should have a description.")
         }
     }
 
