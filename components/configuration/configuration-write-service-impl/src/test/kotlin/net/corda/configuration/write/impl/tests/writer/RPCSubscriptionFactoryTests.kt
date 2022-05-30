@@ -1,15 +1,14 @@
 package net.corda.configuration.write.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
-import net.corda.configuration.write.impl.writer.CLIENT_NAME_DB
 import net.corda.configuration.write.impl.writer.CLIENT_NAME_RPC
-import net.corda.configuration.write.impl.writer.ConfigWriterFactory
+import net.corda.configuration.write.impl.writer.RPCSubscriptionFactory
 import net.corda.configuration.write.impl.writer.GROUP_NAME
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -23,8 +22,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-/** Tests of [ConfigWriterFactory]. */
-class ConfigWriterFactoryTests {
+/** Tests of [RPCSubscriptionFactory]. */
+class RPCSubscriptionFactoryTests {
     private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     /** Returns a mock [SubscriptionFactory]. */
@@ -42,23 +41,15 @@ class ConfigWriterFactoryTests {
         whenever(createConfigValidator()).thenReturn(mock())
     }
 
-    @Test
-    fun `factory does not start the config writer`() {
-        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), getPublisherFactory(), getConfigValidatorFactory(), mock())
-        val configWriter = configWriterFactory.create(mock())
-        assertFalse(configWriter.isRunning)
+    val dbConnectionManager = mock<DbConnectionManager>().also {
+        whenever(it.getClusterEntityManagerFactory()).thenReturn(mock())
     }
 
     @Test
-    fun `factory creates a publisher with the correct configuration`() {
-        val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB)
-        val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
-
-        val publisherFactory = getPublisherFactory()
-        val configWriterFactory = ConfigWriterFactory(getSubscriptionFactory(), publisherFactory, getConfigValidatorFactory(), mock())
-        configWriterFactory.create(expectedConfig)
-
-        verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
+    fun `factory does not start the config writer`() {
+        val configWriterFactory = RPCSubscriptionFactory(getSubscriptionFactory(), getConfigValidatorFactory(), dbConnectionManager, mock())
+        val configWriter = configWriterFactory.create(mock())
+        assertFalse(configWriter.isRunning)
     }
 
     @Test
@@ -73,7 +64,7 @@ class ConfigWriterFactoryTests {
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
         val subscriptionFactory = getSubscriptionFactory()
-        val configWriterFactory = ConfigWriterFactory(subscriptionFactory, getPublisherFactory(), getConfigValidatorFactory(), mock())
+        val configWriterFactory = RPCSubscriptionFactory(subscriptionFactory, getConfigValidatorFactory(), dbConnectionManager, mock())
         configWriterFactory.create(expectedConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())

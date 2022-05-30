@@ -18,6 +18,8 @@ import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
+// This should be used by our class that needs to cache config
+
 internal class ConfigProcessor(
     private val coordinator: LifecycleCoordinator,
     private val smartConfigFactory: SmartConfigFactory,
