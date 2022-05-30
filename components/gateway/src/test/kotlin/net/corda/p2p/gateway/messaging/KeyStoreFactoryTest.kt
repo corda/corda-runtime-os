@@ -36,22 +36,6 @@ class KeyStoreFactoryTest {
     }
 
     @Test
-    fun `silly test`() {
-        val future = CompletableFuture<Unit>()
-        future.complete(Unit)
-        future.whenComplete { _, exception ->
-            if (exception == null) {
-                println("Completed")
-            }
-        }
-        future.whenComplete { _, exception ->
-            if (exception == null) {
-                println("Completed 1")
-            }
-        }
-    }
-
-    @Test
     fun `createDelegatedKeyStore return the key store`() {
         assertThat(testObject.createDelegatedKeyStore().keyStore).isSameAs(keyStore)
     }

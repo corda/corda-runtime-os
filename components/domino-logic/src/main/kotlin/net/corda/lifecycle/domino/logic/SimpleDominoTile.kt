@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @param componentName The name of the component
  * @param coordinatorFactory A coordinator factory.
  */
-open class SimpleDominoTile(
+class SimpleDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
 ) : DominoTile {
