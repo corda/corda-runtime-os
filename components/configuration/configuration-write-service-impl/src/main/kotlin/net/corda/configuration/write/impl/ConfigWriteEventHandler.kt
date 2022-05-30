@@ -29,20 +29,27 @@ internal class ConfigWriteEventHandler(
 
     private var registration: RegistrationHandle? = null
 
-    private var bootStrapConfig: SmartConfig? = null
+    private var bootstrapConfig: SmartConfig? = null
 
     /**
-     * Upon [BootstrapConfigEvent], populates boot config and waits on dependent components. On components being ready,
+     * Upon [BootstrapConfigEvent], populates boot config and waits on needed components. On components being ready,
      * it starts processing cluster configuration updates. Upon [StopEvent], stops processing them.
      *
      * @throws ConfigWriteServiceException If multiple [BootstrapConfigEvent]s are received, or if the creation of the
      *  subscription fails.
      */
+    @Suppress("NestedBlockDepth")
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is BootstrapConfigEvent -> {
                 logger.info("Bootstrap config provided")
-                bootStrapConfig = event.bootConfig
+                if (bootstrapConfig != null) {
+                    val errorString = "An attempt was made to set the bootstrap configuration twice with " +
+                            "different config. Current: $bootstrapConfig, New: ${event.bootstrapConfig}"
+                    logger.error(errorString)
+                    throw ConfigWriteServiceException(errorString)
+                }
+                bootstrapConfig = event.bootstrapConfig
                 registration = coordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
@@ -57,7 +64,7 @@ internal class ConfigWriteEventHandler(
                         // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
                         //  against Kafka topic.
                         rpcSubscription =
-                            rpcSubscriptionFactory.create(configMerger.getMessagingConfig(bootStrapConfig!!))
+                            rpcSubscriptionFactory.create(configMerger.getMessagingConfig(bootstrapConfig!!))
                                 .apply { start() }
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }

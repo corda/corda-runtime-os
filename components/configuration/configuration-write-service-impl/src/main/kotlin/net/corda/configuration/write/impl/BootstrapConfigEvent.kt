@@ -7,6 +7,6 @@ import net.corda.lifecycle.LifecycleEvent
 /**
  * Upon [BootstrapConfigEvent] event, [ConfigWriteService] starts processing cluster configuration updates.
  *
- * @param bootConfig Config to be used by the subscription.
+ * @param bootstrapConfig Config to be used by the subscription.
  */
-internal data class BootstrapConfigEvent(val bootConfig: SmartConfig) : LifecycleEvent
+internal data class BootstrapConfigEvent(val bootstrapConfig: SmartConfig) : LifecycleEvent
