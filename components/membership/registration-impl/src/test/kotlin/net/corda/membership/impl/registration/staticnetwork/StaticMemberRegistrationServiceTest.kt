@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -46,6 +47,8 @@ import net.corda.schema.Schemas
 import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
@@ -152,6 +155,8 @@ class StaticMemberRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
 
+    private val hsmRegistrationClient: HSMRegistrationClient = mock()
+
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -159,7 +164,8 @@ class StaticMemberRegistrationServiceTest {
         cryptoOpsClient,
         configurationReadService,
         lifecycleCoordinatorFactory,
-        layeredPropertyMapFactory
+        layeredPropertyMapFactory,
+        hsmRegistrationClient
     )
 
     @Suppress("UNCHECKED_CAST")
