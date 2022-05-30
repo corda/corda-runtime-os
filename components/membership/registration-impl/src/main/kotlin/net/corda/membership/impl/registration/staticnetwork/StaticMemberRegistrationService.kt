@@ -11,7 +11,7 @@ import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.toWire
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
@@ -33,11 +33,12 @@ import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SU
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
@@ -68,9 +69,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LayeredPropertyMapFactory::class)
-    val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    @Reference(service = DigestService::class)
-    val digestService: DigestService
+    val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -108,8 +107,11 @@ class StaticMemberRegistrationService @Activate constructor(
             )
         }
         try {
-            val updates = lifecycleHandler.publisher.publish(parseMemberTemplate(member))
-            updates.forEach { it.get() }
+            val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
+            val membershipUpdates = lifecycleHandler.publisher.publish(parseMemberTemplate(member, groupPolicy))
+            membershipUpdates.forEach { it.get() }
+            val hostedIdentityUpdates = lifecycleHandler.publisher.publish(listOf(createHostedIdentity(member, groupPolicy)))
+            hostedIdentityUpdates.forEach { it.get() }
         } catch (e: Exception) {
             StringWriter().use { sw ->
                 PrintWriter(sw).use { pw ->
@@ -129,18 +131,13 @@ class StaticMemberRegistrationService @Activate constructor(
      * Parses the static member list template, creates the MemberInfo for the registering member and the records for the
      * kafka publisher.
      */
-    private fun parseMemberTemplate(registeringMember: HoldingIdentity): List<Record<String, PersistentMemberInfo>> {
+    @Suppress("MaxLineLength")
+    private fun parseMemberTemplate(registeringMember: HoldingIdentity, groupPolicy: GroupPolicy): List<Record<String, PersistentMemberInfo>> {
         val records = mutableListOf<Record<String, PersistentMemberInfo>>()
 
-        val policy = try {
-            groupPolicyProvider.getGroupPolicy(registeringMember)
-        } catch (e: BadGroupPolicyException) {
-            logger.error("Creating empty member list since group policy file could not be found for holding identity.")
-            return emptyList()
-        }
-        val groupId = policy.groupId
+        val groupId = groupPolicy.groupId
 
-        val staticMemberList = policy.staticMembers
+        val staticMemberList = groupPolicy.staticMembers
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
@@ -182,13 +179,39 @@ class StaticMemberRegistrationService @Activate constructor(
             records.add(
                 Record(
                     MEMBER_LIST_TOPIC,
-                    owningMemberHoldingIdentity.id + "-" + memberId,
+                    "${owningMemberHoldingIdentity.id}-$memberId",
                     PersistentMemberInfo(owningMemberHoldingIdentity.toAvro(), memberProvidedContext.toWire(), mgmProvidedContext.toWire())
                 )
             )
         }
 
         return records
+    }
+
+    /**
+     * Creates the locally hosted identity required for the P2P layer.
+     */
+    private fun createHostedIdentity(registeringMember: HoldingIdentity, groupPolicy: GroupPolicy): Record<String, HostedIdentityEntry> {
+        val memberName = registeringMember.x500Name
+        val memberId = registeringMember.id
+        val groupId = groupPolicy.groupId
+
+        val hostedIdentity = HostedIdentityEntry(
+            net.corda.data.identity.HoldingIdentity(memberName, groupId),
+            memberId,
+            memberId,
+            // we don't have certs yet
+            listOf(""),
+            // and we don't have the session initiation public key
+            ""
+        )
+
+        return Record(
+            HOSTED_MAP_TOPIC,
+            "$memberName-$groupId",
+            hostedIdentity
+
+        )
     }
 
     private fun validateStaticMemberList(members: List<StaticMember>) {
