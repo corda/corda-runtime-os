@@ -10,5 +10,8 @@ public class CryptoServiceContextJavaApiTest {
     public void constantsTest() {
         assertNotNull(CryptoServiceContext.CRYPTO_CATEGORY);
         assertNotNull(CryptoServiceContext.CRYPTO_TENANT_ID);
+        assertNotNull(CryptoServiceContext.CRYPTO_KEY_TYPE);
+        assertNotNull(CryptoServiceContext.CRYPTO_KEY_TYPE_WRAPPING);
+        assertNotNull(CryptoServiceContext.CRYPTO_KEY_TYPE_KEYPAIR);
     }
 }
