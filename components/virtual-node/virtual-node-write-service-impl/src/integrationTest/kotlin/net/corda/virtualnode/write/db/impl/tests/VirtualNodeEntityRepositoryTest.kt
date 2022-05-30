@@ -87,7 +87,7 @@ internal class VirtualNodeEntityRepositoryTest {
                 signerSummaryHash,
                 "TestFile",
                 fileChecksum,
-                "Test Group Policy",
+                "Dummy Group Policy",
                 "Test Group ID",
                 "Request ID",
                 emptySet(),

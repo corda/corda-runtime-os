@@ -21,6 +21,7 @@ import net.corda.orm.utils.transaction
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -50,6 +51,10 @@ internal class VirtualNodeWriterProcessor(
     private val keyEncodingService: KeyEncodingService,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
+
+    companion object {
+        private val logger = contextLogger()
+    }
 
     /**
      * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
@@ -221,6 +226,10 @@ internal class VirtualNodeWriterProcessor(
     private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
         val mgmMemberInfo = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory).run {
             val groupPolicy = parse(groupPolicyJson)
+            if(groupPolicy.mgmInfo.isEmpty()) {
+                logger.info("No MGM information available for Group ID: ${groupPolicy.groupId}. MGM member info not published.")
+                return
+            }
             buildMgmMemberInfo(groupPolicy.mgmInfo, groupPolicy.groupId)
         }
         val mgmRecord = Record(

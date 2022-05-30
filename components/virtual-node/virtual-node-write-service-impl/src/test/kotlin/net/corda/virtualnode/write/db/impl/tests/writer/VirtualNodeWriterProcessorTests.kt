@@ -10,7 +10,11 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.converter.EndpointInfoConverter
+import net.corda.membership.impl.converter.PublicKeyConverter
+import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -32,9 +36,11 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.sql.Connection
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -56,8 +62,10 @@ class VirtualNodeWriterProcessorTests {
     private val cpiIdentifier = CpiIdentifier("dummy_name", "dummy_version", secureHash)
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
-    private val cpiMetaData = CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId, "dummy_group_policy")
-
+    private val cpiMetaData =
+        CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId, "{\"group policy\":\"dummy_group_policy\"}")
+    private val cpiMetaDataWithMGM =
+        CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId, getSampleGroupPolicy())
     private val connectionId = UUID.randomUUID().toString()
     private val vnodeInfo =
         VirtualNodeInfo(
@@ -118,8 +126,15 @@ class VirtualNodeWriterProcessorTests {
         on { getHoldingIdentity(any()) }.doReturn(null)
     }
 
-    private val keyEncodingService: KeyEncodingService = mock()
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
+    private val defaultKey: PublicKey = mock {
+        on { encoded } doReturn "1234".toByteArray()
+    }
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { decodePublicKey(any<String>()) } doReturn defaultKey
+    }
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
+        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+    )
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
@@ -163,6 +178,46 @@ class VirtualNodeWriterProcessorTests {
         processRequest(processor, vnodeCreationReq)
 
         verify(publisher).publish(listOf(expectedRecord))
+    }
+
+    @Test
+    fun `publishes MGM member info to Kafka`() {
+        val publisher = getPublisher()
+        val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+            on { getCPIMetadata(any()) }.doReturn(cpiMetaDataWithMGM)
+        }
+        val processor = VirtualNodeWriterProcessor(
+            publisher,
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
+        processRequest(processor, vnodeCreationReq)
+
+        // called twice for publishing vnode info and MGM info
+        verify(publisher, times(2)).publish(any())
+    }
+
+    @Test
+    fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
+        val publisher = getPublisher()
+        val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+            on { getCPIMetadata(any()) }.doReturn(cpiMetaData)
+        }
+        val processor = VirtualNodeWriterProcessor(
+            publisher,
+            connectionManager,
+            vNodeRepo,
+            vNodeFactory,
+            keyEncodingService,
+            layeredPropertyMapFactory
+        )
+        processRequest(processor, vnodeCreationReq)
+
+        // called once for publishing vnode info
+        verify(publisher, times(1)).publish(any())
     }
 
     @Test
@@ -320,5 +375,11 @@ class VirtualNodeWriterProcessorTests {
         assertEquals(expectedEnvelope.errorType, resp.exception.errorType)
         assertTrue(resp.exception.errorMessage.contains(
             "New holding identity $holdingIdentity has a short hash that collided with existing holding identity"))
+    }
+
+    private fun getSampleGroupPolicy(): String {
+        val url = this::class.java.getResource("/SampleGroupPolicy.json")
+        requireNotNull(url)
+        return url.readText()
     }
 }

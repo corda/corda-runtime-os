@@ -209,13 +209,18 @@ class GroupPolicyParser @Activate constructor(
             @JvmStatic
             @Suppress("UNCHECKED_CAST")
             val GroupPolicy.mgmInfo: MGM
-                get() = (get("protocolParameters") as Map<String, Any>).run {
-                    if (containsKey(MGM_INFO)) {
-                        val mgmInfo = get(MGM_INFO) as? Map<String, Any>
-                            ?: throw ClassCastException("Casting failed for MGM info from group policy JSON.")
-                        MGM(mgmInfo)
-                    } else {
-                        MGM(emptyMap())
+                get() {
+                    return if (!containsKey("protocolParameters")) MGM(emptyMap())
+                    else {
+                        (get("protocolParameters") as Map<String, Any>).run {
+                            if (containsKey(MGM_INFO)) {
+                                val mgmInfo = get(MGM_INFO) as? Map<String, Any>
+                                    ?: throw ClassCastException("Casting failed for MGM info from group policy JSON.")
+                                MGM(mgmInfo)
+                            } else {
+                                MGM(emptyMap())
+                            }
+                        }
                     }
                 }
         }

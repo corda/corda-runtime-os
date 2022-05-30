@@ -14,7 +14,6 @@ import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.PublicKeyHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -60,15 +59,12 @@ class GroupPolicyParserTest {
         const val ROLES = "roles"
 
         private const val DEFAULT_KEY = "1234"
-        private const val DEFAULT_KEY_HASH = "CB8379AC2098AA165029E3938A51DA0BCECFC008FD6795F401178647F96C5B34"
     }
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
-    private val defaultKeyHash = PublicKeyHash.parse(DEFAULT_KEY_HASH)
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
-//        on { calculateHash() } doReturn defaultKeyHash
     }
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(any<String>()) } doReturn defaultKey
@@ -190,16 +186,6 @@ class GroupPolicyParserTest {
         assertEquals(mgmInfo.serial, 1)
         assertTrue(mgmInfo.isActive)
         assertEquals(mgmInfo.mgm, true)
-    }
-
-    @Test
-    fun `Empty or missing MGM information in group policy throws exception`() {
-        assertThrows<BadGroupPolicyException> {
-            groupPolicyParser.buildMgmMemberInfo(
-                GroupPolicyParser.MGM(emptyMap()),
-                "ABC123"
-            )
-        }
     }
 
     private fun getSampleGroupPolicy(): String {
