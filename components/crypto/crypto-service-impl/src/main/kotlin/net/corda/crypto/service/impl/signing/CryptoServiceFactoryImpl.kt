@@ -1,15 +1,11 @@
 package net.corda.crypto.service.impl.signing
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
+import net.corda.crypto.impl.CryptoServiceDecorator
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
@@ -20,6 +16,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.crypto.exceptions.CryptoServiceException
@@ -104,18 +101,6 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val hsmRegistrar: HSMService,
         cryptoServiceProviders: List<CryptoServiceProvider<*>>
     ) : Impl {
-        companion object {
-            private val jsonMapper = JsonMapper
-                .builder()
-                .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
-                .build()
-            private val objectMapper = jsonMapper
-                .registerModule(JavaTimeModule())
-                .registerModule(KotlinModule.Builder().build())
-                .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        }
-
         private val cryptoServiceProvidersMap = cryptoServiceProviders.associateBy { it.name }
 
         private val cryptoServices = ConcurrentHashMap<String, CryptoService>()
@@ -127,10 +112,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private val encryptor = event.config.toCryptoConfig().rootEncryptor()
 
         override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.debug(
-                "Getting the crypto service for tenantId={}, category={})",
-                tenantId, category
-            )
+            logger.debug {
+                "Getting the crypto service for tenantId=$tenantId, category=$category)"
+            }
             return cryptoRefs.computeIfAbsent(tenantId to category) {
                 try {
                     val association = hsmRegistrar.findAssignedHSM(tenantId, category)
@@ -146,10 +130,9 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         override fun getInstance(tenantId: String, category: String, associationId: String): CryptoServiceRef {
-            logger.debug(
-                "Getting the crypto service for tenantId={}, category={}, associationId={})",
-                tenantId, category, associationId
-            )
+            logger.debug {
+                "Getting the crypto service for tenantId=$tenantId, category=$category, associationId=$associationId)"
+            }
             return cryptoAssociations.computeIfAbsent(associationId) {
                 try {
                     val association = hsmRegistrar.findAssignedHSM(tenantId, category)
@@ -172,7 +155,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         override fun getInstance(configId: String): CryptoService {
-            logger.debug("Getting the crypto service for configId={})", configId)
+            logger.debug {"Getting the crypto service for configId=$configId)" }
             val config = hsmRegistrar.findHSMConfig(configId)
                 ?: throw CryptoServiceException("The config=$configId is not found.")
             return getInstance(config.info, config.serviceConfig)
@@ -181,20 +164,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
         private fun getInstance(info: HSMInfo, serviceConfig: ByteArray): CryptoService =
             cryptoServices.computeIfAbsent(info.id) {
                 val provider = findCryptoServiceProvider(info.serviceName)
-                CryptoServiceDecorator(
-                    cryptoService = provider.getInstance(deserializeServiceConfig(serviceConfig, provider)),
-                    timeout = Duration.ofMillis(info.timeoutMills),
-                    retries = info.retries
+                CryptoServiceDecorator.create(
+                    provider,
+                    encryptor.decrypt(serviceConfig),
+                    info.retries,
+                    Duration.ofMillis(info.timeoutMills)
                 )
             }
-
-        private fun deserializeServiceConfig(
-            serviceConfig: ByteArray,
-            provider: CryptoServiceProvider<Any>
-        ) = objectMapper.readValue(
-            encryptor.decrypt(serviceConfig),
-            provider.configType
-        )
 
         @Suppress("UNCHECKED_CAST")
         private fun findCryptoServiceProvider(serviceName: String) =
