@@ -55,29 +55,6 @@
         <addUniqueConstraint tableName="cpi" columnNames="file_checksum" constraintName="db_cpi_uc1"
                              schemaName="${schema.name}"/>
 
-        <createTable tableName="cpk" schemaName="${schema.name}">
-            <column name="file_checksum" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="data" type="BLOB">
-                <constraints nullable="false"/>
-            </column>
-            <!-- audit -->
-            <column name="entity_version" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="is_deleted" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column name="insert_ts" type="TIMESTAMP"
-                    defaultValueComputed="CURRENT_TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-
-        <addPrimaryKey tableName="cpk" columnNames="file_checksum" constraintName="cpk_pk"
-                       schemaName="${schema.name}"/>
-
         <createTable tableName="cpk_metadata" schemaName="${schema.name}">
             <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -114,9 +91,32 @@
         <addPrimaryKey tableName="cpk_metadata" columnNames="file_checksum" constraintName="cpk_metadata_pk"
                        schemaName="${schema.name}"/>
 
-        <addForeignKeyConstraint baseTableName="cpk_metadata" baseColumnNames="file_checksum"
-                                 referencedTableName="cpk" referencedColumnNames="file_checksum"
-                                 constraintName="FK_cpk_metadata_cpk"
+        <createTable tableName="cpk_file" schemaName="${schema.name}">
+            <column name="file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="BLOB">
+                <constraints nullable="false"/>
+            </column>
+            <!-- audit -->
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_file" columnNames="file_checksum" constraintName="cpk_file_pk"
+                       schemaName="${schema.name}"/>
+
+        <addForeignKeyConstraint baseTableName="cpk_file" baseColumnNames="file_checksum"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpk_file_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
@@ -147,8 +147,8 @@
                        schemaName="${schema.name}"/>
 
         <addForeignKeyConstraint baseTableName="cpk_db_change_log" baseColumnNames="cpk_file_checksum"
-                                 referencedTableName="cpk" referencedColumnNames="file_checksum"
-                                 constraintName="FK_cpk_db_change_log_cpk"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpk_db_change_log_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
@@ -191,8 +191,8 @@
                                  referencedTableSchemaName="${schema.name}"/>
 
         <addForeignKeyConstraint baseTableName="cpi_cpk" baseColumnNames="cpk_file_checksum"
-                                 referencedTableName="cpk" referencedColumnNames="file_checksum"
-                                 constraintName="FK_cpi_cpk_cpk"
+                                 referencedTableName="cpk_metadata" referencedColumnNames="file_checksum"
+                                 constraintName="FK_cpi_cpk_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
