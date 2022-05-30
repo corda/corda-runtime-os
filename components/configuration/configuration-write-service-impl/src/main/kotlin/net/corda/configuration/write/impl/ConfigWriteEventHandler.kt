@@ -22,7 +22,7 @@ internal class ConfigWriteEventHandler(
     private val rpcSubscriptionFactory: RPCSubscriptionFactory,
     private val configMerger: ConfigMerger) : LifecycleEventHandler {
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
     }
 
     private var rpcSubscription: ConfigurationManagementRPCSubscription? = null

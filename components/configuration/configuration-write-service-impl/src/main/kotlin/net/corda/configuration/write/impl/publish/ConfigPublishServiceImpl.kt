@@ -37,7 +37,7 @@ class ConfigPublishServiceImpl @Activate constructor(
 
     private val publisher: Publisher
         get() =
-            handler.publisher ?: throw IllegalStateException("Publisher was null while it shouldn't")
+            handler.publisher ?: throw IllegalStateException("Config publish service publisher is null")
 
     override fun put(configDto: ConfigurationDto) {
         val (configSection, configAvro) = configDto.toAvro()
