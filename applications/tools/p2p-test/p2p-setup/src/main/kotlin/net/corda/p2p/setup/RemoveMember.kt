@@ -10,6 +10,7 @@ import java.util.concurrent.Callable
     name = "remove-member",
     aliases = ["rm-member"],
     description = ["Remove a member from a group"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,
@@ -28,7 +29,8 @@ class RemoveMember : Callable<Collection<Record<String, *>>> {
         names = ["-x", "--x500", "--x500-name"],
         description = [
             "The x500 name"
-        ]
+        ],
+        required = true,
     )
     private lateinit var x500Name: String
 
@@ -36,7 +38,8 @@ class RemoveMember : Callable<Collection<Record<String, *>>> {
         names = ["-g", "--group", "--group-id"],
         description = [
             "The group ID"
-        ]
+        ],
+        required = true,
     )
     private lateinit var groupId: String
 

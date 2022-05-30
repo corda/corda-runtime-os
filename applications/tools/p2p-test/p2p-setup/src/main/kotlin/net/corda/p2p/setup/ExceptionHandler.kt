@@ -1,10 +1,9 @@
-package net.corda.p2p.fake.ca
+package net.corda.p2p.setup
 
 import picocli.CommandLine
-import picocli.CommandLine.IExecutionExceptionHandler
 import java.lang.Exception
 
-internal class ExceptionHandler : IExecutionExceptionHandler {
+internal class ExceptionHandler : CommandLine.IExecutionExceptionHandler {
     override fun handleExecutionException(
         exception: Exception,
         commandLine: CommandLine,
