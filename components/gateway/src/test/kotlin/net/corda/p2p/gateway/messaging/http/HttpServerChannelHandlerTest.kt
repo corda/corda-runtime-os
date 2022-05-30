@@ -4,14 +4,16 @@ import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.LastHttpContent
+import io.netty.handler.codec.http.HttpRequest as NettyHttpRequest
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atMost
+//import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.slf4j.Logger
 
-internal class HttpServerChannelHandlerTest {
+class HttpServerChannelHandlerTest {
 
     @Test
     fun `ChannelFutureListener is added`() {
@@ -21,10 +23,15 @@ internal class HttpServerChannelHandlerTest {
 
         val mockCtx = mock<ChannelHandlerContext>()
         val mockChannelFuture = mock<ChannelFuture>()
-        val mockHttpRequest = mock<io.netty.handler.codec.http.HttpRequest>()
         val mockLastHttpContent = mock<LastHttpContent>()
+        val mockHttpRequest = mock<NettyHttpRequest>()
+
+/*        val mockHttpRequest = mock<NettyHttpRequest> {
+            on { uri() } doReturn "http://www.alice.net:90"
+        }*/
 
         Mockito.`when`(mockHttpRequest.uri()).thenReturn("http://www.alice.net:90")
+        httpServerChannelHandler.channelRead(mockCtx, mockHttpRequest)
         Mockito.`when`(mockCtx.writeAndFlush(any())).thenReturn(mockChannelFuture)
         httpServerChannelHandler.channelRead(mockCtx, mockLastHttpContent)
         Mockito.verify(mockChannelFuture, atMost(1)).addListener { ChannelFutureListener.CLOSE }
