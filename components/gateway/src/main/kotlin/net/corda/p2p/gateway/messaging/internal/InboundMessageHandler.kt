@@ -75,9 +75,9 @@ internal class InboundMessageHandler(
         lifecycleCoordinatorFactory,
         registry,
         dependentChildren = listOf(
-            sessionPartitionMapper.dominoTile,
-            p2pInPublisher.dominoTile,
-            server.dominoTile,
+            sessionPartitionMapper.dominoTile.coordinatorName,
+            p2pInPublisher.dominoTile.coordinatorName,
+            server.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             sessionPartitionMapper.dominoTile,

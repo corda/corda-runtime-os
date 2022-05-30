@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -51,8 +52,12 @@ class TlsCertificatesPublisherTest {
         whenever(mock.isRunning).doReturn(true)
     }
     private val mockPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
         whenever(mock.publish(publishedRecords.capture())).doReturn(emptyList())
         whenever(mock.isRunning).doReturn(true)
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
     private val publisherFactory = mock<PublisherFactory>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()

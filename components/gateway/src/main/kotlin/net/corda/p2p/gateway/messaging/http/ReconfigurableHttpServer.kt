@@ -48,7 +48,7 @@ class ReconfigurableHttpServer(
         registry,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
         dependentChildren = listOf(
-            dynamicKeyStore.dominoTile,
+            dynamicKeyStore.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             dynamicKeyStore.dominoTile,

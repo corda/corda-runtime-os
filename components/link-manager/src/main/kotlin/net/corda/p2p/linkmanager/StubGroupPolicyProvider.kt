@@ -92,7 +92,7 @@ internal class StubGroupPolicyProvider(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         registry,
-        dependentChildren = setOf(groupSubscriptionTile, blockingTile),
+        dependentChildren = setOf(groupSubscriptionTile.coordinatorName, blockingTile.coordinatorName),
         managedChildren = setOf(groupSubscriptionTile, blockingTile)
     )
 

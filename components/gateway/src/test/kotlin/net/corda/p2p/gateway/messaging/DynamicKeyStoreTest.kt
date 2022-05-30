@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
@@ -46,12 +47,20 @@ class DynamicKeyStoreTest {
     }
     private val certificateFactory = mock<CertificateFactory>()
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java)
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
-    private val signer = mockConstruction(StubCryptoProcessor::class.java)
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
+    private val signer = mockConstruction(StubCryptoProcessor::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
     private var future: CompletableFuture<Unit>? = null
-    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         future = context.arguments()[2] as CompletableFuture<Unit>
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
 
     private val dynamicKeyStore = DynamicKeyStore(

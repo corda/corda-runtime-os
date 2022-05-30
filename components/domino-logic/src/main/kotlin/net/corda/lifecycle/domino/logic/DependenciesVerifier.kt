@@ -1,5 +1,6 @@
 package net.corda.lifecycle.domino.logic
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import java.lang.IllegalStateException
 
 object DependenciesVerifier {
@@ -14,32 +15,28 @@ object DependenciesVerifier {
      * @throws InvalidTileConfigurationException if the configuration is invalid.
      */
     fun verify(rootDominoTile: DominoTile) {
-        val allHierarchyTiles = mutableSetOf<DominoTile>()
-        val managedTileToParent = mutableMapOf<DominoTile, DominoTile>()
+        val managedTiles = mutableSetOf<DominoTile>()
+        val dependantTiles =  mutableSetOf<LifecycleCoordinatorName>()
 
-        visit(rootDominoTile, allHierarchyTiles, managedTileToParent)
+        visit(rootDominoTile, managedTiles, dependantTiles)
 
-        allHierarchyTiles.forEach {
-            if (!managedTileToParent.containsKey(it)) {
-                throw InvalidTileConfigurationException("The domino tile ${it.coordinatorName} is not being managed by any parent tile.")
+        dependantTiles.forEach { dependentTile ->
+            if (!managedTiles.map { it.coordinatorName }.contains(dependentTile)) {
+                throw InvalidTileConfigurationException("The domino tile $dependentTile is not being managed by any parent tile.")
             }
         }
     }
 
-    private fun visit(dominoTile: DominoTile, allTiles: MutableSet<DominoTile>, managedTiles: MutableMap<DominoTile, DominoTile>) {
-        val tilesNotSeenYet = dominoTile.dependentChildren.filter { !allTiles.contains(it) }
-        allTiles.addAll(tilesNotSeenYet)
-
+    private fun visit(dominoTile: DominoTile, managedTiles: MutableSet<DominoTile>, dependantTiles: MutableSet<LifecycleCoordinatorName>) {
         dominoTile.managedChildren.forEach {
             if (managedTiles.contains(it)) {
                 throw InvalidTileConfigurationException("The domino tile ${it.coordinatorName} is being managed by two parent tiles: " +
-                        "${managedTiles[it]!!.coordinatorName} and ${dominoTile.coordinatorName}")
+                        "${it.coordinatorName} and ${dominoTile.coordinatorName}")
             }
-
-            managedTiles[it] = dominoTile
+            managedTiles.add(it)
+            visit(it, managedTiles, dependantTiles)
         }
-
-        tilesNotSeenYet.forEach { visit(it, allTiles, managedTiles) }
+        dependantTiles.addAll(dominoTile.dependentChildren)
     }
 
 }

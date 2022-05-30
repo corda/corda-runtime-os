@@ -61,7 +61,7 @@ internal class TrustStoresMap(
         lifecycleCoordinatorFactory,
         registry,
         managedChildren = listOf(subscriptionTile, blockingDominoTile),
-        dependentChildren = listOf(subscriptionTile, blockingDominoTile),
+        dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
     )
 
     class TrustedCertificates(

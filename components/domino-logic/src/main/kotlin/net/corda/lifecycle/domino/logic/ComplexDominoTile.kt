@@ -56,7 +56,7 @@ class ComplexDominoTile(
     private val registry: LifecycleRegistry,
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
-    override val dependentChildren: Collection<DominoTile> = emptySet(),
+    override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet(),
     override val managedChildren: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : DominoTile {
@@ -110,11 +110,11 @@ class ComplexDominoTile(
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
     private val configResources = ResourcesHolder()
 
-    private val registrationToChildMap: Map<RegistrationHandle, DominoTile> = dependentChildren.associateBy {
-        coordinator.followStatusChangesByName(setOf(it.coordinatorName))
+    private val registrationToChildMap: Map<RegistrationHandle, LifecycleCoordinatorName> = dependentChildren.associateBy {
+        coordinator.followStatusChangesByName(setOf(it))
     }
     private val latestChildStateMap = dependentChildren.associateWith {
-        it.state
+        registry.componentStatus()[it]?.status
     }.toMutableMap()
 
     private val currentInternalState = AtomicReference(Created)
@@ -189,12 +189,12 @@ class ComplexDominoTile(
                     // The coordinator had started, set the children state map - from
                     // now on we should receive messages of any change
                     latestChildStateMap += dependentChildren.associateWith {
-                        val status = registry.componentStatus()[it.coordinatorName]?.status
+                        val status = registry.componentStatus()[it]?.status
                         if (status != null) {
                             status
                         } else {
                             coordinator.postEvent(
-                                ErrorEvent(NoCoordinatorException("No registered coordinator with name ${it.coordinatorName}."))
+                                ErrorEvent(NoCoordinatorException("No registered coordinator with name ${it}."))
                             )
                             LifecycleStatus.ERROR
                         }
@@ -228,15 +228,15 @@ class ComplexDominoTile(
 
                     when (event.status) {
                          LifecycleStatus.UP -> {
-                            logger.info("Status change: child ${child.coordinatorName} went up.")
+                            logger.info("Status change: child $child went up.")
                             handleChildStarted()
                         }
                         LifecycleStatus.DOWN -> {
-                            logger.info("Status change: child ${child.coordinatorName} went down.")
+                            logger.info("Status change: child $child went down.")
                             handleChildDownOrError()
                         }
                         LifecycleStatus.ERROR -> {
-                            logger.info("Status change: child ${child.coordinatorName} errored.")
+                            logger.info("Status change: child $child errored.")
                             handleChildDownOrError()
                         }
                     }
@@ -433,7 +433,7 @@ class ComplexDominoTile(
     private class NoCoordinatorException(override val message: String): IllegalStateException(message)
 
     override fun toString(): String {
-        return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it.coordinatorName }}, " +
+        return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it }}, " +
                 "managed children: ${managedChildren.map { it.coordinatorName }})"
     }
 }

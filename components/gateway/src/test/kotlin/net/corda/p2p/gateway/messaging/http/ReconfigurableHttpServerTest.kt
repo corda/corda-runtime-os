@@ -4,13 +4,13 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -23,6 +23,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.net.InetSocketAddress
 
 class ReconfigurableHttpServerTest {
@@ -51,13 +52,18 @@ class ReconfigurableHttpServerTest {
     }
 
     private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         configHandler = (context.arguments()[7] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
 
-    private val dynamicKeyStore = mockConstruction(DynamicKeyStore::class.java)
-    private val signer = mockConstruction(StubCryptoProcessor::class.java)
+    private val dynamicKeyStore = mockConstruction(DynamicKeyStore::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
@@ -72,7 +78,6 @@ class ReconfigurableHttpServerTest {
     fun cleanUp() {
         serverMock.close()
         dominoTile.close()
-        signer.close()
         dynamicKeyStore.close()
     }
 

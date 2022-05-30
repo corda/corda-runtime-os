@@ -43,7 +43,7 @@ abstract class SubscriptionDominoTileBase(
     // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
     private val subscription: Lifecycle,
     private val subscriptionName: LifecycleCoordinatorName,
-    final override val dependentChildren: Collection<DominoTile>,
+    final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<DominoTile>
 ): DominoTile {
 
@@ -86,7 +86,7 @@ abstract class SubscriptionDominoTileBase(
     override val state: LifecycleStatus
         get() = coordinator.status
 
-    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it.coordinatorName }.toSet())
+    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it }.toSet())
     private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
 
     private val logger = LoggerFactory.getLogger(coordinatorName.toString())

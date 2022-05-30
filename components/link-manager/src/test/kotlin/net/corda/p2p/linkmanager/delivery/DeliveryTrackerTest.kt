@@ -69,10 +69,18 @@ class DeliveryTrackerTest {
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
-    private val subscriptionTile = Mockito.mockConstruction(StateAndEventSubscriptionDominoTile::class.java)
+    private val subscriptionTile = Mockito.mockConstruction(StateAndEventSubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
 
-    private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
+    private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
 
     private val source = HoldingIdentity("Source", groupId)
     private val dest = HoldingIdentity("Dest", groupId)
@@ -127,10 +135,30 @@ class DeliveryTrackerTest {
             publisherFactory,
             mock(),
             subscriptionFactory,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
+            mock {
+                val mockDominoTile = mock<ComplexDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                whenever(it.dominoTile).thenReturn(mockDominoTile)
+            },
+            mock {
+                val mockDominoTile = mock<ComplexDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                whenever(it.dominoTile).thenReturn(mockDominoTile)
+            },
+            mock {
+                val mockDominoTile = mock<ComplexDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                whenever(it.dominoTile).thenReturn(mockDominoTile)
+            },
+            mock {
+                val mockDominoTile = mock<ComplexDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                whenever(it.dominoTile).thenReturn(mockDominoTile)
+            },
             mock(),
             ::processAuthenticatedMessage
         )

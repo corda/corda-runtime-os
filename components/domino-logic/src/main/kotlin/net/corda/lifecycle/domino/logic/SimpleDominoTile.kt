@@ -52,7 +52,7 @@ open class SimpleDominoTile(
     override val isRunning: Boolean
         get() = state == LifecycleStatus.UP
 
-    override val dependentChildren: Collection<DominoTile> = emptyList()
+    override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
     override val managedChildren: Collection<DominoTile> = emptyList()
 
     fun updateState(newState: LifecycleStatus) {

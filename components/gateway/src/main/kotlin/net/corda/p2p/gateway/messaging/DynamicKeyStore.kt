@@ -77,7 +77,11 @@ internal class DynamicKeyStore(
         lifecycleCoordinatorFactory,
         registry,
         managedChildren = listOf(subscriptionTile, signer.dominoTile, blockingDominoTile),
-        dependentChildren = listOf(subscriptionTile, signer.dominoTile, blockingDominoTile),
+        dependentChildren = listOf(
+            subscriptionTile.coordinatorName,
+            signer.dominoTile.coordinatorName,
+            blockingDominoTile.coordinatorName
+        ),
     )
 
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {

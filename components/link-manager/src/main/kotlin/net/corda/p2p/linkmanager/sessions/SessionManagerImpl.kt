@@ -148,9 +148,10 @@ internal class SessionManagerImpl(
         registry,
         ::onTileStart,
         dependentChildren = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, groups.dominoTile, members.dominoTile, cryptoProcessor.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile, linkManagerHostingMap.dominoTile,
-            inboundAssignmentListener.dominoTile,
+            heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName, cryptoProcessor.dominoTile.coordinatorName,
+            pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
+            linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(heartbeatManager.dominoTile, sessionReplayer.dominoTile, publisher.dominoTile),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
@@ -739,7 +740,11 @@ internal class SessionManagerImpl(
             coordinatorFactory,
             registry,
             onClose = { executorService.shutdownNow() },
-            dependentChildren = setOf(groups.dominoTile, members.dominoTile, publisher.dominoTile),
+            dependentChildren = setOf(
+                groups.dominoTile.coordinatorName,
+                members.dominoTile.coordinatorName,
+                publisher.dominoTile.coordinatorName
+            ),
             managedChildren = setOf(publisher.dominoTile),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )

@@ -598,7 +598,7 @@ class ComplexDominoTileTest {
 
     @Nested
     inner class InternalTileTest {
-        private fun tile(dependentChildren: Collection<ComplexDominoTile>,
+        private fun tile(dependentChildren: Collection<LifecycleCoordinatorName>,
                          managedChildren: Collection<ComplexDominoTile>): ComplexDominoTile =
             ComplexDominoTile(
                 TILE_NAME,
@@ -618,7 +618,7 @@ class ComplexDominoTileTest {
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
 
                 tile.start()
 
@@ -634,7 +634,7 @@ class ComplexDominoTileTest {
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
 
                 tile.start()
                 tile.start()
@@ -673,7 +673,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 // simulate children starting
@@ -696,7 +696,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 // simulate only 2 out of 3 children starting
@@ -718,7 +718,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 // simulate children starting
@@ -745,7 +745,7 @@ class ComplexDominoTileTest {
                 val children = listOf<ComplexDominoTile>(
                     mock(),
                 )
-                tile(children, emptyList())
+                tile(children.map { it.coordinatorName }, emptyList())
                 class Event : LifecycleEvent
 
                 assertDoesNotThrow {
@@ -787,7 +787,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 tile.close()
@@ -801,7 +801,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.close()
 
                 verify(coordinator).close()

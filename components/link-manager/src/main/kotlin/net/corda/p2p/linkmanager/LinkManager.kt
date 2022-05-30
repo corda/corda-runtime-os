@@ -88,9 +88,9 @@ class LinkManager(
         lifecycleCoordinatorFactory,
         lifecycleRegistry,
         dependentChildren = setOf(
-            commonComponents.dominoTile,
-            outboundLinkManager.dominoTile,
-            inboundLinkManager.dominoTile,
+            commonComponents.dominoTile.coordinatorName,
+            outboundLinkManager.dominoTile.coordinatorName,
+            inboundLinkManager.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             commonComponents.dominoTile,

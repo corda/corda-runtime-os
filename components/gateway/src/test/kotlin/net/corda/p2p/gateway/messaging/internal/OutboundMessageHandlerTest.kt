@@ -8,6 +8,7 @@ import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -81,10 +82,19 @@ class OutboundMessageHandlerTest {
         } doReturn subscription
     }
     private var connectionConfig = ConnectionConfiguration()
-    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
+    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
     private val truststore = mock<KeyStore>()
     private val trustStores = mockConstruction(TrustStoresMap::class.java) { mock, _ ->
         whenever(mock.getTrustStore(GROUP_ID)).doReturn(truststore)
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
     private val sentMessages = mutableListOf<GatewayMessage>()
@@ -109,9 +119,15 @@ class OutboundMessageHandlerTest {
         @Suppress("UNCHECKED_CAST")
         onClose = context.arguments()[4] as? (() -> Unit)
     }
-    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
     private val connectionConfigReader = mockConstruction(ConnectionConfigReader::class.java) { mock, _ ->
         whenever(mock.connectionConfig) doAnswer { connectionConfig }
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
 
     private val handler = OutboundMessageHandler(

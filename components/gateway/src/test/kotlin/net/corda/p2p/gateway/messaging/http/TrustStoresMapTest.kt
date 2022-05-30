@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -37,9 +38,10 @@ class TrustStoresMapTest {
     private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
     private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java)
     private var future: CompletableFuture<Unit>? = null
-    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         future = context.arguments()[2] as CompletableFuture<Unit>
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
     private val processor = argumentCaptor<CompactedProcessor<String, GatewayTruststore>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
@@ -56,7 +58,9 @@ class TrustStoresMapTest {
             KeyStore.getInstance("PKCS12")
         }.doReturn(keyStore)
     }
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
 
     @AfterEach
     fun cleanUp() {

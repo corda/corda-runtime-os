@@ -73,7 +73,7 @@ internal class OutboundMessageHandler(
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundSubscription,
-        setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile),
+        setOf(connectionManager.dominoTile.coordinatorName, connectionConfigReader.dominoTile.coordinatorName),
         setOf(connectionManager.dominoTile, connectionConfigReader.dominoTile)
     )
 
@@ -82,7 +82,7 @@ internal class OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         registry,
         onClose = { retryThreadPool.shutdown() },
-        dependentChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
+        dependentChildren = listOf(outboundSubscriptionTile.coordinatorName, trustStoresMap.dominoTile.coordinatorName),
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),
     )
 

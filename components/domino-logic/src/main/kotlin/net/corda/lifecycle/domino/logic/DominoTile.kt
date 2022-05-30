@@ -19,11 +19,11 @@ interface DominoTile: Lifecycle {
     val state: LifecycleStatus
 
     /**
-     * Domino tiles this tile is dependent upon.
-     * This tile will wait for these children to start before starting itself.
+     * Coordinators this tile is dependent upon.
+     * This tile will wait for these children to have [LifecycleStatus.UP] before starting itself.
      * If any of them goes down or has an error, it will also go down.
      */
-    val dependentChildren: Collection<DominoTile>
+    val dependentChildren: Collection<LifecycleCoordinatorName>
 
     /**
      * Domino tiles that are managed by this tile.

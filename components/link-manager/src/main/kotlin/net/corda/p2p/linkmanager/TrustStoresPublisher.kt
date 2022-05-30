@@ -79,9 +79,9 @@ internal class TrustStoresPublisher(
             blockingDominoTile
         ),
         dependentChildren = listOf(
-            publisher.dominoTile,
-            subscriptionTile,
-            blockingDominoTile
+            publisher.dominoTile.coordinatorName,
+            subscriptionTile.coordinatorName,
+            blockingDominoTile.coordinatorName
         )
     )
 

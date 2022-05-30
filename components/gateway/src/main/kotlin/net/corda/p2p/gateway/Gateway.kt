@@ -54,7 +54,7 @@ class Gateway(
     internal val children: Collection<DominoTile> =
         listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, registry,
-        dependentChildren = children, managedChildren = children)
+        dependentChildren = children.map { it.coordinatorName }, managedChildren = children)
 
     companion object {
         const val CONFIG_KEY = "p2p.gateway"

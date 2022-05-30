@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.session
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -25,7 +26,9 @@ class SessionPartitionMapperImplTest {
 
     private var processor = argumentCaptor<CompactedProcessor<String, SessionPartitions>>()
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java)
-    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
 
     private val factory = mock<LifecycleCoordinatorFactory>()
     private val subscription = mock<CompactedSubscription<String, SessionPartitions>>()

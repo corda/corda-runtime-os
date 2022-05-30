@@ -54,7 +54,8 @@ internal class InMemorySessionReplayer(
         this::class.java.simpleName,
         coordinatorFactory,
         registry,
-        dependentChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile, groups.dominoTile, members.dominoTile),
+        dependentChildren = setOf(replayScheduler.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
+            groups.dominoTile.coordinatorName, members.dominoTile.coordinatorName),
         managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)
     )
 

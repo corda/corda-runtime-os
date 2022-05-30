@@ -84,7 +84,7 @@ internal class StubMembershipGroupReader(
         lifecycleCoordinatorFactory,
         registry,
         ::onStart,
-        dependentChildren = setOf(subscriptionTile, blockingTile),
+        dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName),
         managedChildren = setOf(subscriptionTile, blockingTile)
     )
 

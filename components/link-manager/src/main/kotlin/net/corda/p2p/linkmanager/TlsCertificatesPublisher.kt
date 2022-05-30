@@ -131,9 +131,9 @@ internal class TlsCertificatesPublisher(
             blockingDominoTile
         ),
         dependentChildren = listOf(
-            publisher.dominoTile,
-            subscriptionDominoTile,
-            blockingDominoTile
+            publisher.dominoTile.coordinatorName,
+            subscriptionDominoTile.coordinatorName,
+            blockingDominoTile.coordinatorName
         )
     )
 

@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
@@ -66,13 +67,23 @@ class InMemorySessionReplayerTest {
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
-    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java)
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).thenReturn(mockDominoTile)
+    }
 
     private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
-    private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { _, context ->
+    private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         replayCallback = context.arguments()[4] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).thenReturn(mockDominoTile)
     }
 
     private val groupsAndMembers = mockMembersAndGroups(US, COUNTER_PARTY)
@@ -165,6 +176,10 @@ class InMemorySessionReplayerTest {
         }
         val groups = mock<LinkManagerGroupPolicyProvider> {
             on { getGroupInfo(any()) } doReturnConsecutively listOf(null, groupInfo)
+            val mockDominoTile = mock<ComplexDominoTile> {
+                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+            }
+            whenever(mock.dominoTile).thenReturn(mockDominoTile)
         }
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
@@ -190,6 +205,10 @@ class InMemorySessionReplayerTest {
     fun `The replaySchedular callback logs a warning when the responder is not in the network map`() {
         val members = mock<LinkManagerMembershipGroupReader> {
             on { getMemberInfo(COUNTER_PARTY) } doReturnConsecutively listOf(null, groupsAndMembers.first.getMemberInfo(COUNTER_PARTY))
+            val mockDominoTile = mock<ComplexDominoTile> {
+                whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+            }
+            whenever(mock.dominoTile).thenReturn(mockDominoTile)
         }
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groupsAndMembers.second, members, mockTimeFacilitiesProvider.clock)
         val id = UUID.randomUUID().toString()
@@ -219,7 +238,8 @@ class InMemorySessionReplayerTest {
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), mock(), mock(), mockTimeFacilitiesProvider.clock)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(),
+            groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(
                 "",

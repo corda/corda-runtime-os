@@ -40,7 +40,7 @@ class BlockingDominoTile(componentName: String,
 
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
-    override val dependentChildren: Collection<DominoTile> = emptyList()
+    override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
     override val managedChildren: Collection<DominoTile> = emptyList()
 
     override val state: LifecycleStatus

@@ -70,7 +70,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile starts all managed children when started`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children, children)
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
 
         subscriptionTile.start()
         children.forEach {
@@ -80,7 +80,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile stops all managed children when stopped`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children, children)
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
 
         subscriptionTile.stop()
         children.forEach {
@@ -90,7 +90,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile waits for dependent children before starting the subscription`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children, children)
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
 
         subscriptionTile.start()
         verify(subscription, never()).start()
@@ -117,7 +117,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile goes down if any of the dependent children goes down`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children, children)
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
 
         subscriptionTile.start()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
@@ -131,7 +131,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile goes down if any of the dependent children errors`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children, children)
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
 
         subscriptionTile.start()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
@@ -145,7 +145,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `tile errors if subscription errors`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children, children)
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
 
         subscriptionTile.start()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
@@ -164,7 +164,7 @@ class SubscriptionDominoTileBaseTest {
     class SubscriptionDominoTile<K, V>(
         coordinatorFactory: LifecycleCoordinatorFactory,
         subscription: Subscription<K, V>,
-        dependentChildren: Collection<DominoTile>,
+        dependentChildren: Collection<LifecycleCoordinatorName>,
         managedChildren: Collection<DominoTile>
     ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
 

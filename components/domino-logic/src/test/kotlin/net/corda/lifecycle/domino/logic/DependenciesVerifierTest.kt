@@ -1,6 +1,7 @@
 package net.corda.lifecycle.domino.logic
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -23,9 +24,9 @@ class DependenciesVerifierTest {
          *   A     A
          */
         val tileA = tile("A")
-        val tileB = tile("B", listOf(tileA), listOf(tileA))
-        val tileC = tile("C", listOf(tileA), listOf(tileA))
-        val tileD = tile("D", listOf(tileB, tileC), listOf(tileB, tileC))
+        val tileB = tile("B", listOf(tileA.coordinatorName), listOf(tileA))
+        val tileC = tile("C", listOf(tileA.coordinatorName), listOf(tileA))
+        val tileD = tile("D", listOf(tileB.coordinatorName, tileC.coordinatorName), listOf(tileB, tileC))
 
         assertThatThrownBy {
             DependenciesVerifier.verify(tileD)
@@ -42,9 +43,9 @@ class DependenciesVerifierTest {
          *   A     A
          */
         val tileA = tile("A")
-        val tileB = tile("B", listOf(tileA))
-        val tileC = tile("C", listOf(tileA))
-        val tileD = tile("D", listOf(tileB, tileC), listOf(tileB, tileC))
+        val tileB = tile("B", listOf(tileA.coordinatorName))
+        val tileC = tile("C", listOf(tileA.coordinatorName))
+        val tileD = tile("D", listOf(tileB.coordinatorName, tileC.coordinatorName), listOf(tileB, tileC))
 
         assertThatThrownBy {
             DependenciesVerifier.verify(tileD)
@@ -61,9 +62,9 @@ class DependenciesVerifierTest {
          *   A     A
          */
         val tileA = tile("A")
-        val tileB = tile("B", listOf(tileA), listOf(tileA))
-        val tileC = tile("C", listOf(tileA))
-        val tileD = tile("D", listOf(tileB, tileC), listOf(tileB, tileC))
+        val tileB = tile("B", listOf(tileA.coordinatorName), listOf(tileA))
+        val tileC = tile("C", listOf(tileA.coordinatorName))
+        val tileD = tile("D", listOf(tileB.coordinatorName, tileC.coordinatorName), listOf(tileB, tileC))
 
         assertDoesNotThrow {
             DependenciesVerifier.verify(tileD)
@@ -71,7 +72,7 @@ class DependenciesVerifierTest {
     }
 
     private fun tile(name: String,
-                     dependentChildren: Collection<ComplexDominoTile> = emptyList(),
+                     dependentChildren: Collection<LifecycleCoordinatorName> = emptyList(),
                      managedChildren: Collection<ComplexDominoTile> = emptyList()): ComplexDominoTile {
         return ComplexDominoTile(
             name,

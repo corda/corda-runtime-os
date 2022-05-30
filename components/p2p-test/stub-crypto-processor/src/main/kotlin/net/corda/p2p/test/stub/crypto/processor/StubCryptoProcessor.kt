@@ -54,7 +54,7 @@ class StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         registry,
         managedChildren = listOf(subscriptionTile, blockingDominoTile),
-        dependentChildren = listOf(subscriptionTile, blockingDominoTile),
+        dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
     )
 
     override fun sign(
