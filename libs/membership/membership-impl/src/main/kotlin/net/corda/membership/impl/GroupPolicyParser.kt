@@ -27,6 +27,7 @@ class GroupPolicyParser @Activate constructor(
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
+        const val MGM_INFO_FAILURE = "Failed to build MGM MemberInfo from GroupPolicy file."
     }
 
     private val objectMapper = ObjectMapper()
@@ -61,42 +62,48 @@ class GroupPolicyParser @Activate constructor(
         )
     }
 
-    @Suppress("UNCHECKED_CAST")
+    /**
+     * Constructs MGM [MemberInfo] from details specified in [GroupPolicy].
+     */
+    @Suppress("UNCHECKED_CAST", "SpreadOperator")
     fun buildMgmMemberInfo(mgm: MGM, groupId: String): MemberInfo {
         val keys = mgm.keyList.map {
             keyEncodingService.decodePublicKey(it)
         }
         val now = UTCClock().instant().toString()
-        return MemberInfoImpl(
-            memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-                sortedMapOf(
-                    MemberInfoExtension.PARTY_NAME to mgm.name,
-                    MemberInfoExtension.PARTY_OWNING_KEY to mgm.sessionKey,
-                    MemberInfoExtension.ECDH_KEY to mgm.ecdhKey,
-                    MemberInfoExtension.GROUP_ID to groupId,
-                    *convertKeys(mgm.keyList).toTypedArray(),
-                    *generateKeyHashes(keys).toTypedArray(),
-                    *convertEndpoints(mgm[MGM.ENDPOINTS] as List<Map<String, Any>>).toTypedArray(),
-                    *convertCertificates(mgm.certificate).toTypedArray(),
-                    MemberInfoExtension.SOFTWARE_VERSION to mgm.softwareVersion,
-                    MemberInfoExtension.PLATFORM_VERSION to mgm.platformVersion,
-                    MemberInfoExtension.SERIAL to mgm.serial
-                )
-            ),
-            mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
-                sortedMapOf(
-                    MemberInfoExtension.CREATED_TIME to now,
-                    MemberInfoExtension.MODIFIED_TIME to now,
-                    MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                    "mgm" to "true"
+        try {
+            return MemberInfoImpl(
+                memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
+                    sortedMapOf(
+                        MemberInfoExtension.PARTY_NAME to mgm.name,
+                        MemberInfoExtension.PARTY_OWNING_KEY to mgm.sessionKey,
+                        MemberInfoExtension.ECDH_KEY to mgm.ecdhKey,
+                        MemberInfoExtension.GROUP_ID to groupId,
+                        *convertKeys(mgm.keyList).toTypedArray(),
+                        *generateKeyHashes(keys).toTypedArray(),
+                        *convertEndpoints(mgm.endpointList).toTypedArray(),
+                        *convertCertificates(mgm.certificate).toTypedArray(),
+                        MemberInfoExtension.SOFTWARE_VERSION to mgm.softwareVersion,
+                        MemberInfoExtension.PLATFORM_VERSION to mgm.platformVersion,
+                        MemberInfoExtension.SERIAL to mgm.serial
+                    )
+                ),
+                mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
+                    sortedMapOf(
+                        MemberInfoExtension.CREATED_TIME to now,
+                        MemberInfoExtension.MODIFIED_TIME to now,
+                        MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                        MemberInfoExtension.MGM_KEY to "true"
+                    )
                 )
             )
-        )
-
+        } catch (e: Exception) {
+            throw BadGroupPolicyException(MGM_INFO_FAILURE, e)
+        }
     }
 
     /**
-     * Mapping keys from JSON format to the keys expected in [MemberInfo].
+     * Converts keys from JSON format to the keys expected in [MemberInfo].
      */
     private fun convertKeys(
         keys: List<String>
@@ -126,7 +133,7 @@ class GroupPolicyParser @Activate constructor(
     }
 
     /**
-     * Mapping certificates from JSON format to the certificates expected in [MemberInfo].
+     * Converts certificates from JSON format to the certificates expected in [MemberInfo].
      */
     private fun convertCertificates(certificates: List<String>): List<Pair<String, String>> {
         require(certificates.isNotEmpty()) { "List of MGM certificates cannot be empty." }
@@ -143,7 +150,7 @@ class GroupPolicyParser @Activate constructor(
     }
 
     /**
-     * Mapping endpoints from JSON format to the endpoints expected in [MemberInfo].
+     * Converts endpoints from JSON format to the endpoints expected in [MemberInfo].
      */
     private fun convertEndpoints(endpoints: List<Map<String, Any>>): List<Pair<String, String>> {
         require(endpoints.isNotEmpty()) { "List of MGM endpoints cannot be empty." }
@@ -169,44 +176,47 @@ class GroupPolicyParser @Activate constructor(
     class MGM(private val mgmData: Map<String, Any>) : Map<String, Any> by mgmData {
         companion object {
             /** Key name for MGM in the network. */
-            const val MGM_INFO = "mgmInfo"
+            private const val MGM_INFO = "mgmInfo"
 
             /** Key name for MGM's name. */
-            const val NAME = "name"
+            private const val NAME = "name"
 
             /** Key name for MGM session key. */
-            const val SESSION_KEY = "sessionKey"
+            private const val SESSION_KEY = "sessionKey"
 
             /** Key name for MGM certificate. */
-            const val CERTIFICATE = "certificate"
+            private const val CERTIFICATE = "certificate"
 
             /** Key name for MGM ECDH key. */
-            const val ECDH_KEY = "ecdhKey"
+            private const val ECDH_KEY = "ecdhKey"
 
             /** Key name for MGM keys. */
-            const val KEYS = "keys"
+            private const val KEYS = "keys"
 
             /** Key name for MGM endpoints. */
-            const val ENDPOINTS = "endpoints"
+            private const val ENDPOINTS = "endpoints"
 
             /** Key name for MGM platform version. */
-            const val PLATFORM_VERSION = "platformVersion"
+            private const val PLATFORM_VERSION = "platformVersion"
 
             /** Key name for MGM software version. */
-            const val SOFTWARE_VERSION = "softwareVersion"
+            private const val SOFTWARE_VERSION = "softwareVersion"
 
             /** Key name for MGM serial. */
-            const val SERIAL = "serial"
+            private const val SERIAL = "serial"
 
             /** MGM info. */
             @JvmStatic
             @Suppress("UNCHECKED_CAST")
             val GroupPolicy.mgmInfo: MGM
-                get() = if (containsKey(MGM_INFO)) {
-                    get(MGM_INFO) as? MGM
-                        ?: throw ClassCastException("Casting failed for MGM info from group policy JSON.")
-                } else {
-                    MGM(emptyMap())
+                get() = (get("protocolParameters") as Map<String, Any>).run {
+                    if (containsKey(MGM_INFO)) {
+                        val mgmInfo = get(MGM_INFO) as? Map<String, Any>
+                            ?: throw ClassCastException("Casting failed for MGM info from group policy JSON.")
+                        MGM(mgmInfo)
+                    } else {
+                        MGM(emptyMap())
+                    }
                 }
         }
         val name: String
@@ -223,6 +233,10 @@ class GroupPolicyParser @Activate constructor(
 
         val keyList: List<String>
             get() = getListValue(KEYS)
+
+        @Suppress("UNCHECKED_CAST")
+        val endpointList: List<Map<String, Any>>
+            get() = mgmData[ENDPOINTS] as List<Map<String, Any>>
 
         val platformVersion: String
             get() = getIntValueAsString(PLATFORM_VERSION)!!

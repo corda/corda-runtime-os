@@ -62,6 +62,9 @@ class MemberInfoExtension {
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
 
+        /** Key name for MGM property. */
+        const val MGM_KEY = "corda.mgm"
+
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
 
@@ -128,5 +131,10 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.identityKeyHashes: Collection<PublicKeyHash>
             get() = memberProvidedContext.parseSet(IDENTITY_KEY_HASHES)
+
+        /** Denotes whether this [MemberInfo] represents an MGM node. */
+        @JvmStatic
+        val MemberInfo.mgm: Boolean
+            get() = mgmProvidedContext.parse<String>(MGM_KEY).toBoolean()
     }
 }

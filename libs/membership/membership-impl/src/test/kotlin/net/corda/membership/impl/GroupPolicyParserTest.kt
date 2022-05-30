@@ -1,15 +1,29 @@
 package net.corda.membership.impl
 
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.impl.GroupPolicyParser.MGM.Companion.mgmInfo
+import net.corda.membership.impl.MemberInfoExtension.Companion.certificate
+import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
+import net.corda.membership.impl.MemberInfoExtension.Companion.mgm
+import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.impl.converter.EndpointInfoConverter
+import net.corda.membership.impl.converter.PublicKeyConverter
+import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.PublicKeyHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.security.PublicKey
 
 /**
  * Unit tests for [GroupPolicyParser]
@@ -44,12 +58,24 @@ class GroupPolicyParserTest {
         const val MGM_INFO = "mgmInfo"
         const val CIPHER_SUITE = "cipherSuite"
         const val ROLES = "roles"
+
+        private const val DEFAULT_KEY = "1234"
+        private const val DEFAULT_KEY_HASH = "CB8379AC2098AA165029E3938A51DA0BCECFC008FD6795F401178647F96C5B34"
     }
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
-    private val keyEncodingService: KeyEncodingService = mock()
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
+    private val defaultKeyHash = PublicKeyHash.parse(DEFAULT_KEY_HASH)
+    private val defaultKey: PublicKey = mock {
+        on { encoded } doReturn DEFAULT_KEY.toByteArray()
+//        on { calculateHash() } doReturn defaultKeyHash
+    }
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { decodePublicKey(any<String>()) } doReturn defaultKey
+    }
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
+        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+    )
 
     @BeforeEach
     fun setUp() {
@@ -148,6 +174,32 @@ class GroupPolicyParserTest {
         assertEquals(charlie[ENDPOINT_PROTOCOL_1], 1)
         assertEquals(charlie[ENDPOINT_URL_2], "https://charlie-dr.corda5.r3.com:10001")
         assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
+    }
+
+    @Test
+    fun `MGM member info is correctly constructed from group policy information`() {
+        val result = groupPolicyParser.parse(getSampleGroupPolicy())
+        val mgmInfo = groupPolicyParser.buildMgmMemberInfo(result.mgmInfo, result.groupId)
+        assertEquals(mgmInfo.name.toString(), "CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
+        assertEquals(mgmInfo.certificate.size, 4)
+        assertEquals(mgmInfo.identityKeys.size, 1)
+        assertEquals(mgmInfo.identityKeyHashes.size, 1)
+        assertEquals(mgmInfo.endpoints.size, 2)
+        assertEquals(mgmInfo.platformVersion, 1)
+        assertEquals(mgmInfo.softwareVersion, "5.0.0")
+        assertEquals(mgmInfo.serial, 1)
+        assertTrue(mgmInfo.isActive)
+        assertEquals(mgmInfo.mgm, true)
+    }
+
+    @Test
+    fun `Empty or missing MGM information in group policy throws exception`() {
+        assertThrows<BadGroupPolicyException> {
+            groupPolicyParser.buildMgmMemberInfo(
+                GroupPolicyParser.MGM(emptyMap()),
+                "ABC123"
+            )
+        }
     }
 
     private fun getSampleGroupPolicy(): String {
