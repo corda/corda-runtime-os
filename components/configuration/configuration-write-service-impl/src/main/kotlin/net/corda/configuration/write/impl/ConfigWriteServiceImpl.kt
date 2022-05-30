@@ -16,6 +16,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /** An implementation of [ConfigWriteService]. */
+// TODO add to kdoc describing the lifecycle of this
 @Suppress("Unused", "LongParameterList")
 @Component(service = [ConfigWriteService::class])
 internal class ConfigWriteServiceImpl @Activate constructor(

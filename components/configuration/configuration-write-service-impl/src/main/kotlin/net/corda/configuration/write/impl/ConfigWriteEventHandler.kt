@@ -32,10 +32,10 @@ internal class ConfigWriteEventHandler(
     private var bootStrapConfig: SmartConfig? = null
 
     /**
-     * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
+     * Upon [BootstrapConfigEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
      * them.
      *
-     * @throws ConfigWriteServiceException If multiple [StartProcessingEvent]s are received, or if the creation of the
+     * @throws ConfigWriteServiceException If multiple [BootstrapConfigEvent]s are received, or if the creation of the
      *  subscription fails.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

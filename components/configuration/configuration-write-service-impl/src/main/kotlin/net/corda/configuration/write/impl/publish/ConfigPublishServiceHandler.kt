@@ -21,8 +21,7 @@ class ConfigPublishServiceHandler(
         private const val CONFIG_PUBLISH_CLIENT = "$CONFIG_PUBLISH_GROUP.client"
     }
 
-
-    var publisher: Publisher? = null
+    internal var publisher: Publisher? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when(event) {
