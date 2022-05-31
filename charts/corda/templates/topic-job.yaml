@@ -13,7 +13,7 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: run-topic-script
-          image: bitnami/kafka:3.1.0-debian-10-r89
+          image: {{ .Values.kafka.clientImage }}
           resources:
             requests:
               cpu: 2000m

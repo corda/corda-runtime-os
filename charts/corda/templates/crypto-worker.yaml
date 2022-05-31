@@ -90,4 +90,4 @@ spec:
       {{- include "corda.workerVolumes" . | nindent 8 }}
       nodeSelector:
         kubernetes.io/os: linux
-        kubernetes.io/arch: amd64
+        kubernetes.io/arch: {{ .Values.node.arch }}
