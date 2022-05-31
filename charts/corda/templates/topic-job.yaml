@@ -2,16 +2,13 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "corda.fullname" . }}-create-topics
-  labels: &id012
-    app: create-topics
-    app.kubernetes.io/instance: corda
+  labels:
+    {{- include "corda.workerLabels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
-    metadata:
-      labels: *id012
     spec:
       containers:
         - name: create-topics

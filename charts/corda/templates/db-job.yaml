@@ -4,7 +4,7 @@ kind: Job
 metadata:
   name: corda-setup-db
   labels:
-    app.kubernetes.io/instance: corda
+    {{- include "corda.workerLabels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
