@@ -175,7 +175,7 @@ class GroupPolicyParserTest {
     fun `MGM member info is correctly constructed from group policy information`() {
         val mgmInfo = groupPolicyParser.getMgmInfo(getSampleGroupPolicy())!!
         assertEquals("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB", mgmInfo.name.toString())
-        assertEquals(0, mgmInfo.certificate.size)
+        assertEquals(3, mgmInfo.certificate.size)
         assertEquals(1, mgmInfo.identityKeys.size)
         assertEquals(1, mgmInfo.identityKeyHashes.size)
         assertEquals(2, mgmInfo.endpoints.size)

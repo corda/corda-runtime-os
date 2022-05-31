@@ -5,6 +5,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -28,6 +29,8 @@ class GroupPolicyParser @Activate constructor(
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
         const val MGM_INFO_FAILURE = "Failed to build MGM MemberInfo from GroupPolicy file."
+        const val MGM_INFO = "mgmInfo"
+        const val PROTOCOL_PARAMETERS = "protocolParameters"
     }
 
     private val objectMapper = ObjectMapper()
@@ -68,10 +71,10 @@ class GroupPolicyParser @Activate constructor(
     @Suppress("UNCHECKED_CAST", "SpreadOperator")
     fun getMgmInfo(groupPolicyJson: String): MemberInfo? {
         val groupPolicy = parse(groupPolicyJson)
-        val mgmInfo = (groupPolicy["protocolParameters"] as? Map<String, Any>)?.let {
-            it["mgmInfo"] as Map<String, String>
+        val mgmInfo = (groupPolicy[PROTOCOL_PARAMETERS] as? Map<String, Any>)?.let {
+            it[MGM_INFO] as Map<String, String>
         } ?: return null
-        val encodedSessionKey = mgmInfo["corda.session.key"] as String
+        val encodedSessionKey = mgmInfo[SESSION_KEY] as String
         val sessionKey = keyEncodingService.decodePublicKey(encodedSessionKey)
         val now = UTCClock().instant().toString()
         try {
