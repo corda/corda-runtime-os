@@ -36,13 +36,13 @@ class CreateTest {
 
         val create1 = plugin.createTopicScripts("topic", 1, 1, emptyMap())
         @Suppress("MaxLineLength")
-        assertThat(create1).containsExactly("kafka-topics.sh --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic  &")
+        assertThat(create1).containsExactly("kafka-topics.sh --command-config /tmp/config.properties --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic  &")
         val create2 = plugin.createTopicScripts("topic", 1, 1, mapOf("test.key" to "test.val"))
         @Suppress("MaxLineLength")
-        assertThat(create2).containsExactly("kafka-topics.sh --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic --config \"test.key=test.val\" &")
+        assertThat(create2).containsExactly("kafka-topics.sh --command-config /tmp/config.properties --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic --config \"test.key=test.val\" &")
         val create3 = plugin.createTopicScripts("topic", 1, 1, mapOf("test.key" to "test.val", "something" to "else"))
         @Suppress("MaxLineLength")
-        assertThat(create3).containsExactly("kafka-topics.sh --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic --config \"test.key=test.val\" --config \"something=else\" &")
+        assertThat(create3).containsExactly("kafka-topics.sh --command-config /tmp/config.properties --bootstrap-server address --partitions 1 --replication-factor 1 --create --if-not-exists --topic topic --config \"test.key=test.val\" --config \"something=else\" &")
     }
 
     @Test
