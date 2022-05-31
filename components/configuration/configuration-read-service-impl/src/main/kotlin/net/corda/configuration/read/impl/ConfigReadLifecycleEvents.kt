@@ -1,5 +1,6 @@
 package net.corda.configuration.read.impl
 
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleEvent
 
@@ -9,6 +10,8 @@ import net.corda.lifecycle.LifecycleEvent
  * @param config The bootstrap configuration.
  */
 internal data class BootstrapConfigProvided(val config: SmartConfig) : LifecycleEvent
+
+internal data class OnNewConfigurationCallBack(val callback: (String, Configuration) -> Unit) : LifecycleEvent
 
 /**
  * The service should create its subscription to the message bus.

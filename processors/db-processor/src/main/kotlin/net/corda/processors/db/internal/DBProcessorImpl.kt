@@ -35,6 +35,7 @@ import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.db.internal.reconcile.bus.ConfigBusCache
 import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
@@ -122,6 +123,8 @@ class DBProcessorImpl @Activate constructor(
     private var cpiInfoDbReader: CpiInfoDbReader? = null
     private var cpiInfoReconciler: Reconciler? = null
 
+    private val configBusCache = ConfigBusCache(coordinatorFactory)
+
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
     private var dbManagerRegistrationHandler: RegistrationHandle? = null
@@ -154,6 +157,9 @@ class DBProcessorImpl @Activate constructor(
                 if (event.registration == dbManagerRegistrationHandler) {
                     log.info("Bootstrapping config read service")
                     configurationReadService.bootstrapConfig(bootstrapConfig!!)
+                    configurationReadService.registerOnNewConfigurationCallBack { s, configuration ->
+                        configBusCache.add(s to configuration)
+                    }
                 } else {
                     log.info("DB processor is ${event.status}")
                     if (event.status == LifecycleStatus.UP) {

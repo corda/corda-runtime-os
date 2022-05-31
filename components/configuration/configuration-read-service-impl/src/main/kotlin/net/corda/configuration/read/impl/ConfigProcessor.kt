@@ -24,7 +24,8 @@ internal class ConfigProcessor(
     private val coordinator: LifecycleCoordinator,
     private val smartConfigFactory: SmartConfigFactory,
     private val bootConfig: SmartConfig,
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
+    private val onNewConfiguration: ((String, Configuration) -> Unit)? = null
 ) : CompactedProcessor<String, Configuration> {
 
     private companion object {
@@ -38,6 +39,9 @@ internal class ConfigProcessor(
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
         if (currentData.isNotEmpty()) {
+            onNewConfiguration?.let {
+                currentData.forEach(onNewConfiguration)
+            }
             val config = mergeConfigs(currentData)
             coordinator.postEvent(NewConfigReceived(config))
         } else {
@@ -53,6 +57,9 @@ internal class ConfigProcessor(
         currentData: Map<String, Configuration>
     ) {
         val newConfig = newRecord.value?.toSmartConfig()
+        newRecord.value?.let { newRecordValue ->
+            onNewConfiguration?.invoke(newRecord.key, newRecordValue)
+        }
         if (newConfig != null) {
             val config = mergeConfigs(currentData)
             val newConfigKey = newRecord.key

@@ -2,6 +2,7 @@ package net.corda.configuration.read.impl
 
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,6 +39,10 @@ class ConfigurationReadServiceImpl @Activate constructor(
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
+    }
+
+    override fun registerOnNewConfigurationCallBack(callback: (String, Configuration) -> Unit) {
+        lifecycleCoordinator.postEvent(OnNewConfigurationCallBack(callback))
     }
 
     override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {

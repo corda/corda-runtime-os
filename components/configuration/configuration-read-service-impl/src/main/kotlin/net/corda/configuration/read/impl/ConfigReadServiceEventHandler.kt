@@ -27,6 +27,7 @@ internal class ConfigReadServiceEventHandler(
 ) : LifecycleEventHandler {
 
     private var bootstrapConfig: SmartConfig? = null
+    private var onNewConfiguration: ((String, Configuration) -> Unit)? = null
     private var subscription: CompactedSubscription<String, Configuration>? = null
     private var subReg: RegistrationHandle? = null
 
@@ -50,6 +51,9 @@ internal class ConfigReadServiceEventHandler(
             is BootstrapConfigProvided -> {
                 // This will trigger SetupSubscription to be sent on new bootstrap configuration.
                 handleBootstrapConfig(event.config, coordinator)
+            }
+            is OnNewConfigurationCallBack -> {
+                registerOnNewConfigurationCallBack(event.callback)
             }
             is SetupSubscription -> {
                 setupSubscription(coordinator)
@@ -104,7 +108,7 @@ internal class ConfigReadServiceEventHandler(
         // defined. May also be relevant for secret service configuration in the processor.
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP, CONFIG_TOPIC),
-            ConfigProcessor(coordinator, config.factory, config, configMerger),
+            ConfigProcessor(coordinator, config.factory, config, configMerger, onNewConfiguration),
             configMerger.getMessagingConfig(config, null)
         )
         subReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
@@ -128,6 +132,14 @@ internal class ConfigReadServiceEventHandler(
             throw ConfigurationReadException(errorString)
         } else {
             logger.debug { "Duplicate bootstrap configuration received." }
+        }
+    }
+
+    private fun registerOnNewConfigurationCallBack(onNewConfiguration: (String, Configuration) -> Unit) {
+        if (this.onNewConfiguration == null) {
+            this.onNewConfiguration = onNewConfiguration
+        } else {
+            // warn we tried to init twice and throw
         }
     }
 }

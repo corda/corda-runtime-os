@@ -1,5 +1,6 @@
 package net.corda.configuration.read
 
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -74,4 +75,6 @@ interface ConfigurationReadService : Lifecycle {
      *                                established, or if the configuration does not allow access.
      */
     fun bootstrapConfig(config: SmartConfig)
+
+    fun registerOnNewConfigurationCallBack(callback: (String, Configuration) -> Unit)
 }
