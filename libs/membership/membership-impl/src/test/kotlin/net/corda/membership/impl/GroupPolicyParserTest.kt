@@ -58,6 +58,10 @@ class GroupPolicyParserTest {
         const val ROLES = "roles"
 
         private const val DEFAULT_KEY = "1234"
+        enum class GroupPolicyType {
+            STATIC,
+            DYNAMIC
+        }
     }
 
     private lateinit var groupPolicyParser: GroupPolicyParser
@@ -94,13 +98,13 @@ class GroupPolicyParserTest {
 
     @Test
     fun `Parse group policy - verify interface properties`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
+        val result = groupPolicyParser.parse(getSampleGroupPolicy(GroupPolicyType.STATIC))
         assertEquals(testGroupId, result.groupId)
     }
 
     @Test
     fun `Parse group policy - verify internal map`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
+        val result = groupPolicyParser.parse(getSampleGroupPolicy(GroupPolicyType.STATIC))
 
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
@@ -126,7 +130,7 @@ class GroupPolicyParserTest {
         assertEquals("AUTHENTICATED_ENCRYPTION", protocolParameters[P2P_PROTOCOL_MODE])
 
         assertTrue(protocolParameters[MGM_INFO] is Map<*, *>)
-        assertEquals(13, (protocolParameters[MGM_INFO] as Map<*, *>).size)
+        assertEquals(9, (protocolParameters[MGM_INFO] as Map<*, *>).size)
 
         assertTrue(protocolParameters[CIPHER_SUITE] is Map<*, *>)
         assertEquals(6, (protocolParameters[CIPHER_SUITE] as Map<*, *>).size)
@@ -173,7 +177,7 @@ class GroupPolicyParserTest {
 
     @Test
     fun `MGM member info is correctly constructed from group policy information`() {
-        val mgmInfo = groupPolicyParser.getMgmInfo(getSampleGroupPolicy())!!
+        val mgmInfo = groupPolicyParser.getMgmInfo(getSampleGroupPolicy(GroupPolicyType.DYNAMIC))!!
         assertEquals("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB", mgmInfo.name.toString())
         assertEquals(3, mgmInfo.certificate.size)
         assertEquals(1, mgmInfo.identityKeys.size)
@@ -186,8 +190,11 @@ class GroupPolicyParserTest {
         assertEquals(true, mgmInfo.isMgm)
     }
 
-    private fun getSampleGroupPolicy(): String {
-        val url = this::class.java.getResource("/SampleGroupPolicy.json")
+    private fun getSampleGroupPolicy(type: GroupPolicyType): String {
+        val url = when (type) {
+            GroupPolicyType.STATIC -> this::class.java.getResource("/SampleStaticGroupPolicy.json")
+            GroupPolicyType.DYNAMIC -> this::class.java.getResource("/SampleDynamicGroupPolicy.json")
+        }
         requireNotNull(url)
         return url.readText()
     }

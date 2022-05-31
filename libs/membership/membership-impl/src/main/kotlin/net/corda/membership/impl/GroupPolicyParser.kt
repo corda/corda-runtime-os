@@ -71,9 +71,7 @@ class GroupPolicyParser @Activate constructor(
     @Suppress("UNCHECKED_CAST", "SpreadOperator")
     fun getMgmInfo(groupPolicyJson: String): MemberInfo? {
         val groupPolicy = parse(groupPolicyJson)
-        val mgmInfo = (groupPolicy[PROTOCOL_PARAMETERS] as? Map<String, Any>)?.let {
-            it[MGM_INFO] as Map<String, String>
-        } ?: return null
+        val mgmInfo = groupPolicy[MGM_INFO] as? Map<String, String> ?: return null
         val encodedSessionKey = mgmInfo[SESSION_KEY] as String
         val sessionKey = keyEncodingService.decodePublicKey(encodedSessionKey)
         val now = UTCClock().instant().toString()
