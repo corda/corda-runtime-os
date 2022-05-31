@@ -1,7 +1,7 @@
 package net.corda.configuration.write.impl.publish
 
 import net.corda.configuration.write.publish.ConfigPublishService
-import net.corda.configuration.write.publish.ConfigurationDto
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -41,11 +41,10 @@ class ConfigPublishServiceImpl @Activate constructor(
         get() =
             handler.publisher ?: throw IllegalStateException("Config publish service publisher is null")
 
-    override fun put(configSection: String, configDto: ConfigurationDto) {
-        val (_, configAvro) = configDto.toAvro()
+    override fun put(configSection: String, config: Configuration) {
 
         // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
-        val futures = publisher.publish(listOf(Record(CONFIG_TOPIC, configSection, configAvro)))
+        val futures = publisher.publish(listOf(Record(CONFIG_TOPIC, configSection, config)))
 
         // TODO - CORE-3730 - Define timeout policy.
         futures.first().get()
