@@ -111,16 +111,17 @@ class FlowMapperService @Activate constructor(
             scheduledTaskState?.close()
             stateAndEventSub?.close()
 
-            scheduledTaskState = ScheduledTaskState(
+            val newScheduledTaskState = ScheduledTaskState(
                 Executors.newSingleThreadScheduledExecutor(),
                 publisherFactory.createPublisher(PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"), messagingConfig),
                 mutableMapOf()
             )
+            scheduledTaskState = newScheduledTaskState
             stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
                 FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
                 messagingConfig,
-                FlowMapperListener(scheduledTaskState!!)
+                FlowMapperListener(newScheduledTaskState)
             )
             stateAndEventSub?.start()
             coordinator.updateStatus(LifecycleStatus.UP)

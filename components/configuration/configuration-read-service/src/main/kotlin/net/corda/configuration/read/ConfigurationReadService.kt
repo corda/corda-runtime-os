@@ -40,6 +40,7 @@ interface ConfigurationReadService : Lifecycle {
      * @param configHandler The user configuration handler. See [ConfigurationHandler].
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */
+    @Deprecated("Prefer using registerComponentForUpdates", replaceWith = ReplaceWith("registerComponentForUpdates"))
     fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable
 
     /**
