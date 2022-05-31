@@ -10,8 +10,8 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyCache
-import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
@@ -74,8 +74,8 @@ class SigningServiceGeneralTests {
     @Test
     fun `Should re-throw same CryptoServiceException when failing signing`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -94,14 +94,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing signing`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -120,17 +120,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should throw CryptoServiceBadRequestException when key is not found for signing`() {
-        val actions = mock<SigningKeyCacheActions> {
+        val actions = mock<SigningKeyStoreActions> {
             on { find(any<PublicKey>()) } doReturn null
         }
-        val cache = mock<SigningKeyCache> {
+        val cache = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -168,12 +168,12 @@ class SigningServiceGeneralTests {
             timestamp = Instant.now(),
             status = SigningKeyStatus.NORMAL
         )
-        val actions = mock<SigningKeyCacheActions> {
+        val actions = mock<SigningKeyStoreActions> {
             on { find(any<String>()) } doReturn existingKey
         }
-        val cache = mock<SigningKeyCache> {
+        val cache = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -204,8 +204,8 @@ class SigningServiceGeneralTests {
     @Test
     fun `Should re-throw same CryptoServiceException when failing aliased key generation`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -233,14 +233,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(2)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(2)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing aliased key generation`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -268,14 +268,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(2)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(2)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should re-throw same CryptoServiceException when failing fresh key generation`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -290,14 +290,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing fresh key generation`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -312,14 +312,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should re-throw same CryptoServiceException when failing fresh key generation with external id`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -335,14 +335,14 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing fresh key generation with external id`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val cache = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -358,7 +358,7 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
@@ -373,10 +373,10 @@ class SigningServiceGeneralTests {
         val masterKeyAlias: String = UUID.randomUUID().toString()
         val createdAfter: Instant = Instant.now().plusSeconds(-5)
         val createdBefore: Instant = Instant.now()
-        val actions = mock<SigningKeyCacheActions>()
-        val cache = mock<SigningKeyCache> {
+        val actions = mock<SigningKeyStoreActions>()
+        val cache = mock<SigningKeyStore> {
             on { act(tenantId) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
             cache = cache,
@@ -414,10 +414,10 @@ class SigningServiceGeneralTests {
             val skip = 17
             val take = 21
             val tenantId: String = UUID.randomUUID().toString()
-            val actions = mock<SigningKeyCacheActions>()
-            val cache = mock<SigningKeyCache> {
+            val actions = mock<SigningKeyStoreActions>()
+            val cache = mock<SigningKeyStore> {
                 on { act(tenantId) } doReturn actions
-                on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+                on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
             }
             val signingService = SigningServiceImpl(
                 cache = cache,
@@ -452,10 +452,10 @@ class SigningServiceGeneralTests {
         )
         val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
-        val actions = mock<SigningKeyCacheActions>()
-        val cache = mock<SigningKeyCache> {
+        val actions = mock<SigningKeyStoreActions>()
+        val cache = mock<SigningKeyStore> {
             on { act(tenantId) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(

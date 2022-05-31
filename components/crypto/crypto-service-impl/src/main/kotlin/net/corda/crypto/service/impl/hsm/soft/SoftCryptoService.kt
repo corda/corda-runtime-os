@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.impl.SignatureInstances
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -29,7 +29,7 @@ import java.security.Provider
 import javax.crypto.Cipher
 
 open class SoftCryptoService(
-    private val cache: SoftCryptoKeyCache,
+    private val cache: SoftCryptoKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val digestService: DigestService
 ) : CryptoService {

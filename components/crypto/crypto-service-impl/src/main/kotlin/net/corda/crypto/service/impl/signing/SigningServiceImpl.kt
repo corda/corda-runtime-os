@@ -1,8 +1,8 @@
 package net.corda.crypto.service.impl.signing
 
 import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyCache
-import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
@@ -24,7 +24,7 @@ import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 open class SigningServiceImpl(
-    private val cache: SigningKeyCache,
+    private val cache: SigningKeyStore,
     private val cryptoServiceFactory: CryptoServiceFactory,
     override val schemeMetadata: CipherSchemeMetadata
 ) : SigningService {
@@ -215,7 +215,7 @@ open class SigningServiceImpl(
 
     private fun getKeyRecord(
         tenantId: String,
-        cacheActions: SigningKeyCacheActions,
+        cacheActions: SigningKeyStoreActions,
         publicKey: PublicKey
     ): Pair<PublicKey, SigningCachedKey> =
         if (publicKey is CompositeKey) {

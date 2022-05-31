@@ -5,8 +5,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.persistence.signing.SigningKeyCache
-import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
+import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -16,13 +16,14 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
-@Component(service = [SigningKeyCacheProvider::class])
-class SigningKeyCacheProviderImpl @Activate constructor(
+@Component(service = [SigningKeyStoreProvider::class])
+class SigningKeyStoreProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -34,10 +35,12 @@ class SigningKeyCacheProviderImpl @Activate constructor(
     @Reference(service = LayeredPropertyMapFactory::class)
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService
-) : AbstractConfigurableComponent<SigningKeyCacheProviderImpl.Impl>(
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val vnodeInfo: VirtualNodeInfoReadService
+) : AbstractConfigurableComponent<SigningKeyStoreProviderImpl.Impl>(
     coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<SigningKeyCacheProvider>(),
+    LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>(),
     configurationReadService,
     InactiveImpl(),
     setOf(
@@ -49,21 +52,27 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         ConfigKeys.BOOT_CONFIG,
         ConfigKeys.CRYPTO_CONFIG
     )
-), SigningKeyCacheProvider {
+), SigningKeyStoreProvider {
     interface Impl: AutoCloseable {
-        fun getInstance(): SigningKeyCache
+        fun getInstance(): SigningKeyStore
     }
 
     override fun createInactiveImpl(): Impl =
         InactiveImpl()
 
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, dbConnectionManager, jpaEntitiesRegistry, layeredPropertyMapFactory, keyEncodingService)
+    override fun createActiveImpl(event: ConfigChangedEvent): Impl = ActiveImpl(
+        event,
+        dbConnectionManager,
+        jpaEntitiesRegistry,
+        layeredPropertyMapFactory,
+        keyEncodingService,
+        vnodeInfo
+    )
 
-    override fun getInstance(): SigningKeyCache = impl.getInstance()
+    override fun getInstance(): SigningKeyStore = impl.getInstance()
 
     class InactiveImpl : Impl {
-        override fun getInstance(): SigningKeyCache =
+        override fun getInstance(): SigningKeyStore =
             throw IllegalStateException("The component is in illegal state.")
 
         override fun close() = Unit
@@ -74,7 +83,8 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         private val dbConnectionOps: DbConnectionOps,
         private val jpaEntitiesRegistry: JpaEntitiesRegistry,
         private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-        private val keyEncodingService: KeyEncodingService
+        private val keyEncodingService: KeyEncodingService,
+        private val vnodeInfo: VirtualNodeInfoReadService
     ) : Impl {
         private val config: SmartConfig
 
@@ -83,16 +93,17 @@ class SigningKeyCacheProviderImpl @Activate constructor(
         }
 
         private val instance by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            SigningKeyCacheImpl(
+            SigningKeyStoreImpl(
                 config = config.signingPersistence(),
                 dbConnectionOps = dbConnectionOps,
                 jpaEntitiesRegistry = jpaEntitiesRegistry,
                 layeredPropertyMapFactory = layeredPropertyMapFactory,
-                keyEncodingService = keyEncodingService
+                keyEncodingService = keyEncodingService,
+                vnodeInfo = vnodeInfo
             )
         }
 
-        override fun getInstance(): SigningKeyCache = instance
+        override fun getInstance(): SigningKeyStore = instance
 
         override fun close() = Unit
     }

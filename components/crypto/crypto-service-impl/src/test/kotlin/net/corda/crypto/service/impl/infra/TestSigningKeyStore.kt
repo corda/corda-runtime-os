@@ -2,9 +2,9 @@ package net.corda.crypto.service.impl.infra
 
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyCache
-import net.corda.crypto.persistence.signing.SigningKeyCacheActions
-import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
+import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.signing.SigningKeyStoreActions
+import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
 import net.corda.crypto.persistence.signing.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeySaveContext
@@ -28,13 +28,13 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
-class TestSigningKeyCacheProvider(
+class TestSigningKeyStoreProvider(
     coordinatorFactory: LifecycleCoordinatorFactory
-) : SigningKeyCacheProvider {
-    private val instance = TestSigningKeyCache()
+) : SigningKeyStoreProvider {
+    private val instance = TestSigningKeyStore()
 
     val coordinator = coordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName.forComponent<SigningKeyCacheProvider>()
+        LifecycleCoordinatorName.forComponent<SigningKeyStoreProvider>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
     override val isRunning: Boolean
@@ -48,7 +48,7 @@ class TestSigningKeyCacheProvider(
         coordinator.stop()
     }
 
-    override fun getInstance(): SigningKeyCache {
+    override fun getInstance(): SigningKeyStore {
         check(isRunning) {
             "The provider is in invalid state."
         }
@@ -56,17 +56,17 @@ class TestSigningKeyCacheProvider(
     }
 }
 
-class TestSigningKeyCache : SigningKeyCache {
-    private val actions = ConcurrentHashMap<String, SigningKeyCacheActions>()
-    override fun act(tenantId: String): SigningKeyCacheActions =
-        actions.computeIfAbsent(tenantId) { TestSigningKeyCacheActions(tenantId) }
+class TestSigningKeyStore : SigningKeyStore {
+    private val actions = ConcurrentHashMap<String, SigningKeyStoreActions>()
+    override fun act(tenantId: String): SigningKeyStoreActions =
+        actions.computeIfAbsent(tenantId) { TestSigningKeyStoreActions(tenantId) }
 
     override fun close() = Unit
 }
 
-class TestSigningKeyCacheActions(
+class TestSigningKeyStoreActions(
     private val tenantId: String
-) : SigningKeyCacheActions {
+) : SigningKeyStoreActions {
     private val keys = ConcurrentHashMap<String, SigningCachedKey>()
 
     override fun save(context: SigningKeySaveContext) {

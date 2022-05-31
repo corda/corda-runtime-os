@@ -8,9 +8,9 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.persistence.hsm.HSMCacheProvider
-import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.hsm.HSMStoreProvider
+import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
@@ -57,10 +57,10 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = SoftCryptoKeyCacheProvider::class)
-    private val softCryptoKeyCacheProvider: SoftCryptoKeyCacheProvider,
-    @Reference(service = SigningKeyCacheProvider::class)
-    private val signingKeyCacheProvider: SigningKeyCacheProvider,
+    @Reference(service = SoftCryptoKeyStoreProvider::class)
+    private val softCryptoKeyStoreProvider: SoftCryptoKeyStoreProvider,
+    @Reference(service = SigningKeyStoreProvider::class)
+    private val signingKeyStoreProvider: SigningKeyStoreProvider,
     @Reference(service = SigningServiceFactory::class)
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
@@ -79,8 +79,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmConfiguration: HSMConfigurationBusService,
     @Reference(service = HSMRegistrationBusService::class)
     private val hsmRegistration: HSMRegistrationBusService,
-    @Reference(service = HSMCacheProvider::class)
-    private val hsmCacheProvider: HSMCacheProvider,
+    @Reference(service = HSMStoreProvider::class)
+    private val hsmStoreProvider: HSMStoreProvider,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -104,8 +104,8 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::softCryptoKeyCacheProvider,
-        ::signingKeyCacheProvider,
+        ::softCryptoKeyStoreProvider,
+        ::signingKeyStoreProvider,
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
@@ -115,7 +115,7 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmService,
         ::hsmConfiguration,
         ::hsmRegistration,
-        ::hsmCacheProvider,
+        ::hsmStoreProvider,
         ::dbConnectionManager
     )
 

@@ -61,8 +61,8 @@ class TestServicesFactory {
         SignatureVerificationServiceImpl(schemeMetadata, digest)
     }
 
-    val signingCacheProvider: TestSigningKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TestSigningKeyCacheProvider(coordinatorFactory).also {
+    val signingCacheProvider: TestSigningKeyStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TestSigningKeyStoreProvider(coordinatorFactory).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
@@ -70,8 +70,8 @@ class TestServicesFactory {
         }
     }
 
-    val softCacheProvider: TestSoftCryptoKeyCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TestSoftCryptoKeyCacheProvider(coordinatorFactory).also {
+    val softCacheProvider: TestSoftCryptoKeyStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TestSoftCryptoKeyStoreProvider(coordinatorFactory).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
@@ -84,7 +84,7 @@ class TestServicesFactory {
             coordinatorFactory,
             HSMServiceImpl(
                 cryptoConfig,
-                TestHSMCache(),
+                TestHSMStore(),
                 schemeMetadata,
                 opsProxyClient
             )
@@ -105,8 +105,8 @@ class TestServicesFactory {
         }
     }
 
-    val hsmCacheProvider: TestHSMCacheProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TestHSMCacheProvider(this).also {
+    val hsmCacheProvider: TestHSMStoreProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TestHSMStoreProvider(this).also {
             it.start()
             eventually {
                 assertTrue(it.isRunning)
@@ -128,16 +128,16 @@ class TestServicesFactory {
         }
     }
 
-    val hsmCache: TestHSMCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        hsmCacheProvider.getInstance() as TestHSMCache
+    val hsmCache: TestHSMStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        hsmCacheProvider.getInstance() as TestHSMStore
     }
 
-    private val signingCache: TestSigningKeyCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        signingCacheProvider.getInstance() as TestSigningKeyCache
+    private val signingCache: TestSigningKeyStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        signingCacheProvider.getInstance() as TestSigningKeyStore
     }
 
-    val softCache: TestSoftCryptoKeyCache by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        softCacheProvider.getInstance() as TestSoftCryptoKeyCache
+    val softCache: TestSoftCryptoKeyStore by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        softCacheProvider.getInstance() as TestSoftCryptoKeyStore
     }
 
     val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
