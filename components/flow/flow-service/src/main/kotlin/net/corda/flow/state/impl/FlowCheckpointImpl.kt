@@ -21,12 +21,19 @@ import net.corda.v5.application.flows.InitiatingFlow
 import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.Instant
+import kotlin.math.min
+import kotlin.math.pow
 
 class FlowCheckpointImpl(
     private var nullableCheckpoint: Checkpoint?,
     private val config: SmartConfig,
     private val instantProvider: () -> Instant
 ) : FlowCheckpoint {
+
+    companion object{
+        const val RETRY_INITIAL_DELAY_MS = 1000 // 1 second
+    }
+
     init {
         if (nullableCheckpoint != null) {
 
@@ -39,6 +46,8 @@ class FlowCheckpointImpl(
             nullableCheckpoint = checkpoint
 
             validateAndAddAll()
+            // Reset the max sleep time
+            checkpoint.maxFlowSleepDuration = config.getInt(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION)
         }
     }
 
@@ -165,10 +174,18 @@ class FlowCheckpointImpl(
             checkpoint.retryState.error = createAvroExceptionEnvelope(exception)
             checkpoint.retryState.lastFailureTimestamp = instantProvider()
         }
+
+        val maxRetrySleepTime = config.getInt(FlowConfig.PROCESSING_MAX_RETRY_DELAY)
+        val sleepTime = (2.0.pow(checkpoint.retryState.retryCount-1.toDouble())) * RETRY_INITIAL_DELAY_MS
+        setFlowSleepDuration(min(maxRetrySleepTime, sleepTime.toInt()))
     }
 
     override fun markRetrySuccess() {
         checkpoint.retryState = null
+    }
+
+    override fun setFlowSleepDuration(sleepTimeMs: Int) {
+        checkpoint.maxFlowSleepDuration = min(sleepTimeMs, checkpoint.maxFlowSleepDuration)
     }
 
     override fun toAvro(): Checkpoint? {
@@ -255,18 +272,7 @@ class FlowCheckpointImpl(
         }
 
         private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            var current: Class<in Flow<*>> = this.javaClass
-
-            while (true) {
-                val annotation = current.getDeclaredAnnotation(InitiatingFlow::class.java)
-                if (annotation != null) {
-                    require(annotation.version > 0) { "Flow versions have to be greater or equal to 1" }
-                    return true
-                }
-
-                current = current.superclass
-                    ?: return false
-            }
+            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

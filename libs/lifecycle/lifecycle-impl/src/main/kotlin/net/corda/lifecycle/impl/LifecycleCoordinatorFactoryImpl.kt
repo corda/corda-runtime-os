@@ -3,6 +3,7 @@ package net.corda.lifecycle.impl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleCoordinatorSchedulerFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
@@ -14,8 +15,11 @@ import org.osgi.service.component.annotations.ServiceScope
 @Component(service = [LifecycleCoordinatorFactory::class], scope = ServiceScope.SINGLETON)
 class LifecycleCoordinatorFactoryImpl @Activate constructor(
     @Reference
-    private val registry: LifecycleRegistryCoordinatorAccess
-) : LifecycleCoordinatorFactory {
+    private val registry: LifecycleRegistryCoordinatorAccess,
+    @Reference
+    private val schedulerFactory: LifecycleCoordinatorSchedulerFactory,
+
+    ) : LifecycleCoordinatorFactory {
 
 
     override fun createCoordinator(
@@ -29,7 +33,8 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
                         " than 1. (Provided batch size was $batchSize)"
             )
         }
-        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, handler)
+
+        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, schedulerFactory.create(), handler )
         registry.registerCoordinator(name, coordinator)
         return coordinator
     }

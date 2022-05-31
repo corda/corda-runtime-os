@@ -1,9 +1,9 @@
 package net.corda.lifecycle.impl
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleCoordinatorScheduler
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
@@ -17,7 +17,6 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -43,35 +42,12 @@ class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
     private val registry: LifecycleRegistryCoordinatorAccess,
+    private val scheduler: LifecycleCoordinatorScheduler,
     lifecycleEventHandler: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
     companion object {
         private val logger: Logger = contextLogger()
-
-        /**
-         * The executor on which events are processed. Note that all events should be processed on an executor thread,
-         * but they may be posted from any thread. Different events may be processed on different executor threads.
-         *
-         * The coordinator guarantees that the event processing task is only scheduled once. This means that event
-         * processing is effectively single threaded in the sense that no event processing will happen concurrently.
-         *
-         * By sharing a thread pool among coordinators, it should be possible to reduce resource usage when in a stable
-         * state.
-         */
-        private val executor = Executors.newCachedThreadPool(
-            ThreadFactoryBuilder()
-                .setNameFormat("lifecycle-coordinator-%d")
-                .setDaemon(true)
-                .build()
-        )
-
-        private val timerExecutor = Executors.newSingleThreadScheduledExecutor(
-            ThreadFactoryBuilder()
-                .setNameFormat("lifecycle-coordinator-timer-%d")
-                .setDaemon(true)
-                .build()
-        )
     }
 
     /**
@@ -129,7 +105,7 @@ class LifecycleCoordinatorImpl(
      */
     private fun scheduleIfRequired() {
         if (!isScheduled.getAndSet(true)) {
-            executor.submit(::processEvents)
+            scheduler.execute(::processEvents)
         }
     }
 
@@ -139,7 +115,7 @@ class LifecycleCoordinatorImpl(
      * This is invoked from the processor when processing a new timer set up event.
      */
     private fun createTimer(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
-        return timerExecutor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
+        return scheduler.timerSchedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
     }
 
     /**

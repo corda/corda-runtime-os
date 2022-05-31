@@ -11,7 +11,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.messaging.api.config.getConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG

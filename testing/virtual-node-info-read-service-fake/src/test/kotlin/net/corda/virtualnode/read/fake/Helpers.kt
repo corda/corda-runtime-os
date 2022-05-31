@@ -1,6 +1,7 @@
 package net.corda.virtualnode.read.fake
 
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -13,7 +14,7 @@ internal fun createService(
     val service = VirtualNodeInfoReadServiceFake(
         virtualNodeInfos.associateBy { it.holdingIdentity },
         callbacks,
-        LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
     )
     service.start()
     service.waitUntilRunning()

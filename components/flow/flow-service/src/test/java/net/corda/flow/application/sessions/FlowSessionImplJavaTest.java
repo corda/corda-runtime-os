@@ -5,11 +5,10 @@ import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
 import net.corda.flow.fiber.FlowFiberService;
 import net.corda.flow.fiber.FlowIORequest;
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes;
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.membership.read.MembershipGroupReader;
-import net.corda.sandboxgroupcontext.SandboxGroupContext;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.application.serialization.SerializationService;
@@ -29,12 +28,12 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final SerializationService serializationService = mock(SerializationService.class);
-    private final SandboxGroupContext sandboxGroupContext = mock(SandboxGroupContext.class);
+    private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
+    private final SandboxDependencyInjector sandboxDependencyInjector = mock(SandboxDependencyInjector.class);
+    private final CheckpointSerializer checkpointSerializer = mock(CheckpointSerializer.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
-            mock(SandboxDependencyInjector.class),
             mock(FlowCheckpoint.class),
-            mock(CheckpointSerializer.class),
-            sandboxGroupContext,
+            flowSandboxGroupContext,
             new HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
             mock(MembershipGroupReader.class)
     );
@@ -54,9 +53,10 @@ public class FlowSessionImplJavaTest {
         received.put("session id", new byte[]{ 1, 2, 3 });
         when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
         when(serializationService.deserialize(any(byte[].class), any())).thenReturn(1);
-        when(sandboxGroupContext.get(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, SerializationService.class))
-                .thenReturn(serializationService);
         when(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext);
+        when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
+        when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
+        when(flowSandboxGroupContext.getAmqpSerializer()).thenReturn(serializationService);
         when(flowFiber.suspend(any(FlowIORequest.SendAndReceive.class))).thenReturn(received);
         when(flowFiber.suspend(any(FlowIORequest.Receive.class))).thenReturn(received);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);

@@ -25,7 +25,7 @@ internal class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     private val groups: LinkManagerGroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
     private val clock: Clock
@@ -41,7 +41,7 @@ internal class InMemorySessionReplayer(
         publisherFactory,
         coordinatorFactory,
         PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
-        configuration
+        messagingConfiguration
     )
 
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,

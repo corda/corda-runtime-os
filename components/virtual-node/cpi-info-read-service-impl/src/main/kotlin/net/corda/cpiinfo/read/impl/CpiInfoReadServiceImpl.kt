@@ -92,12 +92,12 @@ class CpiInfoReadServiceImpl @Activate constructor(
         getAll()
             .stream()
             .map {
-                VersionedRecord(
-                    version = it.version,
-                    isDeleted = false,
-                    key = it.cpiId,
-                    value = it
-                )
+                object : VersionedRecord<CpiIdentifier, CpiMetadata> {
+                    override val version = it.version
+                    override val isDeleted = false
+                    override val key = it.cpiId
+                    override val value = it
+                }
             }
 
     override fun get(identifier: CpiIdentifier): CpiMetadata? = cpiInfoProcessor.get(identifier)

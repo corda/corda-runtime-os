@@ -18,6 +18,7 @@ import net.corda.cpk.write.impl.services.kafka.impl.KafkaCpkChunksPublisher
 import net.corda.data.chunking.CpkChunkId
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -30,7 +31,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig

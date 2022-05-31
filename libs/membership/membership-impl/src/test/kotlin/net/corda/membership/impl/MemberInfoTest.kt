@@ -148,6 +148,7 @@ class MemberInfoTest {
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
             ByteBuffer.wrap(byteArrayOf()),
+            KeyValuePairList(emptyList())
         )
 
         @BeforeAll

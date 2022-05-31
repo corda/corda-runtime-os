@@ -9,8 +9,10 @@ import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
@@ -31,7 +33,7 @@ open class SigningServiceImpl(
     }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        logger.debug("getSupportedSchemes(tenant={}, category={})", tenantId, category)
+        logger.debug {"getSupportedSchemes(tenant=$tenantId, category=$category)" }
         return cryptoServiceFactory.getInstance(tenantId = tenantId, category = category).getSupportedSchemes()
     }
 
@@ -42,10 +44,9 @@ open class SigningServiceImpl(
         orderBy: KeyOrderBy,
         filter: Map<String, String>
     ): Collection<SigningKeyInfo> {
-        logger.debug(
-            "lookup(tenantId={}, skip={}, take={}, orderBy={}, filter=[{}]",
-            skip, take, orderBy, tenantId, filter.map { it }.joinToString { "${it.key}=${it.value}" }
-        )
+        logger.debug {
+            "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
+        }
         return cache.act(tenantId) {
             it.lookup(
                 skip,
@@ -57,7 +58,7 @@ open class SigningServiceImpl(
     }
 
     override fun lookup(tenantId: String, ids: List<String>): Collection<SigningKeyInfo> {
-        logger.debug("lookup(tenantId={}, ids=[{}])", tenantId, ids.joinToString())
+        logger.debug {"lookup(tenantId=$tenantId, ids=[${ids.joinToString()}])" }
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
@@ -72,13 +73,10 @@ open class SigningServiceImpl(
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
-        logger.debug(
-            "createWrappingKey(configId={},masterKeyAlias={},failIfExists={},onBehalf={})",
-            configId,
-            masterKeyAlias,
-            failIfExists,
-            context[CRYPTO_TENANT_ID]
-        )
+        logger.debug {
+            "createWrappingKey(configId=$configId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
+                    "onBehalf=${context[CRYPTO_TENANT_ID]})"
+        }
         cryptoServiceFactory.getInstance(configId).createWrappingKey(
             masterKeyAlias = masterKeyAlias,
             failIfExists = failIfExists,
@@ -90,7 +88,7 @@ open class SigningServiceImpl(
         tenantId: String,
         category: String,
         alias: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -98,7 +96,7 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = null,
-            schemeCode = scheme,
+            scheme = scheme,
             context = context
         )
 
@@ -107,7 +105,7 @@ open class SigningServiceImpl(
         category: String,
         alias: String,
         externalId: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -115,14 +113,14 @@ open class SigningServiceImpl(
             category = category,
             alias = alias,
             externalId = externalId,
-            schemeCode = scheme,
+            scheme = scheme,
             context = context
         )
 
     override fun freshKey(
         tenantId: String,
         category: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -130,7 +128,7 @@ open class SigningServiceImpl(
             category = category,
             alias = null,
             externalId = null,
-            schemeCode = scheme,
+            scheme = scheme,
             context = context
         )
 
@@ -138,7 +136,7 @@ open class SigningServiceImpl(
         tenantId: String,
         category: String,
         externalId: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String>
     ): PublicKey =
         doGenerateKeyPair(
@@ -146,17 +144,9 @@ open class SigningServiceImpl(
             category = category,
             alias = null,
             externalId = externalId,
-            schemeCode = scheme,
+            scheme = scheme,
             context = context
         )
-
-    override fun sign(
-        tenantId: String,
-        publicKey: PublicKey,
-        data: ByteArray,
-        context: Map<String, String>
-    ): DigitalSignature.WithKey =
-        doSign(tenantId, publicKey, null, data, context)
 
     override fun sign(
         tenantId: String,
@@ -165,7 +155,31 @@ open class SigningServiceImpl(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey =
-        doSign(tenantId, publicKey, signatureSpec, data, context)
+        try {
+            val record = cache.act(tenantId) {
+                getKeyRecord(tenantId, it, publicKey)
+            }
+            logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
+            val scheme = schemeMetadata.findKeyScheme(record.second.schemeCodeName)
+            val cryptoService = cryptoServiceFactory.getInstance(
+                tenantId = tenantId,
+                category = record.second.category,
+                associationId = record.second.associationId
+            )
+            val signedBytes = cryptoService.sign(record.second, scheme, signatureSpec, data, context)
+            DigitalSignature.WithKey(
+                by = record.first,
+                bytes = signedBytes,
+                context = context
+            )
+        } catch (e: CryptoServiceException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoServiceException(
+                "Failed to sign using public key '${publicKey.publicKeyId()}' for tenant $tenantId",
+                e
+            )
+        }
 
     @Suppress("LongParameterList")
     private fun doGenerateKeyPair(
@@ -173,7 +187,7 @@ open class SigningServiceImpl(
         category: String,
         alias: String?,
         externalId: String?,
-        schemeCode: String,
+        scheme: KeyScheme,
         context: Map<String, String>
     ): PublicKey =
         try {
@@ -185,48 +199,17 @@ open class SigningServiceImpl(
                         "The key with alias $alias already exist for tenant $tenantId"
                     )
                 }
-                val scheme = schemeMetadata.findSignatureScheme(schemeCode)
-                val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
-                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
-                generatedKey.publicKey
             }
+            val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
+            cache.act(tenantId) {
+                it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
+            }
+            generatedKey.publicKey
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
             throw CryptoServiceException(
                 "Cannot generate key pair for category=$category and alias=$alias, tenant=$tenantId", e
-            )
-        }
-
-    private fun doSign(
-        tenantId: String,
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec?,
-        data: ByteArray,
-        context: Map<String, String>
-    ): DigitalSignature.WithKey =
-        try {
-            cache.act(tenantId) {
-                val record = getKeyRecord(tenantId, it, publicKey)
-                logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
-                var signatureScheme = schemeMetadata.findSignatureScheme(record.second.schemeCodeName)
-                if (signatureSpec != null) {
-                    signatureScheme = signatureScheme.copy(signatureSpec = signatureSpec)
-                }
-                val cryptoService = cryptoServiceFactory.getInstance(
-                    tenantId = tenantId,
-                    category = record.second.category,
-                    associationId = record.second.associationId
-                )
-                val signedBytes = cryptoService.sign(record.second, signatureScheme, data, context)
-                DigitalSignature.WithKey(record.first, signedBytes)
-            }
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException(
-                "Failed to sign using public key '${publicKey.publicKeyId()}' for tenant $tenantId",
-                e
             )
         }
 

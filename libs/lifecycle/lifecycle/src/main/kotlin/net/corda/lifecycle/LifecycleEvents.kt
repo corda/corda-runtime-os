@@ -81,4 +81,4 @@ data class RegistrationStatusChangeEvent(
  * @param registration the registration the custom event was be sent to.
  * @param payload the payload of the custom event.
  */
-class CustomEvent(val registration: RegistrationHandle, val payload: Any): LifecycleEvent
+data class CustomEvent(val registration: RegistrationHandle, val payload: Any): LifecycleEvent

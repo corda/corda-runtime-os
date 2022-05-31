@@ -1,3 +1,9 @@
 package net.corda.entityprocessor.impl.internal.exceptions
 
-internal class VirtualNodeException(message: String, cause: Throwable? = null) : Exception(message, cause)
+/**
+ * Used to indicate a problem with retrieving virtual nodes from the system.
+ *
+ * This exception may occur because CPI metadata is missing from various
+ * internal components because it simply hasn't been sent over Kafka yet.
+ */
+class VirtualNodeException(message: String, cause: Throwable? = null) : Exception(message, cause)

@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager
 
+import java.util.LinkedList
+import java.util.Queue
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -13,14 +15,11 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import java.util.HashMap
-import java.util.LinkedList
-import java.util.Queue
 
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    configuration: SmartConfig
+    messagingConfiguration: SmartConfig
 ) : PendingSessionMessageQueues {
 
     companion object {
@@ -34,7 +33,7 @@ internal class PendingSessionMessageQueuesImpl(
         publisherFactory,
         coordinatorFactory,
         PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, false),
-        configuration
+        messagingConfiguration
     )
     override val dominoTile = publisher.dominoTile
 

@@ -22,7 +22,7 @@ import picocli.CommandLine.Mixin
 @Component(service = [Application::class])
 class FlowWorker @Activate constructor(
     @Reference(service = FlowProcessor::class)
-    private val processor: FlowProcessor,
+    private val flowProcessor: FlowProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -35,7 +35,7 @@ class FlowWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [processor]. */
+    /** Parses the arguments, then initialises and starts the [flowProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
         JavaSerialisationFilter.install()
@@ -46,12 +46,12 @@ class FlowWorker @Activate constructor(
 
         val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator())
 
-        processor.start(config)
+        flowProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
-        processor.stop()
+        flowProcessor.stop()
         healthMonitor.stop()
     }
 }

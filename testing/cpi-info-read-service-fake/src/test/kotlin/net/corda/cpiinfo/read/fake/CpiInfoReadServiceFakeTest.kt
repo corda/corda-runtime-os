@@ -3,8 +3,7 @@ package net.corda.cpiinfo.read.fake
 import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -66,7 +65,7 @@ internal class CpiInfoReadServiceFakeTest {
         val service = CpiInfoReadServiceFake(
             cpiIds.asIterable(),
             callbacks,
-            LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+            TestLifecycleCoordinatorFactoryImpl()
         )
         service.start()
         service.waitUntilRunning()

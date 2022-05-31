@@ -1,6 +1,7 @@
 package net.corda.crypto.service
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -108,7 +109,7 @@ interface SigningService {
         tenantId: String,
         category: String,
         alias: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -134,7 +135,7 @@ interface SigningService {
         category: String,
         alias: String,
         externalId: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -151,7 +152,7 @@ interface SigningService {
     fun freshKey(
         tenantId: String,
         category: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
 
@@ -171,23 +172,9 @@ interface SigningService {
         tenantId: String,
         category: String,
         externalId: String,
-        scheme: String,
+        scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT
     ): PublicKey
-
-    /**
-     * Using the provided signing public key internally looks up the matching private key information and signs the data.
-     * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
-     * Default signature scheme for the key scheme is used.
-     *
-     * @param tenantId the tenant's id which the key belongs to.
-     */
-    fun sign(
-        tenantId: String,
-        publicKey: PublicKey,
-        data: ByteArray,
-        context: Map<String, String> = EMPTY_CONTEXT
-    ): DigitalSignature.WithKey
 
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.

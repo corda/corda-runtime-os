@@ -5,24 +5,24 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.state.FlowStack
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class MockFlowFiberService : FlowFiberService {
     val flowFiber = mock<FlowFiber<*>>()
-    val sandboxDependencyInjector: SandboxDependencyInjector = mock()
+    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     val flowCheckpoint: FlowCheckpoint = mock()
     val flowStack: FlowStack = mock()
-    val checkpointSerializer: CheckpointSerializer = mock()
-    val sandboxGroupContext: SandboxGroupContext = mock()
+    private val checkpointSerializer = mock<CheckpointSerializer>()
+    val sandboxGroupContext: FlowSandboxGroupContext = mock()
     val holdingIdentity: HoldingIdentity =  HoldingIdentity(BOB_X500_NAME.toString(),"group1")
-    val membershipGroupReader: MembershipGroupReader = mock()
+    private val membershipGroupReader: MembershipGroupReader = mock()
     val flowFiberExecutionContext: FlowFiberExecutionContext
 
     init {
@@ -31,11 +31,11 @@ class MockFlowFiberService : FlowFiberService {
          * before we create the instance of the context
          */
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
+        whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
+        whenever(sandboxGroupContext.checkpointSerializer).thenReturn(checkpointSerializer)
 
         flowFiberExecutionContext = FlowFiberExecutionContext(
-            sandboxDependencyInjector,
             flowCheckpoint,
-            checkpointSerializer,
             sandboxGroupContext,
             holdingIdentity,
             membershipGroupReader

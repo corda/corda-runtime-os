@@ -1,13 +1,14 @@
 package net.corda.crypto.impl
 
 import net.corda.utilities.LazyPool
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider
 import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * This is a collection of [Signature] instances as the [Signature.getInstance] method tend to be quite inefficient
+ * This is a collection of [Signature] instances as the [Signature.getInstance] method tend to be quite inefficient,
  * and we want to be able to optimise them en masse.
  */
 class SignatureInstances(
@@ -15,10 +16,10 @@ class SignatureInstances(
 ) {
     private val signatureFactory: SignatureFactory = CachingSignatureFactory()
 
-    fun <A> withSignature(signatureScheme: SignatureScheme, func: (signature: Signature) -> A): A {
+    fun <A> withSignature(scheme: KeyScheme, signatureSpec: SignatureSpec, func: (signature: Signature) -> A): A {
         val signature = getSignatureInstance(
-            signatureScheme.signatureSpec.signatureName,
-            providers[signatureScheme.providerName]
+            signatureSpec.signatureName,
+            providers[scheme.providerName]
         )
         try {
             return func(signature)
