@@ -224,11 +224,11 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
             // persist metadata
-            em.persist(cpiMetadataEntity)
+            em.merge(cpiMetadataEntity)
             // persist file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
-                em.persist(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
             }
         }
     }
