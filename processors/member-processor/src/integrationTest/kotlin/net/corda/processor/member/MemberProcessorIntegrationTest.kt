@@ -2,7 +2,6 @@ package net.corda.processor.member
 
 import com.typesafe.config.ConfigRenderOptions
 import java.time.Duration
-import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -63,6 +62,7 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
@@ -76,6 +76,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import net.corda.utilities.time.UTCClock
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -255,7 +256,7 @@ class MemberProcessorIntegrationTest {
                             UUID.randomUUID(),
                             db.name,
                             DbPrivilege.DML,
-                            Instant.now(),
+                            clock.instant(),
                             "sa",
                             "Test ${db.name}",
                             configAsString
@@ -280,6 +281,8 @@ class MemberProcessorIntegrationTest {
                 }
             }
         }
+
+        private val clock: Clock = UTCClock()
     }
 
     @Test

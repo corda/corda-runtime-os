@@ -8,7 +8,7 @@ import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import java.net.URL
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 
 class MemberInfoExtension {
     companion object {
@@ -111,7 +111,7 @@ class MemberInfoExtension {
          * this is because only MGM can populate this information.
          * */
         @JvmStatic
-        val MemberInfo.modifiedTime: Instant?
+        val MemberInfo.modifiedTime: UTCClock?
             get() = mgmProvidedContext.parse(MODIFIED_TIME)
 
         /** Collection of identity key hashes for member's node. */

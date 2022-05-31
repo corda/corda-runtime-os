@@ -40,11 +40,15 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.lang.IllegalStateException
-import java.time.Instant
 import java.util.UUID
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 
 class MemberProcessorTestUtils {
     companion object {
+
+        private val clock: Clock = UTCClock()
+
         private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
             subscription {
@@ -261,7 +265,7 @@ class MemberProcessorTestUtils {
             emptyList(),
             groupPolicy,
             -1,
-            Instant.now()
+            clock.instant()
         )
 
         private fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService, holdingIdentity: HoldingIdentity) =

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.client
 
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
+import net.corda.utilities.time.Clock
 import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -53,6 +54,8 @@ class MemberOpsClientImpl @Activate constructor(
 
         const val CLIENT_ID = "membership.ops.rpc"
         const val GROUP_NAME = "membership.ops.rpc"
+
+        private val clock: Clock = UTCClock()
     }
 
     private interface InnerMemberOpsClient : AutoCloseable {
@@ -178,7 +181,7 @@ class MemberOpsClientImpl @Activate constructor(
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
-                    Instant.now()
+                    clock.instant()
                 ),
                 RegistrationRequest(
                     memberRegistrationRequest.holdingIdentityId,
@@ -193,7 +196,7 @@ class MemberOpsClientImpl @Activate constructor(
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
-                    Instant.now()
+                    clock.instant()
                 ),
                 RegistrationStatusRequest(holdingIdentityId)
             )

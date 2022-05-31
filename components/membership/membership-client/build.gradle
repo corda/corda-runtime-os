@@ -12,4 +12,5 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:utilities")
 }

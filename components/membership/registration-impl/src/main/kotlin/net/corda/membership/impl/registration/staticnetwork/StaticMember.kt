@@ -9,8 +9,9 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
+import net.corda.utilities.time.Clock
 import net.corda.v5.membership.EndpointInfo
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 
 /**
  * Class which represents a static member. Static members are Map<String, Any> which we need
@@ -22,6 +23,7 @@ class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String,
         const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
         const val DEFAULT_PLATFORM_VERSION = "10"
         const val DEFAULT_SERIAL = "1"
+        private val clock: Clock = UTCClock()
     }
 
     val name: String?
@@ -43,7 +45,7 @@ class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String,
         get() = getStringValue(MEMBER_STATUS, MEMBER_STATUS_ACTIVE)!!
 
     val modifiedTime: String
-        get() = getStringValue(STATIC_MODIFIED_TIME, Instant.now().toString())!!
+        get() = getStringValue(STATIC_MODIFIED_TIME, clock.instant().toString())!!
 
     private fun getStringValue(key: String, default: String? = null): String? =
         staticMemberData[key] as String? ?: default

@@ -12,4 +12,5 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:utilities")
 }

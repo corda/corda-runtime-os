@@ -25,6 +25,7 @@ import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.utilities.time.Clock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
@@ -41,7 +42,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 import java.util.UUID
 import kotlin.test.assertFailsWith
 
@@ -49,6 +50,7 @@ class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
         private const val HOLDING_IDENTITY_STRING = "test"
+        private val clock: Clock = UTCClock()
     }
 
     private var coordinatorIsRunning = false
@@ -122,7 +124,7 @@ class MemberLookupRpcOpsTest {
         mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
-                MemberInfoExtension.MODIFIED_TIME to Instant.now().toString()
+                MemberInfoExtension.MODIFIED_TIME to clock.instant().toString()
             )
         )
     )

@@ -13,11 +13,12 @@ import net.corda.membership.exceptions.RegistrationProtocolSelectionException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.Logger
 import java.lang.reflect.Constructor
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -44,6 +45,7 @@ class MemberOpsServiceProcessor(
          * Temporarily hardcoded to 1.
          */
         private const val REGISTRATION_PROTOCOL_VERSION = 1
+        private val clock: Clock = UTCClock()
     }
 
     override fun onNext(request: MembershipRpcRequest, respFuture: CompletableFuture<MembershipRpcResponse>) {
@@ -74,7 +76,7 @@ class MemberOpsServiceProcessor(
     private fun createResponseContext(request: MembershipRpcRequest) = MembershipRpcResponseContext(
         request.requestContext.requestId,
         request.requestContext.requestTimestamp,
-        Instant.now()
+        clock.instant()
     )
 
     @Suppress("UNCHECKED_CAST")

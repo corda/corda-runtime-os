@@ -27,6 +27,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:utilities")
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 

@@ -14,6 +14,7 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.RegistrationProxy
+import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
@@ -58,19 +59,20 @@ class MemberOpsServiceProcessorTest {
             }
             processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
+        private val clock: Clock = UTCClock()
     }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        val now = Instant.now()
+        val now = clock.instant()
         assertThat(actual.responseTimestamp.epochSecond).isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
         assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
     }
 
     @Test
     fun `should successfully submit registration request`() {
-        val requestTimestamp = Instant.now()
+        val requestTimestamp = clock.instant()
         val requestContext = MembershipRpcRequestContext(
             UUID.randomUUID().toString(),
             requestTimestamp
@@ -101,7 +103,7 @@ class MemberOpsServiceProcessorTest {
         val request = MembershipRpcRequest(
             MembershipRpcRequestContext(
                 UUID.randomUUID().toString(),
-                Instant.now()
+                clock.instant()
             ),
             mock()
         )

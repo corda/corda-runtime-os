@@ -8,6 +8,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.request.RegistrationAction
+import net.corda.utilities.time.Clock
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -17,13 +18,14 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
+        private val clock: Clock = UTCClock()
     }
 
     private var coordinatorIsRunning = false
@@ -38,7 +40,7 @@ class MemberRegistrationRpcOpsTest {
     }
 
     private val registrationProgress = RegistrationRequestProgressDto(
-        Instant.now(),
+        clock.instant(),
         "SUBMITTED",
         MemberInfoSubmittedDto(emptyMap())
     )
