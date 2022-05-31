@@ -50,8 +50,6 @@ spec:
           volumeMounts:
             - mountPath: /tmp/
               name: tmp-volume
-            - mountPath: /tmp/working_dir
-              name: working-volume
             {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
             - mountPath: "/certs"
               name: certs
