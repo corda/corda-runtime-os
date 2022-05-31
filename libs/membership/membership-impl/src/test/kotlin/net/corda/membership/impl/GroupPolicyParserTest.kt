@@ -3,7 +3,6 @@ package net.corda.membership.impl
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.membership.exceptions.BadGroupPolicyException
-import net.corda.membership.impl.GroupPolicyParser.MGM.Companion.mgmInfo
 import net.corda.membership.impl.MemberInfoExtension.Companion.certificate
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
@@ -127,7 +126,7 @@ class GroupPolicyParserTest {
         assertEquals("AUTHENTICATED_ENCRYPTION", protocolParameters[P2P_PROTOCOL_MODE])
 
         assertTrue(protocolParameters[MGM_INFO] is Map<*, *>)
-        assertEquals(9, (protocolParameters[MGM_INFO] as Map<*, *>).size)
+        assertEquals(13, (protocolParameters[MGM_INFO] as Map<*, *>).size)
 
         assertTrue(protocolParameters[CIPHER_SUITE] is Map<*, *>)
         assertEquals(6, (protocolParameters[CIPHER_SUITE] as Map<*, *>).size)
@@ -174,18 +173,17 @@ class GroupPolicyParserTest {
 
     @Test
     fun `MGM member info is correctly constructed from group policy information`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
-        val mgmInfo = groupPolicyParser.buildMgmMemberInfo(result.mgmInfo, result.groupId)
-        assertEquals(mgmInfo.name.toString(), "CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
-        assertEquals(mgmInfo.certificate.size, 4)
-        assertEquals(mgmInfo.identityKeys.size, 1)
-        assertEquals(mgmInfo.identityKeyHashes.size, 1)
-        assertEquals(mgmInfo.endpoints.size, 2)
-        assertEquals(mgmInfo.platformVersion, 1)
-        assertEquals(mgmInfo.softwareVersion, "5.0.0")
-        assertEquals(mgmInfo.serial, 1)
+        val mgmInfo = groupPolicyParser.getMgmInfo(getSampleGroupPolicy())!!
+        assertEquals("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB", mgmInfo.name.toString())
+        assertEquals(0, mgmInfo.certificate.size)
+        assertEquals(1, mgmInfo.identityKeys.size)
+        assertEquals(1, mgmInfo.identityKeyHashes.size)
+        assertEquals(2, mgmInfo.endpoints.size)
+        assertEquals(5000, mgmInfo.platformVersion)
+        assertEquals("5.0.0", mgmInfo.softwareVersion)
+        assertEquals(1, mgmInfo.serial)
         assertTrue(mgmInfo.isActive)
-        assertEquals(mgmInfo.isMgm, true)
+        assertEquals(true, mgmInfo.isMgm)
     }
 
     private fun getSampleGroupPolicy(): String {

@@ -12,7 +12,6 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toWire
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.impl.GroupPolicyParser
-import net.corda.membership.impl.GroupPolicyParser.MGM.Companion.mgmInfo
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -225,12 +224,11 @@ internal class VirtualNodeWriterProcessor(
 
     private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
         val mgmMemberInfo = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory).run {
-            val groupPolicy = parse(groupPolicyJson)
-            if(groupPolicy.mgmInfo.isEmpty()) {
-                logger.info("No MGM information available for Group ID: ${groupPolicy.groupId}. MGM member info not published.")
-                return
-            }
-            buildMgmMemberInfo(groupPolicy.mgmInfo, groupPolicy.groupId)
+            getMgmInfo(groupPolicyJson)
+        }
+        if (mgmMemberInfo == null) {
+            logger.info("No MGM information available. MGM member info not published.")
+            return
         }
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,

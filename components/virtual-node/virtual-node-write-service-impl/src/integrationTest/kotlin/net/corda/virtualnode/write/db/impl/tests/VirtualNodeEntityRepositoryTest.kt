@@ -78,7 +78,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.create(signerSummaryHash))
-        val expectedCpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Dummy Group Policy")
+        val expectedCpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -87,7 +87,7 @@ internal class VirtualNodeEntityRepositoryTest {
                 signerSummaryHash,
                 "TestFile",
                 fileChecksum,
-                "Dummy Group Policy",
+                "Test Group Policy",
                 "Test Group ID",
                 "Request ID",
                 emptySet(),
@@ -278,7 +278,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.create(signerSummaryHash))
-        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Dummy Group Policy")
+        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = HoldingIdentity("X500 Name 4", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
@@ -288,8 +288,7 @@ internal class VirtualNodeEntityRepositoryTest {
                 signerSummaryHash,
                 "TestFile",
                 fileChecksum,
-
-                "Dummy Group Policy",
+                "Test Group Policy",
                 "Test Group ID",
                 "Request ID",
                 emptySet()
@@ -323,7 +322,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.create(signerSummaryHash))
-        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Dummy Group Policy")
+        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = HoldingIdentity("X500 Name 5", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
@@ -333,7 +332,7 @@ internal class VirtualNodeEntityRepositoryTest {
                 signerSummaryHash,
                 "TestFile",
                 fileChecksum,
-                "Dummy Group Policy",
+                "Test Group Policy",
                 "Test Group ID",
                 "Request ID",
                 emptySet()

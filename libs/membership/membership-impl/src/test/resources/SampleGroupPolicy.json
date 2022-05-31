@@ -16,31 +16,19 @@
     "tlsPki": "C5",
     "p2pProtocolMode": "AUTHENTICATED_ENCRYPTION",
     "mgmInfo": {
-      "name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
-      "sessionKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",
-      "certificate": [
-        "-----BEGIN CERTIFICATE-----\nMIICxjCCRG11cu1\n-----END CERTIFICATE-----\n",
-        "-----BEGIN CERTIFICATE-----\nMIIB/TCCDJOIjhJ\n-----END CERTIFICATE-----\n",
-        "-----BEGIN CERTIFICATE-----\nMIICCDCCDZFSiI=\n-----END CERTIFICATE-----\n",
-        "-----BEGIN CERTIFICATE-----\nMIIFPDCClifT20M\n-----END CERTIFICATE-----"
-      ],
-      "ecdhKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDH8Tc=\n-----END PUBLIC KEY-----\n",
-      "keys": [
-        "-----BEGIN PUBLIC KEY-----\nMFkwEwYHgcIALw==\n-----END PUBLIC KEY-----\n"
-      ],
-      "endpoints": [
-        {
-          "url": "https://mgm.corda5.r3.com:10000",
-          "protocolVersion": 1
-        },
-        {
-          "url": "https://mgm-dr.corda5.r3.com:10000",
-          "protocolVersion": 1
-        }
-      ],
-      "platformVersion": 1,
-      "softwareVersion": "5.0.0",
-      "serial": 1
+      "corda.name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
+      "corda.session.key": "-----BEGIN PUBLIC KEY-----\n{truncated for readability}\n-----END PUBLIC KEY-----",
+      "corda.session.certificate.0":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "corda.session.certificate.1":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "corda.session.certificate.2":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "corda.ecdh.key": "-----BEGIN PUBLIC KEY-----\n{truncated for readability}\n-----END PUBLIC KEY-----",
+      "corda.endpoints.0.connectionURL": "https://mgm.corda5.r3.com:10000",
+      "corda.endpoints.0.protocolVersion": "1",
+      "corda.endpoints.1.connectionURL": "https://mgm-dr.corda5.r3.com:10000",
+      "corda.endpoints.1.protocolVersion": "1",
+      "corda.platformVersion": "5000",
+      "corda.softwareVersion": "5.0.0",
+      "corda.serial": "1"
     },
     "identityPKI": "Standard",
     "identityKeyPolicy": "Combined",

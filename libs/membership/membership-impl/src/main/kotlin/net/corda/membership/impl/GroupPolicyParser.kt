@@ -66,26 +66,22 @@ class GroupPolicyParser @Activate constructor(
      * Constructs MGM [MemberInfo] from details specified in [GroupPolicy].
      */
     @Suppress("UNCHECKED_CAST", "SpreadOperator")
-    fun buildMgmMemberInfo(mgm: MGM, groupId: String): MemberInfo {
-        val keys = mgm.keyList.map {
-            keyEncodingService.decodePublicKey(it)
-        }
+    fun getMgmInfo(groupPolicyJson: String): MemberInfo? {
+        val groupPolicy = parse(groupPolicyJson)
+        val mgmInfo = (groupPolicy["protocolParameters"] as? Map<String, Any>)?.let {
+            it["mgmInfo"] as Map<String, String>
+        } ?: return null
+        val encodedSessionKey = mgmInfo["corda.session.key"] as String
+        val sessionKey = keyEncodingService.decodePublicKey(encodedSessionKey)
         val now = UTCClock().instant().toString()
         try {
             return MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-                    sortedMapOf(
-                        MemberInfoExtension.PARTY_NAME to mgm.name,
-                        MemberInfoExtension.PARTY_OWNING_KEY to mgm.sessionKey,
-                        MemberInfoExtension.ECDH_KEY to mgm.ecdhKey,
-                        MemberInfoExtension.GROUP_ID to groupId,
-                        *convertKeys(mgm.keyList).toTypedArray(),
-                        *generateKeyHashes(keys).toTypedArray(),
-                        *convertEndpoints(mgm.endpointList).toTypedArray(),
-                        *convertCertificates(mgm.certificate).toTypedArray(),
-                        MemberInfoExtension.SOFTWARE_VERSION to mgm.softwareVersion,
-                        MemberInfoExtension.PLATFORM_VERSION to mgm.platformVersion,
-                        MemberInfoExtension.SERIAL to mgm.serial
+                    mgmInfo + sortedMapOf(
+                        MemberInfoExtension.PARTY_NAME to mgmInfo["corda.name"],
+                        *convertKeys(listOf(encodedSessionKey)).toTypedArray(),
+                        *generateKeyHashes(listOf(sessionKey)).toTypedArray(),
+                        MemberInfoExtension.PARTY_OWNING_KEY to encodedSessionKey
                     )
                 ),
                 mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
@@ -130,136 +126,5 @@ class GroupPolicyParser @Activate constructor(
                 index
             ) to hash.toString()
         }
-    }
-
-    /**
-     * Converts certificates from JSON format to the certificates expected in [MemberInfo].
-     */
-    private fun convertCertificates(certificates: List<String>): List<Pair<String, String>> {
-        require(certificates.isNotEmpty()) { "List of MGM certificates cannot be empty." }
-        val result = mutableListOf<Pair<String, String>>()
-        for (index in certificates.indices) {
-            result.add(
-                Pair(
-                    String.format(MemberInfoExtension.CERTIFICATE_KEY, index),
-                    certificates[index]
-                )
-            )
-        }
-        return result
-    }
-
-    /**
-     * Converts endpoints from JSON format to the endpoints expected in [MemberInfo].
-     */
-    private fun convertEndpoints(endpoints: List<Map<String, Any>>): List<Pair<String, String>> {
-        require(endpoints.isNotEmpty()) { "List of MGM endpoints cannot be empty." }
-        val result = mutableListOf<Pair<String, String>>()
-        for (index in endpoints.indices) {
-            result.add(
-                Pair(
-                    String.format(MemberInfoExtension.URL_KEY, index),
-                    endpoints[index]["url"].toString()
-                )
-            )
-            result.add(
-                Pair(
-                    String.format(MemberInfoExtension.PROTOCOL_VERSION, index),
-                    endpoints[index]["protocolVersion"].toString()
-                )
-            )
-        }
-        return result
-    }
-
-
-    class MGM(private val mgmData: Map<String, Any>) : Map<String, Any> by mgmData {
-        companion object {
-            /** Key name for MGM in the network. */
-            private const val MGM_INFO = "mgmInfo"
-
-            /** Key name for MGM's name. */
-            private const val NAME = "name"
-
-            /** Key name for MGM session key. */
-            private const val SESSION_KEY = "sessionKey"
-
-            /** Key name for MGM certificate. */
-            private const val CERTIFICATE = "certificate"
-
-            /** Key name for MGM ECDH key. */
-            private const val ECDH_KEY = "ecdhKey"
-
-            /** Key name for MGM keys. */
-            private const val KEYS = "keys"
-
-            /** Key name for MGM endpoints. */
-            private const val ENDPOINTS = "endpoints"
-
-            /** Key name for MGM platform version. */
-            private const val PLATFORM_VERSION = "platformVersion"
-
-            /** Key name for MGM software version. */
-            private const val SOFTWARE_VERSION = "softwareVersion"
-
-            /** Key name for MGM serial. */
-            private const val SERIAL = "serial"
-
-            /** MGM info. */
-            @JvmStatic
-            @Suppress("UNCHECKED_CAST")
-            val GroupPolicy.mgmInfo: MGM
-                get() {
-                    return if (!containsKey("protocolParameters")) MGM(emptyMap())
-                    else {
-                        (get("protocolParameters") as Map<String, Any>).run {
-                            if (containsKey(MGM_INFO)) {
-                                val mgmInfo = get(MGM_INFO) as? Map<String, Any>
-                                    ?: throw ClassCastException("Casting failed for MGM info from group policy JSON.")
-                                MGM(mgmInfo)
-                            } else {
-                                MGM(emptyMap())
-                            }
-                        }
-                    }
-                }
-        }
-        val name: String
-            get() = getStringValue(NAME)!!
-
-        val sessionKey: String
-            get() = getStringValue(SESSION_KEY)!!
-
-        val certificate: List<String>
-            get() = getListValue(CERTIFICATE)
-
-        val ecdhKey: String
-            get() = getStringValue(ECDH_KEY)!!
-
-        val keyList: List<String>
-            get() = getListValue(KEYS)
-
-        @Suppress("UNCHECKED_CAST")
-        val endpointList: List<Map<String, Any>>
-            get() = mgmData[ENDPOINTS] as List<Map<String, Any>>
-
-        val platformVersion: String
-            get() = getIntValueAsString(PLATFORM_VERSION)!!
-
-        val softwareVersion: String
-            get() = getStringValue(SOFTWARE_VERSION)!!
-
-        val serial: String
-            get() = getIntValueAsString(SERIAL)!!
-
-        private fun getStringValue(key: String, default: String? = null): String? =
-            mgmData[key] as String? ?: default
-
-        @Suppress("UNCHECKED_CAST")
-        private fun getListValue(key: String): List<String> =
-            mgmData[key] as List<String>? ?: emptyList()
-
-        private fun getIntValueAsString(key: String, default: String? = null): String? =
-            (mgmData[key] as Int?)?.toString() ?: default
     }
 }
