@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: {{ include "corda.fullname" . }}-create-topics
   labels:
-    {{- include "corda.workerLabels" . | nindent 4 }}
+    {{- include "corda.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
