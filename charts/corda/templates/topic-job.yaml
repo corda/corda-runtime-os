@@ -76,6 +76,8 @@ spec:
       volumes:
         - name: working-volume
           emptyDir: {}
+        - name: tmp-volume
+          emptyDir: {}
         {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
         - name: certs
           secret:
