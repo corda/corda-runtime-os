@@ -25,7 +25,17 @@ spec:
       initContainers:
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
-          args: [ 'topic', 'create', '-a', '{{ include "corda.kafkaBootstrapServers" . }}', '-f', '{{ .Values.kafka.topicPrefix }}', '-r', '{{ .Values.kafka.replicas }}', '-p', '{{ .Values.kafka.partitions }}', '-l', '/tmp/working_dir/create-topics.sh' ]
+          args: [
+            'topic',
+            'create',
+            '-a', '{{ include "corda.kafkaBootstrapServers" . }}',
+            {{- if .Values.kafka.topicPrefix }}
+            '-f', '"{{ .Values.kafka.topicPrefix }}"',
+            {{- end }}
+            '-r', '{{ .Values.kafka.replicas }}',
+            '-p', '{{ .Values.kafka.partitions }}',
+            '-l', '/tmp/working_dir/create-topics.sh'
+          ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
