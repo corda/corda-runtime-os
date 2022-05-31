@@ -20,6 +20,8 @@ spec:
             - /bin/bash
           args: [ "/tmp/working_dir/create-topics.sh" ]
           volumeMounts:
+            - mountPath: /tmp/
+              name: tmp-volume
             - mountPath: /tmp/working_dir
               name: working-volume
             {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
@@ -28,6 +30,33 @@ spec:
               readOnly: true
             {{- end }}
       initContainers:
+        - name: create-trust-store
+          image: bitnami/kafka:3.1.0-debian-10-r89
+          command:
+            - /bin/bash
+          args: [
+            "touch /tmp/config.properties"
+            "{ { - if .Values.kafka.tls.enabled } }"
+            "echo \"security.protocol=SSL\n\" >> /tmp/config.properties"
+            "{ { - if .Values.kafka.tls.truststore.secretRef.name } }"
+            "echo \"ssl.truststore.location=/certs/ca.crt\n\" >> /tmp/config.properties"
+            "  echo \"ssl.truststore.type={ { .Values.kafka.tls.truststore.type | upper } }\n\" >> /tmp/config.properties"
+            "{ { - if .Values.kafka.tls.truststore.password } }"
+            "echo \"ssl.truststore.password={ { .Values.kafka.tls.truststore.password } }\n\" >> /tmp/config.properties"
+            "{ { - end } }"
+            "{ { - end } }"
+            "{ { - end } }"
+          ]
+          volumeMounts:
+            - mountPath: /tmp/
+              name: tmp-volume
+            - mountPath: /tmp/working_dir
+              name: working-volume
+            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+            - mountPath: "/certs"
+              name: certs
+              readOnly: true
+            {{- end }}
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
           args: [
