@@ -2,6 +2,7 @@ package net.corda.applications.workers.rpc
 
 import java.time.Instant
 import net.corda.applications.workers.rpc.http.TestToolkit
+import net.corda.applications.workers.rpc.test.annotation.SkipWhenLocalClusterUnavailable
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
@@ -17,6 +18,7 @@ import net.corda.test.util.eventually
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.assertDoesNotThrow
 
+@SkipWhenLocalClusterUnavailable
 class RbacE2eClientRequestHelper(
     private val testToolkit: TestToolkit,
     private val requestUserName: String,
