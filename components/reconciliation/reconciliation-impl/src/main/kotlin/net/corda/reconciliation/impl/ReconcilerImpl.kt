@@ -23,7 +23,7 @@ import kotlin.streams.asSequence
 class ReconcilerImpl<K : Any, V : Any>(
     private val dbReader: ReconcilerReader<K, V>,
     private val kafkaReader: ReconcilerReader<K, V>,
-    private val writer: ReconcilerWriter<V>,
+    private val writer: ReconcilerWriter<K, V>,
     keyClass: Class<K>,
     valueClass: Class<V>,
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -133,9 +133,9 @@ class ReconcilerImpl<K : Any, V : Any>(
         toBeReconciledDbRecords.use {
             it.forEach { dbRecord ->
                 if (dbRecord.isDeleted) {
-                    writer.remove(dbRecord.value)
+                    writer.remove(dbRecord.key)
                 } else {
-                    writer.put(dbRecord.value)
+                    writer.put(dbRecord.key, dbRecord.value)
                 }
             }
         }

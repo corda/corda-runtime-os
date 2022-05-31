@@ -41,8 +41,8 @@ class ConfigPublishServiceImpl @Activate constructor(
         get() =
             handler.publisher ?: throw IllegalStateException("Config publish service publisher is null")
 
-    override fun put(configDto: ConfigurationDto) {
-        val (configSection, configAvro) = configDto.toAvro()
+    override fun put(configSection: String, configDto: ConfigurationDto) {
+        val (_, configAvro) = configDto.toAvro()
 
         // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
         val futures = publisher.publish(listOf(Record(CONFIG_TOPIC, configSection, configAvro)))
@@ -55,7 +55,8 @@ class ConfigPublishServiceImpl @Activate constructor(
         coordinator.postEvent(BootstrapConfigEvent(bootConfig))
     }
 
-    override fun remove(record: ConfigurationDto) {
+    @Suppress("parameter_name_changed_on_override")
+    override fun remove(configSection: String) {
         TODO("Not yet implemented")
     }
 

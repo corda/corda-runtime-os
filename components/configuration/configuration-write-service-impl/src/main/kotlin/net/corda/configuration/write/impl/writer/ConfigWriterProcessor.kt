@@ -112,7 +112,7 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture
     ) {
         try {
-            configPublishService.put(configDto)
+            configPublishService.put(configDto.section, configDto)
         } catch (e: Exception) {
             // TODO using the entity for now. Maybe we should be introducing a DTO for Configuration.
             val errMsg = "Configuration $configDto was written to the database, but couldn't be published. Cause: $e"
