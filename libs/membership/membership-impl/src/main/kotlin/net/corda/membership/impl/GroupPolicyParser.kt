@@ -78,7 +78,6 @@ class GroupPolicyParser @Activate constructor(
             return MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                     mgmInfo + sortedMapOf(
-                        MemberInfoExtension.PARTY_NAME to mgmInfo["corda.name"],
                         *convertKeys(listOf(encodedSessionKey)).toTypedArray(),
                         *generateKeyHashes(listOf(sessionKey)).toTypedArray(),
                         MemberInfoExtension.PARTY_OWNING_KEY to encodedSessionKey
