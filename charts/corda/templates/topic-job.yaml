@@ -35,17 +35,17 @@ spec:
           command:
             - /bin/bash
           args: [
-            "touch /tmp/config.properties"
-            "{ { - if .Values.kafka.tls.enabled } }"
-            "echo \"security.protocol=SSL\n\" >> /tmp/config.properties"
-            "{ { - if .Values.kafka.tls.truststore.secretRef.name } }"
-            "echo \"ssl.truststore.location=/certs/ca.crt\n\" >> /tmp/config.properties"
-            "  echo \"ssl.truststore.type={ { .Values.kafka.tls.truststore.type | upper } }\n\" >> /tmp/config.properties"
-            "{ { - if .Values.kafka.tls.truststore.password } }"
-            "echo \"ssl.truststore.password={ { .Values.kafka.tls.truststore.password } }\n\" >> /tmp/config.properties"
-            "{ { - end } }"
-            "{ { - end } }"
-            "{ { - end } }"
+            "touch /tmp/config.properties",
+            {{- if .Values.kafka.tls.enabled }}
+            "echo \"security.protocol=SSL\n\" >> /tmp/config.properties",
+            {{- if .Values.kafka.tls.truststore.secretRef.name }}
+            "echo \"ssl.truststore.location=/certs/ca.crt\n\" >> /tmp/config.properties",
+            "echo \"ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n\" >> /tmp/config.properties",
+            {{- if .Values.kafka.tls.truststore.password }}
+            "echo \"ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n\" >> /tmp/config.properties",
+            {{- end }}
+            {{- end }}
+            {{- end }}
           ]
           volumeMounts:
             - mountPath: /tmp/
