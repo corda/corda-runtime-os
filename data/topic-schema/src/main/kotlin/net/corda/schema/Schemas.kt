@@ -52,6 +52,7 @@ class Schemas {
         companion object {
             const val HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.registration.hsm"
             const val RPC_OPS_MESSAGE_TOPIC = "crypto.ops.rpc"
+            const val RPC_OPS_MESSAGE_RESPONSE_TOPIC = "crypto.ops.rpc.resp"
             const val FLOW_OPS_MESSAGE_TOPIC = "crypto.ops.flow"
             const val HSM_CONFIG_TOPIC = "crypto.config.hsm"
             const val MEMBER_CONFIG_TOPIC = "crypto.config.member"
