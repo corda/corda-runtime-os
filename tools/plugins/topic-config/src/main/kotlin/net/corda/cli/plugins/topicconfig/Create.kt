@@ -118,7 +118,7 @@ class Create(
     ): List<String> {
         val address = bootstrapAddress ?: throw NoValidBootstrapAddress(bootstrapAddress)
         @Suppress("MaxLineLength")
-        return listOf("kafka-topics.sh --bootstrap-server $address --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName ${createConfigString(config)} &")
+        return listOf("kafka-topics.sh --command-config /tmp/config.properties --bootstrap-server $address --partitions $partitions --replication-factor $replicas --create --if-not-exists --topic $topicName ${createConfigString(config)} &")
     }
 
     fun createConfigString(config: Map<String, String>): String {
