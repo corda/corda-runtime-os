@@ -6,8 +6,8 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
 
-fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, signatureSchemeName: String): KeyPair {
-    val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
+fun generateKeyPair(schemeMetadata: CipherSchemeMetadata, schemeName: String): KeyPair {
+    val scheme = schemeMetadata.findKeyScheme(schemeName)
     val keyPairGenerator = KeyPairGenerator.getInstance(
         scheme.algorithmName,
         schemeMetadata.providers.getValue(scheme.providerName)

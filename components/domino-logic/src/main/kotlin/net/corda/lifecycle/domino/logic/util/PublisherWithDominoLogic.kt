@@ -1,5 +1,6 @@
 package net.corda.lifecycle.domino.logic.util
 
+import java.util.concurrent.CompletableFuture
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -8,13 +9,12 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import java.util.concurrent.CompletableFuture
 
 class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherConfig: PublisherConfig,
-    private val configuration: SmartConfig,
+    private val messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -26,7 +26,7 @@ class PublisherWithDominoLogic(
         val resourceReady = CompletableFuture<Unit>()
         publisher = publisherFactory.createPublisher(
             publisherConfig,
-            configuration
+            messagingConfiguration
         ).also {
             resources.keep {
                 it.close()

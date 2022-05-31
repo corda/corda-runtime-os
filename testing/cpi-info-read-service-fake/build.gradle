@@ -20,6 +20,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:registry")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

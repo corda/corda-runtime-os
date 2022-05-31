@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
-import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -19,7 +18,7 @@ class FlowEventProcessorImpl(
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
     private val config: SmartConfig
-) : FlowEventProcessor {
+) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
         val log = contextLogger()

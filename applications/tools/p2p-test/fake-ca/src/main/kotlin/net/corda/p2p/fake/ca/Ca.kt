@@ -67,6 +67,13 @@ class Ca {
     )
     private var curveName: String = "secp256r1"
 
+    @Option(
+        names = ["--stacktrace"],
+        description = ["Print out the stacktrace for all exceptions"],
+        hidden = true,
+    )
+    private var _stackTrace: Boolean = false
+
     internal val authority by lazy {
         if (certificatesDurationInDays <= 0) {
             throw FakeCaException("Invalid duration: $certificatesDurationInDays")

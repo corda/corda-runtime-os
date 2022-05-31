@@ -1,11 +1,15 @@
 package net.corda.crypto.impl.components
 
 import net.corda.crypto.impl.SignatureInstances
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -20,6 +24,9 @@ class SignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val hashingService: DigestService
 ) : SignatureVerificationService {
+    companion object {
+        private val logger = contextLogger()
+    }
 
     private val signatureInstances = SignatureInstances(schemeMetadata.providers)
 
@@ -28,82 +35,96 @@ class SignatureVerificationServiceImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         signatureData: ByteArray,
         clearData: ByteArray
-    ) =
-        doVerify(schemeMetadata.findSignatureScheme(publicKey), signatureSpec, publicKey, signatureData, clearData)
+    ) {
+        logger.debug {
+            "verify(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
+        }
+        if (!isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)) {
+            throw SignatureException("Signature Verification failed!")
+        }
+    }
 
-    override fun verify(publicKey: PublicKey, signatureData: ByteArray, clearData: ByteArray) =
-        doVerify(schemeMetadata.findSignatureScheme(publicKey), null, publicKey, signatureData, clearData)
+    override fun verify(
+        publicKey: PublicKey,
+        digest: DigestAlgorithmName,
+        signatureData: ByteArray,
+        clearData: ByteArray
+    ) {
+        logger.debug {
+            "verify(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
+        }
+        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
+        require(signatureSpec != null) {
+            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+                    " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
+        }
+        if (!isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)) {
+            throw SignatureException("Signature Verification failed!")
+        }
+    }
 
     override fun isValid(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         signatureData: ByteArray,
         clearData: ByteArray
-    ): Boolean =
-        isValid(publicKey, schemeMetadata.findSignatureScheme(publicKey), signatureSpec, signatureData, clearData)
+    ): Boolean {
+        logger.debug {
+            "isValid(publicKey=${publicKey.publicKeyId()},signatureSpec=${signatureSpec.signatureName})"
+        }
+        return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
+    }
 
-    override fun isValid(publicKey: PublicKey, signatureData: ByteArray, clearData: ByteArray): Boolean =
-        isValid(publicKey, schemeMetadata.findSignatureScheme(publicKey), null, signatureData, clearData)
-
-    @Suppress("ThrowsCount")
-    private fun doVerify(
-        signatureScheme: SignatureScheme,
-        signatureSpec: SignatureSpec?,
+    override fun isValid(
         publicKey: PublicKey,
+        digest: DigestAlgorithmName,
         signatureData: ByteArray,
         clearData: ByteArray
-    ) {
-        require(isSupported(signatureScheme)) {
-            "Unsupported key/algorithm for schemeCodeName: ${signatureScheme.codeName}"
+    ): Boolean {
+        logger.debug {
+            "isValid(publicKey=${publicKey.publicKeyId()},digest=${digest.name})"
         }
-        val verificationResult = isValid(publicKey, signatureScheme, signatureSpec, signatureData, clearData)
-        if (!verificationResult) {
-            throw SignatureException("Signature Verification failed!")
+        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
+        require(signatureSpec != null) {
+            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+                    " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
+        return isValid(publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec, signatureData, clearData)
     }
 
     private fun isValid(
         publicKey: PublicKey,
-        signatureScheme: SignatureScheme,
-        signatureSpec: SignatureSpec?,
-        signatureBytes: ByteArray,
+        scheme: KeyScheme,
+        signatureSpec: SignatureSpec,
+        signatureData: ByteArray,
         clearData: ByteArray
     ): Boolean {
-        require(isSupported(signatureScheme)) {
-            "Unsupported key/algorithm for codeName: ${signatureScheme.codeName}"
+        require(schemeMetadata.schemes.contains(scheme)) {
+            "Unsupported key/algorithm for codeName: ${scheme.codeName}"
         }
-        require(signatureBytes.isNotEmpty()) {
+        require(signatureData.isNotEmpty()) {
             "Signature data is empty!"
         }
         require(clearData.isNotEmpty()) {
             "Clear data is empty, nothing to verify!"
         }
-        val effectiveSignatureScheme = if(signatureSpec != null) {
-            signatureScheme.copy(signatureSpec = signatureSpec)
-        } else {
-            signatureScheme
-        }
-        val signingData = effectiveSignatureScheme.signatureSpec.getSigningData(hashingService, clearData)
-        return if (effectiveSignatureScheme.signatureSpec.precalculateHash && signatureScheme.algorithmName == "RSA") {
+        val signingData = signatureSpec.getSigningData(hashingService, clearData)
+        return if (signatureSpec.precalculateHash && scheme.algorithmName == "RSA") {
             val cipher = Cipher.getInstance(
-                effectiveSignatureScheme.signatureSpec.signatureName,
-                    schemeMetadata.providers.getValue(signatureScheme.providerName)
+                signatureSpec.signatureName,
+                schemeMetadata.providers.getValue(scheme.providerName)
             )
             cipher.init(Cipher.DECRYPT_MODE, publicKey)
-            cipher.doFinal(signatureBytes).contentEquals(signingData)
+            cipher.doFinal(signatureData).contentEquals(signingData)
         } else {
-            signatureInstances.withSignature(effectiveSignatureScheme) {
-                if(effectiveSignatureScheme.signatureSpec.params != null) {
-                    it.setParameter(effectiveSignatureScheme.signatureSpec.params)
+            signatureInstances.withSignature(scheme, signatureSpec) {
+                if(signatureSpec.params != null) {
+                    it.setParameter(signatureSpec.params)
                 }
                 it.initVerify(publicKey)
                 it.update(signingData)
-                it.verify(signatureBytes)
+                it.verify(signatureData)
             }
         }
-    }
-
-    private fun isSupported(scheme: SignatureScheme): Boolean {
-        return schemeMetadata.schemes.contains(scheme)
     }
 }

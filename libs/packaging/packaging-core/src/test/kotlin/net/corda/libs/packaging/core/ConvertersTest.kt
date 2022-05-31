@@ -4,52 +4,8 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.Random
 
 class ConvertersTest {
-
-    private val random = Random(0)
-
-    // Need to truncate the timestamp as round trip to Avro wipes nanos
-    private val currentTimeStamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
-
-    private val cpiId = CpiIdentifier("SomeName",
-        "1.0",
-        SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
-    )
-    private val cpkId = CpkIdentifier("SomeName",
-        "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)))
-    private val cpkDependencyId = CpkIdentifier("SomeName 2",
-        "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)))
-    private val cpkType = CpkType.CORDA_API
-    private val cpkFormatVersion = CpkFormatVersion(2, 3)
-    private val cpkManifest = CpkManifest(CpkFormatVersion(2, 3))
-    private val manifestCordappInfo = ManifestCorDappInfo("someName", "R3", 42, "some license")
-    private val cordappManifest = CordappManifest(
-        "net.corda.Bundle",
-        "1.2.3",
-        12,
-        34,
-        ManifestCorDappInfo("someName", "R3", 42, "some license"),
-        ManifestCorDappInfo("someName", "R3", 42, "some license"),
-        mapOf("Corda-Contract-Classes" to "contractClass1, contractClass2",
-            "Corda-Flow-Classes" to "flowClass1, flowClass2"),
-    )
-
-    private val cpkMetadata = CpkMetadata(
-        cpkId,
-        cpkManifest,
-        "mainBundle.jar",
-        listOf("library.jar"),
-        listOf(cpkDependencyId),
-        cordappManifest,
-        cpkType,
-        SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
-        emptySet(),
-        currentTimeStamp
-    )
 
     private companion object {
 
@@ -91,7 +47,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․Identifier round trip`() {
-        val original = cpkId
+        val original = CpkMetaTestData.cpkId
         val avroObject = original.toAvro()
         val cordaObject = CpkIdentifier.fromAvro(avroObject)
         Assertions.assertEquals(original, cordaObject)
@@ -107,7 +63,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․Type round trip`() {
-        val original = cpkType
+        val original = CpkMetaTestData.cpkType
         val avroObject = original.toAvro()
         val cordaObject = CpkType.fromAvro(avroObject)
         Assertions.assertEquals(original, cordaObject)
@@ -115,7 +71,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․FormatVersion round trip`() {
-        val original = cpkFormatVersion
+        val original = CpkMetaTestData.cpkFormatVersion
         val avroObject = original.toAvro()
         val cordaObject = CpkFormatVersion.fromAvro(avroObject)
         Assertions.assertEquals(original, cordaObject)
@@ -123,7 +79,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․Manifest round trip`() {
-        val original = cpkManifest
+        val original = CpkMetaTestData.cpkManifest
         val avroObject = original.toAvro()
         val cordaObject = CpkManifest(
             CpkFormatVersion.fromAvro(avroObject.version)
@@ -133,7 +89,7 @@ class ConvertersTest {
 
     @Test
     fun `ManifestCordappInfo round trip`() {
-        val original = manifestCordappInfo
+        val original = CpkMetaTestData.manifestCordappInfo
         val avroObject = original.toAvro()
         val cordaObject =
             ManifestCorDappInfo(avroObject.shortName, avroObject.vendor, avroObject.versionId, avroObject.license)
@@ -142,7 +98,7 @@ class ConvertersTest {
 
     @Test
     fun `CordappManifest round trip`() {
-        val original = cordappManifest
+        val original = CpkMetaTestData.cordappManifest
         val avroObject = original.toAvro()
         val cordaObject = CordappManifest.fromAvro(avroObject)
         assertCordappManifestEquals(original, cordaObject)
@@ -150,18 +106,7 @@ class ConvertersTest {
 
     @Test
     fun `CPK․Metadata round trip`() {
-        val original = CpkMetadata(
-            cpkId,
-            cpkManifest,
-            "mainBundle.jar",
-            listOf("library.jar"),
-            listOf(cpkId),
-            cordappManifest,
-            cpkType,
-            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
-            emptySet(),
-            currentTimeStamp
-        )
+        val original = CpkMetaTestData.create()
         val avroObject = original.toAvro()
         val cordaObject = CpkMetadata.fromAvro(avroObject)
         assertCpkMetadataEquals(original, cordaObject)
@@ -169,7 +114,7 @@ class ConvertersTest {
 
     @Test
     fun `CPI․Identifier round trip`() {
-        val original = cpiId
+        val original = CpkMetaTestData.cpiId
         val avroObject = original.toAvro()
         val cordaObject = CpiIdentifier.fromAvro(avroObject)
         Assertions.assertEquals(original, cordaObject)
@@ -191,12 +136,12 @@ class ConvertersTest {
     @Test
     fun `CPI․Metadata round trip`() {
         val original = CpiMetadata(
-            cpiId,
-            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
-            listOf(cpkMetadata),
+            CpkMetaTestData.cpiId,
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(CpkMetaTestData.random::nextBytes)),
+            listOf(CpkMetaTestData.create()),
             "someString",
             -1,
-            currentTimeStamp
+            CpkMetaTestData.currentTimeStamp
         )
         val avroObject = original.toAvro()
         val cordaObject = CpiMetadata.fromAvro(avroObject)

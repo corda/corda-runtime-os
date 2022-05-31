@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.signing
 
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
 
 @Suppress("LongParameterList")
 class SigningWrappedKeySaveContext(
@@ -10,6 +10,6 @@ class SigningWrappedKeySaveContext(
     override val externalId: String?,
     override val alias: String?,
     override val category: String,
-    override val signatureScheme: SignatureScheme,
+    override val keyScheme: KeyScheme,
     override val associationId: String
 ) : SigningKeySaveContext

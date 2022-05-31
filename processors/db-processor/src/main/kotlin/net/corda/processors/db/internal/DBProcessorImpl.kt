@@ -5,6 +5,7 @@ import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
@@ -80,7 +81,9 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = CpiInfoWriteService::class)
     private val cpiInfoWriteService: CpiInfoWriteService,
     @Reference(service = ReconcilerFactory::class)
-    private val reconcilerFactory: ReconcilerFactory
+    private val reconcilerFactory: ReconcilerFactory,
+    @Reference(service = ConfigPublishService::class)
+    private val configPublishService: ConfigPublishService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -112,7 +115,8 @@ class DBProcessorImpl @Activate constructor(
         ::flowPersistenceService,
         ::cpkReadService,
         ::cpiInfoReadService,
-        ::cpiInfoWriteService
+        ::cpiInfoWriteService,
+        ::configPublishService
     )
 
     private var cpiInfoDbReader: CpiInfoDbReader? = null
@@ -148,14 +152,7 @@ class DBProcessorImpl @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.registration == dbManagerRegistrationHandler) {
-                    log.info("DB Connection Manager has been initialised")
-
-                    // ready to continue bootstrapping processor
-                    log.info("Bootstrapping Config Write Service with instance ID: $instanceId")
-                    configWriteService.startProcessing(
-                        bootstrapConfig!!,
-                        dbConnectionManager.getClusterEntityManagerFactory())
-
+                    log.info("Bootstrapping config read service")
                     configurationReadService.bootstrapConfig(bootstrapConfig!!)
                 } else {
                     log.info("DB processor is ${event.status}")
@@ -177,11 +174,19 @@ class DBProcessorImpl @Activate constructor(
                     }
             }
             is BootConfigEvent -> {
-                bootstrapConfig = event.config
-                instanceId = event.config.getInt(INSTANCE_ID)
+                val bootstrapConfig = event.config
+                instanceId = bootstrapConfig.getInt(INSTANCE_ID)
 
                 log.info("Bootstrapping DB connection Manager")
-                dbConnectionManager.bootstrap(event.config.getConfig(BOOT_DB_PARAMS))
+                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB_PARAMS))
+
+                log.info("Bootstrapping config publish service")
+                configPublishService.bootstrapConfig(bootstrapConfig)
+
+                log.info("Bootstrapping config write service with instance id: $instanceId")
+                configWriteService.bootstrapConfig(bootstrapConfig)
+
+                this.bootstrapConfig = bootstrapConfig
             }
             is StopEvent -> {
                 dependentComponents.stopAll()

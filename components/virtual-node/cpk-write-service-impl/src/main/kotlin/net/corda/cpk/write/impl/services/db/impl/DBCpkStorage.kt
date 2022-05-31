@@ -2,7 +2,7 @@ package net.corda.cpk.write.impl.services.db.impl
 
 import net.corda.cpk.write.impl.services.db.CpkStorage
 import net.corda.cpk.write.impl.services.db.CpkChecksumToData
-import net.corda.libs.cpi.datamodel.CpkDataEntity
+import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.findCpkChecksumsNotIn
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
@@ -39,7 +39,7 @@ class DBCpkStorage(private val entityManagerFactory: EntityManagerFactory) : Cpk
     override fun getCpkDataByCpkId(checksum: SecureHash): CpkChecksumToData {
         return entityManagerFactory.createEntityManager().transaction {
             val cpkDataEntity = it.find(
-                CpkDataEntity::class.java,
+                CpkFileEntity::class.java,
                 checksum.toString()
             )
             CpkChecksumToData(SecureHash.create(cpkDataEntity.fileChecksum), cpkDataEntity.data)

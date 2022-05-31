@@ -95,13 +95,14 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testSessionInitOutAndDataInbound() {
         val testId = "test1"
+        val versions = listOf(1)
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), bootConfig)
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                    testId, testId, testId,null
+                    testId, versions, testId, testId,null
                 ))
             )
         )

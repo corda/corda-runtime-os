@@ -3,19 +3,19 @@ package net.corda.configuration.write.impl.writer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import java.time.Clock
+import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.configuration.write.publish.ConfigurationDto
+import net.corda.configuration.write.publish.ConfigurationSchemaVersionDto
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.versioning.Version
+import net.corda.data.config.ConfigurationSchemaVersion
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -28,7 +28,7 @@ import net.corda.v5.base.versioning.Version
  * @property clock Controls how the current instant is determined, so it can be injected during testing.
  */
 internal class ConfigWriterProcessor(
-    private val publisher: Publisher,
+    private val configPublishService: ConfigPublishService,
     private val configEntityWriter: ConfigEntityWriter,
     private val validator: ConfigurationValidator,
     private val clock: Clock = Clock.systemUTC()
@@ -38,7 +38,7 @@ internal class ConfigWriterProcessor(
 
     /**
      * For each [request], the processor attempts to commit the updated config to the cluster database. If successful,
-     * the updated config is then published by the [publisher] to the [CONFIG_TOPIC] topic for consumption using a
+     * the updated config is then published by the [configPublishService] to the [CONFIG_TOPIC] topic for consumption using a
      * `ConfigReader`.
      *
      * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.
@@ -46,11 +46,14 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
+
+        // abstract the following to be re used here and in DB `ReconcilerReader`
         if (validate(request, respFuture, false)) {
             val configEntity = publishConfigToDB(request, respFuture)
             if (configEntity != null && validate(request, respFuture, true)) {
                 configEntity.config = request.config
-                publishConfigToKafka(configEntity, respFuture)
+                val configDto = configEntity.toDto()
+                publishConfigToKafka(configDto, respFuture)
             }
         }
     }
@@ -105,28 +108,21 @@ internal class ConfigWriterProcessor(
      * not retried. Otherwise, [respFuture] is completed successfully.
      */
     private fun publishConfigToKafka(
-        entity: ConfigEntity,
+        configDto: ConfigurationDto,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-        val config = Configuration(
-            entity.config, entity.version.toString(),
-            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor)
-        )
-        val configRecord = Record(CONFIG_TOPIC, entity.section, config)
-        // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
-        val future = publisher.publish(listOf(configRecord)).first()
-
         try {
-            // TODO - CORE-3730 - Define timeout policy.
-            future.get()
+            configPublishService.put(configDto)
         } catch (e: Exception) {
-            val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
+            // TODO using the entity for now. Maybe we should be introducing a DTO for Configuration.
+            val errMsg = "Configuration $configDto was written to the database, but couldn't be published. Cause: $e"
             handleException(
-                respFuture, errMsg, e, entity.section, entity.config, ConfigurationSchemaVersion(
-                    entity.schemaVersionMajor,
-                    entity.schemaVersionMinor
+                respFuture, errMsg, e, configDto.section, configDto.value,
+                ConfigurationSchemaVersion(
+                    configDto.configurationSchemaVersionDto.majorVersion,
+                    configDto.configurationSchemaVersionDto.minorVersion
                 ),
-                entity.version
+                configDto.version
             )
             return
         }
@@ -134,10 +130,13 @@ internal class ConfigWriterProcessor(
         val response = ConfigurationManagementResponse(
             true,
             null,
-            entity.section,
-            entity.config,
-            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor),
-            entity.version
+            configDto.section,
+            configDto.value,
+            ConfigurationSchemaVersion(
+                configDto.configurationSchemaVersionDto.majorVersion,
+                configDto.configurationSchemaVersionDto.minorVersion
+            ),
+            configDto.version
         )
         respFuture.complete(response)
     }
@@ -158,3 +157,14 @@ internal class ConfigWriterProcessor(
         respFuture.complete(response)
     }
 }
+
+private fun ConfigEntity.toDto(): ConfigurationDto =
+    ConfigurationDto(
+        section = this.section,
+        value = this.config,
+        version = this.version,
+        configurationSchemaVersionDto = ConfigurationSchemaVersionDto(
+            this.schemaVersionMajor,
+            this.schemaVersionMinor
+        )
+    )

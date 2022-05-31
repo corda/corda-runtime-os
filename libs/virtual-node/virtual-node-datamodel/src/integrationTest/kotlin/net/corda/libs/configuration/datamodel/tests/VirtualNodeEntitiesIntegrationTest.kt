@@ -84,7 +84,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val cpiMetadata = CpiMetadataEntity(
             "Test CPI", "1.0", "CPI summary hash",
             "file", "1234567890", "group policy",
-            "group ID", "request ID", false
+            "group ID", "request ID", emptySet()
         )
         val virtualNode = VirtualNodeEntity(
             "0123456789AB", "Test CPI", "1.0",

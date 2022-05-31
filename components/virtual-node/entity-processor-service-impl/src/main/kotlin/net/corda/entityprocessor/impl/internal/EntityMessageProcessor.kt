@@ -2,14 +2,17 @@ package net.corda.entityprocessor.impl.internal
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
-import net.corda.data.virtualnode.DeleteEntity
-import net.corda.data.virtualnode.EntityRequest
-import net.corda.data.virtualnode.EntityResponse
-import net.corda.data.virtualnode.EntityResponseFailure
-import net.corda.data.virtualnode.Error
-import net.corda.data.virtualnode.FindEntity
-import net.corda.data.virtualnode.MergeEntity
-import net.corda.data.virtualnode.PersistEntity
+import net.corda.data.persistence.DeleteEntityById
+import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.EntityRequest
+import net.corda.data.persistence.EntityResponse
+import net.corda.data.persistence.EntityResponseFailure
+import net.corda.data.persistence.Error
+import net.corda.data.persistence.FindAll
+import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.MergeEntity
+import net.corda.data.persistence.PersistEntity
+import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.messaging.api.processor.DurableProcessor
@@ -18,12 +21,13 @@ import net.corda.orm.utils.transaction
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.schema.Schemas
+import net.corda.utilities.time.Clock
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
-import java.time.Instant
+import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 
 
@@ -40,6 +44,8 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  */
 class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
+    private val clock: Clock,
+    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, EntityRequest> {
     companion object {
         private val log = contextLogger()
@@ -95,6 +101,7 @@ class EntityMessageProcessor(
         return processRequestWithSandbox(sandbox, requestId, request)
     }
 
+    @Suppress("ComplexMethod")
     private fun processRequestWithSandbox(
         sandbox: SandboxGroupContext,
         requestId: String,
@@ -106,10 +113,15 @@ class EntityMessageProcessor(
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
 
-        val persistenceServiceInternal = PersistenceServiceInternal(entitySandboxService::getClass, requestId)
+        val persistenceServiceInternal = PersistenceServiceInternal(
+            entitySandboxService::getClass,
+            requestId,
+            clock,
+            payloadCheck
+        )
 
         // We match on the type, and pass the cast into the persistence service.
-        // Any exception that occurs next we assume orignates in Hibernate and categorise
+        // Any exception that occurs next we assume originates in Hibernate and categorise
         // it accordingly.
         val response = try {
             entityManagerFactory.createEntityManager().transaction {
@@ -124,6 +136,12 @@ class EntityMessageProcessor(
                         it,
                         request.request as DeleteEntity
                     )
+                    is DeleteEntityById -> persistenceServiceInternal.removeById(
+                        serializationService,
+                        it,
+                        request.request as DeleteEntityById,
+                        holdingIdentity
+                    )
                     is MergeEntity -> persistenceServiceInternal.merge(
                         serializationService,
                         it,
@@ -135,6 +153,12 @@ class EntityMessageProcessor(
                         request.request as FindEntity,
                         holdingIdentity
                     )
+                    is FindAll -> persistenceServiceInternal.findAll(
+                        serializationService,
+                        it,
+                        request.request as FindAll,
+                        holdingIdentity
+                    )
                     else -> {
                         failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
                     }
@@ -143,30 +167,36 @@ class EntityMessageProcessor(
         } catch (e: java.io.NotSerializableException) {
             // Deserialization failure should be deterministic, and therefore retrying won't save you.
             // We mark this as FATAL so the flow worker knows about it, as per PR discussion.
-            EntityResponse(
-                Instant.now(), requestId, EntityResponseFailure(
-                    Error.FATAL, ExceptionEnvelope(e.javaClass.canonicalName, e.localizedMessage)
-                )
-            )
+            failureResponse(requestId, e, Error.FATAL)
+        } catch (e: KafkaMessageSizeException) {
+            // Results exceeded max packet size that we support at the moment.
+            // We intend to support chunked results later.
+            failureResponse(requestId, e, Error.FATAL)
         } catch (e: Exception) {
-            EntityResponse(
-                Instant.now(), requestId, EntityResponseFailure(
-                    Error.DATABASE, ExceptionEnvelope(e.javaClass.canonicalName, e.localizedMessage)
-                )
-            )
+            failureResponse(requestId, e, Error.DATABASE)
         }
+
         return response
     }
 
-    private fun failureResponse(requestId: String, e: Exception, errorType: Error) =
-        EntityResponse(
-            Instant.now(),
+    private fun failureResponse(requestId: String, e: Exception, errorType: Error): EntityResponse {
+        if (errorType == Error.FATAL) {
+            //  Fatal exception here is unrecoverable and serious as far the flow worker is concerned.
+            log.error("Exception occurred (type=$errorType) for flow-worker request $requestId", e)
+        } else {
+            //  Non-fatal is a warning, and could be 'no cpks', but should still be logged for investigation.
+            log.warn("Exception occurred (type=$errorType) for flow-worker request $requestId", e)
+        }
+
+        return EntityResponse(
+            clock.instant(),
             requestId,
             EntityResponseFailure(
                 errorType,
                 ExceptionEnvelope(e::class.java.simpleName, e.localizedMessage)
             )
         )
+    }
 
     override val keyClass: Class<String>
         get() = String::class.java

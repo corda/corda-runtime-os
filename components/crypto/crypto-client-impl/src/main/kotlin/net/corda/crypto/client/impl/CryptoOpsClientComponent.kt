@@ -9,6 +9,7 @@ import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoPublicKey
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -17,15 +18,17 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.config.getConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -109,19 +112,26 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun sign(
         tenantId: String,
         publicKey: PublicKey,
-        data: ByteArray,
-        context: Map<String, String>
-    ): DigitalSignature.WithKey =
-        impl.ops.sign(tenantId, publicKey, data, context)
-
-    override fun sign(
-        tenantId: String,
-        publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey =
         impl.ops.sign(tenantId, publicKey, signatureSpec, data, context)
+
+    override fun sign(
+        tenantId: String,
+        publicKey: PublicKey,
+        digest: DigestAlgorithmName,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignature.WithKey {
+        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
+        require(signatureSpec != null) {
+            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+                    " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
+        }
+        return impl.ops.sign(tenantId, publicKey, signatureSpec, data, context)
+    }
 
     override fun lookup(
         tenantId: String,
@@ -165,9 +175,10 @@ class CryptoOpsClientComponent @Activate constructor(
     override fun signProxy(
         tenantId: String,
         publicKey: ByteBuffer,
+        signatureSpec: CryptoSignatureSpec,
         data: ByteBuffer,
         context: KeyValuePairList
-    ): CryptoSignatureWithKey = impl.ops.signProxy(tenantId, publicKey, data, context)
+    ): CryptoSignatureWithKey = impl.ops.signProxy(tenantId, publicKey, signatureSpec, data, context)
 
     override fun createWrappingKey(
         configId: String,

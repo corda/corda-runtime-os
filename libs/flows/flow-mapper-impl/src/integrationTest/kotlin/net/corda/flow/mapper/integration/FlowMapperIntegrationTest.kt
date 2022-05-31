@@ -105,7 +105,7 @@ class FlowMapperIntegrationTest {
     @Test
     fun `Send SessionInit`() {
         val inputKey = "sessionId"
-        val sessionInit = SessionInit("flowName", "cpiId", "flowId", null)
+        val sessionInit = SessionInit("flowName", listOf(1), "cpiId", "flowId", null)
 
         val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit)
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
@@ -125,6 +125,7 @@ class FlowMapperIntegrationTest {
         val inputKey = "sessionId-INITIATED"
         val sessionInit = SessionInit(
             "flowName",
+            listOf(1),
             "cpiId",
             "flow id",
             null

@@ -18,11 +18,11 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -40,7 +40,7 @@ class FlowRunnerImplTest {
     private val flowFactory = mock<FlowFactory>()
     private val flowStack = mock<FlowStack>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
-    private val sandboxGroupContext = mock<SandboxGroupContext>()
+    private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     private val fiber = mock<FlowFiber<Any?>>()
@@ -54,10 +54,9 @@ class FlowRunnerImplTest {
     init {
         whenever(flowCheckpoint.flowId).thenReturn(FLOW_ID_1)
         whenever(flowCheckpoint.flowStack).thenReturn(flowStack)
+        whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
         flowFiberExecutionContext = FlowFiberExecutionContext(
-            sandboxDependencyInjector,
             flowCheckpoint,
-            mock(),
             sandboxGroupContext,
             BOB_X500_HOLDING_IDENTITY,
             mock()

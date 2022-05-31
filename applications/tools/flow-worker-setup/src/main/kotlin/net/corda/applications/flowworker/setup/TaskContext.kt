@@ -1,6 +1,8 @@
 package net.corda.applications.flowworker.setup
 
 import com.typesafe.config.ConfigValueFactory
+import java.util.Properties
+import java.util.concurrent.TimeUnit
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -8,14 +10,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.v5.base.concurrent.getOrThrow
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
-import java.util.*
-import java.util.concurrent.TimeUnit
 
 class TaskContext(
     val startArgs: Args,
@@ -27,12 +27,12 @@ class TaskContext(
 
     init {
         kafkaAdminClient = AdminClient.create(getKafkaProperties())
-        val bootConfig = SmartConfigImpl.empty()
+        val messagingConfig = SmartConfigImpl.empty()
             .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(startArgs.instanceId))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(startArgs.topicPrefix))
             .withValue(KAFKA_BOOTSTRAP_SERVERS, ConfigValueFactory.fromAnyRef(startArgs.bootstrapServer))
             .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("KAFKA"))
-        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup", false), bootConfig)
+        publisher = publisherFactory.createPublisher(PublisherConfig("Flow Worker Setup", false), messagingConfig)
     }
 
     fun createTopics(topics: List<NewTopic>) {

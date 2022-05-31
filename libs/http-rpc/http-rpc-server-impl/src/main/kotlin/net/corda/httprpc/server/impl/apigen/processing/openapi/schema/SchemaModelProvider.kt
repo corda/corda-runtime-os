@@ -168,7 +168,7 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
 
     private fun SchemaModel.applyMetaInfo(param: EndpointParameter) = this.apply {
         this.name = param.name
-        this.description = param.description
+        if(param.description.isNotBlank()) this.description = param.description
         this.required = param.required
         this.nullable = param.nullable
     }

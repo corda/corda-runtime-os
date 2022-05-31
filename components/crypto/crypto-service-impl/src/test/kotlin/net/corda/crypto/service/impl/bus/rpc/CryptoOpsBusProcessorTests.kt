@@ -3,18 +3,19 @@ package net.corda.crypto.service.impl.bus.rpc
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.service.impl.infra.TestServicesFactory.Companion.CTX_TRACKING
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoKeySchemes
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
-import net.corda.data.crypto.wire.CryptoSignatureSchemes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -25,7 +26,6 @@ import net.corda.data.crypto.wire.ops.rpc.commands.GenerateFreshKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.commands.SignRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.commands.SignWithSpecRpcCommand
 import net.corda.data.crypto.wire.ops.rpc.queries.ByIdsRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.crypto.wire.ops.rpc.queries.KeysRpcQuery
@@ -33,11 +33,12 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.assertj.core.api.Assertions.assertThat
@@ -46,8 +47,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -71,16 +70,7 @@ class CryptoOpsBusProcessorTests {
             )
 
         private fun getRSAasCustomSignatureSpecWithParams(): SignatureSpec =
-            SignatureSpec(
-                signatureName = "RSASSA-PSS",
-                params = PSSParameterSpec(
-                    "SHA-256",
-                    "MGF1",
-                    MGF1ParameterSpec.SHA256,
-                    32,
-                    1
-                )
-            )
+            RSASSA_PSS_SHA256_SIGNATURE_SPEC
     }
 
     private lateinit var factory: TestServicesFactory
@@ -260,11 +250,11 @@ class CryptoOpsBusProcessorTests {
         assertEquals(1, key3.keys.size)
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         // signing
-        testSigningByPublicKeyLookup(publicKey, data)
+        testSigning(publicKey, data)
     }
 
     @Test
-    fun `Should generate key pair and be able to find and lookup and then sign custom signature params`() {
+    fun `Should generate key pair and be able to find and lookup and then sign with custom signature params`() {
         setup()
         val signatureSpec4 = getRSAasCustomSignatureSpecWithParams()
         val data = UUID.randomUUID().toString().toByteArray()
@@ -349,7 +339,7 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context4,
-                SignWithSpecRpcCommand(
+                SignRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         signatureSpec4.signatureName,
@@ -412,7 +402,7 @@ class CryptoOpsBusProcessorTests {
         assertNull(info.alias)
         assertNull(info.externalId)
         // signing
-        testSigningByPublicKeyLookup(publicKey, data)
+        testSigning(publicKey, data)
     }
 
     @Test
@@ -455,7 +445,7 @@ class CryptoOpsBusProcessorTests {
         assertNull(info.alias)
         assertEquals(externalId, UUID.fromString(info.externalId))
         // signing
-        testSigningByPublicKeyLookup(publicKey, data)
+        testSigning(publicKey, data)
     }
 
     @Test
@@ -539,7 +529,7 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context3,
-                SignWithSpecRpcCommand(
+                SignRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         "BAD-SIGNATURE-ALGORITHM",
@@ -595,8 +585,8 @@ class CryptoOpsBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(CryptoSignatureSchemes::class.java)
-        val actualSchemes = result.response as CryptoSignatureSchemes
+        assertThat(result.response).isInstanceOf(CryptoKeySchemes::class.java)
+        val actualSchemes = result.response as CryptoKeySchemes
         val expectedSchemes = signingService.getSupportedSchemes(
             tenantId,
             CryptoConsts.Categories.LEDGER
@@ -623,8 +613,8 @@ class CryptoOpsBusProcessorTests {
         )
         val result = future.get()
         assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(CryptoSignatureSchemes::class.java)
-        val actualSchemes = result.response as CryptoSignatureSchemes
+        assertThat(result.response).isInstanceOf(CryptoKeySchemes::class.java)
+        val actualSchemes = result.response as CryptoKeySchemes
         val expectedSchemes = signingService.getSupportedSchemes(
             tenantId,
             CryptoConsts.Categories.LEDGER
@@ -635,7 +625,7 @@ class CryptoOpsBusProcessorTests {
         }
     }
 
-    private fun testSigningByPublicKeyLookup(publicKey: PublicKey, data: ByteArray) {
+    private fun testSigning(publicKey: PublicKey, data: ByteArray) {
         // sign using public key and default scheme
         val context2 = createRequestContext()
         val operationContext = listOf(
@@ -643,11 +633,15 @@ class CryptoOpsBusProcessorTests {
             KeyValuePair("reason", "Hello World!")
         )
         val future2 = CompletableFuture<RpcOpsResponse>()
+        val signatureSpec2 = schemeMetadata.supportedSignatureSpec(
+            schemeMetadata.findKeyScheme(publicKey)
+        ).first()
         processor.onNext(
             RpcOpsRequest(
                 context2,
                 SignRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                    signatureSpec2.toWire(schemeMetadata),
                     ByteBuffer.wrap(data),
                     KeyValuePairList(operationContext)
                 )
@@ -664,7 +658,7 @@ class CryptoOpsBusProcessorTests {
         assertThat(result2.response).isInstanceOf(CryptoSignatureWithKey::class.java)
         val signature2 = result2.response as CryptoSignatureWithKey
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
-        verifier.verify(publicKey, signature2.bytes.array(), data)
+        verifier.verify(publicKey, signatureSpec2, signature2.bytes.array(), data)
         // sign using public key and full custom scheme
         val signatureSpec3 = getECDSAFullCustomSignatureSpec()
         val context3 = createRequestContext()
@@ -672,7 +666,7 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context3,
-                SignWithSpecRpcCommand(
+                SignRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         signatureSpec3.signatureName,
@@ -698,7 +692,7 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context4,
-                SignWithSpecRpcCommand(
+                SignRpcCommand(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         signatureSpec4.signatureName,

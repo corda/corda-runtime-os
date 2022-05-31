@@ -265,9 +265,14 @@ if (System.getenv("RELEASE_VERSION")?.trim()) {
 logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 //logger.quiet("Release Type: {}", releaseType)
+
 if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
     logger.quiet( "Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
 }
+
+if ("${compositeBuild}".toBoolean() && file("${cordaCliHostLocation}").exists()) {
+    logger.quiet( "Corda-Cli-Plugin-Host project exists on disk in the expected location and Gradle composite build is enabled, corda-cli-plugin-host binaries will be substituted with source code")
+} 
 
 subprojects {
     buildscript {

@@ -2,15 +2,9 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.findAllCpiMetadata
-import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.packaging.core.CpkFormatVersion
-import net.corda.libs.packaging.core.CpkIdentifier
-import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -118,7 +112,7 @@ class CpiInfoDbReader(
     // Separating actual logic from lifecycle stuff so it can be unit tested.
     @Suppress("ComplexMethod")
     @VisibleForTesting
-    internal fun doGetAllVersionedRecords() =
+    internal fun doGetAllVersionedRecords() : Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
         entityManagerFactory!!.createEntityManager().run {
             val currentTransaction = transaction
             currentTransaction.begin()
@@ -128,92 +122,31 @@ class CpiInfoDbReader(
                 currentTransaction.rollback()
                 close()
             }.map { cpiMetadataEntity ->
-                val cpiMetadata = CpiMetadata(
-                    cpiId = CpiIdentifier(
-                        cpiMetadataEntity.name,
-                        cpiMetadataEntity.version,
-                        if (cpiMetadataEntity.signerSummaryHash != "")
-                            SecureHash.create(cpiMetadataEntity.signerSummaryHash)
-                        else
-                            null
-                    ),
-                    fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum),
-                    cpksMetadata = mutableListOf<CpkMetadata>().also { cpkMetadataList ->
-                        for (cpkMetadataEntity in cpiMetadataEntity.cpks) {
-                            cpkMetadataList.add(
-                                CpkMetadata(
-                                    cpkId = CpkIdentifier(
-                                        cpkMetadataEntity.mainBundleName,
-                                        cpkMetadataEntity.mainBundleVersion,
-                                        if (cpkMetadataEntity.signerSummaryHash != "")
-                                            SecureHash.create(cpkMetadataEntity.signerSummaryHash)
-                                        else
-                                            null
-                                    ),
-                                    manifest = CpkManifest(
-                                        CpkFormatVersion(
-                                            cpkMetadataEntity.cpkManifest.cpkFormatVersion.major,
-                                            cpkMetadataEntity.cpkManifest.cpkFormatVersion.minor
-                                        )
-                                    ),
-                                    mainBundle = cpkMetadataEntity.cpkMainBundle,
-                                    libraries = cpkMetadataEntity.cpkLibraries.toList(),
-                                    dependencies = mutableListOf<CpkIdentifier>().also { cpkDependenciesList ->
-                                        cpkMetadataEntity.cpkDependencies.forEach { cpkDependencyEntity ->
-                                            cpkDependenciesList.add(
-                                                CpkIdentifier(
-                                                    cpkDependencyEntity.mainBundleName,
-                                                    cpkDependencyEntity.mainBundleVersion,
-                                                    if (cpkDependencyEntity.signerSummaryHash != "")
-                                                        SecureHash.create(cpkDependencyEntity.signerSummaryHash)
-                                                    else
-                                                        null
-                                                )
-                                            )
-                                        }
-                                    },
-                                    cordappManifest = CordappManifest(
-                                        bundleSymbolicName = cpkMetadataEntity.cpkCordappManifest!!.bundleSymbolicName,
-                                        bundleVersion = cpkMetadataEntity.cpkCordappManifest!!.bundleVersion,
-                                        minPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.minPlatformVersion,
-                                        targetPlatformVersion = cpkMetadataEntity.cpkCordappManifest!!.targetPlatformVersion,
-                                        contractInfo = ManifestCorDappInfo(
-                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.shortName,
-                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.vendor,
-                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.versionId,
-                                            cpkMetadataEntity.cpkCordappManifest?.contractInfo?.license
-                                        ),
-                                        workflowInfo = ManifestCorDappInfo(
-                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.shortName,
-                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.vendor,
-                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.versionId,
-                                            cpkMetadataEntity.cpkCordappManifest?.workflowInfo?.license
-                                        ),
-                                        // TODO below field to be populated from CpkCordappManifestEntity.attributes when added
-                                        //  (https://r3-cev.atlassian.net/browse/CORE-4658)
-                                        emptyMap()
-                                    ),
-                                    type = CpkType.parse(cpkMetadataEntity.cpkType ?: ""),
-                                    fileChecksum = cpkMetadataEntity.cpkFileChecksum.let { SecureHash.create(it) },
-                                    // TODO below field to be populated from CpkMetadataEntity.cordappCertificates when added
-                                    //  (https://r3-cev.atlassian.net/browse/CORE-4658)
-                                    cordappCertificates = emptySet(),
-                                    timestamp = cpkMetadataEntity.insertTimestamp.getOrNow()
-                                )
-                            )
-                        }
-                    },
-                    groupPolicy = cpiMetadataEntity.groupPolicy,
-                    version = cpiMetadataEntity.entityVersion,
-                    timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
+                val cpiId = CpiIdentifier(
+                    cpiMetadataEntity.name,
+                    cpiMetadataEntity.version,
+                    if (cpiMetadataEntity.signerSummaryHash != "")
+                        SecureHash.create(cpiMetadataEntity.signerSummaryHash)
+                    else
+                        null
                 )
-
-                VersionedRecord(
-                    version = cpiMetadata.version,
-                    isDeleted = cpiMetadataEntity.isDeleted,
-                    key = cpiMetadata.cpiId,
-                    value = cpiMetadata
-                )
+                object : VersionedRecord<CpiIdentifier, CpiMetadata> {
+                    override val version = cpiMetadataEntity.entityVersion
+                    override val isDeleted = cpiMetadataEntity.isDeleted
+                    override val key = cpiId
+                    override val value by lazy {
+                        CpiMetadata(
+                            cpiId = cpiId,
+                            fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum),
+                            cpksMetadata = cpiMetadataEntity.cpks.map {
+                                CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata)
+                            },
+                            groupPolicy = cpiMetadataEntity.groupPolicy,
+                            version = cpiMetadataEntity.entityVersion,
+                            timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
+                        )
+                    }
+                }
             }
         }
 
