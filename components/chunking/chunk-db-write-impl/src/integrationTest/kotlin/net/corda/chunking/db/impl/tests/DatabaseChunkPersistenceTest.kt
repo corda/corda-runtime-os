@@ -38,6 +38,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -440,6 +441,26 @@ internal class DatabaseChunkPersistenceTest {
 
         assertThrows<PersistenceException> {
             persistence.persistMetadataAndCpks(cpi, "test.cpi", checksum, UUID.randomUUID().toString(), "123456")
+        }
+    }
+
+    @Test
+    fun `database chunk persistence can write multiple CPIs with shared CPKs into database`() {
+        val sharedCpk = mockCpk(SecureHash.create("AAA:1234567890abcd"), "1.cpk")
+        val cpi1 = mockCpi(listOf(
+            sharedCpk,
+            mockCpk(SecureHash.create("BBB:2345678901abcd"), "2.cpk"),
+        ))
+
+        persistence.persistMetadataAndCpks(cpi1, "test.cpi", SecureHash.create("DUMMY:deadbeefdeadbeef"), UUID.randomUUID().toString(), "123456")
+
+        val cpi2 = mockCpi(listOf(
+            sharedCpk,
+            mockCpk(SecureHash.create("CCC:3456789012abcd"), "3.cpk"),
+        ))
+
+        assertDoesNotThrow {
+            persistence.persistMetadataAndCpks(cpi2, "test.cpi", SecureHash.create("DUMMY:deadbeefdeadbbff"), UUID.randomUUID().toString(), "123456")
         }
     }
 

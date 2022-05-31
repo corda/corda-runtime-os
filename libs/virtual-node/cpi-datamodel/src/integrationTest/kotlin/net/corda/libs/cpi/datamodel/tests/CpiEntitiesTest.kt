@@ -181,6 +181,74 @@ class CpiEntitiesIntegrationTest {
     }
 
     @Test
+    fun `can have second cpi with shared cpk`() {
+        val cpiId = UUID.randomUUID()
+        val cpkId = UUID.randomUUID()
+        val cpkData = CpkFileEntity(
+            "cpk-checksum-$cpkId",
+            ByteArray(2000),
+        )
+        val cpkMeta1 =
+            CpkMetadataEntityFactory.create(
+                cpkData.fileChecksum,
+                "test-cpk",
+                "1.2.3",
+                randomChecksumString(),
+            )
+        val cpi1 = CpiMetadataEntityFactory.create(cpiId, listOf(Pair("test-cpk", cpkMeta1)))
+
+        EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use { em ->
+            em.transaction {
+                it.persist(cpi1)
+                it.persist(cpkData)
+                it.flush()
+            }
+        }
+
+        // Create another CPK
+        val cpkData2 = CpkFileEntity(
+            "cpk-checksum-${UUID.randomUUID()}",
+            ByteArray(2000),
+        )
+        val cpkMeta2 = CpkMetadataEntityFactory.create(
+            cpkData2.fileChecksum,
+            "test-cpk2",
+            "2.2.3",
+            randomChecksumString(),
+        )
+        val cpi2 = CpiMetadataEntityFactory.create(cpiId, listOf(Pair("test-cpk1", cpkMeta1), Pair("test-cpk2", cpkMeta2)))
+
+        EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use { em ->
+            em.transaction {
+                it.merge(cpi2)
+                it.persist(cpkData2)
+                it.flush()
+            }
+        }
+
+        val loadedCpi = EntityManagerFactoryFactoryImpl().create(
+            "test_unit",
+            CpiEntities.classes.toList(),
+            dbConfig
+        ).use {
+            it.find(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
+            )
+        }
+
+        assertThat(loadedCpi.cpks.size).isEqualTo(2)
+    }
+
+    @Test
     fun `on findCpkChecksumsNotIn an empty set returns all results`() {
         val cpkChecksums = List(3) { randomChecksumString() }
 
