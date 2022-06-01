@@ -54,7 +54,7 @@ internal class VirtualNodeWriterProcessor(
 
     companion object {
         private val logger = contextLogger()
-        val PUBLICATION_TIMEOUT_SECONDS = 30L
+        const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
     /**
@@ -225,11 +225,11 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
-        val mgmMemberInfo = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory).run {
+        val mgmInfo = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory).run {
             getMgmInfo(groupPolicyJson)
         }
-        if (mgmMemberInfo == null) {
-            logger.info("No MGM information available. MGM member info not published.")
+        if (mgmInfo == null) {
+            logger.info("No MGM information found in group policy. MGM member info not published.")
             return
         }
         val mgmRecord = Record(
@@ -237,16 +237,15 @@ internal class VirtualNodeWriterProcessor(
             holdingIdentity,
             PersistentMemberInfo(
                 holdingIdentity.toAvro(),
-                mgmMemberInfo.memberProvidedContext.toWire(),
-                mgmMemberInfo.mgmProvidedContext.toWire()
+                mgmInfo.memberProvidedContext.toWire(),
+                mgmInfo.mgmProvidedContext.toWire()
             )
         )
         try {
-            val future = vnodePublisher.publish(listOf(mgmRecord)).first()
-            future.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            vnodePublisher.publish(listOf(mgmRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
-                "MGM member info for Group ID: ${mgmMemberInfo.groupId} could not be published. Cause: $e", e)
+                "MGM member info for Group ID: ${mgmInfo.groupId} could not be published. Cause: $e", e)
         }
     }
 

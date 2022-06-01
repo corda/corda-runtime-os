@@ -80,11 +80,11 @@ class GroupPolicyParser @Activate constructor(
             val now = clock.instant().toString()
             return MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-                    mgmInfo + sortedMapOf(
+                    (mgmInfo + mapOf(
                         *convertKeys(listOf(encodedSessionKey)).toTypedArray(),
                         *generateKeyHashes(listOf(sessionKey)).toTypedArray(),
                         MemberInfoExtension.PARTY_OWNING_KEY to encodedSessionKey
-                    )
+                    )).toSortedMap()
                 ),
                 mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                     sortedMapOf(

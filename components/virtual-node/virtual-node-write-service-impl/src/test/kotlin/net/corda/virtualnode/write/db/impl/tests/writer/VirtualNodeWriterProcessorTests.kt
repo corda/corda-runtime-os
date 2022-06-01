@@ -1,7 +1,9 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.packaging.CpiIdentifier
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
@@ -10,18 +12,25 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.MGMContextImpl
+import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
+import net.corda.membership.impl.toMemberInfo
+import net.corda.membership.impl.toSortedMap
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
@@ -30,10 +39,12 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -50,6 +61,9 @@ import javax.persistence.EntityTransaction
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
+    companion object {
+        const val CPI_ID_SHORT_HASH = "dummy_cpi_id_short_hash"
+    }
 
     private val groupId = "dummy_mgm_group_id"
     private val x500Name = "OU=LLC, O=Bob, L=Dublin, C=IE"
@@ -63,9 +77,9 @@ class VirtualNodeWriterProcessorTests {
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
-        CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId, "{\"group policy\":\"dummy_group_policy\"}")
+        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, "{\"group policy\":\"dummy_group_policy\"}")
     private val cpiMetaDataWithMGM =
-        CPIMetadata(cpiId, "dummy_cpi_id_short_hash", groupId, getSampleGroupPolicy())
+        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, getSampleGroupPolicy())
     private val connectionId = UUID.randomUUID().toString()
     private val vnodeInfo =
         VirtualNodeInfo(
@@ -75,7 +89,7 @@ class VirtualNodeWriterProcessorTests {
             null)
 
     private val vnodeCreationReq =
-        VirtualNodeCreationRequest(vnodeInfo.holdingIdentity.x500Name, "dummy_cpi_id_short_hash",
+        VirtualNodeCreationRequest(vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
             "dummy_vault_ddl_config", "dummy_vault_dml_config",
             "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor")
 
@@ -196,8 +210,34 @@ class VirtualNodeWriterProcessorTests {
         )
         processRequest(processor, vnodeCreationReq)
 
-        // called twice for publishing vnode info and MGM info
-        verify(publisher, times(2)).publish(any())
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+        // called twice for publishing virtual node info and MGM info
+        verify(publisher, times(2)).publish(capturedPublishedList.capture())
+        val publishedVirtualNodeList = capturedPublishedList.firstValue
+        assertSoftly {
+            it.assertThat(publishedVirtualNodeList.size).isEqualTo(1)
+            val publishedVirtualNode = publishedVirtualNodeList.first()
+            it.assertThat(publishedVirtualNode.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+            it.assertThat((publishedVirtualNode.value as VirtualNodeInfo).holdingIdentity.toCorda())
+                .isEqualTo(holdingIdentity)
+        }
+        val publishedMgmInfoList = capturedPublishedList.secondValue
+        assertSoftly {
+            it.assertThat(publishedMgmInfoList.size).isEqualTo(1)
+            val publishedMgmInfo = publishedMgmInfoList.first()
+            it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
+            val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
+            val mgmPublished = toMemberInfo(
+                layeredPropertyMapFactory.create<MemberContextImpl>(
+                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.memberContext).toSortedMap()
+                ),
+                layeredPropertyMapFactory.create<MGMContextImpl>(
+                    KeyValuePairList.fromByteBuffer(persistentMemberPublished.mgmContext).toSortedMap()
+                )
+            )
+            it.assertThat(mgmPublished.name.toString())
+                .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
+        }
     }
 
     @Test
@@ -216,8 +256,17 @@ class VirtualNodeWriterProcessorTests {
         )
         processRequest(processor, vnodeCreationReq)
 
-        // called once for publishing vnode info
-        verify(publisher, times(1)).publish(any())
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+        // called once for publishing virtual node info
+        verify(publisher, times(1)).publish(capturedPublishedList.capture())
+        val publishedVirtualNodeList = capturedPublishedList.firstValue
+        assertSoftly {
+            it.assertThat(publishedVirtualNodeList.size).isEqualTo(1)
+            val publishedVirtualNode = publishedVirtualNodeList.first()
+            it.assertThat(publishedVirtualNode.topic).isEqualTo(VIRTUAL_NODE_INFO_TOPIC)
+            it.assertThat((publishedVirtualNode.value as VirtualNodeInfo).holdingIdentity.toCorda())
+                .isEqualTo(holdingIdentity)
+        }
     }
 
     @Test
