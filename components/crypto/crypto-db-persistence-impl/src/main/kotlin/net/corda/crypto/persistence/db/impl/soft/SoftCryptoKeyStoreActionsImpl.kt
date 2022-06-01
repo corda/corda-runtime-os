@@ -1,18 +1,18 @@
 package net.corda.crypto.persistence.db.impl.soft
 
 import com.github.benmanes.caffeine.cache.Cache
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheActions
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.persistence.db.impl.doInTransaction
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import java.time.Instant
 import javax.persistence.EntityManager
 
-class SoftCryptoKeyCacheActionsImpl(
+class SoftCryptoKeyStoreActionsImpl(
     private val entityManager: EntityManager,
     private val cache: Cache<String, WrappingKey>,
     private val master: WrappingKey
-) : SoftCryptoKeyCacheActions {
+) : SoftCryptoKeyStoreActions {
     override fun saveWrappingKey(alias: String, key: WrappingKey, failIfExists: Boolean) {
         val entity = WrappingKeyEntity(
             alias = alias,

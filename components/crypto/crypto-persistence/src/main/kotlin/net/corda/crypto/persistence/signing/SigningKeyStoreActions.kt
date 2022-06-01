@@ -3,7 +3,7 @@ package net.corda.crypto.persistence.signing
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import java.security.PublicKey
 
-interface SigningKeyCacheActions : AutoCloseable {
+interface SigningKeyStoreActions : AutoCloseable {
     /**
      * Saving a new key information.
      *

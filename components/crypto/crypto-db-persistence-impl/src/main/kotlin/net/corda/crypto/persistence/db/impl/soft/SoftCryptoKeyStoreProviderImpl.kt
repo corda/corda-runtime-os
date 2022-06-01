@@ -3,8 +3,8 @@ package net.corda.crypto.persistence.db.impl.soft
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.impl.config.toCryptoConfig
@@ -21,8 +21,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [SoftCryptoKeyCacheProvider::class])
-class SoftCryptoKeyCacheProviderImpl @Activate constructor(
+@Component(service = [SoftCryptoKeyStoreProvider::class])
+class SoftCryptoKeyStoreProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -31,9 +31,9 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata
-) : AbstractConfigurableComponent<SoftCryptoKeyCacheProviderImpl.Impl>(
+) : AbstractConfigurableComponent<SoftCryptoKeyStoreProviderImpl.Impl>(
     coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>(),
+    LifecycleCoordinatorName.forComponent<SoftCryptoKeyStoreProvider>(),
     configurationReadService,
     InactiveImpl(),
     setOf(
@@ -45,9 +45,9 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
         ConfigKeys.BOOT_CONFIG,
         ConfigKeys.CRYPTO_CONFIG
     )
-), SoftCryptoKeyCacheProvider {
+), SoftCryptoKeyStoreProvider {
     interface Impl: AutoCloseable {
-        fun getInstance(): SoftCryptoKeyCache
+        fun getInstance(): SoftCryptoKeyStore
     }
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
@@ -55,11 +55,11 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
         ActiveImpl(event, dbConnectionManager, schemeMetadata)
 
-    override fun getInstance(): SoftCryptoKeyCache =
+    override fun getInstance(): SoftCryptoKeyStore =
         impl.getInstance()
 
     class InactiveImpl : Impl {
-        override fun getInstance(): SoftCryptoKeyCache =
+        override fun getInstance(): SoftCryptoKeyStore =
             throw IllegalStateException("The component is in illegal state.")
 
         override fun close() = Unit
@@ -76,9 +76,9 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
             config = event.config.toCryptoConfig()
         }
 
-        private val _instance: SoftCryptoKeyCache by lazy {
+        private val _instance: SoftCryptoKeyStore by lazy {
             val softConfig = config.softPersistence()
-            SoftCryptoKeyCacheImpl(
+            SoftCryptoKeyStoreImpl(
                 config = softConfig,
                 entityManagerFactory = dbConnectionOps.getOrCreateEntityManagerFactory(
                     CordaDb.Crypto,
@@ -92,7 +92,7 @@ class SoftCryptoKeyCacheProviderImpl @Activate constructor(
             )
         }
 
-        override fun getInstance(): SoftCryptoKeyCache = _instance
+        override fun getInstance(): SoftCryptoKeyStore = _instance
 
         override fun close() {
             _instance.close()

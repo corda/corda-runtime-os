@@ -167,6 +167,8 @@ class MemberProcessorIntegrationTest {
 
         private val messagingConfig = makeMessagingConfig(boostrapConfig)
 
+        private lateinit var connectionIds: Map<String, UUID>
+
         @JvmStatic
         @BeforeAll
         fun setUp() {
@@ -191,8 +193,18 @@ class MemberProcessorIntegrationTest {
 
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             publisher.publishMessagingConf(messagingConfig)
-            publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, aliceHoldingIdentity)
-            publisher.publishRawGroupPolicyData(virtualNodeInfoReader, cpiInfoReader, bobHoldingIdentity)
+            publisher.publishRawGroupPolicyData(
+                virtualNodeInfoReader,
+                cpiInfoReader,
+                aliceHoldingIdentity,
+                connectionIds.getValue(aliceVNodeDb.name)
+            )
+            publisher.publishRawGroupPolicyData(
+                virtualNodeInfoReader,
+                cpiInfoReader,
+                bobHoldingIdentity,
+                connectionIds.getValue(bobVNodeDb.name)
+            )
 
             // Wait for published content to be picked up by components.
             eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
@@ -236,21 +248,22 @@ class MemberProcessorIntegrationTest {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
-            addDbConnectionConfigs(configEmf, cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
+            connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, aliceVNodeDb, bobVNodeDb, charlieVNodeDb)
             configEmf.close()
         }
 
-        private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo) {
+        private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo): Map<String, UUID> {
+            val ids = mutableMapOf<String, UUID>()
             dbs.forEach { db ->
                 val configAsString = db.config.root().render(ConfigRenderOptions.concise())
                 configEmf.transaction {
                     val existing = it.createQuery("""
                         SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
-                    """.trimIndent())
+                    """.trimIndent(), DbConnectionConfig::class.java)
                         .setParameter("name", db.name)
                         .setParameter("privilege", DbPrivilege.DML)
                         .resultList
-                    if(existing.isEmpty()) {
+                    ids[db.name] = if(existing.isEmpty()) {
                         val record = DbConnectionConfig(
                             UUID.randomUUID(),
                             db.name,
@@ -261,9 +274,13 @@ class MemberProcessorIntegrationTest {
                             configAsString
                         )
                         it.persist(record)
+                        record.id
+                    } else {
+                        existing.first().id
                     }
                 }
             }
+            return ids
         }
 
         private fun assignHSMs() {
@@ -274,9 +291,6 @@ class MemberProcessorIntegrationTest {
                 }
                 if(hsmRegistrationClient.findHSM(bobVNodeId, it) == null) {
                     hsmRegistrationClient.assignSoftHSM(bobVNodeId, it, emptyMap())
-                }
-                if(hsmRegistrationClient.findHSM(charlieVNodeId, it) == null) {
-                    hsmRegistrationClient.assignSoftHSM(charlieVNodeId, it, emptyMap())
                 }
             }
         }
@@ -369,6 +383,7 @@ class MemberProcessorIntegrationTest {
             virtualNodeInfoReader,
             cpiInfoReader,
             aliceHoldingIdentity,
+            connectionIds.getValue(aliceVNodeDb.name),
             groupPolicy = sampleGroupPolicy2
         )
 
@@ -382,6 +397,7 @@ class MemberProcessorIntegrationTest {
             virtualNodeInfoReader,
             cpiInfoReader,
             aliceHoldingIdentity,
+            connectionIds.getValue(aliceVNodeDb.name),
             groupPolicy = sampleGroupPolicy1
         )
 

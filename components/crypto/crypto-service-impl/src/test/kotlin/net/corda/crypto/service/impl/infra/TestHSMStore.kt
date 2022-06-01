@@ -8,8 +8,8 @@ import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryMapEntity
 import net.corda.crypto.persistence.db.model.HSMConfigEntity
 import net.corda.crypto.persistence.db.model.PrivateKeyPolicy
-import net.corda.crypto.persistence.hsm.HSMCache
-import net.corda.crypto.persistence.hsm.HSMCacheActions
+import net.corda.crypto.persistence.hsm.HSMStore
+import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMStat
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock
 import javax.persistence.RollbackException
 import kotlin.concurrent.withLock
 
-class TestHSMCache : HSMCache {
+class TestHSMStore : HSMStore {
     private val lock = ReentrantLock()
 
     private val configs = mutableListOf<HSMConfigEntity>()
@@ -33,13 +33,13 @@ class TestHSMCache : HSMCache {
     private val associations = mutableListOf<HSMAssociationEntity>()
     private val categoryAssociations = mutableListOf<HSMCategoryAssociationEntity>()
 
-    override fun act(): HSMCacheActions = Actions(this)
+    override fun act(): HSMStoreActions = Actions(this)
 
     override fun close() = Unit
 
     private class Actions(
-        private val cache: TestHSMCache
-    ) : HSMCacheActions {
+        private val cache: TestHSMStore
+    ) : HSMStoreActions {
         companion object {
             private val secureRandom = SecureRandom()
         }

@@ -3,7 +3,7 @@ package net.corda.crypto.persistence.db.impl.signing
 import com.github.benmanes.caffeine.cache.Cache
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningKeyFilterMapImpl
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeySaveContext
@@ -40,13 +40,13 @@ import kotlin.reflect.KProperty
  * that the generation of the keys using aliases is quite rare occasion and that the existence check is done
  * upstream by the higher services.
  */
-class SigningKeyCacheActionsImpl(
+class SigningKeyStoreActionsImpl(
     private val tenantId: String,
     private val entityManager: EntityManager,
     private val cache: Cache<String, SigningCachedKey>,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val keyEncodingService: KeyEncodingService
-) : SigningKeyCacheActions {
+) : SigningKeyStoreActions {
     override fun save(context: SigningKeySaveContext) {
         val entity = when (context) {
             is SigningPublicKeySaveContext -> {
