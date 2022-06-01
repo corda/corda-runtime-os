@@ -40,11 +40,13 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
+    @Suppress("DEPRECATION")
     override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable {
         val handler = ComponentConfigHandler(coordinator, requiredKeys)
         return registerForUpdates(handler)
     }
 
+    @Deprecated("Prefer using registerComponentForUpdates", replaceWith = ReplaceWith("registerComponentForUpdates"))
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
         val registration = ConfigurationChangeRegistration(lifecycleCoordinator, configHandler)
         lifecycleCoordinator.postEvent(ConfigRegistrationAdd(registration))
