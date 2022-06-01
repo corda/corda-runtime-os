@@ -16,7 +16,7 @@ import net.corda.membership.impl.MemberInfoExtension
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -110,7 +110,7 @@ class MemberLookupRpcOpsTest {
         memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 PARTY_NAME to name,
-                PARTY_OWNING_KEY to KNOWN_KEY,
+                PARTY_SESSION_KEY to KNOWN_KEY,
                 GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                 *convertPublicKeys().toTypedArray(),
                 *convertEndpoints().toTypedArray(),
@@ -128,11 +128,11 @@ class MemberLookupRpcOpsTest {
     )
 
     private fun convertPublicKeys(): List<Pair<String, String>> =
-        keys.mapIndexed { index, identityKey ->
+        keys.mapIndexed { index, ledgerKey ->
             String.format(
-                MemberInfoExtension.IDENTITY_KEYS_KEY,
+                MemberInfoExtension.LEDGER_KEYS_KEY,
                 index
-            ) to keyEncodingService.encodeAsString(identityKey)
+            ) to keyEncodingService.encodeAsString(ledgerKey)
         }
 
     private fun convertEndpoints(): List<Pair<String, String>> {

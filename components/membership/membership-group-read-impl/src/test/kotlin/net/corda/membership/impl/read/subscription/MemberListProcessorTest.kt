@@ -9,13 +9,13 @@ import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
@@ -51,7 +51,7 @@ class MemberListProcessorTest {
             EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
         )
-        private val identityKeys = listOf(knownKey, knownKey)
+        private val ledgerKeys = listOf(knownKey, knownKey)
         private lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
         private val converters = listOf(
             EndpointInfoConverter(),
@@ -75,7 +75,7 @@ class MemberListProcessorTest {
             memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to x500Name,
-                    PARTY_OWNING_KEY to knownKeyAsString,
+                    PARTY_SESSION_KEY to knownKeyAsString,
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                     *convertPublicKeys().toTypedArray(),
                     *convertEndpoints().toTypedArray(),
@@ -135,11 +135,11 @@ class MemberListProcessorTest {
         }
 
         private fun convertPublicKeys(): List<Pair<String, String>> =
-            identityKeys.mapIndexed { index, identityKey ->
+            ledgerKeys.mapIndexed { index, ledgerKey ->
                 String.format(
-                    IDENTITY_KEYS_KEY,
+                    LEDGER_KEYS_KEY,
                     index
-                ) to keyEncodingService.encodeAsString(identityKey)
+                ) to keyEncodingService.encodeAsString(ledgerKey)
             }
 
         @JvmStatic

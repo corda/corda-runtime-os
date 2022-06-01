@@ -26,18 +26,18 @@ class AuthenticatedEncryptionSessionTest {
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
-    private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
+    private val partyALedgerKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolA = AuthenticationProtocolInitiator(
         sessionId,
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         partyAMaxMessageSize,
-        partyAIdentityKey.public,
+        partyALedgerKey.public,
         groupId
     )
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
-    private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+    private val partyBLedgerKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolB =
         AuthenticationProtocolResponder(
             sessionId,
@@ -60,29 +60,29 @@ class AuthenticatedEncryptionSessionTest {
 
         // Step 3: initiator sending handshake message and responder validating it.
         val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
+            signature.initSign(partyALedgerKey.private)
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBLedgerKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            partyAIdentityKey.public,
+            partyALedgerKey.public,
             ECDSA_SHA256_SIGNATURE_SPEC,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
+            signature.initSign(partyBLedgerKey.private)
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBLedgerKey.public, signingCallbackForB)
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            partyBIdentityKey.public,
+            partyBLedgerKey.public,
             ECDSA_SHA256_SIGNATURE_SPEC,
         )
 
@@ -139,29 +139,29 @@ class AuthenticatedEncryptionSessionTest {
 
         // Step 3: initiator sending handshake message and responder validating it.
         val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
+            signature.initSign(partyALedgerKey.private)
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBLedgerKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            partyAIdentityKey.public,
+            partyALedgerKey.public,
             ECDSA_SHA256_SIGNATURE_SPEC,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
+            signature.initSign(partyBLedgerKey.private)
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBLedgerKey.public, signingCallbackForB)
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            partyBIdentityKey.public,
+            partyBLedgerKey.public,
             ECDSA_SHA256_SIGNATURE_SPEC,
         )
 
@@ -224,29 +224,29 @@ class AuthenticatedEncryptionSessionTest {
 
         // Step 3: initiator sending handshake message and responder validating it.
         val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
+            signature.initSign(partyALedgerKey.private)
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBLedgerKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            partyAIdentityKey.public,
+            partyALedgerKey.public,
             ECDSA_SHA256_SIGNATURE_SPEC,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
+            signature.initSign(partyBLedgerKey.private)
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBLedgerKey.public, signingCallbackForB)
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            partyBIdentityKey.public,
+            partyBLedgerKey.public,
             ECDSA_SHA256_SIGNATURE_SPEC,
         )
 

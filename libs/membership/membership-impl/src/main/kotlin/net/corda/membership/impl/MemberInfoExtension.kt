@@ -13,24 +13,24 @@ import java.time.Instant
 
 class MemberInfoExtension {
     companion object {
-        /** Key name for identity keys property. */
-        const val IDENTITY_KEYS = "corda.identityKeys"
-        const val IDENTITY_KEYS_KEY = "corda.identityKeys.%s"
+        /** Key name for ledger keys property. */
+        const val LEDGER_KEYS = "corda.ledgerKeys"
+        const val LEDGER_KEYS_KEY = "corda.ledgerKeys.%s"
 
-        /** Key name for identity key hashes property. */
-        const val IDENTITY_KEY_HASHES = "corda.identityKeyHashes"
-        const val IDENTITY_KEY_HASHES_KEY = "corda.identityKeyHashes.%s"
+        /** Key name for ledger key hashes property. */
+        const val LEDGER_KEY_HASHES = "corda.ledgerKeyHashes"
+        const val LEDGER_KEY_HASHES_KEY = "corda.ledgerKeyHashes.%s"
 
         /** Key name for platform version property. */
         const val PLATFORM_VERSION = "corda.platformVersion"
 
         /** Key name for party property. */
         const val PARTY_NAME = "corda.party.name"
-        const val PARTY_OWNING_KEY = "corda.party.owningKey"
+        const val PARTY_SESSION_KEY = "corda.party.sessionInitiationKey"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryServiceParty.name"
-        const val NOTARY_SERVICE_PARTY_KEY = "corda.notaryServiceParty.owningKey"
+        const val NOTARY_SERVICE_PARTY_KEY = "corda.notaryServiceParty.sessionInitiationKey"
 
         /** Key name for serial property. */
         const val SERIAL = "corda.serial"
@@ -127,10 +127,10 @@ class MemberInfoExtension {
         val MemberInfo.modifiedTime: Instant?
             get() = mgmProvidedContext.parse(MODIFIED_TIME)
 
-        /** Collection of identity key hashes for member's node. */
+        /** Collection of ledger key hashes for member's node. */
         @JvmStatic
-        val MemberInfo.identityKeyHashes: Collection<PublicKeyHash>
-            get() = memberProvidedContext.parseSet(IDENTITY_KEY_HASHES)
+        val MemberInfo.ledgerKeyHashes: Collection<PublicKeyHash>
+            get() = memberProvidedContext.parseSet(LEDGER_KEY_HASHES)
 
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic

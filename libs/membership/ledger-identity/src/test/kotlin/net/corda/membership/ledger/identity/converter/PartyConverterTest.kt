@@ -31,7 +31,7 @@ class PartyConverterTest {
         val memberContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.PARTY_NAME to partyName,
-                MemberInfoExtension.PARTY_OWNING_KEY to KEY,
+                MemberInfoExtension.PARTY_SESSION_KEY to KEY,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_NAME to notaryName,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_KEY to KEY
             )
