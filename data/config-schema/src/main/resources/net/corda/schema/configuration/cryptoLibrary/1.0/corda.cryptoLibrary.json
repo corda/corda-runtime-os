@@ -49,13 +49,13 @@
           "description": "Item's expiration time in minutes after accessing it in the wrapping key cache.",
           "type": "integer",
           "minimum": 0,
-          "default": 60
+          "default": 240
         },
         "maximumSize": {
           "description": "Maximum number of items in the wrapping key cache.",
           "type": "integer",
           "minimum": 0,
-          "default": 100
+          "default": 1000
         },
         "retries": {
           "description": "Number of retries if call to the SOFT HSM fails, that value is copied to the corresponding HSM configuration.",
@@ -106,13 +106,25 @@
       "description": "Settings used by signing service persistence layer.",
       "type": "object",
       "properties": {
-        "expireAfterAccessMins": {
+        "keysExpireAfterAccessMins": {
           "description": "Item's expiration time in minutes after accessing it in the key metadata cache, the cache is created per tenant.",
           "type": "integer",
           "minimum": 0,
-          "default": 60
+          "default": 90
         },
-        "maximumSize": {
+        "keyNumberLimit": {
+          "description": "Maximum number of items in the key metadata cache, the cache is created per tenant.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 20
+        },
+        "vnodesExpireAfterAccessMins": {
+          "description": "Item's expiration time in minutes after accessing it in the key metadata cache, the cache is created per tenant.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 120
+        },
+        "vnodeNumberLimit": {
           "description": "Maximum number of items in the key metadata cache, the cache is created per tenant.",
           "type": "integer",
           "minimum": 0,
@@ -129,13 +141,13 @@
           "description": "Item's expiration time in minutes after accessing it in the cache.",
           "type": "integer",
           "minimum": 0,
-          "default": 60
+          "default": 240
         },
         "maximumSize": {
           "description": "Maximum number of items in the cache.",
           "type": "integer",
           "minimum": 0,
-          "default": 100
+          "default": 1000
         },
         "downstreamRetries": {
           "description": "Number of retries when calling downstream services, like creating wrapping key on configuring new HSM.",
