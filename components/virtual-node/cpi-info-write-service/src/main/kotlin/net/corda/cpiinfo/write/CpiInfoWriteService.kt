@@ -11,12 +11,12 @@ import net.corda.reconciliation.ReconcilerWriter
  *
  * This interface complements [CpiInfoReadService]
  */
-interface CpiInfoWriteService : ReconcilerWriter<CpiMetadata>, Lifecycle {
+interface CpiInfoWriteService : ReconcilerWriter<CpiIdentifier, CpiMetadata>, Lifecycle {
     /** Put a new [CpiMetadata] into some implementation (e.g. a Kafka component) */
     @Suppress("parameter_name_changed_on_override")
-    override fun put(cpiMetadata: CpiMetadata)
+    override fun put(cpiIdentifier: CpiIdentifier, cpiMetadata: CpiMetadata)
 
     /** Remove [CpiMetadata] some implementation (e.g. a Kafka component) */
     @Suppress("parameter_name_changed_on_override")
-    override fun remove(cpiMetadata: CpiMetadata)
+    override fun remove(cpiIdentifier: CpiIdentifier)
 }

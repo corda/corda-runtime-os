@@ -7,9 +7,8 @@ import net.corda.configuration.write.impl.writer.ConfigEntityWriter
 import net.corda.configuration.write.impl.writer.ConfigWriterProcessor
 import net.corda.configuration.write.impl.writer.ConfigurationManagementResponseFuture
 import net.corda.configuration.write.publish.ConfigPublishService
-import net.corda.configuration.write.publish.ConfigurationDto
-import net.corda.configuration.write.publish.ConfigurationSchemaVersionDto
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -32,16 +31,16 @@ import org.mockito.kotlin.whenever
 /** Tests of [ConfigWriterProcessor]. */
 class ConfigWriterProcessorTests {
     companion object {
-        fun ConfigurationManagementRequest.toConfigurationDto(): ConfigurationDto =
-            ConfigurationDto(
-                section,
-                config,
-                version,
-                ConfigurationSchemaVersionDto(
-                    schemaVersion.majorVersion,
-                    schemaVersion.minorVersion
-                )
-            )
+        fun ConfigurationManagementRequest.toConfiguration(): Pair<String, Configuration> =
+            section to
+                    Configuration(
+                        config,
+                        version.toString(),
+                        ConfigurationSchemaVersion(
+                            schemaVersion.majorVersion,
+                            schemaVersion.minorVersion
+                        )
+                    )
     }
 
 
@@ -67,7 +66,7 @@ class ConfigWriterProcessorTests {
 
     /** Returns a mock [Publisher] that throws an error whenever it tries to publish. */
     private fun getErroringPublishService() = mock<ConfigPublishService>().apply {
-        whenever(put(any())).thenThrow(publisherError)
+        whenever(put(any(), any())).thenThrow(publisherError)
     }
 
     /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
@@ -101,13 +100,13 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `publishes correct configuration to Kafka`() {
-        val expectedConfig = configMgmtReq.toConfigurationDto()
+        val (expectedConfigSection, expectedConfig) = configMgmtReq.toConfiguration()
 
         val configPublishService = configPublishService
         val processor = ConfigWriterProcessor(configPublishService, configEntityWriter, validator, clock)
         processRequest(processor, configMgmtReq)
 
-        verify(configPublishService).put(expectedConfig)
+        verify(configPublishService).put(expectedConfigSection, expectedConfig)
     }
 
     @Test
@@ -152,7 +151,7 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `sends RPC failure response if fails to publish configuration to Kafka`() {
-        val expectedConfig = configMgmtReq.toConfigurationDto()
+        val expectedConfig = configMgmtReq.toConfiguration()
 
         val expectedEnvelope = ExceptionEnvelope(
             CordaMessageAPIIntermittentException::class.java.name,
