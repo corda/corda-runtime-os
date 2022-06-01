@@ -175,7 +175,7 @@ class Create(
         }
 
         val finalTopics = topics.flatMapIndexed{ index: Int, topic: String ->
-            return@flatMapIndexed if (index % blockSize == 0) {
+            if (index % blockSize == 0) {
                 listOf(topic, "wait")
             } else {
                 listOf(topic)
