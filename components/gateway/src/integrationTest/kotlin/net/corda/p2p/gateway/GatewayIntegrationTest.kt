@@ -77,8 +77,8 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
@@ -807,7 +807,7 @@ class GatewayIntegrationTest : TestBase() {
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
-                    .createMemoryAuthority(RSA_SHA256_TEMPLATE.toFactoryDefinitions())
+                    .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
@@ -891,7 +891,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // new trust store...
                 val secondCertificatesAuthority = CertificateAuthorityFactory
-                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
+                    .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -912,7 +912,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // new trust store and pair...
                 val thirdCertificatesAuthority = CertificateAuthorityFactory
-                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
+                    .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )

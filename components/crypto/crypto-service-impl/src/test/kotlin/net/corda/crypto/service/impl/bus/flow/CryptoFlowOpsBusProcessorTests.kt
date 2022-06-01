@@ -15,6 +15,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoResponseContext
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
@@ -24,8 +25,9 @@ import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -56,6 +58,7 @@ class CryptoFlowOpsBusProcessorTests {
 
     private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformer =
         CryptoFlowOpsTransformer(
+            serializer = mock(),
             requestingComponent = componentName,
             responseTopic = responseTopic,
             keyEncodingService = keyEncodingService,
@@ -320,16 +323,19 @@ class CryptoFlowOpsBusProcessorTests {
         var passedPublicKey = ByteBuffer.allocate(1)
         var passedData = ByteBuffer.allocate(1)
         var passedContext = KeyValuePairList()
+        var passedSignatureSpec = CryptoSignatureSpec()
         doAnswer {
             passedTenantId = it.getArgument(0)
             passedPublicKey = it.getArgument(1)
-            passedData = it.getArgument(2)
-            passedContext = it.getArgument(3)
+            passedSignatureSpec = it.getArgument(2)
+            passedData = it.getArgument(3)
+            passedContext = it.getArgument(4)
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(signature)
+                ByteBuffer.wrap(signature),
+                passedContext
             )
-        }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any())
+        }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any(), any())
         val recordKey = UUID.randomUUID().toString()
         val data = UUID.randomUUID().toString().toByteArray()
         val operationContext = mapOf("key1" to "value1")
@@ -343,6 +349,7 @@ class CryptoFlowOpsBusProcessorTests {
                         value = transformer.createSign(
                             tenantId,
                             publicKey,
+                            EDDSA_ED25519_NONE_SIGNATURE_SPEC,
                             data,
                             operationContext
                         )
@@ -357,6 +364,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(tenantId, passedTenantId)
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
         assertArrayEquals(data, passedData.array())
+        assertEquals(EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName, passedSignatureSpec.signatureName)
         assertNotNull(passedContext.items)
         assertEquals(1, passedContext.items.size)
         assertTrue {

@@ -16,6 +16,7 @@ import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import java.time.Instant
 
 class CryptoFlowOpsBusProcessor(
@@ -88,11 +89,9 @@ class CryptoFlowOpsBusProcessor(
                 event.key,
                 FlowOpsResponse(createResponseContext(request), response)
             )
-            logger.debug(
-                "Handled {} for tenant {}",
-                request.request::class.java.name,
-                request.context.tenantId
-            )
+            logger.debug {
+                "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId}"
+            }
             result
         } catch (e: Throwable) {
             val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"
@@ -174,7 +173,8 @@ class CryptoFlowOpsBusProcessor(
         override fun handle(context: CryptoRequestContext, request: SignFlowCommand): Any =
             client.signProxy(
                 tenantId = context.tenantId,
-                publicKey = request.publicKey ,
+                publicKey = request.publicKey,
+                signatureSpec = request.signatureSpec,
                 data = request.bytes,
                 context = request.context
             )

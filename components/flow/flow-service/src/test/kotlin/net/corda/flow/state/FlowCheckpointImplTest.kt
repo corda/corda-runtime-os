@@ -5,13 +5,16 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.state.impl.FlowCheckpointImpl
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
@@ -23,15 +26,14 @@ import java.nio.ByteBuffer
 import java.time.Instant
 
 class FlowCheckpointImplTest {
-
-
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
+        .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(60000L))
     private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
     private val now = Instant.MIN
 
-    private fun createFlowCheckpoint(checkpoint: Checkpoint? = null): FlowCheckpointImpl {
-        return FlowCheckpointImpl(checkpoint, smartFlowConfig) { now }
+    private fun createFlowCheckpoint(checkpoint: Checkpoint? = null, config: SmartConfig? = null): FlowCheckpointImpl {
+        return FlowCheckpointImpl(checkpoint, config ?: smartFlowConfig) { now }
     }
 
     @Test
@@ -492,6 +494,126 @@ class FlowCheckpointImplTest {
         assertThat(afterRollback?.flowState?.waitingFor).isNull()
         assertThat(afterRollback?.sessions).hasSize(0)
     }
+
+    @Test
+    fun `retry - mark for retry should create retry state`() {
+        val flowEvent = FlowEvent()
+        val error = Exception()
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+        }
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        flowCheckpoint.markForRetry(flowEvent, error)
+
+        val result = flowCheckpoint.toAvro()!!
+
+        assertThat(result.retryState).isNotNull
+        assertThat(result.retryState.retryCount).isEqualTo(1)
+        assertThat(result.retryState.failedEvent).isSameAs(flowEvent)
+        assertThat(result.retryState.firstFailureTimestamp).isEqualTo(now)
+        assertThat(result.retryState.lastFailureTimestamp).isEqualTo(now)
+    }
+
+    @Test
+    fun `retry - mark for retry should apply doubling retry delay`() {
+        val checkpoint1 = Checkpoint().apply {
+            flowState = StateMachineState()
+            retryState = null
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+        }
+
+        val checkpoint2 = Checkpoint().apply {
+            flowState = StateMachineState()
+            retryState = RetryState().apply { retryCount = 1 }
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+        }
+
+        val checkpoint3 = Checkpoint().apply {
+            flowState = StateMachineState()
+            retryState = RetryState().apply { retryCount = 2 }
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+        }
+
+        var flowCheckpoint = createFlowCheckpoint(checkpoint1)
+        flowCheckpoint.markForRetry(FlowEvent(), Exception())
+        var result = flowCheckpoint.toAvro()!!
+        assertThat(result.maxFlowSleepDuration).isEqualTo(1000)
+
+        flowCheckpoint = createFlowCheckpoint(checkpoint2)
+        flowCheckpoint.markForRetry(FlowEvent(), Exception())
+        result = flowCheckpoint.toAvro()!!
+        assertThat(result.maxFlowSleepDuration).isEqualTo(2000)
+
+        flowCheckpoint = createFlowCheckpoint(checkpoint3)
+        flowCheckpoint.markForRetry(FlowEvent(), Exception())
+        result = flowCheckpoint.toAvro()!!
+        assertThat(result.maxFlowSleepDuration).isEqualTo(4000)
+    }
+
+    @Test
+    fun `retry - mark for retry should limit max retry time`() {
+        val flowConfig = ConfigFactory.empty()
+            .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
+            .withValue(FlowConfig.PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(3000L))
+        val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
+
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            retryState = RetryState().apply { retryCount = 5 }
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+        }
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
+        flowCheckpoint.markForRetry(FlowEvent(), Exception())
+        val result = flowCheckpoint.toAvro()!!
+        assertThat(result.maxFlowSleepDuration).isEqualTo(3000)
+    }
+
+    @Test
+    fun `set sleep duration should always keep the min value seen`() {
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+        }
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
+
+        // Defaults to configured value
+        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
+
+        flowCheckpoint.setFlowSleepDuration(500)
+        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(500)
+
+        flowCheckpoint.setFlowSleepDuration(1000)
+        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(500)
+
+        flowCheckpoint.setFlowSleepDuration(200)
+        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(200)
+    }
+
+    @Test
+    fun `set sleep duration should default to configured value for existing checkpoint`() {
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+            this.flowStackItems = listOf()
+            maxFlowSleepDuration = 100
+        }
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint, smartFlowConfig)
+
+        // Defaults to configured value
+        assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
+    }
 }
 
 @InitiatingFlow("valid-example")
@@ -504,4 +626,3 @@ class NonInitiatingFlowExample : Flow<Unit> {
     override fun call() {
     }
 }
-    

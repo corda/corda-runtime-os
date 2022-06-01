@@ -1,5 +1,6 @@
 package net.corda.p2p.setup
 
+import kotlin.system.exitProcess
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -12,7 +13,6 @@ import net.corda.messaging.publisher.factory.CordaPublisherFactory
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.v5.base.util.contextLogger
 import picocli.CommandLine
-import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     Setup(args).run()
@@ -42,6 +42,7 @@ class Setup(
         val command = Command()
         val commandLine = CommandLine(command)
             .setCaseInsensitiveEnumValuesAllowed(true)
+            .setExecutionExceptionHandler(ExceptionHandler())
         @Suppress("SpreadOperator")
         val exitCode = commandLine.execute(*args)
         if (exitCode != 0) {
@@ -56,7 +57,7 @@ class Setup(
         if (records.isNotEmpty()) {
             publisherFactory.createPublisher(
                 PublisherConfig("p2p-setup", false),
-                command.nodeConfiguration(),
+                command.messagingConfiguration(),
             ).use { publisher ->
                 logger.info("Publishing ${records.size} records")
                 publisher.publish(records).forEach {

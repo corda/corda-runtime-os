@@ -1,59 +1,171 @@
 package net.corda.session.mapper.service
 
+import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.config.Configuration
+import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
-import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 internal class FlowMapperServiceTest {
+
+    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
+    private val bootConfig = configFactory.create(
+        ConfigFactory.parseString(
+            """
+                    """.trimIndent()
+        )
+    )
+
+    private val messagingConfig = configFactory.create(
+        ConfigFactory.parseString(
+            """
+                    """.trimIndent()
+        )
+    )
+
     @Test
     fun `flow mapper service correctly responds to dependencies changes`() {
+        LifecycleTest<FlowMapperService>{
+            addDependency<ConfigurationReadService>()
+
+            FlowMapperService(
+                coordinatorFactory,
+                configReadService,
+                mock(),
+                mock(),
+                mock()
+            )
+        }.run {
+
+            testClass.start()
+
+            bringDependenciesUp()
+            verifyIsDown<FlowMapperService>()
+
+            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+
+            verifyIsUp<FlowMapperService>()
+
+            repeat(5) {
+                val iteration = it + 1 // start from one
+                toggleDependency<ConfigurationReadService>(
+                    verificationWhenDown = {
+                        verify(lastConfigHandle).close()
+                    },
+                    verificationWhenUp = {
+                        verify(configReadService, times(iteration + 1)).registerComponentForUpdates(any(), any())
+                    }
+                )
+            }
+            bringDependencyDown<ConfigurationReadService>()
+        }
+    }
+
+    @Test
+    fun `flow mapper service correctly reacts to config changes`() {
         val subName = LifecycleCoordinatorName("sub")
-        val subscription = mock<CompactedSubscription<String, Configuration>>().apply {
+        val subscription = mock<StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>>().apply {
             whenever(subscriptionName).thenReturn(subName)
         }
         val subscriptionFactory = mock<SubscriptionFactory>().apply {
-            whenever(createCompactedSubscription<String, Configuration>(any(), any(), any())).thenReturn(subscription)
+            whenever(createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(any(), any(), any(), any()))
+                .thenReturn(subscription)
         }
 
-        LifecycleTest<FlowMapperService>().run {
+        LifecycleTest<FlowMapperService> {
             addDependency<ConfigurationReadService>()
             addDependency(subName)
 
-            val closeable = mock<AutoCloseable>()
-            val configReadService = mock<ConfigurationReadService>().apply {
-                whenever(registerComponentForUpdates(any(), any())).thenReturn(closeable)
-            }
-
-            val test = FlowMapperService(
+            FlowMapperService(
                 coordinatorFactory,
                 configReadService,
                 subscriptionFactory,
                 mock(),
                 mock()
             )
-            test.start()
+        }.run {
+            testClass.start()
 
-            verifyIsDown<FlowMapperService>()
             bringDependenciesUp()
-            bringDependencyUp<FlowMapperService>()
+            verifyIsDown<FlowMapperService>()
+
+            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+
+            // Create and start the subscription (using the message config)
+            verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
+                any(),
+                any(),
+                eq(messagingConfig),
+                any()
+            )
+            verify(subscription).start()
             verifyIsUp<FlowMapperService>()
 
-            repeat(5) {
-                toggleDependency<ConfigurationReadService>()
-            }
-            verify(closeable, times(5)).close()
-            verify(configReadService, times(6)).registerComponentForUpdates(any(), any())
-            bringDependencyDown<ConfigurationReadService>()
+            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+
+            // Close, recreate and start the subscription (using the message config)
+            verify(subscription).close()
+            verify(subscriptionFactory, times(2)).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
+                any(),
+                any(),
+                eq(messagingConfig),
+                any()
+            )
+            verify(subscription, times(2)).start()
+            verifyIsUp<FlowMapperService>()
+        }
+    }
+
+    @Test
+    fun `flow mapper service correctly handles bad config`() {
+        val subName = LifecycleCoordinatorName("sub")
+        val subscriptionFactory = mock<SubscriptionFactory>().apply {
+            whenever(createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(any(), any(), any(), any()))
+                .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
 
+        LifecycleTest<FlowMapperService> {
+            addDependency<ConfigurationReadService>()
+            addDependency(subName)
+
+            FlowMapperService(
+                coordinatorFactory,
+                configReadService,
+                subscriptionFactory,
+                mock(),
+                mock()
+            )
+        }.run {
+            testClass.start()
+
+            bringDependenciesUp()
+            verifyIsDown<FlowMapperService>()
+
+            sendConfigUpdate(mapOf(BOOT_CONFIG to bootConfig, MESSAGING_CONFIG to messagingConfig))
+
+            // Create and start the subscription (using the message config)
+            verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
+                any(),
+                any(),
+                eq(messagingConfig),
+                any()
+            )
+            verifyIsInError<FlowMapperService>()
+        }
     }
+
 }

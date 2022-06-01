@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,14 +31,13 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 internal class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     subscriptionFactory: SubscriptionFactory,
     groups: LinkManagerGroupPolicyProvider,
     members: LinkManagerMembershipGroupReader,
@@ -50,7 +50,7 @@ internal class DeliveryTracker(
     private val appMessageReplayer = AppMessageReplayer(
         coordinatorFactory,
         publisherFactory,
-        configuration,
+        messagingConfiguration,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler(
@@ -65,7 +65,7 @@ internal class DeliveryTracker(
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
         SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS),
         messageTracker.processor,
-        configuration,
+        messagingConfiguration,
         messageTracker.listener
     )
     private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
@@ -90,7 +90,7 @@ internal class DeliveryTracker(
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
-        configuration: SmartConfig,
+        messagingConfiguration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): LifecycleWithDominoTile {
 
@@ -103,7 +103,7 @@ internal class DeliveryTracker(
             publisherFactory,
             coordinatorFactory,
             PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
-            configuration
+            messagingConfiguration
         )
 
         override val dominoTile = publisher.dominoTile

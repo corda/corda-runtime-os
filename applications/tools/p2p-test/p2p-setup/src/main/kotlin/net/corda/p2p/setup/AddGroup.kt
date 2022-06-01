@@ -17,6 +17,7 @@ import java.util.concurrent.Callable
 @Command(
     name = "add-group",
     description = ["Create a membership group"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,

@@ -56,6 +56,8 @@ interface FlowCheckpoint : NonSerializable {
 
     fun markRetrySuccess()
 
+    fun setFlowSleepDuration(sleepTimeMs: Int)
+
     fun toAvro(): Checkpoint?
 }
 

@@ -18,7 +18,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
@@ -35,6 +34,8 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.messaging.api.records.Record
+import net.corda.libs.packaging.Cpk
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -378,7 +379,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, sessionEvent))
     }
 
-    private fun getFlowEventProcessor(): FlowEventProcessor {
+    private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
             SmartConfigFactory

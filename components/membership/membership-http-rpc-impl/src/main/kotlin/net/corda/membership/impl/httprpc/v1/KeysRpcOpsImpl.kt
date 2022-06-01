@@ -26,6 +26,7 @@ class KeysRpcOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : KeysRpcOps, PluggableRPCOps<KeysRpcOps>, Lifecycle {
+
     override fun listSchemes(
         tenantId: String,
         hsmCategory: String,
@@ -60,7 +61,7 @@ class KeysRpcOpsImpl @Activate constructor(
 
     override fun generateKeyPem(
         tenantId: String,
-        keyId: String
+        keyId: String,
     ): String {
         val key = cryptoOpsClient.lookup(
             tenantId = tenantId,

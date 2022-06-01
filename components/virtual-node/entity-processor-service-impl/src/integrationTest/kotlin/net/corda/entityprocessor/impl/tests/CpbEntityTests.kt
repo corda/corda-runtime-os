@@ -1,8 +1,8 @@
 package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.cpk.read.CpkReadService
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
+import net.corda.entityprocessor.impl.tests.helpers.Resources
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
@@ -35,7 +34,7 @@ class CpbEntityTests {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 5000)
+        @InjectService(timeout = 10000)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -44,8 +43,8 @@ class CpbEntityTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 5000)
-            cpiInfoReadService = setup.fetchService(timeout = 5000)
+            virtualNode = setup.fetchService(timeout = 10000)
+            cpiInfoReadService = setup.fetchService(timeout = 10000)
         }
     }
 

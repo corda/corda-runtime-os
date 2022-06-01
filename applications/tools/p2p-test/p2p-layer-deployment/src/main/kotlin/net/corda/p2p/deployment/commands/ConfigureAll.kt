@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import picocli.CommandLine.Command
@@ -90,9 +90,9 @@ class ConfigureAll : Runnable {
     }
     private val keyStoreDir = File("p2p-deployment/keystores/")
 
-    private fun KeyAlgorithm.signatureScheme() = when (this) {
-        KeyAlgorithm.RSA -> RSA_SHA256_TEMPLATE
-        KeyAlgorithm.ECDSA -> ECDSA_SECP256R1_SHA256_TEMPLATE
+    private fun KeyAlgorithm.keyScheme() = when (this) {
+        KeyAlgorithm.RSA -> RSA_TEMPLATE
+        KeyAlgorithm.ECDSA -> ECDSA_SECP256R1_TEMPLATE
     }
 
     private fun identityKeyFilePair(name: String): Pair<File, File> {
@@ -100,10 +100,10 @@ class ConfigureAll : Runnable {
         val publicKeyFile = File(keyStoreDir.absolutePath, "$name.identity.public.key.pem")
         if (!privateKeyFile.exists()) {
             privateKeyFile.parentFile.mkdirs()
-            val signatureSchemeTemplate = algo.signatureScheme()
-            val keysFactory = KeyPairGenerator.getInstance(signatureSchemeTemplate.algorithmName, BouncyCastleProvider())
-            if (signatureSchemeTemplate.algSpec != null) {
-                keysFactory.initialize(signatureSchemeTemplate.algSpec)
+            val keySchemeTemplate = algo.keyScheme()
+            val keysFactory = KeyPairGenerator.getInstance(keySchemeTemplate.algorithmName, BouncyCastleProvider())
+            if (keySchemeTemplate.algSpec != null) {
+                keysFactory.initialize(keySchemeTemplate.algSpec)
             }
             val pair = keysFactory.generateKeyPair()
 
@@ -155,7 +155,7 @@ class ConfigureAll : Runnable {
                     File(keyStoreDir, "trust-store")
                 }
             )
-            creator.create(hosts = listOf(host), algo.signatureScheme())
+            creator.create(hosts = listOf(host), algo.keyScheme())
         }
     }
 

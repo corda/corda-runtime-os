@@ -13,7 +13,6 @@ import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
-import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.signingPersistence
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -22,9 +21,9 @@ import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.signing.SigningWrappedKeySaveContext
-import net.corda.crypto.persistence.db.impl.hsm.HSMCacheImpl
-import net.corda.crypto.persistence.db.impl.signing.SigningKeyCacheImpl
-import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyCacheImpl
+import net.corda.crypto.persistence.db.impl.hsm.HSMStoreImpl
+import net.corda.crypto.persistence.db.impl.signing.SigningKeyStoreImpl
+import net.corda.crypto.persistence.db.impl.soft.SoftCryptoKeyStoreImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
@@ -49,6 +48,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -59,11 +59,15 @@ import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoListener
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -140,8 +144,8 @@ class PersistenceTests {
 
         private fun randomTenantId() = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
 
-        fun generateKeyPair(signatureSchemeName: String): KeyPair {
-            val scheme = schemeMetadata.findSignatureScheme(signatureSchemeName)
+        fun generateKeyPair(schemeName: String): KeyPair {
+            val scheme = schemeMetadata.findKeyScheme(schemeName)
             val keyPairGenerator = KeyPairGenerator.getInstance(
                 scheme.algorithmName,
                 schemeMetadata.providers.getValue(scheme.providerName)
@@ -314,7 +318,7 @@ class PersistenceTests {
         assertEquals(expected.key.hsmAlias, actual.hsmAlias)
         assertArrayEquals(expected.key.publicKey.encoded, actual.publicKey)
         assertNull(actual.keyMaterial)
-        assertEquals(expected.signatureScheme.codeName, actual.schemeCodeName)
+        assertEquals(expected.keyScheme.codeName, actual.schemeCodeName)
         assertNull(actual.masterKeyAlias)
         assertEquals(expected.externalId, actual.externalId)
         assertNull(actual.encodingVersion)
@@ -338,7 +342,7 @@ class PersistenceTests {
         assertNull(actual.hsmAlias)
         assertArrayEquals(expected.key.publicKey.encoded, actual.publicKey)
         assertArrayEquals(expected.key.keyMaterial, actual.keyMaterial)
-        assertEquals(expected.signatureScheme.codeName, actual.schemeCodeName)
+        assertEquals(expected.keyScheme.codeName, actual.schemeCodeName)
         assertEquals(expected.masterKeyAlias, actual.masterKeyAlias)
         assertEquals(expected.externalId, actual.externalId)
         assertEquals(expected.key.encodingVersion, actual.encodingVersion)
@@ -361,18 +365,17 @@ class PersistenceTests {
             .resultList
     }
 
-    private fun createHSMCacheImpl() = HSMCacheImpl(
-        config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).hsmPersistence(),
+    private fun createHSMCacheImpl() = HSMStoreImpl(
         entityManagerFactory = cryptoEmf
     )
 
-    private fun createSoftCryptoKeyCacheImpl() = SoftCryptoKeyCacheImpl(
+    private fun createSoftCryptoKeyCacheImpl() = SoftCryptoKeyStoreImpl(
         config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).softPersistence(),
         entityManagerFactory = cryptoEmf,
         masterKey = WrappingKey.generateWrappingKey(schemeMetadata)
     )
 
-    private fun createSigningKeyCacheImpl() = SigningKeyCacheImpl(
+    private fun createSigningKeyCacheImpl() = SigningKeyStoreImpl(
         config = createDefaultCryptoConfig(KeyCredentials("salt", "passphrase")).signingPersistence(),
         dbConnectionOps = object : DbConnectionOps {
             override fun putConnection(
@@ -382,7 +385,6 @@ class PersistenceTests {
                 description: String?,
                 updateActor: String
             ): UUID = throw NotImplementedError()
-
             override fun putConnection(
                 entityManager: EntityManager,
                 name: String,
@@ -391,7 +393,6 @@ class PersistenceTests {
                 description: String?,
                 updateActor: String
             ): UUID = throw NotImplementedError()
-
             override fun getClusterDataSource(): DataSource = throw NotImplementedError()
             override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? = null
             override fun getDataSource(config: SmartConfig): CloseableDataSource = throw NotImplementedError()
@@ -405,22 +406,15 @@ class PersistenceTests {
                 } else {
                     throw IllegalArgumentException()
                 }
-
             override fun getOrCreateEntityManagerFactory(
                 name: String,
                 privilege: DbPrivilege,
                 entitiesSet: JpaEntitiesSet
-            ): EntityManagerFactory =
-                if (name.startsWith("vnode_crypto_") && privilege == DbPrivilege.DML) {
-                    cryptoEmf
-                } else {
-                    throw IllegalArgumentException()
-                }
-
+            ): EntityManagerFactory = throw NotImplementedError()
             override fun createEntityManagerFactory(
                 connectionId: UUID,
                 entitiesSet: JpaEntitiesSet
-            ): EntityManagerFactory = throw NotImplementedError()
+            ): EntityManagerFactory = cryptoEmf
         },
         jpaEntitiesRegistry = object : JpaEntitiesRegistry {
             override val all: Set<JpaEntitiesSet> get() = throw NotImplementedError()
@@ -435,7 +429,27 @@ class PersistenceTests {
                 throw NotImplementedError()
         },
         layeredPropertyMapFactory = layeredPropertyMapFactory,
-        keyEncodingService = schemeMetadata
+        keyEncodingService = schemeMetadata,
+        vnodeInfo = object : VirtualNodeInfoReadService {
+            override fun getAll(): List<VirtualNodeInfo> = throw NotImplementedError()
+            override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo = throw NotImplementedError()
+            override fun getById(id: String): VirtualNodeInfo =
+                VirtualNodeInfo(
+                    holdingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
+                    cpiIdentifier = CpiIdentifier(
+                        name = "some-name",
+                        version = "1",
+                        signerSummaryHash = null
+                    ),
+                    vaultDmlConnectionId = UUID.randomUUID(),
+                    cryptoDmlConnectionId = UUID.randomUUID()
+                )
+            override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
+                throw NotImplementedError()
+            override val isRunning: Boolean = true
+            override fun start() {}
+            override fun stop() {}
+        }
     )
 
     private fun createSigningWrappedKeySaveContext(
@@ -452,7 +466,7 @@ class PersistenceTests {
             externalId = UUID.randomUUID().toString(),
             alias = null,
             category = CryptoConsts.Categories.CI,
-            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
+            keyScheme = schemeMetadata.findKeyScheme(schemeCodeName),
             associationId = UUID.randomUUID().toString()
         )
     }
@@ -469,7 +483,7 @@ class PersistenceTests {
             ),
             alias = UUID.randomUUID().toString(),
             category = category,
-            signatureScheme = schemeMetadata.findSignatureScheme(schemeCodeName),
+            keyScheme = schemeMetadata.findKeyScheme(schemeCodeName),
             externalId = UUID.randomUUID().toString(),
             associationId = UUID.randomUUID().toString()
         )

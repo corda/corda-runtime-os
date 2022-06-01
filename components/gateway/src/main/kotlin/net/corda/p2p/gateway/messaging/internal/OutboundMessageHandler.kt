@@ -1,6 +1,12 @@
 package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
+import java.net.URI
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfig
@@ -25,12 +31,6 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
-import java.net.URI
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 /**
  * This is an implementation of an [PubSubProcessor] used to consume messages from a P2P message subscription. The received
@@ -41,7 +41,7 @@ internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     private val retryThreadPoolFactory: () -> ScheduledExecutorService
         = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
@@ -61,13 +61,13 @@ internal class OutboundMessageHandler(
     private val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        nodeConfiguration
+        messagingConfiguration
     )
 
     private val outboundSubscription = subscriptionFactory.createPubSubSubscription(
         SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC),
         this,
-        nodeConfiguration,
+        messagingConfiguration,
     )
     private val outboundSubscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,

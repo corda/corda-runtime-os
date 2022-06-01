@@ -8,7 +8,7 @@ interface ReconcilerFactory {
     fun <K : Any, V : Any> create(
         dbReader: ReconcilerReader<K, V>,
         kafkaReader: ReconcilerReader<K, V>,
-        writer: ReconcilerWriter<V>,
+        writer: ReconcilerWriter<K, V>,
         keyClass: Class<K>,
         valueClass: Class<V>,
         reconciliationIntervalMs: Long

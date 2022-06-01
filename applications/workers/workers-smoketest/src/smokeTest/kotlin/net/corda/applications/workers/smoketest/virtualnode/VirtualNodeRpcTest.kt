@@ -241,7 +241,7 @@ class VirtualNodeRpcTest {
             Thread.sleep(FLOW_WAIT_DURATION.toMillis())
 
             // Depends on the flows in the cpi
-            val className = "net.corda.testing.calculator.CalculatorFlow"
+            val className = "net.cordapp.testing.calculator.CalculatorFlow"
             assertWithRetry {
                 command { flowStart(id, 1, className, requestBody) }
                 condition { it.code == 200 }
