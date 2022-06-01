@@ -3,13 +3,14 @@ package net.corda.libs.packaging.internal
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader
+import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPB_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.internal.PackagingConstants.CPI_GROUP_POLICY_ENTRY
-import net.corda.libs.packaging.internal.PackagingConstants.CPI_NAME_ATTRIBUTE
-import net.corda.libs.packaging.internal.PackagingConstants.CPI_VERSION_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPI_GROUP_POLICY_ENTRY
+import net.corda.libs.packaging.certSummaryHash
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -47,8 +48,8 @@ internal object CpiLoader {
         var groupPolicy : String? = null
         JarInputStream(DigestInputStream(inputStream, md), verifySignature).use { jarInputStream ->
             jarInputStream.manifest?.let(Manifest::getMainAttributes)?.let { mainAttributes ->
-                name = mainAttributes.getValue(CPI_NAME_ATTRIBUTE)
-                version = mainAttributes.getValue(CPI_VERSION_ATTRIBUTE)
+                name = mainAttributes.getValue(CPB_NAME_ATTRIBUTE)
+                version = mainAttributes.getValue(CPB_VERSION_ATTRIBUTE)
             }
             while(true) {
                 val entry = jarInputStream.nextJarEntry ?: break
