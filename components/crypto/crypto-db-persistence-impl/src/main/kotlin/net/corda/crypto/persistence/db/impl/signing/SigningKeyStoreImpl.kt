@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 class SigningKeyStoreImpl(
     private val config: CryptoSigningPersistenceConfig,
     private val dbConnectionOps: DbConnectionOps,
