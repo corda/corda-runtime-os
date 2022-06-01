@@ -1,18 +1,22 @@
 package net.corda.p2p.gateway.messaging.http
 
+import io.netty.buffer.ByteBufAllocator
+import io.netty.buffer.EmptyByteBuf
+import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
+import io.netty.handler.codec.http.HttpHeaders
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.codec.http.HttpRequest as NettyHttpRequest
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atMost
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.slf4j.Logger
 import java.net.InetSocketAddress
-import java.net.SocketAddress
 
 class HttpServerChannelHandlerTest {
 
@@ -22,23 +26,28 @@ class HttpServerChannelHandlerTest {
         val mockLogger = mock<Logger>()
         val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, mockLogger)
 
-        val mockCtx = mock<ChannelHandlerContext>()
-        //val mockCtxChannel = mockCtx.channel()
-        val mockChannelFuture = mock<ChannelFuture>()
-        val mockLastHttpContent = mock<LastHttpContent>()
-        val mockHttpRequest = mock<NettyHttpRequest>()
         val socketAddress = InetSocketAddress("www.alice.net", 91)
+        val mockCtxChannel = mock<Channel> {
+            on { remoteAddress() } doReturn socketAddress
+        }
 
-/*        val mockHttpRequest = mock<NettyHttpRequest> {
+        val mockChannelFuture = mock<ChannelFuture>()
+        val mockCtx = mock<ChannelHandlerContext>{
+            on { channel() } doReturn mockCtxChannel
+            on { writeAndFlush(any()) } doReturn mockChannelFuture
+        }
+
+        val mockHeaders = mock<HttpHeaders>()
+        val mockHttpRequest = mock<NettyHttpRequest> {
             on { uri() } doReturn "http://www.alice.net:90"
-        }*/
+            on { headers() } doReturn mockHeaders
+        }
 
+        val mockLastHttpContent = mock<LastHttpContent> {
+            on { content() } doReturn EmptyByteBuf(ByteBufAllocator.DEFAULT)
+        }
 
-        Mockito.`when`(mockHttpRequest.uri()).thenReturn("http://www.alice.net:90")
-        Mockito.`when`(mockCtx.channel().remoteAddress()).thenReturn(socketAddress)
-        //Mockito.`when`(mockCtxChannel.remoteAddress()).thenReturn(socketAddress)
         httpServerChannelHandler.channelRead(mockCtx, mockHttpRequest)
-        Mockito.`when`(mockCtx.writeAndFlush(any())).thenReturn(mockChannelFuture)
         httpServerChannelHandler.channelRead(mockCtx, mockLastHttpContent)
         Mockito.verify(mockChannelFuture, atMost(1)).addListener { ChannelFutureListener.CLOSE }
     }
