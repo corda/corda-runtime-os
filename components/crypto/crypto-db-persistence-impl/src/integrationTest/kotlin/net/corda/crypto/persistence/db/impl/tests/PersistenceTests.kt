@@ -432,9 +432,10 @@ class PersistenceTests {
         keyEncodingService = schemeMetadata,
         vnodeInfo = object : VirtualNodeInfoReadService {
             override fun getAll(): List<VirtualNodeInfo> = throw NotImplementedError()
-            override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
+            override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo = throw NotImplementedError()
+            override fun getById(id: String): VirtualNodeInfo =
                 VirtualNodeInfo(
-                    holdingIdentity = holdingIdentity,
+                    holdingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
                     cpiIdentifier = CpiIdentifier(
                         name = "some-name",
                         version = "1",
@@ -443,7 +444,6 @@ class PersistenceTests {
                     vaultDmlConnectionId = UUID.randomUUID(),
                     cryptoDmlConnectionId = UUID.randomUUID()
                 )
-            override fun getById(id: String): VirtualNodeInfo? = throw NotImplementedError()
             override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
                 throw NotImplementedError()
             override val isRunning: Boolean = true

@@ -44,6 +44,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -86,7 +87,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = ConfigMerger::class)
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val vnodeInfo: VirtualNodeInfoReadService
 ) : CryptoProcessor {
     private companion object {
         const val CRYPTO_PROCESSOR_CLIENT_ID = "crypto.processor"
@@ -116,7 +119,8 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmConfiguration,
         ::hsmRegistration,
         ::hsmStoreProvider,
-        ::dbConnectionManager
+        ::dbConnectionManager,
+        ::vnodeInfo
     )
 
     override val isRunning: Boolean
