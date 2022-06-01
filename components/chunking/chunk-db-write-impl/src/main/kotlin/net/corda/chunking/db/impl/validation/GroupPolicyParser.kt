@@ -6,7 +6,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.UUID
 
 object GroupPolicyParser {
-    private const val MGM_GROUP_ID = "CREATE_ID"
+    const val MGM_GROUP_ID = "CREATE_ID"
 
     fun groupId(groupPolicyJson: String): String {
         try {
