@@ -1,4 +1,9 @@
 topics:
+  ConfigManagementTopic:
+    name: config.management
+    consumers:
+    producers:
+    config:
   ConfigManagementRequestTopic:
     name: config.management.request
     consumers:

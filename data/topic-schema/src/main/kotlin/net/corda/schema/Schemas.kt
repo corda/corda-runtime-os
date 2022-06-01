@@ -40,6 +40,7 @@ class Schemas {
     class Config {
         companion object {
             const val CONFIG_TOPIC = "config.topic"
+            const val CONFIG_MGMT_TOPIC = "config.management"
             const val CONFIG_MGMT_REQUEST_TOPIC = "config.management.request"
             const val CONFIG_MGMT_REQUEST_RESP_TOPIC = "$CONFIG_MGMT_REQUEST_TOPIC.resp"
         }
@@ -53,6 +54,7 @@ class Schemas {
             const val HSM_REGISTRATION_MESSAGE_TOPIC = "crypto.registration.hsm"
             const val RPC_OPS_MESSAGE_TOPIC = "crypto.ops.rpc"
             const val RPC_OPS_MESSAGE_RESPONSE_TOPIC = "crypto.ops.rpc.resp"
+            const val RPC_OPS_CLIENT_TOPIC = "crypto.ops.rpc.client"
             const val FLOW_OPS_MESSAGE_TOPIC = "crypto.ops.flow"
             const val HSM_CONFIG_TOPIC = "crypto.config.hsm"
             const val MEMBER_CONFIG_TOPIC = "crypto.config.member"
@@ -95,6 +97,8 @@ class Schemas {
             const val PROPOSAL_TOPIC = "membership.proposals"
             const val MEMBERSHIP_RPC_TOPIC = "membership.rpc.ops"
             const val MEMBERSHIP_RPC_RESPONSE_TOPIC = "membership.rpc.ops.resp"
+            const val MEMBERSHIP_OPS_RPC_TOPIC = "membership.ops.rpc"
+            const val MEMBERSHIP_OPS_RPC_RESPONSE_TOPIC = "membership.ops.rpc.resp"
 
             // Member messaging topics
             const val UPDATE_TOPIC = "membership.update"
@@ -124,6 +128,7 @@ class Schemas {
     class Permissions {
         companion object {
             const val PERMISSIONS_USER_SUMMARY_TOPIC = "permissions.user.summary"
+            const val USER_PERMISSIONS_MGMT_TOPIC = "user.permissions.management"
         }
     }
 
@@ -147,13 +152,16 @@ class Schemas {
     class VirtualNode {
         companion object {
             const val VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info"
+            const val VIRTUAL_NODE_MANAGEMENT_TOPIC = "virtual.node.management"
             const val VIRTUAL_NODE_CREATION_REQUEST_TOPIC = "virtual.node.creation.request"
             const val VIRTUAL_NODE_CREATION_REQUEST_RESPONSE_TOPIC = "virtual.node.creation.request.resp"
             const val CPI_INFO_TOPIC = "cpi.info"
             const val CPI_UPLOAD_TOPIC = "cpi.upload"
+            const val CPI_CHUNK_WRITER = "cpi.chunk.writer"
             const val CPI_UPLOAD_STATUS_TOPIC = "cpi.upload.status"
             const val CPK_FILE_TOPIC = "cpk.file"
             const val ENTITY_PROCESSOR = "db.entity.processor"
+            const val VIRTUAL_NODE_ENTITY_PROCESSOR = "virtual.node.entity.processor"
         }
     }
 }

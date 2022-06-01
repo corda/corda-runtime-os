@@ -69,6 +69,11 @@ topics:
     consumers:
     producers:
     config:
+  CryptoOpsRpcClientTopic:
+    name: crypto.ops.rpc.client
+    consumers:
+    producers:
+    config:
   CryptoRegistrationHSMTopic:
     name: crypto.registration.hsm
     consumers:

@@ -15,6 +15,11 @@ topics:
     consumers:
     producers:
     config:
+  CPIChunkWriterTopic:
+    name: cpi.chunk.writer
+    consumers:
+    producers:
+    config:
   CPIStatusTopic:
     name: cpi.upload.status
     consumers:
@@ -33,6 +38,16 @@ topics:
       min.cleanable.dirty.ratio: 0.5
   DatabaseEntityTopic:
     name: db.entity.processor
+    consumers:
+    producers:
+    config:
+  VirtualNodeEntityTopic:
+    name: virtual.node.entity.processor
+    consumers:
+    producers:
+    config:
+  VirtualNodeManagementTopic:
+    name: virtual.node.management
     consumers:
     producers:
     config:

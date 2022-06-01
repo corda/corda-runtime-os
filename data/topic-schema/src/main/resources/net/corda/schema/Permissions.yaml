@@ -1,4 +1,9 @@
 topics:
+  UserPermissionsManagementTopic:
+    name: user.permissions.management
+    consumers:
+    producers:
+    config:
   PermissionsUserSummaryTopic:
     name: permissions.user.summary
     consumers:
