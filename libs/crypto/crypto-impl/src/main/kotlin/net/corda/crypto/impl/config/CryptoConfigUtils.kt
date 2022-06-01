@@ -16,7 +16,7 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 /*
 {
   "rootKey": {
-    "salt": "<plain-text-value>"
+    "salt": "<plain-text-value>",
     "passphrase": {
         "configSecret": {
             "encryptedSecret": "<encrypted-value>"
@@ -27,7 +27,7 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
         "maximumSize": 1000,
         "retries": 0,
         "timeoutMills": 20000,
-        "salt": "<plain-text-value>"
+        "salt": "<plain-text-value>",
         "passphrase": {
             "configSecret": {
                 "encryptedSecret": "<encrypted-value>"
@@ -38,7 +38,9 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
         "keysExpireAfterAccessMins": 90,
         "keyNumberLimit": 20,
         "vnodesExpireAfterAccessMins": 120,
-        "vnodeNumberLimit": 100
+        "vnodeNumberLimit": 100,
+        "connectionsExpireAfterAccessMins": 15,
+        "connectionNumberLimit": 2
     },
     "hsmPersistence": {
         "expireAfterAccessMins": 240,
@@ -164,7 +166,9 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                         CryptoSigningPersistenceConfig::keysExpireAfterAccessMins.name to "90",
                         CryptoSigningPersistenceConfig::keyNumberLimit.name to "20",
                         CryptoSigningPersistenceConfig::vnodesExpireAfterAccessMins.name to "120",
-                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100"
+                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100",
+                        CryptoSigningPersistenceConfig::connectionsExpireAfterAccessMins.name to "15",
+                        CryptoSigningPersistenceConfig::connectionNumberLimit.name to "2"
                     )
                 )
             ).withValue(
