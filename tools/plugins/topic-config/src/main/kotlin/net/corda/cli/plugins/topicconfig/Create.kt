@@ -63,6 +63,12 @@ class Create(
     )
     var outputLocation: String? = null
 
+    @CommandLine.Option(
+        names = ["-b", "--block-size"],
+        description = ["Directory to write all files to"]
+    )
+    var blockSize: Int = 10
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
@@ -165,17 +171,25 @@ class Create(
             val config = topicConfig.config
             val topicScripts = createTopicScripts(topicName, partitions, replicas, config)
             val acls = createACLs(topicName, topicConfig.consumers, topicConfig.producers)
-            topicScripts + acls + listOf("wait")
-        } + "wait"
+            topicScripts + acls
+        }
+
+        val finalTopics = topics.flatMapIndexed{ index: Int, topic: String ->
+            return@flatMapIndexed if (index % blockSize == 0) {
+                listOf(topic, "wait")
+            } else {
+                listOf(topic)
+            }
+        }
 
         if (outputLocation != null) {
             logger.info("Wrote to path $outputLocation")
             val writer = writerFactory(outputLocation!!)
-            writer.write(topics.joinToString(System.lineSeparator()))
+            writer.write(finalTopics.joinToString(System.lineSeparator()))
             writer.flush()
             writer.close()
         } else {
-            println(topics.joinToString(System.lineSeparator()))
+            println(finalTopics.joinToString(System.lineSeparator()))
         }
     }
 }
