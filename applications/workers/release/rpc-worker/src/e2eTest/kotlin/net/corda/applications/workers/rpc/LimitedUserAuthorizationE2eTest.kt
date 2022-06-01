@@ -3,7 +3,7 @@ package net.corda.applications.workers.rpc
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
-import net.corda.applications.workers.rpc.test.annotation.SkipWhenLocalClusterUnavailable
+import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.assertj.core.api.Assertions
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
  * - is allowed to perform read-only get operations.
  * - no explicit permission is set for creation of a role, therefore this should not be permitted.
  */
-@SkipWhenLocalClusterUnavailable
+@SkipWhenRpcEndpointUnavailable
 class LimitedUserAuthorizationE2eTest {
 
     companion object {
