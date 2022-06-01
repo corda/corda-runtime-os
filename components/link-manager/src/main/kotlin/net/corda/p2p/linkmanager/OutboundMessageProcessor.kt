@@ -139,12 +139,15 @@ internal class OutboundMessageProcessor(
             }
         }
 
-        return if (linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination)) {
-            listOf(
-                Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
-                recordForLMReceivedMarker(messageAndKey.message.header.messageId)
-            )
+        if (linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination)) {
+            return if (isReplay) {
+                emptyList()
+            } else {
+                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                    recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId),
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                )
+            }
         } else {
             val markers = if (isReplay) {
                 emptyList()

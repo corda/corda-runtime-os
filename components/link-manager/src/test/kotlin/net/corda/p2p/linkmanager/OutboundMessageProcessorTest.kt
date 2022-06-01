@@ -116,6 +116,26 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
+    fun `if destination identity is hosted locally, replaying an authenticated messages results in no records`() {
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                myIdentity,
+                localIdentity,
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMsg,
+            "key"
+        )
+
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+        assertThat(records).isEmpty()
+    }
+
+    @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
