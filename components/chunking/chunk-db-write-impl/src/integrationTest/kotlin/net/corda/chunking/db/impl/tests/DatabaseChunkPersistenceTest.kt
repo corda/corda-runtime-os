@@ -446,21 +446,35 @@ internal class DatabaseChunkPersistenceTest {
 
     @Test
     fun `database chunk persistence can write multiple CPIs with shared CPKs into database`() {
-        val sharedCpk = mockCpk(SecureHash.create("AAA:1234567890abcd"), "1.cpk")
+        val sharedCpk = mockCpk(
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+            "1.cpk")
         val cpi1 = mockCpi(listOf(
             sharedCpk,
             mockCpk(SecureHash.create("BBB:2345678901abcd"), "2.cpk"),
         ))
 
-        persistence.persistMetadataAndCpks(cpi1, "test.cpi", SecureHash.create("DUMMY:deadbeefdeadbeef"), UUID.randomUUID().toString(), "123456")
+        persistence.persistMetadataAndCpks(
+            cpi1,
+            "test.cpi",
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+            UUID.randomUUID().toString(),
+            "123456")
 
         val cpi2 = mockCpi(listOf(
             sharedCpk,
-            mockCpk(SecureHash.create("CCC:3456789012abcd"), "3.cpk"),
+            mockCpk(
+                SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+                "3.cpk"),
         ))
 
         assertDoesNotThrow {
-            persistence.persistMetadataAndCpks(cpi2, "test.cpi", SecureHash.create("DUMMY:deadbeefdeadbbff"), UUID.randomUUID().toString(), "123456")
+            persistence.persistMetadataAndCpks(
+                cpi2,
+                "test.cpi",
+                SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+                UUID.randomUUID().toString(),
+                "123456")
         }
     }
 
@@ -491,5 +505,37 @@ internal class DatabaseChunkPersistenceTest {
         }!!
 
         assertThat(loadedCpi.cpks.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `database chunk persistence can force update the same CPI`() {
+        val cpiChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        val cpkChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+        val cpk1 = mockCpk(cpkChecksum, "1.cpk")
+        val cpks = listOf(cpk1)
+        val cpi = mockCpi(cpks)
+
+        persistence.persistMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+
+        val loadedCpi = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
+            ))
+        }!!
+
+        // force update same CPI
+        persistence.updateMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+
+        val updatedCpi = entityManagerFactory.createEntityManager().transaction {
+            it.find(CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHash.toString(),
+            ))
+        }!!
+
+        assertThat(updatedCpi.insertTimestamp).isAfter(loadedCpi.insertTimestamp)
     }
 }
