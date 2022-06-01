@@ -9,6 +9,10 @@ import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 internal class GroupPolicyParserTest {
+    companion object {
+        private const val MGM_GROUP_ID = "CREATE_ID"
+    }
+
     @Test
     fun `group policy parser can extract group id`() {
         val groupId = UUID.randomUUID().toString()
@@ -24,5 +28,12 @@ internal class GroupPolicyParserTest {
         assertThrows<CordaRuntimeException> {
             GroupPolicyParser.groupId(groupPolicyJson)
         }
+    }
+
+    @Test
+    fun `group policy parser generates group id when not defined for MGM`() {
+        val groupPolicyJson = """{ "groupId" : "$MGM_GROUP_ID"}"""
+        val groupId = GroupPolicyParser.groupId(groupPolicyJson)
+        assertThat(groupId).isNotEqualTo(MGM_GROUP_ID)
     }
 }
