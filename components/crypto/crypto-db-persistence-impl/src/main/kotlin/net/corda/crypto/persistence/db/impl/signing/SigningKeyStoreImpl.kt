@@ -1,5 +1,6 @@
 package net.corda.crypto.persistence.db.impl.signing
 
+import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.impl.config.CryptoSigningPersistenceConfig
@@ -12,7 +13,6 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManagerFactory
 
@@ -25,7 +25,10 @@ class SigningKeyStoreImpl(
     private val keyEncodingService: KeyEncodingService,
     private val vnodeInfo: VirtualNodeInfoReadService
 ) : SigningKeyStore {
-    private val cache = ConcurrentHashMap<String, SigningKeyCache>()
+    private val cache: Cache<String, SigningKeyCache> = Caffeine.newBuilder()
+        .expireAfterAccess(config.vnodesExpireAfterAccessMins, TimeUnit.MINUTES)
+        .maximumSize(config.vnodeNumberLimit)
+        .build()
 
     override fun act(tenantId: String): SigningKeyStoreActions {
         val cache = getCache(tenantId)
@@ -39,20 +42,21 @@ class SigningKeyStoreImpl(
     }
 
     override fun close() {
-        cache.values.forEach {
+        cache.asMap().values.forEach {
             it.clean()
         }
-        cache.clear()
+        cache.invalidateAll()
+        cache.cleanUp()
     }
 
     private fun getCache(tenantId: String): SigningKeyCache {
-        return cache.computeIfAbsent(tenantId) {
+        return cache.get(tenantId) {
             SigningKeyCache(
                 tenantId = it,
                 entityManagerFactory = getEntityManagerFactory(it),
                 keys = Caffeine.newBuilder()
-                    .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
-                    .maximumSize(config.maximumSize)
+                    .expireAfterAccess(config.keysExpireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(config.keyNumberLimit)
                     .build()
             )
         }

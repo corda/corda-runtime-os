@@ -23,8 +23,8 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
         }
     },
     "softPersistence": {
-        "expireAfterAccessMins": 60,
-        "maximumSize": 100,
+        "expireAfterAccessMins": 240,
+        "maximumSize": 1000,
         "retries": 0,
         "timeoutMills": 20000,
         "salt": "<plain-text-value>"
@@ -35,12 +35,14 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
         }
     },
     "signingPersistence": {
-        "expireAfterAccessMins": 60,
-        "maximumSize": 100
+        "keysExpireAfterAccessMins": 90,
+        "keyNumberLimit": 20,
+        "vnodesExpireAfterAccessMins": 120,
+        "vnodeNumberLimit": 100
     },
     "hsmPersistence": {
-        "expireAfterAccessMins": 60,
-        "maximumSize": 100,
+        "expireAfterAccessMins": 240,
+        "maximumSize": 1000,
         "downstreamRetries": 3
     }
 }
@@ -145,8 +147,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
             .withValue(
                 SOFT_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        "expireAfterAccessMins" to "240",
-                        "maximumSize" to "1000",
+                        CryptoSoftPersistenceConfig::expireAfterAccessMins.name to "240",
+                        CryptoSoftPersistenceConfig::maximumSize.name to "1000",
                         CryptoSoftPersistenceConfig::salt.name to softKey.salt,
                         CryptoSoftPersistenceConfig::passphrase.name to ConfigValueFactory.fromMap(
                             makeSecret(softKey.passphrase).root().unwrapped()
@@ -159,15 +161,17 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
             .withValue(
                 SIGNING_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        "expireAfterAccessMins" to "90",
-                        "maximumSize" to "20"
+                        CryptoSigningPersistenceConfig::keysExpireAfterAccessMins.name to "90",
+                        CryptoSigningPersistenceConfig::keyNumberLimit.name to "20",
+                        CryptoSigningPersistenceConfig::vnodesExpireAfterAccessMins.name to "120",
+                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100"
                     )
                 )
             ).withValue(
                 HSM_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        "expireAfterAccessMins" to "240",
-                        "maximumSize" to "1000",
+                        CryptoHSMPersistenceConfig::expireAfterAccessMins.name to "240",
+                        CryptoHSMPersistenceConfig::maximumSize.name to "1000",
                         CryptoHSMPersistenceConfig::downstreamRetries.name to "3",
                     )
                 )
