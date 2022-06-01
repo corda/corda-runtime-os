@@ -128,7 +128,7 @@ class FlowMapperService @Activate constructor(
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"
             logger.error(errorMsg)
-            coordinator.updateStatus(LifecycleStatus.DOWN, errorMsg)
+            coordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
         }
     }
 
