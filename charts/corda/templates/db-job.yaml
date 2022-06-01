@@ -3,6 +3,8 @@ kind: Job
 {{- if .Values.bootstrap.auto }}
 metadata:
   name: corda-setup-db
+  labels:
+    {{- include "corda.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
