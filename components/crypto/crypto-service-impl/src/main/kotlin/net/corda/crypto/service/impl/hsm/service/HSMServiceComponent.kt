@@ -27,7 +27,7 @@ class HSMServiceComponent @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = HSMStoreProvider::class)
-    private val cacheProvider: HSMStoreProvider,
+    private val storeProvider: HSMStoreProvider,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = CryptoOpsProxyClient::class)
@@ -53,7 +53,7 @@ class HSMServiceComponent @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, cacheProvider, schemeMetadata, opsProxyClient)
+        ActiveImpl(event, storeProvider, schemeMetadata, opsProxyClient)
 
     override fun createInactiveImpl(): Impl =
         InactiveImpl()
@@ -93,13 +93,13 @@ class HSMServiceComponent @Activate constructor(
 
     class ActiveImpl(
         event: ConfigChangedEvent,
-        cacheProvider: HSMStoreProvider,
+        storeProvider: HSMStoreProvider,
         schemeMetadata: CipherSchemeMetadata,
         opsProxyClient: CryptoOpsProxyClient
     ): Impl {
         override val service: HSMServiceImpl = HSMServiceImpl(
             event.config.toCryptoConfig(),
-            cacheProvider.getInstance(),
+            storeProvider.getInstance(),
             schemeMetadata,
             opsProxyClient
         )

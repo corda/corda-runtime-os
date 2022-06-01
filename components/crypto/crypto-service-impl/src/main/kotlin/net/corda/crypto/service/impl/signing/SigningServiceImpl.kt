@@ -24,7 +24,7 @@ import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 open class SigningServiceImpl(
-    private val cache: SigningKeyStore,
+    private val store: SigningKeyStore,
     private val cryptoServiceFactory: CryptoServiceFactory,
     override val schemeMetadata: CipherSchemeMetadata
 ) : SigningService {
@@ -47,7 +47,7 @@ open class SigningServiceImpl(
         logger.debug {
             "lookup(tenantId=$tenantId, skip=$skip, take=$take, orderBy=$orderBy, filter=[${filter.keys.joinToString()}]"
         }
-        return cache.act(tenantId) {
+        return store.act(tenantId) {
             it.lookup(
                 skip,
                 take,
@@ -62,7 +62,7 @@ open class SigningServiceImpl(
         require(ids.size <= KEY_LOOKUP_INPUT_ITEMS_LIMIT) {
             "The number of items exceeds $KEY_LOOKUP_INPUT_ITEMS_LIMIT"
         }
-        return cache.act(tenantId) {
+        return store.act(tenantId) {
             it.lookup(ids).map { key -> key.toSigningKeyInfo() }
         }
     }
@@ -156,7 +156,7 @@ open class SigningServiceImpl(
         context: Map<String, String>
     ): DigitalSignature.WithKey =
         try {
-            val record = cache.act(tenantId) {
+            val record = store.act(tenantId) {
                 getKeyRecord(tenantId, it, publicKey)
             }
             logger.info("sign(tenant={}, publicKey={})", tenantId, record.second.id)
@@ -193,7 +193,7 @@ open class SigningServiceImpl(
         try {
             logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
             val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
-            cache.act(tenantId) {
+            store.act(tenantId) {
                 if (alias != null && it.find(alias) != null) {
                     throw CryptoServiceBadRequestException(
                         "The key with alias $alias already exist for tenant $tenantId"
@@ -201,7 +201,7 @@ open class SigningServiceImpl(
                 }
             }
             val generatedKey = cryptoService.generateKeyPair(alias, scheme, context)
-            cache.act(tenantId) {
+            store.act(tenantId) {
                 it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
             }
             generatedKey.publicKey
@@ -215,13 +215,13 @@ open class SigningServiceImpl(
 
     private fun getKeyRecord(
         tenantId: String,
-        cacheActions: SigningKeyStoreActions,
+        storeActions: SigningKeyStoreActions,
         publicKey: PublicKey
     ): Pair<PublicKey, SigningCachedKey> =
         if (publicKey is CompositeKey) {
             var result: Pair<PublicKey, SigningCachedKey>? = null
             publicKey.leafKeys.firstOrNull {
-                val r = cacheActions.find(it)
+                val r = storeActions.find(it)
                 if (r != null) {
                     result = it to r
                     true
@@ -231,7 +231,7 @@ open class SigningServiceImpl(
             }
             result
         } else {
-            cacheActions.find(publicKey)?.let { publicKey to it }
+            storeActions.find(publicKey)?.let { publicKey to it }
         } ?: throw CryptoServiceBadRequestException(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )

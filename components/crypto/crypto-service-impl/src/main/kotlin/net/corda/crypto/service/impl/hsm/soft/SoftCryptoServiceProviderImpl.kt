@@ -26,7 +26,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = SoftCryptoKeyStoreProvider::class)
-    private val cacheProvider: SoftCryptoKeyStoreProvider
+    private val storeProvider: SoftCryptoKeyStoreProvider
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory,
     lifecycleCoordinatorName,
@@ -43,7 +43,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         override fun close() = Unit
     }
 
-    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, digestService, cacheProvider)
+    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, digestService, storeProvider)
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
 
@@ -65,12 +65,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     internal class ActiveImpl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: DigestService,
-        private val cacheProvider: SoftCryptoKeyStoreProvider
+        private val storeProvider: SoftCryptoKeyStoreProvider
     ) : Impl {
         override fun getInstance(config: SoftCryptoServiceConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             return SoftCryptoService(
-                cache = cacheProvider.getInstance(),
+                store = storeProvider.getInstance(),
                 schemeMetadata = schemeMetadata,
                 digestService = digestService
             )

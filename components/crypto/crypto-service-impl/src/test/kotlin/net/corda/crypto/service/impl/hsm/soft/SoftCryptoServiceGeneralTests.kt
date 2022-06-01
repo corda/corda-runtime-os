@@ -43,12 +43,12 @@ class SoftCryptoServiceGeneralTests {
 
     @Test
     fun `Should throw CryptoServiceBadRequestException when master alias exists and failIfExists is true`() {
-        val cacheActions = mock<SoftCryptoKeyStoreActions> {
+        val actions = mock<SoftCryptoKeyStoreActions> {
             on { findWrappingKey(any()) } doReturn WrappingKey.generateWrappingKey(schemeMetadata)
         }
         val service = SoftCryptoService(
             mock {
-                on { act() } doReturn cacheActions
+                on { act() } doReturn actions
                 on { act<SoftCryptoKeyStoreActions>(any()) }.thenCallRealMethod()
             },
             schemeMetadata,
@@ -57,34 +57,34 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<CryptoServiceBadRequestException> {
             service.createWrappingKey(UUID.randomUUID().toString(), true, emptyMap())
         }
-        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any(), any())
+        Mockito.verify(actions, never()).saveWrappingKey(any(), any(), any())
     }
 
     @Test
     fun `Should not generate new master key when master alias exists and failIfExists is false`() {
-        val cacheActions = mock<SoftCryptoKeyStoreActions> {
+        val actions = mock<SoftCryptoKeyStoreActions> {
             on { findWrappingKey(any()) } doReturn WrappingKey.generateWrappingKey(schemeMetadata)
         }
         val service = SoftCryptoService(
             mock {
-                on { act() } doReturn cacheActions
+                on { act() } doReturn actions
                 on { act<SoftCryptoKeyStoreActions>(any()) }.thenCallRealMethod()
             },
             schemeMetadata,
             mock()
         )
         service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
-        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any(), any())
+        Mockito.verify(actions, never()).saveWrappingKey(any(), any(), any())
     }
 
     @Test
     fun `Should re-throw same CryptoServiceException when failing createWrappingKey`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SoftCryptoKeyStore> {
+        val store = mock<SoftCryptoKeyStore> {
             on { act<SoftCryptoKeyStoreActions>(any()) } doThrow exception
         }
         val service = SoftCryptoService(
-            cache,
+            store,
             schemeMetadata,
             mock()
         )
@@ -92,17 +92,17 @@ class SoftCryptoServiceGeneralTests {
             service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing createWrappingKey`() {
         val exception = RuntimeException("")
-        val cache = mock<SoftCryptoKeyStore> {
+        val store = mock<SoftCryptoKeyStore> {
             on { act<SoftCryptoKeyStoreActions>(any()) } doThrow exception
         }
         val service = SoftCryptoService(
-            cache,
+            store,
             schemeMetadata,
             mock()
         )
@@ -110,7 +110,7 @@ class SoftCryptoServiceGeneralTests {
             service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any())
     }
 
     @Test
@@ -187,11 +187,11 @@ class SoftCryptoServiceGeneralTests {
     @Test
     fun `Should re-throw same CryptoServiceException when failing generating key pair`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SoftCryptoKeyStore> {
+        val store = mock<SoftCryptoKeyStore> {
             on { act<SoftCryptoKeyStoreActions>(any()) } doThrow exception
         }
         val service = SoftCryptoService(
-            cache,
+            store,
             schemeMetadata,
             mock()
         )
@@ -210,17 +210,17 @@ class SoftCryptoServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing generating key pair`() {
         val exception = RuntimeException("")
-        val cache = mock<SoftCryptoKeyStore> {
+        val store = mock<SoftCryptoKeyStore> {
             on { act<SoftCryptoKeyStoreActions>(any()) } doThrow exception
         }
         val service = SoftCryptoService(
-            cache,
+            store,
             schemeMetadata,
             mock()
         )
@@ -239,7 +239,7 @@ class SoftCryptoServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any())
     }
 
     @Test
@@ -313,11 +313,11 @@ class SoftCryptoServiceGeneralTests {
     @Test
     fun `Should re-throw same CryptoServiceException when failing signing`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SoftCryptoKeyStore> {
+        val store = mock<SoftCryptoKeyStore> {
             on { act<SoftCryptoKeyStoreActions>(any()) } doThrow exception
         }
         val service = SoftCryptoService(
-            cache,
+            store,
             schemeMetadata,
             mock()
         )
@@ -339,17 +339,17 @@ class SoftCryptoServiceGeneralTests {
             )
         }
         assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing signing`() {
         val exception = RuntimeException("")
-        val cache = mock<SoftCryptoKeyStore> {
+        val store = mock<SoftCryptoKeyStore> {
             on { act<SoftCryptoKeyStoreActions>(any()) } doThrow exception
         }
         val service = SoftCryptoService(
-            cache,
+            store,
             schemeMetadata,
             mock()
         )
@@ -371,6 +371,6 @@ class SoftCryptoServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyStoreActions>(any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any())
     }
 }

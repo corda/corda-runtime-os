@@ -143,7 +143,7 @@ class TestServicesFactory {
     val cryptoService: CryptoService by lazy(LazyThreadSafetyMode.PUBLICATION) {
         CryptoServiceWrapper(
             SoftCryptoService(
-                cache = softCache,
+                store = softCache,
                 schemeMetadata = schemeMetadata,
                 digestService = digest
             ).also { it.createWrappingKey(wrappingKeyAlias, true, emptyMap()) },
@@ -191,7 +191,7 @@ class TestServicesFactory {
         effectiveWrappingKeyAlias: String = wrappingKeyAlias
     ) =
         SigningServiceImpl(
-            cache = signingCache,
+            store = signingCache,
             cryptoServiceFactory = object : CryptoServiceFactory {
                 override fun getInstance(tenantId: String, category: String): CryptoServiceRef {
                     check(isRunning) {
