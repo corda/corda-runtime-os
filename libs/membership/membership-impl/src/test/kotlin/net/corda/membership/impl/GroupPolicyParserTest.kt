@@ -13,6 +13,7 @@ import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.KeyEncodingService
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -178,24 +179,24 @@ class GroupPolicyParserTest {
     @Test
     fun `MGM member info is correctly constructed from group policy information`() {
         val mgmInfo = groupPolicyParser.getMgmInfo(getSampleGroupPolicy(GroupPolicyType.DYNAMIC))!!
-        assertEquals("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB", mgmInfo.name.toString())
-        assertEquals(3, mgmInfo.certificate.size)
-        assertEquals(1, mgmInfo.identityKeys.size)
-        assertEquals(1, mgmInfo.identityKeyHashes.size)
-        assertEquals(2, mgmInfo.endpoints.size)
-        assertEquals(5000, mgmInfo.platformVersion)
-        assertEquals("5.0.0", mgmInfo.softwareVersion)
-        assertEquals(1, mgmInfo.serial)
-        assertTrue(mgmInfo.isActive)
-        assertEquals(true, mgmInfo.isMgm)
+        assertSoftly {
+            it.assertThat(mgmInfo.name.toString())
+                .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
+            it.assertThat(mgmInfo.certificate.size).isEqualTo(3)
+            it.assertThat(mgmInfo.identityKeys.size).isEqualTo(1)
+            it.assertThat(mgmInfo.identityKeyHashes.size).isEqualTo(1)
+            it.assertThat(mgmInfo.endpoints.size).isEqualTo(2)
+            it.assertThat(mgmInfo.platformVersion).isEqualTo(5000)
+            it.assertThat(mgmInfo.softwareVersion).isEqualTo("5.0.0")
+            it.assertThat(mgmInfo.serial).isEqualTo(1)
+            it.assertThat(mgmInfo.isActive).isTrue
+            it.assertThat(mgmInfo.isMgm).isTrue
+        }
     }
 
-    private fun getSampleGroupPolicy(type: GroupPolicyType): String {
-        val url = when (type) {
-            GroupPolicyType.STATIC -> this::class.java.getResource("/SampleStaticGroupPolicy.json")
-            GroupPolicyType.DYNAMIC -> this::class.java.getResource("/SampleDynamicGroupPolicy.json")
+    private fun getSampleGroupPolicy(type: GroupPolicyType) =
+        when (type) {
+            GroupPolicyType.STATIC -> this::class.java.getResource("/SampleStaticGroupPolicy.json")!!.readText()
+            GroupPolicyType.DYNAMIC -> this::class.java.getResource("/SampleDynamicGroupPolicy.json")!!.readText()
         }
-        requireNotNull(url)
-        return url.readText()
-    }
 }

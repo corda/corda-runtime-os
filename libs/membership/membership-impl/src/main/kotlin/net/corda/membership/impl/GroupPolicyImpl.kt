@@ -6,7 +6,7 @@ import net.corda.membership.impl.GroupPolicyExtension.Companion.REGISTRATION_PRO
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
-class GroupPolicyImpl(private val map: Map<String, Any>) : GroupPolicy, Map<String, Any> by map {
+class GroupPolicyImpl(private val map: Map<String, Any?>) : GroupPolicy, Map<String, Any?> by map {
 
     companion object {
         private val logger = contextLogger()

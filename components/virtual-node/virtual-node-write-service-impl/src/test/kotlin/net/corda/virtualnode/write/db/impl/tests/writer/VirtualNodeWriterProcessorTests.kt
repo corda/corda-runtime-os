@@ -377,9 +377,5 @@ class VirtualNodeWriterProcessorTests {
             "New holding identity $holdingIdentity has a short hash that collided with existing holding identity"))
     }
 
-    private fun getSampleGroupPolicy(): String {
-        val url = this::class.java.getResource("/SampleGroupPolicy.json")
-        requireNotNull(url)
-        return url.readText()
-    }
+    private fun getSampleGroupPolicy() = this::class.java.getResource("/SampleGroupPolicy.json")!!.readText()
 }

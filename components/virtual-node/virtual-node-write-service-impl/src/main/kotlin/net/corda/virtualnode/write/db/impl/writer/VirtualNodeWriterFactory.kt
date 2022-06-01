@@ -76,7 +76,7 @@ internal class VirtualNodeWriterFactory(
             virtualNodeEntityRepository,
             vnodeDbFactory,
             keyEncodingService,
-            layeredPropertyMapFactory
+            layeredPropertyMapFactory,
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

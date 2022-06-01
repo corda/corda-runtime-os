@@ -30,6 +30,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 
 /**
@@ -53,6 +54,7 @@ internal class VirtualNodeWriterProcessor(
 
     companion object {
         private val logger = contextLogger()
+        val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
     /**
@@ -240,7 +242,8 @@ internal class VirtualNodeWriterProcessor(
             )
         )
         try {
-            vnodePublisher.publish(listOf(mgmRecord))
+            val future = vnodePublisher.publish(listOf(mgmRecord)).first()
+            future.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "MGM member info for Group ID: ${mgmMemberInfo.groupId} could not be published. Cause: $e", e)

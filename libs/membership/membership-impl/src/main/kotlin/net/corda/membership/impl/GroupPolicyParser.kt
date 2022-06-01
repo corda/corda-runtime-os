@@ -34,6 +34,7 @@ class GroupPolicyParser @Activate constructor(
     }
 
     private val objectMapper = ObjectMapper()
+    private val clock = UTCClock()
 
     /**
      * Parses a GroupPolicy from [String] to [GroupPolicy].
@@ -55,7 +56,7 @@ class GroupPolicyParser @Activate constructor(
                 else -> {
                     try {
                         @Suppress("UNCHECKED_CAST")
-                        objectMapper.readValue(groupPolicyJson, Map::class.java) as Map<String, Any>
+                        objectMapper.readValue(groupPolicyJson, Map::class.java) as Map<String, Any?>
                     } catch (e: Exception) {
                         logger.error("$FAILED_PARSING Caused by: ${e.message}")
                         throw BadGroupPolicyException(FAILED_PARSING, e)
@@ -72,10 +73,11 @@ class GroupPolicyParser @Activate constructor(
     fun getMgmInfo(groupPolicyJson: String): MemberInfo? {
         val groupPolicy = parse(groupPolicyJson)
         val mgmInfo = groupPolicy[MGM_INFO] as? Map<String, String> ?: return null
-        val encodedSessionKey = mgmInfo[SESSION_KEY] as String
-        val sessionKey = keyEncodingService.decodePublicKey(encodedSessionKey)
-        val now = UTCClock().instant().toString()
         try {
+            val encodedSessionKey = mgmInfo[SESSION_KEY]
+                ?: throw IllegalArgumentException("Session key must be specified in the group policy.")
+            val sessionKey = keyEncodingService.decodePublicKey(encodedSessionKey)
+            val now = clock.instant().toString()
             return MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                     mgmInfo + sortedMapOf(

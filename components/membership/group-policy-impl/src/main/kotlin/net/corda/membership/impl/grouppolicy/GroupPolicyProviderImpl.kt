@@ -128,8 +128,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private class ActiveImpl(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         private val cpiInfoReader: CpiInfoReadService,
-        private val keyEncodingService: KeyEncodingService,
-        private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+        keyEncodingService: KeyEncodingService,
+        layeredPropertyMapFactory: LayeredPropertyMapFactory
     ) : InnerGroupPolicyProvider {
         private val groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
 

@@ -35,9 +35,9 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     @Reference(service = LiquibaseSchemaMigrator::class)
     schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = KeyEncodingService::class)
-    val keyEncodingService: KeyEncodingService,
+    keyEncodingService: KeyEncodingService,
     @Reference(service = LayeredPropertyMapFactory::class)
-    val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) : VirtualNodeWriteService {
     private val coordinator = let {
         val vnodeWriterFactory = VirtualNodeWriterFactory(
@@ -47,7 +47,7 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             dbAdmin,
             schemaMigrator,
             keyEncodingService,
-            layeredPropertyMapFactory
+            layeredPropertyMapFactory,
         )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
