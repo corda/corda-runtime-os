@@ -16,6 +16,10 @@ spec:
       containers:
         - name: run-topic-script
           image: bitnami/kafka:3.1.0-debian-10-r89
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
           command:
             - /bin/bash
           args: [ "/tmp/working_dir/create-topics.sh" ]
