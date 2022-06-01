@@ -164,7 +164,7 @@ internal class FlowMapperServiceTest {
                 eq(messagingConfig),
                 any()
             )
-            verifyIsDown<FlowMapperService>()
+            verifyIsInError<FlowMapperService>()
         }
     }
 
