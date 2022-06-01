@@ -165,7 +165,7 @@ class Create(
             val config = topicConfig.config
             val topicScripts = createTopicScripts(topicName, partitions, replicas, config)
             val acls = createACLs(topicName, topicConfig.consumers, topicConfig.producers)
-            topicScripts + acls
+            topicScripts + acls + listOf("wait")
         } + "wait"
 
         if (outputLocation != null) {

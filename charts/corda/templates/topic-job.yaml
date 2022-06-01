@@ -18,11 +18,11 @@ spec:
           image: bitnami/kafka:3.1.0-debian-10-r89
           resources:
             requests:
-              cpu: 1000m
-              memory: 390Mi
+              cpu: 2000m
+              memory: 750Mi
             limits:
-              cpu: 1000m
-              memory: 800Mi
+              cpu: 2000m
+              memory: 2000Mi
           command:
             - /bin/bash
           args: [ "/tmp/working_dir/create-topics.sh" ]
