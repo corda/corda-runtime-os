@@ -30,6 +30,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.service.CertificatesService
+import net.corda.membership.certificates.datamodel.CertificateEntities
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -82,6 +84,8 @@ class DBProcessorImpl @Activate constructor(
     private val cpiInfoWriteService: CpiInfoWriteService,
     @Reference(service = ReconcilerFactory::class)
     private val reconcilerFactory: ReconcilerFactory,
+    @Reference(service = CertificatesService::class)
+    private val certificatesService: CertificatesService,
     @Reference(service = ConfigPublishService::class)
     private val configPublishService: ConfigPublishService
 ) : DBProcessor {
@@ -94,8 +98,10 @@ class DBProcessorImpl @Activate constructor(
                     + VirtualNodeEntities.classes
                     + ChunkingEntities.classes
                     + CpiEntities.classes
+                    + CertificateEntities.clusterClasses
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
+        entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, CertificateEntities.vnodeClasses)
     }
     companion object {
         private val log = contextLogger()
@@ -116,7 +122,8 @@ class DBProcessorImpl @Activate constructor(
         ::cpkReadService,
         ::cpiInfoReadService,
         ::cpiInfoWriteService,
-        ::configPublishService
+        ::certificatesService,
+        ::configPublishService,
     )
 
     private var cpiInfoDbReader: CpiInfoDbReader? = null

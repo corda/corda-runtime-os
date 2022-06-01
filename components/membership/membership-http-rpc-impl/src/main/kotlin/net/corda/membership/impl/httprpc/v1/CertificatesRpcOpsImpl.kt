@@ -3,12 +3,15 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
@@ -45,6 +48,7 @@ import org.osgi.service.component.annotations.Reference
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 import java.security.PublicKey
+import java.security.cert.CertificateFactory
 import javax.security.auth.x500.X500Principal
 
 @Component(service = [PluggableRPCOps::class])
@@ -55,6 +59,8 @@ class CertificatesRpcOpsImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = CertificatesClient::class)
+    private val certificatesClient: CertificatesClient,
 ) : CertificatesRpcOps, PluggableRPCOps<CertificatesRpcOps>, Lifecycle {
 
     private companion object {
@@ -127,6 +133,23 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
+    override fun importCertificate(tenantId: String, alias: String, certificate: HttpFileUpload) {
+        // validate certificate
+        val rawCertificate = certificate.content.reader().readText()
+        try {
+            CertificateFactory
+                .getInstance("X.509")
+                .generateCertificate(rawCertificate.byteInputStream())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw InvalidInputDataException(
+                details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
+            )
+        }
+
+        certificatesClient.importCertificate(tenantId, alias, rawCertificate)
+    }
+
     override val targetInterface = CertificatesRpcOps::class.java
 
     override val protocolVersion = 1
@@ -151,6 +174,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         ::deactivate,
         setOf(
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+            LifecycleCoordinatorName.forComponent<CertificatesClient>(),
         )
     )
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)

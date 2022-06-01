@@ -19,6 +19,7 @@ import java.time.Duration
     subcommands = [
         CreateCa::class,
         CreateCertificate::class,
+        SignCertificate::class,
     ],
     showAtFileInUsageHelp = true,
     subcommandsRepeatable = true,

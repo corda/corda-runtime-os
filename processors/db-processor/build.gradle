@@ -24,7 +24,9 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:cpi-info-write-service')
     implementation project(':components:virtual-node:virtual-node-write-service')
+    implementation project(':components:membership:certificates-service')
     implementation project(':libs:chunking:chunking-datamodel')
+    implementation project(':libs:membership:certificates-datamodel')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-admin')
@@ -54,6 +56,7 @@ dependencies {
     runtimeOnly project(':components:virtual-node:cpk-write-service-impl')
     runtimeOnly project(':components:virtual-node:entity-processor-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
+    runtimeOnly project(':components:membership:certificates-service-impl')
 
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')

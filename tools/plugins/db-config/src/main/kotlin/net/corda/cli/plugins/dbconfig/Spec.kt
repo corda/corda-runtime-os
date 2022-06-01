@@ -54,6 +54,7 @@ class Spec(
             "net/corda/db/schema/config/db.changelog-master.xml" to DbMetadata(),
             "net/corda/db/schema/messagebus/db.changelog-master.xml" to DbMetadata(),
             "net/corda/db/schema/rbac/db.changelog-master.xml" to DbMetadata(),
+            "net/corda/db/schema/cluster-certificates/db.changelog-master.xml" to DbMetadata(),
             "net/corda/db/schema/crypto/db.changelog-master.xml" to DbMetadata(
                 defaultSchemaName = DbSchema.CRYPTO
             )
