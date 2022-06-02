@@ -5,6 +5,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
@@ -80,6 +81,7 @@ class GroupPolicyParser @Activate constructor(
             return MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
                     (mgmInfo + mapOf(
+                        GROUP_ID to groupPolicy.groupId,
                         *convertKeys(listOf(encodedSessionKey)).toTypedArray(),
                         *generateKeyHashes(listOf(sessionKey)).toTypedArray(),
                         MemberInfoExtension.PARTY_OWNING_KEY to encodedSessionKey

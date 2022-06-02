@@ -69,6 +69,10 @@ class VirtualNodeWriterProcessorTests {
     private val groupId = "dummy_mgm_group_id"
     private val x500Name = "OU=LLC, O=Bob, L=Dublin, C=IE"
     private val holdingIdentity = HoldingIdentity(x500Name, groupId)
+    private val mgmHoldingIdentity = HoldingIdentity(
+        "CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB",
+        "f3676687-ab69-4ca1-a17b-ab20b7bc6d03"
+    )
 
     private val secureHash = SecureHash(
         "SHA-256",
@@ -78,7 +82,7 @@ class VirtualNodeWriterProcessorTests {
     val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
-        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, "{\"group policy\":\"dummy_group_policy\"}")
+        CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, "{\"groupId\": \"${UUID.randomUUID()}\"}")
     private val cpiMetaDataWithMGM =
         CPIMetadata(cpiId, CPI_ID_SHORT_HASH, groupId, getSampleGroupPolicy())
     private val connectionId = UUID.randomUUID().toString()
@@ -226,6 +230,8 @@ class VirtualNodeWriterProcessorTests {
             it.assertThat(publishedMgmInfoList.size).isEqualTo(1)
             val publishedMgmInfo = publishedMgmInfoList.first()
             it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
+            val expectedRecordKey = "${holdingIdentity.id}-${mgmHoldingIdentity.id}"
+            it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
             val persistentMemberPublished = publishedMgmInfo.value as PersistentMemberInfo
             val mgmPublished = toMemberInfo(
                 layeredPropertyMapFactory.create<MemberContextImpl>(

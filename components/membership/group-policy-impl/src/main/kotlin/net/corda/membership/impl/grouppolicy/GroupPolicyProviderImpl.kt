@@ -1,7 +1,6 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -15,7 +14,6 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

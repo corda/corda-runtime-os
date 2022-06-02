@@ -8,7 +8,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toWire
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.impl.GroupPolicyParser
@@ -21,7 +20,6 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -231,9 +229,10 @@ internal class VirtualNodeWriterProcessor(
             logger.info("No MGM information found in group policy. MGM member info not published.")
             return
         }
+        val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name.toString(), mgmInfo.groupId)
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
-            holdingIdentity,
+            "${holdingIdentity.id}-${mgmHoldingIdentity.id}",
             PersistentMemberInfo(
                 holdingIdentity.toAvro(),
                 mgmInfo.memberProvidedContext.toWire(),

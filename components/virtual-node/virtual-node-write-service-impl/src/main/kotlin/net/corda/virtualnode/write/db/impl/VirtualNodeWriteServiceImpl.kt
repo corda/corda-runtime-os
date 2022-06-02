@@ -4,13 +4,11 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 import org.osgi.service.component.annotations.Activate
