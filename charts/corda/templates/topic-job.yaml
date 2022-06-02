@@ -23,7 +23,11 @@ spec:
               memory: 2000Mi
           command:
             - /bin/bash
-          args: [ "/tmp/working_dir/create-topics.sh" ]
+            - -c
+          args:
+            - |
+              export KAFKA_HEAP_OPTS="-Xmx1750M"
+              bash -c "/tmp/working_dir/create-topics.sh"
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
