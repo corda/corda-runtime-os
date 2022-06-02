@@ -7,7 +7,6 @@ import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.HSMRegistrationClient
-import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.DbPrivilege
@@ -210,8 +209,6 @@ class MemberProcessorIntegrationTest {
             eventually { assertNotNull(virtualNodeInfoReader.get(aliceHoldingIdentity)) }
 
             testDependencies.waitUntilAllUp(Duration.ofSeconds(60))
-
-            assignHSMs()
         }
 
         @JvmStatic
@@ -281,18 +278,6 @@ class MemberProcessorIntegrationTest {
                 }
             }
             return ids
-        }
-
-        private fun assignHSMs() {
-            CryptoConsts.Categories.all.forEach {
-                // cluster is assigned in the crypto processor
-                if(hsmRegistrationClient.findHSM(aliceVNodeId, it) == null) {
-                    hsmRegistrationClient.assignSoftHSM(aliceVNodeId, it, emptyMap())
-                }
-                if(hsmRegistrationClient.findHSM(bobVNodeId, it) == null) {
-                    hsmRegistrationClient.assignSoftHSM(bobVNodeId, it, emptyMap())
-                }
-            }
         }
     }
 
