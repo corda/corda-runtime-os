@@ -32,10 +32,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    @Reference(service = GroupPolicyParser::class)
+    private val groupPolicyParser: GroupPolicyParser,
 ) : GroupPolicyProvider {
 
     /**
@@ -93,8 +91,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                             ActiveImpl(
                                 virtualNodeInfoReadService,
                                 cpiInfoReader,
-                                keyEncodingService,
-                                layeredPropertyMapFactory
+                                groupPolicyParser,
                             )
                         )
                         coordinator.updateStatus(LifecycleStatus.UP, "All dependencies are UP.")
@@ -128,11 +125,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private class ActiveImpl(
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         private val cpiInfoReader: CpiInfoReadService,
-        keyEncodingService: KeyEncodingService,
-        layeredPropertyMapFactory: LayeredPropertyMapFactory
+        private val groupPolicyParser: GroupPolicyParser
     ) : InnerGroupPolicyProvider {
-        private val groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
-
         private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
 
         private var virtualNodeInfoCallbackHandle: AutoCloseable = startVirtualNodeHandle()

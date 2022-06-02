@@ -15,6 +15,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
@@ -149,6 +150,7 @@ class VirtualNodeWriterProcessorTests {
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
+    private val groupPolicyParser =  GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 
@@ -185,8 +187,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             vNodeRepo,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
 
         processRequest(processor, vnodeCreationReq)
@@ -205,8 +206,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             vNodeRepo,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
         processRequest(processor, vnodeCreationReq)
 
@@ -251,8 +251,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             vNodeRepo,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
         processRequest(processor, vnodeCreationReq)
 
@@ -292,8 +291,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             vNodeRepo,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
         val resp = processRequest(processor, vnodeCreationReq)
 
@@ -327,8 +325,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             vNodeRepo,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
         val resp = processRequest(processor, vnodeCreationReq)
 
@@ -361,8 +358,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             entityRepository,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
         val resp = processRequest(processor, vnodeCreationReq)
 
@@ -409,8 +405,7 @@ class VirtualNodeWriterProcessorTests {
             connectionManager,
             entityRepository,
             vNodeFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser,
         )
         val resp = processRequest(processor, vnodeCreationReq)
 

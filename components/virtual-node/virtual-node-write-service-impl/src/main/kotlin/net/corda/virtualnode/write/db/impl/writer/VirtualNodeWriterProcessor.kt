@@ -48,8 +48,7 @@ internal class VirtualNodeWriterProcessor(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val vnodeDbFactory: VirtualNodeDbFactory,
-    private val keyEncodingService: KeyEncodingService,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val groupPolicyParser: GroupPolicyParser,
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
 
     companion object {
@@ -225,7 +224,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
-        val mgmInfo = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory).run {
+        val mgmInfo = groupPolicyParser.run {
             getMgmInfo(groupPolicyJson)
         }
         if (mgmInfo == null) {

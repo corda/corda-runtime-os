@@ -7,6 +7,7 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -24,8 +25,7 @@ internal class VirtualNodeWriterFactory(
     private val dbConnectionManager: DbConnectionManager,
     private val dbAdmin: DbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
-    private val keyEncodingService: KeyEncodingService,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val groupPolicyParser: GroupPolicyParser,
 ) {
 
     /**
@@ -75,8 +75,7 @@ internal class VirtualNodeWriterFactory(
             dbConnectionManager,
             virtualNodeEntityRepository,
             vnodeDbFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory,
+            groupPolicyParser,
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

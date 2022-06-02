@@ -13,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
@@ -128,6 +129,7 @@ class GroupPolicyProviderImplTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
+    private val groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
 
     fun registrationChange(status: LifecycleStatus = LifecycleStatus.UP) {
         handler?.processEvent(RegistrationStatusChangeEvent(mock(), status), coordinator)
@@ -139,8 +141,7 @@ class GroupPolicyProviderImplTest {
             virtualNodeInfoReadService,
             cpiInfoReader,
             lifecycleCoordinatorFactory,
-            keyEncodingService,
-            layeredPropertyMapFactory
+            groupPolicyParser
         )
     }
 

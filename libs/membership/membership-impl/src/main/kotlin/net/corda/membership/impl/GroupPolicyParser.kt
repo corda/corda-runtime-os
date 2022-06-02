@@ -30,7 +30,6 @@ class GroupPolicyParser @Activate constructor(
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
         const val MGM_INFO_FAILURE = "Failed to build MGM MemberInfo from GroupPolicy file."
         const val MGM_INFO = "mgmInfo"
-        const val PROTOCOL_PARAMETERS = "protocolParameters"
     }
 
     private val objectMapper = ObjectMapper()
