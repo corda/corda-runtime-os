@@ -17,8 +17,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
 @InitiatingFlow(protocol = "flowDevProtocol")
-@RPCStartableFlow
-class MessagingFlow(private val jsonArg: String) : Flow<String> {
+class MessagingFlow : RPCStartableFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
@@ -31,7 +30,7 @@ class MessagingFlow(private val jsonArg: String) : Flow<String> {
     lateinit var flowMessaging: FlowMessaging
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: String): String {
         log.info("Hello world is starting... [${flowEngine.flowId}]")
         val session = flowMessaging.initiateFlow(
             MemberX500Name(

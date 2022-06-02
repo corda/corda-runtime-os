@@ -29,9 +29,7 @@ class FlowFactoryImpl  @Activate constructor(
                 )
             )
 
-        return flowClass
-            .getDeclaredConstructor(String::class.java)
-            .newInstance(startFlowEvent.flowStartArgs)
+        return flowClass.getDeclaredConstructor().newInstance()
     }
 
     override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): Flow<*> {

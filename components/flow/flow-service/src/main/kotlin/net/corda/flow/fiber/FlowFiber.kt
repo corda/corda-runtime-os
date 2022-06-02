@@ -4,7 +4,7 @@ import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.Future
 
 @DoNotImplement

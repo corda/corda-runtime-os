@@ -8,11 +8,12 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 
 @InitiatingFlow(protocol = "packaging-test")
-@RPCStartableFlow
-class PackagingTestFlow : Flow<Unit> {
+class PackagingTestFlow : RPCStartableFlow<Unit> {
 
     @Suspendable
-    override fun call() {}
+    override fun call(requestBody: String) : String {
+        return ""
+    }
 }
 
 @InitiatedBy(protocol = "packaging-test")

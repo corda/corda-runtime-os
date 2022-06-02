@@ -13,6 +13,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.messaging.FlowSession
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -64,11 +65,11 @@ class FlowFactoryImplTest {
         whenever(sandboxGroup.loadClassFromMainBundles(className, Flow::class.java))
             .thenReturn(ExampleFlow1::class.java)
 
-        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as ExampleFlow1
-        assertThat(result.args).isEqualTo(startArgs)
+        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext)
+        assertTrue(result is ExampleFlow1)
     }
 
-    class ExampleFlow1(val args: String) : Flow<Unit> {
+    class ExampleFlow1 : Flow<Unit> {
         override fun call() {
         }
     }

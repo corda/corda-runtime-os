@@ -1,7 +1,6 @@
 package com.example.cpk
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -12,8 +11,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
-@RPCStartableFlow
-class ExampleFlow(private val json: String) : Flow<String> {
+class ExampleFlow : RPCStartableFlow<Unit> {
     private val logger = loggerFor<ExampleFlow>()
 
     @CordaInject
@@ -31,9 +29,9 @@ class ExampleFlow(private val json: String) : Flow<String> {
     }
 
     @Suspendable
-    override fun call(): String {
-        logger.info("Invoked: JSON=$json")
-        val input = jsonMarshaller.parseJson<FlowInput>(json)
+    override fun call(requestBody: String): String {
+        logger.info("Invoked: JSON=$requestBody")
+        val input = jsonMarshaller.parseJson<FlowInput>(requestBody)
         return hashOf(
             bytes = input.message?.toByteArray() ?: byteArrayOf()
         ).also { result ->

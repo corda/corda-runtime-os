@@ -6,6 +6,7 @@ import co.paralleluniverse.fibers.FiberWriter
 import net.corda.data.flow.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -21,6 +22,7 @@ import java.util.concurrent.Future
 class FlowFiberImpl<R>(
     override val flowId: UUID,
     override val flowLogic: Flow<R>,
+    private val args: Any?,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber<R> {
 
@@ -60,13 +62,21 @@ class FlowFiberImpl<R>(
         val outcomeOfFlow = try {
             suspend(FlowIORequest.InitialCheckpoint)
 
-            /**
-             * TODOs: Need to review/discuss how/where to ensure the user code can only return
-             * a string
-             */
-            when (val result = flowLogic.call()) {
-                is String -> FlowIORequest.FlowFinished(result)
-                else -> throw IllegalStateException("The flow result has to be a string.")
+            when (flowLogic) {
+                is RPCStartableFlow -> {
+                    val requestBody = args as? String
+                        ?: throw IllegalStateException("The provided arguments was not a string for an RPC started flow")
+                    val output = flowLogic.call(requestBody)
+                    FlowIORequest.FlowFinished(output)
+                }
+                else -> {
+                    /**
+                     * TODOs: Need to review/discuss how/where to ensure the user code can only return
+                     * a string
+                     */
+                    val output = flowLogic.call()
+                    FlowIORequest.FlowFinished(output.toString())
+                }
             }
         } catch (t: Throwable) {
             log.error("Flow failed", t)

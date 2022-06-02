@@ -8,7 +8,7 @@ import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-class CalculatorFlow : RPCStartableFlow {
+class CalculatorFlow : RPCStartableFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
@@ -30,7 +30,7 @@ class CalculatorFlow : RPCStartableFlow {
             log.info("Calculated result ${inputs.a} + ${inputs.b} = ${result}, formatting for response...")
             val outputFormatter = OutputFormattingFlow(result)
             resultMessage = flowEngine.subFlow(outputFormatter)
-            log.info("Calculated response:  ${resultMessage}")
+            log.info("Calculated response:  $resultMessage")
         } catch (e: Exception) {
             log.warn(":( could not complete calculation of '$requestBody' because:'${e.message}'")
         }

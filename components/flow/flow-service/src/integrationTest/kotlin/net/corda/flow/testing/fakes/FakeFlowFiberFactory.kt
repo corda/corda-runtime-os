@@ -9,7 +9,7 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.v5.application.flows.Flow
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -19,7 +19,7 @@ class FakeFlowFiberFactory : FlowFiberFactory {
 
     val fiber = FakeFiber<Any?>(UUID(0, 0), FakeFlow())
 
-    override fun createFlowFiber(flowId: String, logic: Flow<*>): FlowFiber<Any?> {
+    override fun createFlowFiber(flowId: String, logic: Flow<*>, args: Any?): FlowFiber<Any?> {
         return fiber
     }
 

@@ -9,7 +9,7 @@ import java.util.concurrent.Future
 
 interface FlowFiberFactory {
 
-    fun createFlowFiber(flowId: String, logic: Flow<*>) : FlowFiber<Any?>
+    fun createFlowFiber(flowId: String, logic: Flow<*>, args: Any? = null) : FlowFiber<Any?>
 
     fun createAndResumeFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
