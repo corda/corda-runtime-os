@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.impl.config.CryptoSigningPersistenceConfig
+import net.corda.crypto.persistence.signing.SigningCachedKey
 import net.corda.crypto.persistence.signing.SigningKeyStore
 import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.db.connection.manager.DbConnectionOps
@@ -25,55 +26,61 @@ class SigningKeyStoreImpl(
     private val keyEncodingService: KeyEncodingService,
     private val vnodeInfo: VirtualNodeInfoReadService
 ) : SigningKeyStore {
-    private val cache: Cache<String, SigningKeyCache> = Caffeine.newBuilder()
+    private val keys: Cache<String, Cache<String, SigningCachedKey>> = Caffeine.newBuilder()
         .expireAfterAccess(config.vnodesExpireAfterAccessMins, TimeUnit.MINUTES)
         .maximumSize(config.vnodeNumberLimit)
         .build()
 
+    private val connections: Cache<String, EntityManagerFactory> = Caffeine.newBuilder()
+        .expireAfterAccess(config.connectionsExpireAfterAccessMins, TimeUnit.MINUTES)
+        .maximumSize(config.connectionNumberLimit)
+        .evictionListener<String, EntityManagerFactory> { _, value, _ -> value?.close() }
+        .build()
+
     override fun act(tenantId: String): SigningKeyStoreActions {
-        val cache = getCache(tenantId)
+        val keys = getKeys(tenantId)
         return SigningKeyStoreActionsImpl(
-            tenantId = cache.tenantId,
-            entityManager = cache.entityManagerFactory.createEntityManager(),
-            cache = cache.keys,
+            tenantId = tenantId,
+            entityManager = getEntityManagerFactory(tenantId).createEntityManager(),
+            cache = keys,
             layeredPropertyMapFactory = layeredPropertyMapFactory,
             keyEncodingService = keyEncodingService
         )
     }
 
     override fun close() {
-        cache.asMap().values.forEach {
-            it.clean()
-        }
-        cache.invalidateAll()
-        cache.cleanUp()
+        connections.invalidateAll()
+        connections.cleanUp()
+        keys.invalidateAll()
+        keys.cleanUp()
     }
 
-    private fun getCache(tenantId: String): SigningKeyCache {
-        return cache.get(tenantId) {
-            SigningKeyCache(
-                tenantId = it,
-                entityManagerFactory = getEntityManagerFactory(it),
-                keys = Caffeine.newBuilder()
-                    .expireAfterAccess(config.keysExpireAfterAccessMins, TimeUnit.MINUTES)
-                    .maximumSize(config.keyNumberLimit)
-                    .build()
-            )
+    private fun getKeys(tenantId: String): Cache<String, SigningCachedKey> {
+        return keys.get(tenantId) {
+            Caffeine.newBuilder()
+                .expireAfterAccess(config.keysExpireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(config.keyNumberLimit)
+                .build()
         }
     }
+
     private fun getEntityManagerFactory(tenantId: String): EntityManagerFactory =
         if (CryptoTenants.isClusterTenant(tenantId)) {
             dbConnectionOps.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         } else {
-            dbConnectionOps.createEntityManagerFactory(
-                vnodeInfo.getById(tenantId)?.cryptoDmlConnectionId
-                    ?: throw throw IllegalStateException(
-                        "virtual node for $tenantId is not registered."
-                    ),
-                jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
-                    ?: throw IllegalStateException(
-                        "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
-                    )
-            )
+            connections.get(tenantId) {
+                createEntityManagerFactory(tenantId)
+            }
         }
+
+    private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
+        vnodeInfo.getById(tenantId)?.cryptoDmlConnectionId
+            ?: throw throw IllegalStateException(
+                "virtual node for $tenantId is not registered."
+            ),
+        jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
+            ?: throw IllegalStateException(
+                "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
+            )
+    )
 }

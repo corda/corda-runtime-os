@@ -34,4 +34,18 @@ class CryptoSigningPersistenceConfig(internal val config: SmartConfig) : SmartCo
         } catch (e: Throwable) {
             throw CryptoConfigurationException("Failed to get ${this::vnodeNumberLimit.name}", e)
         }
+
+    val connectionsExpireAfterAccessMins: Long
+        get() = try {
+            config.getLong(this::connectionsExpireAfterAccessMins.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::connectionsExpireAfterAccessMins.name}", e)
+        }
+
+    val connectionNumberLimit: Long
+        get() = try {
+            config.getLong(this::connectionNumberLimit.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::connectionNumberLimit.name}", e)
+        }
 }
