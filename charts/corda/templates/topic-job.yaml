@@ -27,7 +27,7 @@ spec:
           args:
             - |
               export KAFKA_HEAP_OPTS="-Xmx1750M"
-              bash -c "/tmp/working_dir/create-topics.sh"
+              bash "/tmp/working_dir/create-topics.sh"
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
