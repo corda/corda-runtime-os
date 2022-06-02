@@ -26,6 +26,7 @@ spec:
             - -c
           args:
             - |
+              set -e
               export KAFKA_HEAP_OPTS="-Xmx1G"
               bash "/tmp/working_dir/create-topics.sh"
           volumeMounts:
