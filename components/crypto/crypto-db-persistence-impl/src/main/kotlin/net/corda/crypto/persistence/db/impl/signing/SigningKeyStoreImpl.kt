@@ -69,16 +69,18 @@ class SigningKeyStoreImpl(
             dbConnectionOps.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
         } else {
             connections.get(tenantId) {
-                dbConnectionOps.createEntityManagerFactory(
-                    vnodeInfo.getById(tenantId)?.cryptoDmlConnectionId
-                        ?: throw throw IllegalStateException(
-                            "virtual node for $tenantId is not registered."
-                        ),
-                    jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
-                        ?: throw IllegalStateException(
-                            "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
-                        )
-                )
+                createEntityManagerFactory(tenantId)
             }
         }
+
+    private fun createEntityManagerFactory(tenantId: String) = dbConnectionOps.createEntityManagerFactory(
+        vnodeInfo.getById(tenantId)?.cryptoDmlConnectionId
+            ?: throw throw IllegalStateException(
+                "virtual node for $tenantId is not registered."
+            ),
+        jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
+            ?: throw IllegalStateException(
+                "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
+            )
+    )
 }
