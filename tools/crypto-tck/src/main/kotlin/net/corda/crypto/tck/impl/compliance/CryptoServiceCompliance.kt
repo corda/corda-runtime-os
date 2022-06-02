@@ -6,7 +6,7 @@ import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ComplianceSpec
-import net.corda.test.util.createTestCase
+import net.corda.crypto.tck.impl.ConcurrentTests.Companion.createTestCase
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -113,7 +113,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should be able to generate key pair with suggested alias then endcode & decode public key and then sign and verify`() {
+    fun `Should be able to generate key pair with proposed alias then endcode & decode public key and then sign and verify`() {
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)
@@ -138,7 +138,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should be able to generate key pair without suggested alias, suggesting wrapped key, then endcode & decode public key and then sign and verify`() {
+    fun `Should be able to generate key pair without proposed alias, suggesting wrapped key, then encode & decode public key and then sign and verify`() {
         schemesAndSignatureSpecs.forEach { (codeName, signatureSpec) ->
             logger.info("scheme=$codeName, signatureSpec=$signatureSpec")
             val keyScheme = schemeMetadata.findKeyScheme(codeName)

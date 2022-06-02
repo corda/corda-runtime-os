@@ -167,7 +167,7 @@ class ExecutionBuilder(
     }
 
     private fun ifSupported(codeName: String) =
-        tck.schemeMetadata.schemes.any { it.codeName.equals(codeName, true) }
+        tck.schemeMetadata.schemes.any { it.codeName == codeName }
 
     /**
      * TCK suite runner.

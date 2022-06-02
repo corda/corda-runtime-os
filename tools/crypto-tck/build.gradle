@@ -19,7 +19,6 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:crypto:crypto-serialization-impl')
-    implementation project(':testing:test-utilities')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"

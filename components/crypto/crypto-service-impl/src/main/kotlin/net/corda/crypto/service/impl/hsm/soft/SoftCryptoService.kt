@@ -51,7 +51,7 @@ open class SoftCryptoService(
             schemeMetadata: CipherSchemeMetadata,
             codeName: String
         ) {
-            if (schemeMetadata.schemes.any { it.codeName.equals(codeName, true) }) {
+            if (schemeMetadata.schemes.any { it.codeName == codeName }) {
                 add(schemeMetadata.findKeyScheme(codeName))
             }
         }
