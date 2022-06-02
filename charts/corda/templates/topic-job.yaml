@@ -52,8 +52,8 @@ spec:
                 {{- end }}
                 {{- end }}
           volumeMounts:
-            - mountPath: /tmp
-              name: tmp-volume
+            - mountPath: /tmp/working_dir
+              name: working-volume
             {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
             - mountPath: "/certs"
               name: certs
@@ -77,8 +77,6 @@ spec:
               name: working-volume
       volumes:
         - name: working-volume
-          emptyDir: {}
-        - name: tmp-volume
           emptyDir: {}
         {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
         - name: certs
