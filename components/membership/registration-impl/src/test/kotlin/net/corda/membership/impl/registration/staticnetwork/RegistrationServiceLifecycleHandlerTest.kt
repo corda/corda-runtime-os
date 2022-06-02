@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,7 +18,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.crypto.DigestService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -54,7 +54,7 @@ class RegistrationServiceLifecycleHandlerTest {
 
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
 
-    private val digestService: DigestService = mock()
+    private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -64,7 +64,7 @@ class RegistrationServiceLifecycleHandlerTest {
         configurationReadService,
         coordinatorFactory,
         layeredPropertyMapFactory,
-        digestService
+        hsmRegistrationClient
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
@@ -81,6 +81,7 @@ class RegistrationServiceLifecycleHandlerTest {
                 setOf(
                     LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
                 )
             )
         )

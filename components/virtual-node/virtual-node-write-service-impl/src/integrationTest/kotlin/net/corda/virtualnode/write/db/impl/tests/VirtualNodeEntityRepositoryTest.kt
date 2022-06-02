@@ -10,14 +10,13 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
@@ -83,8 +82,15 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
-                id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID", false
+                id.name,
+                id.version,
+                signerSummaryHash,
+                "TestFile",
+                fileChecksum,
+                "Test Group Policy",
+                "Test Group ID",
+                "Request ID",
+                emptySet(),
             )
         }
 
@@ -277,8 +283,16 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
-                id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID", false
+                id.name,
+                id.version,
+                signerSummaryHash,
+                "TestFile",
+                fileChecksum,
+
+                "Test Group Policy",
+                "Test Group ID",
+                "Request ID",
+                emptySet()
             )
         }
         val holdingIdentityEntity = with(holdingIdentity) {
@@ -314,8 +328,15 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
-                id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID", false
+                id.name,
+                id.version,
+                signerSummaryHash,
+                "TestFile",
+                fileChecksum,
+                "Test Group Policy",
+                "Test Group ID",
+                "Request ID",
+                emptySet()
             )
         }
         val holdingIdentityEntity = with(holdingIdentity) {

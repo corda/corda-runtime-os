@@ -1,9 +1,10 @@
 package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.impl.SignatureInstances
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.GeneratedKey
@@ -28,7 +29,7 @@ import java.security.Provider
 import javax.crypto.Cipher
 
 open class SoftCryptoService(
-    private val cache: SoftCryptoKeyCache,
+    private val store: SoftCryptoKeyStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val digestService: DigestService
 ) : CryptoService {
@@ -68,7 +69,8 @@ open class SoftCryptoService(
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
-        cache.act {
+        val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
+        store.act {
             if (it.findWrappingKey(masterKeyAlias) != null) {
                 if (failIfExists) {
                     throw CryptoServiceBadRequestException(
@@ -81,7 +83,6 @@ open class SoftCryptoService(
                     )
                 }
             } else {
-                val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
                 it.saveWrappingKey(masterKeyAlias, wrappingKey, failIfExists)
             }
         }
@@ -104,7 +105,7 @@ open class SoftCryptoService(
         if (!isSupported(spec.keyScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${spec.keyScheme.codeName}")
         }
-        val wrappingKey = cache.act { it.findWrappingKey(spec.masterKeyAlias!!) }
+        val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
             ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
         val keyPairGenerator = KeyPairGenerator.getInstance(
             spec.keyScheme.algorithmName,
@@ -137,12 +138,10 @@ open class SoftCryptoService(
         if (spec.masterKeyAlias.isNullOrBlank()) {
             throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
         }
-        logger.debug(
-            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.keyScheme={})",
-            spec.masterKeyAlias,
-            spec.keyScheme.codeName
-        )
-        val wrappingKey = cache.act { it.findWrappingKey(spec.masterKeyAlias!!) }
+        logger.debug {
+            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName})"
+        }
+        val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
             ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
         val privateKey = wrappingKey.unwrap(spec.keyMaterial)
         sign(spec, privateKey, data)

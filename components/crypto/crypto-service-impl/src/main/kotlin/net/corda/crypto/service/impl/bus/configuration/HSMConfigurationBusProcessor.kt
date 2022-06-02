@@ -18,6 +18,7 @@ import net.corda.data.crypto.wire.hsm.configuration.queries.HSMLinkedCategoriesQ
 import net.corda.data.crypto.wire.hsm.configuration.queries.HSMQuery
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
 import java.time.Instant
@@ -43,12 +44,10 @@ class HSMConfigurationBusProcessor(
             val response = getHandler(request.request::class.java, hsmService)
                 .handle(request.context, request.request)
             val result = HSMConfigurationResponse(createResponseContext(request), response)
-            logger.debug(
-                "Handled {} for tenant {} with {}",
-                request.request::class.java.name,
-                request.context.tenantId,
-                if (result.response != null) result.response::class.java.name else "null"
-            )
+            logger.debug {
+                "Handled ${request.request::class.java.name} for tenant ${request.context.tenantId} with" +
+                        " ${if (result.response != null) result.response::class.java.name else "null"}"
+            }
             respFuture.complete(result)
         } catch (e: Throwable) {
             val message = "Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}"

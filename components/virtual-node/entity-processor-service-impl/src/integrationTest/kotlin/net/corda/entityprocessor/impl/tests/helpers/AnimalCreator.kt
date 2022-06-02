@@ -44,8 +44,8 @@ object AnimalCreator {
         catNames.forEach {
             for (i in 1..times) {
                 val name = "${it.first} $i"
-                val dog = ctx.sandbox.createCatInstance(UUID.randomUUID(), name, colours.random(), UUID.randomUUID(), it.second, (20..30).random())
-                ctx.persist(dog)
+                val obj = ctx.sandbox.createCatInstance(UUID.randomUUID(), name, colours.random(), UUID.randomUUID(), it.second, (20..30).random())
+                ctx.persist(obj)
             }
         }
 

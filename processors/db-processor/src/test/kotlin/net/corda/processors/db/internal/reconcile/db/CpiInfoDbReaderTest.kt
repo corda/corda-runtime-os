@@ -1,8 +1,9 @@
 package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.cpi.datamodel.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkEntity
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -79,19 +80,15 @@ class CpiInfoDbReaderTest {
     )
 
     private val dummyCpk =
-        mock<CpkEntity>() {
-            whenever(it.metadata).then {
-                CpkMetadataEntity(
-                    "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
-                    "test-cpk",
-                    "2.3.4",
-                    "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
-                    "1.0",
-                    dummyCpkMetadata.toJsonAvro(),
-                    isDeleted = false
-                )
-            }
-        }
+        CpkMetadataEntity(
+            "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
+            "test-cpk",
+            "2.3.4",
+            "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
+            "1.0",
+            dummyCpkMetadata.toJsonAvro(),
+            isDeleted = false
+        )
 
     private val dummyCpiMetadataEntity =
         mock<CpiMetadataEntity>() {
@@ -104,7 +101,16 @@ class CpiInfoDbReaderTest {
             whenever(it.groupId).then { "group-id" }
             whenever(it.fileUploadRequestId).then { "request-id" }
             whenever(it.isDeleted).then { false }
-            whenever(it.cpks).then { setOf(dummyCpk) }
+            whenever(it.cpks).then { listOf(dummyCpk).map { CpiCpkEntity(
+                CpiCpkKey(
+                    "test-cpi",
+                    "1.2.3",
+                    "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
+                    it.cpkFileChecksum
+                ),
+                "${it.cpkName}.cpk",
+                it
+            ) }.toSet() }
         }
 
     @Test

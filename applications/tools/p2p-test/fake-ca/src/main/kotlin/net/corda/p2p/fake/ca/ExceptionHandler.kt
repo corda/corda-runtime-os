@@ -6,11 +6,14 @@ import java.lang.Exception
 
 internal class ExceptionHandler : IExecutionExceptionHandler {
     override fun handleExecutionException(
-        ex: Exception,
+        exception: Exception,
         commandLine: CommandLine,
         parseResult: CommandLine.ParseResult,
     ): Int {
-        System.err.println(ex.message)
+        if (parseResult.hasMatchedOption("--stacktrace")) {
+            throw exception
+        }
+        System.err.println(exception.message)
         return -1
     }
 }

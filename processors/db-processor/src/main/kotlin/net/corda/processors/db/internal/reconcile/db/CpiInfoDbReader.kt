@@ -112,7 +112,7 @@ class CpiInfoDbReader(
     // Separating actual logic from lifecycle stuff so it can be unit tested.
     @Suppress("ComplexMethod")
     @VisibleForTesting
-    internal fun doGetAllVersionedRecords() =
+    internal fun doGetAllVersionedRecords() : Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
         entityManagerFactory!!.createEntityManager().run {
             val currentTransaction = transaction
             currentTransaction.begin()
@@ -122,32 +122,31 @@ class CpiInfoDbReader(
                 currentTransaction.rollback()
                 close()
             }.map { cpiMetadataEntity ->
-                // TODO - is this conversion really needed all the time? Maybe it's delayed
-                //    until the content is actually needed?
-                val cpiMetadata = CpiMetadata(
-                    cpiId = CpiIdentifier(
-                        cpiMetadataEntity.name,
-                        cpiMetadataEntity.version,
-                        if (cpiMetadataEntity.signerSummaryHash != "")
-                            SecureHash.create(cpiMetadataEntity.signerSummaryHash)
-                        else
-                            null
-                    ),
-                    fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum),
-                    cpksMetadata = cpiMetadataEntity.cpks.map {
-                        CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata)
-                    },
-                    groupPolicy = cpiMetadataEntity.groupPolicy,
-                    version = cpiMetadataEntity.entityVersion,
-                    timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
+                val cpiId = CpiIdentifier(
+                    cpiMetadataEntity.name,
+                    cpiMetadataEntity.version,
+                    if (cpiMetadataEntity.signerSummaryHash != "")
+                        SecureHash.create(cpiMetadataEntity.signerSummaryHash)
+                    else
+                        null
                 )
-
-                VersionedRecord(
-                    version = cpiMetadata.version,
-                    isDeleted = cpiMetadataEntity.isDeleted,
-                    key = cpiMetadata.cpiId,
-                    value = cpiMetadata
-                )
+                object : VersionedRecord<CpiIdentifier, CpiMetadata> {
+                    override val version = cpiMetadataEntity.entityVersion
+                    override val isDeleted = cpiMetadataEntity.isDeleted
+                    override val key = cpiId
+                    override val value by lazy {
+                        CpiMetadata(
+                            cpiId = cpiId,
+                            fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum),
+                            cpksMetadata = cpiMetadataEntity.cpks.map {
+                                CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata)
+                            },
+                            groupPolicy = cpiMetadataEntity.groupPolicy,
+                            version = cpiMetadataEntity.entityVersion,
+                            timestamp = cpiMetadataEntity.insertTimestamp.getOrNow()
+                        )
+                    }
+                }
             }
         }
 
