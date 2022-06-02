@@ -1,7 +1,6 @@
 package net.corda.membership.impl.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,7 +14,6 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -33,10 +31,13 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.*
+import java.util.UUID
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -61,6 +62,22 @@ class GroupPolicyProviderImplTest {
     val groupPolicy2 = "{\"$testAttrKey\": \"$testAttr2\", \"$groupIdKey\": \"$groupId1\"}"
     val groupPolicy3 = "{\"$testAttrKey\": \"$testAttr3\", \"$groupIdKey\": \"$groupId2\"}"
     val groupPolicy4: String? = null
+
+    private val parsedGroupPolicy1: GroupPolicy = mock {
+        on { get(groupIdKey) }.doReturn(groupId1)
+        on { get(testAttrKey) }.doReturn(testAttr1)
+        on { size }.doReturn(2)
+    }
+    private val parsedGroupPolicy2: GroupPolicy = mock {
+        on { get(groupIdKey) }.doReturn(groupId1)
+        on { get(testAttrKey) }.doReturn(testAttr2)
+        on { size }.doReturn(2)
+    }
+    private val parsedGroupPolicy3: GroupPolicy = mock {
+        on { get(groupIdKey) }.doReturn(groupId2)
+        on { get(testAttrKey) }.doReturn(testAttr3)
+        on { size }.doReturn(2)
+    }
 
     val holdingIdentity1 = HoldingIdentity(alice.toString(), groupId1)
     val holdingIdentity2 = HoldingIdentity(bob.toString(), groupId1)
@@ -127,9 +144,12 @@ class GroupPolicyProviderImplTest {
             coordinator
         }
     }
-    private val keyEncodingService: KeyEncodingService = mock()
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
-    private val groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
+    private val groupPolicyParser: GroupPolicyParser = mock {
+        on { parse(groupPolicy1) }.doReturn(parsedGroupPolicy1)
+        on { parse(groupPolicy2) }.doReturn(parsedGroupPolicy2)
+        on { parse(groupPolicy3) }.doReturn(parsedGroupPolicy3)
+        on { parse(null) }.doThrow(BadGroupPolicyException(""))
+    }
 
     fun registrationChange(status: LifecycleStatus = LifecycleStatus.UP) {
         handler?.processEvent(RegistrationStatusChangeEvent(mock(), status), coordinator)
@@ -201,17 +221,18 @@ class GroupPolicyProviderImplTest {
         val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
         assertEquals(result1, result2)
+        verify(groupPolicyParser, times(1)).parse(any())
     }
 
     @Test
-    fun `Different group policy is returned if the service restarts`() {
+    fun `Cache is cleared and group policy is parsed again if the service restarts`() {
         startComponentAndDependencies()
-        val result1 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         groupPolicyProvider.stop()
         startComponentAndDependencies()
-        val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
-        assertNotEquals(result1, result2)
+        verify(groupPolicyParser, times(2)).parse(any())
     }
 
     @Test

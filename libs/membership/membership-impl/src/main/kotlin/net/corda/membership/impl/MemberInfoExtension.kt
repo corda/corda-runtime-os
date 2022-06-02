@@ -3,7 +3,6 @@ package net.corda.membership.impl
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
-import net.corda.v5.base.util.parseOrNull
 import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
@@ -135,6 +134,6 @@ class MemberInfoExtension {
         /** Denotes whether this [MemberInfo] represents an MGM node. */
         @JvmStatic
         val MemberInfo.isMgm: Boolean
-            get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
+            get() = mgmProvidedContext.parse<String?>(IS_MGM)?.toBoolean() ?: false
     }
 }
