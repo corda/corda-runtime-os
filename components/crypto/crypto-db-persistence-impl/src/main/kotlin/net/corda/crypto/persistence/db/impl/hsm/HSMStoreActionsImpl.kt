@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.db.impl.hsm
 
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.persistence.hsm.HSMCacheActions
+import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMStat
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
@@ -26,9 +26,9 @@ import javax.persistence.criteria.Predicate
 import kotlin.reflect.KProperty
 
 @Suppress("TooManyFunctions")
-class HSMCacheActionsImpl(
+class HSMStoreActionsImpl(
     private val entityManager: EntityManager
-) : HSMCacheActions {
+) : HSMStoreActions {
     private val secureRandom = SecureRandom()
 
     override fun findConfig(configId: String): HSMConfig? =

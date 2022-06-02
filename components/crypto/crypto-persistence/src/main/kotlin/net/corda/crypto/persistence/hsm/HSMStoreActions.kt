@@ -6,7 +6,7 @@ import net.corda.data.crypto.wire.hsm.HSMInfo
 /**
  * Persistence level actions to configure, assign, and query HSM configurations.
  */
-interface HSMCacheActions : AutoCloseable {
+interface HSMStoreActions : AutoCloseable {
 
     /**
      * Find HSM configuration by its id.

@@ -12,8 +12,8 @@ import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.impl.executeWithRetry
-import net.corda.crypto.persistence.hsm.HSMCache
-import net.corda.crypto.persistence.hsm.HSMCacheActions
+import net.corda.crypto.persistence.hsm.HSMStore
+import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMStat
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
@@ -34,7 +34,7 @@ import java.time.Instant
 @Suppress("TooManyFunctions")
 class HSMServiceImpl(
     config: SmartConfig,
-    private val hsmCache: HSMCache,
+    private val hsmStore: HSMStore,
     private val schemeMetadata: CipherSchemeMetadata,
     private val opsProxyClient: CryptoOpsProxyClient
 ) : AutoCloseable {
@@ -58,7 +58,7 @@ class HSMServiceImpl(
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
         validatePutHSMConfig(info)
         val encryptedServiceConfig = encryptor.encrypt(serviceConfig)
-        val id = hsmCache.act {
+        val id = hsmStore.act {
             if (info.id.isNullOrBlank()) {
                 it.add(info, encryptedServiceConfig)
             } else if (it.findConfig(info.id) != null) {
@@ -76,7 +76,7 @@ class HSMServiceImpl(
 
     fun assignHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         logger.info("assignHSM(tenant={}, category={})", tenantId, category)
-        val pre = hsmCache.act {
+        val pre = hsmStore.act {
             Pair(
                 if (context.notFailIfAssociationExists()) {
                     it.findTenantAssociation(tenantId, category)
@@ -97,7 +97,7 @@ class HSMServiceImpl(
             } else {
                 tryChooseAny(stats)
             }
-            hsmCache.act {
+            hsmStore.act {
                 it.associate(tenantId = tenantId, category = category, configId = chosen.configId)
             }
         }
@@ -107,7 +107,7 @@ class HSMServiceImpl(
 
     fun assignSoftHSM(tenantId: String, category: String, context: Map<String, String>): HSMInfo {
         logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
-        val association = hsmCache.act {
+        val association = hsmStore.act {
             val existing = if (context.notFailIfAssociationExists()) {
                 it.findTenantAssociation(tenantId, category)
             } else {
@@ -128,46 +128,46 @@ class HSMServiceImpl(
     fun linkCategories(configId: String, links: List<HSMCategoryInfo>) {
         logger.info("linkCategories(configId={}, links=[{}])", configId, links.joinToString { it.category })
         validateLinkCategories(links)
-        hsmCache.act {
+        hsmStore.act {
             it.linkCategories(configId, links)
         }
     }
 
     fun getLinkedCategories(configId: String): List<HSMCategoryInfo> {
         logger.debug { "getLinkedCategories(configId=$configId)" }
-        return hsmCache.act {
+        return hsmStore.act {
             it.getLinkedCategories(configId)
         }
     }
 
     fun findAssignedHSM(tenantId: String, category: String): HSMTenantAssociation? {
         logger.debug { "findAssignedHSM(tenant=$tenantId, category=$category)"  }
-        return hsmCache.act {
+        return hsmStore.act {
             it.findTenantAssociation(tenantId, category)
         }
     }
 
     fun findAssociation(associationId: String): HSMTenantAssociation? {
         logger.debug {"findAssociation(associationId=$associationId)" }
-        return hsmCache.act {
+        return hsmStore.act {
             it.findTenantAssociation(associationId)
         }
     }
 
     fun findHSMConfig(configId: String): HSMConfig? {
         logger.debug { "getPrivateHSMConfig(configId=$configId)"  }
-        return hsmCache.act {
+        return hsmStore.act {
             it.findConfig(configId)
         }
     }
 
     fun lookup(filter: Map<String, String>): List<HSMInfo> {
         logger.debug { "lookup(filter=${filter.keys.joinToString()})"  }
-        return hsmCache.act { it.lookup(filter) }
+        return hsmStore.act { it.lookup(filter) }
     }
 
     override fun close() {
-        hsmCache.close()
+        hsmStore.close()
     }
 
     private fun validatePutHSMConfig(info: HSMInfo) {
@@ -227,7 +227,7 @@ class HSMServiceImpl(
         }
     }
 
-    private fun HSMCacheActions.addSoftConfig(): HSMInfo {
+    private fun HSMStoreActions.addSoftConfig(): HSMInfo {
         logger.info("Creating config for Soft HSM")
         val info = HSMInfo(
             CryptoConsts.SOFT_HSM_CONFIG_ID,

@@ -59,7 +59,7 @@ class CpiValidatorImpl(
             version = 0,
             timestamp
         )
-        cpiInfoWriteService.put(cpiMetadata)
+        cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         return fileInfo.checksum
     }

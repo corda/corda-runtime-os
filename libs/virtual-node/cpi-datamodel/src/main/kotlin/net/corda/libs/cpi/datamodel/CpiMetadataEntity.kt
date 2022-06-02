@@ -76,7 +76,10 @@ data class CpiMetadataEntity(
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null,
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
+    var isDeleted: Boolean = false,
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    var entityVersion: Int = 0,
 ) {
     companion object {
         // Create a [CpiMetadataEntity] with CPKs as filename/metadata pairs
@@ -116,21 +119,18 @@ data class CpiMetadataEntity(
         }
     }
 
-    @Version
-    @Column(name = "entity_version", nullable = false)
-    var entityVersion: Int = 0
-
     @PreUpdate
     fun onUpdate() {
         insertTimestamp = Instant.now()
     }
 
     // return a clone of this object with the updated properties
-    fun createUpdated(
+    fun update(
         fileUploadRequestId: String,
         fileName: String,
         fileChecksum: String,
-        cpks: List<Pair<String, CpkMetadataEntity>>) =
+        cpks: List<Pair<String, CpkMetadataEntity>>
+    ) =
         this.copy(
             fileUploadRequestId = fileUploadRequestId,
             fileName = fileName,

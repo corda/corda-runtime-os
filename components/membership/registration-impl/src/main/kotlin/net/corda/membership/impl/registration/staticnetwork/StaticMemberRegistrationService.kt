@@ -2,7 +2,9 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
@@ -57,19 +59,21 @@ import java.security.PublicKey
 @Component(service = [MemberRegistrationService::class])
 class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
-    val groupPolicyProvider: GroupPolicyProvider,
+    private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
     @Reference(service = KeyEncodingService::class)
-    val keyEncodingService: KeyEncodingService,
+    private val keyEncodingService: KeyEncodingService,
     @Reference(service = CryptoOpsClient::class)
-    val cryptoOpsClient: CryptoOpsClient,
+    private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LayeredPropertyMapFactory::class)
-    val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    @Reference(service = HSMRegistrationClient::class)
+    private val hsmRegistrationClient: HSMRegistrationClient
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -142,6 +146,8 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val memberName = registeringMember.x500Name
         val memberId = registeringMember.id
+
+        assignSoftHsm(memberId)
 
         val staticMemberInfo = staticMemberList.firstOrNull {
             MemberX500Name.parse(it.name!!) == MemberX500Name.parse(memberName)
@@ -228,6 +234,17 @@ class StaticMemberRegistrationService @Activate constructor(
         require(
             member.keys.any { it.startsWith(endpointProtocolIdentifier) }
         ) { "Endpoint protocols are not provided." }
+    }
+
+    /**
+     * Assigns soft HSM to the registering member.
+     */
+    private fun assignSoftHsm(memberId: String) {
+        CryptoConsts.Categories.all.forEach {
+            if(hsmRegistrationClient.findHSM(memberId, it) == null) {
+                hsmRegistrationClient.assignSoftHSM(memberId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+            }
+        }
     }
 
     /**

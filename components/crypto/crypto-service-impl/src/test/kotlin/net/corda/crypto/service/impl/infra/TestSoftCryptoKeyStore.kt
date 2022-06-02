@@ -1,8 +1,8 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheActions
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStore
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -10,13 +10,13 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import java.util.concurrent.ConcurrentHashMap
 
-class TestSoftCryptoKeyCacheProvider(
+class TestSoftCryptoKeyStoreProvider(
     coordinatorFactory: LifecycleCoordinatorFactory
-) : SoftCryptoKeyCacheProvider {
-    private val instance = TestSoftCryptoKeyCache()
+) : SoftCryptoKeyStoreProvider {
+    private val instance = TestSoftCryptoKeyStore()
 
     val coordinator = coordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>()
+        LifecycleCoordinatorName.forComponent<SoftCryptoKeyStoreProvider>()
     ) { e, c -> if(e is StartEvent) { c.updateStatus(LifecycleStatus.UP) } }
 
     override val isRunning: Boolean
@@ -30,7 +30,7 @@ class TestSoftCryptoKeyCacheProvider(
         coordinator.stop()
     }
 
-    override fun getInstance(): SoftCryptoKeyCache {
+    override fun getInstance(): SoftCryptoKeyStore {
         check(isRunning) {
             "The provider is in invalid state."
         }
@@ -38,15 +38,15 @@ class TestSoftCryptoKeyCacheProvider(
     }
 }
 
-class TestSoftCryptoKeyCache : SoftCryptoKeyCache {
+class TestSoftCryptoKeyStore : SoftCryptoKeyStore {
     val keys = ConcurrentHashMap<String, WrappingKey>()
-    override fun act(): SoftCryptoKeyCacheActions = TestSoftCryptoKeyCacheActions(keys)
+    override fun act(): SoftCryptoKeyStoreActions = TestSoftCryptoKeyStoreActions(keys)
     override fun close() = Unit
 }
 
-class TestSoftCryptoKeyCacheActions(
+class TestSoftCryptoKeyStoreActions(
     private val keys: MutableMap<String, WrappingKey>
-) : SoftCryptoKeyCacheActions {
+) : SoftCryptoKeyStoreActions {
     override fun saveWrappingKey(alias: String, key: WrappingKey, failIfExists: Boolean) {
         if(keys.putIfAbsent(alias, key) != null) {
             if(failIfExists) {
