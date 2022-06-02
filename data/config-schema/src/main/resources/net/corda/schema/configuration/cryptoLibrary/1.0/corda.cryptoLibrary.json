@@ -119,16 +119,28 @@
           "default": 20
         },
         "vnodesExpireAfterAccessMins": {
-          "description": "Item's expiration time in minutes after accessing it in the key metadata cache, the cache is created per tenant.",
+          "description": "Item's expiration time in minutes after accessing it in the tenant's cache.",
           "type": "integer",
           "minimum": 0,
           "default": 120
         },
         "vnodeNumberLimit": {
-          "description": "Maximum number of items in the key metadata cache, the cache is created per tenant.",
+          "description": "Maximum number of items in the key tenant's  cache.",
           "type": "integer",
           "minimum": 0,
           "default": 100
+        },
+        "connectionsExpireAfterAccessMins": {
+          "description": "Item's expiration time in minutes after accessing it in the database connection cache.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 15
+        },
+        "connectionNumberLimit": {
+          "description": "Maximum number of items in the database connection cache.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 2
         }
       },
       "additionalProperties": false
