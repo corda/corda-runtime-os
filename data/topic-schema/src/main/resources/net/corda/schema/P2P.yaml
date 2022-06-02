@@ -14,6 +14,11 @@ topics:
     consumers:
     producers:
     config:
+  P2PHostedIdentitiesTopic:
+    name: p2p.hosted.identities
+    consumers:
+    producers:
+    config:
   LinkInTopic:
     name: link.in
     consumers:
