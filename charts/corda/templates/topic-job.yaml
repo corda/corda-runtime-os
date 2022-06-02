@@ -27,8 +27,6 @@ spec:
             - /bin/bash
           args: [ "/tmp/working_dir/create-topics.sh" ]
           volumeMounts:
-            - mountPath: /tmp/
-              name: tmp-volume
             - mountPath: /tmp/working_dir
               name: working-volume
             {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
@@ -44,14 +42,14 @@ spec:
             - -c
           args:
             - |
-                touch /tmp/config.properties
+                touch /tmp/working_dir/config.properties
                 {{- if .Values.kafka.tls.enabled }}
-                echo "security.protocol=SSL\n" >> /tmp/config.properties
+                echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
                 {{- if .Values.kafka.tls.truststore.secretRef.name }}
-                echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/config.properties
-                echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/config.properties
+                echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/working_dir/config.properties
+                echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/working_dir/config.properties
                 {{- if .Values.kafka.tls.truststore.password }}
-                echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/config.properties
+                echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/working_dir/config.properties
                 {{- end }}
                 {{- end }}
                 {{- end }}
