@@ -153,7 +153,7 @@ class VirtualNodeWriterProcessorTests {
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
-    private val groupPolicyParser =  GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
+    private val groupPolicyParser =  GroupPolicyParser(layeredPropertyMapFactory)
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
 

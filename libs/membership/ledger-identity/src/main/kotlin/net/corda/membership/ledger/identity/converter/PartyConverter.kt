@@ -21,7 +21,7 @@ class PartyConverter @Activate constructor(
 ) : CustomPropertyConverter<Party> {
     companion object {
         private const val NAME = "name"
-        private const val OWNING_KEY = "owningKey"
+        private const val SESSION_KEY = "sessionInitiationKey"
     }
 
     override val type: Class<Party>
@@ -32,8 +32,8 @@ class PartyConverter @Activate constructor(
             name = context.value(NAME)?.let {
                 MemberX500Name.parse(it)
             } ?: throw ValueNotFoundException("'$NAME' is null or missing"),
-            owningKey = context.value(OWNING_KEY)?.let {
+            owningKey = context.value(SESSION_KEY)?.let {
                 keyEncodingService.decodePublicKey(it)
-            } ?: throw ValueNotFoundException("'$OWNING_KEY' is null or missing")
+            } ?: throw ValueNotFoundException("'$SESSION_KEY' is null or missing")
         )
 }

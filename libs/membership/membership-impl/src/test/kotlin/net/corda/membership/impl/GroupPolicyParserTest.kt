@@ -5,8 +5,8 @@ import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.MemberInfoExtension.Companion.certificate
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
-import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
@@ -79,7 +79,7 @@ class GroupPolicyParserTest {
 
     @BeforeEach
     fun setUp() {
-        groupPolicyParser = GroupPolicyParser(keyEncodingService, layeredPropertyMapFactory)
+        groupPolicyParser = GroupPolicyParser(layeredPropertyMapFactory)
     }
 
     @Test
@@ -183,8 +183,8 @@ class GroupPolicyParserTest {
             it.assertThat(mgmInfo.name.toString())
                 .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
             it.assertThat(mgmInfo.certificate.size).isEqualTo(3)
-            it.assertThat(mgmInfo.identityKeys.size).isEqualTo(1)
-            it.assertThat(mgmInfo.identityKeyHashes.size).isEqualTo(1)
+            it.assertThat(mgmInfo.ledgerKeys.size).isEqualTo(0)
+            it.assertThat(mgmInfo.ledgerKeyHashes.size).isEqualTo(0)
             it.assertThat(mgmInfo.endpoints.size).isEqualTo(2)
             it.assertThat(mgmInfo.platformVersion).isEqualTo(5000)
             it.assertThat(mgmInfo.softwareVersion).isEqualTo("5.0.0")

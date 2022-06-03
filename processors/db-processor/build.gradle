@@ -58,7 +58,6 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
 
-    runtimeOnly project(':libs:crypto:crypto-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
