@@ -1,7 +1,8 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.messaging.FlowSession
 
 class FakeFlow: RPCStartableFlow<String> {
     override fun call(): String {
@@ -13,8 +14,12 @@ class FakeFlow: RPCStartableFlow<String> {
     }
 }
 
-class FakeInitiatedFlow: Flow<String> {
+class FakeInitiatedFlow: ResponderFlow<String> {
     override fun call(): String {
         return ""
+    }
+
+    override fun call(session: FlowSession) {
+
     }
 }

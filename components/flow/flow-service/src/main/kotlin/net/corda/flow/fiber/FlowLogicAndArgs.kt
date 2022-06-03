@@ -2,6 +2,7 @@ package net.corda.flow.fiber
 
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 
 /**
@@ -20,5 +21,5 @@ sealed interface FlowLogicAndArgs {
     /**
      * A flow started via an incoming session event
      */
-    data class InitiatedFlow(override val logic: Flow<*>, val session: FlowSession) : FlowLogicAndArgs
+    data class InitiatedFlow(override val logic: ResponderFlow<*>, val session: FlowSession) : FlowLogicAndArgs
 }

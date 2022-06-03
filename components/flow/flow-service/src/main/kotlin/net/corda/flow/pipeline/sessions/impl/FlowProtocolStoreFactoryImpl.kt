@@ -8,10 +8,11 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
-@Suppress("Unused")
+//@Suppress("Unused")
 @Component(service = [FlowProtocolStoreFactory::class])
 class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
 
@@ -37,6 +38,11 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                     initiatorToProtocol[flow] = protocols
                 }
                 flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
+                    if (!flowClass.interfaces.contains(ResponderFlow::class.java)) {
+                        throw FlowProcessingException(
+                            "Found a responder flow that does not implement ResponderFlow"
+                        )
+                    }
                     val protocol = flowClass.getAnnotation(InitiatedBy::class.java).protocol
                     val versions = flowClass.getAnnotation(InitiatedBy::class.java).version
                     val protocols = versions.map { FlowProtocol(protocol, it) }

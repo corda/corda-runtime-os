@@ -11,8 +11,8 @@ import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,7 +45,7 @@ class FlowFactoryImplTest {
         }
 
         whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
-        whenever(sandboxGroup.loadClassFromMainBundles(className, Flow::class.java))
+        whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
             .thenReturn(ExampleFlow2::class.java)
 
         val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as FlowLogicAndArgs.InitiatedFlow
@@ -79,8 +79,8 @@ class FlowFactoryImplTest {
         }
     }
 
-    class ExampleFlow2(val flowSession: FlowSession) : Flow<Unit> {
-        override fun call() {
+    class ExampleFlow2 : ResponderFlow<Unit> {
+        override fun call(session: FlowSession) {
         }
     }
 }

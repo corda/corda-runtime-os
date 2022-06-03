@@ -26,6 +26,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -51,6 +52,7 @@ class FlowRunnerImplTest {
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessionIds = mutableListOf() }
     private var rpcFlow = mock<RPCStartableFlow<Unit>>()
+    private var initiatedFlow = mock<ResponderFlow<Unit>>()
 
     private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
 
@@ -113,13 +115,13 @@ class FlowRunnerImplTest {
         val sessionEvent = SessionEvent().apply {
             payload = sessionInit
         }
-        val logicAndArgs = FlowLogicAndArgs.InitiatedFlow(rpcFlow, mock())
+        val logicAndArgs = FlowLogicAndArgs.InitiatedFlow(initiatedFlow, mock())
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)).thenReturn(logicAndArgs)
         whenever(flowFiberFactory.createFlowFiber(eq(FLOW_ID_1), eq(logicAndArgs))).thenReturn(fiber)
-        whenever(flowStack.push(rpcFlow)).thenReturn(flowStackItem)
+        whenever(flowStack.push(initiatedFlow)).thenReturn(flowStackItem)
         whenever(fiber.startFlow(any())).thenReturn(fiberResult)
 
         val result = flowRunner.runFlow(context, flowContinuation)
@@ -127,7 +129,7 @@ class FlowRunnerImplTest {
         assertThat(result).isSameAs(fiberResult)
 
         assertThat(flowStackItem.sessionIds).containsOnly(SESSION_ID_1)
-        verify(sandboxDependencyInjector).injectServices(rpcFlow)
+        verify(sandboxDependencyInjector).injectServices(initiatedFlow)
     }
 
     @Test

@@ -64,13 +64,9 @@ class FlowFiberImpl(
                     val output = flowLogic.logic.call(flowLogic.requestBody)
                     FlowIORequest.FlowFinished(output)
                 }
-                else -> {
-                    /**
-                     * TODOs: Need to review/discuss how/where to ensure the user code can only return
-                     * a string
-                     */
-                    val output = flowLogic.logic.call()
-                    FlowIORequest.FlowFinished(output.toString())
+                is FlowLogicAndArgs.InitiatedFlow -> {
+                    flowLogic.logic.call(flowLogic.session)
+                    FlowIORequest.FlowFinished(null)
                 }
             }
         } catch (e: Exception) {

@@ -6,9 +6,8 @@ import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.RPCStartableFlow
-import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -37,10 +36,10 @@ class FlowFactoryImpl  @Activate constructor(
     }
 
     override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        val flowClass: Class<Flow<*>> = uncheckedCast(
+        val flowClass: Class<ResponderFlow<*>> = uncheckedCast(
             sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                 flowStartContext.flowClassName,
-                Flow::class.java
+                ResponderFlow::class.java
             )
         )
 
@@ -49,9 +48,7 @@ class FlowFactoryImpl  @Activate constructor(
             MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
             initiated = true
         )
-        val logic = flowClass
-            .getDeclaredConstructor(FlowSession::class.java)
-            .newInstance(flowSession)
+        val logic = flowClass.getDeclaredConstructor().newInstance()
 
         return FlowLogicAndArgs.InitiatedFlow(logic, flowSession)
     }
