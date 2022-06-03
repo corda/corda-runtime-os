@@ -3,6 +3,7 @@ package net.corda.membership.impl
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
+import net.corda.v5.base.util.parseOrNull
 import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
@@ -49,11 +50,20 @@ class MemberInfoExtension {
         /** Key name for group identifier property. */
         const val GROUP_ID = "corda.groupId"
 
+        /** Key name for session key property. */
+        const val SESSION_KEY = "corda.session.key"
+
         /** Key name for certificate property. */
-        const val CERTIFICATE = "corda.certificate"
+        const val CERTIFICATE = "corda.session.certificate"
+
+        /** Key name for created time property. */
+        const val CREATED_TIME = "corda.createdTime"
 
         /** Key name for modified time property. */
         const val MODIFIED_TIME = "corda.modifiedTime"
+
+        /** Key name for MGM property. */
+        const val IS_MGM = "corda.mgm"
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
@@ -75,6 +85,9 @@ class MemberInfoExtension {
         /*@JvmStatic
         val MemberInfo.certificate: CertPath?
             get() = memberProvidedContext.readAs(CERTIFICATE)*/
+        @JvmStatic
+        val MemberInfo.certificate: List<String>
+            get() = memberProvidedContext.parseList(CERTIFICATE)
 
         /** Group identifier. UUID as a String. */
         @JvmStatic
@@ -118,5 +131,10 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.identityKeyHashes: Collection<PublicKeyHash>
             get() = memberProvidedContext.parseSet(IDENTITY_KEY_HASHES)
+
+        /** Denotes whether this [MemberInfo] represents an MGM node. */
+        @JvmStatic
+        val MemberInfo.isMgm: Boolean
+            get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
     }
 }

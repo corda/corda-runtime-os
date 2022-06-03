@@ -1,19 +1,25 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreationRequest
 import net.corda.data.virtualnode.VirtualNodeCreationResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
+import net.corda.layeredpropertymap.toWire
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -22,6 +28,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.CRYPTO
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbType.VAULT
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 
 /**
@@ -33,12 +40,19 @@ import javax.persistence.EntityManager
  * @property vnodePublisher Used to publish to Kafka.
  * @property virtualNodeEntityRepository Used to retrieve and store virtual nodes and related entities.
  */
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class VirtualNodeWriterProcessor(
     private val vnodePublisher: Publisher,
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
-    private val vnodeDbFactory: VirtualNodeDbFactory
+    private val vnodeDbFactory: VirtualNodeDbFactory,
+    private val groupPolicyParser: GroupPolicyParser,
 ) : RPCResponderProcessor<VirtualNodeCreationRequest, VirtualNodeCreationResponse> {
+
+    companion object {
+        private val logger = contextLogger()
+        const val PUBLICATION_TIMEOUT_SECONDS = 30L
+    }
 
     /**
      * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
@@ -83,6 +97,8 @@ internal class VirtualNodeWriterProcessor(
             val dbConnections = persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, request.updateActor)
 
             publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+
+            publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
 
             sendSuccessfulResponse(respFuture, request, holdingId, cpiMetadata, dbConnections)
         } catch (e: Exception) {
@@ -202,6 +218,32 @@ internal class VirtualNodeWriterProcessor(
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e)
+        }
+    }
+
+    private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
+        val mgmInfo = groupPolicyParser.run {
+            getMgmInfo(groupPolicyJson)
+        }
+        if (mgmInfo == null) {
+            logger.info("No MGM information found in group policy. MGM member info not published.")
+            return
+        }
+        val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name.toString(), mgmInfo.groupId)
+        val mgmRecord = Record(
+            MEMBER_LIST_TOPIC,
+            "${holdingIdentity.id}-${mgmHoldingIdentity.id}",
+            PersistentMemberInfo(
+                holdingIdentity.toAvro(),
+                mgmInfo.memberProvidedContext.toWire(),
+                mgmInfo.mgmProvidedContext.toWire()
+            )
+        )
+        try {
+            vnodePublisher.publish(listOf(mgmRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (e: Exception) {
+            throw VirtualNodeWriteServiceException(
+                "MGM member info for Group ID: ${mgmInfo.groupId} could not be published. Cause: $e", e)
         }
     }
 
