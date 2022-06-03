@@ -49,7 +49,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
 
     private val className = this::class.java.simpleName
 
-    private var impl: InnerMemberLookupRpcOps = InactiveImpl(className)
+    private var impl: InnerMemberLookupRpcOps = InactiveImpl()
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberLookupRpcOps>(
         protocolVersion.toString()
@@ -92,13 +92,13 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     ) = impl.lookup(holdingIdentityId, commonName, organisation, organisationUnit, locality, state, country)
 
     fun activate(reason: String) {
-        impl = ActiveImpl(virtualNodeInfoReadService, membershipGroupReaderProvider)
+        impl = ActiveImpl()
         updateStatus(LifecycleStatus.UP, reason)
     }
 
     fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
-        impl = InactiveImpl(className)
+        impl = InactiveImpl()
     }
 
     private fun updateStatus(status: LifecycleStatus, reason: String) {
@@ -107,9 +107,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         }
     }
 
-    private class InactiveImpl(
-        val className: String
-    ) : InnerMemberLookupRpcOps {
+    private inner class InactiveImpl : InnerMemberLookupRpcOps {
         override fun lookup(
             holdingIdentityId: String,
             commonName: String?,
@@ -121,10 +119,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         ) = throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
     }
 
-    private class ActiveImpl(
-        val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        val membershipGroupReaderProvider: MembershipGroupReaderProvider
-    ) : InnerMemberLookupRpcOps {
+    private inner class ActiveImpl : InnerMemberLookupRpcOps {
         @Suppress("ComplexMethod")
         override fun lookup(
             holdingIdentityId: String,

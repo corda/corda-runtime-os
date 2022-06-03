@@ -50,6 +50,7 @@ class MemberOpsClientImpl @Activate constructor(
 ) : MemberOpsClient {
     companion object {
         private val logger: Logger = contextLogger()
+        const val ERROR_MSG = "Service is in an incorrect state for calling."
 
         const val CLIENT_ID = "membership.ops.rpc"
         const val GROUP_NAME = "membership.ops.rpc"
@@ -156,11 +157,7 @@ class MemberOpsClientImpl @Activate constructor(
         current.close()
     }
 
-    private class InactiveImpl : InnerMemberOpsClient {
-        companion object {
-            const val ERROR_MSG = "Service is in an incorrect state for calling."
-        }
-
+    private inner class InactiveImpl : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
             throw IllegalStateException(ERROR_MSG)
 
@@ -171,7 +168,7 @@ class MemberOpsClientImpl @Activate constructor(
 
     }
 
-    private class ActiveImpl(
+    private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {

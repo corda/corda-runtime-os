@@ -101,7 +101,7 @@ class RegistrationProxyImpl @Activate constructor(
 
     private fun activate(message: String) {
         logger.debug(message)
-        impl = ActiveImpl(groupPolicyProvider, registrationServices)
+        impl = ActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP, message)
     }
 
@@ -125,16 +125,13 @@ class RegistrationProxyImpl @Activate constructor(
 
     override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult = impl.register(member)
 
-    private class InactiveImpl : InnerRegistrationProxy {
+    private inner class InactiveImpl : InnerRegistrationProxy {
         override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult =
             throw IllegalStateException("RegistrationProxy currently inactive.")
 
     }
 
-    private class ActiveImpl(
-        val groupPolicyProvider: GroupPolicyProvider,
-        val registrationServices: List<MemberRegistrationService>
-    ) : InnerRegistrationProxy {
+    private inner class ActiveImpl: InnerRegistrationProxy {
         override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult {
             val service = getRegistrationService(
                 try {
