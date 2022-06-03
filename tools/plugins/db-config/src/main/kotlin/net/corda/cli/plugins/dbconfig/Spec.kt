@@ -46,6 +46,7 @@ class Spec(
     }
 
     override fun run() {
+        val parentClassLoader = Database.classLoader
         if (clearChangeLog == true) {
             deleteFile(databaseChangeLogFile)
         }
@@ -73,8 +74,11 @@ class Spec(
             // Make .sql output file
             val outputFileName = "${outputDir.removeSuffix("/")}/${test.find((file.key))!!.groupValues.last()}.sql"
             val outputFile = writerFactory(outputFileName)
+            // This is a workaround to make liquibase play nicely with the logger that's on the class loader
+            val oldCl = Thread.currentThread().contextClassLoader
+            Thread.currentThread().contextClassLoader = parentClassLoader
             val database = PostgresDatabase()
-            if(!file.value.defaultSchemaName.isNullOrBlank()) {
+            if (!file.value.defaultSchemaName.isNullOrBlank()) {
                 database.defaultSchemaName = file.value.defaultSchemaName
                 outputFile.write(System.lineSeparator())
                 outputFile.write("CREATE SCHEMA IF NOT EXISTS ${file.value.defaultSchemaName};")
@@ -94,6 +98,7 @@ class Spec(
                 )
             outputFile.flush()
             outputFile.close()
+            Thread.currentThread().contextClassLoader = oldCl
         }
     }
 }

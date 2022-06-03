@@ -112,6 +112,7 @@ class MemberProcessorTestUtils {
             virtualNodeInfoReader: VirtualNodeInfoReadService,
             cpiInfoReadService: CpiInfoReadService,
             holdingIdentity: HoldingIdentity,
+            cryptoConnectionId: UUID,
             groupPolicy: String = sampleGroupPolicy1
         ) {
             val cpiVersion = UUID.randomUUID().toString()
@@ -123,8 +124,10 @@ class MemberProcessorTestUtils {
                 cpiVersion = cpiVersion
             )
             val virtualNodeInfo = VirtualNodeInfo(
-                holdingIdentity, cpiMetadata.cpiId,
-                null, UUID.randomUUID(), null, UUID.randomUUID()
+                holdingIdentity = holdingIdentity,
+                cpiIdentifier = cpiMetadata.cpiId,
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = cryptoConnectionId
             )
 
             // Publish test data

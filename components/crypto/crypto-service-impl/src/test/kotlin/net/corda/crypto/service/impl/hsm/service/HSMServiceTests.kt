@@ -47,7 +47,7 @@ class HSMServiceTests {
         encryptor = config.rootEncryptor()
         service = HSMServiceImpl(
             config = config,
-            hsmCache = factory.hsmCache,
+            hsmStore = factory.hsmCache,
             schemeMetadata = factory.schemeMetadata,
             opsProxyClient = factory.opsProxyClient
         )

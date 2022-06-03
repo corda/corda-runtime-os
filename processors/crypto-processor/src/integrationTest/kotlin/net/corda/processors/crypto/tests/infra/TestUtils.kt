@@ -10,10 +10,15 @@ import net.corda.crypto.impl.config.addDefaultBootCryptoConfig
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.records.Record
 import net.corda.processors.crypto.CryptoProcessor
+import net.corda.schema.Schemas
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.sha256Bytes
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertTrue
 
 const val RESPONSE_TOPIC = "test.response"
@@ -95,7 +100,15 @@ fun randomDataByteArray(): ByteArray {
     return random.nextBytes(random.nextInt(157, 311))
 }
 
-fun randomTenantId(): String =
-    UUID.randomUUID().toString().toByteArray().sha256Bytes().toHexString().take(12)
-
+fun Publisher.publishVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
+    publish(
+        listOf(
+            Record(
+                Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC,
+                virtualNodeInfo.holdingIdentity.toAvro(),
+                virtualNodeInfo.toAvro()
+            )
+        )
+    )
+}
 

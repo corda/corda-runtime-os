@@ -108,6 +108,25 @@ class LifecycleTest<T : Lifecycle>(
     }
 
     /**
+     * Verify a component is in the [LifecycleStatus.ERROR] state
+     *
+     * @param coordinatorName the name of the coordinator to verify
+     */
+    fun verifyIsInError(coordinatorName: LifecycleCoordinatorName) {
+        assertThat(registry.getCoordinator(coordinatorName).status)
+            .withFailMessage("$coordinatorName was not in ERROR")
+            .isEqualTo(LifecycleStatus.ERROR)
+    }
+
+    /**
+     * Verify a component is in the [LifecycleStatus.DOWN] state
+     */
+    inline fun <reified D> verifyIsInError() {
+        verifyIsInError(LifecycleCoordinatorName.forComponent<D>())
+    }
+
+
+    /**
      * Bring all registered dependencies to the [LifecycleStatus.UP]
      */
     fun bringDependenciesUp() {

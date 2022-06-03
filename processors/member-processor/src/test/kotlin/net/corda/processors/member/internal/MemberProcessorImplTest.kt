@@ -33,6 +33,7 @@ class MemberProcessorImplTest {
             mock(),
             mock(),
             mock(),
+            mock(),
             mock()
         )
 

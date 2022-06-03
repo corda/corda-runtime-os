@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
+import net.corda.libs.packaging.core.CpiIdentifier
 
 /**
  * CPI Info Service writer so that we can [put] and [remove]
@@ -53,12 +54,12 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     private var publisher: Publisher? = null
 
-    override fun put(cpiMetadata: CpiMetadata) {
-        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())))
+    override fun put(cpiIdentifier: CpiIdentifier, cpiMetadata: CpiMetadata) {
+        publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), cpiMetadata.toAvro())))
     }
 
-    override fun remove(cpiMetadata: CpiMetadata) {
-        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), null)))
+    override fun remove(cpiIdentifier: CpiIdentifier) {
+        publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), null)))
     }
 
     /** Synchronous publish */

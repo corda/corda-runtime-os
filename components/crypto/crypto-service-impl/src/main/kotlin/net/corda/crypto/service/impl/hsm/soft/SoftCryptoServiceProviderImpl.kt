@@ -1,6 +1,6 @@
 package net.corda.crypto.service.impl.hsm.soft
 
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.service.SoftCryptoServiceConfig
 import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.component.impl.AbstractComponent
@@ -25,13 +25,13 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
-    @Reference(service = SoftCryptoKeyCacheProvider::class)
-    private val cacheProvider: SoftCryptoKeyCacheProvider
+    @Reference(service = SoftCryptoKeyStoreProvider::class)
+    private val storeProvider: SoftCryptoKeyStoreProvider
 ) : AbstractComponent<SoftCryptoServiceProviderImpl.Impl>(
     coordinatorFactory,
     lifecycleCoordinatorName,
     InactiveImpl(),
-    setOf(LifecycleCoordinatorName.forComponent<SoftCryptoKeyCacheProvider>())
+    setOf(LifecycleCoordinatorName.forComponent<SoftCryptoKeyStoreProvider>())
 ), SoftCryptoServiceProvider {
     companion object {
         private val logger: Logger = contextLogger()
@@ -43,7 +43,7 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
         override fun close() = Unit
     }
 
-    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, digestService, cacheProvider)
+    override fun createActiveImpl(): Impl = ActiveImpl(schemeMetadata, digestService, storeProvider)
 
     override fun createInactiveImpl(): Impl = InactiveImpl()
 
@@ -65,12 +65,12 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
     internal class ActiveImpl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val digestService: DigestService,
-        private val cacheProvider: SoftCryptoKeyCacheProvider
+        private val storeProvider: SoftCryptoKeyStoreProvider
     ) : Impl {
         override fun getInstance(config: SoftCryptoServiceConfig): CryptoService {
             logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
             return SoftCryptoService(
-                cache = cacheProvider.getInstance(),
+                store = storeProvider.getInstance(),
                 schemeMetadata = schemeMetadata,
                 digestService = digestService
             )

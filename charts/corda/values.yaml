@@ -53,6 +53,8 @@ kafka:
   bootstrapServers: ""
   # -- Kafka topic partitions
   partitions: 3
+  # -- Kafka topic replicas
+  replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
   # TLS configuration for client connections to Kafka

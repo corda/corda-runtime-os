@@ -3,6 +3,7 @@ package net.corda.processors.member.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -36,7 +37,9 @@ class MemberProcessorImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = MemberOpsService::class)
-    private val memberOpsService: MemberOpsService
+    private val memberOpsService: MemberOpsService,
+    @Reference(service = HSMRegistrationClient::class)
+    private val hsmRegistrationClient: HSMRegistrationClient
 ) : MemberProcessor {
 
     companion object {
@@ -48,6 +51,7 @@ class MemberProcessorImpl @Activate constructor(
         ::virtualNodeInfoReadService,
         ::cpiInfoReader,
         ::groupPolicyProvider,
+        ::hsmRegistrationClient,
         ::registrationProxy,
         ::cryptoOpsClient,
         ::memberOpsService

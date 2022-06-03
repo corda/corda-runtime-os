@@ -5,12 +5,11 @@ import com.typesafe.config.ConfigRenderOptions
 import java.time.Clock
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.configuration.write.publish.ConfigurationDto
-import net.corda.configuration.write.publish.ConfigurationSchemaVersionDto
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
@@ -52,8 +51,7 @@ internal class ConfigWriterProcessor(
             val configEntity = publishConfigToDB(request, respFuture)
             if (configEntity != null && validate(request, respFuture, true)) {
                 configEntity.config = request.config
-                val configDto = configEntity.toDto()
-                publishConfigToKafka(configDto, respFuture)
+                publishConfigToKafka(configEntity, respFuture)
             }
         }
     }
@@ -108,21 +106,27 @@ internal class ConfigWriterProcessor(
      * not retried. Otherwise, [respFuture] is completed successfully.
      */
     private fun publishConfigToKafka(
-        configDto: ConfigurationDto,
+        entity: ConfigEntity,
         respFuture: ConfigurationManagementResponseFuture
     ) {
+        val configSection = entity.section
+        val config = Configuration(
+            entity.config,
+            entity.version.toString(),
+            ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor)
+        )
         try {
-            configPublishService.put(configDto)
+            configPublishService.put(configSection, config)
         } catch (e: Exception) {
             // TODO using the entity for now. Maybe we should be introducing a DTO for Configuration.
-            val errMsg = "Configuration $configDto was written to the database, but couldn't be published. Cause: $e"
+            val errMsg = "Configuration ${configSection to config} was written to the database, but couldn't be published. Cause: $e"
             handleException(
-                respFuture, errMsg, e, configDto.section, configDto.value,
+                respFuture, errMsg, e, configSection, config.value,
                 ConfigurationSchemaVersion(
-                    configDto.configurationSchemaVersionDto.majorVersion,
-                    configDto.configurationSchemaVersionDto.minorVersion
+                    config.schemaVersion.majorVersion,
+                    config.schemaVersion.minorVersion
                 ),
-                configDto.version
+                config.version.toInt()
             )
             return
         }
@@ -130,13 +134,13 @@ internal class ConfigWriterProcessor(
         val response = ConfigurationManagementResponse(
             true,
             null,
-            configDto.section,
-            configDto.value,
+            configSection,
+            config.value,
             ConfigurationSchemaVersion(
-                configDto.configurationSchemaVersionDto.majorVersion,
-                configDto.configurationSchemaVersionDto.minorVersion
+                config.schemaVersion.majorVersion,
+                config.schemaVersion.minorVersion
             ),
-            configDto.version
+            config.version.toInt()
         )
         respFuture.complete(response)
     }
@@ -157,14 +161,3 @@ internal class ConfigWriterProcessor(
         respFuture.complete(response)
     }
 }
-
-private fun ConfigEntity.toDto(): ConfigurationDto =
-    ConfigurationDto(
-        section = this.section,
-        value = this.config,
-        version = this.version,
-        configurationSchemaVersionDto = ConfigurationSchemaVersionDto(
-            this.schemaVersionMajor,
-            this.schemaVersionMinor
-        )
-    )

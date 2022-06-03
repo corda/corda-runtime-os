@@ -7,17 +7,45 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
  * The signing service persistence configuration.
  */
 class CryptoSigningPersistenceConfig(internal val config: SmartConfig) : SmartConfig by config {
-    val expireAfterAccessMins: Long
+    val keysExpireAfterAccessMins: Long
         get() = try {
-            config.getLong(this::expireAfterAccessMins.name)
+            config.getLong(this::keysExpireAfterAccessMins.name)
         } catch (e: Throwable) {
-            throw CryptoConfigurationException("Failed to get ${this::expireAfterAccessMins.name}", e)
+            throw CryptoConfigurationException("Failed to get ${this::keysExpireAfterAccessMins.name}", e)
         }
 
-    val maximumSize: Long
+    val keyNumberLimit: Long
         get() = try {
-            config.getLong(this::maximumSize.name)
+            config.getLong(this::keyNumberLimit.name)
         } catch (e: Throwable) {
-            throw CryptoConfigurationException("Failed to get ${this::maximumSize.name}", e)
+            throw CryptoConfigurationException("Failed to get ${this::keyNumberLimit.name}", e)
+        }
+
+    val vnodesExpireAfterAccessMins: Long
+        get() = try {
+            config.getLong(this::vnodesExpireAfterAccessMins.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::vnodesExpireAfterAccessMins.name}", e)
+        }
+
+    val vnodeNumberLimit: Long
+        get() = try {
+            config.getLong(this::vnodeNumberLimit.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::vnodeNumberLimit.name}", e)
+        }
+
+    val connectionsExpireAfterAccessMins: Long
+        get() = try {
+            config.getLong(this::connectionsExpireAfterAccessMins.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::connectionsExpireAfterAccessMins.name}", e)
+        }
+
+    val connectionNumberLimit: Long
+        get() = try {
+            config.getLong(this::connectionNumberLimit.name)
+        } catch (e: Throwable) {
+            throw CryptoConfigurationException("Failed to get ${this::connectionNumberLimit.name}", e)
         }
 }

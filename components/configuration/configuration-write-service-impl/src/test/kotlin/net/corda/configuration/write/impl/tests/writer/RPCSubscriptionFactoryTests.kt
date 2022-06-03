@@ -9,7 +9,6 @@ import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
@@ -29,11 +28,6 @@ class RPCSubscriptionFactoryTests {
     /** Returns a mock [SubscriptionFactory]. */
     private fun getSubscriptionFactory() = mock<SubscriptionFactory>().apply {
         whenever(createRPCSubscription<Any, Any>(any(), any(), any())).doReturn(mock())
-    }
-
-    /** Returns a mock [PublisherFactory]. */
-    private fun getPublisherFactory() = mock<PublisherFactory>().apply {
-        whenever(createPublisher(any(), any())).thenReturn(mock())
     }
 
     /** Returns a mock [ConfigurationValidatorFactory]. */

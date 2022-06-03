@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.HSMRegistrationClient
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -53,6 +54,8 @@ class RegistrationServiceLifecycleHandlerTest {
 
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = mock()
 
+    private val hsmRegistrationClient: HSMRegistrationClient = mock()
+
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
@@ -60,7 +63,8 @@ class RegistrationServiceLifecycleHandlerTest {
         mock(),
         configurationReadService,
         coordinatorFactory,
-        layeredPropertyMapFactory
+        layeredPropertyMapFactory,
+        hsmRegistrationClient
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(
@@ -77,6 +81,7 @@ class RegistrationServiceLifecycleHandlerTest {
                 setOf(
                     LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<HSMRegistrationClient>()
                 )
             )
         )
