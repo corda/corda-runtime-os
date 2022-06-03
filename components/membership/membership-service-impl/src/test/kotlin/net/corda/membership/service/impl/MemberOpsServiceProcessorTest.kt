@@ -14,7 +14,6 @@ import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
 import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.membership.registration.RegistrationProxy
-import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -59,7 +58,7 @@ class MemberOpsServiceProcessorTest {
             }
             processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
-        private val clock: Clock = UTCClock()
+        private val clock = UTCClock()
     }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {

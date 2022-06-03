@@ -8,7 +8,6 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.request.RegistrationAction
-import net.corda.utilities.time.Clock
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -25,7 +24,7 @@ import kotlin.test.assertFailsWith
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
-        private val clock: Clock = UTCClock()
+        private val clock = UTCClock()
     }
 
     private var coordinatorIsRunning = false

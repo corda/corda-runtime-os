@@ -28,7 +28,6 @@ import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.records.Record
-import net.corda.utilities.time.Clock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
@@ -44,7 +43,7 @@ import net.corda.utilities.time.UTCClock
 
 class MemberListProcessorTest {
     companion object {
-        private val clock: Clock = UTCClock()
+        private val clock = UTCClock()
         private val keyEncodingService: CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"

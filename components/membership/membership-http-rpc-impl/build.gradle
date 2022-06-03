@@ -25,10 +25,10 @@ dependencies {
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:utilities")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":libs:utilities")
 }

@@ -34,7 +34,6 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,7 +49,7 @@ import org.mockito.kotlin.whenever
 class MemberOpsClientTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "nodeId"
-        private val clock: Clock = UTCClock()
+        private val clock = UTCClock()
     }
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()

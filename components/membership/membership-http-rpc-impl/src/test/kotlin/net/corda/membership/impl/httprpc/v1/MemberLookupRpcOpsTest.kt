@@ -25,7 +25,6 @@ import net.corda.membership.impl.converter.EndpointInfoConverter
 import net.corda.membership.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.utilities.time.Clock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
@@ -50,7 +49,7 @@ class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
         private const val HOLDING_IDENTITY_STRING = "test"
-        private val clock: Clock = UTCClock()
+        private val clock = UTCClock()
     }
 
     private var coordinatorIsRunning = false

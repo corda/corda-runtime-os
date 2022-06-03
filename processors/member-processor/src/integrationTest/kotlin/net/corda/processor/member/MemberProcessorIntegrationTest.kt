@@ -62,7 +62,6 @@ import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.test.util.eventually
-import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.seconds
 import net.corda.virtualnode.HoldingIdentity
@@ -282,7 +281,7 @@ class MemberProcessorIntegrationTest {
             }
         }
 
-        private val clock: Clock = UTCClock()
+        private val clock = UTCClock()
     }
 
     @Test
