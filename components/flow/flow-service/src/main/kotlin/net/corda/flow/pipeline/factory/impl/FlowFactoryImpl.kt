@@ -3,9 +3,11 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
@@ -20,19 +22,21 @@ class FlowFactoryImpl  @Activate constructor(
     private val flowSessionFactory: FlowSessionFactory
 ): FlowFactory {
 
-    override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): Flow<*> {
-        val flowClass: Class<Flow<*>> =
+    override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
+        val flowClass: Class<RPCStartableFlow<*>> =
             uncheckedCast(
                 sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                     startFlowEvent.startContext.flowClassName,
-                    Flow::class.java
+                    RPCStartableFlow::class.java
                 )
             )
+        val logic = flowClass.getDeclaredConstructor().newInstance()
+        val args = startFlowEvent.flowStartArgs
 
-        return flowClass.getDeclaredConstructor().newInstance()
+        return FlowLogicAndArgs.RPCStartedFlow(logic, args)
     }
 
-    override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): Flow<*> {
+    override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         val flowClass: Class<Flow<*>> = uncheckedCast(
             sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                 flowStartContext.flowClassName,
@@ -45,10 +49,11 @@ class FlowFactoryImpl  @Activate constructor(
             MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
             initiated = true
         )
-
-        return flowClass
+        val logic = flowClass
             .getDeclaredConstructor(FlowSession::class.java)
             .newInstance(flowSession)
+
+        return FlowLogicAndArgs.InitiatedFlow(logic, flowSession)
     }
 }
 

@@ -5,8 +5,6 @@ import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
 import net.corda.data.flow.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -19,12 +17,11 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
 @Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
-class FlowFiberImpl<R>(
+class FlowFiberImpl(
     override val flowId: UUID,
-    override val flowLogic: Flow<R>,
-    private val args: Any?,
+    override val flowLogic: FlowLogicAndArgs,
     scheduler: FiberScheduler
-) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber<R> {
+) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber {
 
     private fun interface SerializableFiberWriter : FiberWriter, Serializable
 
@@ -63,10 +60,8 @@ class FlowFiberImpl<R>(
             suspend(FlowIORequest.InitialCheckpoint)
 
             when (flowLogic) {
-                is RPCStartableFlow -> {
-                    val requestBody = args as? String
-                        ?: throw IllegalStateException("The provided arguments was not a string for an RPC started flow")
-                    val output = flowLogic.call(requestBody)
+                is FlowLogicAndArgs.RPCStartedFlow -> {
+                    val output = flowLogic.logic.call(flowLogic.requestBody)
                     FlowIORequest.FlowFinished(output)
                 }
                 else -> {
@@ -74,7 +69,7 @@ class FlowFiberImpl<R>(
                      * TODOs: Need to review/discuss how/where to ensure the user code can only return
                      * a string
                      */
-                    val output = flowLogic.call()
+                    val output = flowLogic.logic.call()
                     FlowIORequest.FlowFinished(output.toString())
                 }
             }

@@ -1,16 +1,15 @@
 package net.corda.flow.fiber
 
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import java.util.UUID
 import java.util.concurrent.Future
 
 @DoNotImplement
-interface FlowFiber<FLOWRESULT> {
+interface FlowFiber {
     val flowId: UUID
-    val flowLogic: Flow<FLOWRESULT>
+    val flowLogic: FlowLogicAndArgs
 
     fun getExecutionContext(): FlowFiberExecutionContext
 

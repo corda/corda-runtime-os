@@ -5,8 +5,8 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
-import net.corda.v5.application.flows.Flow
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.UUID
@@ -17,9 +17,9 @@ import java.util.concurrent.Future
 @Component(service = [FlowFiberFactory::class, FakeFlowFiberFactory::class])
 class FakeFlowFiberFactory : FlowFiberFactory {
 
-    val fiber = FakeFiber<Any?>(UUID(0, 0), FakeFlow())
+    val fiber = FakeFiber(UUID(0, 0), FlowLogicAndArgs.RPCStartedFlow(FakeFlow(), ""))
 
-    override fun createFlowFiber(flowId: String, logic: Flow<*>, args: Any?): FlowFiber<Any?> {
+    override fun createFlowFiber(flowId: String, logic: FlowLogicAndArgs): FlowFiber {
         return fiber
     }
 
@@ -30,10 +30,10 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         return fiber.resume(suspensionOutcome)
     }
 
-    class FakeFiber<R>(
+    class FakeFiber(
         override val flowId: UUID,
-        override val flowLogic: Flow<R>
-    ) : FlowFiber<R> {
+        override val flowLogic: FlowLogicAndArgs
+    ) : FlowFiber {
 
         var ioToCompleteWith: FlowIORequest<*>? = null
         var startContext: FlowFiberExecutionContext? = null

@@ -11,11 +11,11 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.SESSION_ID_1
-import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
@@ -25,7 +25,7 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -46,14 +46,13 @@ class FlowRunnerImplTest {
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
-    private val fiber = mock<FlowFiber<Any?>>()
+    private val fiber = mock<FlowFiber>()
     private val fiberResult = mock<Future<FlowIORequest<*>>>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessionIds = mutableListOf() }
-    private var flow = mock<Flow<Unit>>()
-    private val flowSessionFactory = mock<FlowSessionFactory>()
+    private var rpcFlow = mock<RPCStartableFlow<Unit>>()
 
-    private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory, flowSessionFactory)
+    private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
 
     init {
         whenever(flowCheckpoint.flowId).thenReturn(FLOW_ID_1)
@@ -83,18 +82,19 @@ class FlowRunnerImplTest {
             startContext = flowStartContext
             flowStartArgs = startArgs
         }
+        val logicAndArgs = FlowLogicAndArgs.RPCStartedFlow(rpcFlow, startArgs)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
-        whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(flow)
-        whenever(flowFiberFactory.createFlowFiber(eq(FLOW_ID_1), eq(flow), any())).thenReturn(fiber)
-        whenever(flowStack.push(flow)).thenReturn(flowStackItem)
+        whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)
+        whenever(flowFiberFactory.createFlowFiber(eq(FLOW_ID_1), eq(logicAndArgs))).thenReturn(fiber)
+        whenever(flowStack.push(rpcFlow)).thenReturn(flowStackItem)
         whenever(fiber.startFlow(any())).thenReturn(fiberResult)
 
         val result = flowRunner.runFlow(context, flowContinuation)
 
         assertThat(result).isSameAs(fiberResult)
 
-        verify(sandboxDependencyInjector).injectServices(flow)
+        verify(sandboxDependencyInjector).injectServices(rpcFlow)
     }
 
     @Test
@@ -113,12 +113,13 @@ class FlowRunnerImplTest {
         val sessionEvent = SessionEvent().apply {
             payload = sessionInit
         }
+        val logicAndArgs = FlowLogicAndArgs.InitiatedFlow(rpcFlow, mock())
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)
-        whenever(flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)).thenReturn(flow)
-        whenever(flowFiberFactory.createFlowFiber(eq(FLOW_ID_1), eq(flow), eq(null))).thenReturn(fiber)
-        whenever(flowStack.push(flow)).thenReturn(flowStackItem)
+        whenever(flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)).thenReturn(logicAndArgs)
+        whenever(flowFiberFactory.createFlowFiber(eq(FLOW_ID_1), eq(logicAndArgs))).thenReturn(fiber)
+        whenever(flowStack.push(rpcFlow)).thenReturn(flowStackItem)
         whenever(fiber.startFlow(any())).thenReturn(fiberResult)
 
         val result = flowRunner.runFlow(context, flowContinuation)
@@ -126,7 +127,7 @@ class FlowRunnerImplTest {
         assertThat(result).isSameAs(fiberResult)
 
         assertThat(flowStackItem.sessionIds).containsOnly(SESSION_ID_1)
-        verify(sandboxDependencyInjector).injectServices(flow)
+        verify(sandboxDependencyInjector).injectServices(rpcFlow)
     }
 
     @Test

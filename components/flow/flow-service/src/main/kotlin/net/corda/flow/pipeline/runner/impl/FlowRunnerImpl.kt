@@ -1,29 +1,25 @@
 package net.corda.flow.pipeline.runner.impl
 
 import net.corda.data.flow.FlowStackItem
-import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Future
 
-@Suppress("unused", "LongParameterList")
+@Suppress( "LongParameterList")
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberFactory::class)
@@ -31,9 +27,7 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFactory::class)
     private val flowFactory: FlowFactory,
     @Reference(service = FlowFiberExecutionContextFactory::class)
-    private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory,
-    @Reference(service = FlowSessionFactory::class)
-    private val flowSessionFactory: FlowSessionFactory
+    private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory
 ) : FlowRunner {
     private companion object {
         val log = contextLogger()
@@ -60,10 +54,8 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         startFlowEvent: StartFlow
     ): Future<FlowIORequest<*>> {
-        val args = extractRPCArgs(startFlowEvent)
         return startFlow(
             context,
-            args,
             createFlow = { sgc -> flowFactory.createFlow(startFlowEvent, sgc) },
             updateFlowStackItem = { }
         )
@@ -73,10 +65,8 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>
     ): Future<FlowIORequest<*>> {
         val flowStartContext = context.checkpoint.flowStartContext
-        val args = extractInitiatedArgs(flowStartContext)
         return startFlow(
             context,
-            args,
             createFlow = { sgc -> flowFactory.createInitiatedFlow(flowStartContext, sgc) },
             updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) }
         )
@@ -84,17 +74,16 @@ class FlowRunnerImpl @Activate constructor(
 
     private fun startFlow(
         context: FlowEventContext<Any>,
-        args: Any?,
-        createFlow: (SandboxGroupContext) -> Flow<*>,
+        createFlow: (SandboxGroupContext) -> FlowLogicAndArgs,
         updateFlowStackItem: (FlowStackItem) -> Unit
     ): Future<FlowIORequest<*>> {
         val checkpoint = context.checkpoint
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         val flow = createFlow(fiberContext.sandboxGroupContext)
-        val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow, args)
-        val stackItem = fiberContext.flowStackService.push(flow)
+        val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow)
+        val stackItem = fiberContext.flowStackService.push(flow.logic)
         updateFlowStackItem(stackItem)
-        fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow)
+        fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)
 
         return flowFiber.startFlow(fiberContext)
     }
@@ -105,17 +94,5 @@ class FlowRunnerImpl @Activate constructor(
     ): Future<FlowIORequest<*>> {
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         return flowFiberFactory.createAndResumeFlowFiber(fiberContext,flowContinuation)
-    }
-
-    private fun extractRPCArgs(startFlowEvent: StartFlow) : String {
-        return startFlowEvent.flowStartArgs
-    }
-
-    private fun extractInitiatedArgs(flowStartContext: FlowStartContext) : FlowSession {
-        return flowSessionFactory.create(
-            flowStartContext.statusKey.id, // The ID on a start context is the session ID
-            MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
-            initiated = true
-        )
     }
 }

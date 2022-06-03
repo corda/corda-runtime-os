@@ -7,12 +7,15 @@ import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.SESSION_ID_1
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.messaging.FlowSession
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,13 +48,13 @@ class FlowFactoryImplTest {
         whenever(sandboxGroup.loadClassFromMainBundles(className, Flow::class.java))
             .thenReturn(ExampleFlow2::class.java)
 
-        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as ExampleFlow2
-        assertThat(result.flowSession).isSameAs(flowSession)
+        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as FlowLogicAndArgs.InitiatedFlow
+        assertThat(result.session).isSameAs(flowSession)
     }
 
     @Test
     fun `create flow`() {
-        var startArgs = "args"
+        val startArgs = "args"
         val flowStartContext = FlowStartContext().apply {
             statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
             initiatedBy = BOB_X500_HOLDING_IDENTITY
@@ -62,15 +65,17 @@ class FlowFactoryImplTest {
             flowStartArgs= startArgs
         }
 
-        whenever(sandboxGroup.loadClassFromMainBundles(className, Flow::class.java))
+        whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
             .thenReturn(ExampleFlow1::class.java)
 
-        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext)
-        assertTrue(result is ExampleFlow1)
+        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as FlowLogicAndArgs.RPCStartedFlow
+        assertTrue(result.logic is ExampleFlow1)
+        assertEquals(startArgs, result.requestBody)
     }
 
-    class ExampleFlow1 : Flow<Unit> {
-        override fun call() {
+    class ExampleFlow1 : RPCStartableFlow<Unit> {
+        override fun call(requestBody: String) : String {
+            return "result"
         }
     }
 
