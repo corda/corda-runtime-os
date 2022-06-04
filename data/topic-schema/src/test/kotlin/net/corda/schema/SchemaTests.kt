@@ -30,7 +30,7 @@ class SchemaTests {
         this::class.java.classLoader.getResources("net/corda/schema")
             .toList()
             .filterNotNull()
-            .map { File(it.file) }
+            .map { File(it.toURI()) }
             .filter { it.isDirectory }
             .flatMap { it.listFiles()!!.toList() }
             .filter { it.name.endsWith("yaml") || it.endsWith("yml") }
