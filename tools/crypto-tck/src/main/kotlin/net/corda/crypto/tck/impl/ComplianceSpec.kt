@@ -1,6 +1,6 @@
 package net.corda.crypto.tck.impl
 
-import net.corda.crypto.impl.CryptoServiceDecorator
+import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.tck.ExecutionOptions
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CryptoService

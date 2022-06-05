@@ -139,7 +139,8 @@ open class SoftCryptoService(
             throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
         }
         logger.debug {
-            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName})"
+            "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName}," +
+                    " signature=${spec.signatureSpec})"
         }
         val wrappingKey = store.act { it.findWrappingKey(spec.masterKeyAlias!!) }
             ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")

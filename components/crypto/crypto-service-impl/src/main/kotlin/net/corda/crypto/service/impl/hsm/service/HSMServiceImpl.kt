@@ -8,10 +8,10 @@ import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLIC
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.Executor
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
-import net.corda.crypto.impl.executeWithRetry
 import net.corda.crypto.persistence.hsm.HSMStore
 import net.corda.crypto.persistence.hsm.HSMStoreActions
 import net.corda.crypto.persistence.hsm.HSMConfig
@@ -53,6 +53,8 @@ class HSMServiceImpl(
     private val softConfig = config.softPersistence()
 
     private val hsmConfig = config.hsmPersistence()
+
+    private val executor = Executor(logger, hsmConfig.downstreamRetries)
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
@@ -197,7 +199,7 @@ class HSMServiceImpl(
             }
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
-            executeWithRetry(logger, hsmConfig.downstreamRetries) {
+            executor.executeWithRetry {
                 opsProxyClient.createWrappingKey(
                     configId = association.config.info.id,
                     failIfExists = false,
@@ -214,7 +216,7 @@ class HSMServiceImpl(
         if (info.masterKeyPolicy == MasterKeyPolicy.SHARED) {
             // All config information at that point is persisted, so it's safe to call crypto operations
             // for that tenant and category
-            executeWithRetry(logger, hsmConfig.downstreamRetries) {
+            executor.executeWithRetry {
                 opsProxyClient.createWrappingKey(
                     configId = info.id,
                     failIfExists = false,

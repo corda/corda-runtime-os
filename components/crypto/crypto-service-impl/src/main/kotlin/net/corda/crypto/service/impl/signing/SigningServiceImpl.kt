@@ -8,6 +8,10 @@ import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
+import net.corda.crypto.service.impl.hsm.soft.generateKeyPair
+import net.corda.crypto.service.impl.hsm.soft.getSupportedSchemes
+import net.corda.crypto.service.impl.hsm.soft.sign
+import net.corda.crypto.service.impl.hsm.soft.toSaveKeyContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID

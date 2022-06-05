@@ -13,7 +13,7 @@ import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
-import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
+import net.corda.crypto.service.impl.hsm.soft.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory

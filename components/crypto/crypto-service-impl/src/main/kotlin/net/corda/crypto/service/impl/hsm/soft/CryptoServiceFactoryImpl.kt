@@ -1,11 +1,11 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.impl.CryptoServiceDecorator
+import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.toCryptoConfig
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation

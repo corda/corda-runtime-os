@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.persistence.signing.SigningKeySaveContext
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext

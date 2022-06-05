@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.decorators
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
@@ -10,7 +10,7 @@ import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -24,6 +24,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.TimeoutException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
@@ -40,92 +41,92 @@ class CryptoServiceDecoratorTests {
 
     @Test
     fun `Should close wrapped service`() {
-        val circuitBreaker = createCircuitBreaker()
-        circuitBreaker.close()
+        val decorator = createDecorator()
+        decorator.close()
         Mockito.verify(cryptoService, times(1)).close()
     }
 
     @Test
     fun `Should execute requiresWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         whenever(
             cryptoService.requiresWrappingKey()
         ).thenReturn(true, false)
-        assertTrue(circuitBreaker.requiresWrappingKey())
-        assertFalse(circuitBreaker.requiresWrappingKey())
+        assertTrue(decorator.requiresWrappingKey())
+        assertFalse(decorator.requiresWrappingKey())
     }
 
     @Test
     fun `Should throw same CryptoServiceException from wrapped service when executing requiresWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val expected = CryptoServiceException("")
         whenever(
             cryptoService.requiresWrappingKey()
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.requiresWrappingKey()
+            decorator.requiresWrappingKey()
         }
         assertSame(expected, actual)
     }
 
     @Test
     fun `Should throw exception wrapped in CryptoServiceException when executing requiresWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val expected = RuntimeException()
         whenever(
             cryptoService.requiresWrappingKey()
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.requiresWrappingKey()
+            decorator.requiresWrappingKey()
         }
         assertSame(expected, actual.cause)
     }
 
     @Test
     fun `Should execute supportedSchemes`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val expected = listOf<KeyScheme>()
         whenever(
             cryptoService.supportedSchemes()
         ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.supportedSchemes())
+        assertSame(expected, decorator.supportedSchemes())
     }
 
     @Test
     fun `Should throw same CryptoServiceException from wrapped service when executing supportedSchemes`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val expected = CryptoServiceException("")
         whenever(
             cryptoService.supportedSchemes()
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.supportedSchemes()
+            decorator.supportedSchemes()
         }
         assertSame(expected, actual)
     }
 
     @Test
     fun `Should throw exception wrapped in CryptoServiceException  when executing supportedSchemes`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val expected = RuntimeException()
         whenever(
             cryptoService.supportedSchemes()
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.supportedSchemes()
+            decorator.supportedSchemes()
         }
         assertSame(expected, actual.cause)
     }
 
     @Test
     fun `Should execute createWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val context = emptyMap<String, String>()
         val argCaptor1 = argumentCaptor<String>()
         val argCaptor2 = argumentCaptor<Boolean>()
         val argCaptor3 = argumentCaptor<Map<String, String>>()
-        circuitBreaker.createWrappingKey(alias, true, context)
+        decorator.createWrappingKey(alias, true, context)
         Mockito.verify(cryptoService, times(1)).createWrappingKey(
             argCaptor1.capture(),
             argCaptor2.capture(),
@@ -138,49 +139,49 @@ class CryptoServiceDecoratorTests {
 
     @Test
     fun `Should throw same CryptoServiceException from wrapped service when executing createWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val expected = CryptoServiceException("")
         whenever(
             cryptoService.createWrappingKey(alias, true, emptyMap())
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.createWrappingKey(alias, true, emptyMap())
+            decorator.createWrappingKey(alias, true, emptyMap())
         }
         assertSame(expected, actual)
     }
 
     @Test
     fun `Should throw same IllegalArgumentException from wrapped service when executing createWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val expected = IllegalArgumentException()
         whenever(
             cryptoService.createWrappingKey(alias, true, emptyMap())
         ).thenThrow(expected)
         val actual = assertThrows<IllegalArgumentException> {
-            circuitBreaker.createWrappingKey(alias, true, emptyMap())
+            decorator.createWrappingKey(alias, true, emptyMap())
         }
         assertSame(expected, actual)
     }
 
     @Test
     fun `Should throw exception wrapped in CryptoServiceException when executing createWrappingKey`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val expected = RuntimeException()
         whenever(
             cryptoService.createWrappingKey(alias, true, emptyMap())
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.createWrappingKey(alias, true, emptyMap())
+            decorator.createWrappingKey(alias, true, emptyMap())
         }
         assertSame(expected, actual.cause)
     }
 
     @Test
     fun `Should execute generateKeyPair`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
         val expectedMasterKeyAlias = UUID.randomUUID().toString()
@@ -204,7 +205,7 @@ class CryptoServiceDecoratorTests {
                 spec,
                 context)
         ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.generateKeyPair(spec, context))
+        assertSame(expected, decorator.generateKeyPair(spec, context))
         Mockito.verify(cryptoService, times(1)).generateKeyPair(
             argThat {
                 keyScheme == scheme &&
@@ -222,7 +223,7 @@ class CryptoServiceDecoratorTests {
 
     @Test
     fun `Should throw same CryptoServiceException from wrapped service when executing generateKeyPair`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         val scheme = RSA_TEMPLATE.makeScheme(
@@ -240,14 +241,14 @@ class CryptoServiceDecoratorTests {
             cryptoService.generateKeyPair(spec, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.generateKeyPair(spec, context)
+            decorator.generateKeyPair(spec, context)
         }
         assertSame(expected, actual)
     }
 
     @Test
     fun `Should throw exception wrapped in CryptoServiceException when executing generateKeyPair`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         val scheme = RSA_TEMPLATE.makeScheme(
@@ -265,14 +266,14 @@ class CryptoServiceDecoratorTests {
             cryptoService.generateKeyPair(spec, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.generateKeyPair(spec, context)
+            decorator.generateKeyPair(spec, context)
         }
         assertSame(expected, actual.cause)
     }
 
     @Test
     fun `Should execute sign`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
@@ -280,12 +281,12 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.sign(spec, data, context))
+        assertSame(expected, decorator.sign(spec, data, context))
     }
 
     @Test
     fun `Should throw same CryptoServiceException from wrapped service when executing sign`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = CryptoServiceException("")
         val context = emptyMap<String, String>()
@@ -294,14 +295,14 @@ class CryptoServiceDecoratorTests {
             cryptoService.sign(spec, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(spec, data, context)
+            decorator.sign(spec, data, context)
         }
         assertSame(expected, actual)
     }
 
     @Test
     fun `Should throw exception wrapped in CryptoServiceException when executing sign`() {
-        val circuitBreaker = createCircuitBreaker()
+        val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = RuntimeException()
         val context = emptyMap<String, String>()
@@ -310,29 +311,30 @@ class CryptoServiceDecoratorTests {
             cryptoService.sign(spec, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(spec, data, context)
+            decorator.sign(spec, data, context)
         }
         assertSame(expected, actual.cause)
     }
 
     @Test
     fun `Should throw CryptoServiceTimeoutException on timeout`() {
-        val circuitBreaker = createCircuitBreaker(0)
+        val decorator = createDecorator(0)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val spec = mock<SigningSpec>()
         val expected = UUID.randomUUID().toString().toByteArray()
         whenever(
             cryptoService.sign(spec, data, context)
-        ).thenAnswer(AnswersWithDelay(1000, Returns(expected)))
-        assertThrows<CryptoServiceTimeoutException> {
-            circuitBreaker.sign(spec, data, context)
+        ).thenAnswer(AnswersWithDelay(500, Returns(expected)))
+        val e = assertThrows<CryptoServiceException> {
+            decorator.sign(spec, data, context)
         }
+        assertThat(e.cause).isInstanceOf(TimeoutException::class.java)
     }
 
     @Test
     fun `Should throw CryptoServiceTimeoutException on exceeding number of retries`() {
-        val circuitBreaker = createCircuitBreaker(1)
+        val decorator = createDecorator(1)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val spec = mock<SigningSpec>()
@@ -340,16 +342,17 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         )
-        .thenAnswer(AnswersWithDelay(1000, Returns(expected)))
-        .thenAnswer(AnswersWithDelay(1000, Returns(expected)))
-        assertThrows<CryptoServiceTimeoutException> {
-            circuitBreaker.sign(spec, data, context)
+        .thenAnswer(AnswersWithDelay(500, Returns(expected)))
+        .thenAnswer(AnswersWithDelay(500, Returns(expected)))
+        val e = assertThrows<CryptoServiceException> {
+            decorator.sign(spec, data, context)
         }
+        assertThat(e.cause).isInstanceOf(TimeoutException::class.java)
     }
 
     @Test
     fun `Should eventually succeed after retry`() {
-        val circuitBreaker = createCircuitBreaker(1)
+        val decorator = createDecorator(2)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val spec = mock<SigningSpec>()
@@ -358,16 +361,16 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         )
-        .thenAnswer(AnswersWithDelay(1000, Returns(expected1)))
+        .thenAnswer(AnswersWithDelay(500, Returns(expected1)))
         .thenReturn(expected2, expected1)
-        assertSame(expected2, circuitBreaker.sign(spec, data, context))
-        assertSame(expected1, circuitBreaker.sign(spec, data, context))
+        assertSame(expected2, decorator.sign(spec, data, context))
+        assertSame(expected1, decorator.sign(spec, data, context))
     }
 
-    private fun createCircuitBreaker(retries: Int = 0): CryptoServiceDecorator {
+    private fun createDecorator(retries: Int = 0): CryptoServiceDecorator {
         return CryptoServiceDecorator(
             cryptoService,
-            Duration.ofMillis(500),
+            Duration.ofMillis(250),
             retries = retries
         )
     }
