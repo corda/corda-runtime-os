@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Instant
 import java.util.UUID
 import kotlin.streams.toList
 
@@ -49,7 +50,8 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
                 HoldingIdentity(x500, cpi.metadata.cpiId.name),
                 cpi.metadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID()
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                timestamp = Instant.now()
             ) }
         }
 
