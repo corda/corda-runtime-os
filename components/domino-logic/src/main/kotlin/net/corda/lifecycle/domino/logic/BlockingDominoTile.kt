@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StopEvent
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * This class encapsulates domino logic for components that have no dependencies, where we want to delay startup until we receive an
@@ -39,6 +40,7 @@ class BlockingDominoTile(componentName: String,
     }
 
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    private val internalState = AtomicReference(LifecycleStatus.DOWN)
 
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
     override val managedChildren: Collection<DominoTile> = emptyList()
@@ -69,15 +71,25 @@ class BlockingDominoTile(componentName: String,
 
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+            val currentInternalState = internalState.get()
             when (event) {
                 is AsynchronousReady -> {
-                    if (state != LifecycleStatus.UP) coordinator.updateStatus(LifecycleStatus.UP)
+                    if (currentInternalState == LifecycleStatus.DOWN) {
+                        internalState.set(LifecycleStatus.UP)
+                        coordinator.updateStatus(LifecycleStatus.UP)
+                    }
                 }
                 is AsynchronousException -> {
-                    if (state != LifecycleStatus.ERROR) coordinator.updateStatus(LifecycleStatus.ERROR, event.exception.toString())
+                    if (currentInternalState != LifecycleStatus.ERROR) {
+                        internalState.set(LifecycleStatus.ERROR)
+                        coordinator.updateStatus(LifecycleStatus.ERROR, event.exception.toString())
+                    }
                 }
                 is StopEvent -> {
-                    if (state == LifecycleStatus.UP) coordinator.updateStatus(LifecycleStatus.DOWN)
+                    if (state == LifecycleStatus.UP) {
+                        internalState.set(LifecycleStatus.DOWN)
+                        coordinator.updateStatus(LifecycleStatus.DOWN)
+                    }
                 }
             }
         }
