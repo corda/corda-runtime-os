@@ -33,7 +33,9 @@ internal interface Sandbox {
     /**
      * Uninstalls all the sandbox's bundles.
      *
-     * Returns the bundles that could not be uninstalled.
+     * Returns at most two lists of bundles.
+     * The bundles for `true` are no longer installed,
+     * whereas the bundles for `false` are still installed.
      */
-    fun unload(): List<Bundle>
+    fun unload(): Map<Boolean, List<Bundle>>
 }
