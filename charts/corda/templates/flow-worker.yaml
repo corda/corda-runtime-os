@@ -40,10 +40,14 @@ spec:
           allowPrivilegeEscalation: false
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
+          - name: JAVA_TOOL_OPTIONS
+            value: "-Djava.security.auth.login.config=/etc/config/jaas.conf"
         {{- include "corda.workerJavaToolOptions" . | nindent 10 }}
         args:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
         volumeMounts:
+          - name: jaas-conf
+            mountPath: /etc/config
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:
         {{- if .Values.workers.flow.debug.enabled }}
@@ -64,9 +68,12 @@ spec:
             path: /isHealthy
             port: health
           periodSeconds: 10
-          failureThreshold: 5
+          failureThreshold: 10
         {{- end }}
       volumes:
+        - name: jaas-conf
+          configMap:
+            name: sasl
       {{- include "corda.workerVolumes" . | nindent 8 }}
       nodeSelector:
         kubernetes.io/os: linux

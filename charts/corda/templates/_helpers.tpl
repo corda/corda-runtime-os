@@ -133,7 +133,6 @@ Worker Kafka arguments
 {{- if .Values.kafka.sasl.enabled }}
 - "-msecurity.protocol=SASL_SSL"
 - "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
-- "-msasl.jaas.config=\"org.apache.kafka.common.security.scram.ScramLoginModule required username=\\\"{{ .Values.kafka.sasl.username }}\\\" password=\\\"{{ .Values.kafka.sasl.password }}\\\" ;\""
 {{- else }}
 - "-msecurity.protocol=SSL"
 {{- end }}
