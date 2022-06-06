@@ -4,6 +4,7 @@ import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -35,7 +36,8 @@ import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
-import net.corda.processors.db.internal.reconcile.db.CpiInfoDbReader
+import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader
+import net.corda.processors.db.internal.reconcile.db.getAllCpiInfoDBVersionedRecords
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
@@ -83,7 +85,9 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = ReconcilerFactory::class)
     private val reconcilerFactory: ReconcilerFactory,
     @Reference(service = ConfigPublishService::class)
-    private val configPublishService: ConfigPublishService
+    private val configPublishService: ConfigPublishService,
+    @Reference(service = ConfigReconcilerReader::class)
+    private val configBusReconcilerReader: ConfigReconcilerReader
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -119,7 +123,7 @@ class DBProcessorImpl @Activate constructor(
         ::configPublishService
     )
 
-    private var cpiInfoDbReader: CpiInfoDbReader? = null
+    private var cpiInfoDbReconcilerReader: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
     private var cpiInfoReconciler: Reconciler? = null
 
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
@@ -192,8 +196,8 @@ class DBProcessorImpl @Activate constructor(
                 dependentComponents.stopAll()
                 cpiInfoReconciler?.close()
                 cpiInfoReconciler = null
-                cpiInfoDbReader?.close()
-                cpiInfoDbReader = null
+                cpiInfoDbReconcilerReader?.close()
+                cpiInfoDbReconcilerReader = null
                 dbManagerRegistrationHandler?.close()
                 dbManagerRegistrationHandler = null
             }
@@ -203,16 +207,25 @@ class DBProcessorImpl @Activate constructor(
         }
     }
 
+    // TODO - the following should probably become a `Lifecycle` Reconciler's Factory/ Manager
+    //  to have its own lifecycle management i.e. waiting on needed components.
     private fun createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs: Long) {
-        if (cpiInfoDbReader == null) {
-            log.info("Creating ${CpiInfoDbReader::class.java.name}")
-            cpiInfoDbReader =
-                CpiInfoDbReader(coordinatorFactory, dbConnectionManager).also { it.start() }
+        if (cpiInfoDbReconcilerReader == null) {
+            cpiInfoDbReconcilerReader =
+                DbReconcilerReader(
+                    coordinatorFactory,
+                    dbConnectionManager,
+                    CpiIdentifier::class.java,
+                    CpiMetadata::class.java,
+                    getAllCpiInfoDBVersionedRecords
+                ).also {
+                    it.start()
+                }
         }
 
         if (cpiInfoReconciler == null) {
             cpiInfoReconciler = reconcilerFactory.create(
-                dbReader = cpiInfoDbReader!!,
+                dbReader = cpiInfoDbReconcilerReader!!,
                 kafkaReader = cpiInfoReadService,
                 writer = cpiInfoWriteService,
                 keyClass = CpiIdentifier::class.java,

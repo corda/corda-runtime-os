@@ -3,6 +3,7 @@ package net.corda.libs.configuration.datamodel
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
+import javax.persistence.EntityManager
 import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
@@ -36,7 +37,9 @@ data class ConfigEntity(
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)
-    var updateActor: String
+    var updateActor: String,
+    @Column(name = "is_deleted", nullable = false)
+    val isDeleted: Boolean = false
 ) {
     @Version
     @Column(name = "version", nullable = false)
@@ -51,3 +54,9 @@ data class ConfigEntity(
         updateActor = configEntity.updateActor
     }
 }
+
+fun EntityManager.findAllConfig() =
+    createQuery(
+        "FROM ${ConfigEntity::class.simpleName}",
+        ConfigEntity::class.java
+    ).resultStream
