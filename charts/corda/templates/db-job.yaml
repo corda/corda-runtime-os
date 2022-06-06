@@ -15,7 +15,11 @@ spec:
       containers:
         - name: fin
           image: {{ include "corda.bootstrapImage" . }}
-          command: ['sh', '-c', "echo 'SQL applied'; cat /tmp/working_dir/*.sql"]
+          command:
+            - /bin/sh
+            - -e
+            - -c
+          args: ["echo", "'DB Bootstrapped'"]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume

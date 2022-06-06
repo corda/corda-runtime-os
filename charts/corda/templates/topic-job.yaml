@@ -10,85 +10,86 @@ metadata:
 spec:
   template:
     spec:
+      {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: create-topics
+        - name: run-topic-script
           image: bitnami/kafka:3.1.0-debian-10-r89
-          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 2000m
+              memory: 750Mi
+            limits:
+              cpu: 2000m
+              memory: 2000Mi
           command:
-            - /bin/sh
-            - -e
+            - /bin/bash
             - -c
           args:
             - |
-              echo -e 'Creating kafka topics'
-              touch /tmp/config.properties
-              {{- if .Values.kafka.tls.enabled }}
-              echo "security.protocol=SSL\n" >> /tmp/config.properties
-              {{- if .Values.kafka.tls.truststore.secretRef.name }}
-              echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/config.properties
-              echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/config.properties
-              {{- if .Values.kafka.tls.truststore.password }}
-              echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/config.properties
-              {{- end }}
-              {{- end }}
-              {{- end }}
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}config.management.request &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}config.management.request.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}config.topic --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}p2p.in &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}p2p.out &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}virtual.node.creation.request &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}virtual.node.creation.request.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}virtual.node.info --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}cpi.info --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}cpi.upload &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}cpi.upload.status &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}cpk.file --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}rpc.permissions.management &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}rpc.permissions.management.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}rpc.permissions.user --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}rpc.permissions.group --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}rpc.permissions.role --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}rpc.permissions.permission --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}permissions.user.summary --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.status --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.event &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.event.state --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.event.dlq &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.mapper.event &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.mapper.event.state --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}flow.mapper.event.dlq &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}membership.members --config "cleanup.policy=compact" &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}membership.rpc.ops &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}membership.rpc.ops.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}membership.rpc.certificates.ops &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}membership.rpc.certificates.ops.resp &              
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.hsm.rpc.registration &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.hsm.rpc.registration.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.hsm.rpc.configuration &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.hsm.rpc.configuration.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.ops.rpc &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.ops.rpc.resp &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.ops.flow &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}crypto.hsm.label &
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --partitions {{ .Values.kafka.partitions }} --replication-factor 1 --create --if-not-exists --topic {{ .Values.kafka.topicPrefix }}db.entity.processor &
-              wait
-              echo -e 'Successfully created the following topics:'
-              kafka-topics.sh --bootstrap-server {{ include "corda.kafkaBootstrapServers" . }} --command-config /tmp/config.properties --list
-          {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+              set -e
+              export KAFKA_HEAP_OPTS="-Xmx1G"
+              bash "/tmp/working_dir/create-topics.sh"
           volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
             - mountPath: "/certs"
               name: certs
               readOnly: true
-          {{- end }}
-      {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+            {{- end }}
+      initContainers:
+        - name: create-trust-store
+          image: bitnami/kafka:3.1.0-debian-10-r89
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                touch /tmp/working_dir/config.properties
+                {{- if .Values.kafka.tls.enabled }}
+                echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
+                {{- if .Values.kafka.tls.truststore.secretRef.name }}
+                echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/working_dir/config.properties
+                echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/working_dir/config.properties
+                {{- if .Values.kafka.tls.truststore.password }}
+                echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/working_dir/config.properties
+                {{- end }}
+                {{- end }}
+                {{- end }}
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+            - mountPath: "/certs"
+              name: certs
+              readOnly: true
+            {{- end }}
+        - name: create-topic-script
+          image: {{ include "corda.bootstrapImage" . }}
+          args: [
+            'topic',
+            'create',
+            '-a', '{{ include "corda.kafkaBootstrapServers" . }}',
+            {{- if .Values.kafka.topicPrefix }}
+            '-f', '"{{ .Values.kafka.topicPrefix }}"',
+            {{- end }}
+            '-r', '{{ .Values.kafka.replicas }}',
+            '-p', '{{ .Values.kafka.partitions }}',
+            '-l', '/tmp/working_dir/create-topics.sh'
+          ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
       volumes:
+        - name: working-volume
+          emptyDir: {}
+        {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
         - name: certs
           secret:
             secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
             items:
               - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
                 path: ca.crt
-      {{- end }}
+        {{- end }}
       restartPolicy: Never
   backoffLimit: 0
