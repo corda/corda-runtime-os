@@ -6,7 +6,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
 import net.corda.crypto.impl.config.toCryptoConfig
-import net.corda.crypto.persistence.hsm.HSMCacheProvider
+import net.corda.crypto.persistence.hsm.HSMStoreProvider
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
 import net.corda.crypto.service.HSMService
@@ -26,8 +26,8 @@ class HSMServiceComponent @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
-    @Reference(service = HSMCacheProvider::class)
-    private val cacheProvider: HSMCacheProvider,
+    @Reference(service = HSMStoreProvider::class)
+    private val storeProvider: HSMStoreProvider,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = CryptoOpsProxyClient::class)
@@ -38,7 +38,7 @@ class HSMServiceComponent @Activate constructor(
     configurationReadService = configurationReadService,
     impl = InactiveImpl(),
     dependencies = setOf(
-        LifecycleCoordinatorName.forComponent<HSMCacheProvider>(),
+        LifecycleCoordinatorName.forComponent<HSMStoreProvider>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
     ),
@@ -53,7 +53,7 @@ class HSMServiceComponent @Activate constructor(
     }
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        ActiveImpl(event, cacheProvider, schemeMetadata, opsProxyClient)
+        ActiveImpl(event, storeProvider, schemeMetadata, opsProxyClient)
 
     override fun createInactiveImpl(): Impl =
         InactiveImpl()
@@ -93,13 +93,13 @@ class HSMServiceComponent @Activate constructor(
 
     class ActiveImpl(
         event: ConfigChangedEvent,
-        cacheProvider: HSMCacheProvider,
+        storeProvider: HSMStoreProvider,
         schemeMetadata: CipherSchemeMetadata,
         opsProxyClient: CryptoOpsProxyClient
     ): Impl {
         override val service: HSMServiceImpl = HSMServiceImpl(
             event.config.toCryptoConfig(),
-            cacheProvider.getInstance(),
+            storeProvider.getInstance(),
             schemeMetadata,
             opsProxyClient
         )

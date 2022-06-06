@@ -37,7 +37,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
         val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
-        return CPIMetadata(cpiId, fileChecksum, cpiMetadataEntity.groupId)
+        return CPIMetadata(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
     /**

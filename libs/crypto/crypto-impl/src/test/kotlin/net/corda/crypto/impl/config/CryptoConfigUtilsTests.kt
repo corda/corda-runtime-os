@@ -119,8 +119,8 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Should be able to get CryptoSigningPersistenceConfigTests and its properties`() {
         val config = smartConfig.signingPersistence()
-        assertEquals(90, config.expireAfterAccessMins)
-        assertEquals(20, config.maximumSize)
+        assertEquals(90, config.keysExpireAfterAccessMins)
+        assertEquals(20, config.keyNumberLimit)
     }
 
     @Test
@@ -161,7 +161,7 @@ class CryptoConfigUtilsTests {
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<CryptoConfigurationException> {
-            config.expireAfterAccessMins
+            config.keysExpireAfterAccessMins
         }
     }
 
@@ -171,7 +171,7 @@ class CryptoConfigUtilsTests {
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<CryptoConfigurationException> {
-            config.maximumSize
+            config.keyNumberLimit
         }
     }
 
@@ -285,8 +285,12 @@ class CryptoConfigUtilsTests {
         assertEquals(0, sofPersistence.retries)
         assertEquals(20000, sofPersistence.timeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
-        assertEquals(90, signingPersistence.expireAfterAccessMins)
-        assertEquals(20, signingPersistence.maximumSize)
+        assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
+        assertEquals(20, signingPersistence.keyNumberLimit)
+        assertEquals(120, signingPersistence.vnodesExpireAfterAccessMins)
+        assertEquals(100, signingPersistence.vnodeNumberLimit)
+        assertEquals(15, signingPersistence.connectionsExpireAfterAccessMins)
+        assertEquals(2, signingPersistence.connectionNumberLimit)
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
@@ -329,8 +333,12 @@ class CryptoConfigUtilsTests {
         assertEquals(0, sofPersistence.retries)
         assertEquals(20000, sofPersistence.timeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
-        assertEquals(90, signingPersistence.expireAfterAccessMins)
-        assertEquals(20, signingPersistence.maximumSize)
+        assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
+        assertEquals(20, signingPersistence.keyNumberLimit)
+        assertEquals(120, signingPersistence.vnodesExpireAfterAccessMins)
+        assertEquals(100, signingPersistence.vnodeNumberLimit)
+        assertEquals(15, signingPersistence.connectionsExpireAfterAccessMins)
+        assertEquals(2, signingPersistence.connectionNumberLimit)
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
@@ -371,8 +379,12 @@ class CryptoConfigUtilsTests {
         assertEquals(0, sofPersistence.retries)
         assertEquals(20000, sofPersistence.timeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
-        assertEquals(90, signingPersistence.expireAfterAccessMins)
-        assertEquals(20, signingPersistence.maximumSize)
+        assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
+        assertEquals(20, signingPersistence.keyNumberLimit)
+        assertEquals(120, signingPersistence.vnodesExpireAfterAccessMins)
+        assertEquals(100, signingPersistence.vnodeNumberLimit)
+        assertEquals(15, signingPersistence.connectionsExpireAfterAccessMins)
+        assertEquals(2, signingPersistence.connectionNumberLimit)
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
@@ -413,8 +425,12 @@ class CryptoConfigUtilsTests {
         assertEquals(0, sofPersistence.retries)
         assertEquals(20000, sofPersistence.timeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
-        assertEquals(90, signingPersistence.expireAfterAccessMins)
-        assertEquals(20, signingPersistence.maximumSize)
+        assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
+        assertEquals(20, signingPersistence.keyNumberLimit)
+        assertEquals(120, signingPersistence.vnodesExpireAfterAccessMins)
+        assertEquals(100, signingPersistence.vnodeNumberLimit)
+        assertEquals(15, signingPersistence.connectionsExpireAfterAccessMins)
+        assertEquals(2, signingPersistence.connectionNumberLimit)
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
@@ -434,7 +450,12 @@ class CryptoConfigUtilsTests {
                         "softPersistence.passphrase" to "p2",
                         "softPersistence.salt" to "s2",
                         "softPersistence.maximumSize" to "77",
-                        "signingPersistence.expireAfterAccessMins" to "42",
+                        "signingPersistence.keysExpireAfterAccessMins" to "42",
+                        "signingPersistence.keyNumberLimit" to "21",
+                        "signingPersistence.vnodesExpireAfterAccessMins" to "127",
+                        "signingPersistence.vnodeNumberLimit" to "55",
+                        "signingPersistence.connectionsExpireAfterAccessMins" to "17",
+                        "signingPersistence.connectionNumberLimit" to "3",
                         "hsmPersistence.expireAfterAccessMins" to "11",
                         "hsmPersistence.maximumSize" to 222,
                         "hsmPersistence.downstreamRetries" to 17
@@ -462,8 +483,12 @@ class CryptoConfigUtilsTests {
         assertEquals(0, sofPersistence.retries)
         assertEquals(20000, sofPersistence.timeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
-        assertEquals(42, signingPersistence.expireAfterAccessMins)
-        assertEquals(20, signingPersistence.maximumSize)
+        assertEquals(42, signingPersistence.keysExpireAfterAccessMins)
+        assertEquals(21, signingPersistence.keyNumberLimit)
+        assertEquals(127, signingPersistence.vnodesExpireAfterAccessMins)
+        assertEquals(55, signingPersistence.vnodeNumberLimit)
+        assertEquals(17, signingPersistence.connectionsExpireAfterAccessMins)
+        assertEquals(3, signingPersistence.connectionNumberLimit)
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(11, hsmPersistence.expireAfterAccessMins)
         assertEquals(222, hsmPersistence.maximumSize)
