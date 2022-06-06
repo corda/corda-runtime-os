@@ -157,7 +157,7 @@ open class TestBase {
             this.publish(listOf(Record(
                 CONFIG_TOPIC,
                 "p2p.gateway",
-                Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1", ConfigurationSchemaVersion(1, 0))
+                Configuration(config.root().render(ConfigRenderOptions.concise()), "0", ConfigurationSchemaVersion(1, 0))
             ))).forEach { it.get() }
         }
 

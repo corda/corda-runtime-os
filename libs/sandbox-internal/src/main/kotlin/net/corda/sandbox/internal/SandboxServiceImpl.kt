@@ -15,6 +15,7 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
+import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
@@ -31,7 +32,8 @@ import kotlin.streams.asSequence
 @RequireSandboxHooks
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
-    private val bundleUtils: BundleUtils
+    private val bundleUtils: BundleUtils,
+    private val bundleContext: BundleContext
 ) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
     private val serviceComponentRuntimeBundleId = bundleUtils.getServiceRuntimeComponentBundle()?.bundleId
         ?: throw SandboxException(
@@ -217,7 +219,9 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
         val bundle = try {
-            bundleUtils.installAsBundle(sandboxLocation.toString(), inputStream)
+            inputStream.use {
+                bundleContext.installBundle(sandboxLocation.toString(), it)
+            }
         } catch (e: BundleException) {
             if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
                 logger.warn(
@@ -243,7 +247,7 @@ internal class SandboxServiceImpl @Activate constructor(
     private fun startBundles(bundles: Collection<Bundle>) {
         bundles.forEach { bundle ->
             try {
-                bundleUtils.startBundle(bundle)
+                bundle.start()
             } catch (e: BundleException) {
                 throw SandboxException("Bundle $bundle could not be started.", e)
             }

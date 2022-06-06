@@ -26,6 +26,8 @@ internal class ConfigReadServiceEventHandler(
     private val configMerger: ConfigMerger
 ) : LifecycleEventHandler {
 
+    internal var configProcessor: ConfigProcessor? = null
+
     private var bootstrapConfig: SmartConfig? = null
     private var subscription: CompactedSubscription<String, Configuration>? = null
     private var subReg: RegistrationHandle? = null
@@ -102,12 +104,14 @@ internal class ConfigReadServiceEventHandler(
         }
         // The configuration passed through here might not be quite correct - boot configuration needs to be properly
         // defined. May also be relevant for secret service configuration in the processor.
+        val configProcessor = ConfigProcessor(coordinator, config.factory, config, configMerger)
         val sub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP, CONFIG_TOPIC),
-            ConfigProcessor(coordinator, config.factory, config, configMerger),
+            configProcessor,
             configMerger.getMessagingConfig(config, null)
         )
         subReg = coordinator.followStatusChangesByName(setOf(sub.subscriptionName))
+        this.configProcessor = configProcessor
         subscription = sub
         sub.start()
     }

@@ -6,7 +6,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerWriter
 
 /**
- * Configuration publisher interface. [ConfigurationDto] contains its own key, [ConfigurationDto.section].
+ * Configuration publisher interface.
  *
  * Because it is being used by [ConfigWriteService] which needs boot config, [ConfigPublishService] needs
  * also boot config. It cannot wait for dynamic config because that would mean a deadlock, i.e.
