@@ -340,7 +340,7 @@ class P2PLayerEndToEndTest {
         }
     }
 
-    data class Identity(
+    private data class Identity(
         val x500Name: String,
         val keyStoreFileName: String,
     )
