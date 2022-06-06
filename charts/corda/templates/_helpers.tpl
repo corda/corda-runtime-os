@@ -127,15 +127,21 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
-- --topicPrefix={{ .Values.kafka.topicPrefix }}
+- "-mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}"
+- "--topicPrefix={{ .Values.kafka.topicPrefix }}"
 {{- if .Values.kafka.tls.enabled }}
-- -msecurity.protocol=SSL
+{{- if .Values.kafka.sasl.enabled }}
+- "-msecurity.protocol=SASL_SSL"
+- "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
+- "-msasl.jaas.config=\"org.apache.kafka.common.security.scram.ScramLoginModule required username=\\\"{{ .Values.kafka.sasl.username }}\\\" password=\\\"{{ .Values.kafka.sasl.password }}\\\" ;\""
+{{- else }}
+- "-msecurity.protocol=SSL"
+{{- end }}
 {{- if .Values.kafka.tls.truststore.secretRef.name }}
-- -mssl.truststore.location=/certs/ca.crt
-- -mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}
+- "-mssl.truststore.location=/certs/ca.crt"
+- "-mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}"
 {{- if .Values.kafka.tls.truststore.password }}
-- -mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}
+- "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
 {{- end }}
 {{- end }}
 {{- end }}

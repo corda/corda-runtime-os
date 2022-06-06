@@ -73,6 +73,11 @@ kafka:
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: ""
+  sasl:
+    username: "user"
+    password: ""
+    mechanism: "SCRAM-SHA-256"
+    enabled: false
 
 # Configuration for the bootstrapper
 bootstrap:
