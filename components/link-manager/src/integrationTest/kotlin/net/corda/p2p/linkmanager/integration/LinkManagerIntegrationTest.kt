@@ -84,7 +84,7 @@ class LinkManagerIntegrationTest {
         this.publish(listOf(Record(
             Schemas.Config.CONFIG_TOPIC,
             "${LinkManagerConfiguration.PACKAGE_NAME}.${LinkManagerConfiguration.COMPONENT_NAME}",
-            Configuration(config.root().render(ConfigRenderOptions.concise()), "0.1", ConfigurationSchemaVersion(1, 0))
+            Configuration(config.root().render(ConfigRenderOptions.concise()), "0", ConfigurationSchemaVersion(1, 0))
         ))).forEach { it.get() }
     }
 

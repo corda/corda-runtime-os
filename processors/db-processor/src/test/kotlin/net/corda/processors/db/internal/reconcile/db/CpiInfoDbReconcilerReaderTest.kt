@@ -1,6 +1,5 @@
 package net.corda.processors.db.internal.reconcile.db
 
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
@@ -13,11 +12,9 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -27,22 +24,10 @@ import java.time.temporal.ChronoUnit
 import java.util.Random
 import java.util.stream.Stream
 import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
 
-class CpiInfoDbReaderTest {
-    lateinit var cpiInfoDbReader: CpiInfoDbReader
-    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    lateinit var dbConnectionManager: DbConnectionManager
-
-    @BeforeEach
-    fun setUp() {
-        coordinatorFactory = mock()
-        dbConnectionManager = mock()
-        cpiInfoDbReader = CpiInfoDbReader(coordinatorFactory, dbConnectionManager)
-    }
-
+class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
 
     // TODO - we should maybe have a generator for this dummy data somewhere reusable?
@@ -117,15 +102,11 @@ class CpiInfoDbReaderTest {
     fun `doGetAllVersionedRecords converts db data to version records`() {
         val typeQuery = mock<TypedQuery<CpiMetadataEntity>>()
         whenever(typeQuery.resultStream).thenReturn(Stream.of(dummyCpiMetadataEntity))
-        val entityManager = mock<EntityManager>()
-        whenever(entityManager.transaction).thenReturn(mock())
-        whenever(entityManager.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
-        val entityManagerFactory = mock<EntityManagerFactory>()
-        whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
-        cpiInfoDbReader.entityManagerFactory = entityManagerFactory
+        val em = mock<EntityManager>()
+        whenever(em.transaction).thenReturn(mock())
+        whenever(em.createQuery(any(), any<Class<CpiMetadataEntity>>())).thenReturn(typeQuery)
 
-
-        val versionedRecords = cpiInfoDbReader.doGetAllVersionedRecords().toList()
+        val versionedRecords = getAllCpiInfoDBVersionedRecords(em).toList()
         val record = versionedRecords.single()
 
         val expectedId = CpiIdentifier(
