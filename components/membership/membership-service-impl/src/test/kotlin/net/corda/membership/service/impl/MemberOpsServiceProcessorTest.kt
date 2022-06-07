@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
@@ -58,7 +59,7 @@ class MemberOpsServiceProcessorTest {
             }
             processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
     }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {

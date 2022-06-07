@@ -1,6 +1,5 @@
 package net.corda.membership.impl.client
 
-import net.corda.utilities.time.UTCClock
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -45,11 +44,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 class MemberOpsClientTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "nodeId"
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
     }
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()

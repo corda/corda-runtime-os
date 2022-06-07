@@ -17,14 +17,15 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
     }
 
     private var coordinatorIsRunning = false

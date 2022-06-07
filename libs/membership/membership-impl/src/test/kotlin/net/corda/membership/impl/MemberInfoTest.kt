@@ -50,7 +50,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 @Suppress("MaxLineLength")
 class MemberInfoTest {
@@ -60,7 +61,7 @@ class MemberInfoTest {
         private val key = Mockito.mock(PublicKey::class.java)
 
 
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
         private val modifiedTime = clock.instant()
         private val endpoints = listOf(
             EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),

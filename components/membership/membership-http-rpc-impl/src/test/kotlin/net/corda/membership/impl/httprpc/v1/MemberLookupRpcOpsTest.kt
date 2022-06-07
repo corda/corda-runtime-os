@@ -41,7 +41,8 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
 
@@ -49,7 +50,7 @@ class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
         private const val HOLDING_IDENTITY_STRING = "test"
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
     }
 
     private var coordinatorIsRunning = false

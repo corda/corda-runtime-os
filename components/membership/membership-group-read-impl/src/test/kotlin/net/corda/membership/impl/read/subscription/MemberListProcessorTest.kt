@@ -39,11 +39,12 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 class MemberListProcessorTest {
     companion object {
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
         private val keyEncodingService: CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"

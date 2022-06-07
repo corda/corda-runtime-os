@@ -26,4 +26,5 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation project(":testing:test-utilities")
 }

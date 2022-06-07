@@ -41,12 +41,13 @@ import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.lang.IllegalStateException
 import java.util.UUID
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 class MemberProcessorTestUtils {
     companion object {
 
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
 
         private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"

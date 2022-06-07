@@ -75,7 +75,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -281,7 +282,7 @@ class MemberProcessorIntegrationTest {
             }
         }
 
-        private val clock = UTCClock()
+        private val clock = TestClock(Instant.now())
     }
 
     @Test
