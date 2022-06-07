@@ -43,9 +43,7 @@ publishing {
         maven(MavenPublication) {
             groupId project.group
             artifactId appJarBaseName
-            afterEvaluate {
-                artifacts = [ appJar ]
-            }
+            artifact appJar
         }
     }
 }
