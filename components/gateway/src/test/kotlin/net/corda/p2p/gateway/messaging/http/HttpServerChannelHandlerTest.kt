@@ -8,15 +8,18 @@ import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.HttpHeaders
 import io.netty.handler.codec.http.LastHttpContent
-import io.netty.handler.codec.http.HttpRequest as NettyHttpRequest
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import java.net.InetSocketAddress
+import io.netty.handler.codec.http.HttpRequest as NettyHttpRequest
 
 class HttpServerChannelHandlerTest {
 
@@ -47,8 +50,13 @@ class HttpServerChannelHandlerTest {
             on { content() } doReturn EmptyByteBuf(ByteBufAllocator.DEFAULT)
         }
 
+        val listenerCaptor = argumentCaptor<ChannelFutureListener>()
+        whenever(mockChannelFuture.addListener(listenerCaptor.capture())).doReturn(mockChannelFuture)
+
         httpServerChannelHandler.channelRead(mockCtx, mockHttpRequest)
         httpServerChannelHandler.channelRead(mockCtx, mockLastHttpContent)
-        Mockito.verify(mockChannelFuture, atMost(1)).addListener { ChannelFutureListener.CLOSE }
+
+        listenerCaptor.firstValue.operationComplete(mockChannelFuture)
+        verify(listenerCaptor).firstValue.equals(ChannelFutureListener.CLOSE)
     }
 }
