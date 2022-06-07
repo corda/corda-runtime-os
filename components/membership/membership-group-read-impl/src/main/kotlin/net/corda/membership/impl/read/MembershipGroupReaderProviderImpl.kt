@@ -65,7 +65,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val coordinator =
         coordinatorFactory.createCoordinator<MembershipGroupReaderProvider>(lifecycleHandler)
 
-    private var impl: InnerMembershipGroupReaderProvider = InactiveImpl()
+    private var impl: InnerMembershipGroupReaderProvider = InactiveImpl
 
     private fun activate(configs: Map<String, SmartConfig>, reason: String) {
         impl.close()
@@ -76,7 +76,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
         val current = impl
-        impl = InactiveImpl()
+        impl = InactiveImpl
         current.close()
     }
 
@@ -145,7 +145,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    private inner class InactiveImpl : InnerMembershipGroupReaderProvider {
+    private object InactiveImpl : InnerMembershipGroupReaderProvider {
         override fun getGroupReader(
             holdingIdentity: HoldingIdentity
         ): MembershipGroupReader {

@@ -50,7 +50,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
-    private var impl: InnerGroupPolicyProvider = InactiveImpl()
+    private var impl: InnerGroupPolicyProvider = InactiveImpl
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
 
@@ -98,7 +98,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private fun deactivate(reason: String) {
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        swapImpl(InactiveImpl())
+        swapImpl(InactiveImpl)
     }
 
     private fun swapImpl(newImpl: InnerGroupPolicyProvider) {
@@ -107,7 +107,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         current.close()
     }
 
-    private inner class InactiveImpl : InnerGroupPolicyProvider {
+    private object InactiveImpl : InnerGroupPolicyProvider {
         override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy =
             throw IllegalStateException("Service is in incorrect state for accessing group policies.")
 

@@ -65,7 +65,7 @@ class RegistrationProxyImpl @Activate constructor(
 
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator<RegistrationProxy>(::handleEvent)
 
-    private var impl: InnerRegistrationProxy = InactiveImpl()
+    private var impl: InnerRegistrationProxy = InactiveImpl
 
     /**
      * Handle lifecycle events.
@@ -108,7 +108,7 @@ class RegistrationProxyImpl @Activate constructor(
     private fun deactivate(message: String) {
         logger.debug(message)
         coordinator.updateStatus(LifecycleStatus.DOWN, message)
-        impl = InactiveImpl()
+        impl = InactiveImpl
     }
 
     override val isRunning get() = coordinator.isRunning
@@ -125,7 +125,7 @@ class RegistrationProxyImpl @Activate constructor(
 
     override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult = impl.register(member)
 
-    private inner class InactiveImpl : InnerRegistrationProxy {
+    private object InactiveImpl : InnerRegistrationProxy {
         override fun register(member: HoldingIdentity): MembershipRequestRegistrationResult =
             throw IllegalStateException("RegistrationProxy currently inactive.")
 

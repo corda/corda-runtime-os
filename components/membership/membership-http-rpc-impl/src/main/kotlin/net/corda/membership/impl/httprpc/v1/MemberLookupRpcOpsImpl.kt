@@ -49,7 +49,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
 
     private val className = this::class.java.simpleName
 
-    private var impl: InnerMemberLookupRpcOps = InactiveImpl()
+    private var impl: InnerMemberLookupRpcOps = InactiveImpl
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberLookupRpcOps>(
         protocolVersion.toString()
@@ -98,7 +98,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
 
     fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
-        impl = InactiveImpl()
+        impl = InactiveImpl
     }
 
     private fun updateStatus(status: LifecycleStatus, reason: String) {
@@ -107,7 +107,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         }
     }
 
-    private inner class InactiveImpl : InnerMemberLookupRpcOps {
+    private object InactiveImpl : InnerMemberLookupRpcOps {
         override fun lookup(
             holdingIdentityId: String,
             commonName: String?,
@@ -116,7 +116,9 @@ class MemberLookupRpcOpsImpl @Activate constructor(
             locality: String?,
             state: String?,
             country: String?
-        ) = throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+        ) = throw ServiceUnavailableException(
+            "${MemberLookupRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+        )
     }
 
     private inner class ActiveImpl : InnerMemberLookupRpcOps {

@@ -38,7 +38,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override val protocolVersion = 1
 
-    private var impl: InnerMemberRegistrationRpcOps = InactiveImpl()
+    private var impl: InnerMemberRegistrationRpcOps = InactiveImpl
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberRegistrationRpcOps>(
         protocolVersion.toString()
@@ -80,7 +80,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
-        impl = InactiveImpl()
+        impl = InactiveImpl
     }
 
     private fun updateStatus(status: LifecycleStatus, reason: String) {
@@ -89,12 +89,16 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         }
     }
 
-    private inner class InactiveImpl : InnerMemberRegistrationRpcOps {
+    private object InactiveImpl : InnerMemberRegistrationRpcOps {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest) =
-            throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+            throw ServiceUnavailableException(
+                "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
 
         override fun checkRegistrationProgress(holdingIdentityId: String) =
-            throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+            throw ServiceUnavailableException(
+                "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
     }
 
     private inner class ActiveImpl : InnerMemberRegistrationRpcOps {

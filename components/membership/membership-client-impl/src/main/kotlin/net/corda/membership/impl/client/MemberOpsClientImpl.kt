@@ -62,7 +62,7 @@ class MemberOpsClientImpl @Activate constructor(
         fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgressDto
     }
 
-    private var impl: InnerMemberOpsClient = InactiveImpl()
+    private var impl: InnerMemberOpsClient = InactiveImpl
 
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
@@ -153,11 +153,11 @@ class MemberOpsClientImpl @Activate constructor(
     private fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
         val current = impl
-        impl = InactiveImpl()
+        impl = InactiveImpl
         current.close()
     }
 
-    private inner class InactiveImpl : InnerMemberOpsClient {
+    private object InactiveImpl : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
             throw IllegalStateException(ERROR_MSG)
 
