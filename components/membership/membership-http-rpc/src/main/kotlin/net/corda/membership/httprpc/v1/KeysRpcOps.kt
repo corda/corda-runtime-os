@@ -4,6 +4,7 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
@@ -36,6 +37,16 @@ interface KeysRpcOps : RpcOps {
      * GET endpoint which returns the list of a tenant keys.
      *
      * @param tenantId The tenant ID.
+     * @param skip How many keys to skip.
+     * @param take The maximal number of keys to take.
+     * @param orderBy How to order the results.
+     * @param category The keys categories.
+     * @param schemeCodeName The keys' schema code name.
+     * @param alias The keys alias.
+     * @param masterKeyAlias The keys master key alias.
+     * @param createdAfter Return only keys that had been created after...
+     * @param createdBefore Return only keys that had been created before...
+     * @param ids The list of key IDs (will ignore other parameters)
      *
      * @return A map from a tenant key ID to its metadata.
      */
@@ -43,9 +54,64 @@ interface KeysRpcOps : RpcOps {
         path = "{tenantId}",
         description = "Get list of keys for members."
     )
+    @Suppress("LongParameterList")
     fun listKeys(
         @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
         tenantId: String,
+        @HttpRpcQueryParameter(
+            description = "Index of the first key",
+            default = "0",
+            required = false,
+        )
+        skip: Int,
+        @HttpRpcQueryParameter(
+            description = "Maximal number of many keys to return",
+            default = "20",
+            required = false,
+        )
+        take: Int,
+        @HttpRpcQueryParameter(
+            description = "How to order the results",
+            default = "None",
+            required = false,
+        )
+        orderBy: String,
+        @HttpRpcQueryParameter(
+            description = "The key category",
+            required = false,
+        )
+        category: String?,
+        @HttpRpcQueryParameter(
+            description = "The key schema code name",
+            required = false,
+        )
+        schemeCodeName: String?,
+        @HttpRpcQueryParameter(
+            description = "The key alias",
+            required = false,
+        )
+        alias: String?,
+        @HttpRpcQueryParameter(
+            description = "The key master key alias",
+            required = false,
+        )
+        masterKeyAlias: String?,
+        @HttpRpcQueryParameter(
+            description = "Only keys that had been created after (for example: 2007-12-03T10:15:30.00Z)",
+            required = false,
+        )
+        createdAfter: String?,
+        @HttpRpcQueryParameter(
+            description = "Only keys that had been created before (for example: 2007-12-03T10:15:30.00Z)",
+            required = false,
+        )
+        createdBefore: String?,
+        @HttpRpcQueryParameter(
+            description = "ID's of the keys (Will ignore any other parameter)",
+            required = false,
+            name = "id",
+        )
+        ids: List<String>?,
     ): Map<String, KeyMetaData>
 
     /**
