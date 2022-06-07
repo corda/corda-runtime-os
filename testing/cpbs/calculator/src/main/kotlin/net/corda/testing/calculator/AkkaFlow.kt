@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 sealed class SessionMessages
 
 sealed class FlowCommands {
-    data class InitSession(val processName: String, val counterparty: String) : FlowCommands()
+    data class InitSession(val processName: String, val responderName: String, val counterparty: String) : FlowCommands()
     data class EstablishSession(val sessionId: String, val processName: String, val senderIdentity: String) : FlowCommands()
     data class AckSession(val sessionId: String, val ok: Boolean) : FlowCommands()
 
@@ -57,11 +57,11 @@ class FlowDashboard(context: ActorContext<FlowCommands>, val senderIdentity: Str
     fun onRegisterProcess(cmd: FlowCommands.RegisterProcess) : Behavior<FlowCommands> {
         println("FlowDashboard - ${cmd}")
 
-        if (senderIdentity == "PartyA") {
-            processes[cmd.processName] = context.spawn(IssueTokensHell.create(context.self, senderIdentity), "TokenExample")
-        } else {
-            processes[cmd.processName] = context.spawn(TransferTokensProcess.create(context.self, senderIdentity), "TokenExample")
-        }
+
+        processes["TokenExample-Initiator"] = context.spawn(IssueTokensHell.create(context.self, senderIdentity), "TokenExample-Initiator")
+        processes["TokenExample"] = context.spawn(TransferTokensProcess.create(context.self, senderIdentity), "TokenExample")
+        processes["TokenExample-Responder"] = context.spawn(IssueTokensHell.IssueTokensHellResponder.create(context.self, senderIdentity), "TokenExample-Responder")
+
         return this
     }
 
@@ -85,7 +85,7 @@ class FlowDashboard(context: ActorContext<FlowCommands>, val senderIdentity: Str
         activeSessions[sessionId.toString()] = context.spawn(BidirectionalSession.create(processRef, param.counterparty) {
             sendMsg(param.counterparty, FlowCommands.ReceiveMessage(sessionId.toString(), it))
         }, "$sessionId")
-        sendMsg(param.counterparty, FlowCommands.EstablishSession(sessionId.toString(), param.processName, senderIdentity))
+        sendMsg(param.counterparty, FlowCommands.EstablishSession(sessionId.toString(), param.responderName, senderIdentity))
 
 
         return this
@@ -199,7 +199,7 @@ abstract class MultiPartyProcess(
     fun establishSession(recipient: String, responderProcess: String = processName) : CompletableFuture<ActorRef<SessionCommands>> {
         if (futures[recipient] != null) return futures[recipient]!!
 
-        flowDashboard.tell(FlowCommands.InitSession(responderProcess, recipient))
+        flowDashboard.tell(FlowCommands.InitSession(processName, responderProcess, recipient))
         futures[recipient] = CompletableFuture()
         return futures[recipient]!!
     }
@@ -254,7 +254,7 @@ abstract class AutoStateMachineCallbackHell<T : SessionMessages>(
     abstract var currentExecution : SessionPipe<T, *>?
 
     private fun handleMessage(msg: SessionMessages) : Behavior<SessionMessages> {
-        println("Handling message... $currentExecution ... ${currentExecution!!.now}")
+        println("$processName is Handling message... $currentExecution ... ${currentExecution!!.now}")
         val res = currentExecution?.now?.let {
             it(uncheckedCast(msg)) ?: throw IllegalStateException("Received a message without processing logic!")
         }
@@ -269,20 +269,45 @@ class IssueTokensHell(
     context: ActorContext<SessionMessages>,
     flowDashboard: ActorRef<FlowCommands>,
     val myIdentity: String
-) : AutoStateMachineCallbackHell<TransferTokensProcess.Commands.Issue>(context, flowDashboard,"TokenExample") {
-    override var currentExecution: SessionPipe<TransferTokensProcess.Commands.Issue, *>? = uncheckedCast(SessionPipe { issue: TransferTokensProcess.Commands.Issue ->
-        println("Establishing connection")
-        establishSession(issue.recipient)
+) : AutoStateMachineCallbackHell<TransferTokensProcess.Commands.Issue>(context, flowDashboard,"TokenExample-Initiator") {
+    override var currentExecution: SessionPipe<TransferTokensProcess.Commands.Issue, *>? = uncheckedCast(
+        SessionPipe { issue: TransferTokensProcess.Commands.Issue ->
+            println("Establishing connection")
+            establishSession(issue.recipient, "TokenExample-Responder")
 
-        SessionPipe { sessionMsg: SystemMessages.SessionEstablished ->
-            sessionMsg.actorRef.tell(SessionCommands.Send(TransferTokensProcess.Commands.Issuing(myIdentity, issue.amount)))
+            SessionPipe { sessionMsg: SystemMessages.SessionEstablished ->
+                sessionMsg.actorRef.tell(SessionCommands.Send(TransferTokensProcess.Commands.Issuing(myIdentity, issue.amount)))
 
-            SessionPipe<TransferTokensProcess.Commands.SaySomething, NoopMessage> {
-                println(it)
-                null
+                SessionPipe<TransferTokensProcess.Commands.SaySomething, NoopMessage> {
+                    println(it)
+                    null
+                }
             }
         }
-    })
+    )
+
+    class IssueTokensHellResponder(
+        context: ActorContext<SessionMessages>,
+        flowDashboard: ActorRef<FlowCommands>,
+        val myIdentity: String
+    ) : AutoStateMachineCallbackHell<SystemMessages.SessionEstablished>(context, flowDashboard,"TokenExample-Responder") {
+        override var currentExecution: SessionPipe<SystemMessages.SessionEstablished, *>? = uncheckedCast(SessionPipe { sessionMsg ->
+            println("$myIdentity -- session established ${sessionMsg}")
+            SessionPipe<TransferTokensProcess.Commands.Issuing, NoopMessage> { issuance: TransferTokensProcess.Commands.Issuing ->
+                println("Received issuance ${issuance}")
+                sessionMsg.actorRef.tell(SessionCommands.Send(TransferTokensProcess.Commands.SaySomething("$myIdentity says hi!")))
+                null
+            }
+        })
+
+        companion object {
+            fun create(flowDashboard: ActorRef<FlowCommands>, identity: String) : Behavior<SessionMessages> {
+                return Behaviors.setup {
+                    IssueTokensHellResponder(it, flowDashboard, identity)
+                }
+            }
+        }
+    }
 
     companion object {
         fun create(flowDashboard: ActorRef<FlowCommands>, identity: String) : Behavior<SessionMessages> {
@@ -387,7 +412,7 @@ class ExampleApp(
     }
 
     fun issueTokens(recipient: String, validator: String, amount: Int) {
-        appSystem.tell(FlowCommands.SendCommand("TokenExample", TransferTokensProcess.Commands.Issue(recipient, amount)))
+        appSystem.tell(FlowCommands.SendCommand("TokenExample-Initiator", TransferTokensProcess.Commands.Issue(recipient, amount)))
     }
 }
 
