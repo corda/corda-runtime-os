@@ -51,7 +51,7 @@ class StartFlow(private val context: TaskContext) : Task {
         val rpcStartFlow = StartFlow(context, jsonArgs)
         return Record(
             Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC,
-            context.statusKey,
+            context.statusKey.toString(),
             FlowMapperEvent(rpcStartFlow)
         )
     }
