@@ -9,10 +9,8 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.HttpHeaders
 import io.netty.handler.codec.http.LastHttpContent
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atMost
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -33,8 +31,9 @@ class HttpServerChannelHandlerTest {
         val mockCtxChannel = mock<Channel> {
             on { remoteAddress() } doReturn socketAddress
         }
-
-        val mockChannelFuture = mock<ChannelFuture>()
+        val mockChannelFuture = mock<ChannelFuture>() {
+            on { channel() } doReturn mockCtxChannel
+        }
         val mockCtx = mock<ChannelHandlerContext>{
             on { channel() } doReturn mockCtxChannel
             on { writeAndFlush(any()) } doReturn mockChannelFuture
@@ -57,6 +56,6 @@ class HttpServerChannelHandlerTest {
         httpServerChannelHandler.channelRead(mockCtx, mockLastHttpContent)
 
         listenerCaptor.firstValue.operationComplete(mockChannelFuture)
-        verify(listenerCaptor).firstValue.equals(ChannelFutureListener.CLOSE)
+        verify(mockCtxChannel).close()
     }
 }
