@@ -334,7 +334,7 @@ internal object CpkLoader {
         }.use { jarInputStream ->
             val jarManifest =
                 jarInputStream.manifest ?: throw PackagingException(ctx.fileLocationAppender("Invalid file format"))
-            ctx.cpkManifest = CpkManifest(FormatVersionReader.readFormatVersion(Manifest(jarManifest)))
+            ctx.cpkManifest = CpkManifest(FormatVersionReader.readCpkFormatVersion(Manifest(jarManifest)))
             while (true) {
                 val cpkEntry = jarInputStream.nextEntry ?: break
                 when {
@@ -343,7 +343,7 @@ internal object CpkLoader {
                     }
                     isLibJar(cpkEntry) -> processLibJar(jarInputStream, cpkEntry, ctx)
                     isManifest(cpkEntry) -> {
-                        ctx.cpkManifest = CpkManifest(FormatVersionReader.readFormatVersion(Manifest(jarInputStream)))
+                        ctx.cpkManifest = CpkManifest(FormatVersionReader.readCpkFormatVersion(Manifest(jarInputStream)))
                     }
                 }
                 jarInputStream.closeEntry()
