@@ -5,14 +5,17 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.*
 import akka.pattern.Patterns
+import akka.persistence.AbstractPersistentActor
+import akka.persistence.SnapshotOffer
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.javadsl.CommandHandler
+import akka.persistence.typed.javadsl.EventHandler
+import akka.persistence.typed.javadsl.EventSourcedBehavior
 import net.corda.v5.base.util.uncheckedCast
-import scala.concurrent.Await
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import java.util.*
-import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
@@ -54,6 +57,8 @@ class FlowDashboard(context: ActorContext<FlowCommands>, val senderIdentity: Str
         return this
     }
 
+    val meh = context.spawn(ExamplePersistentBehavior(PersistenceId.ofUniqueId("55")), "ExamplePersistentBehaviour")
+
     fun onRegisterProcess(cmd: FlowCommands.RegisterProcess) : Behavior<FlowCommands> {
         println("FlowDashboard - ${cmd}")
 
@@ -61,6 +66,8 @@ class FlowDashboard(context: ActorContext<FlowCommands>, val senderIdentity: Str
         processes["TokenExample-Initiator"] = context.spawn(IssueTokensHell.create(context.self, senderIdentity), "TokenExample-Initiator")
         processes["TokenExample"] = context.spawn(TransferTokensProcess.create(context.self, senderIdentity), "TokenExample")
         processes["TokenExample-Responder"] = context.spawn(IssueTokensHell.IssueTokensHellResponder.create(context.self, senderIdentity), "TokenExample-Responder")
+
+        meh.tell(ExamplePersistentBehavior.Commands.ChangeTo("It works?"))
 
         return this
     }
@@ -462,3 +469,94 @@ class Environment {
         nodes
     }
 }
+
+class AnotherExamplePersistence(val pId: String) : AbstractPersistentActor() {
+
+    sealed class Commands {
+        data class ChangeTo(val msg: String) : Commands()
+    }
+
+    sealed class Events {
+        data class UpdateMessage(var newMsg: String) : Events()
+    }
+
+    data class State(var msg: String)
+
+    var state = State("Hello")
+
+    override fun createReceive(): Receive {
+        return receiveBuilder()
+            .match(Commands.ChangeTo::class.java) { cmd ->
+                persist(Events.UpdateMessage(cmd.msg)) {
+                    state = State("{ ${state.msg} } -> { ${it.newMsg} }")
+                    println("State is ${state}")
+                    context.system.eventStream.publish(it)
+                    saveSnapshot(state.copy())
+                }
+            }.build()
+    }
+
+    override fun persistenceId(): String {
+        return pId
+    }
+
+    override fun createReceiveRecover(): Receive {
+        return receiveBuilder()
+            .match(Events.UpdateMessage::class.java) {
+                state = State("{ ${state.msg} } -> { ${it.newMsg} }")
+                println("State is ${state}")
+            }
+            .match(SnapshotOffer::class.java) {
+                state = uncheckedCast(it.snapshot())
+                println("State is ${state}")
+            }
+            .build()
+    }
+
+}
+
+
+class ExamplePersistentBehavior(id: PersistenceId, val ctx: ActorContext<Commands>? = null) : EventSourcedBehavior<ExamplePersistentBehavior.Commands, ExamplePersistentBehavior.Events, ExamplePersistentBehavior.State>(id) {
+
+    companion object {
+        fun create(id: PersistenceId) : Behavior<Commands> = Behaviors.setup {
+            ExamplePersistentBehavior(id, it)
+        }
+    }
+
+    sealed class Commands {
+        data class ChangeTo(val msg: String) : Commands()
+    }
+
+    sealed class Events {
+        data class UpdateMessage(var newMsg: String) : Events()
+    }
+
+    data class State(var msg: String)
+
+    override fun emptyState(): State {
+        return State("Hello")
+    }
+
+    override fun commandHandler(): CommandHandler<Commands, Events, State> {
+        return newCommandHandlerBuilder()
+            .forAnyState()
+            .onCommand(Commands.ChangeTo::class.java) { command ->
+                println("Received update command with ${command.msg}")
+                Effect().persist(Events.UpdateMessage(command.msg))
+            }
+            .build()
+    }
+
+    override fun eventHandler(): EventHandler<State, Events> {
+        return newEventHandlerBuilder()
+            .forAnyState()
+            .onEvent(Events.UpdateMessage::class.java) { state, event: Events.UpdateMessage ->
+                val newMsg = "${state.msg} -> ${event.newMsg}"
+                println("updating to $newMsg")
+                State(newMsg)
+            }
+            .build()
+    }
+}
+
