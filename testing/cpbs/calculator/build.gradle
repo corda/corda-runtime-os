@@ -12,7 +12,18 @@ cordapp {
     }
 }
 
+
+def versions = [
+        ScalaBinary: "2.12"
+]
+
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
+
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.19")
+
+    implementation "com.typesafe.akka:akka-actor-typed_${versions.ScalaBinary}"
+    implementation group: 'com.typesafe.akka', name: 'akka-stream_2.12', version: '2.6.19'
+    implementation "com.typesafe.akka:akka-serialization-jackson_${versions.ScalaBinary}"
 }
