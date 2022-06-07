@@ -304,14 +304,3 @@ class HsmRpcOpsImplTest {
         }
     }
 }
-/*
-    override fun assignSoftHsm(tenantId: String, category: String) = hsmRegistrationClient.assignSoftHSM(
-        tenantId, category.toCategory(), emptyMap()
-    ).expose()
-
-    override fun assignHsm(tenantId: String, category: String) = hsmRegistrationClient.assignHSM(
-        tenantId, category.toCategory(), emptyMap()
-    ).expose()
-
-
- */
