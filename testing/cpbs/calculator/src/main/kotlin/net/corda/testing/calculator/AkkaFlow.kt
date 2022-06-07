@@ -11,7 +11,9 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.javadsl.CommandHandler
 import akka.persistence.typed.javadsl.EventHandler
 import akka.persistence.typed.javadsl.EventSourcedBehavior
+import com.fasterxml.jackson.annotation.JsonProperty
 import net.corda.v5.base.util.uncheckedCast
+import java.io.Serializable
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import java.util.*
@@ -67,7 +69,7 @@ class FlowDashboard(context: ActorContext<FlowCommands>, val senderIdentity: Str
         processes["TokenExample"] = context.spawn(TransferTokensProcess.create(context.self, senderIdentity), "TokenExample")
         processes["TokenExample-Responder"] = context.spawn(IssueTokensHell.IssueTokensHellResponder.create(context.self, senderIdentity), "TokenExample-Responder")
 
-        meh.tell(ExamplePersistentBehavior.Commands.ChangeTo("It works?"))
+        meh.tell(ExamplePersistentBehaviorCommands.ChangeTo("It works?"))
 
         return this
     }
@@ -515,33 +517,34 @@ class AnotherExamplePersistence(val pId: String) : AbstractPersistentActor() {
 
 }
 
+sealed class ExamplePersistentBehaviorCommands {
+    data class ChangeTo(@JsonProperty("msg") val msg: String) : ExamplePersistentBehaviorCommands()
+}
 
-class ExamplePersistentBehavior(id: PersistenceId, val ctx: ActorContext<Commands>? = null) : EventSourcedBehavior<ExamplePersistentBehavior.Commands, ExamplePersistentBehavior.Events, ExamplePersistentBehavior.State>(id) {
+class ExamplePersistentBehavior(id: PersistenceId, val ctx: ActorContext<ExamplePersistentBehaviorCommands>? = null) : EventSourcedBehavior<ExamplePersistentBehaviorCommands, ExamplePersistentBehavior.Events, ExamplePersistentBehavior.State>(id) {
 
     companion object {
-        fun create(id: PersistenceId) : Behavior<Commands> = Behaviors.setup {
+        fun create(id: PersistenceId) : Behavior<ExamplePersistentBehaviorCommands> = Behaviors.setup {
             ExamplePersistentBehavior(id, it)
         }
     }
 
-    sealed class Commands {
-        data class ChangeTo(val msg: String) : Commands()
-    }
+
 
     sealed class Events {
-        data class UpdateMessage(var newMsg: String) : Events()
+        data class UpdateMessage(@JsonProperty("newMsg") var newMsg: String) : Events()
     }
 
-    data class State(var msg: String)
+    data class State(@JsonProperty("msg") var msg: String)
 
     override fun emptyState(): State {
         return State("Hello")
     }
 
-    override fun commandHandler(): CommandHandler<Commands, Events, State> {
+    override fun commandHandler(): CommandHandler<ExamplePersistentBehaviorCommands, Events, State> {
         return newCommandHandlerBuilder()
             .forAnyState()
-            .onCommand(Commands.ChangeTo::class.java) { command ->
+            .onCommand(ExamplePersistentBehaviorCommands.ChangeTo::class.java) { command ->
                 println("Received update command with ${command.msg}")
                 Effect().persist(Events.UpdateMessage(command.msg))
             }

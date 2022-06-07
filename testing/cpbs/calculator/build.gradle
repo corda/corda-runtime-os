@@ -27,4 +27,7 @@ dependencies {
     implementation group: 'com.typesafe.akka', name: 'akka-stream_2.12', version: '2.6.19'
     implementation "com.typesafe.akka:akka-serialization-jackson_${versions.ScalaBinary}"
     implementation "com.typesafe.akka:akka-persistence-typed_2.12:2.6.19"
+
+    testImplementation "com.typesafe.akka:akka-persistence-testkit_${versions.ScalaBinary}:2.6.19"
+    testImplementation "org.junit.jupiter:junit-jupiter-migrationsupport:$junit5Version"
 }
