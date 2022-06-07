@@ -73,7 +73,9 @@ dependencies {
     systemPackages project(":osgi-framework-api")
 }
 
-TaskProvider<Jar> jarTask = tasks.named('jar', Jar)
+TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
+    archiveClassifier = 'ignore'
+}
 
 @CompileStatic
 private def addSystemPackagesExtra(
@@ -406,7 +408,7 @@ def appJar = tasks.register('appJar', Jar) {
     finalizedBy verifyApp
 
     archiveBaseName = appJarBaseName
-    destinationDirectory = layout.buildDirectory.dir("bin")
+    destinationDirectory = layout.buildDirectory.dir('bin')
 
     exclude "META-INF/MANIFEST.MF"
     exclude "META-INF/*.SF"
@@ -454,13 +456,13 @@ artifacts {
 pluginManager.withPlugin('maven-publish') {
     publishing {
         publications {
-            mavenAppJar(MavenPublication) {
+            maven(MavenPublication) {
                 artifactId appJarBaseName
 
                 afterEvaluate { proj ->
                     groupId proj.group
                     version proj.version
-                    artifact appJar
+                    artifacts = [ appJar ]
                 }
             }
         }
