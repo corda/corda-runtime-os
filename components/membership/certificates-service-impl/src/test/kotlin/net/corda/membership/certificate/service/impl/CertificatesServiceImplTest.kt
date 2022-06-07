@@ -2,8 +2,8 @@ package net.corda.membership.certificate.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.rpc.certificates.request.CertificateRpcRequest
-import net.corda.data.membership.rpc.certificates.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.request.CertificateRpcRequest
+import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,7 +39,7 @@ class CertificatesServiceImplTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    val subscription = mock<RPCSubscription< CertificateRpcRequest, CertificateRpcResponse>>()
+    val subscription = mock<RPCSubscription<CertificateRpcRequest, CertificateRpcResponse>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createRPCSubscription(

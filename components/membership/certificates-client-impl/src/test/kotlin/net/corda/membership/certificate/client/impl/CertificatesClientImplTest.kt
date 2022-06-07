@@ -2,9 +2,9 @@ package net.corda.membership.certificate.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.rpc.certificates.request.CertificateRpcRequest
-import net.corda.data.membership.rpc.certificates.request.ImportCertificateRpcRequest
-import net.corda.data.membership.rpc.certificates.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.request.CertificateRpcRequest
+import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

@@ -2,8 +2,8 @@ package net.corda.membership.certificate.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.rpc.certificates.request.CertificateRpcRequest
-import net.corda.data.membership.rpc.certificates.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.request.CertificateRpcRequest
+import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
@@ -132,7 +132,7 @@ class CertificatesServiceImpl @Activate constructor(
                     rpcConfig = RPCConfig(
                         groupName = GROUP_NAME,
                         clientName = CLIENT_NAME,
-                        requestTopic = Schemas.Membership.MEMBERSHIP_RPC_CERTIFICATES_TOPIC,
+                        requestTopic = Schemas.Certificates.CERTIFICATES_RPC_TOPIC,
                         requestType = CertificateRpcRequest::class.java,
                         responseType = CertificateRpcResponse::class.java
                     ),

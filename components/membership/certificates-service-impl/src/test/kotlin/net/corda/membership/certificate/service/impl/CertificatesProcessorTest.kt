@@ -1,10 +1,10 @@
 package net.corda.membership.certificate.service.impl
 
 import net.corda.crypto.core.CryptoTenants
-import net.corda.data.membership.rpc.certificates.request.CertificateRpcRequest
-import net.corda.data.membership.rpc.certificates.request.ImportCertificateRpcRequest
-import net.corda.data.membership.rpc.certificates.response.CertificateImportedRpcResponse
-import net.corda.data.membership.rpc.certificates.response.CertificateRpcResponse
+import net.corda.data.certificates.rpc.request.CertificateRpcRequest
+import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
+import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
+import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
