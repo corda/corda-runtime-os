@@ -33,7 +33,7 @@ class PartyConverterTest {
                 MemberInfoExtension.PARTY_NAME to partyName,
                 MemberInfoExtension.PARTY_SESSION_KEY to KEY,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_NAME to notaryName,
-                MemberInfoExtension.NOTARY_SERVICE_PARTY_KEY to KEY
+                MemberInfoExtension.NOTARY_SERVICE_PARTY_SESSION_KEY to KEY
             )
         )
 

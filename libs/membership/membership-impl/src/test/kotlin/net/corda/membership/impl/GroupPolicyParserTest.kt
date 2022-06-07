@@ -183,6 +183,7 @@ class GroupPolicyParserTest {
             it.assertThat(mgmInfo.name.toString())
                 .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
             it.assertThat(mgmInfo.certificate.size).isEqualTo(3)
+            it.assertThat(mgmInfo.sessionInitiationKey).isNotNull
             it.assertThat(mgmInfo.ledgerKeys.size).isEqualTo(0)
             it.assertThat(mgmInfo.ledgerKeyHashes.size).isEqualTo(0)
             it.assertThat(mgmInfo.endpoints.size).isEqualTo(2)

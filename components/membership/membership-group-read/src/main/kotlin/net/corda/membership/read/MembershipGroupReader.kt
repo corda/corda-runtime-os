@@ -43,9 +43,9 @@ interface MembershipGroupReader {
      *
      * If the member is not found then the null value is returned.
      *
-     * @param publicKeyHash Public key hash for the member to lookup.
+     * @param ledgerKeyHash Hash of the ledger key belonging to the member to be looked up.
      */
-    fun lookup(publicKeyHash: PublicKeyHash): MemberInfo?
+    fun lookup(ledgerKeyHash: PublicKeyHash): MemberInfo?
 
     /**
      * Looks up a group member matching the [MemberX500Name] as visible by the member represented
