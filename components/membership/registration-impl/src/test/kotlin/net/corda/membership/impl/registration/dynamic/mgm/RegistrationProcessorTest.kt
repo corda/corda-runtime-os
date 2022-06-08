@@ -121,11 +121,11 @@ class RegistrationProcessorTest {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult(true)
-            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult(true)
+            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult()
+            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult()
         }
         membershipQueryClient = mock {
-            on { queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()) } doReturn MembershipQueryResult(true)
+            on { queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()) } doReturn MembershipQueryResult()
         }
 
         processor = RegistrationProcessor(

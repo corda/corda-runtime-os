@@ -66,9 +66,11 @@ class StartRegistrationHandler(
         val outputCommand = RegistrationCommand(
             try {
                 logger.info("Persisting the received registration request.")
-                require(
-                    membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).success
-                ) { "Failed to persist the received registration request." }
+                membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
+                    require(it.errorMsg == null) {
+                        "Failed to persist the received registration request. Reason: ${it.errorMsg}"
+                    }
+                }
 
                 val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
                 logger.info("Registering with MGM for holding identity: $mgmHoldingId")
@@ -98,9 +100,11 @@ class StartRegistrationHandler(
                 ) { "Registering member has not specified any endpoints" }
 
                 // Persist pending member info
-                require(
-                    membershipPersistenceClient.persistMemberInfo(mgmHoldingId, pendingMemberInfo).success
-                ) { "Failed to persist pending member info." }
+                membershipPersistenceClient.persistMemberInfo(mgmHoldingId, pendingMemberInfo).also {
+                    require(it.errorMsg == null) {
+                        "Failed to persist pending member info. Reason: ${it.errorMsg}"
+                    }
+                }
 
                 logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
                 VerifyMember()

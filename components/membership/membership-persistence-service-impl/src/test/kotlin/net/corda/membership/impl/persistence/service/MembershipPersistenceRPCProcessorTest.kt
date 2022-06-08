@@ -112,9 +112,7 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
-            assertThat(errorMessage).isNotBlank
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
@@ -151,9 +149,7 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
-            assertThat(success).isTrue
             assertThat(payload).isNull()
-            assertThat(errorMessage).isBlank
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
@@ -178,9 +174,7 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
-            assertThat(success).isTrue
             assertThat(payload).isNull()
-            assertThat(errorMessage).isBlank
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
@@ -205,7 +199,6 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
-            assertThat(success).isTrue
             assertThat(payload)
                 .isInstanceOf(MemberInfoQueryResponse::class.java)
             assertThat((payload as MemberInfoQueryResponse).members)
@@ -213,7 +206,6 @@ class MembershipPersistenceRPCProcessorTest {
             assertThat(uncheckedCast<Any, List<PersistentMemberInfo>>((payload as MemberInfoQueryResponse).members))
                 .isNotNull
                 .isEmpty()
-            assertThat(errorMessage).isBlank
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)

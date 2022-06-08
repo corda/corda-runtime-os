@@ -11,7 +11,7 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.StartRegistration
 import net.corda.data.membership.command.registration.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.membership.impl.MemberInfoExtension
+import net.corda.membership.impl.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
@@ -95,7 +95,7 @@ class StartRegistrationHandlerTest {
 
     val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-        on { parseList(eq(MemberInfoExtension.ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+        on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
     val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
@@ -131,14 +131,11 @@ class StartRegistrationHandlerTest {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult(true)
-            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult(true)
+            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult()
+            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult()
         }
         membershipQueryClient = mock {
-            on { queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()) } doReturn MembershipQueryResult(
-                true,
-                emptyList()
-            )
+            on { queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()) } doReturn MembershipQueryResult(emptyList())
         }
 
         handler = StartRegistrationHandler(
@@ -175,7 +172,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if persistence of registration request fails`() {
         whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any()))
-            .doReturn(MembershipPersistenceResult(false))
+            .doReturn(MembershipPersistenceResult(errorMsg = "error"))
 
         with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
@@ -298,7 +295,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member already exists`() {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult(true, listOf(mock())))
+            .doReturn(MembershipQueryResult(listOf(mock())))
         with(
             handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
@@ -343,7 +340,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member info fails to persist`() {
         whenever(membershipPersistenceClient.persistMemberInfo(any(), any<MemberInfo>())).thenReturn(
-            MembershipPersistenceResult(false)
+            MembershipPersistenceResult(errorMsg = "error")
         )
         with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull

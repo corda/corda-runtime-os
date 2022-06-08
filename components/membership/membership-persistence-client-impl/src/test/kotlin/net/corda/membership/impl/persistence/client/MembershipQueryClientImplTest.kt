@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -130,7 +131,6 @@ class MembershipQueryClientImplTest {
     fun `query all member infos before starting component`() {
         val result = membershipQueryClient.queryMemberInfo(ourHoldingIdentity)
 
-        assertThat(result.success).isFalse
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNotBlank
     }
@@ -139,7 +139,6 @@ class MembershipQueryClientImplTest {
     fun `query specific member info before starting component`() {
         val result = membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))
 
-        assertThat(result.success).isFalse
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNotBlank
     }
@@ -249,9 +248,7 @@ class MembershipQueryClientImplTest {
         payload: Any?
     ) = MembershipPersistenceResponse(
         rsContext,
-        success,
-        payload,
-        null
+        if(success) payload else QueryFailedResponse("Error")
     )
 
     @Suppress("LongParameterList")
@@ -308,8 +305,8 @@ class MembershipQueryClientImplTest {
         mockPersistenceResponse(true, listOf(mock()))
 
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity)) {
-            assertThat(success).isTrue
             assertThat(payload).hasSize(1)
+            assertThat(errorMsg).isNull()
         }
     }
 
@@ -319,7 +316,6 @@ class MembershipQueryClientImplTest {
         mockPersistenceResponse(false, null)
 
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity)) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -331,8 +327,8 @@ class MembershipQueryClientImplTest {
         mockPersistenceResponse(true, listOf(mock()))
 
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))) {
-            assertThat(success).isTrue
             assertThat(payload).hasSize(1)
+            assertThat(errorMsg).isNull()
         }
     }
 
@@ -342,7 +338,6 @@ class MembershipQueryClientImplTest {
         mockPersistenceResponse(false, null)
 
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -354,8 +349,8 @@ class MembershipQueryClientImplTest {
         mockPersistenceResponse(true, emptyList())
 
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity)) {
-            assertThat(success).isTrue
             assertThat(payload).isEmpty()
+            assertThat(errorMsg).isNull()
         }
     }
 
@@ -368,7 +363,6 @@ class MembershipQueryClientImplTest {
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -383,7 +377,6 @@ class MembershipQueryClientImplTest {
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -398,7 +391,6 @@ class MembershipQueryClientImplTest {
             reqIdOverride = UUID.randomUUID().toString()
         )
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -413,7 +405,6 @@ class MembershipQueryClientImplTest {
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
         with(membershipQueryClient.queryMemberInfo(ourHoldingIdentity, listOf(ourHoldingIdentity))) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }

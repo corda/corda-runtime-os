@@ -287,7 +287,6 @@ class MembershipPersistenceTest {
             )
         )
 
-        assertThat(result.success).isTrue
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNull()
 
@@ -337,7 +336,6 @@ class MembershipPersistenceTest {
             )
         )
 
-        assertThat(result.success).isTrue
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNull()
 

@@ -8,6 +8,7 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
@@ -60,26 +61,16 @@ class MembershipPersistenceRPCProcessor(
     ) {
         logger.info("Processor received new RPC persistence request. Selecting handler.")
         val result = try {
-            Triple(
-                true,
-                getHandler(request.request::class.java).invoke(request.context, request.request),
-                null
-            )
+            getHandler(request.request::class.java).invoke(request.context, request.request)
         } catch (e: Exception) {
             val error = "Exception thrown while processing membership persistence request: ${e.message}"
             logger.warn(error)
-            Triple(
-                false,
-                null,
-                error
-            )
+            QueryFailedResponse(error)
         }
         respFuture.complete(
             MembershipPersistenceResponse(
                 buildResponseContext(request.context),
-                result.first,
-                result.second,
-                result.third
+                result
             )
         )
     }

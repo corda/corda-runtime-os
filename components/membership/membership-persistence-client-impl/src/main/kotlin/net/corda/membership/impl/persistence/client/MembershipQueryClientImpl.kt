@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
@@ -58,19 +59,27 @@ class MembershipQueryClientImpl @Activate constructor(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryMemberInfo(queryFilter.map { it.toAvro() })
         ).execute()
-        return if (result.success && result.payload is MemberInfoQueryResponse) {
-            logger.info("Found ${(result.payload as MemberInfoQueryResponse).members.size} results.")
-            MembershipQueryResult(
-                true,
-                (result.payload as MemberInfoQueryResponse).members.map { memberInfoFactory.create(it) }
-            )
-        } else {
-            val err = "Query failed because of: ${result.errorMessage}"
-            logger.warn(err)
-            MembershipQueryResult(
-                false,
-                errorMsg = err
-            )
+        return when(val payload = result.payload) {
+            is MemberInfoQueryResponse -> {
+                logger.info("Found ${(result.payload as MemberInfoQueryResponse).members.size} results.")
+                MembershipQueryResult(
+                    payload = (result.payload as MemberInfoQueryResponse).members.map { memberInfoFactory.create(it) }
+                )
+            }
+            is QueryFailedResponse -> {
+                val err = "Query failed because of: ${payload.errorMessage}"
+                logger.warn(err)
+                MembershipQueryResult(
+                    errorMsg = err
+                )
+            }
+            else -> {
+                val err = "Query returned unexpected payload."
+                logger.warn(err)
+                MembershipQueryResult(
+                    errorMsg = err
+                )
+            }
         }
     }
 

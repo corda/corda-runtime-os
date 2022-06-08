@@ -8,6 +8,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -66,11 +67,10 @@ class MembershipPersistenceClientImpl @Activate constructor(
 
             )
         ).execute()
-        return MembershipPersistenceResult(
-            result.success,
-            result.payload,
-            result.errorMessage
-        )
+        return when (val failedResponse = result.payload as? QueryFailedResponse) {
+            null -> MembershipPersistenceResult(payload = result.payload)
+            else -> MembershipPersistenceResult(errorMsg = failedResponse.errorMessage)
+        }
     }
 
     override fun persistMemberInfo(
@@ -103,10 +103,9 @@ class MembershipPersistenceClientImpl @Activate constructor(
                 }
             )
         ).execute()
-        return MembershipPersistenceResult(
-            result.success,
-            result.payload,
-            result.errorMessage
-        )
+        return when (val failedResponse = result.payload as? QueryFailedResponse) {
+            null -> MembershipPersistenceResult(payload = result.payload)
+            else -> MembershipPersistenceResult(errorMsg = failedResponse.errorMessage)
+        }
     }
 }

@@ -13,6 +13,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -318,7 +320,7 @@ class StaticMemberRegistrationService @Activate constructor(
         val ledgerKeys = listOf(memberKey)
         return ledgerKeys.mapIndexed { index, ledgerKey ->
             String.format(
-                MemberInfoExtension.LEDGER_KEYS_KEY,
+                LEDGER_KEYS_KEY,
                 index
             ) to ledgerKey
         }
@@ -335,7 +337,7 @@ class StaticMemberRegistrationService @Activate constructor(
         return ledgerKeys.mapIndexed { index, ledgerKey ->
             val hash = ledgerKey.calculateHash()
             String.format(
-                MemberInfoExtension.LEDGER_KEY_HASHES_KEY,
+                LEDGER_KEY_HASHES_KEY,
                 index
             ) to hash.toString()
         }

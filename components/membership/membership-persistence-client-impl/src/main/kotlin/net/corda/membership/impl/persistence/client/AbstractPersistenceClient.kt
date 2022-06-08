@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -66,8 +67,8 @@ abstract class AbstractPersistenceClient(
 
     fun MembershipPersistenceRequest.execute(): MembershipPersistenceResponse {
         if(rpcSender == null) {
-            val warn = "Persistence client could not send persistence request because the RPC sender has not been initialised."
-            logger.warn(warn)
+            val failureReason = "Persistence client could not send persistence request because the RPC sender has not been initialised."
+            logger.warn(failureReason)
             return MembershipPersistenceResponse(
                 MembershipResponseContext(
                     context.requestTimestamp,
@@ -75,9 +76,7 @@ abstract class AbstractPersistenceClient(
                     clock.instant(),
                     context.holdingIdentity
                 ),
-                false,
-                null,
-                warn
+                QueryFailedResponse(failureReason)
             )
         }
         logger.info("Sending membership persistence RPC request.")
@@ -108,9 +107,7 @@ abstract class AbstractPersistenceClient(
                     clock.instant(),
                     context.holdingIdentity
                 ),
-                false,
-                null,
-                "Invalid response. ${e.message}"
+                QueryFailedResponse("Invalid response. ${e.message}")
             )
         }
         return response

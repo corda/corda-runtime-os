@@ -3,7 +3,12 @@ package net.corda.membership.impl
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
+import net.corda.membership.impl.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.impl.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.GroupPolicy
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.utilities.time.UTCClock
@@ -75,10 +80,10 @@ class GroupPolicyParser @Activate constructor(
                 ),
                 mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                     sortedMapOf(
-                        MemberInfoExtension.CREATED_TIME to now,
-                        MemberInfoExtension.MODIFIED_TIME to now,
-                        MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                        MemberInfoExtension.IS_MGM to "true"
+                        CREATED_TIME to now,
+                        MODIFIED_TIME to now,
+                        STATUS to MEMBER_STATUS_ACTIVE,
+                        IS_MGM to "true"
                     )
                 )
             )

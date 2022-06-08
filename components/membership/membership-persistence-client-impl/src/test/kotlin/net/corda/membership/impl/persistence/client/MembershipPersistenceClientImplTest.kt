@@ -11,6 +11,7 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -144,7 +145,6 @@ class MembershipPersistenceClientImplTest {
     fun `persist member info before starting component`() {
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
 
-        assertThat(result.success).isFalse
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNotBlank
     }
@@ -153,7 +153,6 @@ class MembershipPersistenceClientImplTest {
     fun `persist list of member info before starting component`() {
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
 
-        assertThat(result.success).isFalse
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNotBlank
     }
@@ -165,7 +164,6 @@ class MembershipPersistenceClientImplTest {
             ourRegistrationRequest
         )
 
-        assertThat(result.success).isFalse
         assertThat(result.payload).isNull()
         assertThat(result.errorMsg).isNotBlank
     }
@@ -266,9 +264,7 @@ class MembershipPersistenceClientImplTest {
         success: Boolean
     ) = MembershipPersistenceResponse(
         rsContext,
-        success,
-        null,
-        if (success) null else "Placeholder error"
+        if (success) null else QueryFailedResponse("Placeholder error")
     )
 
     fun mockPersistenceResponse(
@@ -384,7 +380,6 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(true)
 
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(success).isTrue
             assertThat(payload).isNull()
             assertThat(errorMsg).isNull()
         }
@@ -396,7 +391,6 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(false, null)
 
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -408,7 +402,6 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(true)
 
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))) {
-            assertThat(success).isTrue
             assertThat(payload).isNull()
             assertThat(errorMsg).isNull()
         }
@@ -420,7 +413,6 @@ class MembershipPersistenceClientImplTest {
         mockPersistenceResponse(false, null)
 
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -434,7 +426,6 @@ class MembershipPersistenceClientImplTest {
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -448,7 +439,6 @@ class MembershipPersistenceClientImplTest {
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -462,7 +452,6 @@ class MembershipPersistenceClientImplTest {
             reqIdOverride = UUID.randomUUID().toString()
         )
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
@@ -476,7 +465,6 @@ class MembershipPersistenceClientImplTest {
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
         with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(success).isFalse
             assertThat(payload).isNull()
             assertThat(errorMsg).isNotNull
         }
