@@ -94,7 +94,7 @@ subprojects {
                 languageVersion = of(javaVersion.majorVersion.toInteger())
             }
 
-            if (releaseType != 'GA' || releaseType != 'RC') {
+            if (releaseType != 'GA' && releaseType != 'RC') {
                 withSourcesJar()
             }
         }

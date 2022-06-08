@@ -9,22 +9,33 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
     pluginManager.withPlugin('java') {
         publishing {
             publications {
-                register('maven', MavenPublication) {
+                register('maven', MavenPublication) { mvn ->
                     afterEvaluate {
                         artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
                         groupId group.toString()
                         from components.findByName('cordapp') ?: components.findByName('kotlin') ?: components.java
-                    }
-                    if (project.hasProperty("sourceJar")) {
-                        maven.artifact(tasks.getByName("sourcesJar"))
-                    }
-                    if (project.hasProperty("javaDoc")) {
-                        maven.artifact(tasks.getByName("javadocJar"))
-                    }
 
+                        try {
+                            artifact tasks.named('sourcesJar', Jar)
+                        } catch (UnknownTaskException ignored) {
+                        }
+
+                        try {
+                            artifact tasks.named('javadocJar', Jar)
+                        } catch (UnknownTaskException ignored) {
+                        }
+
+                        mvn.artifacts = mvn.artifacts.findAll { a ->
+                            !(a instanceof MavenArtifact) || a.classifier != 'ignore'
+                        }
+                    }
                 }
             }
         }
+    }
+
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
     }
 
     tasks.register('install') {
