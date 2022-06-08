@@ -50,7 +50,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
-    private var impl: InnerGroupPolicyProvider = InactiveImpl()
+    private var impl: InnerGroupPolicyProvider = InactiveImpl
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
 
@@ -85,13 +85,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        swapImpl(
-                            ActiveImpl(
-                                virtualNodeInfoReadService,
-                                cpiInfoReader,
-                                groupPolicyParser,
-                            )
-                        )
+                        swapImpl(ActiveImpl())
                         coordinator.updateStatus(LifecycleStatus.UP, "All dependencies are UP.")
                     }
                     else -> {
@@ -104,7 +98,7 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     private fun deactivate(reason: String) {
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
-        swapImpl(InactiveImpl())
+        swapImpl(InactiveImpl)
     }
 
     private fun swapImpl(newImpl: InnerGroupPolicyProvider) {
@@ -113,18 +107,14 @@ class GroupPolicyProviderImpl @Activate constructor(
         current.close()
     }
 
-    private class InactiveImpl : InnerGroupPolicyProvider {
+    private object InactiveImpl : InnerGroupPolicyProvider {
         override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy =
             throw IllegalStateException("Service is in incorrect state for accessing group policies.")
 
         override fun close() = Unit
     }
 
-    private class ActiveImpl(
-        private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        private val cpiInfoReader: CpiInfoReadService,
-        private val groupPolicyParser: GroupPolicyParser
-    ) : InnerGroupPolicyProvider {
+    private inner class ActiveImpl : InnerGroupPolicyProvider {
         private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy> = ConcurrentHashMap()
 
         private var virtualNodeInfoCallbackHandle: AutoCloseable = startVirtualNodeHandle()

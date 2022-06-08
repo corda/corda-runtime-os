@@ -2,6 +2,7 @@ package net.corda.poc.typeevolution
 
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier
 import org.osgi.service.component.annotations.Component
@@ -26,8 +27,8 @@ class CpkReadServiceLocalImpl : CpkReadService, CpkReadServiceLoader {
     override fun start() { }
     override fun stop() { }
 
-    override fun load(cpiInputStream: InputStream) : Cpi {
-        val cpi = Cpi.from(cpiInputStream, expansionLocation = tmpDir, verifySignature = true)
+    override fun load(cpiInputStream: InputStream): Cpi {
+        val cpi = CpiReader.readCpi(cpiInputStream, expansionLocation = tmpDir, verifySignature = true)
 
         cpi.cpks.forEach { cpk -> cpkById[cpk.metadata.cpkId] = cpk }
 
