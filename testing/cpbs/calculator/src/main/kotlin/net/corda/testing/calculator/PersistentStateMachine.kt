@@ -3,11 +3,14 @@ package net.corda.testing.calculator
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
+import akka.actor.typed.javadsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.javadsl.CommandHandler
 import akka.persistence.typed.javadsl.Effect
 import akka.persistence.typed.javadsl.EventHandler
 import akka.persistence.typed.javadsl.EventSourcedBehavior
+import net.corda.v5.base.util.uncheckedCast
+import java.lang.IllegalStateException
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -51,7 +54,7 @@ class FlowManager(
 
         sealed class ProcessCommands : Commands() {
 
-            data class RegisterProcess(val processName: String, val creator: Behavior<SessionMessage>) : ProcessCommands()
+            data class RegisterProcess(val processName: String, val creator: (String)->Behavior<SessionMessage>) : ProcessCommands()
             data class SpawnProcess(
                 val processName: String,
                 val onComplete: CompletableFuture<ActorRef<SessionMessage>>
@@ -168,7 +171,7 @@ class FlowManager(
             .onEvent(Events.SpawnProcess::class.java) { state, event ->
                 registeredProccesses.getOrDefault(event.processName, CompletableFuture()).thenApply {
                     if (state.activeProcesses.contains(event.processId)) {
-                        val ref = ctx.spawn(it, "${event.processName}-${event.processId}")
+                        val ref = ctx.spawn(it(event.processId), "${event.processName}-${event.processId}")
                         activeStateMachines.getOrDefault(event.processId, CompletableFuture()).complete(ref)
                     }
                 }
@@ -221,7 +224,7 @@ class FlowManager(
         }
     }
 
-    val registeredProccesses = mutableMapOf<String, CompletableFuture<Behavior<SessionMessage>>>()
+    val registeredProccesses = mutableMapOf<String, CompletableFuture<(String)->Behavior<SessionMessage>>>()
     val activeStateMachines = mutableMapOf<String, CompletableFuture<ActorRef<SessionMessage>>>()
     val activeSessions = mutableMapOf<String, CompletableFuture<SessionChannel>>()
 
@@ -243,34 +246,178 @@ class FlowManager(
 
 }
 
-class PersistentStateMachine(persistenceID : PersistenceId)
-    : EventSourcedBehavior<PersistentStateMachine.Commands, PersistentStateMachine.Events, PersistentStateMachine.State> (persistenceID)
+data class ExampleFlow(val amount: Int)
+    : PersistentStateMachine.Context()
 {
-    sealed class Commands : SessionMessage() {
+    init {
+        start/*(Select tokens)*/ {
 
+            println("Starting")
+            CompletableFuture.completedFuture(amount)
+
+        }.then { amount : Int -> //or session
+
+            println("Got 5")
+            CompletableFuture.completedFuture("Hi")
+
+        }.finally { msg : String ->
+
+            "Finally received $msg"
+        }
+
+        onEvent(SessionMessage.SystemMessages.SessionEstablished::class.java) { msg : SessionMessage.SystemMessages.SessionEstablished ->
+
+            CompletableFuture.completedFuture(42)
+        }.then { amount: Int ->
+
+            CompletableFuture.completedFuture("heh")
+        }.finally { prev : String ->
+            "OK"
+        }
+    }
+}
+
+class PersistentStateMachine(
+    persistenceID : PersistenceId,
+    val flowManagerRef: ActorRef<WireMessage>,
+    val context: ActorContext<SessionMessage>,
+    val executionContext : Context
+)
+    : EventSourcedBehavior<SessionMessage, PersistentStateMachine.Events, PersistentStateMachine.State> (persistenceID)
+{
+
+    companion object {
+        fun create(id: String, ref: ActorRef<WireMessage>, ctx : Context) : Behavior<SessionMessage> {
+            return Behaviors.setup {
+                PersistentStateMachine(PersistenceId.ofUniqueId(id), ref, it, ctx)
+            }
+        }
     }
 
     sealed class Events {
-
+        object Start : Events()
+        data class Msg(val msg: SessionMessage) : Events()
     }
 
-    sealed class State {
-        object STATELESS : State()
-    }
+    abstract class Context {
+        data class ComputationPathContext(
+            var stageFuture : CompletableFuture<*> = CompletableFuture.completedFuture(Unit),
+            var stageCounter : Int = 0,
+            val processingStages : MutableList<()->Boolean> = mutableListOf(),
+            var result: Any? = null,
+            var initiatingEvent: Any? = null
+        )
 
-    override fun emptyState(): State {
-        return State.STATELESS
-    }
+        val initiatingStages = ComputationPathContext()
+        val respondingStages = mutableMapOf<Class<*>, ComputationPathContext>()
 
-    override fun commandHandler(): CommandHandler<Commands, Events, State> {
-        return newCommandHandlerBuilder()
-            .forAnyState()
-            .build()
+        var computedResult: Any? = null
+
+        var currentContext: ComputationPathContext? = null
+
+        fun<T: Any, X> onEvent(clazz: Class<*>, operation: Context.(T)->CompletableFuture<X>) = this.let { flowContext ->
+            if (currentContext != null) throw IllegalStateException("Trying to build something weird")
+
+            respondingStages[clazz] = ComputationPathContext()
+            currentContext = respondingStages[clazz]
+            currentContext!!.apply {
+                processingStages.add {
+                    stageFuture = flowContext.operation(uncheckedCast(initiatingEvent))
+                    stageCounter += 1
+                    stageFuture.isDone
+                }
+            }
+            flowContext
+        }
+
+         fun<T : Any> start(operation: Context.()->CompletableFuture<T>) = this.let { flowContext ->
+            currentContext = initiatingStages
+            currentContext!!.apply {
+                processingStages.add {
+                    stageFuture = flowContext.operation()
+                    stageCounter += 1
+                    stageFuture.isDone
+                }
+            }
+             flowContext
+        }
+
+         fun<T, X> then(operation: Context.(T)->CompletableFuture<X>) = this.let { flowContext ->
+             currentContext!!.apply {
+                 processingStages.add {
+                     stageFuture = flowContext.operation(uncheckedCast(stageFuture.get()))
+                     stageCounter += 1
+                     stageFuture.isDone
+                 }
+             }
+             flowContext
+        }
+
+         fun<T, R> finally(operation: Context.(T)->R)  = this.let { flowContext ->
+             currentContext!!.apply {
+                 processingStages.add {
+                     result = flowContext.operation(uncheckedCast(stageFuture.get()))
+                     flowContext.computedResult = result
+                     stageCounter += 1
+                     true
+                 }
+
+             }
+             currentContext = null
+             flowContext
+        }
+
+        fun process(stateMachine: PersistentStateMachine?, event: Any? = null) = this.apply {
+            val contextToProgress = event?.let { respondingStages[event.javaClass]!!.apply { initiatingEvent = event } } ?: initiatingStages
+
+            contextToProgress.apply {
+                while (stageCounter < processingStages.size) {
+                    val stage = processingStages[stageCounter]
+                    if (!stage.invoke()) {
+                        break
+                    }
+                }
+            }
+        }
+
+
     }
 
     override fun eventHandler(): EventHandler<State, Events> {
         return newEventHandlerBuilder()
             .forAnyState()
+        /*    .onEvent(Events.ContextUpdate::class.java) { state, event ->
+                state.context.process(this).stageFuture.thenApply {
+                    context.self.tell(Commands.ContextFutureResolved(it))
+                }
+                state
+            } */
             .build()
+    }
+
+
+    fun establishSession(recipient: String, responderProcess: String) {
+        flowManagerRef.tell(FlowManager.Commands.SessionCommands.InitiateSession(recipient, persistenceId().id(), responderProcess))
+    }
+
+    data class State(val context: Context)
+
+    override fun emptyState(): State {
+        return State(executionContext)
+    }
+
+    sealed class Commands : SessionMessage() {
+        data class ContextFutureResolved(val res: Any) : Commands()
+    }
+
+    override fun commandHandler(): CommandHandler<SessionMessage, Events, State> {
+        return newCommandHandlerBuilder()
+            .forAnyState()
+           /* .onCommand(Commands.ContextFutureResolved::class.java) { msg ->
+                Effect().persist(Events.ContextUpdate())
+            } */
+            .onCommand(SessionMessage::class.java) { msg ->
+                Effect().none()
+            }.build()
     }
 }
