@@ -59,7 +59,7 @@ class MemberOpsServiceProcessorTest {
             }
             processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {

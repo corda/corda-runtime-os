@@ -47,7 +47,7 @@ import java.time.Instant
 class MemberProcessorTestUtils {
     companion object {
 
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
 
         private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"

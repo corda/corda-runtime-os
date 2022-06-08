@@ -44,7 +44,7 @@ import java.time.Instant
 
 class MemberListProcessorTest {
     companion object {
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
         private val keyEncodingService: CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"

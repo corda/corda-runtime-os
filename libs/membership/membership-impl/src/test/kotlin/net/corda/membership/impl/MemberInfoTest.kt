@@ -61,7 +61,7 @@ class MemberInfoTest {
         private val key = Mockito.mock(PublicKey::class.java)
 
 
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
         private val modifiedTime = clock.instant()
         private val endpoints = listOf(
             EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),

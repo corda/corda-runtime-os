@@ -25,7 +25,7 @@ import kotlin.test.assertFailsWith
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private var coordinatorIsRunning = false

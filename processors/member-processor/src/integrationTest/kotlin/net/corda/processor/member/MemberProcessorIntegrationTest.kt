@@ -282,7 +282,7 @@ class MemberProcessorIntegrationTest {
             }
         }
 
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     @Test

@@ -50,7 +50,7 @@ import java.time.Instant
 class MemberOpsClientTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "nodeId"
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()

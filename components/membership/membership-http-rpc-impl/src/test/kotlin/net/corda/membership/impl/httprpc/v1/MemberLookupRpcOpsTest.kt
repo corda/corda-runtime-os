@@ -50,7 +50,7 @@ class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
         private const val HOLDING_IDENTITY_STRING = "test"
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private var coordinatorIsRunning = false
