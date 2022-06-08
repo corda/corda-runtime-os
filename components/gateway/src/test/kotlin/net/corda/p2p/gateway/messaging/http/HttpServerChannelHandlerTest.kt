@@ -14,7 +14,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import java.net.InetSocketAddress
 import io.netty.handler.codec.http.HttpRequest as NettyHttpRequest
@@ -31,8 +30,10 @@ class HttpServerChannelHandlerTest {
         val mockCtxChannel = mock<Channel> {
             on { remoteAddress() } doReturn socketAddress
         }
+        val listenerCaptor = argumentCaptor<ChannelFutureListener>()
         val mockChannelFuture = mock<ChannelFuture>() {
             on { channel() } doReturn mockCtxChannel
+            on { mock.addListener(listenerCaptor.capture()) } doReturn mock
         }
         val mockCtx = mock<ChannelHandlerContext>{
             on { channel() } doReturn mockCtxChannel
@@ -48,9 +49,6 @@ class HttpServerChannelHandlerTest {
         val mockLastHttpContent = mock<LastHttpContent> {
             on { content() } doReturn EmptyByteBuf(ByteBufAllocator.DEFAULT)
         }
-
-        val listenerCaptor = argumentCaptor<ChannelFutureListener>()
-        whenever(mockChannelFuture.addListener(listenerCaptor.capture())).doReturn(mockChannelFuture)
 
         httpServerChannelHandler.channelRead(mockCtx, mockHttpRequest)
         httpServerChannelHandler.channelRead(mockCtx, mockLastHttpContent)

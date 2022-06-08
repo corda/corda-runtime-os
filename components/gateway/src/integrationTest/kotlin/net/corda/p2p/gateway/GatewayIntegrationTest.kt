@@ -184,7 +184,7 @@ class GatewayIntegrationTest : TestBase() {
 
             val myTm = tmf.trustManagers.filterIsInstance(X509TrustManager::class.java).first()
 
-            val sslContext: SSLContext = SSLContext.getInstance("TLSv1.3")
+            val sslContext = SSLContext.getInstance("TLSv1.3")
             sslContext.init(null, arrayOf(myTm), null)
 
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
