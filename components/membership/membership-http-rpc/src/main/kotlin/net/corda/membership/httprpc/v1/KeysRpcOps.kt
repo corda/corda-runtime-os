@@ -65,14 +65,17 @@ interface KeysRpcOps : RpcOps {
         )
         skip: Int,
         @HttpRpcQueryParameter(
-            description = "Maximal number of many keys to return",
+            description = "Page size",
             default = "20",
             required = false,
         )
         take: Int,
         @HttpRpcQueryParameter(
-            description = "How to order the results",
-            default = "None",
+            description = "How to order the results (one of: none, timestamp, category, scheme_code_name, alias, " +
+                "master_key_alias, external_id, id, " +
+                "timestamp_desc, category_desc, scheme_code_name_desc, " +
+                "alias_desc, master_key_alias_desc, external_id_desc or id_desc)",
+            default = "none",
             required = false,
         )
         orderBy: String,

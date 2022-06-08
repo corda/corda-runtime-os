@@ -25,7 +25,7 @@ data class KeyMetaData(
     /**
      * The key master key alias
      */
-    val masterKeyAlias: String,
+    val masterKeyAlias: String?,
     /**
      * When was the key created
      */
