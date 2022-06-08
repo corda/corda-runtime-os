@@ -1,9 +1,9 @@
 package net.corda.membership.impl
 
-import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
@@ -26,14 +26,13 @@ class MemberInfoImpl(
         require(endpoints.isNotEmpty()) { "Node must have at least one address." }
         require(platformVersion > 0) { "Platform version must be at least 1." }
         require(softwareVersion.isNotEmpty()) { "Node software version must not be blank." }
-        require(owningKey in identityKeys) { "Identity key must be in the key list." }
     }
 
     override val name: MemberX500Name get() = memberProvidedContext.parse(PARTY_NAME)
 
-    override val owningKey: PublicKey get() = memberProvidedContext.parse(PARTY_OWNING_KEY)
+    override val sessionInitiationKey: PublicKey get() = memberProvidedContext.parse(PARTY_SESSION_KEY)
 
-    override val identityKeys: List<PublicKey> get() = memberProvidedContext.parseList(IDENTITY_KEYS)
+    override val ledgerKeys: List<PublicKey> get() = memberProvidedContext.parseList(LEDGER_KEYS)
 
     override val platformVersion: Int get() = memberProvidedContext.parse(PLATFORM_VERSION)
 

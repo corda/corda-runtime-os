@@ -30,34 +30,34 @@ class AuthenticationProtocolTest {
     fun `no handshake message crosses the minimum value allowed for max message size`() {
         val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+        val partyASessionKey = keyPairGenerator.generateKeyPair()
+        val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, ECDSA_SHA256_SIGNATURE_SPEC)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, ECDSA_SHA256_SIGNATURE_SPEC)
     }
 
     @Test
     fun `authentication protocol works successfully with RSA signatures`() {
         val signature = Signature.getInstance(RSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider)
-        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+        val partyASessionKey = keyPairGenerator.generateKeyPair()
+        val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, RSA_SHA256_SIGNATURE_SPEC)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, RSA_SHA256_SIGNATURE_SPEC)
     }
 
     @Test
     fun `authentication protocol methods are idempotent`() {
         val signature = Signature.getInstance(ECDSA_SHA256_SIGNATURE_SPEC.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+        val partyASessionKey = keyPairGenerator.generateKeyPair()
+        val partyBSessionKey = keyPairGenerator.generateKeyPair()
 
-        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, ECDSA_SHA256_SIGNATURE_SPEC, true)
+        executeProtocol(partyASessionKey, partyBSessionKey, signature, ECDSA_SHA256_SIGNATURE_SPEC, true)
     }
 
-    private fun executeProtocol(partyAIdentityKey: KeyPair,
-                                partyBIdentityKey: KeyPair,
+    private fun executeProtocol(partyASessionKey: KeyPair,
+                                partyBSessionKey: KeyPair,
                                 signature: Signature,
                                 signatureSpec: SignatureSpec,
                                 duplicateInvocations: Boolean = false) {
@@ -65,7 +65,7 @@ class AuthenticationProtocolTest {
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
-            partyAIdentityKey.public,
+            partyASessionKey.public,
             groupId
         )
         val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
@@ -98,32 +98,32 @@ class AuthenticationProtocolTest {
 
         // Step 3: initiator sending handshake message and responder validating it.
         val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
+            signature.initSign(partyASessionKey.private)
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, signatureSpec)
+        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyASessionKey.public, signatureSpec)
         if (duplicateInvocations) {
-            assertThat(protocolInitiator.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA))
+            assertThat(protocolInitiator.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA))
                 .isEqualTo(initiatorHandshakeMessage)
-            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, signatureSpec)
+            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyASessionKey.public, signatureSpec)
         }
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
+            signature.initSign(partyBSessionKey.private)
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+        val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, signatureSpec)
+        protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBSessionKey.public, signatureSpec)
         if (duplicateInvocations) {
-            assertThat(protocolResponder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB))
+            assertThat(protocolResponder.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB))
                 .isEqualTo(responderHandshakeMessage)
-            protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, signatureSpec)
+            protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBSessionKey.public, signatureSpec)
         }
     }
 }

@@ -202,7 +202,7 @@ class MemberProcessorTestUtils {
         }
 
         fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
-            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.owningKey))
+            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.sessionInitiationKey))
             assertNotNull(result)
             result!!
         }
