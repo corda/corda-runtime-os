@@ -14,13 +14,11 @@ spec:
       containers:
         - name: run-topic-script
           image: bitnami/kafka:3.1.0-debian-10-r89
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
           resources:
             requests:
               cpu: 2000m
               memory: 750Mi
-            limits:
-              cpu: 2000m
-              memory: 2000Mi
           command:
             - /bin/bash
             - -c
@@ -40,6 +38,7 @@ spec:
       initContainers:
         - name: create-trust-store
           image: bitnami/kafka:3.1.0-debian-10-r89
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
           command:
             - /bin/bash
             - -c
@@ -66,6 +65,7 @@ spec:
             {{- end }}
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
           args: [
             'topic',
             'create',
