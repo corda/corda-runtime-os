@@ -141,6 +141,11 @@ internal class OutboundMessageProcessor(
 
         if (linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination)) {
             return if (isReplay) {
+                /* This code block was added to fix a race which happens if the OutboundMessageProcessor runs quicker than the
+                 * DeliveryTracker. Under normal circumstances a message to locally hosted holding identity will be added and then removed
+                 * from the delivery tracker, before the message is replayed (as the OutboundMessageProcessor adds both a LinkManagerSent
+                 * and a LinkManagerReceived marker).
+                 */
                 emptyList()
             } else {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
