@@ -30,6 +30,7 @@ class PropertyConverter constructor(
                     Short::class -> value.toShort() as T
                     Float::class -> value.toFloat() as T
                     Double::class -> value.toDouble() as T
+                    Boolean::class -> value.toBoolean() as T
                     String::class -> value as T
                     Instant::class -> Instant.parse(value) as T
                     MemberX500Name::class -> MemberX500Name.parse(value) as T

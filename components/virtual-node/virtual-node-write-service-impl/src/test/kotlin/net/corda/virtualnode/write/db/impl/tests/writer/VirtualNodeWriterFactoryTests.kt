@@ -48,7 +48,7 @@ class VirtualNodeWriterFactoryTests {
     @Test
     fun `factory does not start the virtual node writer`() {
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), getPublisherFactory(), getDbConnectionManager(), mock(), mock())
+            getSubscriptionFactory(), getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock())
         val virtualNodeWriter = virtualNodeWriterFactory.create(mock())
         assertFalse(virtualNodeWriter.isRunning)
     }
@@ -60,7 +60,7 @@ class VirtualNodeWriterFactoryTests {
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock())
+            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock())
         virtualNodeWriterFactory.create(expectedConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -79,7 +79,7 @@ class VirtualNodeWriterFactoryTests {
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock())
+            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock())
         virtualNodeWriterFactory.create(expectedConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
