@@ -246,37 +246,6 @@ class FlowManager(
 
 }
 
-data class ExampleFlow(val amount: Int)
-    : PersistentStateMachine.Context()
-{
-    init {
-        start/*(Select tokens)*/ {
-
-            println("Starting")
-            CompletableFuture.completedFuture(amount)
-
-        }.then { amount : Int -> //or session
-
-            println("Got 5")
-            CompletableFuture.completedFuture("Hi")
-
-        }.finally { msg : String ->
-
-            "Finally received $msg"
-        }
-
-        onEvent(SessionMessage.SystemMessages.SessionEstablished::class.java) { msg : SessionMessage.SystemMessages.SessionEstablished ->
-
-            CompletableFuture.completedFuture(42)
-        }.then { amount: Int ->
-
-            CompletableFuture.completedFuture("heh")
-        }.finally { prev : String ->
-            "OK"
-        }
-    }
-}
-
 class PersistentStateMachine(
     persistenceID : PersistenceId,
     val flowManagerRef: ActorRef<WireMessage>,
@@ -301,11 +270,8 @@ class PersistentStateMachine(
 
     abstract class Context {
         data class ComputationPathContext(
-            var stageFuture : CompletableFuture<*> = CompletableFuture.completedFuture(Unit),
-            var stageCounter : Int = 0,
-            val processingStages : MutableList<()->Boolean> = mutableListOf(),
-            var result: Any? = null,
-            var initiatingEvent: Any? = null
+            val processingStages : MutableList<(Any?)->StateMachineEvent> = mutableListOf(),
+            val id: String = UUID.randomUUID().toString()
         )
 
         val initiatingStages = ComputationPathContext()
@@ -313,71 +279,156 @@ class PersistentStateMachine(
 
         var computedResult: Any? = null
 
-        var currentContext: ComputationPathContext? = null
+        var currentContextBuilder: ComputationPathContext? = null
 
-        fun<T: Any, X> onEvent(clazz: Class<*>, operation: Context.(T)->CompletableFuture<X>) = this.let { flowContext ->
-            if (currentContext != null) throw IllegalStateException("Trying to build something weird")
+        sealed class StateMachineEvent {
+            data class WaitFor(val event: Class<*>, val from: Any?) : StateMachineEvent()
+            data class WaitAll(val list: List<WaitFor>) : StateMachineEvent()
+            data class ProceedNow(val eventForNextStep: Any) : StateMachineEvent()
+            internal data class Finish(val result: Any?) : StateMachineEvent()
+
+            data class RevertTo(val step: Int, val eventToPass: Any? = null) : StateMachineEvent()
+            data class Cancel(val signal: Class<*>? = null) : StateMachineEvent() //Event does not match this execution context
+
+            internal object Yield: StateMachineEvent() //Event is good but need more
+            object Fresh: StateMachineEvent() //Just started
+        }
+
+
+        fun<T: Any> onEvent(clazz: Class<*>, operation: Context.(T)->StateMachineEvent) = this.let { flowContext ->
+            if (currentContextBuilder != null) throw IllegalStateException("Trying to build something weird")
 
             respondingStages[clazz] = ComputationPathContext()
-            currentContext = respondingStages[clazz]
-            currentContext!!.apply {
-                processingStages.add {
-                    stageFuture = flowContext.operation(uncheckedCast(initiatingEvent))
-                    stageCounter += 1
-                    stageFuture.isDone
+            currentContextBuilder = respondingStages[clazz]
+            currentContextBuilder!!.apply {
+                processingStages.add { event ->
+                    flowContext.operation(uncheckedCast(event))
                 }
             }
             flowContext
         }
 
-         fun<T : Any> start(operation: Context.()->CompletableFuture<T>) = this.let { flowContext ->
-            currentContext = initiatingStages
-            currentContext!!.apply {
-                processingStages.add {
-                    stageFuture = flowContext.operation()
-                    stageCounter += 1
-                    stageFuture.isDone
+         fun start(operation: Context.()->StateMachineEvent) = this.let { flowContext ->
+            currentContextBuilder = initiatingStages
+            currentContextBuilder!!.apply {
+                processingStages.add { unused ->
+                    flowContext.operation()
                 }
             }
              flowContext
         }
 
-         fun<T, X> then(operation: Context.(T)->CompletableFuture<X>) = this.let { flowContext ->
-             currentContext!!.apply {
-                 processingStages.add {
-                     stageFuture = flowContext.operation(uncheckedCast(stageFuture.get()))
-                     stageCounter += 1
-                     stageFuture.isDone
+         fun<T> then(operation: Context.(T)->StateMachineEvent) = this.let { flowContext ->
+             currentContextBuilder!!.apply {
+                 processingStages.add { event ->
+                     flowContext.operation(uncheckedCast(event))
                  }
              }
              flowContext
         }
 
          fun<T, R> finally(operation: Context.(T)->R)  = this.let { flowContext ->
-             currentContext!!.apply {
-                 processingStages.add {
-                     result = flowContext.operation(uncheckedCast(stageFuture.get()))
+             currentContextBuilder!!.apply {
+                 processingStages.add { event ->
+                     val result = flowContext.operation(uncheckedCast(event))
                      flowContext.computedResult = result
-                     stageCounter += 1
-                     true
+                     StateMachineEvent.Finish(result)
                  }
 
              }
-             currentContext = null
+             currentContextBuilder = null
              flowContext
         }
 
-        fun process(stateMachine: PersistentStateMachine?, event: Any? = null) = this.apply {
-            val contextToProgress = event?.let { respondingStages[event.javaClass]!!.apply { initiatingEvent = event } } ?: initiatingStages
+        data class RunningContext(var stage : Int = 0, val context: ComputationPathContext, var state: StateMachineEvent = StateMachineEvent.Fresh)
 
-            contextToProgress.apply {
-                while (stageCounter < processingStages.size) {
-                    val stage = processingStages[stageCounter]
-                    if (!stage.invoke()) {
-                        break
+        lateinit var runContext : RunningContext
+
+        fun start(event: Any? = null) : StateMachineEvent {
+            val contextToProgress = event?.let { respondingStages[event.javaClass]!! } ?: initiatingStages
+            runContext = RunningContext(context = contextToProgress)
+            return process(event)
+        }
+
+        val bufferedEvents = mutableMapOf<Int, Pair<Any?, Any?>>()
+
+        enum class MatchResult {
+            PASS,
+            FAIL,
+            WAIT_FOR_MORE
+        }
+        private fun matchArgs(state: StateMachineEvent, event: Any? = null, from: Any? = null) : MatchResult {
+            when (state) {
+                is StateMachineEvent.WaitFor -> {
+                    val isNotSameClass = event?.javaClass != state.event
+                    val isNotFromRightSender = state.from != from
+
+                    if (isNotSameClass || isNotFromRightSender) return MatchResult.FAIL
+                }
+                is StateMachineEvent.WaitAll -> {
+                    var matched = false
+                    var failed = false
+                    state.list.forEachIndexed { index, item ->
+                        if (bufferedEvents.containsKey(index)) return@forEachIndexed
+
+                        if (matchArgs(item, event, from) == MatchResult.PASS) {
+                            bufferedEvents[index] = Pair(event, from)
+                            matched = true
+                        } else {
+                            failed = true
+                        }
+                    }
+
+                    if (!matched) {
+                        return MatchResult.FAIL
+                    }
+                    if (failed) { //If we didnt match anything do nothing; if we reach here we have made a match, but failed the whole comparison
+                        return MatchResult.WAIT_FOR_MORE
                     }
                 }
             }
+            return MatchResult.PASS
+        }
+
+        data class MultipleEvents(val events: List<Pair<Any?, Any?>>)
+
+        fun process(event: Any? = null, from: Any? = null) : StateMachineEvent {
+            when (matchArgs(runContext.state, event, from)) {
+                MatchResult.WAIT_FOR_MORE -> return StateMachineEvent.Yield
+                MatchResult.FAIL -> return StateMachineEvent.Cancel()
+                else -> {
+                    //Why is kotlin complaining about no else wtf. .-.
+                }
+            }
+
+            val eventToProcess = runContext.state.let {
+                if (it is StateMachineEvent.WaitAll) {
+                    val orderedEvents = it.list.mapIndexed { index, item ->
+                        bufferedEvents[index] ?: throw IllegalStateException("Arguments matched, but nothing buffered for index: ${index};")
+                    }
+
+                    MultipleEvents(orderedEvents)
+                } else {
+                    event
+                }
+            }
+
+            val stage = runContext.context.processingStages[runContext.stage]
+            val resultingEvent = stage.invoke(eventToProcess)
+            when (resultingEvent) {
+                is StateMachineEvent.Cancel -> return resultingEvent
+                is StateMachineEvent.RevertTo -> {
+                    runContext.stage = resultingEvent.step
+                    return resultingEvent
+                }
+                else -> {
+                    runContext.state = resultingEvent
+                }
+            }
+            runContext.stage++
+            bufferedEvents.clear()
+
+            return resultingEvent
         }
 
 

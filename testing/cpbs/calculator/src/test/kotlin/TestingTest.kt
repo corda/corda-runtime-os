@@ -1,5 +1,4 @@
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource
-import akka.dispatch.ExecutorServiceFactory
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
@@ -14,8 +13,6 @@ import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport
 import java.security.SecureRandom
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
 @EnableRuleMigrationSupport
@@ -57,7 +54,7 @@ class TestingTest {
 
     class ResponderProcess(val event: String, val future: CompletableFuture<String>) {
         val t = thread {
-            EventFlow().apply {
+            EventFlow(null).apply {
                 process(null, event)
                 Thread.sleep(3500)
                 process(null, event)
@@ -66,39 +63,41 @@ class TestingTest {
         }
     }
 
-    class EventFlow : PersistentStateMachine.Context() {
-
-        var msg : String? = null
+    class EventFlow(val testEnvSpawnResponder: ((String)->String)?) : PersistentStateMachine.Context() {
+        var selectedAsset : String? = null
+        object AssetAvailable
 
         init {
             start {
                 val uuid = UUID.randomUUID().toString()
+                val sessionId = testEnvSpawnResponder!!.invoke(uuid)
+                StateMachineEvent.WaitFor(String::class.java, sessionId)
+            }.then { assetTypeID: String ->
 
-
-                val res = CompletableFuture<String>()
-                ResponderProcess(uuid, res)
-                res
-            }.then { externalMsg: String ->
-                msg = externalMsg
-                println(msg)
-
-                val res = CompletableFuture<Int>()
-                thread {
-                    res.complete(SecureRandom.getInstanceStrong().nextInt())
+                if (!SecureRandom.getInstanceStrong().nextBoolean()) {
+                    println("Our external system is unable to respond for asset type ID: { $assetTypeID } right now;")
+                    return@then StateMachineEvent.Cancel(AssetAvailable::class.java) //Wait for signal from another actor to retry this stage
                 }
-                res
+
+                val totallyNotRandomNotFictivePrice = SecureRandom.getInstanceStrong().nextInt(42)
+
+                if (totallyNotRandomNotFictivePrice < 4) {
+                    println("This asset price sucks! Going back to find something more suitable.")
+                    return@then StateMachineEvent.RevertTo(0)
+                }
+
+                selectedAsset = assetTypeID
+                println(selectedAsset)
+
+                StateMachineEvent.ProceedNow(totallyNotRandomNotFictivePrice)
             }.finally { rng : Int ->
                 println("Rng: $rng")
-                Pair(msg, rng)
+                Pair(selectedAsset, rng)
             }
 
             onEvent(String::class.java) { uuid : String ->
-                val res = CompletableFuture<String>()
-                thread {
-                    Thread.sleep(2000)
-                    res.complete("${uuid}=>${UUID.randomUUID()}")
-                }
-                res
+                Thread.sleep(2000)
+                StateMachineEvent.ProceedNow("${uuid}=>${UUID.randomUUID()}")
             }.finally { computed: String ->
                 "Result: $computed"
             }
@@ -107,14 +106,33 @@ class TestingTest {
 
     @Test
     fun `execution context test`() {
-        val flow = EventFlow()
 
-        flow.process(null)
-        Thread.sleep(3500)
-        flow.process(null)
-        Thread.sleep(3500)
-        flow.process(null)
-        println(flow.computedResult)
+        val responderResult = CompletableFuture<String>()
+        fun spawnResponder(uuid: String): String {
+            thread {
+                Thread.sleep(3500)
+
+                EventFlow(null).let { flowStateMachine ->
+                    val res : PersistentStateMachine.Context.StateMachineEvent.ProceedNow = uncheckedCast(flowStateMachine.start(uuid))
+                    val finish: PersistentStateMachine.Context.StateMachineEvent.Finish = uncheckedCast(flowStateMachine.process(res.eventForNextStep))
+                    responderResult.complete(uncheckedCast(finish.result))
+                }
+            }
+            val sessionID = "${UUID.randomUUID()}"
+            return sessionID
+        }
+
+        val flow = EventFlow(::spawnResponder)
+
+        val waitFor : PersistentStateMachine.Context.StateMachineEvent.WaitFor = uncheckedCast(flow.start())
+        var res = flow.process(responderResult.get(), waitFor.from)
+        while (res !is PersistentStateMachine.Context.StateMachineEvent.ProceedNow) {
+            //Wont work for revert to, but can't be bothered to mock it in a test
+            res = flow.process(responderResult.get(), waitFor.from)
+        }
+
+        val finishResult : PersistentStateMachine.Context.StateMachineEvent.Finish = uncheckedCast(flow.process(res.eventForNextStep))
+        println(finishResult)
     }
 
 /*    @Test
