@@ -472,51 +472,6 @@ class Environment {
     }
 }
 
-class AnotherExamplePersistence(val pId: String) : AbstractPersistentActor() {
-
-    sealed class Commands {
-        data class ChangeTo(val msg: String) : Commands()
-    }
-
-    sealed class Events {
-        data class UpdateMessage(var newMsg: String) : Events()
-    }
-
-    data class State(var msg: String)
-
-    var state = State("Hello")
-
-    override fun createReceive(): Receive {
-        return receiveBuilder()
-            .match(Commands.ChangeTo::class.java) { cmd ->
-                persist(Events.UpdateMessage(cmd.msg)) {
-                    state = State("{ ${state.msg} } -> { ${it.newMsg} }")
-                    println("State is ${state}")
-                    context.system.eventStream.publish(it)
-                    saveSnapshot(state.copy())
-                }
-            }.build()
-    }
-
-    override fun persistenceId(): String {
-        return pId
-    }
-
-    override fun createReceiveRecover(): Receive {
-        return receiveBuilder()
-            .match(Events.UpdateMessage::class.java) {
-                state = State("{ ${state.msg} } -> { ${it.newMsg} }")
-                println("State is ${state}")
-            }
-            .match(SnapshotOffer::class.java) {
-                state = uncheckedCast(it.snapshot())
-                println("State is ${state}")
-            }
-            .build()
-    }
-
-}
-
 sealed class ExamplePersistentBehaviorCommands {
     data class ChangeTo(@JsonProperty("msg") val msg: String) : ExamplePersistentBehaviorCommands()
 }

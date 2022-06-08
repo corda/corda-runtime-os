@@ -1,11 +1,7 @@
-import akka.actor.ActorRef
-import akka.actor.Props
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource
-import akka.actor.typed.ActorSystem
 import akka.persistence.testkit.javadsl.EventSourcedBehaviorTestKit
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
-import net.corda.testing.akka.AnotherExamplePersistence
 import net.corda.testing.akka.Environment
 import net.corda.testing.akka.ExamplePersistentBehavior
 import net.corda.testing.akka.ExamplePersistentBehaviorCommands
