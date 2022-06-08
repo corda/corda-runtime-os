@@ -1,7 +1,14 @@
-import java.nio.file.Files
-import java.util.jar.JarFile
-
 description("OSGi Framework Bootstrap")
+
+configurations {
+    testBundles {
+        attributes { attrs ->
+            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        }
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -17,54 +24,19 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+
+    testBundles project(':testing:apps:test-app')
 }
 
-private static boolean isBundle(JarFile jarFile) {
-    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION) != null
+def copyBundles = tasks.register('copyBundles', Copy) {
+    into layout.buildDirectory.dir('resources/test/bundles')
+    from configurations.testBundles
 }
 
-private static boolean isJar(final File file) {
-    return file.name.endsWith(".jar")
-}
-
-private addBundle(
-        final File source,
-        final File target,
-        final Set<String> applicationBundleSet) {
-    Files.deleteIfExists(target.toPath())
-    Files.copy(source.toPath(), target.toPath())
-    applicationBundleSet.add("bundles/${source.name}")
-    logger.info "OSGI Bundle $source.name included as resource."
-}
-
-private addBundles(
-        final File[] files,
-        final File bundlesDir,
-        final Set<String> applicationBundleSet) {
-    if (!bundlesDir.exists()) {
-        bundlesDir.mkdirs()
-    }
-    files.each { file ->
-        if (isJar(file)) {
-            final def jarFile = new JarFile(file)
-            if (isBundle(jarFile)) {
-                addBundle(file, new File(bundlesDir, file.name), applicationBundleSet)
-            }
-        }
-    }
-}
-
-test {
-    dependsOn(':testing:apps:test-app:appJar')
-    final def appTesterProject = project(":testing:apps:test-app")
+tasks.named('test', Test) {
+    dependsOn copyBundles
     doFirst {
-        final File source = new File(appTesterProject.buildDir, "libs")
-        final File target = new File(buildDir, "resources/test/bundles")
-        if (!target.exists()) {
-            target.mkdirs()
-        }
-        final Set<String> applicationBundleSet = new TreeSet<>()
-        addBundles(source.listFiles(), target, applicationBundleSet)
+        def applicationBundleSet = configurations.testBundles.files.collect { "bundles/${it.name}" } as Set<String>
         final applicationBundlesFile = new File(project.buildDir, "resources/test/application_bundles")
         applicationBundlesFile.withWriter { writer ->
             applicationBundleSet.each { line ->
