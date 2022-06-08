@@ -65,7 +65,9 @@ class CPKTests {
 
         workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
         processedWorkflowCPKPath = testDir.resolve(workflowCPKPath.fileName)
-        workflowCPK = CpkReader.readCpk(Files.newInputStream(workflowCPKPath), processedWorkflowCPKPath, workflowCPKPath.toString())
+        workflowCPK = Files.newInputStream(workflowCPKPath).use {
+            CpkReader.readCpk(it, processedWorkflowCPKPath, workflowCPKPath.toString())
+        }
         cordappJarPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cordapp")))
         nonJarFile = Files.createFile(testDir.resolve("someFile.bin"))
         workflowCPKLibraries = System.getProperty("net.corda.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
@@ -421,7 +423,7 @@ class CPKTests {
                 jarSignatureVerificationEnabledByDefault())
         }
         assertThrows<PackagingException> {
-            CpkReader.readCpk(Files.newInputStream(nonJarFile), processedWorkflowCPKPath, nonJarFile.toString())
+            Files.newInputStream(nonJarFile).use { CpkReader.readCpk(it, processedWorkflowCPKPath, nonJarFile.toString()) }
                 .also(Cpk::close)
         }
     }

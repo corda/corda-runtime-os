@@ -32,7 +32,7 @@ class ZipTweakerTest {
     @Test
     @Suppress("ComplexMethod")
     fun `Ensure a jar with removed signature can be read`() {
-        CpkReader.readCpk(workflowCPKPath.openStream(), testDir).use { cpk ->
+        workflowCPKPath.openStream().use { CpkReader.readCpk(it, testDir) }.use { cpk ->
             val algo = "SHA-256"
             val originalEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
                 generateSequence { zipInputStream.nextEntry }.map {
