@@ -23,12 +23,12 @@ interface MemberInfo {
     val name: MemberX500Name
 
     /**
-     * Member's identity key.
+     * Member's session initiation key.
      */
-    val owningKey: PublicKey
+    val sessionInitiationKey: PublicKey
 
-    /** List of current and previous (rotated) identity keys, which member can still use to sign unspent transactions on ledger. */
-    val identityKeys: List<PublicKey>
+    /** List of current and previous (rotated) ledger keys, which member can still use to sign unspent transactions on ledger. */
+    val ledgerKeys: List<PublicKey>
 
     /** Corda platform version */
     val platformVersion: Int

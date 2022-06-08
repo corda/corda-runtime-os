@@ -96,8 +96,8 @@ interface TransactionService : TransactionStorage, TransactionMappingService, Tr
     fun sign(builder: TransactionBuilder, publicKey: PublicKey): SignedTransaction
 
     /**
-     * Constructs an initial partially signed transaction from a [TransactionBuilder] using the default identity key contained in the node.
-     * The legal identity key is used to sign.
+     * Constructs an initial partially signed transaction from a [TransactionBuilder] using the default ledger key contained in the node.
+     * The ledger key is used to sign.
      *
      * @param builder The [TransactionBuilder] to seal with the node's signature. Any existing signatures on the builder will be preserved.
      *
@@ -140,8 +140,8 @@ interface TransactionService : TransactionStorage, TransactionMappingService, Tr
     fun createSignature(signedTransaction: SignedTransaction, publicKey: PublicKey): DigitalSignatureAndMetadata
 
     /**
-     * Creates a signature for an existing (partially) [SignedTransaction] using the default identity signing key of the node. The legal
-     * identity key is used to sign. Additional [DigitalSignatureMetadata], including the platform version used during signing and the
+     * Creates a signature for an existing (partially) [SignedTransaction] using the default identity signing key of the node. The
+     * ledger key is used to sign. Additional [DigitalSignatureMetadata], including the platform version used during signing and the
      * cryptographic signature scheme use, is added to the signature.
      *
      * @param signedTransaction The [SignedTransaction] to which the signature will apply.
@@ -164,7 +164,7 @@ interface TransactionService : TransactionStorage, TransactionMappingService, Tr
     fun createSignature(filteredTransaction: FilteredTransaction, publicKey: PublicKey): DigitalSignatureAndMetadata
 
     /**
-     * Creates a signature for a [FilteredTransaction] using the default identity signing key of the node. The legal identity key is used to
+     * Creates a signature for a [FilteredTransaction] using the default ledger signing key of the node. The ledger key is used to
      * sign. Additional [DigitalSignatureMetadata], including the platform version used during signing and the cryptographic signature scheme use,
      * is added to the signature.
      *

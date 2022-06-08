@@ -7,7 +7,7 @@ import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
 /**
- * Group Manager Service contains list of identities in Membership Management Group along with information about their identity keys,
+ * Group Manager Service contains list of identities in Membership Management Group along with information about their ledger keys,
  * services they provide and host names or IP addresses where they can be connected to. The cache wraps around a list fetched from the
  * manager, and adds easy lookup of the data stored within it. Generally it would be initialised with a specific Group Manager,
  * which it fetches data from and then subscribes to updates of.

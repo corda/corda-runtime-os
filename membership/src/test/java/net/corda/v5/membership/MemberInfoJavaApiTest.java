@@ -55,17 +55,30 @@ public class MemberInfoJavaApiTest {
     }
 
     @Test
-    public void getIdentityKeys() {
+    public void getLedgerKeys() {
         PublicKey testPublicKey = mock(PublicKey.class);
         List<PublicKey> mockList = List.of(testPublicKey);
-        when(memberInfo.getIdentityKeys()).thenReturn(mockList);
+        when(memberInfo.getLedgerKeys()).thenReturn(mockList);
 
-        List<PublicKey> result = memberInfo.getIdentityKeys();
+        List<PublicKey> result = memberInfo.getLedgerKeys();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(mockList);
 
-        verify(memberInfo, times(1)).getIdentityKeys();
+        verify(memberInfo, times(1)).getLedgerKeys();
+    }
+
+    @Test
+    public void getSessionKey() {
+        PublicKey testPublicKey = mock(PublicKey.class);
+        when(memberInfo.getSessionInitiationKey()).thenReturn(testPublicKey);
+
+        PublicKey result = memberInfo.getSessionInitiationKey();
+
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result).isEqualTo(testPublicKey);
+
+        verify(memberInfo, times(1)).getSessionInitiationKey();
     }
 
     @Test

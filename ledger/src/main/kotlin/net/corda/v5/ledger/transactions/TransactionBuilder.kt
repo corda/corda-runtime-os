@@ -100,8 +100,8 @@ interface TransactionBuilder {
     fun sign(publicKey: PublicKey): SignedTransaction
 
     /**
-     * Constructs an initial partially signed transaction from a [TransactionBuilder] using the default identity key contained in the node.
-     * The legal identity key is used to sign.
+     * Constructs an initial partially signed transaction from a [TransactionBuilder] using the default ledger key contained in the node.
+     * The ledger key is used to sign.
      *
      * @return Returns a [SignedTransaction] with the new node signature attached.
      *

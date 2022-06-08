@@ -83,10 +83,10 @@ interface LayeredPropertyMap {
      * the [T] is different from it was called for the first time.
      *
      * Here is an example of what a set will look like
-     * (the [itemKeyPrefix] has to be "corda.identityKeyHashes" or "corda.identityKeyHashes."):
-     *  corda.identityKeyHashes.1 = <hash value of identity key 1>
-     *  corda.identityKeyHashes.2 = <hash value of identity key 2>
-     *  corda.identityKeyHashes.3 = <hash value of identity key 3>
+     * (the [itemKeyPrefix] has to be "corda.ledgerKeyHashes" or "corda.ledgerKeyHashes."):
+     *  corda.ledgerKeyHashes.1 = <hash value of ledger key 1>
+     *  corda.ledgerKeyHashes.2 = <hash value of ledger key 2>
+     *  corda.ledgerKeyHashes.3 = <hash value of ledger key 3>
      */
     fun <T> parseSet(itemKeyPrefix: String, clazz: Class<out T>): Set<T>
 }
