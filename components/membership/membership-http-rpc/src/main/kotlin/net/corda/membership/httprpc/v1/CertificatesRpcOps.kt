@@ -1,7 +1,9 @@
 package net.corda.membership.httprpc.v1
 
+import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
@@ -15,6 +17,33 @@ interface CertificatesRpcOps : RpcOps {
     companion object {
         const val SIGNATURE_SPEC = "signatureSpec"
     }
+
+    /**
+     * PUT endpoint which import a certificate.
+     *
+     * @param tenantId The tenant ID.
+     * @param alias The certificate alias.
+     * @param certificate - The certificate (in PEM format)
+     */
+    @HttpRpcPUT(
+        path = "{tenantId}",
+        description = "Import certificate."
+    )
+    fun importCertificate(
+        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity identity ID.")
+        tenantId: String,
+        @HttpRpcRequestBodyParameter(
+            description = "The certificate alias.",
+            required = true,
+        )
+        alias: String,
+        @HttpRpcRequestBodyParameter(
+            description = "The certificate",
+            required = true,
+        )
+        certificate: HttpFileUpload,
+    )
+
     /**
      * POST endpoint which Generate a certificate signing request (CSR) for a holding identity.
      *

@@ -19,6 +19,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -67,7 +68,9 @@ class RPCProcessorImpl @Activate constructor(
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
     @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = CertificatesClient::class)
+    private val certificatesClient: CertificatesClient,
 ) : RPCProcessor {
 
     private companion object {
@@ -87,6 +90,7 @@ class RPCProcessorImpl @Activate constructor(
         ::membershipGroupReaderProvider,
         ::virtualNodeInfoReadService,
         ::cryptoOpsClient,
+        ::certificatesClient,
     )
 
     override fun start(bootConfig: SmartConfig) {
