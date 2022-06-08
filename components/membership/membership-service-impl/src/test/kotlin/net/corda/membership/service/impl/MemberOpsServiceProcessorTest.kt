@@ -59,20 +59,20 @@ class MemberOpsServiceProcessorTest {
             }
             processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
-        private val clock = TestClock(Instant.ofEpochSecond(100))
+        private val clock = TestClock(Instant.now())
     }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        val now = clock.instant()
+        val now = TestClock(Instant.now()).instant()
         assertThat(actual.responseTimestamp.epochSecond).isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
         assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
     }
 
     @Test
     fun `should successfully submit registration request`() {
-        val requestTimestamp = clock.instant()
+        val requestTimestamp = TestClock(Instant.now()).instant()
         val requestContext = MembershipRpcRequestContext(
             UUID.randomUUID().toString(),
             requestTimestamp

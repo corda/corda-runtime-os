@@ -33,7 +33,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
-    testImplementation project(":libs:utilities")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
