@@ -106,6 +106,11 @@ class Schemas {
         }
     }
 
+    object Certificates {
+        const val CERTIFICATES_RPC_TOPIC = "certificates.rpc.ops"
+        const val CERTIFICATES_RPC_RESPONSE_TOPIC = "certificates.rpc.ops.resp"
+    }
+
     /**
      * P2P topic schema
      */

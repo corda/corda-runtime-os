@@ -13,7 +13,7 @@ object DbSchema {
     const val CONFIG_AUDIT_TABLE = "config_audit"
     const val CONFIG_AUDIT_ID_SEQUENCE = "config_audit_id_seq"
     const val CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1
-    
+
     const val DB_CONNECTION_TABLE = "db_connection"
     const val DB_CONNECTION_AUDIT_TABLE = "db_connection_audit"
     const val DB_CONNECTION_AUDIT_ID_SEQUENCE = "db_connection_audit_id_seq"
@@ -25,6 +25,9 @@ object DbSchema {
     const val VNODE_VAULT_DB_TABLE = "vnode_vault"
     const val VNODE_KEY_DB_TABLE = "vnode_key"
     const val VNODE_CERTIFICATE_DB_TABLE = "vnode_certificate"
+
+    const val CERTIFICATES_SCHEME = "CERTIFICATES"
+    const val CLUSTER_CERTIFICATES_DB_TABLE = "cluster_certificates"
 
     const val DB_MESSAGE_BUS = "DB_MESSAGE_BUS"
 

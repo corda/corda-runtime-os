@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "CertificateRpcRequest",
+  "namespace": "net.corda.data.certificates.rpc.request",
+  "doc": "RPC request regarding certificates.",
+  "fields": [
+    {
+      "name": "tenantId",
+      "doc": "'p2p', 'rpc-api', or holding identity identity ID.",
+      "type": "string"
+    },
+    {
+      "name": "request",
+      "doc": "The request type.",
+      "type": [
+        "ImportCertificateRpcRequest"
+      ]
+    }
+  ]
+}

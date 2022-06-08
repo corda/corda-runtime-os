@@ -2,17 +2,18 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <property name="schema.name" value="CERTIFICATES"/>
 
-    <changeSet author="R3.Corda" id="vnode-vault-creation-v1.0">
+    <changeSet author="R3.Corda" id="certificates-creation-v1.0">
 
-        <createTable tableName="vnode_vault">
-            <column name="holding_identity_id" type="VARCHAR(12)">
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS CERTIFICATES;
+        </sql>
+
+        <createTable tableName="cluster_certificates" schemaName="${schema.name}">
+            <column name="tenant_id" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-        </createTable>
-        <addPrimaryKey columnNames="holding_identity_id" constraintName="vnode_vault_pk" tableName="vnode_vault"/>
-
-        <createTable tableName="vnode_certificate">
             <column name="alias" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -20,6 +21,8 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="alias" constraintName="vnode_certificate_pk" tableName="vnode_certificate"/>
+
+        <addPrimaryKey tableName="cluster_certificates" columnNames="tenant_id, alias" constraintName="certificates_pk"
+                       schemaName="${schema.name}"/>
     </changeSet>
 </databaseChangeLog>

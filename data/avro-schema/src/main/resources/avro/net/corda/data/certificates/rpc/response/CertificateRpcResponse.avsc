@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CertificateRpcResponse",
+  "namespace": "net.corda.data.certificates.rpc.response",
+  "doc": "RPC response regarding certificates.",
+  "fields": [
+    {
+      "name": "response",
+      "doc": "The response payload.",
+      "type": [
+        "CertificateImportedRpcResponse"
+      ]
+    }
+  ]
+}

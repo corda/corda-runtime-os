@@ -8,8 +8,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.io.File
-import kotlin.reflect.KCallable
 import kotlin.reflect.full.companionObject
+import kotlin.reflect.typeOf
 
 class SchemaTests {
     // Setup jackson mapper to support yaml with null values
@@ -40,18 +40,23 @@ class SchemaTests {
 
     // Scan companion objects for constant definitions
     private val memberMap: Map<String, List<String>> by lazy {
-        val schemaCompanions = Schemas::class.nestedClasses
-            .filter { it.simpleName != null && it.companionObject != null }
+        Schemas::class.nestedClasses
+            .filter { it.simpleName != null && !it.isCompanion }
             .associate {
-                it.simpleName!! to it.companionObject!!.members.filter { member -> member.isFinal }
+                it.simpleName!! to (it.companionObject ?: it)
+                    .members
+                    .filter { member ->
+                        member.isFinal &&
+                            member.returnType == typeOf<String>() &&
+                            member.parameters.size == 1
+                    }.map { callable ->
+                        if (it.companionObject == null) {
+                            callable.call()
+                        } else {
+                            callable.call(null)
+                        } as String
+                    }
             }
-        val memberValueMap = schemaCompanions.map { (className: String, members: List<KCallable<*>>) ->
-            className to members.map {
-                it.call(emptyList<Any>()) as String
-            }
-        }
-
-        return@lazy memberValueMap.toMap()
     }
 
     @Test
