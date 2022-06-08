@@ -154,6 +154,14 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     }
 
     @Test
+    fun `GET hello name returns string without optional query param`() {
+
+        val helloResponse = client.call(GET, WebRequest<Any>("health/hello/world"), userName, password)
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals(""""Hello null : world"""", helloResponse.body)
+    }
+
+    @Test
     fun `GET hello2 name returns string greeting name`() {
 
         val fullUrl = "health/hello2/pathString?id=id"

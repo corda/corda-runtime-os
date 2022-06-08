@@ -2,6 +2,7 @@ package net.corda.libs.packaging.internal
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CpkReader
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
@@ -57,8 +58,7 @@ internal object CpiLoader {
                         /** We need to do this as [Cpk.from] closes the stream, while we still need it afterward **/
                         val uncloseableInputStream = UncloseableInputStream(jarInputStream)
                         if(expansionLocation != null) {
-                            val cpk = Cpk.from(
-                                uncloseableInputStream,
+                            val cpk = CpkReader.readCpk(uncloseableInputStream,
                                 expansionLocation,
                                 cpkLocation = cpiLocation.plus("/${entry.name}"),
                                 verifySignature = verifySignature,

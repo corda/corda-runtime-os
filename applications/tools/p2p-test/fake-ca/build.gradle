@@ -15,9 +15,17 @@ dependencies {
     implementation 'net.corda:corda-cipher-suite'
 }
 
-task appJar(type: Jar) {
-    destinationDirectory = file("$buildDir/bin")
-    archiveBaseName = "corda-${project.name}"
+def jar = tasks.named('jar', Jar) {
+    archiveClassifier = 'ignore'
+}
+
+def appJarBaseName = "corda-${project.name}"
+
+def appJar = tasks.register('appJar', Jar) {
+    dependsOn jar
+
+    destinationDirectory = layout.buildDirectory.dir('bin')
+    archiveBaseName = appJarBaseName
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
     manifest {
@@ -27,13 +35,14 @@ task appJar(type: Jar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    with jar
+    with jar.get()
 }
 
 publishing {
     publications {
         maven(MavenPublication) {
             groupId project.group
+            artifactId appJarBaseName
             artifact appJar
         }
     }

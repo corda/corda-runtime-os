@@ -21,6 +21,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -74,6 +75,8 @@ class RPCProcessorImpl @Activate constructor(
     private val hsmConfigurationClient: HSMConfigurationClient,
     @Reference(service = HSMRegistrationClient::class)
     private val hsmRegistrationClient: HSMRegistrationClient,
+    @Reference(service = CertificatesClient::class)
+    private val certificatesClient: CertificatesClient,
 ) : RPCProcessor {
 
     private companion object {
@@ -95,6 +98,7 @@ class RPCProcessorImpl @Activate constructor(
         ::cryptoOpsClient,
         ::hsmConfigurationClient,
         ::hsmRegistrationClient,
+        ::certificatesClient,
     )
 
     override fun start(bootConfig: SmartConfig) {

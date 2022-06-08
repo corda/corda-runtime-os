@@ -15,6 +15,7 @@ dependencies {
     implementation "net.corda:corda-membership"
 
     implementation project(":components:membership:membership-client")
+    implementation project(":components:membership:certificates-client")
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-http-rpc")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
@@ -28,6 +29,7 @@ dependencies {
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 
     testImplementation project(":testing:layered-property-map-testkit")
 }

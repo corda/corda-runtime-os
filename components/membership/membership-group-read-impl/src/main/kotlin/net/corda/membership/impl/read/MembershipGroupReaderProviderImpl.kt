@@ -65,18 +65,18 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val coordinator =
         coordinatorFactory.createCoordinator<MembershipGroupReaderProvider>(lifecycleHandler)
 
-    private var impl: InnerMembershipGroupReaderProvider = InactiveImpl()
+    private var impl: InnerMembershipGroupReaderProvider = InactiveImpl
 
     private fun activate(configs: Map<String, SmartConfig>, reason: String) {
         impl.close()
-        impl = ActiveImpl(subscriptionFactory, layeredPropertyMapFactory, configs)
+        impl = ActiveImpl(configs)
         updateStatus(LifecycleStatus.UP, reason)
     }
 
     private fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
         val current = impl
-        impl = InactiveImpl()
+        impl = InactiveImpl
         current.close()
     }
 
@@ -113,9 +113,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader
     }
 
-    private class ActiveImpl(
-        subscriptionFactory: SubscriptionFactory,
-        layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    private inner class ActiveImpl(
         configs: Map<String, SmartConfig>
     ) : InnerMembershipGroupReaderProvider {
         // Group data cache instance shared across services.
@@ -147,7 +145,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    private class InactiveImpl : InnerMembershipGroupReaderProvider {
+    private object InactiveImpl : InnerMembershipGroupReaderProvider {
         override fun getGroupReader(
             holdingIdentity: HoldingIdentity
         ): MembershipGroupReader {
