@@ -7,14 +7,14 @@ import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.SESSION_ID_1
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
-import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.InitiatedFlow
+import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -48,8 +48,8 @@ class FlowFactoryImplTest {
         whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
             .thenReturn(ExampleFlow2::class.java)
 
-        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as FlowLogicAndArgs.InitiatedFlow
-        assertThat(result.session).isSameAs(flowSession)
+        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as InitiatedFlow
+        assertTrue(result.logic is ExampleFlow2)
     }
 
     @Test
@@ -68,18 +68,18 @@ class FlowFactoryImplTest {
         whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
             .thenReturn(ExampleFlow1::class.java)
 
-        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as FlowLogicAndArgs.RPCStartedFlow
+        val result = flowFactory.createFlow(flowStartEvent, sandboxGroupContext) as RPCStartedFlow
         assertTrue(result.logic is ExampleFlow1)
-        assertEquals(startArgs, result.requestBody)
+        assertEquals("result", result.invoke())
     }
 
-    class ExampleFlow1 : RPCStartableFlow<Unit> {
+    class ExampleFlow1 : RPCStartableFlow {
         override fun call(requestBody: String) : String {
             return "result"
         }
     }
 
-    class ExampleFlow2 : ResponderFlow<Unit> {
+    class ExampleFlow2 : ResponderFlow {
         override fun call(session: FlowSession) {
         }
     }

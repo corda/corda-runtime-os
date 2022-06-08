@@ -266,7 +266,7 @@ class FlowCheckpointImplTest {
 
         flowCheckpoint.suspendedOn = "A"
         flowCheckpoint.waitingFor = waitingFor
-        val flowStackItem = flowCheckpoint.flowStack.push(flow)
+        val flowStackItem = flowCheckpoint.flowStack.push(flow::class.java)
         flowCheckpoint.putSessionState(session1)
         flowCheckpoint.serializedFiber = fiber
 

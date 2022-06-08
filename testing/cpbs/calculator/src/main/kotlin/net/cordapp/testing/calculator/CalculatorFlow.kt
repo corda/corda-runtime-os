@@ -8,7 +8,7 @@ import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-class CalculatorFlow : RPCStartableFlow<Unit> {
+class CalculatorFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -37,9 +37,5 @@ class CalculatorFlow : RPCStartableFlow<Unit> {
         log.info("Calculation completed.")
 
         return resultMessage
-    }
-
-    override fun call() {
-        println("Surprise")
     }
 }

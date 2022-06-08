@@ -6,6 +6,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
@@ -17,7 +18,7 @@ import java.util.concurrent.Future
 @Component(service = [FlowFiberFactory::class, FakeFlowFiberFactory::class])
 class FakeFlowFiberFactory : FlowFiberFactory {
 
-    val fiber = FakeFiber(UUID(0, 0), FlowLogicAndArgs.RPCStartedFlow(FakeFlow(), ""))
+    val fiber = FakeFiber(UUID(0, 0), RPCStartedFlow(FakeFlow(), ""))
 
     override fun createFlowFiber(flowId: String, logic: FlowLogicAndArgs): FlowFiber {
         return fiber

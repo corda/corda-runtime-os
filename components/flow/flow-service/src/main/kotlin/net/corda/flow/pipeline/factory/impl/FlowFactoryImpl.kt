@@ -4,6 +4,8 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.InitiatedFlow
+import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -22,7 +24,7 @@ class FlowFactoryImpl  @Activate constructor(
 ): FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        val flowClass: Class<RPCStartableFlow<*>> =
+        val flowClass: Class<RPCStartableFlow> =
             uncheckedCast(
                 sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                     startFlowEvent.startContext.flowClassName,
@@ -32,11 +34,11 @@ class FlowFactoryImpl  @Activate constructor(
         val logic = flowClass.getDeclaredConstructor().newInstance()
         val args = startFlowEvent.flowStartArgs
 
-        return FlowLogicAndArgs.RPCStartedFlow(logic, args)
+        return RPCStartedFlow(logic, args)
     }
 
     override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        val flowClass: Class<ResponderFlow<*>> = uncheckedCast(
+        val flowClass: Class<ResponderFlow> = uncheckedCast(
             sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                 flowStartContext.flowClassName,
                 ResponderFlow::class.java
@@ -50,7 +52,7 @@ class FlowFactoryImpl  @Activate constructor(
         )
         val logic = flowClass.getDeclaredConstructor().newInstance()
 
-        return FlowLogicAndArgs.InitiatedFlow(logic, flowSession)
+        return InitiatedFlow(logic, flowSession)
     }
 }
 

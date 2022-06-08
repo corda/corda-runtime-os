@@ -8,7 +8,7 @@ import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-class StartTicTacToeGameFlow : RPCStartableFlow<Unit> {
+class StartTicTacToeGameFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()

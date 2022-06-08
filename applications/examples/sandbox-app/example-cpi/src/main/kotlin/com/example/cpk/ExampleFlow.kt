@@ -11,7 +11,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
-class ExampleFlow : RPCStartableFlow<Unit> {
+class ExampleFlow : RPCStartableFlow {
     private val logger = loggerFor<ExampleFlow>()
 
     @CordaInject

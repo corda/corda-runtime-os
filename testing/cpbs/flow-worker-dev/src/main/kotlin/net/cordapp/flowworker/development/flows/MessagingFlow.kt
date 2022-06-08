@@ -18,7 +18,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
 @InitiatingFlow(protocol = "flowDevProtocol")
-class MessagingFlow : RPCStartableFlow<Unit> {
+class MessagingFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -66,7 +66,7 @@ class MessagingFlow : RPCStartableFlow<Unit> {
 }
 
 @InitiatedBy(protocol = "flowDevProtocol")
-class MessagingInitiatedFlow : ResponderFlow<String> {
+class MessagingInitiatedFlow : ResponderFlow {
 
     private companion object {
         val log = contextLogger()
@@ -157,7 +157,7 @@ class InitiatingSubFlow : Flow<Unit> {
 }
 
 @InitiatedBy(protocol = "subFlowDevProtocol")
-class InitiatingSubFlowInitiatedFlow : ResponderFlow<String> {
+class InitiatingSubFlowInitiatedFlow : ResponderFlow {
 
     private companion object {
         val log = contextLogger()

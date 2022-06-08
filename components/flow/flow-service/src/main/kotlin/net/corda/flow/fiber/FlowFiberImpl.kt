@@ -59,16 +59,7 @@ class FlowFiberImpl(
         val outcomeOfFlow = try {
             suspend(FlowIORequest.InitialCheckpoint)
 
-            when (flowLogic) {
-                is FlowLogicAndArgs.RPCStartedFlow -> {
-                    val output = flowLogic.logic.call(flowLogic.requestBody)
-                    FlowIORequest.FlowFinished(output)
-                }
-                is FlowLogicAndArgs.InitiatedFlow -> {
-                    flowLogic.logic.call(flowLogic.session)
-                    FlowIORequest.FlowFinished(null)
-                }
-            }
+            FlowIORequest.FlowFinished(flowLogic.invoke())
         } catch (e: Exception) {
             log.error("Flow failed", e)
             FlowIORequest.FlowFailed(e)

@@ -15,7 +15,8 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.InitiatedFlow
+import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
@@ -51,8 +52,8 @@ class FlowRunnerImplTest {
     private val fiberResult = mock<Future<FlowIORequest<*>>>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessionIds = mutableListOf() }
-    private var rpcFlow = mock<RPCStartableFlow<Unit>>()
-    private var initiatedFlow = mock<ResponderFlow<Unit>>()
+    private var rpcFlow = mock<RPCStartableFlow>()
+    private var initiatedFlow = mock<ResponderFlow>()
 
     private val flowRunner = FlowRunnerImpl(flowFiberFactory, flowFactory, flowFiberExecutionContextFactory)
 
@@ -84,7 +85,7 @@ class FlowRunnerImplTest {
             startContext = flowStartContext
             flowStartArgs = startArgs
         }
-        val logicAndArgs = FlowLogicAndArgs.RPCStartedFlow(rpcFlow, startArgs)
+        val logicAndArgs = RPCStartedFlow(rpcFlow, startArgs)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)
@@ -115,7 +116,7 @@ class FlowRunnerImplTest {
         val sessionEvent = SessionEvent().apply {
             payload = sessionInit
         }
-        val logicAndArgs = FlowLogicAndArgs.InitiatedFlow(initiatedFlow, mock())
+        val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)

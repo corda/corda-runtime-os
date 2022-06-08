@@ -17,7 +17,7 @@ import net.cordapp.flowworker.development.messages.TestFlowOutput
  * is used as a basic flow worker smoke test.
  */
 @Suppress("unused")
-class TestFlow : RPCStartableFlow<String> {
+class TestFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
