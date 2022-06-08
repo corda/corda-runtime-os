@@ -458,11 +458,11 @@ pluginManager.withPlugin('maven-publish') {
         publications {
             maven(MavenPublication) {
                 artifactId appJarBaseName
+                artifact appJar
 
                 afterEvaluate { proj ->
                     groupId proj.group
                     version proj.version
-                    artifacts = [ appJar ]
                 }
             }
         }
