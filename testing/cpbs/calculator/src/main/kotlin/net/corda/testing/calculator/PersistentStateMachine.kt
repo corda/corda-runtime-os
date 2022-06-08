@@ -9,6 +9,7 @@ import akka.persistence.typed.javadsl.CommandHandler
 import akka.persistence.typed.javadsl.Effect
 import akka.persistence.typed.javadsl.EventHandler
 import akka.persistence.typed.javadsl.EventSourcedBehavior
+import jdk.jfr.Event
 import net.corda.v5.base.util.uncheckedCast
 import java.lang.IllegalStateException
 import java.util.*
@@ -18,6 +19,7 @@ import java.util.concurrent.CompletableFuture
 interface AuthenticatedCommunicator {
     fun send(recipient: String, command: FlowManager.Commands)
     fun myIdentity() : String
+    fun authenticate(command: FlowManager.Commands) : AuthenticatedMessage
 }
 
 sealed class WireMessage
@@ -246,26 +248,79 @@ class FlowManager(
 
 }
 
+typealias ProcessID = String
+
+sealed class ChannelIdentity {
+    data class ExternalTarget(val identifier: String, val externalProcessURL: String /*Actor URL, tcp, responding flow*/) : ChannelIdentity()
+    data class InternalTarget(val processURL: String) : ChannelIdentity()
+}
+
 class PersistentStateMachine(
-    persistenceID : PersistenceId,
+    val persistenceID : PersistenceId,
     val flowManagerRef: ActorRef<WireMessage>,
+    val executionContext : Context,
+    val comms: AuthenticatedCommunicator,
     val context: ActorContext<SessionMessage>,
-    val executionContext : Context
 )
     : EventSourcedBehavior<SessionMessage, PersistentStateMachine.Events, PersistentStateMachine.State> (persistenceID)
 {
 
     companion object {
-        fun create(id: String, ref: ActorRef<WireMessage>, ctx : Context) : Behavior<SessionMessage> {
-            return Behaviors.setup {
-                PersistentStateMachine(PersistenceId.ofUniqueId(id), ref, it, ctx)
+        fun create(id: String, ref: ActorRef<WireMessage>, comms: AuthenticatedCommunicator, ctx : Context) : Behavior<SessionMessage> {
+            return Behaviors.setup { actorContext ->
+                PersistentStateMachine(PersistenceId.ofUniqueId(id), ref, ctx, comms, actorContext )
             }
         }
     }
 
-    sealed class Events {
-        object Start : Events()
-        data class Msg(val msg: SessionMessage) : Events()
+    fun injectContext() {
+        executionContext.apply {
+            /* .then { msg -> //this is step 3
+
+                    waitFor -> MessageFromAnotherParty
+                }.fork("id1") { partyMsg ->
+                    start().then().finally() : ComputedResultInFork1 <- joining will give result from finally
+                }.fork("id2") { partyMsg ->
+
+                }.then { partyMsg->
+
+                }.join("id1").then { computedResult: ComputedResultInFork1 ->
+
+                }
+             */
+            fork = {
+                //tell flow dashboard to spawn identical process, and give it a copy of executionContext at current step.
+                "${UUID.randomUUID()}"
+            }
+            join = { pid ->
+                //
+                Context.StateMachineEvent.WaitFor(Unit::class.java, null)
+            }
+
+            establishPersistentSession = {
+                if (it is ChannelIdentity.ExternalTarget) {
+                    flowManagerRef.tell(
+                        comms.authenticate(
+                            FlowManager.Commands.SessionCommands.InitiateSession(
+                                it.identifier,
+                                persistenceID.id(),
+                                it.externalProcessURL,
+                            )
+                        )
+                    )
+                    Context.StateMachineEvent.WaitFor(
+                        SessionMessage.SystemMessages.SessionEstablished::class.java,
+                        flowManagerRef
+                    )
+                } else {
+                    //Implement actor sessions later if they are needed; Presumably they are so that 2 phase commit can be hidden
+                    Context.StateMachineEvent.WaitFor(
+                        SessionMessage.SystemMessages.SessionEstablished::class.java,
+                        flowManagerRef
+                    )
+                }
+            }
+        }
     }
 
     abstract class Context {
@@ -274,10 +329,13 @@ class PersistentStateMachine(
             val id: String = UUID.randomUUID().toString()
         )
 
+        lateinit var establishPersistentSession : (ChannelIdentity) -> StateMachineEvent.WaitFor
+        lateinit var fork: () -> ProcessID
+        lateinit var join: (ProcessID) -> StateMachineEvent.WaitFor
+
+
         val initiatingStages = ComputationPathContext()
         val respondingStages = mutableMapOf<Class<*>, ComputationPathContext>()
-
-        var computedResult: Any? = null
 
         var currentContextBuilder: ComputationPathContext? = null
 
@@ -290,7 +348,7 @@ class PersistentStateMachine(
             data class RevertTo(val step: Int, val eventToPass: Any? = null) : StateMachineEvent()
             data class Cancel(val signal: Class<*>? = null) : StateMachineEvent() //Event does not match this execution context
 
-            internal object Yield: StateMachineEvent() //Event is good but need more
+            internal object EventBuffered: StateMachineEvent() //Event is good but need more
             object Fresh: StateMachineEvent() //Just started
         }
 
@@ -331,7 +389,6 @@ class PersistentStateMachine(
              currentContextBuilder!!.apply {
                  processingStages.add { event ->
                      val result = flowContext.operation(uncheckedCast(event))
-                     flowContext.computedResult = result
                      StateMachineEvent.Finish(result)
                  }
 
@@ -344,10 +401,10 @@ class PersistentStateMachine(
 
         lateinit var runContext : RunningContext
 
-        fun start(event: Any? = null) : StateMachineEvent {
+        fun start(id: String, event: Any? = null) : StateMachineEvent {
             val contextToProgress = event?.let { respondingStages[event.javaClass]!! } ?: initiatingStages
             runContext = RunningContext(context = contextToProgress)
-            return process(event)
+            return process(id, event)
         }
 
         val bufferedEvents = mutableMapOf<Int, Pair<Any?, Any?>>()
@@ -392,9 +449,9 @@ class PersistentStateMachine(
 
         data class MultipleEvents(val events: List<Pair<Any?, Any?>>)
 
-        fun process(event: Any? = null, from: Any? = null) : StateMachineEvent {
+        fun process(id: String, event: Any? = null, from: Any? = null) : StateMachineEvent {
             when (matchArgs(runContext.state, event, from)) {
-                MatchResult.WAIT_FOR_MORE -> return StateMachineEvent.Yield
+                MatchResult.WAIT_FOR_MORE -> return StateMachineEvent.EventBuffered
                 MatchResult.FAIL -> return StateMachineEvent.Cancel()
                 else -> {
                     //Why is kotlin complaining about no else wtf. .-.
@@ -430,45 +487,62 @@ class PersistentStateMachine(
 
             return resultingEvent
         }
-
-
     }
 
-    override fun eventHandler(): EventHandler<State, Events> {
-        return newEventHandlerBuilder()
-            .forAnyState()
-        /*    .onEvent(Events.ContextUpdate::class.java) { state, event ->
-                state.context.process(this).stageFuture.thenApply {
-                    context.self.tell(Commands.ContextFutureResolved(it))
-                }
-                state
-            } */
-            .build()
-    }
-
-
-    fun establishSession(recipient: String, responderProcess: String) {
-        flowManagerRef.tell(FlowManager.Commands.SessionCommands.InitiateSession(recipient, persistenceId().id(), responderProcess))
-    }
-
-    data class State(val context: Context)
+    data class State(val eventLog: Context)
 
     override fun emptyState(): State {
         return State(executionContext)
     }
 
+
+    sealed class Events {
+        data class EventProcessed(val eventValue: Any?, val eventSender: Any?, val result: Context.StateMachineEvent, val id: String) : Events()
+        //data class EventProcessed(val result: Context.StateMachineEvent, val eventId: String) : Events(eventId)
+    }
+
     sealed class Commands : SessionMessage() {
-        data class ContextFutureResolved(val res: Any) : Commands()
+        data class DeliverMessage(val event: Any, val from: Any? = null) : Commands()
+        data class DeliverSignal(val signal: Any) : Commands()
+        data class DeliverForkPayload(val payload: Any) : Commands()
+        data class Start(val event: Any? = null) : Commands()
+    }
+
+    override fun eventHandler(): EventHandler<State, Events> {
+        return newEventHandlerBuilder()
+            .forAnyState()
+           /* .onEvent(Events.Start::class.java) { state, event ->
+
+            } */
+            .build()
     }
 
     override fun commandHandler(): CommandHandler<SessionMessage, Events, State> {
         return newCommandHandlerBuilder()
             .forAnyState()
-           /* .onCommand(Commands.ContextFutureResolved::class.java) { msg ->
-                Effect().persist(Events.ContextUpdate())
-            } */
-            .onCommand(SessionMessage::class.java) { msg ->
-                Effect().none()
-            }.build()
+            .onCommand(Commands.Start::class.java) { cmd ->
+                val id = UUID.randomUUID().toString()
+                val result = executionContext.start(id, cmd.event)
+                val event = Events.EventProcessed(cmd.event, null, result, id)
+
+                Effect()
+                    .persist(event)
+            }.onCommand(Commands.DeliverMessage::class.java) { cmd ->
+                val id = UUID.randomUUID().toString()
+                val result = executionContext.start(id, cmd.event)
+                val event = Events.EventProcessed(cmd.event, cmd.from, result, id)
+
+                Effect()
+                    .persist(event)
+            }.onCommand(Commands.DeliverSignal::class.java) { cmd ->
+                val id = UUID.randomUUID().toString()
+                val result = executionContext.start(id, cmd.signal)
+                val event = Events.EventProcessed(cmd.signal, null, result, id)
+
+                Effect()
+                    .persist(event)
+
+            }
+            .build()
     }
 }
