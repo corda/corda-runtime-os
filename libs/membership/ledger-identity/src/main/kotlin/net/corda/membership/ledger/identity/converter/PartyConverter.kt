@@ -21,7 +21,7 @@ class PartyConverter @Activate constructor(
 ) : CustomPropertyConverter<Party> {
     companion object {
         private const val NAME = "name"
-        private const val SESSION_KEY = "sessionInitiationKey"
+        private const val SESSION_KEY = "session.key"
     }
 
     override val type: Class<Party>

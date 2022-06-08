@@ -25,7 +25,7 @@
   },
   "mgmInfo": {
     "corda.party.name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
-    "corda.party.sessionInitiationKey": "-----BEGIN PUBLIC KEY-----\n{truncated for readability}\n-----END PUBLIC KEY-----",
+    "corda.session.key": "-----BEGIN PUBLIC KEY-----\n{truncated for readability}\n-----END PUBLIC KEY-----",
     "corda.session.certificate.0":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
     "corda.session.certificate.1":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
     "corda.session.certificate.2":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
