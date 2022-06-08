@@ -5,6 +5,7 @@ import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
@@ -15,6 +16,7 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
@@ -64,6 +66,8 @@ class CertificatesRpcOpsImpl @Activate constructor(
 ) : CertificatesRpcOps, PluggableRPCOps<CertificatesRpcOps>, Lifecycle {
 
     private companion object {
+        private val logger = contextLogger()
+
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
             ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
@@ -141,13 +145,18 @@ class CertificatesRpcOpsImpl @Activate constructor(
                 .getInstance("X.509")
                 .generateCertificate(rawCertificate.byteInputStream())
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.warn("Invalid certificate", e)
             throw InvalidInputDataException(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
         }
 
-        certificatesClient.importCertificate(tenantId, alias, rawCertificate)
+        try {
+            certificatesClient.importCertificate(tenantId, alias, rawCertificate)
+        } catch (e: Exception) {
+            logger.warn("Could not import certificate", e)
+            throw InternalServerException("Could not import certificate: ${e.message}")
+        }
     }
 
     override val targetInterface = CertificatesRpcOps::class.java
