@@ -39,7 +39,7 @@ spec:
             {{- end }}
       initContainers:
         - name: create-trust-store
-          image: bitnami/kafka:3.1.0-debian-10-r89
+          image: {{ .Values.kafka.clientImage }}
           command:
             - /bin/bash
             - -c
