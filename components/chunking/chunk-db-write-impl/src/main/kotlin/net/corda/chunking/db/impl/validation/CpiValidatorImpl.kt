@@ -35,31 +35,32 @@ class CpiValidatorImpl(
         validationFunctions.checkSignature(fileInfo)
 
         publisher.update(requestId, "Validating CPI")
-        val cpi: Cpi = validationFunctions.checkCpi(fileInfo)
+        validationFunctions.checkCpi(fileInfo).use { cpi: Cpi ->
 
-        publisher.update(requestId, "Checking group id in CPI")
-        validationFunctions.getGroupId(cpi)
+            publisher.update(requestId, "Checking group id in CPI")
+            validationFunctions.getGroupId(cpi)
 
-        if (!fileInfo.forceUpload) {
-            publisher.update(requestId, "Validating group id against DB")
-            validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+            if (!fileInfo.forceUpload) {
+                publisher.update(requestId, "Validating group id against DB")
+                validationFunctions.checkGroupIdDoesNotExistForThisCpi(persistence, cpi)
+            }
+
+            publisher.update(requestId, "Persisting CPI")
+            validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
+
+            publisher.update(requestId, "Notifying flow workers")
+            val timestamp = Instant.now()
+            val cpiMetadata = CpiMetadata(
+                cpi.metadata.cpiId,
+                fileInfo.checksum,
+                cpi.cpks.map { it.metadata },
+                cpi.metadata.groupPolicy,
+                // TODO the below version should be populated from the DB as per https://r3-cev.atlassian.net/browse/CORE-4890
+                version = 0,
+                timestamp
+            )
+            cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
         }
-
-        publisher.update(requestId, "Persisting CPI")
-        validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
-
-        publisher.update(requestId, "Notifying flow workers")
-        val timestamp = Instant.now()
-        val cpiMetadata = CpiMetadata(
-            cpi.metadata.cpiId,
-            fileInfo.checksum,
-            cpi.cpks.map { it.metadata },
-            cpi.metadata.groupPolicy,
-            // TODO the below version should be populated from the DB as per https://r3-cev.atlassian.net/browse/CORE-4890
-            version = 0,
-            timestamp
-        )
-        cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         return fileInfo.checksum
     }
