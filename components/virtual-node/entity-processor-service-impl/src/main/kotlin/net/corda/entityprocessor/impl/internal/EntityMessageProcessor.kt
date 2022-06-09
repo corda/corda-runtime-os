@@ -1,9 +1,11 @@
 package net.corda.entityprocessor.impl.internal
 
+import java.nio.ByteBuffer
+import javax.persistence.EntityManagerFactory
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.FlowKey
-import net.corda.data.persistence.DeleteEntityById
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntity
+import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -27,8 +29,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
-import java.nio.ByteBuffer
-import javax.persistence.EntityManagerFactory
 
 
 fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
@@ -67,7 +67,7 @@ class EntityMessageProcessor(
 
     override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
-        val responses = mutableListOf<Record<FlowKey, EntityResponse>>()
+        val responses = mutableListOf<Record<String, FlowEvent>>()
         events.forEach {
             val response = try {
                 processRequest(it.key, it.value!!)
@@ -75,7 +75,8 @@ class EntityMessageProcessor(
                 // If we're catching at this point, it's an unrecoverable error.
                 failureResponse(it.key, e, Error.FATAL)
             }
-            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, it.value!!.flowKey, response))
+            val flowId = it.value!!.flowKey.id
+            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, response)))
         }
 
         return responses

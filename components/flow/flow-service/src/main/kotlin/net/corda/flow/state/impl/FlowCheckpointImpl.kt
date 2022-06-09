@@ -1,5 +1,9 @@
 package net.corda.flow.state.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import kotlin.math.min
+import kotlin.math.pow
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStackItem
@@ -8,21 +12,17 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.db.Query
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
-import net.corda.flow.state.FlowStack
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
-import java.lang.Exception
-import java.nio.ByteBuffer
-import java.time.Instant
-import kotlin.math.min
-import kotlin.math.pow
 
 class FlowCheckpointImpl(
     private var nullableCheckpoint: Checkpoint?,
@@ -55,6 +55,7 @@ class FlowCheckpointImpl(
     private var nullableWaitingFor: WaitingFor? = null
     private var nullableSessionsMap: MutableMap<String, SessionState>? = null
     private var nullableFlowStack: FlowStackImpl? = null
+    private var nullableQuery: Query? = null
 
     private val checkpoint: Checkpoint
         get() = checkNotNull(nullableCheckpoint)
@@ -68,7 +69,7 @@ class FlowCheckpointImpl(
         get() = checkpoint.flowId
 
     override val flowKey: FlowKey
-        get() = checkpoint.flowStartContext.statusKey
+        get() = FlowKey(flowId, holdingIdentity)
 
     override val flowStartContext: FlowStartContext
         get() = checkpoint.flowStartContext
@@ -100,6 +101,12 @@ class FlowCheckpointImpl(
 
     override val sessions: List<SessionState>
         get() = sessionMap.values.toList()
+
+    override var query: Query?
+        get() = nullableQuery
+        set(value) {
+            nullableQuery = value
+        }
 
     override val doesExist: Boolean
         get() = nullableCheckpoint != null
@@ -193,6 +200,7 @@ class FlowCheckpointImpl(
             return null
         }
 
+        checkpoint.query = nullableQuery
         checkpoint.flowState.suspendedOn = nullableSuspendOn
         checkpoint.flowState.waitingFor = nullableWaitingFor
         checkpoint.sessions = sessionMap.values.toList()
@@ -204,8 +212,12 @@ class FlowCheckpointImpl(
         validateAndAddStateFields()
         validateAndAddSessions()
         validateAndAddFlowStack()
+        validateAndAddFlowQuery()
     }
 
+    private fun validateAndAddFlowQuery() {
+        nullableQuery = checkpoint.query
+    }
     private fun validateAndAddStateFields() {
         nullableSuspendOn = checkpoint.flowState.suspendedOn
         nullableWaitingFor = checkpoint.flowState.waitingFor

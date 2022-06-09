@@ -12,6 +12,7 @@ import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -161,10 +162,9 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private fun MutableSandboxGroupContext.putAMQPSerializationEnvironment(cpiMetadata: CpiMetadata) {
         val factory = SerializerFactoryBuilder.build(sandboxGroup)
-        for (customSerializer in internalCustomSerializers) {
-            log.info("Registering internal serializer {}", customSerializer.javaClass.name)
-            factory.register(customSerializer, factory)
-        }
+
+        registerCustomSerializers(factory)
+
         // Build CorDapp serializers
         // Current implementation has unique serializers per CPI
         val cordappCustomSerializers = buildCorDappSerializers(

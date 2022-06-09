@@ -14,7 +14,7 @@
     sun.security.x509
 
 # Enable debugging.
-# -runjdb: 1044
+#-runjdb: 5005
 
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\

@@ -1,15 +1,15 @@
 package net.corda.flow.state
 
+import java.nio.ByteBuffer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.db.Query
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.serialization.checkpoint.NonSerializable
-import java.lang.Exception
-import java.nio.ByteBuffer
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
@@ -33,6 +33,8 @@ interface FlowCheckpoint : NonSerializable {
     var serializedFiber: ByteBuffer
 
     val sessions: List<SessionState>
+
+    var query: Query?
 
     val doesExist: Boolean
 

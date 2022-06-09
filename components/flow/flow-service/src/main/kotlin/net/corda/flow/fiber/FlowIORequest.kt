@@ -1,11 +1,11 @@
 package net.corda.flow.fiber
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.flow.FlowStackItem
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
-import java.nio.ByteBuffer
-import java.time.Instant
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
@@ -93,4 +93,13 @@ interface FlowIORequest<out R> {
      * @property output the IO request that caused the suspension.
      */
     data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) : FlowIORequest<Unit>
+
+    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) : FlowIORequest<ByteBuffer?>
+
+    data class Merge(val requestId: String, val obj: ByteArray) : FlowIORequest<ByteBuffer?>
+
+    data class Persist(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
+
+    data class Delete(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
+
 }
