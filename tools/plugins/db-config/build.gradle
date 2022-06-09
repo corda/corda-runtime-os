@@ -43,7 +43,13 @@ def plugin = tasks.register('plugin', Jar) {
 
     dependsOn configurations.runtimeClasspath
     from {
-        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+        configurations.runtimeClasspath.collect { zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 }
 
