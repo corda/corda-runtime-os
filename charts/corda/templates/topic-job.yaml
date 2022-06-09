@@ -13,7 +13,7 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: run-topic-script
-          image: {{ .Values.kafka.clientImage }}
+          image: {{ include "corda.kafkaClientImage" . }}
           resources:
             requests:
               cpu: 2000m
@@ -39,7 +39,7 @@ spec:
             {{- end }}
       initContainers:
         - name: create-trust-store
-          image: {{ .Values.kafka.clientImage }}
+          image: {{ include "corda.kafkaClientImage" . }}
           command:
             - /bin/bash
             - -c

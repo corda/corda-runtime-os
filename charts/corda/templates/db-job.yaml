@@ -31,7 +31,7 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
         - name: apply-db-schemas
-          image: {{ .Values.db.clientImage }}
+          image: {{ include "corda.dbClientImage" . }}
           command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -60,7 +60,7 @@ spec:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
         - name: apply-initial-rbac-db-config
-          image: {{ .Values.db.clientImage }}
+          image: {{ include "corda.dbClientImage" . }}
           command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -89,7 +89,7 @@ spec:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
         - name: apply-initial-crypto-db-config
-          image: {{ .Values.db.clientImage }}
+          image: {{ include "corda.dbClientImage" . }}
           command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -118,7 +118,7 @@ spec:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
         - name: apply-initial-rpc-admin
-          image: {{ .Values.db.clientImage }}
+          image: {{ include "corda.dbClientImage" . }}
           command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/rbac-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -130,7 +130,7 @@ spec:
                   name: {{ include "corda.clusterDbSecretName" . }}
                   key: password
         - name: create-db-users-and-grant
-          image: {{ .Values.db.clientImage }}
+          image: {{ include "corda.dbClientImage" . }}
           command: [ '/bin/sh', '-e', '-c' ]
           args:
             - |
