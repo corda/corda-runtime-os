@@ -77,13 +77,14 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
             ),
             "p2pParameters" to mapOf(
                 "sessionTrustRoots" to listOf(
-                    "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
-                    "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate0.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate1.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate2.pem").readText(),
                 ),
                 "tlsTrustRoots" to listOf(
-                    "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
-                    "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
-                    "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate3.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate4.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate5.pem").readText(),
                 ),
                 "sessionPki" to "Standard",
                 "tlsPki" to "Standard",
@@ -105,24 +106,18 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
         listOf(
             mapOf(
                 "name" to "C=GB, L=London, O=Alice",
-                "keyAlias" to "alice-alias",
-                "rotatedKeyAlias-1" to "alice-historic-alias-1",
                 "memberStatus" to "ACTIVE",
                 "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
                 "endpointProtocol-1" to 1,
             ),
             mapOf(
                 "name" to "C=GB, L=London, O=Bob",
-                "keyAlias" to "bob-alias",
-                "rotatedKeyAlias-1" to "bob-historic-alias-1",
-                "rotatedKeyAlias-2" to "bob-historic-alias-2",
                 "memberStatus" to "ACTIVE",
                 "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
                 "endpointProtocol-1" to 1,
             ),
             mapOf(
                 "name" to "C=GB, L=London, O=Charlie",
-                "keyAlias" to "charlie-alias",
                 "memberStatus" to "SUSPENDED",
                 "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
                 "endpointProtocol-1" to 1,
@@ -165,8 +160,6 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 members.add(
                     mapOf(
                         "name" to name!!,
-                        "keyAlias" to name,
-                        "rotatedKeyAlias-1" to name.toString() + "_old",
                         "memberStatus" to MEMBER_STATUS_ACTIVE,
                         "endpointUrl-1" to content["endpoint"]!!,
                         "endpointProtocol-1" to content["endpointProtocol"]!!
@@ -182,8 +175,6 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 members.add(
                     mapOf(
                         "name" to x500,
-                        "keyAlias" to x500,
-                        "rotatedKeyAlias-1" to x500 + "_old",
                         "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
                         "endpointUrl-1" to (
                             member["endpoint"] ?: content["endpoint"]
@@ -215,8 +206,6 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
             members.add(
                 mapOf(
                     "name" to name,
-                    "keyAlias" to name,
-                    "rotatedKeyAlias-1" to name + "_old",
                     "memberStatus" to MEMBER_STATUS_ACTIVE,
                     "endpointUrl-1" to endpoint!!,
                     "endpointProtocol-1" to endpointProtocol!!
