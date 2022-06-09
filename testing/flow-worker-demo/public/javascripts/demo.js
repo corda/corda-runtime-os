@@ -97,7 +97,7 @@ function getStartRequest() {
     return {
         shortId: getNodeShortId(),
         requestId: Date.now().toString(),
-        flowClass: "net.corda.demo.connectfour.StartConnectFourGameFlow",
+        flowClass: "net.cordapp.demo.connectfour.StartConnectFourGameFlow",
         startMessage: '{ "opponentX500Name":"' + $("#opponent").val() + '", "startingSlotPlayed":"' + $("#startingColumn").val() + '"}'
     }
 }

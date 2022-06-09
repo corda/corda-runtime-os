@@ -1,11 +1,9 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS
+import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
+import net.corda.flow.pipeline.sessions.FlowProtocolStore
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
@@ -27,7 +25,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<CpkIdentifier>()
-    private var initiatingToInitiatedFlowsMap: Map<Pair<String, String>, String> = mapOf()
+    private var initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>> = mapOf()
 
     fun putCpk(cpk: CpkIdentifier) {
         availableCpk.add(cpk)
@@ -37,8 +35,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         availableCpk.clear()
     }
 
-    fun initiatingToInitiatedFlowPair(cpiId: CpiIdentifier, initiatingFlowClassName: String, initiatedFlowClassName: String) {
-        initiatingToInitiatedFlowsMap = mapOf((cpiId.name to initiatingFlowClassName) to initiatedFlowClassName)
+    fun initiatingToInitiatedFlowPair(protocolName: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        initiatingToInitiatedFlowsMap = mapOf(protocolName to Pair(initiatingFlowClassName, initiatedFlowClassName))
     }
 
     override fun getOrCreate(
@@ -81,18 +79,27 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
     class FakeSandboxGroupContext(
         override val virtualNodeContext: VirtualNodeContext,
         override val sandboxGroup: SandboxGroup,
-        initiatingToInitiatedFlowsMap: Map<Pair<String, String>, String>
-    ) : SandboxGroupContext {
-
-        private val cache = mutableMapOf(
-            DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
-            CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
-            AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
-            INITIATING_TO_INITIATED_FLOWS to initiatingToInitiatedFlowsMap
+        private val initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>>
+    ) :SandboxGroupContext{
+        private val cache = mapOf(
+            FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR to FakeSandboxDependencyInjector(),
+            FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER to FakeCheckpointSerializer(),
+            FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE to FakeSerializationService(),
+            FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE to makeProtocolStore()
         )
 
         override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
             return cache[key]?.let(valueType::cast)
+        }
+
+        private fun makeProtocolStore() : FakeFlowProtocolStore {
+            val initiatingMap = initiatingToInitiatedFlowsMap.map {
+                Pair(it.value.first, Pair(it.key, listOf(1)))
+            }.toMap()
+            val responderMap = initiatingToInitiatedFlowsMap.map {
+                Pair(it.key, it.value.second)
+            }.toMap()
+            return FakeFlowProtocolStore(initiatingMap, responderMap)
         }
     }
 
@@ -151,6 +158,19 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
         override fun getClass(className: String, serialisedClassTag: String): Class<*> {
             TODO("Not yet implemented")
+        }
+    }
+
+    class FakeFlowProtocolStore(
+        private val protocolForInitiator: Map<String, Pair<String, List<Int>>>,
+        private val responderForProtocol: Map<String, String>
+    ) : FlowProtocolStore {
+        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): String {
+            return responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
+        }
+
+        override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
+            return protocolForInitiator[initiator] ?: throw IllegalArgumentException("No protocol configured for $initiator")
         }
     }
 }

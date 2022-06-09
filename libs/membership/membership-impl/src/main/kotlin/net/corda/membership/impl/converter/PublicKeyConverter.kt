@@ -22,8 +22,7 @@ class PublicKeyConverter @Activate constructor(
         get() = PublicKey::class.java
 
     /**
-     * We either try to select the single element in case the structure is like 'corda.identityKeys.1'
-     * or fall back to PARTY_OWNING_KEY if it has more than 1 element.
+     * Select the single element in case the structure is like 'corda.ledgerKeys.1'
      */
     override fun convert(context: ConversionContext): PublicKey? =
         context.value()?.let { keyEncodingService.decodePublicKey(it) }

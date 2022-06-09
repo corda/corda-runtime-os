@@ -65,12 +65,13 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session init event starts an initiated flow and sends a session ack`() {
         given {
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
         }
 

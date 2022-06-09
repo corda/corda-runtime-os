@@ -14,9 +14,11 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
@@ -153,7 +155,7 @@ class CordaVNode @Activate constructor(
             // Checkpoint: We have created a sandbox for this CPI.
             val sandboxContext = vnode.getOrCreateSandbox(holdingIdentity)
             try {
-                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map {it.cpkId})
+                logger.info("Created sandbox: {}", sandboxContext.sandboxGroup.metadata.values.map(CpkMetadata::cpkId))
                 dumpHeap("created")
 
                 val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
@@ -169,7 +171,7 @@ class CordaVNode @Activate constructor(
                     }
                 }
             } finally {
-                (sandboxContext as AutoCloseable).close()
+                destroy(sandboxContext)
             }
 
             // Checkpoint: We have destroyed the sandbox.
@@ -179,6 +181,26 @@ class CordaVNode @Activate constructor(
             vnode.unloadVirtualNode(vnodeInfo)
         }
         logger.info("Unloaded CPI")
+    }
+
+    private fun destroy(context: SandboxGroupContext) {
+        if (context is AutoCloseable) {
+            logger.info("Destroying sandbox context (nicely)")
+            context.close()
+        } else {
+            // By hook, or by crook...
+            context::class.java.declaredFields.singleOrNull { field ->
+                field.type.isAssignableFrom(SandboxGroupContext::class.java)
+            }?.let { field ->
+                field.isAccessible = true
+                field.get(context)
+            }?.let { ctx ->
+                ctx as? AutoCloseable
+            }?.also { ctx ->
+                logger.info("Destroying sandbox context (nastily)")
+                ctx.close()
+            } ?: throw IllegalStateException("Sandbox $context not destroyed")
+        }
     }
 
     @Deactivate

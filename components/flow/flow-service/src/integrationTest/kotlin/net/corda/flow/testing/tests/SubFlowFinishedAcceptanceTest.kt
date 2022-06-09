@@ -68,8 +68,12 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             sandboxCpk(CPK1)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
 
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
+
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
+
+            initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
         }
     }
 
@@ -320,6 +324,28 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
                 sessionAckEvents(SESSION_ID_2)
+            }
+        }
+    }
+
+    @Test
+    fun `Receiving a session data event instead of a close resumes the flow with an error`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
             }
         }
     }
@@ -607,14 +633,75 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given an initiated top level flow with an initiated session when it finishes and calls SubFlowFinished a session close event is sent`() {
+    fun `Given two sessions receiving a session data event for one session and a session close event for the other resumes the flow with an error`() {
         given {
-            membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
+                sessionAckEvents(SESSION_ID_2)
+            }
+        }
+    }
+
+    @Test
+    fun `Given two sessions receiving session data events for both sessions resumes the flow with an error`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
+            }
+        }
+    }
+
+    @Test
+    fun `Given an initiated top level flow with an initiated session when it finishes and calls SubFlowFinished a session close event is sent`() {
+        given {
+            membershipGroupFor(BOB_HOLDING_IDENTITY)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME)
+        }
+
+        `when` {
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.SubFlowFinished(FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
         }
 
@@ -630,9 +717,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given an initiated top level flow with a closed session when it finishes and calls SubFlowFinished a wakeup event is scheduled and does not send a session close event`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
         }
 
@@ -653,9 +740,9 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `Given an initiated top level flow with an errored session when it finishes and calls SubFlowFinished a wakeup event is scheduled and no session close event is sent`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            initiatingToInitiatedFlow(CPI1, FLOW_NAME, FLOW_NAME_2)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 

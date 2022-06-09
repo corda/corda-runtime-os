@@ -1,12 +1,12 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.*
+import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
-import net.corda.messaging.api.exception.CordaAPIConfigException
+import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
@@ -49,7 +49,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     private fun resolve(messageBusConfig: SmartConfig, rolePath: String, configParams: SmartConfig): Properties {
         val busType = messageBusConfig.getString(BUS_TYPE)
         if (busType != EXPECTED_BUS_TYPE) {
-            throw CordaAPIConfigException(
+            throw CordaMessageAPIConfigException(
                 "Tried to configure the Kafka bus but received $busType configuration instead"
             )
         }
@@ -117,7 +117,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val bundle = FrameworkUtil.getBundle(this::class.java)
         val url = bundle?.getResource(resource)
             ?: this::class.java.classLoader.getResource(resource)
-            ?: throw CordaAPIConfigException(
+            ?: throw CordaMessageAPIConfigException(
                 "Failed to get resource $resource from Kafka bus implementation bundle"
             )
         val config = ConfigFactory.parseURL(url)

@@ -1,6 +1,6 @@
 package net.corda.membership.impl.client
 
-import java.time.Instant
+import net.corda.utilities.time.UTCClock
 import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -24,7 +24,7 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
-import net.corda.messaging.api.config.getConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -50,9 +50,12 @@ class MemberOpsClientImpl @Activate constructor(
 ) : MemberOpsClient {
     companion object {
         private val logger: Logger = contextLogger()
+        const val ERROR_MSG = "Service is in an incorrect state for calling."
 
         const val CLIENT_ID = "membership.ops.rpc"
         const val GROUP_NAME = "membership.ops.rpc"
+
+        private val clock = UTCClock()
     }
 
     private interface InnerMemberOpsClient : AutoCloseable {
@@ -61,7 +64,7 @@ class MemberOpsClientImpl @Activate constructor(
         fun checkRegistrationProgress(holdingIdentityId: String): RegistrationRequestProgressDto
     }
 
-    private var impl: InnerMemberOpsClient = InactiveImpl()
+    private var impl: InnerMemberOpsClient = InactiveImpl
 
     // for watching the config changes
     private var configHandle: AutoCloseable? = null
@@ -152,15 +155,11 @@ class MemberOpsClientImpl @Activate constructor(
     private fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
         val current = impl
-        impl = InactiveImpl()
+        impl = InactiveImpl
         current.close()
     }
 
-    private class InactiveImpl : InnerMemberOpsClient {
-        companion object {
-            const val ERROR_MSG = "Service is in an incorrect state for calling."
-        }
-
+    private object InactiveImpl : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
             throw IllegalStateException(ERROR_MSG)
 
@@ -171,14 +170,14 @@ class MemberOpsClientImpl @Activate constructor(
 
     }
 
-    private class ActiveImpl(
+    private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
-                    Instant.now()
+                    clock.instant()
                 ),
                 RegistrationRequest(
                     memberRegistrationRequest.holdingIdentityId,
@@ -193,7 +192,7 @@ class MemberOpsClientImpl @Activate constructor(
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
-                    Instant.now()
+                    clock.instant()
                 ),
                 RegistrationStatusRequest(holdingIdentityId)
             )

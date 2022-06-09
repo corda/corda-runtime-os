@@ -33,6 +33,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.lifecycle.domino.logic.DominoTileState
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -76,8 +77,8 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
@@ -87,6 +88,13 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import java.net.HttpURLConnection.HTTP_BAD_REQUEST
+import java.net.http.HttpClient as JavaHttpClient
+import java.net.http.HttpRequest as JavaHttpRequest
+import java.net.http.HttpResponse.BodyHandlers
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 class GatewayIntegrationTest : TestBase() {
     companion object {
@@ -104,7 +112,7 @@ class GatewayIntegrationTest : TestBase() {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
 
-        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
@@ -164,6 +172,50 @@ class GatewayIntegrationTest : TestBase() {
 
     @Nested
     inner class ClientToGatewayTests {
+        @Test
+        @Timeout(30)
+        fun `gateway response to invalid request`() {
+            val port = getOpenPort()
+            val serverAddress = URI.create("https://www.alice.net:$port")
+
+            val tmf = TrustManagerFactory
+                .getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            tmf.init(truststoreKeyStore)
+
+            val myTm = tmf.trustManagers.filterIsInstance(X509TrustManager::class.java).first()
+
+            val sslContext = SSLContext.getInstance("TLSv1.3")
+            sslContext.init(null, arrayOf(myTm), null)
+
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serverAddress.host,
+                        serverAddress.port,
+                        aliceSslConfig
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+            ).use {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
+                it.startAndWaitForStarted()
+                val httpClient = JavaHttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .build()
+
+                val request = JavaHttpRequest.newBuilder()
+                    .uri(serverAddress)
+                    .build()
+
+                val response = httpClient.send(request, BodyHandlers.discarding())
+                assertThat(response.statusCode()).isEqualTo(HTTP_BAD_REQUEST)
+            }
+        }
+
         @Test
         @Timeout(30)
         fun `http client to gateway`() {
@@ -755,7 +807,7 @@ class GatewayIntegrationTest : TestBase() {
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
-                    .createMemoryAuthority(RSA_SHA256_TEMPLATE.toFactoryDefinitions())
+                    .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
                     testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
@@ -839,7 +891,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // new trust store...
                 val secondCertificatesAuthority = CertificateAuthorityFactory
-                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
+                    .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, secondCertificatesAuthority.toGatewayTrustStore()),
                 )
@@ -860,7 +912,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // new trust store and pair...
                 val thirdCertificatesAuthority = CertificateAuthorityFactory
-                    .createMemoryAuthority(ECDSA_SECP256R1_SHA256_TEMPLATE.toFactoryDefinitions())
+                    .createMemoryAuthority(ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions())
                 server.publish(
                     Record(GATEWAY_TLS_TRUSTSTORES, GROUP_ID, thirdCertificatesAuthority.toGatewayTrustStore()),
                 )

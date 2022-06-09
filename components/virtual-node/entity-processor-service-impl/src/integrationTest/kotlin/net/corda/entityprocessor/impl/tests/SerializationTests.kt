@@ -5,6 +5,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
+import net.corda.entityprocessor.impl.tests.helpers.Resources
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDogInstance
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.testing.sandboxes.SandboxSetup

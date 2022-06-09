@@ -59,8 +59,8 @@ class FlowProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::flowService,
-        ::dummyLinkManagerService,
         ::flowMapperService,
+        ::dummyLinkManagerService,
         ::flowP2PFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,

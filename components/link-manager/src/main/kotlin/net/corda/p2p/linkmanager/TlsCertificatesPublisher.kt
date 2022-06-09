@@ -25,7 +25,7 @@ internal class TlsCertificatesPublisher(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile, HostingMapListener {
 
     companion object {
@@ -40,7 +40,7 @@ internal class TlsCertificatesPublisher(
         publisherFactory,
         lifecycleCoordinatorFactory,
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
-        configuration,
+        messagingConfiguration,
     )
 
     private fun HoldingIdentity.asString(): String {
@@ -104,7 +104,7 @@ internal class TlsCertificatesPublisher(
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CURRENT_DATA_READER_GROUP_NAME, GATEWAY_TLS_CERTIFICATES),
         Processor(),
-        configuration,
+        messagingConfiguration,
     )
     private val subscriptionDominoTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,

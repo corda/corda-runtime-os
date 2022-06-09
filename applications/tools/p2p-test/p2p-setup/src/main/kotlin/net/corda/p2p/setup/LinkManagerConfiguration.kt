@@ -16,6 +16,7 @@ import java.util.concurrent.Callable
     aliases = ["config-lm", "config-linkmanager", "config-link_manager"],
     description = ["Configure the P2P Link Manager"],
     showAtFileInUsageHelp = true,
+    mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,
 )

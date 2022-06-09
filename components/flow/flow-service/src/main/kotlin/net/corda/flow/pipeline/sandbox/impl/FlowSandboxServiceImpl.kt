@@ -2,30 +2,27 @@
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.CHECKPOINT_SERIALIZER
-import net.corda.flow.pipeline.sandbox.FlowSandboxContextTypes.DEPENDENCY_INJECTOR
+import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
+import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -63,6 +60,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
+    @Reference(service = FlowProtocolStoreFactory::class)
+    private val flowProtocolStoreFactory: FlowProtocolStoreFactory,
     private val componentContext: ComponentContext
 ) : FlowSandboxService {
 
@@ -81,7 +80,7 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val internalCustomSerializers
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
-    override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
+    override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
 
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
         checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}}'" }
@@ -102,9 +101,11 @@ class FlowSandboxServiceImpl @Activate constructor(
             throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.cpiId}'")
         }
 
-        return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
+        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext, cpiMetadata)
         }
+
+        return FlowSandboxGroupContextImpl.fromContext(sandboxGroupContext)
     }
 
     private fun initialiseSandbox(
@@ -116,7 +117,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
         val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
-        sandboxGroupContext.putObjectByKey(DEPENDENCY_INJECTOR, injectorService)
+        sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR, injectorService)
 
         // Identify singleton services outside the sandbox that may need checkpointing.
         // These services should not overlap with the injectable services, which should
@@ -131,11 +132,14 @@ class FlowSandboxServiceImpl @Activate constructor(
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
             builder.build()
         }
-        sandboxGroupContext.putObjectByKey(CHECKPOINT_SERIALIZER, checkpointSerializer)
+        sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER, checkpointSerializer)
 
         sandboxGroupContext.putAMQPSerializationEnvironment(cpiMetadata)
 
-        sandboxGroupContext.putInitiatingToInitiatedFlowsMap(cpiMetadata)
+        sandboxGroupContext.putObjectByKey(
+            FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE,
+            flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata)
+        )
 
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
@@ -158,6 +162,9 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private fun MutableSandboxGroupContext.putAMQPSerializationEnvironment(cpiMetadata: CpiMetadata) {
         val factory = SerializerFactoryBuilder.build(sandboxGroup)
+
+        registerCustomSerializers(factory)
+
         for (customSerializer in internalCustomSerializers) {
             log.info("Registering internal serializer {}", customSerializer.javaClass.name)
             factory.register(customSerializer, factory)
@@ -183,7 +190,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             AMQP_P2P_CONTEXT.withSandboxGroup(sandboxGroup)
         )
 
-        putObjectByKey(FlowSandboxContextTypes.AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
+        putObjectByKey(FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
     }
 
     private fun buildCorDappSerializers(
@@ -196,24 +203,5 @@ class FlowSandboxServiceImpl @Activate constructor(
                 SerializationCustomSerializer::class.java
             ).getConstructor().newInstance()
         }
-    }
-
-    private fun MutableSandboxGroupContext.putInitiatingToInitiatedFlowsMap(cpiMetadata: CpiMetadata) {
-        val initiatingToInitiatedFlows = mutableMapOf<Pair<String, String>, String>()
-
-        // Current implementation is each flow to initiated flow pair is unique per CPI
-        for (cpkMetadata in cpiMetadata.cpksMetadata) {
-            for (flow in cpkMetadata.cordappManifest.flows) {
-                val flowClass = sandboxGroup.loadClassFromMainBundles(flow, Flow::class.java)
-                if (flowClass.isAnnotationPresent(InitiatedBy::class.java)) {
-                    val initiatingFlow = flowClass.getAnnotation(InitiatedBy::class.java).value.java.name
-                    val key = cpiMetadata.cpiId.name to initiatingFlow
-                    check(key !in initiatingToInitiatedFlows) { "Flow $flow has been found in multiple CPKs but should be unique" }
-                    initiatingToInitiatedFlows[key] = flow
-                }
-            }
-        }
-
-        putObjectByKey(FlowSandboxContextTypes.INITIATING_TO_INITIATED_FLOWS, initiatingToInitiatedFlows)
     }
 }

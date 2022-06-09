@@ -24,10 +24,13 @@ dependencies {
     implementation project(":components:crypto:crypto-db-persistence-model")
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":components:db:db-connection-manager")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:crypto:crypto-impl")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:virtual-node:virtual-node-info")
+
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
@@ -35,6 +38,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:registry")
     testImplementation project(":testing:test-utilities")
 

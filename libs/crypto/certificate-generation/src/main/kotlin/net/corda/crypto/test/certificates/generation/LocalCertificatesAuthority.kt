@@ -1,11 +1,13 @@
 package net.corda.crypto.test.certificates.generation
 
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
-import net.corda.v5.cipher.suite.schemes.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
 import org.bouncycastle.asn1.x509.Extension
+import org.bouncycastle.asn1.x509.Extensions
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
@@ -17,6 +19,8 @@ import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcECContentSignerBuilder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.math.BigInteger
 import java.security.InvalidParameterException
 import java.security.KeyPair
@@ -24,6 +28,7 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PublicKey
 import java.security.cert.Certificate
+import java.security.cert.CertificateFactory
 import java.time.Duration
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
@@ -66,7 +71,7 @@ internal open class LocalCertificatesAuthority(
         )
         val signatureAlgorithm = when (keysFactoryDefinitions.algorithm) {
             Algorithm.RSA -> RSA_SHA256_SIGNATURE_SPEC
-            Algorithm.EC -> ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC
+            Algorithm.EC -> ECDSA_SHA256_SIGNATURE_SPEC
         }.signatureName
         val signer = JcaContentSignerBuilder(signatureAlgorithm).build(caKeyPair.private)
 
@@ -112,7 +117,7 @@ internal open class LocalCertificatesAuthority(
         val signatureAlgorithm =
             when (privateKeyAndCertificate.privateKey.algorithm) {
                 "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
-                "EC" -> ECDSA_SECP256R1_SHA256_SIGNATURE_SPEC.signatureName
+                "EC" -> ECDSA_SHA256_SIGNATURE_SPEC.signatureName
                 else -> throw InvalidParameterException("Unsupported Algorithm")
             }
         val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)
@@ -137,5 +142,60 @@ internal open class LocalCertificatesAuthority(
         return JcaX509CertificateConverter().getCertificate(
             certificateBuilder.build(sigGen)
         )
+    }
+
+    @Suppress("ThrowsCount", "ComplexMethod")
+    fun signCsr(csr: PKCS10CertificationRequest): Certificate {
+        val verifier = JcaContentVerifierProviderBuilder()
+            .setProvider(BouncyCastleProvider())
+            .build(csr.subjectPublicKeyInfo)
+        if (!csr.isSignatureValid(verifier)) {
+            throw CertificateAuthorityException("Invalid signature")
+        }
+
+        val signatureAlgorithm =
+            when (privateKeyAndCertificate.privateKey.algorithm) {
+                "RSA" -> RSA_SHA256_SIGNATURE_SPEC.signatureName
+                "EC" -> ECDSA_SHA256_SIGNATURE_SPEC.signatureName
+                else -> throw InvalidParameterException("Unsupported Algorithm")
+            }
+        val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)
+        val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId)
+        val parameter = PrivateKeyFactory.createKey(privateKeyAndCertificate.privateKey.encoded)
+
+        val startDate = Date(now)
+        val certSerialNumber = nextSerialNumber()
+        val endDate = Date(now + validDuration.toMillis())
+
+        val certificateGenerator = JcaX509v3CertificateBuilder(
+            X500Name("C=UK CN=r3.com"),
+            certSerialNumber,
+            startDate,
+            endDate,
+            csr.subject,
+            privateKeyAndCertificate.certificate.publicKey
+        )
+
+        csr.getAttributes(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest)?.flatMap {
+            it.attrValues
+        }?.filterNotNull()
+            ?.mapNotNull {
+                Extensions.getInstance(it)
+            }?.forEach { extensions ->
+                extensions.extensionOIDs.forEach { oid ->
+                    val extension = extensions.getExtension(oid)
+                    certificateGenerator.addExtension(extension)
+                }
+            }
+
+        val sigGen = when (privateKeyAndCertificate.privateKey.algorithm) {
+            "RSA" -> BcRSAContentSignerBuilder(sigAlgId, digAlgId)
+            "EC" -> BcECContentSignerBuilder(sigAlgId, digAlgId)
+            else -> throw InvalidParameterException("Unsupported Algorithm")
+        }.build(parameter)
+
+        val holder = certificateGenerator.build(sigGen)
+        val structure = holder.toASN1Structure()
+        return CertificateFactory.getInstance("X.509").generateCertificate(structure.encoded.inputStream())
     }
 }

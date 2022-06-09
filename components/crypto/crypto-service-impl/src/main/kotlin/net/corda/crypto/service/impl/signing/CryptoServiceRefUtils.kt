@@ -13,7 +13,8 @@ import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningAliasSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 
 fun CryptoServiceRef.getSupportedSchemes(): List<String> =
@@ -21,12 +22,12 @@ fun CryptoServiceRef.getSupportedSchemes(): List<String> =
 
 fun CryptoServiceRef.generateKeyPair(
     alias: String?,
-    scheme: SignatureScheme,
+    scheme: KeyScheme,
     context: Map<String, String>
 ): GeneratedKey =
     instance.generateKeyPair(
         KeyGenerationSpec(
-            signatureScheme = scheme,
+            keyScheme = scheme,
             alias = alias,
             masterKeyAlias = masterKeyAlias,
             secret = aliasSecret
@@ -40,14 +41,14 @@ fun CryptoServiceRef.generateKeyPair(
 fun CryptoServiceRef.toSaveKeyContext(
     key: GeneratedKey,
     alias: String?,
-    scheme: SignatureScheme,
+    scheme: KeyScheme,
     externalId: String?
 ): SigningKeySaveContext =
     when (key) {
         is GeneratedPublicKey -> SigningPublicKeySaveContext(
             key = key,
             alias = alias,
-            signatureScheme = scheme,
+            keyScheme = scheme,
             category = category,
             associationId = associationId,
             externalId = externalId,
@@ -57,7 +58,7 @@ fun CryptoServiceRef.toSaveKeyContext(
             masterKeyAlias = masterKeyAlias,
             externalId = externalId,
             alias = alias,
-            signatureScheme = scheme,
+            keyScheme = scheme,
             category = category,
             associationId = associationId,
         )
@@ -66,7 +67,8 @@ fun CryptoServiceRef.toSaveKeyContext(
 
 fun CryptoServiceRef.sign(
     record: SigningCachedKey,
-    scheme: SignatureScheme,
+    scheme: KeyScheme,
+    signatureSpec: SignatureSpec,
     data: ByteArray,
     context: Map<String, String>
 ): ByteArray {
@@ -81,7 +83,8 @@ fun CryptoServiceRef.sign(
             keyMaterial = record.keyMaterial!!,
             masterKeyAlias = record.masterKeyAlias,
             encodingVersion = record.encodingVersion!!,
-            signatureScheme = scheme
+            keyScheme = scheme,
+            signatureSpec = signatureSpec
         )
     } else {
         require(!record.hsmAlias.isNullOrBlank()) {
@@ -89,7 +92,8 @@ fun CryptoServiceRef.sign(
         }
         SigningAliasSpec(
             hsmAlias = record.hsmAlias!!,
-            signatureScheme = scheme
+            keyScheme = scheme,
+            signatureSpec = signatureSpec
         )
     }
     return instance.sign(

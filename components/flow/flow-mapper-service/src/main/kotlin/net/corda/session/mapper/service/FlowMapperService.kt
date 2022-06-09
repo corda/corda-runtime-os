@@ -1,11 +1,11 @@
 package net.corda.session.mapper.service
 
-import java.util.concurrent.Executors
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,7 +17,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.config.getConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -29,10 +28,12 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.session.mapper.service.executor.FlowMapperListener
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskState
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
@@ -81,6 +82,7 @@ class FlowMapperService @Activate constructor(
                     )
                 } else {
                     configHandle?.close()
+                    coordinator.updateStatus(LifecycleStatus.DOWN, "Dependency ${coordinator.name} is DOWN")
                 }
             }
             is ConfigChangedEvent -> {
@@ -103,23 +105,31 @@ class FlowMapperService @Activate constructor(
      * Recreate the Flow Mapper service in response to new config [event]
      */
     private fun restartFlowMapperService(event: ConfigChangedEvent) {
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        try {
+            val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
-        scheduledTaskState?.close()
-        stateAndEventSub?.close()
+            scheduledTaskState?.close()
+            stateAndEventSub?.close()
 
-        scheduledTaskState = ScheduledTaskState(
-            Executors.newSingleThreadScheduledExecutor(),
-            publisherFactory.createPublisher(PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"), messagingConfig),
-            mutableMapOf()
-        )
-        stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
-            FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
-            messagingConfig,
-            FlowMapperListener(scheduledTaskState!!)
-        )
-        stateAndEventSub?.start()
+            val newScheduledTaskState = ScheduledTaskState(
+                Executors.newSingleThreadScheduledExecutor(),
+                publisherFactory.createPublisher(PublisherConfig("$CONSUMER_GROUP-cleanup-publisher"), messagingConfig),
+                mutableMapOf()
+            )
+            scheduledTaskState = newScheduledTaskState
+            stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
+                FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
+                messagingConfig,
+                FlowMapperListener(newScheduledTaskState)
+            )
+            stateAndEventSub?.start()
+            coordinator.updateStatus(LifecycleStatus.UP)
+        } catch (e: CordaRuntimeException) {
+            val errorMsg = "Error restarting flow mapper from config change"
+            logger.error(errorMsg)
+            coordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
+        }
     }
 
     override val isRunning: Boolean

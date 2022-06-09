@@ -22,7 +22,7 @@ internal class CommonComponents(
     linkManagerCryptoProcessor: CryptoProcessor,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
-    configuration: SmartConfig,
+    messagingConfiguration: SmartConfig,
     clock: Clock,
 ) : LifecycleWithDominoTile {
     internal val inboundAssignmentListener = InboundAssignmentListener(
@@ -33,7 +33,7 @@ internal class CommonComponents(
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration
+        messagingConfiguration
     )
 
     internal val sessionManager = SessionManagerImpl(
@@ -44,7 +44,7 @@ internal class CommonComponents(
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration,
+        messagingConfiguration,
         inboundAssignmentListener,
         linkManagerHostingMap,
         clock = clock,
@@ -54,7 +54,7 @@ internal class CommonComponents(
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration,
+        messagingConfiguration,
     ).also {
         groups.registerListener(it)
     }
@@ -63,7 +63,7 @@ internal class CommonComponents(
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration,
+        messagingConfiguration,
     ).also {
         linkManagerHostingMap.registerListener(it)
     }

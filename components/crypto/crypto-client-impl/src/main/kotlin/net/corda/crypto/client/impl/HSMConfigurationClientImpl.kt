@@ -1,6 +1,8 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.createWireRequestContext
+import net.corda.crypto.impl.toWire
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoStringResult
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
@@ -16,6 +18,7 @@ import net.corda.data.crypto.wire.hsm.configuration.queries.HSMQuery
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -116,18 +119,18 @@ class HSMConfigurationClientImpl(
                         " ${response.context.requestingComponent} component"
             }
             if (response.response::class.java == CryptoNoContentValue::class.java && allowNoContentValue) {
-                logger.debug(
-                    "Received empty response for {} for tenant {}",
-                    request::class.java.name,
-                    context.tenantId
-                )
+                logger.debug {
+                    "Received empty response for ${request::class.java.name} for tenant ${context.tenantId}"
+                }
                 return null
             }
             require(response.response != null && (response.response::class.java == respClazz)) {
                 "Expected ${respClazz.name} for ${context.tenantId} tenant, but " +
                         "received ${response.response::class.java.name} with ${response.context.tenantId} tenant"
             }
-            logger.debug("Received response {} for tenant {}", respClazz.name, context.tenantId)
+            logger.debug {
+                "Received response ${respClazz.name} for tenant ${context.tenantId}"
+            }
             return response.response as RESPONSE
         } catch (e: CryptoServiceLibraryException) {
             logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)

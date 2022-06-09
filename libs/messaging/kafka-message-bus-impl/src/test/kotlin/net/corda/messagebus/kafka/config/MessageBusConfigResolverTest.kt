@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
+import java.util.Properties
+import java.util.stream.Stream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ConsumerConfig
@@ -8,15 +10,13 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
-import net.corda.messaging.api.exception.CordaAPIConfigException
+import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.*
-import java.util.stream.Stream
 
 class MessageBusConfigResolverTest {
 
@@ -255,10 +255,10 @@ class MessageBusConfigResolverTest {
     fun `configuration resolution fails if the bus is the incorrect type`() {
         val messageBusConfig = loadTestConfig(INCORRECT_BUS_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
-        assertThrows<CordaAPIConfigException> {
+        assertThrows<CordaMessageAPIConfigException> {
             resolver.resolve(messageBusConfig, ConsumerConfig(GROUP_NAME, CLIENT_ID, ConsumerRoles.DURABLE))
         }
-        assertThrows<CordaAPIConfigException> {
+        assertThrows<CordaMessageAPIConfigException> {
             resolver.resolve(messageBusConfig, ProducerConfig(CLIENT_ID, 1, true, ProducerRoles.DURABLE))
         }
     }

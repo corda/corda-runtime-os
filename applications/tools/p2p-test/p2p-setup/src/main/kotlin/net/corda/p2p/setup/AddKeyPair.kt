@@ -18,6 +18,7 @@ import java.util.concurrent.Callable
     name = "add-key-pair",
     aliases = ["add-keys"],
     description = ["Add a key-pair"],
+    showAtFileInUsageHelp = true,
     mixinStandardHelpOptions = true,
     showDefaultValues = true,
     usageHelpAutoWidth = true,

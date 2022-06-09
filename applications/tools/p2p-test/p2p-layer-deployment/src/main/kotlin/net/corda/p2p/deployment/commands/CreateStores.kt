@@ -5,7 +5,7 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.deployment.getAndCheckEnv
-import net.corda.v5.cipher.suite.schemes.SignatureSchemeTemplate
+import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
 import java.io.File
 
 internal class CreateStores(
@@ -26,11 +26,11 @@ internal class CreateStores(
 
     fun create(
         hosts: Collection<String>,
-        signatureSchemeTemplate: SignatureSchemeTemplate,
+        keySchemeTemplate: KeySchemeTemplate,
     ) {
         val certificatesAuthority = if (trustStoreLocation != null) {
             CertificateAuthorityFactory.createFileSystemLocalAuthority(
-                signatureSchemeTemplate.toFactoryDefinitions(),
+                keySchemeTemplate.toFactoryDefinitions(),
                 trustStoreLocation
             )
         } else {

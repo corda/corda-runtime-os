@@ -3,6 +3,9 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.HSMRegistrationClient
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.HSMContext.NOT_FAIL_IF_ASSOCIATION_EXISTS
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -17,7 +20,7 @@ import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
+import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.impl.MemberInfoExtension.Companion.status
@@ -41,22 +44,23 @@ import net.corda.membership.registration.MembershipRequestRegistrationResult
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.schema.Schemas
+import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import java.security.PublicKey
-import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -74,6 +78,10 @@ class StaticMemberRegistrationServiceTest {
     private val bob = HoldingIdentity(bobName.toString(), DUMMY_GROUP_ID)
     private val charlie = HoldingIdentity(charlieName.toString(), DUMMY_GROUP_ID)
     private val daisy = HoldingIdentity(daisyName.toString(), DUMMY_GROUP_ID)
+
+    private val aliceId = alice.id
+    private val bobId = bob.id
+    private val charlieId = charlie.id
 
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
@@ -96,12 +104,7 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private val mockPublisher: Publisher = mock {
-        on { publish(any()) } doAnswer {
-            publishedList.addAll(it.arguments.first() as List<Record<String, PersistentMemberInfo>>)
-            listOf(CompletableFuture.completedFuture(Unit))
-        }
-    }
+    private val mockPublisher: Publisher = mock()
 
     private val publisherFactory: PublisherFactory = mock {
         on { createPublisher(any(), any()) } doReturn mockPublisher
@@ -120,20 +123,14 @@ class StaticMemberRegistrationServiceTest {
         on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
 
-    private val signature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), ByteArray(1))
-
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq("alice-alias"), any(), any<Map<String, String>>()) } doReturn aliceKey
-        // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
-        on { generateKeyPair(any(), any(), eq(bob.id), any(), any<Map<String, String>>()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq(charlie.id), any(), any<Map<String, String>>()) } doReturn charlieKey
-        on { sign(any(), any<PublicKey>(), any<ByteArray>(), any()) } doReturn signature
+        on { generateKeyPair(any(), any(), eq(aliceId), any(), any<Map<String, String>>()) } doReturn aliceKey
+        on { generateKeyPair(any(), any(), eq(bobId), any(), any<Map<String, String>>()) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq(charlieId), any(), any<Map<String, String>>()) } doReturn charlieKey
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
-
-    private val publishedList = mutableListOf<Record<String, PersistentMemberInfo>>()
 
     private var coordinatorIsRunning = false
     private var coordinatorStatus = LifecycleStatus.DOWN
@@ -161,9 +158,7 @@ class StaticMemberRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
 
-    private val digestService: DigestService = mock {
-        on { hash(any<ByteArray>(), any()) } doReturn SecureHash("SHA256", "1234ABCD".toByteArray())
-    }
+    private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -173,13 +168,11 @@ class StaticMemberRegistrationServiceTest {
         configurationReadService,
         lifecycleCoordinatorFactory,
         layeredPropertyMapFactory,
-        digestService
+        hsmRegistrationClient
     )
 
     @Suppress("UNCHECKED_CAST")
     private fun setUpPublisher() {
-        // clears the list before the test runs as we are using one list for the test cases
-        publishedList.clear()
         // kicks off the MessagingConfigurationReceived event to be able to mock the Publisher
         registrationServiceLifecycleHandler?.processEvent(
             ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
@@ -199,17 +192,27 @@ class StaticMemberRegistrationServiceTest {
     fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
         setUpPublisher()
         registrationService.start()
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         val registrationResult = registrationService.register(alice)
+        Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
+        CryptoConsts.Categories.all.forEach {
+            Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId, it)
+            Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId, it, mapOf(NOT_FAIL_IF_ASSOCIATION_EXISTS to "YES"))
+        }
         registrationService.stop()
 
-        assertEquals(3, publishedList.size)
+        val memberList = capturedPublishedList.firstValue
+        assertEquals(3, memberList.size)
 
-        publishedList.forEach {
-            assertTrue(it.key.startsWith(alice.id) || it.key.startsWith(bob.id) || it.key.startsWith(charlie.id))
-            assertTrue(it.key.endsWith(alice.id))
+        val hostedIdentityList = capturedPublishedList.secondValue
+        assertEquals(1, hostedIdentityList.size)
+
+        memberList.forEach {
+            assertTrue(it.key.startsWith(aliceId) || it.key.startsWith(bobId) || it.key.startsWith(charlieId))
+            assertTrue(it.key.endsWith(aliceId))
         }
 
-        val publishedInfo = publishedList.first()
+        val publishedInfo = memberList.first()
 
         assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
         val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
@@ -227,12 +230,20 @@ class StaticMemberRegistrationServiceTest {
         assertNotNull(memberPublished.serial)
         assertNotNull(memberPublished.modifiedTime)
 
-        assertEquals(aliceKey, memberPublished.owningKey)
-        assertEquals(1, memberPublished.identityKeys.size)
-        assertEquals(1, memberPublished.identityKeyHashes.size)
-        assertEquals(aliceKey.calculateHash(), memberPublished.identityKeyHashes.first())
+        assertEquals(aliceKey, memberPublished.sessionInitiationKey)
+        assertEquals(1, memberPublished.ledgerKeys.size)
+        assertEquals(1, memberPublished.ledgerKeyHashes.size)
+        assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
         assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
         assertEquals(1, memberPublished.endpoints.size)
+
+        val publishedHostedIdentity = hostedIdentityList.first()
+
+        assertEquals("${alice.x500Name}-${alice.groupId}", publishedHostedIdentity.key)
+        assertEquals(HOSTED_MAP_TOPIC, publishedHostedIdentity.topic)
+        val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
+        assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
+        assertEquals(alice.x500Name, hostedIdentityPublished.holdingIdentity.x500Name)
 
         assertEquals(MembershipRequestRegistrationResult(SUBMITTED), registrationResult)
     }

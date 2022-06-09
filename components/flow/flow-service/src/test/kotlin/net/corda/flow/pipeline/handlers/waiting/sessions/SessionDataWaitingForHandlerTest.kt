@@ -26,15 +26,17 @@ class SessionDataWaitingForHandlerTest {
 
     private companion object {
         const val SESSION_ID = "session id"
-        const val ANOTHER_SESSION_ID = "another session id"
+        const val SESSION_ID_2 = "session id 2"
+        const val SESSION_ID_3 = "session id 3"
         val DATA = byteArrayOf(1, 1, 1, 1)
         val MORE_DATA = byteArrayOf(2, 2, 2, 2)
-        val sessions = listOf(SESSION_ID, ANOTHER_SESSION_ID)
+        val sessions = listOf(SESSION_ID, SESSION_ID_2)
     }
 
     private val checkpoint = mock<FlowCheckpoint>()
     private val sessionState = SessionState()
-    private val anotherSessionState = SessionState()
+    private val sessionStateTwo = SessionState()
+    private val sessionStateThree = SessionState()
     private val flowSessionManager = mock<FlowSessionManager>()
     private val sessionDataWaitingForHandler = SessionDataWaitingForHandler(flowSessionManager)
 
@@ -42,10 +44,11 @@ class SessionDataWaitingForHandlerTest {
     @BeforeEach
     fun setup() {
         sessionState.sessionId = SESSION_ID
-        anotherSessionState.sessionId = ANOTHER_SESSION_ID
+        sessionStateTwo.sessionId = SESSION_ID_2
+        sessionStateThree.sessionId = SESSION_ID_3
 
         whenever(checkpoint.getSessionState(sessionState.sessionId)).thenReturn(sessionState)
-        whenever(checkpoint.getSessionState(anotherSessionState.sessionId)).thenReturn(anotherSessionState)
+        whenever(checkpoint.getSessionState(sessionStateTwo.sessionId)).thenReturn(sessionStateTwo)
 
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.ERROR)).thenReturn(emptyList())
     }
@@ -60,8 +63,8 @@ class SessionDataWaitingForHandlerTest {
                         payload = SessionData(ByteBuffer.wrap(DATA))
                         sequenceNum = 1
                     },
-                    anotherSessionState to SessionEvent().apply {
-                        sessionId = ANOTHER_SESSION_ID
+                    sessionStateTwo to SessionEvent().apply {
+                        sessionId = SESSION_ID_2
                         payload = SessionData(ByteBuffer.wrap(MORE_DATA))
                         sequenceNum = 1
                     }
@@ -78,14 +81,14 @@ class SessionDataWaitingForHandlerTest {
             net.corda.data.flow.state.waiting.SessionData(sessions)
         )
 
-        assertEquals(FlowContinuation.Run(mapOf(SESSION_ID to DATA, ANOTHER_SESSION_ID to MORE_DATA)), continuation)
+        assertEquals(FlowContinuation.Run(mapOf(SESSION_ID to DATA, SESSION_ID_2 to MORE_DATA)), continuation)
     }
 
     @Test
     fun `All sessions being errored returns a FlowContinuation#Error`() {
         whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions)).thenReturn(emptyList())
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.ERROR))
-            .thenReturn(listOf(sessionState, anotherSessionState))
+            .thenReturn(listOf(sessionState, sessionStateTwo))
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -102,7 +105,9 @@ class SessionDataWaitingForHandlerTest {
     }
 
     @Test
-    fun `All sessions being errored or receiving their session data events returns a FlowContinuation#Error`() {
+    fun `All sessions being errored, closing or receiving their session data events returns a FlowContinuation#Error`() {
+        val sessions = listOf(SESSION_ID, SESSION_ID_2, SESSION_ID_3)
+
         whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions))
             .thenReturn(
                 listOf(
@@ -113,8 +118,11 @@ class SessionDataWaitingForHandlerTest {
                     },
                 )
             )
-        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.ERROR))
-            .thenReturn(listOf(anotherSessionState))
+
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.ERROR))
+            .thenReturn(listOf(sessionStateTwo))
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.CLOSING))
+            .thenReturn(listOf(sessionStateThree))
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -174,6 +182,39 @@ class SessionDataWaitingForHandlerTest {
     }
 
     @Test
+    fun `A closing or errored session that has already received a session data event returns a FlowContinuation#Run`() {
+        whenever(flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID)))
+            .thenReturn(
+                listOf(
+                    sessionState to SessionEvent().apply {
+                        sessionId = SESSION_ID
+                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        sequenceNum = 1
+                    },
+                )
+            )
+
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.ERROR))
+            .thenReturn(emptyList())
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.CLOSING))
+            .thenReturn(emptyList())
+
+        val inputContext = buildFlowEventContext(
+            checkpoint = checkpoint,
+            inputEventPayload = Unit
+        )
+
+        val continuation = sessionDataWaitingForHandler.runOrContinue(
+            inputContext,
+            net.corda.data.flow.state.waiting.SessionData(listOf(SESSION_ID))
+        )
+
+        assertEquals(FlowContinuation.Run(mapOf(SESSION_ID to DATA)), continuation)
+        verify(flowSessionManager).getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.ERROR)
+        verify(flowSessionManager).getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.CLOSING)
+    }
+
+    @Test
     fun `Receiving all required session data events acknowledges the received events`() {
         val receivedEvents = listOf(
             sessionState to SessionEvent().apply {
@@ -181,8 +222,8 @@ class SessionDataWaitingForHandlerTest {
                 payload = SessionData(ByteBuffer.wrap(DATA))
                 sequenceNum = 1
             },
-            anotherSessionState to SessionEvent().apply {
-                sessionId = ANOTHER_SESSION_ID
+            sessionStateTwo to SessionEvent().apply {
+                sessionId = SESSION_ID_2
                 payload = SessionData(ByteBuffer.wrap(MORE_DATA))
                 sequenceNum = 1
             }
@@ -204,7 +245,9 @@ class SessionDataWaitingForHandlerTest {
     }
 
     @Test
-    fun `Acknowledges the received data events when all sessions are either errored or have received their session data events`() {
+    fun `Acknowledges the received data events when all sessions are either errored, closing or have received their session data events`() {
+        val sessions = listOf(SESSION_ID, SESSION_ID_2, SESSION_ID_3)
+
         val receivedEvents = listOf(
             sessionState to SessionEvent().apply {
                 sessionId = SESSION_ID
@@ -214,8 +257,10 @@ class SessionDataWaitingForHandlerTest {
         )
 
         whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions)).thenReturn(receivedEvents)
-        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.ERROR))
-            .thenReturn(listOf(anotherSessionState))
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.ERROR))
+            .thenReturn(listOf(sessionStateTwo))
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.CLOSING))
+            .thenReturn(listOf(sessionStateThree))
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -234,7 +279,7 @@ class SessionDataWaitingForHandlerTest {
     fun `Does not acknowledge the received data events when there are errored sessions and the remaining sessions have not have received their session data events`() {
         whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions)).thenReturn(emptyList())
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.ERROR))
-            .thenReturn(listOf(anotherSessionState))
+            .thenReturn(listOf(sessionStateTwo))
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -259,8 +304,8 @@ class SessionDataWaitingForHandlerTest {
                         payload = SessionData(ByteBuffer.wrap(DATA))
                         sequenceNum = 1
                     },
-                    anotherSessionState to SessionEvent().apply {
-                        sessionId = ANOTHER_SESSION_ID
+                    sessionStateTwo to SessionEvent().apply {
+                        sessionId = SESSION_ID_2
                         payload = SessionClose()
                         sequenceNum = 1
                     }

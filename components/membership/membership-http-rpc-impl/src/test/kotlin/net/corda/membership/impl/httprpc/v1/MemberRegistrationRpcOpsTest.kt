@@ -17,6 +17,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import net.corda.test.util.time.TestClock
 import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -24,6 +25,7 @@ import kotlin.test.assertFailsWith
 class MemberRegistrationRpcOpsTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private var coordinatorIsRunning = false
@@ -38,7 +40,7 @@ class MemberRegistrationRpcOpsTest {
     }
 
     private val registrationProgress = RegistrationRequestProgressDto(
-        Instant.now(),
+        clock.instant(),
         "SUBMITTED",
         MemberInfoSubmittedDto(emptyMap())
     )

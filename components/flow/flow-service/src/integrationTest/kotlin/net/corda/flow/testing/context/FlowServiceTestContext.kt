@@ -18,7 +18,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.FlowEventProcessor
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
@@ -35,6 +34,8 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
 import net.corda.messaging.api.records.Record
+import net.corda.libs.packaging.Cpk
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -172,8 +173,8 @@ class FlowServiceTestContext @Activate constructor(
         testConfig[key] = value
     }
 
-    override fun initiatingToInitiatedFlow(cpiId: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
-        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(getCpiIdentifier(cpiId), initiatingFlowClassName, initiatedFlowClassName)
+    override fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(protocol, initiatingFlowClassName, initiatedFlowClassName)
     }
 
     override fun startFlowEventReceived(
@@ -201,6 +202,7 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         cpiId: String,
+        protocol: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -210,7 +212,8 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionInit.newBuilder()
-                .setFlowName(FLOW_NAME)
+                .setProtocol(protocol)
+                .setVersions(listOf(1))
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setPayload(ByteBuffer.wrap(byteArrayOf()))
@@ -376,7 +379,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(getEventRecord(flowId, sessionEvent))
     }
 
-    private fun getFlowEventProcessor(): FlowEventProcessor {
+    private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
             SmartConfigFactory
