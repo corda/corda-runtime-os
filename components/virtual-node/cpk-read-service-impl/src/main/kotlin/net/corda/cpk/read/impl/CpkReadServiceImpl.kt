@@ -79,6 +79,7 @@ class CpkReadServiceImpl (
     internal var configSubscription: AutoCloseable? = null
     @VisibleForTesting
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
+    private var cpkChunksKafkaReader: CpkChunksKafkaReader? = null
 
     private val cpksById = ConcurrentHashMap<CpkIdentifier, Cpk>()
 
@@ -150,11 +151,13 @@ class CpkReadServiceImpl (
         }
 
         val cpkChunksFileManager = CpkChunksFileManagerImpl(cpkCacheDir)
-        cpkChunksKafkaReaderSubscription?.close()
+        closeKafkaReader()
+        val reader = CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, this::onCpkAssembled)
+        cpkChunksKafkaReader = reader
         cpkChunksKafkaReaderSubscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CPK_READ_GROUP, Schemas.VirtualNode.CPK_FILE_TOPIC),
-                CpkChunksKafkaReader(cpkPartsDir, cpkChunksFileManager, this::onCpkAssembled),
+                reader,
                 messagingConfig
             ).also { it.start() }
     }
@@ -182,11 +185,14 @@ class CpkReadServiceImpl (
         configReadServiceRegistration = null
         configSubscription?.close()
         configSubscription = null
+        closeKafkaReader()
+    }
+
+    private fun closeKafkaReader() {
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription = null
-        for (cpk in cpksById.values) {
-            cpk.close()
-        }
+        cpkChunksKafkaReader?.close()
+        cpkChunksKafkaReader = null
         cpksById.clear()
     }
 }

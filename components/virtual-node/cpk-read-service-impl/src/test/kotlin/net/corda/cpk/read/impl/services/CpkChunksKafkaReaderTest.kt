@@ -51,20 +51,21 @@ class CpkChunksKafkaReaderTest {
     @Test
     fun `on receiving all CPK chunks assembles CPK and clears received chunks cache for that CPK`() {
         val checksum = SecureHash.create(DUMMY_HASH)
-        val cpkChunksKafkaReader = CpkChunksKafkaReader(mock(), cpkChunksFileManager, mock())
+        CpkChunksKafkaReader(mock(), cpkChunksFileManager, mock()).use { cpkChunksKafkaReader ->
 
-        val (cpkChunkId0, chunk0) =
-            Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
-        cpkChunksKafkaReader.writeChunkFile(cpkChunkId0, chunk0)
-        verify(cpkChunksFileManager).writeChunkFile(cpkChunkId0, chunk0)
-        assertTrue(cpkChunksKafkaReader.receivedCpkChunksCache.getChunkIds(checksum)!!.size == 1)
+            val (cpkChunkId0, chunk0) =
+                Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
+            cpkChunksKafkaReader.writeChunkFile(cpkChunkId0, chunk0)
+            verify(cpkChunksFileManager).writeChunkFile(cpkChunkId0, chunk0)
+            assertTrue(cpkChunksKafkaReader.receivedCpkChunksCache.getChunkIds(checksum)!!.size == 1)
 
-        val (cpkChunkId1, chunk1) =
-            Helpers.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf())
-        cpkChunksKafkaReader.writeChunkFile(cpkChunkId1, chunk1)
-        verify(cpkChunksFileManager).writeChunkFile(cpkChunkId1, chunk1)
+            val (cpkChunkId1, chunk1) =
+                Helpers.dummyCpkChunkIdToChunk(checksum, 1, checksum, byteArrayOf())
+            cpkChunksKafkaReader.writeChunkFile(cpkChunkId1, chunk1)
+            verify(cpkChunksFileManager).writeChunkFile(cpkChunkId1, chunk1)
 
-        verify(cpkChunksFileManager).assembleCpk(any(), any())
-        assertNull(cpkChunksKafkaReader.receivedCpkChunksCache.getChunkIds(checksum))
+            verify(cpkChunksFileManager).assembleCpk(any(), any())
+            assertNull(cpkChunksKafkaReader.receivedCpkChunksCache.getChunkIds(checksum))
+        }
     }
 }
