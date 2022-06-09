@@ -43,8 +43,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
             CpiIdentifier(
                 cpi.metadata.cpiId.name,
                 cpi.metadata.cpiId.version,
-                cpi.metadata.cpiId.signerSummaryHash
-            ),
+                cpi.metadata.cpiId.signerSummaryHash),
             null, UUID.randomUUID(), null, UUID.randomUUID(), null
         ).also(::put)
     }
