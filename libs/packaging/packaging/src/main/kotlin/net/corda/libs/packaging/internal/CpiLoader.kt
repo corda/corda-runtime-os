@@ -89,6 +89,6 @@ internal object CpiLoader {
             cpksMetadata = cpkMetadata,
             groupPolicy = groupPolicy,
             timestamp = Instant.now()
-        ), cpks.takeIf { expansionLocation != null } )
+        ), cpks )
     }
 }
