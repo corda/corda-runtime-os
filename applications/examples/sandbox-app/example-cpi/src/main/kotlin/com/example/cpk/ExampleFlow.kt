@@ -1,6 +1,7 @@
 package com.example.cpk
 
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -29,9 +30,9 @@ class ExampleFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    override fun call(requestBody: String): String {
-        logger.info("Invoked: JSON=$requestBody")
-        val input = jsonMarshaller.parseJson<FlowInput>(requestBody)
+    override fun call(requestBody: RPCRequestData): String {
+        logger.info("Invoked: JSON=${requestBody.getRequestBody()}")
+        val input = jsonMarshaller.parseJson<FlowInput>(requestBody.getRequestBody())
         return hashOf(
             bytes = input.message?.toByteArray() ?: byteArrayOf()
         ).also { result ->

@@ -3,8 +3,10 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.InitiatedFlow
+import net.corda.flow.fiber.RPCRequestDataImpl
 import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -20,7 +22,9 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 class FlowFactoryImpl  @Activate constructor(
     @Reference(service = FlowSessionFactory::class)
-    private val flowSessionFactory: FlowSessionFactory
+    private val flowSessionFactory: FlowSessionFactory,
+    @Reference(service = FlowFiberService::class)
+    private val flowFiberService: FlowFiberService
 ): FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
@@ -32,7 +36,7 @@ class FlowFactoryImpl  @Activate constructor(
                 )
             )
         val logic = flowClass.getDeclaredConstructor().newInstance()
-        val args = startFlowEvent.flowStartArgs
+        val args = RPCRequestDataImpl(flowFiberService)
 
         return RPCStartedFlow(logic, args)
     }

@@ -2,6 +2,7 @@ package net.cordapp.demo.tictactoe
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -21,11 +22,11 @@ class StartTicTacToeGameFlow : RPCStartableFlow {
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(requestBody: String): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting a game of Tic-tac-toe...")
 
         try {
-            val startGame = jsonMarshallingService.parseJson<StartGameMessage>(requestBody)
+            val startGame = jsonMarshallingService.parseJson<StartGameMessage>(requestBody.getRequestBody())
 
             val startingColumn = checkNotNull(startGame.startingColumnPlayed) { "No starting column specified" }
             val startingRow = checkNotNull(startGame.startingRowPlayed) { "No starting row specified" }

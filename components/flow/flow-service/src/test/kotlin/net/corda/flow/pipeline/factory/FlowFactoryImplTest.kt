@@ -7,11 +7,13 @@ import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.SESSION_ID_1
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.factory.impl.FlowFactoryImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -25,11 +27,13 @@ import org.mockito.kotlin.whenever
 class FlowFactoryImplTest {
 
     private val className = "flow-class-1"
+    private val args = "arg1"
     private val flowSession = mock<FlowSession>()
     private val sandboxGroupContext = mock<SandboxGroupContext>()
     private val sandboxGroup = mock<SandboxGroup>()
     private val flowSessionFactory = mock<FlowSessionFactory>()
-    private val flowFactory = FlowFactoryImpl(flowSessionFactory)
+    private val flowFiberService = mock<FlowFiberService>()
+    private val flowFactory = FlowFactoryImpl(flowSessionFactory, flowFiberService)
 
     @BeforeEach
     fun setup() {
@@ -42,6 +46,7 @@ class FlowFactoryImplTest {
             statusKey = FlowKey(SESSION_ID_1, BOB_X500_HOLDING_IDENTITY)
             initiatedBy = BOB_X500_HOLDING_IDENTITY
             flowClassName = className
+            startArgs = args
         }
 
         whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
@@ -74,7 +79,7 @@ class FlowFactoryImplTest {
     }
 
     class ExampleFlow1 : RPCStartableFlow {
-        override fun call(requestBody: String) : String {
+        override fun call(requestBody: RPCRequestData) : String {
             return "result"
         }
     }

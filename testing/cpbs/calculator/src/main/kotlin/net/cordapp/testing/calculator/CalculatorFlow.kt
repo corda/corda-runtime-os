@@ -2,6 +2,7 @@ package net.cordapp.testing.calculator
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -21,11 +22,11 @@ class CalculatorFlow : RPCStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: String): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Calculator starting...")
         var resultMessage = ""
         try {
-            val inputs = jsonMarshallingService.parseJson<InputMessage>(requestBody)
+            val inputs = jsonMarshallingService.parseJson<InputMessage>(requestBody.getRequestBody())
             val result = (inputs.a ?: 0) + (inputs.b ?: 0)
             log.info("Calculated result ${inputs.a} + ${inputs.b} = ${result}, formatting for response...")
             val outputFormatter = OutputFormattingFlow(result)

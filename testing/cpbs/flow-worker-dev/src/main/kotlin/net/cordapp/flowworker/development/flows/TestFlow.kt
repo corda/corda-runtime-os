@@ -2,6 +2,7 @@ package net.cordapp.flowworker.development.flows
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.JsonMarshallingService
@@ -33,10 +34,10 @@ class TestFlow : RPCStartableFlow {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(requestBody: String): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(requestBody)
+            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(requestBody.getRequestBody())
             if(inputs.throwException){
                 throw IllegalStateException("Caller requested exception to be raised")
             }

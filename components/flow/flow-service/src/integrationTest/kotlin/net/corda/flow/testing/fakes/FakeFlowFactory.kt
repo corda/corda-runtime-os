@@ -19,7 +19,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 @Component(service = [FlowFactory::class, FakeFlowFactory::class])
 class FakeFlowFactory: FlowFactory {
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
-        return RPCStartedFlow(FakeFlow(), "")
+        return RPCStartedFlow(FakeFlow(), FakeRPCRequestData())
     }
 
     override fun createInitiatedFlow(

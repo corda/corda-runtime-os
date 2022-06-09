@@ -2,6 +2,7 @@ package net.corda.libs.packaging.test.workflow
 
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
@@ -11,7 +12,7 @@ import net.corda.v5.base.annotations.Suspendable
 class PackagingTestFlow : RPCStartableFlow {
 
     @Suspendable
-    override fun call(requestBody: String) : String {
+    override fun call(requestBody: RPCRequestData) : String {
         return ""
     }
 }

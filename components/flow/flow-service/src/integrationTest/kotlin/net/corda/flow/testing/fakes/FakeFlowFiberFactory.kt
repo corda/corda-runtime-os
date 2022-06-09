@@ -18,7 +18,7 @@ import java.util.concurrent.Future
 @Component(service = [FlowFiberFactory::class, FakeFlowFiberFactory::class])
 class FakeFlowFiberFactory : FlowFiberFactory {
 
-    val fiber = FakeFiber(UUID(0, 0), RPCStartedFlow(FakeFlow(), ""))
+    val fiber = FakeFiber(UUID(0, 0), RPCStartedFlow(FakeFlow(), FakeRPCRequestData()))
 
     override fun createFlowFiber(flowId: String, logic: FlowLogicAndArgs): FlowFiber {
         return fiber

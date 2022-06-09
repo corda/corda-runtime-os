@@ -5,6 +5,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowMessaging
@@ -31,7 +32,7 @@ class MessagingFlow : RPCStartableFlow {
     lateinit var flowMessaging: FlowMessaging
 
     @Suspendable
-    override fun call(requestBody: String): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Hello world is starting... [${flowEngine.flowId}]")
         val session = flowMessaging.initiateFlow(
             MemberX500Name(
@@ -115,9 +116,6 @@ class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var flowMessaging: FlowMessaging
 
     @Suspendable
     override fun call() {

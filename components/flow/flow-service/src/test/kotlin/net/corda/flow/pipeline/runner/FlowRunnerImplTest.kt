@@ -26,6 +26,7 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
@@ -85,7 +86,9 @@ class FlowRunnerImplTest {
             startContext = flowStartContext
             flowStartArgs = startArgs
         }
-        val logicAndArgs = RPCStartedFlow(rpcFlow, startArgs)
+        val rpcRequestData = mock<RPCRequestData>()
+        whenever(rpcRequestData.getRequestBody()).thenReturn(startArgs)
+        val logicAndArgs = RPCStartedFlow(rpcFlow, rpcRequestData)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
         whenever(flowFactory.createFlow(flowStartEvent, sandboxGroupContext)).thenReturn(logicAndArgs)
