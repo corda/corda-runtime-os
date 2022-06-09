@@ -35,7 +35,7 @@ def javaVersion = VERSION_11
 
 snyk {
     api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
-    arguments = project.findProperty("snykArguments") ?: ''
+    arguments = project.findProperty("snykArguments") ?: '--all-sub-projects'
     severity = project.findProperty("snykSeverity") ?: 'low'
     autoDownload = true
     autoUpdate = true
