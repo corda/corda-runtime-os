@@ -25,8 +25,8 @@ class MemberInfoExtension {
         const val PLATFORM_VERSION = "corda.platformVersion"
 
         /** Key name for party property. */
-        const val PARTY_NAME = "corda.party.name"
-        const val PARTY_SESSION_KEY = "corda.party.session.key"
+        const val PARTY_NAME = "corda.name"
+        const val PARTY_SESSION_KEY = "corda.session.key"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"

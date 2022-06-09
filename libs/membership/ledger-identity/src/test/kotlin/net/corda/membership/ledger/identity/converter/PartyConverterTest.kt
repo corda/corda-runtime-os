@@ -18,7 +18,7 @@ import java.security.PublicKey
 class PartyConverterTest {
     companion object {
         private val keyEncodingService = Mockito.mock(CipherSchemeMetadata::class.java)
-        private const val PARTY = "corda.party"
+        private const val PARTY = "corda"
         private const val partyName = "O=Alice,L=London,C=GB"
         private const val notaryName = "O=Notary,L=London,C=GB"
         private const val NOTARY_SERVICE_PARTY = "corda.notaryService"
