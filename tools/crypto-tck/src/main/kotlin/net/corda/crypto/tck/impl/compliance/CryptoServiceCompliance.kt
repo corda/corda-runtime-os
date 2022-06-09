@@ -258,14 +258,13 @@ class CryptoServiceCompliance : AbstractCompliance() {
     private fun Collection<Experiment>.cleanupKeyPairs() {
         val candidates = map {
             (it.key as? GeneratedPublicKey)?.hsmAlias
-        }
+        }.filter { !it.isNullOrBlank() }.distinct()
         logger.info(
-            "Considering {} keys [{}] for deleting (out of collection of {})",
+            "Considering {} keys for deleting (out of collection of {})",
             candidates.size,
-            candidates.joinToString(),
             size
         )
-        candidates.filter { !it.isNullOrBlank() }.distinct().forEach {
+        candidates.forEach {
             deleteKeyPair(it!!)
         }
     }
