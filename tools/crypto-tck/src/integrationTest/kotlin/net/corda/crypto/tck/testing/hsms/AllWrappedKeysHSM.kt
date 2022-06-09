@@ -22,8 +22,7 @@ class AllWrappedKeysHSM(
 ) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
 
     override val extensions: List<CryptoServiceExtensions> = listOf(
-        CryptoServiceExtensions.REQUIRE_WRAPPING_KEY,
-        CryptoServiceExtensions.DELETE_KEYS
+        CryptoServiceExtensions.REQUIRE_WRAPPING_KEY
     )
 
     override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> = supportedSchemesMap
@@ -96,6 +95,6 @@ class AllWrappedKeysHSM(
     }
 
     override fun delete(alias: String, context: Map<String, String>) {
-        throw Error("Just to test that the tests will not break.")
+        throw UnsupportedOperationException()
     }
 }

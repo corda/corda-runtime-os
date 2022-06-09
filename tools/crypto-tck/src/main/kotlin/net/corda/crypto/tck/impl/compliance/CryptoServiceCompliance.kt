@@ -3,11 +3,15 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.crypto.impl.decorators.requiresWrappingKey
+import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.ConcurrentTests.Companion.createTestCase
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
+import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -32,7 +36,10 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -102,6 +109,29 @@ class CryptoServiceCompliance : AbstractCompliance() {
             withoutSignatureSpec.isEmpty(),
             "There must be at least one signatures spec for [${withoutSignatureSpec.joinToString()}]"
         )
+    }
+
+    @Test
+    fun `delete should throw UnsupportedOperationException if it's not supported but still called`() {
+        assumeFalse(service.supportsKeyDelete)
+        val exception = assertThrows(CryptoServiceException::class.java) {
+            service.delete("alias", mapOf(
+                CRYPTO_TENANT_ID to tenantId,
+                CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
+            ))
+        }
+        assertInstanceOf(UnsupportedOperationException::class.java, exception.cause)
+    }
+
+    @Test
+    fun `createWrappingKey should throw UnsupportedOperationException if it's not supported but still called`() {
+        assumeFalse(service.requiresWrappingKey)
+        val exception = assertThrows(CryptoServiceException::class.java) {
+            service.createWrappingKey("masterKeyAlias", false, mapOf(
+                CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+            ))
+        }
+        assertInstanceOf(UnsupportedOperationException::class.java, exception.cause)
     }
 
     @Test

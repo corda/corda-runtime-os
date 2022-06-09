@@ -1,8 +1,6 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
-import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -86,8 +84,6 @@ class AllAliasedKeysHSM(
     }
 
     override fun delete(alias: String, context: Map<String, String>) {
-        if(context.any { it.key == CRYPTO_KEY_TYPE && it.value == CRYPTO_KEY_TYPE_KEYPAIR }) {
-            keyPairs.remove(alias)
-        }
+        throw Error("Just to test that the tests will not break.")
     }
 }
