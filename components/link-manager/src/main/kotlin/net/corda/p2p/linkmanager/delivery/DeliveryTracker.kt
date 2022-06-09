@@ -8,7 +8,6 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
@@ -51,14 +49,12 @@ internal class DeliveryTracker(
 
     private val appMessageReplayer = AppMessageReplayer(
         coordinatorFactory,
-        registry,
         publisherFactory,
         messagingConfiguration,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler(
         coordinatorFactory,
-        registry,
         configReadService,
         true,
         appMessageReplayer::replayMessage,
@@ -86,14 +82,13 @@ internal class DeliveryTracker(
         setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory, registry,
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
         dependentChildren = setOf(messageTrackerSubscriptionTile.coordinatorName),
         managedChildren = setOf(messageTrackerSubscriptionTile)
     )
 
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,
-        registry: LifecycleRegistry,
         publisherFactory: PublisherFactory,
         messagingConfiguration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
@@ -107,8 +102,7 @@ internal class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            registry,
-            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
+                PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
             messagingConfiguration
         )
 

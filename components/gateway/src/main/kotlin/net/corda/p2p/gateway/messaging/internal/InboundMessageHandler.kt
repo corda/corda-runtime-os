@@ -11,7 +11,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -37,7 +36,6 @@ import net.corda.v5.base.util.contextLogger
 @Suppress("LongParameterList")
 internal class InboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
@@ -51,20 +49,17 @@ internal class InboundMessageHandler(
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        registry,
         PublisherConfig("inbound-message-handler", false),
         messagingConfiguration
     )
     private val sessionPartitionMapper = SessionPartitionMapperImpl(
         lifecycleCoordinatorFactory,
-        registry,
         subscriptionFactory,
         messagingConfiguration
     )
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
-        registry,
         configurationReaderService,
         this,
         subscriptionFactory,
@@ -73,7 +68,6 @@ internal class InboundMessageHandler(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         dependentChildren = listOf(
             sessionPartitionMapper.dominoTile.coordinatorName,
             p2pInPublisher.dominoTile.coordinatorName,

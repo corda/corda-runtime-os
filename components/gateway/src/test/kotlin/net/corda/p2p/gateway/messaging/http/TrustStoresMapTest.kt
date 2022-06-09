@@ -72,7 +72,6 @@ class TrustStoresMapTest {
 
     private val testObject = TrustStoresMap(
         lifecycleCoordinatorFactory,
-        mock(),
         subscriptionFactory,
         nodeConfiguration,
         certificateFactory

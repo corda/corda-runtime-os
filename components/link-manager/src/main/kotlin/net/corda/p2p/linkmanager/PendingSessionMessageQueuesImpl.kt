@@ -5,7 +5,6 @@ import java.util.Queue
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -19,7 +18,6 @@ import net.corda.v5.base.util.debug
 
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
-    lifecycleRegistry: LifecycleRegistry,
     coordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig
 ) : PendingSessionMessageQueues {
@@ -34,7 +32,6 @@ internal class PendingSessionMessageQueuesImpl(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        lifecycleRegistry,
         PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, false),
         messagingConfiguration
     )

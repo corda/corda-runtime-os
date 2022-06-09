@@ -34,7 +34,6 @@ dependencies {
     implementation project(":libs:p2p-crypto")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:lifecycle:registry")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":components:configuration:configuration-read-service")

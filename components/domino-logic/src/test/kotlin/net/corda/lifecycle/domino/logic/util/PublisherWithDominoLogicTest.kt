@@ -44,7 +44,7 @@ class PublisherWithDominoLogicTest {
         on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
     }
 
-    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, mock(), PublisherConfig(""), messagingConfig)
+    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig(""), messagingConfig)
 
     @Test
     fun `start will start the publisher`() {

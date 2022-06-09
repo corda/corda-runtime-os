@@ -6,7 +6,6 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -15,7 +14,6 @@ import java.util.concurrent.CompletableFuture
 
 class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     val configurationReaderService: ConfigurationReadService,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
         { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
@@ -24,7 +22,6 @@ class ReconfigurableConnectionManager(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         configurationChangeHandler = ConnectionManagerConfigChangeHandler()
     )
 

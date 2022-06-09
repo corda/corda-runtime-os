@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
@@ -30,13 +29,11 @@ class Gateway(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
-        registry,
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
@@ -44,7 +41,6 @@ class Gateway(
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
-        registry,
         configurationReaderService,
         subscriptionFactory,
         messagingConfiguration,
@@ -53,7 +49,8 @@ class Gateway(
     @VisibleForTesting
     internal val children: Collection<DominoTile> =
         listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, registry,
+
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = children.map { it.coordinatorName }, managedChildren = children)
 
     companion object {

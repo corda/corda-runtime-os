@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -78,7 +79,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class SessionManagerTest {
@@ -146,20 +147,20 @@ class SessionManagerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleWriteLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        if (context.arguments()[7] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
-            configHandler = context.arguments()[7] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        if (context.arguments()[6] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
+            configHandler = context.arguments()[6] as SessionManagerImpl.SessionManagerConfigChangeHandler
         }
-        if (context.arguments()[7] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
-            heartbeatConfigHandler = context.arguments()[7] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        if (context.arguments()[6] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[6] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
         }
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
     private val publisherWithDominoLogicByClientId = mutableMapOf<String, MutableList<PublisherWithDominoLogic>>()
     private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, context ->
-        publisherWithDominoLogicByClientId.compute((context.arguments()[3] as PublisherConfig).clientId) { _, map ->
+        publisherWithDominoLogicByClientId.compute((context.arguments()[2] as PublisherConfig).clientId) { _, map ->
             map?.apply { this.add(mock) } ?: mutableListOf(mock)
         }
-        val mockDominoTile = mock<ComplexDominoTile> {
+        val mockDominoTile = mock<DominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
         whenever(mock.dominoTile).thenReturn(mockDominoTile)
@@ -241,7 +242,6 @@ class SessionManagerTest {
         members,
         cryptoService,
         pendingSessionMessageQueues,
-        mock(),
         mock(),
         mock(),
         mock(),
@@ -1066,7 +1066,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock(),
             mock {
                 val dominoTile = mock<SimpleDominoTile> {
                     whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -1116,7 +1115,6 @@ class SessionManagerTest {
             groups, members,
             cryptoService,
             pendingSessionMessageQueues,
-            mock(),
             mock(),
             mock(),
             mock(),
@@ -1195,7 +1193,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock(),
             mock {
                 val dominoTile = mock<SimpleDominoTile> {
                     whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -1260,7 +1257,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock(),
             mock {
                 val dominoTile = mock<SimpleDominoTile> {
                     whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -1320,7 +1316,6 @@ class SessionManagerTest {
             groups, members,
             cryptoService,
             pendingSessionMessageQueues,
-            mock(),
             mock(),
             mock(),
             mock(),
@@ -1395,7 +1390,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            mock(),
             mock {
                 val dominoTile = mock<SimpleDominoTile> {
                     whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -1463,7 +1457,6 @@ class SessionManagerTest {
             groups, members,
             cryptoService,
             pendingSessionMessageQueues,
-            mock(),
             mock(),
             mock(),
             mock(),

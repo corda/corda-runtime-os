@@ -65,7 +65,6 @@ class DynamicKeyStoreTest {
 
     private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
-        mock(),
         subscriptionFactory,
         nodeConfiguration,
         certificateFactory,

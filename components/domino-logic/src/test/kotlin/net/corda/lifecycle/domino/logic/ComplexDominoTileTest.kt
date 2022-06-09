@@ -57,7 +57,7 @@ class ComplexDominoTileTest {
     inner class SimpleLeafTileTests {
 
         private fun tile(): ComplexDominoTile {
-            return ComplexDominoTile(TILE_NAME, factory, mock())
+            return ComplexDominoTile(TILE_NAME, factory)
         }
 
         @Test
@@ -232,7 +232,7 @@ class ComplexDominoTileTest {
                 onStartCalled++
             }
 
-            val tile = ComplexDominoTile(TILE_NAME, factory, mock(), ::onStart)
+            val tile = ComplexDominoTile(TILE_NAME, factory, ::onStart)
             tile.start()
 
             assertThat(onStartCalled).isEqualTo(1)
@@ -241,7 +241,7 @@ class ComplexDominoTileTest {
         @Test
         fun `second start will not restart anything`() {
             val called = AtomicInteger(0)
-            val tile = ComplexDominoTile(TILE_NAME, factory, mock(), onStart = {
+            val tile = ComplexDominoTile(TILE_NAME, factory, onStart = {
                 called.incrementAndGet()
             })
             tile.start()
@@ -254,7 +254,7 @@ class ComplexDominoTileTest {
         @Test
         fun `second start will recreate the resources if it was stopped`() {
             val called = AtomicInteger(0)
-            val tile = ComplexDominoTile(TILE_NAME, factory, mock(), onStart = {
+            val tile = ComplexDominoTile(TILE_NAME, factory, onStart = {
                 called.incrementAndGet()
             })
 
@@ -582,7 +582,6 @@ class ComplexDominoTileTest {
             val tile = ComplexDominoTile(
                 TILE_NAME,
                 factory,
-                mock(),
                 configurationChangeHandler = TileConfigurationChangeHandler(),
                 onStart = {
                     resourceCreated.incrementAndGet()

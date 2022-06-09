@@ -11,7 +11,6 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -26,7 +25,6 @@ internal class TlsCertificatesPublisher(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile, HostingMapListener {
 
@@ -41,7 +39,6 @@ internal class TlsCertificatesPublisher(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        registry,
         PublisherConfig(MISSING_DATA_WRITER_GROUP_NAME, false),
         messagingConfiguration,
     )
@@ -123,7 +120,6 @@ internal class TlsCertificatesPublisher(
     override val dominoTile = ComplexDominoTile(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         onStart = ::onStart,
         managedChildren = listOf(
             publisher.dominoTile,

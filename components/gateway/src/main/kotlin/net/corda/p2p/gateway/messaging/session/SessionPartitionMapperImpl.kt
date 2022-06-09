@@ -8,7 +8,6 @@ import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -19,7 +18,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
@@ -46,7 +44,7 @@ class SessionPartitionMapperImpl(
     )
     private val blockingDominoTile = BlockingDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, future)
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, registry,
+    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = setOf(sessionPartitionSubscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
         managedChildren = setOf(sessionPartitionSubscriptionTile, blockingDominoTile)
     )

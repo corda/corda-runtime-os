@@ -52,7 +52,7 @@ class ReplaySchedulerTest {
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        configHandler = context.arguments()[7] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
+        configHandler = context.arguments()[6] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
 
@@ -67,7 +67,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler will not replay before start`() {
-        val replayManager = ReplayScheduler(coordinatorFactory, mock(), service, false,
+        val replayManager = ReplayScheduler(coordinatorFactory, service, false,
             { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any(), Mockito.mock(SessionManager.SessionCounterparties::class.java))
@@ -78,7 +78,6 @@ class ReplaySchedulerTest {
     fun `fromConfig correctly passes constant config`() {
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             { _: Any -> },
@@ -101,7 +100,6 @@ class ReplaySchedulerTest {
         val cutOff = Duration.ofDays(6)
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             { _: Any -> },
@@ -122,7 +120,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future exceptionally if config is invalid`() {
-        ReplayScheduler(coordinatorFactory, mock(), service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
+        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
         val future = configHandler.applyNewConfiguration(
             ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
                 Duration.ofMillis(-10),
@@ -139,7 +137,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration completes the future if config is valid`() {
-        ReplayScheduler(coordinatorFactory, mock(), service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
+        ReplayScheduler(coordinatorFactory, service, false, { _: Any -> }, clock = mockTimeFacilitiesProvider.clock)
         val future = configHandler.applyNewConfiguration(
             ReplayScheduler.ReplaySchedulerConfig.ExponentialBackoffReplaySchedulerConfig(
                 replayPeriod,
@@ -161,7 +159,6 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages()
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             tracker::replayMessage,
@@ -207,7 +204,6 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages()
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             tracker::replayMessage,
@@ -241,7 +237,6 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages()
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             tracker::replayMessage,
@@ -288,7 +283,6 @@ class ReplaySchedulerTest {
 
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             ::replayMessage,
@@ -321,7 +315,6 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages()
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             false,
             tracker::replayMessage,
@@ -373,7 +366,6 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages()
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             true,
             tracker::replayMessage,
@@ -414,7 +406,6 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages()
         val replayScheduler = ReplayScheduler(
             coordinatorFactory,
-            mock(),
             service,
             true,
             tracker::replayMessage,

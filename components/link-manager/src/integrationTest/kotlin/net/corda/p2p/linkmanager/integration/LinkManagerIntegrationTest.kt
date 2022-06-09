@@ -18,7 +18,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -59,9 +58,6 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var lifecycleCoordinatorFactory : LifecycleCoordinatorFactory
-
-        @InjectService(timeout = 4000)
-        lateinit var lifecycleRegistry: LifecycleRegistry
     }
 
     private val replayPeriod = 2000
@@ -115,7 +111,6 @@ class LinkManagerIntegrationTest {
             subscriptionFactory,
             publisherFactory,
             lifecycleCoordinatorFactory,
-            lifecycleRegistry,
             configReadService,
             bootstrapConfig,
         )
@@ -151,7 +146,6 @@ class LinkManagerIntegrationTest {
             subscriptionFactory,
             publisherFactory,
             lifecycleCoordinatorFactory,
-            lifecycleRegistry,
             configReadService,
             bootstrapConfig,
         )

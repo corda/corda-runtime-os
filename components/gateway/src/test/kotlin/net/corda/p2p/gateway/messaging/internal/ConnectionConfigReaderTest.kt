@@ -19,7 +19,7 @@ class ConnectionConfigReaderTest {
 
     private val domino = mockConstruction(ComplexDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        configChangeHandler = context.arguments()[7] as ConfigurationChangeHandler<GatewayConfiguration>?
+        configChangeHandler = context.arguments()[6] as ConfigurationChangeHandler<GatewayConfiguration>?
     }
     private val coordinatorFactory = mock(LifecycleCoordinatorFactory::class.java)
     private val configReadService = mock(ConfigurationReadService::class.java)
@@ -31,7 +31,7 @@ class ConnectionConfigReaderTest {
 
     @Test
     fun `configuration handler processes new, valid configuration successfully`() {
-        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, mock(), configReadService)
+        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, configReadService)
         val connectionConfig = ConnectionConfiguration().copy(maxClientConnections = 1)
         val gatewayConfig = GatewayConfiguration("", 1, mock(), connectionConfig)
 
@@ -42,7 +42,7 @@ class ConnectionConfigReaderTest {
 
     @Test
     fun `configuration handler returns no change if configuration is the same as before`() {
-        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, mock(), configReadService)
+        val connectionConfigReader = ConnectionConfigReader(coordinatorFactory, configReadService)
         val gatewayConfig = GatewayConfiguration("", 1, mock(), connectionConfigReader.connectionConfig)
 
         val future = configChangeHandler!!.applyNewConfiguration(gatewayConfig, null, mock())

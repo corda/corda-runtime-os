@@ -5,7 +5,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -17,7 +16,6 @@ import net.corda.utilities.time.Clock
 @Suppress("LongParameterList")
 internal class OutboundLinkManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     commonComponents: CommonComponents,
     linkManagerHostingMap: LinkManagerHostingMap,
     groups: LinkManagerGroupPolicyProvider,
@@ -43,7 +41,6 @@ internal class OutboundLinkManager(
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
-        registry,
         configurationReaderService,
         publisherFactory,
         messagingConfiguration,

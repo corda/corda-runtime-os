@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -20,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class StubMembershipGroupReader(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     configuration: SmartConfig,
 ) : LinkManagerMembershipGroupReader {
@@ -82,7 +80,6 @@ internal class StubMembershipGroupReader(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         ::onStart,
         dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName),
         managedChildren = setOf(subscriptionTile, blockingTile)

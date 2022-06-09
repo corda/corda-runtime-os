@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -19,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class StubLinkManagerHostingMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     configuration: SmartConfig,
 ) : LinkManagerHostingMap {
@@ -55,7 +53,6 @@ internal class StubLinkManagerHostingMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         managedChildren = setOf(subscriptionTile, blockingTile),
         dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName)
     )

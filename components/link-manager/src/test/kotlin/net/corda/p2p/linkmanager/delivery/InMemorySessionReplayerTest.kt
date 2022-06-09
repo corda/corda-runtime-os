@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkOutMessage
@@ -70,7 +71,7 @@ class InMemorySessionReplayerTest {
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
     private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
-        val mockDominoTile = mock<ComplexDominoTile> {
+        val mockDominoTile = mock<DominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
         whenever(mock.dominoTile).thenReturn(mockDominoTile)
@@ -79,7 +80,7 @@ class InMemorySessionReplayerTest {
     private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
-        replayCallback = context.arguments()[4] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
         val mockDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
@@ -92,7 +93,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
             mockTimeFacilitiesProvider.clock)
 
         val id = UUID.randomUUID().toString()
@@ -114,7 +115,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeMessageFromReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
             mockTimeFacilitiesProvider.clock)
 
         val id = UUID.randomUUID().toString()
@@ -127,7 +128,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeAllMessageFromReplay`() {
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
             mockTimeFacilitiesProvider.clock)
 
         setRunning()
@@ -139,7 +140,7 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The replaySchedular callback publishes the session message`() {
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
             mockTimeFacilitiesProvider.clock)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
@@ -182,7 +183,7 @@ class InMemorySessionReplayerTest {
             whenever(mock.dominoTile).thenReturn(mockDominoTile)
         }
 
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -210,7 +211,7 @@ class InMemorySessionReplayerTest {
             }
             whenever(mock.dominoTile).thenReturn(mockDominoTile)
         }
-        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(), groupsAndMembers.second, members, mockTimeFacilitiesProvider.clock)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, members, mockTimeFacilitiesProvider.clock)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -238,7 +239,7 @@ class InMemorySessionReplayerTest {
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
-        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock(),
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(),
             groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(

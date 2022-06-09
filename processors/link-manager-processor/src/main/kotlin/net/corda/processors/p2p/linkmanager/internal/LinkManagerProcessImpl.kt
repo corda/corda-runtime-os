@@ -12,7 +12,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
@@ -31,8 +30,6 @@ class LinkManagerProcessImpl @Activate constructor(
     private val configMerger: ConfigMerger,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = LifecycleRegistry::class)
-    private val lifecycleRegistry: LifecycleRegistry,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
@@ -79,7 +76,6 @@ class LinkManagerProcessImpl @Activate constructor(
                     subscriptionFactory,
                     publisherFactory,
                     coordinatorFactory,
-                    lifecycleRegistry,
                     configurationReadService,
                     configMerger.getMessagingConfig(event.config)
                 )

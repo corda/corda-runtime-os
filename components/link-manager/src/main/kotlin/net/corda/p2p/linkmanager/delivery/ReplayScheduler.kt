@@ -13,7 +13,6 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("LongParameterList")
 internal class ReplayScheduler<M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     private val configReadService: ConfigurationReadService,
     private val limitTotalReplays: Boolean,
     private val replayMessage: (message: M) -> Unit,
@@ -39,7 +37,6 @@ internal class ReplayScheduler<M>(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        registry,
         onClose = { executorService.shutdownNow() },
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )

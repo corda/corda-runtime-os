@@ -12,7 +12,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -26,8 +25,6 @@ import kotlin.concurrent.write
 class PublisherWithDominoLogic(
     publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Suppress("Unused")
-    val registry: LifecycleRegistry,
     publisherConfig: PublisherConfig,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
@@ -49,7 +46,8 @@ class PublisherWithDominoLogic(
 
         override val state : LifecycleStatus
             get() = coordinator.status
-        override val isRunning: Boolean = state == LifecycleStatus.UP
+        override val isRunning: Boolean
+            get() = state == LifecycleStatus.UP
 
         override fun start() {
             coordinator.start()

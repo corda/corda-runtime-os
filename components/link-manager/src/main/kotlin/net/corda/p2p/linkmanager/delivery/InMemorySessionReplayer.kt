@@ -7,7 +7,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -26,7 +25,6 @@ internal class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     messagingConfiguration: SmartConfig,
     private val groups: LinkManagerGroupPolicyProvider,
     private val members: LinkManagerMembershipGroupReader,
@@ -42,18 +40,16 @@ internal class InMemorySessionReplayer(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        registry,
         PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
         messagingConfiguration
     )
 
-    private val replayScheduler = ReplayScheduler(coordinatorFactory, registry, configurationReaderService,
+    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
         false, ::replayMessage, clock = clock)
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        registry,
         dependentChildren = setOf(replayScheduler.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             groups.dominoTile.coordinatorName, members.dominoTile.coordinatorName),
         managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)

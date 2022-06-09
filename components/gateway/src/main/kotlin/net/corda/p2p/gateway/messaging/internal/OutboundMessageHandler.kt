@@ -14,7 +14,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
@@ -50,17 +48,15 @@ internal class OutboundMessageHandler(
         private const val MAX_RETRIES = 1
     }
 
-    private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, registry, configurationReaderService)
+    private val connectionConfigReader = ConnectionConfigReader(lifecycleCoordinatorFactory, configurationReaderService)
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
-        registry,
         configurationReaderService
     )
 
     private val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
-        registry,
         subscriptionFactory,
         messagingConfiguration
     )
@@ -80,7 +76,6 @@ internal class OutboundMessageHandler(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         onClose = { retryThreadPool.shutdown() },
         dependentChildren = listOf(outboundSubscriptionTile.coordinatorName, trustStoresMap.dominoTile.coordinatorName),
         managedChildren = listOf(outboundSubscriptionTile, trustStoresMap.dominoTile),

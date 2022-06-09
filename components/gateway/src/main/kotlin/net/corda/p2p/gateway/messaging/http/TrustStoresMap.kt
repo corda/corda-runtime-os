@@ -11,7 +11,6 @@ import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -21,7 +20,6 @@ import net.corda.schema.Schemas
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
@@ -59,7 +57,6 @@ internal class TrustStoresMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         managedChildren = listOf(subscriptionTile, blockingDominoTile),
         dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
     )

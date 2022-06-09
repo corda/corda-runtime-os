@@ -63,7 +63,7 @@ class StubGroupPolicyProviderTest {
     )
 
     private val groups = StubGroupPolicyProvider(
-        lifecycleCoordinatorFactory, mock(), subscriptionFactory, configuration
+        lifecycleCoordinatorFactory, subscriptionFactory, configuration
     )
 
     @AfterEach

@@ -117,7 +117,7 @@ class OutboundMessageHandlerTest {
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doAnswer { handlerStarted }
         @Suppress("UNCHECKED_CAST")
-        onClose = context.arguments()[4] as? (() -> Unit)
+        onClose = context.arguments()[3] as? (() -> Unit)
     }
     private val subscriptionTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
@@ -132,7 +132,6 @@ class OutboundMessageHandlerTest {
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
-        mock(),
         configurationReaderService,
         subscriptionFactory,
         SmartConfigImpl.empty(),
@@ -152,7 +151,6 @@ class OutboundMessageHandlerTest {
         val mockExecutorService = mock<ScheduledExecutorService>()
         OutboundMessageHandler(
             lifecycleCoordinatorFactory,
-            mock(),
             configurationReaderService,
             subscriptionFactory,
             SmartConfigImpl.empty(),

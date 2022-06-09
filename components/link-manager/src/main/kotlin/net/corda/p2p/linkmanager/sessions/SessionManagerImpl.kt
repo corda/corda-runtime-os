@@ -11,7 +11,6 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -82,7 +81,6 @@ internal class SessionManagerImpl(
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     messagingConfiguration: SmartConfig,
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val linkManagerHostingMap: LinkManagerHostingMap,
@@ -92,7 +90,6 @@ internal class SessionManagerImpl(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
-        registry,
         messagingConfiguration,
         groups,
         members,
@@ -124,7 +121,6 @@ internal class SessionManagerImpl(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
-        registry,
         messagingConfiguration,
         groups,
         members,
@@ -137,7 +133,6 @@ internal class SessionManagerImpl(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        registry,
         PublisherConfig(SESSION_MANAGER_CLIENT_ID, false),
         messagingConfiguration
     )
@@ -145,7 +140,6 @@ internal class SessionManagerImpl(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        registry,
         ::onTileStart,
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName, groups.dominoTile.coordinatorName,
@@ -676,7 +670,6 @@ internal class SessionManagerImpl(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        registry: LifecycleRegistry,
         configuration: SmartConfig,
         private val groups: LinkManagerGroupPolicyProvider,
         private val members: LinkManagerMembershipGroupReader,
@@ -730,7 +723,6 @@ internal class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            registry,
             PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, false),
             configuration
         )
@@ -738,7 +730,6 @@ internal class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            registry,
             onClose = { executorService.shutdownNow() },
             dependentChildren = setOf(
                 groups.dominoTile.coordinatorName,

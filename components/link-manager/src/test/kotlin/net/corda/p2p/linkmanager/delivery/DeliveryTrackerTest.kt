@@ -131,7 +131,6 @@ class DeliveryTrackerTest {
         val tracker = DeliveryTracker(
             mock(),
             mock(),
-            mock(),
             publisherFactory,
             mock(),
             subscriptionFactory,

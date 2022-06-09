@@ -78,7 +78,6 @@ class TlsCertificatesPublisherTest {
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
-        mock(),
         configuration,
     )
 

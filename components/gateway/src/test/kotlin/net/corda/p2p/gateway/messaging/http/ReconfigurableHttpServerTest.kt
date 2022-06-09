@@ -54,7 +54,7 @@ class ReconfigurableHttpServerTest {
     private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
-        configHandler = (context.arguments()[7] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
+        configHandler = (context.arguments()[6] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
 
@@ -67,7 +67,6 @@ class ReconfigurableHttpServerTest {
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
-        mock(),
         configurationReaderService,
         listener,
         mock(),

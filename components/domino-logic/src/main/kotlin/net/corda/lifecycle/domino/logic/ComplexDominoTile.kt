@@ -22,7 +22,6 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.lifecycle.registry.LifecycleRegistry
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -53,7 +52,6 @@ import kotlin.concurrent.write
 class ComplexDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val registry: LifecycleRegistry,
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet(),
@@ -114,7 +112,7 @@ class ComplexDominoTile(
         coordinator.followStatusChangesByName(setOf(it))
     }
     private val latestChildStateMap = dependentChildren.associateWith {
-        registry.componentStatus()[it]?.status
+        LifecycleStatus.DOWN
     }.toMutableMap()
 
     private val currentInternalState = AtomicReference(Created)
@@ -189,15 +187,7 @@ class ComplexDominoTile(
                     // The coordinator had started, set the children state map - from
                     // now on we should receive messages of any change
                     latestChildStateMap += dependentChildren.associateWith {
-                        val status = registry.componentStatus()[it]?.status
-                        if (status != null) {
-                            status
-                        } else {
-                            coordinator.postEvent(
-                                ErrorEvent(NoCoordinatorException("No registered coordinator with name ${it}."))
-                            )
-                            LifecycleStatus.ERROR
-                        }
+                        LifecycleStatus.DOWN
                     }
                 }
                 is StopEvent -> {
@@ -429,8 +419,6 @@ class ComplexDominoTile(
             }
         }
     }
-
-    private class NoCoordinatorException(override val message: String): IllegalStateException(message)
 
     override fun toString(): String {
         return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it }}, " +

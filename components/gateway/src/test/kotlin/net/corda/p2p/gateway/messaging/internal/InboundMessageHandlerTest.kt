@@ -89,7 +89,6 @@ class InboundMessageHandlerTest {
 
     private val handler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
-        mock(),
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,

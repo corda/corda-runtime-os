@@ -16,7 +16,6 @@ import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -28,7 +27,6 @@ import net.corda.v5.crypto.SignatureSpec
 
 internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    registry: LifecycleRegistry,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
@@ -61,7 +59,6 @@ internal class DynamicKeyStore(
 
     private val signer = StubCryptoProcessor(
         lifecycleCoordinatorFactory,
-        registry,
         subscriptionFactory,
         messagingConfiguration,
     )
@@ -75,7 +72,6 @@ internal class DynamicKeyStore(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        registry,
         managedChildren = listOf(subscriptionTile, signer.dominoTile, blockingDominoTile),
         dependentChildren = listOf(
             subscriptionTile.coordinatorName,
