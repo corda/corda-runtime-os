@@ -42,40 +42,45 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
 
-        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        try {
+            val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB", "CN=Alice, O=Alice Corp, L=LDN, C=GB")
 
-        val virtualNodes = cpiList.flatMap { cpi ->
-            x500Identities.map { x500 -> cpi to VirtualNodeInfo(
-                HoldingIdentity(x500, cpi.metadata.cpiId.name),
-                cpi.metadata.cpiId,
-                vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID()
-            ) }
-        }
-
-        virtualNodes.forEach { vNode ->
-            val hid = vNode.second.holdingIdentity
-            log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
-        }
-
-        cpiList.flatMap { it.cpks }.map { cpk ->
-            val cpkChecksum = cpk.metadata.fileChecksum
-            val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
-            chunkWriter.onChunk { chunk ->
-                val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
-                context.publish(Record(Schemas.VirtualNode.CPK_FILE_TOPIC, cpkChunkId, chunk))
+            val virtualNodes = cpiList.flatMap { cpi ->
+                x500Identities.map { x500 -> cpi to VirtualNodeInfo(
+                        HoldingIdentity(x500, cpi.metadata.cpiId.name),
+                        cpi.metadata.cpiId,
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID()
+                ) }
             }
-            chunkWriter.write(cpk.path!!.toString(), Files.readAllBytes(cpk.path!!).inputStream())
+
+            virtualNodes.forEach { vNode ->
+                val hid = vNode.second.holdingIdentity
+                log.info("Create vNode for '${hid.x500Name}'-'${hid.groupId}'  with short ID '${hid.id}'")
+            }
+
+            cpiList.flatMap { it.cpks }.map { cpk ->
+                val cpkChecksum = cpk.metadata.fileChecksum
+                val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+                chunkWriter.onChunk { chunk ->
+                    val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
+                    context.publish(Record(Schemas.VirtualNode.CPK_FILE_TOPIC, cpkChunkId, chunk))
+                }
+                chunkWriter.write(cpk.path!!.toString(), Files.readAllBytes(cpk.path!!).inputStream())
+            }
+
+
+            val vNodeCpiRecords = virtualNodes.flatMap { (cpi, virtualNodeInfo) ->
+                listOf(
+                    Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity.toAvro(), virtualNodeInfo.toAvro()),
+                    Record(CPI_INFO_TOPIC, cpi.metadata.cpiId.toAvro(), cpi.metadata.toAvro())
+                )
+            }
+
+            context.publish(vNodeCpiRecords)
+        } finally {
+            cpiList.forEach(Cpi::close)
         }
-
-
-        val vNodeCpiRecords = virtualNodes.flatMap {
-            listOf(
-                Record(VIRTUAL_NODE_INFO_TOPIC, it.second.holdingIdentity.toAvro(), it.second.toAvro()),
-                Record(CPI_INFO_TOPIC, it.first.metadata.cpiId.toAvro(), it.first.metadata.toAvro()))
-        }
-
-        context.publish(vNodeCpiRecords)
     }
 
     private fun scanCPIs(packageRepository: Path, cacheDir: Path): List<Cpi> {
