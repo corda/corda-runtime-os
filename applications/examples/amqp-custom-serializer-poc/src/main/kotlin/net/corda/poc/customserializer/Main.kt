@@ -5,7 +5,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CpkReader
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.sandbox.SandboxCreationService
@@ -87,7 +87,7 @@ class Main @Activate constructor(
     private fun prepareSandbox(cpkFiles: List<Path>, cacheDir: String): SandboxAndSerializers {
 
         val cpks = cpkFiles.map { cpkPath ->
-            cpkPath.inputStream(StandardOpenOption.READ).use { inputStream -> Cpk.from(inputStream, Path.of(cacheDir)) }
+            cpkPath.inputStream(StandardOpenOption.READ).use { inputStream -> CpkReader.readCpk(inputStream, Path.of(cacheDir)) }
         }
 
         val serializers: List<String> = cpks.map { it.metadata }.flatMap { it.cordappManifest.serializers }

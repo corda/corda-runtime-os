@@ -1,0 +1,49 @@
+{
+  "fileFormatVersion": 1,
+  "groupId": "f3676687-ab69-4ca1-a17b-ab20b7bc6d03",
+  "registrationProtocol": "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+  "synchronisationProtocol": "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+  "protocolParameters": {
+    "sessionKeyPolicy": "Combined"
+  },
+  "p2pParameters": {
+    "sessionTrustRoots": [
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----"
+    ],
+    "tlsTrustRoots": [
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+      "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----"
+    ],
+    "sessionPki": "Standard",
+    "tlsPki": "Standard",
+    "tlsVersion" : "1.3",
+    "protocolMode": "Authentication_Encryption"
+  },
+  "mgmInfo": {
+    "corda.party.name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
+    "corda.session.key": "-----BEGIN PUBLIC KEY-----\n{truncated for readability}\n-----END PUBLIC KEY-----",
+    "corda.session.certificate.0":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+    "corda.session.certificate.1":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+    "corda.session.certificate.2":"-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----",
+    "corda.ecdh.key": "-----BEGIN PUBLIC KEY-----\n{truncated for readability}\n-----END PUBLIC KEY-----",
+    "corda.endpoints.0.connectionURL": "https://mgm.corda5.r3.com:10000",
+    "corda.endpoints.0.protocolVersion": "1",
+    "corda.endpoints.1.connectionURL": "https://mgm-dr.corda5.r3.com:10000",
+    "corda.endpoints.1.protocolVersion": "1",
+    "corda.platformVersion": "5000",
+    "corda.softwareVersion": "5.0.0",
+    "corda.serial": "1"
+  },
+  "cipherSuite": {
+    "corda.provider": "default",
+    "corda.signature.provider": "default",
+    "corda.signature.default": "ECDSA_SECP256K1_SHA256",
+    "corda.signature.FRESH_KEYS": "ECDSA_SECP256K1_SHA256",
+    "corda.digest.default": "SHA256",
+    "corda.cryptoservice.provider": "default"
+  }
+}

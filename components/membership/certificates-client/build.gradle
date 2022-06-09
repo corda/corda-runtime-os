@@ -1,0 +1,13 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Membership certificates client'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    api 'net.corda:corda-membership'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:lifecycle:lifecycle')
+}

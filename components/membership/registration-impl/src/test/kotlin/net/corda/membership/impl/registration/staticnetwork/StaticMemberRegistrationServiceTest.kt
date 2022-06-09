@@ -20,7 +20,7 @@ import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
-import net.corda.membership.impl.MemberInfoExtension.Companion.identityKeyHashes
+import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.impl.MemberInfoExtension.Companion.status
@@ -125,8 +125,7 @@ class StaticMemberRegistrationServiceTest {
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq("alice-alias"), any(), any<Map<String, String>>()) } doReturn aliceKey
-        // when no keyAlias is defined in static template, we are using the HoldingIdentity's id
+        on { generateKeyPair(any(), any(), eq(aliceId), any(), any<Map<String, String>>()) } doReturn aliceKey
         on { generateKeyPair(any(), any(), eq(bobId), any(), any<Map<String, String>>()) } doReturn bobKey
         on { generateKeyPair(any(), any(), eq(charlieId), any(), any<Map<String, String>>()) } doReturn charlieKey
     }
@@ -231,10 +230,10 @@ class StaticMemberRegistrationServiceTest {
         assertNotNull(memberPublished.serial)
         assertNotNull(memberPublished.modifiedTime)
 
-        assertEquals(aliceKey, memberPublished.owningKey)
-        assertEquals(1, memberPublished.identityKeys.size)
-        assertEquals(1, memberPublished.identityKeyHashes.size)
-        assertEquals(aliceKey.calculateHash(), memberPublished.identityKeyHashes.first())
+        assertEquals(aliceKey, memberPublished.sessionInitiationKey)
+        assertEquals(1, memberPublished.ledgerKeys.size)
+        assertEquals(1, memberPublished.ledgerKeyHashes.size)
+        assertEquals(aliceKey.calculateHash(), memberPublished.ledgerKeyHashes.first())
         assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
         assertEquals(1, memberPublished.endpoints.size)
 

@@ -1,12 +1,28 @@
-package net.corda.membership.impl.grouppolicy.factory
+package net.corda.membership.impl
 
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.impl.MemberInfoExtension.Companion.certificate
+import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
+import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.impl.converter.EndpointInfoConverter
+import net.corda.membership.impl.converter.PublicKeyConverter
+import net.corda.membership.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.cipher.suite.KeyEncodingService
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import java.security.PublicKey
 
 /**
  * Unit tests for [GroupPolicyParser]
@@ -41,14 +57,29 @@ class GroupPolicyParserTest {
         const val MGM_INFO = "mgmInfo"
         const val CIPHER_SUITE = "cipherSuite"
         const val ROLES = "roles"
+
+        private const val DEFAULT_KEY = "1234"
+        enum class GroupPolicyType {
+            STATIC,
+            DYNAMIC
+        }
     }
 
     private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
+    private val defaultKey: PublicKey = mock {
+        on { encoded } doReturn DEFAULT_KEY.toByteArray()
+    }
+    private val keyEncodingService: KeyEncodingService = mock {
+        on { decodePublicKey(any<String>()) } doReturn defaultKey
+    }
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
+        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+    )
 
     @BeforeEach
     fun setUp() {
-        groupPolicyParser = GroupPolicyParser()
+        groupPolicyParser = GroupPolicyParser(layeredPropertyMapFactory)
     }
 
     @Test
@@ -68,13 +99,13 @@ class GroupPolicyParserTest {
 
     @Test
     fun `Parse group policy - verify interface properties`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
+        val result = groupPolicyParser.parse(getSampleGroupPolicy(GroupPolicyType.STATIC))
         assertEquals(testGroupId, result.groupId)
     }
 
     @Test
     fun `Parse group policy - verify internal map`() {
-        val result = groupPolicyParser.parse(getSampleGroupPolicy())
+        val result = groupPolicyParser.parse(getSampleGroupPolicy(GroupPolicyType.STATIC))
 
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
@@ -145,9 +176,28 @@ class GroupPolicyParserTest {
         assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
     }
 
-    private fun getSampleGroupPolicy(): String {
-        val url = this::class.java.getResource("/SampleGroupPolicy.json")
-        requireNotNull(url)
-        return url.readText()
+    @Test
+    fun `MGM member info is correctly constructed from group policy information`() {
+        val mgmInfo = groupPolicyParser.getMgmInfo(getSampleGroupPolicy(GroupPolicyType.DYNAMIC))!!
+        assertSoftly {
+            it.assertThat(mgmInfo.name.toString())
+                .isEqualTo("CN=Corda Network MGM, OU=MGM, O=Corda Network, L=London, C=GB")
+            it.assertThat(mgmInfo.certificate.size).isEqualTo(3)
+            it.assertThat(mgmInfo.sessionInitiationKey).isNotNull
+            it.assertThat(mgmInfo.ledgerKeys.size).isEqualTo(0)
+            it.assertThat(mgmInfo.ledgerKeyHashes.size).isEqualTo(0)
+            it.assertThat(mgmInfo.endpoints.size).isEqualTo(2)
+            it.assertThat(mgmInfo.platformVersion).isEqualTo(5000)
+            it.assertThat(mgmInfo.softwareVersion).isEqualTo("5.0.0")
+            it.assertThat(mgmInfo.serial).isEqualTo(1)
+            it.assertThat(mgmInfo.isActive).isTrue
+            it.assertThat(mgmInfo.isMgm).isTrue
+        }
     }
+
+    private fun getSampleGroupPolicy(type: GroupPolicyType) =
+        when (type) {
+            GroupPolicyType.STATIC -> this::class.java.getResource("/SampleStaticGroupPolicy.json")!!.readText()
+            GroupPolicyType.DYNAMIC -> this::class.java.getResource("/SampleDynamicGroupPolicy.json")!!.readText()
+        }
 }

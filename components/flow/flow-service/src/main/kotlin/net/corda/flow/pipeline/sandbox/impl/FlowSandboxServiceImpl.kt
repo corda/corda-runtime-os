@@ -165,6 +165,10 @@ class FlowSandboxServiceImpl @Activate constructor(
 
         registerCustomSerializers(factory)
 
+        for (customSerializer in internalCustomSerializers) {
+            log.info("Registering internal serializer {}", customSerializer.javaClass.name)
+            factory.register(customSerializer, factory)
+        }
         // Build CorDapp serializers
         // Current implementation has unique serializers per CPI
         val cordappCustomSerializers = buildCorDappSerializers(

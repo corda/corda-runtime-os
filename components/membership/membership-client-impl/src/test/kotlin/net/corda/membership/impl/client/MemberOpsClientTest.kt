@@ -1,6 +1,5 @@
 package net.corda.membership.impl.client
 
-import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -45,10 +44,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 class MemberOpsClientTest {
     companion object {
         private const val HOLDING_IDENTITY_ID = "nodeId"
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
     private val componentHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
@@ -120,10 +122,10 @@ class MemberOpsClientTest {
                         MembershipRpcResponseContext(
                             rpcRequest!!.requestContext.requestId,
                             rpcRequest!!.requestContext.requestTimestamp,
-                            Instant.now()
+                            clock.instant()
                         ),
                         RegistrationResponse(
-                            Instant.now(),
+                            clock.instant(),
                             RegistrationStatus.SUBMITTED,
                             1,
                             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -226,7 +228,7 @@ class MemberOpsClientTest {
                     MembershipRpcResponseContext(
                         rpcRequest!!.requestContext.requestId,
                         rpcRequest!!.requestContext.requestTimestamp,
-                        Instant.now()
+                        clock.instant()
                     ),
                     null
                 )
@@ -252,10 +254,10 @@ class MemberOpsClientTest {
                     MembershipRpcResponseContext(
                         "wrongId",
                         rpcRequest!!.requestContext.requestTimestamp,
-                        Instant.now()
+                        clock.instant()
                     ),
                     RegistrationResponse(
-                        Instant.now(),
+                        clock.instant(),
                         RegistrationStatus.SUBMITTED,
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -283,11 +285,11 @@ class MemberOpsClientTest {
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
                         rpcRequest!!.requestContext.requestId,
-                        Instant.now().plusMillis(10000000),
-                        Instant.now()
+                        clock.instant().plusMillis(10000000),
+                        clock.instant()
                     ),
                     RegistrationResponse(
-                        Instant.now(),
+                        clock.instant(),
                         RegistrationStatus.SUBMITTED,
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -316,7 +318,7 @@ class MemberOpsClientTest {
                     MembershipRpcResponseContext(
                         rpcRequest!!.requestContext.requestId,
                         rpcRequest!!.requestContext.requestTimestamp,
-                        Instant.now()
+                        clock.instant()
                     ),
                     "WRONG RESPONSE TYPE"
                 )
