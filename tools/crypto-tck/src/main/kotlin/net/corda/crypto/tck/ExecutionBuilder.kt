@@ -27,8 +27,6 @@ class ExecutionBuilder(
         }
     }
 
-    private val signatureSpecs = mutableMapOf<String, List<SignatureSpec>>()
-
     private var testResultsDirectory: Path = Path.of("", serviceName).toAbsolutePath()
 
     private var concurrency: Int = 20
@@ -42,16 +40,6 @@ class ExecutionBuilder(
     private var timeout: Duration = Duration.ofSeconds(10)
 
     private var tests = listOf<ComplianceTestType>()
-
-    /**
-     * Adds mapping of the supported key scheme to the [SignatureSpec]s. It has to be defined for all
-     * key schemes supported by the service.
-     */
-    fun addScheme(codeName: String, vararg signatureSpec: SignatureSpec): ExecutionBuilder {
-        tck.schemeMetadata.findKeyScheme(codeName)
-        signatureSpecs[codeName] = signatureSpec.toList()
-        return this
-    }
 
     /**
      * Sets the path where to output the test results. The default value is `Path.of("", serviceName).toAbsolutePath()`
@@ -133,11 +121,6 @@ class ExecutionBuilder(
             options = ExecutionOptions(
                 serviceName = serviceName,
                 serviceConfig = serviceConfig,
-                signatureSpecs = signatureSpecs.ifEmpty {
-                    throw IllegalArgumentException("" +
-                            "Please specify the signatures pecs map for all supported key schemes."
-                    )
-                },
                 testResultsDirectory = testResultsDirectory,
                 concurrency = concurrency,
                 sessionComplianceSpec = sessionComplianceSpec

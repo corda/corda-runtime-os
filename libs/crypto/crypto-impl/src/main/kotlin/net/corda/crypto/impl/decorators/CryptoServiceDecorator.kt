@@ -9,11 +9,13 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.impl.ExecutorWithTimeout
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.time.Duration
 
@@ -55,32 +57,28 @@ class CryptoServiceDecorator(
         (cryptoService as? AutoCloseable)?.close()
     }
 
-    override fun requiresWrappingKey(): Boolean = try {
-        cryptoService.requiresWrappingKey()
-    } catch (e: CryptoServiceException) {
-        throw e
+    override val extensions: List<CryptoServiceExtensions> get() = try {
+        cryptoService.extensions
     } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService operation failed", e)
+        throw CryptoServiceException("CryptoService extensions failed", e, isRecoverable = false)
     }
 
-    override fun supportedSchemes(): List<KeyScheme> = try {
-        cryptoService.supportedSchemes()
-    } catch (e: CryptoServiceException) {
-        throw e
+    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = try {
+        cryptoService.supportedSchemes
     } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService operation failed", e)
+        throw CryptoServiceException("CryptoService supportedSchemes failed", e, isRecoverable = false)
     }
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         withTimeout.executeWithRetry {
             cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
         }
-    } catch (e: IllegalArgumentException) {
-        throw e
-    } catch (e: CryptoServiceException) {
-        throw e
     } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService operation failed", e)
+        throw CryptoServiceException(
+                "CryptoService createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
+                e,
+                isRecoverable = false
+            )
     }
 
     override fun generateKeyPair(
@@ -90,10 +88,12 @@ class CryptoServiceDecorator(
         withTimeout.executeWithRetry {
             cryptoService.generateKeyPair(spec, context)
         }
-    } catch (e: CryptoServiceException) {
-        throw e
     } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService operation failed", e)
+        throw CryptoServiceException(
+            "CryptoService generateKeyPair failed (spec=$spec)",
+            e,
+            isRecoverable = false
+        )
     }
 
     override fun sign(
@@ -104,9 +104,23 @@ class CryptoServiceDecorator(
         withTimeout.executeWithRetry {
             cryptoService.sign(spec, data, context)
         }
-    } catch (e: CryptoServiceException) {
-        throw e
     } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService operation failed", e)
+        throw CryptoServiceException(
+            "CryptoService sign failed (spec=$spec,data.size=${data.size})",
+            e,
+            isRecoverable = false
+        )
+    }
+
+    override fun delete(alias: String, context: Map<String, String>) = try {
+        withTimeout.executeWithRetry {
+            cryptoService.delete(alias, context)
+        }
+    } catch (e: Throwable) {
+        throw CryptoServiceException(
+            "CryptoService delete failed (alias=$alias)",
+            e,
+            isRecoverable = false
+        )
     }
 }

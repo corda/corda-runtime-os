@@ -13,7 +13,6 @@ import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
 import net.corda.crypto.persistence.hsm.HSMConfig
 import net.corda.crypto.persistence.hsm.HSMTenantAssociation
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -109,7 +108,7 @@ class HSMServiceTests {
             UUID.randomUUID().toString(),
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -132,7 +131,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -154,7 +153,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -177,7 +176,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -195,7 +194,7 @@ class HSMServiceTests {
             UUID.randomUUID().toString(),
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -219,7 +218,7 @@ class HSMServiceTests {
             UUID.randomUUID().toString(),
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -241,7 +240,7 @@ class HSMServiceTests {
             UUID.randomUUID().toString(),
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -263,7 +262,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -284,7 +283,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -320,7 +319,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -367,7 +366,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -408,7 +407,7 @@ class HSMServiceTests {
         assertEquals(softConfig.retries, hsm1.retries)
         assertEquals(softConfig.timeoutMills, hsm1.timeoutMills)
         assertEquals(SOFT_HSM_SERVICE_NAME, hsm1.serviceName)
-        val supportedSchemes = SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName }
+        val supportedSchemes = factory.softHSMSupportedSchemas
         assertEquals(supportedSchemes.size, hsm1.supportedSchemes.size)
         assertTrue(supportedSchemes.all { hsm1.supportedSchemes.contains(it) })
         val association1 = service.findAssignedHSM(tenantId1, CryptoConsts.Categories.LEDGER)
@@ -481,7 +480,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )
@@ -553,7 +552,7 @@ class HSMServiceTests {
             null,
             7,
             57,
-            SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+            factory.softHSMSupportedSchemas,
             UUID.randomUUID().toString(),
             42
         )

@@ -240,7 +240,7 @@ class HSMServiceImpl(
             null,
             softConfig.retries,
             softConfig.timeoutMills,
-            SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.codeName },
+            SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.key.codeName },
             SOFT_HSM_SERVICE_NAME,
             -1
         )

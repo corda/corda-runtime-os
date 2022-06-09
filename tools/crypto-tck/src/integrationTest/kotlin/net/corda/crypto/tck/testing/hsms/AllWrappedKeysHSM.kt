@@ -1,11 +1,10 @@
 package net.corda.crypto.tck.testing.hsms
 
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
+import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
@@ -13,49 +12,27 @@ import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_CODE_NAME
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPairGenerator
-import java.security.Provider
 
 class AllWrappedKeysHSM(
-    userName: String,
+    config: AllWrappedKeysHSMConfiguration,
     schemeMetadata: CipherSchemeMetadata,
-    digestService: DigestService,
-    supportedSchemeCodes: List<String> = listOf(
-        RSA_CODE_NAME,
-        ECDSA_SECP256K1_CODE_NAME,
-        ECDSA_SECP256R1_CODE_NAME,
-        EDDSA_ED25519_CODE_NAME,
-        SPHINCS256_CODE_NAME,
-        SM2_CODE_NAME,
-        GOST3410_GOST3411_CODE_NAME
+    digestService: DigestService
+) : AbstractHSM(config.userName, schemeMetadata, digestService), CryptoService {
+
+    override val extensions: List<CryptoServiceExtensions> = listOf(
+        CryptoServiceExtensions.REQUIRE_WRAPPING_KEY,
+        CryptoServiceExtensions.DELETE_KEYS
     )
-) : AbstractHSM(supportedSchemeCodes, schemeMetadata, digestService), CryptoService, CryptoServiceDeleteOps {
-    companion object {
-        private val logger = contextLogger()
-    }
 
-    init {
-        logger.info("Created ${AllWrappedKeysHSM::class.simpleName} for $userName")
-    }
+    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> = supportedSchemesMap
 
-    override fun requiresWrappingKey(): Boolean = true
-
-    override fun supportedSchemes(): List<KeyScheme> = supportedSchemes
-
-    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
+    override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
         logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
         if (masterKeys[masterKeyAlias] != null) {
             if (failIfExists) {
-                throw CryptoServiceBadRequestException(
+                throw IllegalStateException(
                     "There is an existing key with the alias: $masterKeyAlias"
                 )
             } else {
@@ -68,27 +45,23 @@ class AllWrappedKeysHSM(
             val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
             masterKeys[masterKeyAlias] = wrappingKey
         }
-    } catch (e: CryptoServiceException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoServiceException("Failed create wrapping key with alias $masterKeyAlias", e)
     }
 
-    override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey = try {
+    override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
         logger.info(
             "generateKeyPair(alias={},masterKeyAlias={},scheme={})",
             spec.alias,
             spec.masterKeyAlias,
             spec.keyScheme.codeName
         )
-        if (spec.masterKeyAlias.isNullOrBlank()) {
-            throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
+        require (!spec.masterKeyAlias.isNullOrBlank()) {
+            "The masterKeyAlias is not specified"
         }
-        if (!isSupported(spec.keyScheme)) {
-            throw CryptoServiceBadRequestException("Unsupported signature scheme: ${spec.keyScheme.codeName}")
+        require (isSupported(spec.keyScheme)) {
+            "Unsupported signature scheme: ${spec.keyScheme.codeName}"
         }
         val wrappingKey = masterKeys[spec.masterKeyAlias!!]
-            ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
+            ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
         val keyPairGenerator = KeyPairGenerator.getInstance(
             spec.keyScheme.algorithmName,
             provider(spec.keyScheme)
@@ -99,45 +72,30 @@ class AllWrappedKeysHSM(
             keyPairGenerator.initialize(spec.keyScheme.keySize!!, schemeMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        GeneratedWrappedKey(
+        return GeneratedWrappedKey(
             publicKey = keyPair.public,
             keyMaterial = wrappingKey.wrap(keyPair.private),
             encodingVersion = 1
         )
-    } catch (e: CryptoServiceException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "Cannot generate wrapped key pair with scheme: ${spec.keyScheme.codeName}",
-            e
-        )
     }
 
-    override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray = try {
-        if (spec !is SigningWrappedSpec) {
-            throw CryptoServiceBadRequestException("The service supports only ${SigningWrappedSpec::class.java}")
+    override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
+        require (spec is SigningWrappedSpec) {
+            "The service supports only ${SigningWrappedSpec::class.java}"
         }
-        if (spec.masterKeyAlias.isNullOrBlank()) {
-            throw CryptoServiceBadRequestException("The masterKeyAlias is not specified")
+        require (!spec.masterKeyAlias.isNullOrBlank()) {
+            "The masterKeyAlias is not specified"
         }
         logger.debug {
             "sign(masterKeyAlias=${spec.masterKeyAlias}, keyScheme=${spec.keyScheme.codeName})"
         }
         val wrappingKey = masterKeys[spec.masterKeyAlias!!]
-            ?: throw CryptoServiceBadRequestException("The ${spec.masterKeyAlias} is not created yet.")
+            ?: throw IllegalStateException("The ${spec.masterKeyAlias} is not created yet.")
         val privateKey = wrappingKey.unwrap(spec.keyMaterial)
-        sign(spec, privateKey, data)
-    } catch (e: CryptoServiceException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoServiceException("Cannot sign using the key with wrapped private key", e)
+        return sign(spec, privateKey, data)
     }
 
-    private fun isSupported(scheme: KeyScheme): Boolean = supportedSchemes.any { it.codeName == scheme.codeName }
-
-    private fun provider(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
-
     override fun delete(alias: String, context: Map<String, String>) {
-        throw NotImplementedError("Just to test that the tests will not break.")
+        throw Error("Just to test that the tests will not break.")
     }
 }

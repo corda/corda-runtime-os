@@ -8,10 +8,13 @@ import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
+import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
+import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
 import java.util.UUID
 
@@ -45,9 +48,9 @@ fun Map<String, String>.toWire(): KeyValuePairList {
 }
 
 
-fun KeyValuePairList.toMap() : Map<String, String> = items.toMap()
+fun KeyValuePairList.toMap(): Map<String, String> = items.toMap()
 
-fun List<KeyValuePair>.toMap() : Map<String, String> {
+fun List<KeyValuePair>.toMap(): Map<String, String> {
     val map = mutableMapOf<String, String>()
     forEach {
         map[it.key] = it.value
@@ -55,14 +58,8 @@ fun List<KeyValuePair>.toMap() : Map<String, String> {
     return map
 }
 
-fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService) = SignatureSpec(
-    signatureName = signatureName,
-    customDigestName = if (customDigestName.isNullOrBlank()) {
-        null
-    } else {
-        DigestAlgorithmName(customDigestName)
-    },
-    params = if(params != null) {
+fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodingService): SignatureSpec {
+    val algorithmParams = if (params != null) {
         serializer.deserialize(
             SerializedAlgorithmParameterSpec(
                 clazz = params.className,
@@ -72,15 +69,33 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
     } else {
         null
     }
-)
-
-fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService) = CryptoSignatureSpec(
-    signatureName,
-    customDigestName?.name,
-    if (params != null) {
-        val params = serializer.serialize(params!!)
-        CryptoSignatureParameterSpec(params.clazz, ByteBuffer.wrap(params.bytes))
-    } else {
-        null
+    return when {
+        !customDigestName.isNullOrBlank() -> {
+            CustomSignatureSpec(signatureName, DigestAlgorithmName(customDigestName), algorithmParams)
+        }
+        algorithmParams != null -> ParameterizedSignatureSpec(signatureName, algorithmParams)
+        else -> SignatureSpec(signatureName)
     }
-)
+}
+
+fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec =
+    when(this) {
+        is CustomSignatureSpec -> CryptoSignatureSpec(
+            signatureName,
+            customDigestName.name,
+            params?.serialize(serializer)
+        )
+        is ParameterizedSignatureSpec -> CryptoSignatureSpec(
+            signatureName,
+            null,
+            params.serialize(serializer)
+        )
+        else -> CryptoSignatureSpec(signatureName, null, null)
+    }
+
+private fun AlgorithmParameterSpec.serialize(
+    serializer: AlgorithmParameterSpecEncodingService
+): CryptoSignatureParameterSpec {
+    val params = serializer.serialize(this)
+    return CryptoSignatureParameterSpec(params.clazz, ByteBuffer.wrap(params.bytes))
+}

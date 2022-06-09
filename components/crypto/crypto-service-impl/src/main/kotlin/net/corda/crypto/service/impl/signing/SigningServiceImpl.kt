@@ -21,7 +21,6 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
@@ -176,8 +175,6 @@ open class SigningServiceImpl(
                 bytes = signedBytes,
                 context = context
             )
-        } catch (e: CryptoServiceException) {
-            throw e
         } catch (e: Throwable) {
             throw CryptoServiceException(
                 "Failed to sign using public key '${publicKey.publicKeyId()}' for tenant $tenantId",
@@ -199,7 +196,7 @@ open class SigningServiceImpl(
             val cryptoService = cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
             store.act(tenantId) {
                 if (alias != null && it.find(alias) != null) {
-                    throw CryptoServiceBadRequestException(
+                    throw IllegalStateException(
                         "The key with alias $alias already exist for tenant $tenantId"
                     )
                 }
@@ -209,11 +206,10 @@ open class SigningServiceImpl(
                 it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
             }
             generatedKey.publicKey
-        } catch (e: CryptoServiceException) {
-            throw e
         } catch (e: Throwable) {
             throw CryptoServiceException(
-                "Cannot generate key pair for category=$category and alias=$alias, tenant=$tenantId", e
+                "Cannot generate key pair for category=$category and alias=$alias, tenant=$tenantId",
+                e
             )
         }
 
@@ -236,7 +232,7 @@ open class SigningServiceImpl(
             result
         } else {
             storeActions.find(publicKey)?.let { publicKey to it }
-        } ?: throw CryptoServiceBadRequestException(
+        } ?: throw IllegalStateException(
             "The tenant $tenantId doesn't own public key '${publicKey.publicKeyId()}'."
         )
 

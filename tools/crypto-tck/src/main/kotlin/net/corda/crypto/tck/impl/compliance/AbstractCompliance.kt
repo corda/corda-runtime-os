@@ -2,6 +2,8 @@ package net.corda.crypto.tck.impl.compliance
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.decorators.requiresWrappingKey
+import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
@@ -10,7 +12,6 @@ import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_WRAPPING
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -25,11 +26,12 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentLinkedQueue
 
 abstract class AbstractCompliance {
-    protected val logger = LoggerFactory.getLogger(this::class.java)
+    protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     protected lateinit var compliance: ComplianceSpec
     protected lateinit var service: CryptoService
@@ -41,9 +43,10 @@ abstract class AbstractCompliance {
     protected fun setup(spec: ComplianceSpec, providers: CryptoServiceProviderMap) {
         compliance = spec
         service = compliance.createService(providers)
-        logger.info("serviceName=${compliance.options.serviceName}")
+        spec.options.usedSignatureSpecs = service.supportedSchemes.toMap()
+            logger.info("serviceName=${compliance.options.serviceName}")
         tenantId = compliance.generateRandomIdentifier()
-        if (service.requiresWrappingKey()) {
+        if (service.requiresWrappingKey) {
             masterKeyAlias = compliance.generateRandomIdentifier()
             service.createWrappingKey(
                 masterKeyAlias!!, true, mapOf(
@@ -54,13 +57,13 @@ abstract class AbstractCompliance {
     }
 
     protected fun deleteKeyPair(hsmAlias: String) {
-        if (service !is CryptoServiceDeleteOps) {
+        if (!service.supportsKeyDelete) {
             logger.info("Service doesn't support key deletion.")
             return
         }
         try {
             logger.info("About to delete {} key.", hsmAlias)
-            (service as CryptoServiceDeleteOps).delete(
+            service.delete(
                 hsmAlias, mapOf(
                     CRYPTO_TENANT_ID to tenantId,
                     CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
@@ -72,13 +75,13 @@ abstract class AbstractCompliance {
     }
 
     protected fun deleteWrappingKey(alias: String) {
-        if (service !is CryptoServiceDeleteOps) {
+        if (!service.supportsKeyDelete) {
             logger.info("Service doesn't support key deletion.")
             return
         }
         try {
             logger.info("About to delete {} key.", alias)
-            (service as? CryptoServiceDeleteOps)?.delete(
+            service.delete(
                 alias, mapOf(
                     CRYPTO_TENANT_ID to tenantId,
                     CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_WRAPPING

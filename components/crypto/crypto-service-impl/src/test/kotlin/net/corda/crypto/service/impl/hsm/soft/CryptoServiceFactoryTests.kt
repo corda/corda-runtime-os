@@ -75,7 +75,7 @@ class CryptoServiceFactoryTests {
                 null,
                 0,
                 5000,
-                SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+                factory.softHSMSupportedSchemas,
                 CustomCryptoServiceProvider.NAME,
                 500
             ),

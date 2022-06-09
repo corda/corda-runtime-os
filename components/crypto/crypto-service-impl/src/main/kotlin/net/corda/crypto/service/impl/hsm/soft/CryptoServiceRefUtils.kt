@@ -18,7 +18,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 
 fun CryptoServiceRef.getSupportedSchemes(): List<String> =
-    instance.supportedSchemes().map { it.codeName }
+    instance.supportedSchemes.map { it.key.codeName }
 
 fun CryptoServiceRef.generateKeyPair(
     alias: String?,

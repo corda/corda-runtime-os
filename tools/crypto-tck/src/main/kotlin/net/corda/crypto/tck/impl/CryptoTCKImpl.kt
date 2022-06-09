@@ -145,10 +145,10 @@ class CryptoTCKImpl @Activate constructor(
         }
         out.println("options.${spec.options::tests.name}=${spec.options.tests.joinToString()}")
         out.println("options.${spec.options::testResultsDirectory.name}=${spec.options.testResultsDirectory}")
-        out.println("options.${spec.options::signatureSpecs.name}:")
-        spec.options.signatureSpecs.forEach {
-            out.println("options.${spec.options::signatureSpecs.name}:${it.key}=" +
-                    "[${it.value.joinToString { v -> v.signatureName }}]"
+        out.println("options.${spec.options::usedSignatureSpecs.name}:")
+        spec.options.usedSignatureSpecs.forEach {
+            out.println("options.${spec.options::usedSignatureSpecs.name}:${it.key}=" +
+                    "[${it.value.joinToString()}]"
             )
         }
         out.println("==========================")

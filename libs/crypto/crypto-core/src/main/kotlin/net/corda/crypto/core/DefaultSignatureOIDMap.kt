@@ -1,5 +1,7 @@
 package net.corda.crypto.core
 
+import net.corda.v5.cipher.suite.CustomSignatureSpec
+import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
@@ -9,7 +11,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SHA512_256
 import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
@@ -115,7 +117,7 @@ object DefaultSignatureOIDMap {
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     fun inferSignatureOID(publicKey: PublicKey, signatureSpec: SignatureSpec): AlgorithmIdentifier? {
-        if(signatureSpec.precalculateHash) {
+        if(signatureSpec is CustomSignatureSpec) {
             return null
         }
         val keyInfo = try {
@@ -125,7 +127,7 @@ object DefaultSignatureOIDMap {
         } ?: return null
         val algorithm = normaliseAlgorithmIdentifier(keyInfo.algorithm)
         return if (EDDSA_ED25519_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.has(EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName)) {
+            if (signatureSpec.has(EDDSA_ED25519_SIGNATURE_SPEC.signatureName)) {
                 EDDSA_ED25519
             } else {
                 null
@@ -182,7 +184,7 @@ object DefaultSignatureOIDMap {
             } else if (signatureSpec.has(SHA512_WITH_RSA_AND_MGF1)) {
                 SHA512_RSASSA_PSS
             } else if (signatureSpec.has(RSASSA_PSS)) {
-                (signatureSpec.params as? PSSParameterSpec)?.let {
+                (signatureSpec.getParamsSafely() as? PSSParameterSpec)?.let {
                     if (it.isSHA256()) {
                         SHA256_RSASSA_PSS
                     } else if (it.isSHA384()) {

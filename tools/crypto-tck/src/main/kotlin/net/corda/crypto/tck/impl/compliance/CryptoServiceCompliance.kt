@@ -19,7 +19,7 @@ import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.bouncycastle.asn1.ASN1Sequence
@@ -70,12 +70,14 @@ class CryptoServiceCompliance : AbstractCompliance() {
         lateinit var verifier: SignatureVerificationService
     }
 
-    private lateinit var schemesAndSignatureSpecs: List<Pair<String, SignatureSpec>>
+    private val schemesAndSignatureSpecs = mutableListOf<Pair<String, SignatureSpec>>()
 
     @BeforeEach
     fun setup(spec: ComplianceSpec) {
         super.setup(spec, providers)
-        schemesAndSignatureSpecs = compliance.getFlattenedSchemesAndSignatureSpecs()
+        service.supportedSchemes.forEach {
+            it.value.forEach { s -> schemesAndSignatureSpecs.add(Pair(it.key.codeName, s)) }
+        }
     }
 
     @AfterEach
@@ -88,27 +90,18 @@ class CryptoServiceCompliance : AbstractCompliance() {
     @Test
     fun `Should support at least one key schema supported by scheme matadata`() {
         logger.info(
-            "Supported key schemes by service: [${service.supportedSchemes().joinToString { it.codeName }}]"
+            "Supported key schemes by service: [${service.supportedSchemes.keys.joinToString()}]"
         )
-        logger.info(
-            "Supported key schemes by scheme metadata: [${service.supportedSchemes().joinToString { it.codeName }}]"
-        )
-        val supported = service.supportedSchemes().filter {
-            schemeMetadata.schemes.contains(it)
+        val supported = service.supportedSchemes.filter {
+            schemeMetadata.schemes.contains(it.key)
         }
-        logger.info("Supported by service and scheme metadata: [${supported.joinToString { it.codeName }}]")
+        logger.info("Supported by service and scheme metadata: [${supported.keys.joinToString()}]")
         assertTrue(supported.isNotEmpty(), "The service must support at least one key scheme.")
-        assertEquals(
-            supported.size,
-            compliance.options.signatureSpecs.size,
-            "Not all supported schemes are configured for the ${CryptoServiceCompliance::class.simpleName} tests."
+        val withoutSignatureSpec = supported.filter { it.value.isEmpty() }.map { it.key.toString() }
+        assertTrue(
+            withoutSignatureSpec.isEmpty(),
+            "There must be at least one signatures spec for [${withoutSignatureSpec.joinToString()}]"
         )
-        compliance.options.signatureSpecs.keys.forEach {
-            assertTrue(
-                supported.any { s -> s.codeName == it },
-                "The key scheme $it is not among supported."
-            )
-        }
     }
 
     @Test
@@ -330,7 +323,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
     private fun signByCA(keyPair: KeyPair, data: ByteArray): ByteArray {
         val scheme = schemeMetadata.findKeyScheme(keyPair.public)
         val signature = Signature.getInstance(
-            EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName,
+            EDDSA_ED25519_SIGNATURE_SPEC.signatureName,
             schemeMetadata.providers[scheme.providerName]
         )
         signature.initSign(keyPair.private, schemeMetadata.secureRandom)

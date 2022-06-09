@@ -15,8 +15,11 @@ import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceExtensions
+import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.CompositeKey
@@ -31,8 +34,6 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
@@ -192,9 +193,8 @@ class CryptoOperationsTests {
         }
 
         @JvmStatic
-        fun supportedSchemes(): List<KeyScheme> {
-            return cryptoService.supportedSchemes()
-        }
+        fun supportedSchemes(): List<KeyScheme> =
+            cryptoService.supportedSchemes.keys.toList()
 
         private fun getInferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
             schemeMetadata.inferableDigestNames(scheme)
@@ -203,25 +203,18 @@ class CryptoOperationsTests {
             schemeMetadata.supportedSignatureSpec(scheme)
 
         private fun getAllCustomSignatureSpecs(scheme: KeyScheme): List<SignatureSpec> =
-            if (scheme.codeName == RSA_CODE_NAME || scheme.codeName == ECDSA_SECP256R1_CODE_NAME) {
-                schemeMetadata.digests.map { digest ->
-                    when (scheme.algorithmName) {
-                        "RSA" -> SignatureSpec(
-                            signatureName = "RSA/NONE/PKCS1Padding",
-                            customDigestName = DigestAlgorithmName(digest.algorithmName)
-                        )
-                        "EC" -> SignatureSpec(
-                            signatureName = "NONEwithECDSA",
-                            customDigestName = DigestAlgorithmName(digest.algorithmName)
-                        )
-                        else -> SignatureSpec(
-                            signatureName = "NONEwith${scheme.algorithmName}",
-                            customDigestName = DigestAlgorithmName(digest.algorithmName)
-                        )
-                    }
+            schemeMetadata.digests.mapNotNull { digest ->
+                when (scheme.codeName) {
+                    RSA_CODE_NAME -> CustomSignatureSpec(
+                        signatureName = "RSA/NONE/PKCS1Padding",
+                        customDigestName = DigestAlgorithmName(digest.algorithmName)
+                    )
+                    ECDSA_SECP256R1_CODE_NAME -> CustomSignatureSpec(
+                        signatureName = "NONEwithECDSA",
+                        customDigestName = DigestAlgorithmName(digest.algorithmName)
+                    )
+                    else -> null
                 }
-            } else {
-                emptyList()
             }
 
         private fun verifyCachedKeyRecord(
@@ -356,24 +349,30 @@ class CryptoOperationsTests {
 
     @Test
     fun `SoftCryptoService should require wrapping key`() {
-        assertTrue(cryptoService.requiresWrappingKey())
+        assertThat(cryptoService.extensions).contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
     }
 
     @Test
-    fun `SoftCryptoService should support only schemes defined in cipher suite`() {
-        assertTrue(cryptoService.supportedSchemes().isNotEmpty())
-        cryptoService.supportedSchemes().forEach {
-            assertTrue(schemeMetadata.schemes.contains(it))
-        }
+    fun `SoftCryptoService should not support key deletion`() {
+        assertThat(cryptoService.extensions).doesNotContain(CryptoServiceExtensions.DELETE_KEYS)
+    }
+
+    @Test
+    fun `SoftCryptoService should support at least one schemes defined in cipher suite`() {
+        assertTrue(cryptoService.supportedSchemes.isNotEmpty())
+        assertTrue(cryptoService.supportedSchemes.any {
+            schemeMetadata.schemes.contains(it.key)
+        })
     }
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    fun `SoftCryptoService should fail signing with unknown wrapping key for all supported schemes`(
+    @Suppress("MaxLineLength")
+    fun `SoftCryptoService should throw IllegalStateException when signing with unknown wrapping key for all supported schemes`(
         scheme: KeyScheme
     ) {
         fun verifySign(key: GeneratedWrappedKey) {
-            assertThrows<CryptoServiceBadRequestException> {
+            assertThrows<IllegalStateException> {
                 cryptoService.sign(
                     SigningWrappedSpec(
                         keyMaterial = key.keyMaterial,
@@ -601,8 +600,8 @@ class CryptoOperationsTests {
     }
 
     @Test
-    fun `SoftCryptoService should fail when generating key pair with unsupported signature scheme`() {
-        assertThrows<CryptoServiceBadRequestException> {
+    fun `SoftCryptoService should throw IllegalArgumentException when generating key pair with unsupported key scheme`() {
+        assertThrows<IllegalArgumentException> {
             cryptoService.generateKeyPair(
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
@@ -616,7 +615,7 @@ class CryptoOperationsTests {
                 )
             )
         }
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalArgumentException> {
             cryptoService.generateKeyPair(
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_KEY_SCHEME,
@@ -647,7 +646,7 @@ class CryptoOperationsTests {
         )
         val testData = UUID.randomUUID().toString().toByteArray()
         val key = softAliasedKeys.getValue(scheme)
-        assertThrows<CryptoServiceException> {
+        assertThrows<Throwable> {
             cryptoService.sign(
                 SigningWrappedSpec(
                     keyMaterial = key.keyMaterial,
@@ -678,7 +677,7 @@ class CryptoOperationsTests {
         )
         val testData = UUID.randomUUID().toString().toByteArray()
         val key = softFreshKeys.getValue(scheme)
-        assertThrows<CryptoServiceException> {
+        assertThrows<Throwable> {
             cryptoService.sign(
                 SigningWrappedSpec(
                     keyMaterial = key.keyMaterial,
@@ -863,13 +862,13 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    fun `Should fail to sign for unknown tenant for all supported schemes`(
+    fun `Should throw CryptoServiceException to sign for unknown tenant for all supported schemes`(
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
         validatePublicKeyAlgorithm(scheme, info.publicKey)
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<CryptoServiceException> {
             info.signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = info.publicKey,

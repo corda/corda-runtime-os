@@ -4,13 +4,60 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import java.time.Duration
 import java.util.concurrent.TimeoutException
+import javax.persistence.LockTimeoutException
+import javax.persistence.OptimisticLockException
+import javax.persistence.PersistenceException
+import javax.persistence.PessimisticLockException
+import javax.persistence.QueryTimeoutException
 import kotlin.test.assertEquals
 
 class ExecuteUtilsTests {
     companion object {
         private val logger = contextLogger()
+
+        @JvmStatic
+        fun mostCommonUnrecoverableExceptions(): List<Throwable> = listOf(
+            IllegalStateException(),
+            IllegalArgumentException(),
+            NullPointerException(),
+            IndexOutOfBoundsException(),
+            NoSuchElementException(),
+            RuntimeException(),
+            ClassCastException(),
+            NotImplementedError(),
+            UnsupportedOperationException(),
+            CryptoServiceLibraryException("error", isRecoverable = false),
+            CryptoServiceLibraryException(
+                "error",
+                CryptoServiceLibraryException("error", isRecoverable = true),
+                isRecoverable = false
+            ),
+            CryptoServiceLibraryException(
+                "error",
+                TimeoutException(),
+                isRecoverable = false
+            ),
+            PersistenceException()
+        )
+
+        @JvmStatic
+        fun retryableExceptions(): List<Throwable> = listOf(
+            CryptoServiceLibraryException("error", isRecoverable = true),
+            TimeoutException(),
+            LockTimeoutException(),
+            QueryTimeoutException(),
+            OptimisticLockException(),
+            PessimisticLockException(),
+            RuntimeException("error", TimeoutException()),
+            PersistenceException("error", LockTimeoutException()),
+            PersistenceException("error", QueryTimeoutException()),
+            PersistenceException("error", OptimisticLockException()),
+            PersistenceException("error", PessimisticLockException())
+        )
     }
 
     @Test
@@ -47,15 +94,17 @@ class ExecuteUtilsTests {
         assertEquals(1, called)
     }
 
-    @Test
-    fun `WithTimeout should not retry IllegalArgumentException`() {
+    @ParameterizedTest
+    @MethodSource("mostCommonUnrecoverableExceptions")
+    fun `WithTimeout should not retry common exceptions`(e: Throwable) {
         var called = 0
-        assertThrows<IllegalArgumentException> {
+        val actual = assertThrows<Throwable> {
             ExecutorWithTimeout(logger, 3, Duration.ofMillis(10)).executeWithRetry {
                 called++
-                throw IllegalArgumentException()
+                throw e
             }
         }
+        assertEquals(e::class.java, actual::class.java)
         assertEquals(1, called)
     }
 
@@ -72,26 +121,24 @@ class ExecuteUtilsTests {
     }
 
     @Test
-    @Suppress("TooGenericExceptionThrown")
     fun `Should eventually fail with retrying`() {
         var called = 0
-        assertThrows<IllegalStateException> {
+        assertThrows<TimeoutException> {
             Executor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
                 called++
-                throw IllegalStateException()
+                throw TimeoutException()
             }
         }
         assertEquals(3, called)
     }
 
     @Test
-    @Suppress("TooGenericExceptionThrown")
-    fun `Should eventually succeed after retrying`() {
+    fun `Should eventually succeed after retrying TimeoutException`() {
         var called = 0
         val result = Executor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
             called++
             if (called <= 2) {
-                throw IllegalStateException()
+                throw TimeoutException()
             }
             "Hello World!"
         }
@@ -100,7 +147,20 @@ class ExecuteUtilsTests {
     }
 
     @Test
-    @Suppress("TooGenericExceptionThrown")
+    fun `Should eventually succeed after retrying recoverable CryptoServiceLibraryException`() {
+        var called = 0
+        val result = Executor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
+            called++
+            if (called <= 2) {
+                throw CryptoServiceLibraryException("error", isRecoverable = true)
+            }
+            "Hello World!"
+        }
+        assertEquals("Hello World!", result)
+        assertEquals(3, called)
+    }
+
+    @Test
     fun `Should eventually succeed after retrying recoverable crypto library exception`() {
         var called = 0
         val result = Executor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
@@ -112,5 +172,20 @@ class ExecuteUtilsTests {
         }
         assertEquals("Hello World!", result)
         assertEquals(3, called)
+    }
+
+    @ParameterizedTest
+    @MethodSource("retryableExceptions")
+    fun `Should retry all retryable exceptions`(e: Throwable) {
+        var called = 0
+        val result = Executor(logger, 2, Duration.ofMillis(10)).executeWithRetry {
+            called++
+            if (called < 2) {
+                throw e
+            }
+            "Hello World!"
+        }
+        assertEquals("Hello World!", result)
+        assertEquals(2, called)
     }
 }
