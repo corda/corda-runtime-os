@@ -1,5 +1,6 @@
 package net.corda.crypto.delegated.signing
 
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -157,7 +158,8 @@ class DelegatedSignatureTest {
         }
         signature.sign()
 
-        assertThat(spec.firstValue.params).isEqualTo(parameter)
+        assertThat(spec.firstValue).isInstanceOf(ParameterizedSignatureSpec::class.java)
+        assertThat((spec.firstValue as ParameterizedSignatureSpec).params).isEqualTo(parameter)
     }
 
     @Test
