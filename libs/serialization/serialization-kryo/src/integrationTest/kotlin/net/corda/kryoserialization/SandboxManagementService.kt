@@ -22,9 +22,10 @@ class SandboxManagementService @Activate constructor(
         private const val CPI_TWO = "serializable-cpk-two-package.cpb"
     }
 
-    //    val cpi2: Cpi =
-    val group1: SandboxGroup = loadCPI(CPI_ONE).use { cpi1 -> createSandboxGroupFor(cpi1.cpks) }
-    val group2: SandboxGroup = loadCPI(CPI_TWO).use { cpi2 -> createSandboxGroupFor(cpi2.cpks) }
+    val cpi1: Cpi = loadCPI(resourceName = CPI_ONE)
+    val cpi2: Cpi = loadCPI(resourceName = CPI_TWO)
+    val group1: SandboxGroup = createSandboxGroupFor(cpi1.cpks)
+    val group2: SandboxGroup = createSandboxGroupFor(cpi2.cpks)
 
     @Suppress("unused")
     @Deactivate

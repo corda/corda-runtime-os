@@ -22,9 +22,8 @@ class SandboxFactory @Activate constructor(
     val group2 = createSandboxGroupFor(CPI_THREE)
 
     fun createSandboxGroupFor(cpiResource: String): SandboxGroup {
-        cpiLoader.loadCPI(cpiResource).use { cpi ->
-            return sandboxCreationService.createSandboxGroup(cpi.cpks)
-        }
+        val cpi = cpiLoader.loadCPI(cpiResource)
+        return sandboxCreationService.createSandboxGroup(cpi.cpks)
     }
 
     fun destroySandboxGroup(group: SandboxGroup) {

@@ -15,7 +15,7 @@ class SandboxFactory @Activate constructor(
     private val sandboxCreationService: SandboxCreationService
 ) {
     fun loadSandboxGroup(resourceName: String): SandboxGroup {
-        return cpiLoader.loadCPI(resourceName).use { cpi ->
+        return cpiLoader.loadCPI(resourceName).let { cpi ->
             sandboxCreationService.createSandboxGroup(cpi.cpks)
         }
     }

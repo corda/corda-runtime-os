@@ -50,6 +50,7 @@ import javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING
 import javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.validation.SchemaFactory
+import kotlin.io.path.notExists
 
 internal object CpkLoader {
     private val logger = loggerFor<CpkLoader>()
@@ -152,7 +153,9 @@ internal object CpkLoader {
             val metadata = buildMetadata()
             val finalCpkFile = temporaryCpkFile?.let {
                 val destination = it.parent.resolve(metadata.fileChecksum.toHexString())
-                Files.move(it, destination, REPLACE_EXISTING)
+                if (destination.notExists()) {
+                    Files.move(it, destination, REPLACE_EXISTING)
+                }
                 destination.toFile()
             } ?: throw IllegalStateException("This should never happen")
 
