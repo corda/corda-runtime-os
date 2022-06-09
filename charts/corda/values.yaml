@@ -15,10 +15,6 @@ image:
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
 
-# default node architecture to run the Corda containers on
-node:
-  arch: amd64
-
 # -- image pull secrets
 imagePullSecrets: []
 
