@@ -2,6 +2,8 @@ package net.corda.crypto.merkle
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
@@ -18,7 +20,10 @@ private fun createNonce(random: Random): ByteArray {
 // The classic tree algorithm (e.g. RFC6962) using 0x00 prefix for leaves and 0x01 for nodes
 // and SHA2-256 double hashing throughout
 // Nonce is just null for this style of provider
-object DefaultHashDigestProvider : MerkleTreeHashDigestProvider {
+class DefaultHashDigestProvider(
+    override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+    private val digestService: DigestService
+) : MerkleTreeHashDigestProvider {
     private val ZERO_BYTE = ByteArray(1) { 0 }
     private val ONE_BYTE = ByteArray(1) { 1 }
 
@@ -26,17 +31,19 @@ object DefaultHashDigestProvider : MerkleTreeHashDigestProvider {
 
     override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
         require(nonce == null) { "Nonce must be null" }
-        return SecureHash.doubleHash(concatByteArrays(ZERO_BYTE, bytes))
+        return digestService.hash(concatByteArrays(ZERO_BYTE, bytes), digestAlgorithmName)
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-        return SecureHash.doubleHash(concatByteArrays(ONE_BYTE, left.bytes, right.bytes))
+        return digestService.hash(concatByteArrays(ONE_BYTE, left.bytes, right.bytes), digestAlgorithmName)
     }
 }
 
 // Simple variant of standard hashing, for use where Merkle trees are used in different roles and
 // need to be different to protect against copy-paste attacks
 class TweakableHashDigestProvider(
+    override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+    private val digestService: DigestService,
     private val leafPrefix: ByteArray,
     private val nodePrefix: ByteArray
 ) : MerkleTreeHashDigestProvider {
@@ -50,24 +57,40 @@ class TweakableHashDigestProvider(
 
     override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
         require(nonce == null) { "Nonce must be null" }
-        return SecureHash.doubleHash(concatByteArrays(leafPrefix, bytes))
+        return digestService.hash(concatByteArrays(leafPrefix, bytes), digestAlgorithmName)
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-        return SecureHash.doubleHash(concatByteArrays(nodePrefix, left.bytes, right.bytes))
+        return digestService.hash(concatByteArrays(nodePrefix, left.bytes, right.bytes), digestAlgorithmName)
     }
 }
 
 // This doesn't support log audit proofs as it uses depth in the node hashes
 // However, it is suited to low entropy leaves, such as blockchain transactions
-class NonceHashDigestProvider(val entropy: ByteArray) : MerkleTreeHashDigestProvider {
-    constructor(random: Random = SecureRandom()) : this(createNonce(random))    // @todo: original implementation seems to have used DRBG.
+class NonceHashDigestProvider(
+    override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+    private val digestService: DigestService,
+    val entropy: ByteArray,
+    ) : MerkleTreeHashDigestProvider {
+    constructor(
+        digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+        digestService: DigestService,
+        random: Random = SecureRandom()
+    ) : this(digestAlgorithmName, digestService, createNonce(random))    // @todo: original implementation seems to have used DRBG.
 
     companion object {
         // use this instance if only verification is required and thus don't need to reveal the entropy
-        val VERIFY_INSTANCE = NonceHashDigestProvider(ByteArray(0))
+        fun getVerifyInstance(
+            digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+            digestService: DigestService
+        ) = NonceHashDigestProvider(digestAlgorithmName, digestService, ByteArray(0))
 
-        val SIZE_ONLY_VERIFY_INSTANCE = object : MerkleTreeHashDigestProvider {
+        fun getSizeOnlyVerifyInstance(
+            digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+            digestService: DigestService
+        ) = object: MerkleTreeHashDigestProvider {
+            override val digestAlgorithmName: DigestAlgorithmName = digestAlgorithmName
+
             override fun leafNonce(index: Int): ByteArray? = null
 
             override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
@@ -76,7 +99,7 @@ class NonceHashDigestProvider(val entropy: ByteArray) : MerkleTreeHashDigestProv
             }
 
             override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-                return SecureHash.doubleHash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes))
+                return digestService.hash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes), digestAlgorithmName)
             }
         }
     }
@@ -92,16 +115,16 @@ class NonceHashDigestProvider(val entropy: ByteArray) : MerkleTreeHashDigestProv
 
     override fun leafNonce(index: Int): ByteArray {
         require(entropy.isNotEmpty()) { "No entropy! VERIFY_INSTANCE being used to create proof by mistake?" }
-        return SecureHash.secureHash(concatByteArrays(index.toByteArray(), entropy)).bytes // todo: original: .serialize()
+        return digestService.hash(concatByteArrays(index.toByteArray(), entropy), digestAlgorithmName).bytes // todo: original: .serialize()
     }
 
     override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
         require(nonce != null) { "Nonce must not be null" }
-        return SecureHash.secureHash(concatByteArrays(nonce, bytes))
+        return digestService.hash(concatByteArrays(nonce, bytes), digestAlgorithmName)
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-        return SecureHash.doubleHash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes))
+        return digestService.hash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes), digestAlgorithmName)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -112,10 +135,12 @@ class NonceHashDigestProvider(val entropy: ByteArray) : MerkleTreeHashDigestProv
 
         if (!entropy.contentEquals(other.entropy)) return false
 
+        if (digestAlgorithmName != other.digestAlgorithmName) return false
+
         return true
     }
 
     override fun hashCode(): Int {
-        return entropy.contentHashCode()
+        return 31 * digestAlgorithmName.hashCode() + entropy.contentHashCode()
     }
 }

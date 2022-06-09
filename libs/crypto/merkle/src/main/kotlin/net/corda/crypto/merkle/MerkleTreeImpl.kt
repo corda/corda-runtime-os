@@ -19,7 +19,7 @@ internal class MerkleTreeImpl(
         @JvmStatic
         fun createMerkleTree(
             leaves: List<ByteArray>,
-            digestProvider: MerkleTreeHashDigestProvider = DefaultHashDigestProvider
+            digestProvider: MerkleTreeHashDigestProvider
         ): MerkleTreeImpl = MerkleTreeImpl(leaves, digestProvider)
 
         fun nextHigherPower2(value: Int): Int {
