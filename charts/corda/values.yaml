@@ -51,7 +51,10 @@ db:
     # -- the name of an existing secret containing the cluster database password with a key of 'password'
     existingSecret: ""
   # image containing a db client, used to set up the db
-  clientImage: bitnami/postgresql:14.2.0-debian-10-r88
+  clientImage:
+    registry: ""
+    repository: bitnami/postgresql
+    tag: 14.2.0-debian-10-r88
 
 # Kafka configuration
 kafka:
@@ -80,7 +83,10 @@ kafka:
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: ""
   # image containing a Kafka client, used to set up Kafka
-  clientImage: bitnami/kafka:3.1.0-debian-10-r89
+  clientImage:
+    registry: ""
+    repository: bitnami/kafka
+    tag: 3.1.0-debian-10-r89
 
 # Configuration for the bootstrapper
 bootstrap:
