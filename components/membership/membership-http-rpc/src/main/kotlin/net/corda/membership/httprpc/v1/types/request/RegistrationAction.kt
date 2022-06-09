@@ -6,7 +6,7 @@ package net.corda.membership.httprpc.v1.types.request
  * @param action The action to take during registration.
  */
 enum class RegistrationAction(private val action: String) {
-    REQUEST_JOIN("requestJoin");
+    requestJoin("requestJoin");
 
     override fun toString(): String {
         return action

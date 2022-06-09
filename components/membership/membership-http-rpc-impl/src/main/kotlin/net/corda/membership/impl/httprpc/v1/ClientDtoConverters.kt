@@ -21,7 +21,7 @@ fun MemberRegistrationRequest.toDto() = MemberRegistrationRequestDto(
  * Convert [RegistrationAction] from the HTTP API to the internal DTO [RegistrationActionDto].
  */
 fun RegistrationAction.toDto() = when(this) {
-    RegistrationAction.REQUEST_JOIN -> RegistrationActionDto.REQUEST_JOIN
+    RegistrationAction.requestJoin -> RegistrationActionDto.REQUEST_JOIN
     else -> throw IllegalArgumentException("Unsupported registration action.")
 }
 
