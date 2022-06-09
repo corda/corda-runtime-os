@@ -32,4 +32,5 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
 
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":testing:test-utilities")
 }

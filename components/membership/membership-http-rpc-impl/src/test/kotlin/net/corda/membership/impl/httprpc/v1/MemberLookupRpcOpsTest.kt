@@ -41,6 +41,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
+import net.corda.test.util.time.TestClock
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -49,6 +50,7 @@ class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
         private const val HOLDING_IDENTITY_STRING = "test"
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private var coordinatorIsRunning = false
@@ -122,7 +124,7 @@ class MemberLookupRpcOpsTest {
         mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
-                MemberInfoExtension.MODIFIED_TIME to Instant.now().toString()
+                MemberInfoExtension.MODIFIED_TIME to clock.instant().toString()
             )
         )
     )

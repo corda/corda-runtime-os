@@ -46,11 +46,12 @@ import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.time.Instant
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 @Suppress("MaxLineLength")
 class MemberInfoTest {
@@ -59,7 +60,9 @@ class MemberInfoTest {
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
-        private val modifiedTime = Instant.now()
+
+        private val clock = TestClock(Instant.ofEpochSecond(100))
+        private val modifiedTime = clock.instant()
         private val endpoints = listOf(
             EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
             EndpointInfoImpl("https://google.com", 10)

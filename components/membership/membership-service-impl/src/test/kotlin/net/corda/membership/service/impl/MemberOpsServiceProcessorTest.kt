@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import net.corda.test.util.time.TestClock
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -58,19 +59,20 @@ class MemberOpsServiceProcessorTest {
             }
             processor = MemberOpsServiceProcessor(registrationProxy, virtualNodeInfoReadService)
         }
+        private val clock = TestClock(Instant.now())
     }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        val now = Instant.now()
+        val now = TestClock(Instant.now()).instant()
         assertThat(actual.responseTimestamp.epochSecond).isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
         assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
     }
 
     @Test
     fun `should successfully submit registration request`() {
-        val requestTimestamp = Instant.now()
+        val requestTimestamp = TestClock(Instant.now()).instant()
         val requestContext = MembershipRpcRequestContext(
             UUID.randomUUID().toString(),
             requestTimestamp
@@ -101,7 +103,7 @@ class MemberOpsServiceProcessorTest {
         val request = MembershipRpcRequest(
             MembershipRpcRequestContext(
                 UUID.randomUUID().toString(),
-                Instant.now()
+                clock.instant()
             ),
             mock()
         )

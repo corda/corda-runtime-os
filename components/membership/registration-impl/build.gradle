@@ -29,6 +29,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:membership:group-policy")
     implementation project(":components:membership:registration")
+    implementation project(":libs:utilities")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
