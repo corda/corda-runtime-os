@@ -9,6 +9,7 @@ import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.CpiReader
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
@@ -84,7 +85,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
                     val fileName = it.fileName.toString()
                     Cpi.fileExtensions.any(fileName::endsWith)
                 }.map {
-                    Cpi.from(Files.newInputStream(it), cacheDir, it.toString(), true)
+                    CpiReader.readCpi(Files.newInputStream(it), cacheDir, it.toString(), true)
                 }.toList()
             }
         } ?: listOf()

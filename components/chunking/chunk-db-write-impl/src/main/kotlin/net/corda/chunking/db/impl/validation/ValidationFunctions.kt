@@ -5,6 +5,7 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -63,7 +64,7 @@ internal class ValidationFunctions(
     fun checkCpi(cpiFile: FileInfo): Cpi {
         val cpi: Cpi =
             try {
-                Files.newInputStream(cpiFile.path).use { Cpi.from(it, cpiPartsDir) }
+                Files.newInputStream(cpiFile.path).use { CpiReader.readCpi(it, cpiPartsDir) }
             } catch (ex: Exception) {
                 when (ex) {
                     is PackagingException -> {

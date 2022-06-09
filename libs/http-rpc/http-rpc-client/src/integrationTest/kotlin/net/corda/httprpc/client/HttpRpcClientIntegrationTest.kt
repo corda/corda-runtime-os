@@ -581,4 +581,29 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
         }
     }
 
+    @Test
+    @Timeout(100)
+    fun `optional query parameter call`() {
+        val client = HttpRpcClient(
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+        )
+
+        client.use {
+            val connection = client.start()
+
+            with(connection.proxy) {
+                assertThat(hello("name", 1)).isEqualTo(""""Hello 1 : name"""")
+                assertThat(hello("name", null)).isEqualTo(""""Hello null : name"""")
+                assertThat(hello2("world", "name")).isEqualTo(""""Hello queryParam: world, pathParam : name"""")
+                assertThat(hello2(null, "name")).isEqualTo(""""Hello queryParam: null, pathParam : name"""")
+            }
+        }
+    }
+
 }

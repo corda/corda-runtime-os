@@ -1,13 +1,17 @@
 package net.corda.configuration.read.impl
 
+import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.configuration.read.reconcile.ConfigReconcilerReader
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.createCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.reconciliation.VersionedRecord
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -21,7 +25,7 @@ import org.osgi.service.component.annotations.Reference
  * component will then mark itself as up. Other components can register on this to identify when to register for config
  * change (although the component should cope with registration at any time after startup).
  */
-@Component(service = [ConfigurationReadService::class])
+@Component(service = [ConfigurationReadService::class, ConfigReconcilerReader::class])
 class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -29,12 +33,15 @@ class ConfigurationReadServiceImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger
-) : ConfigurationReadService {
+) : ConfigurationReadService, ConfigReconcilerReader {
 
     private val eventHandler = ConfigReadServiceEventHandler(subscriptionFactory, configMerger)
 
+    override val lifecycleCoordinatorName =
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+
     private val lifecycleCoordinator =
-        lifecycleCoordinatorFactory.createCoordinator<ConfigurationReadService>(eventHandler)
+        lifecycleCoordinatorFactory.createCoordinator(lifecycleCoordinatorName, eventHandler)
 
     override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
@@ -50,6 +57,13 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.postEvent(ConfigRegistrationAdd(registration))
         return registration
     }
+
+    private val configProcessor: ConfigProcessor
+        get() =
+            eventHandler.configProcessor ?: throw IllegalStateException("Config read service configProcessor is null")
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<String, Configuration>> =
+        configProcessor.getAllVersionedRecords()
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning

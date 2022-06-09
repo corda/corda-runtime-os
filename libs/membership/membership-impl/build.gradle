@@ -18,6 +18,7 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-membership"
     implementation project(":libs:membership:membership-common")
+    implementation project(":libs:utilities")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

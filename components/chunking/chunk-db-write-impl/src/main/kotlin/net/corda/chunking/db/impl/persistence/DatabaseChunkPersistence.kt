@@ -26,6 +26,7 @@ import java.nio.file.Files
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.LockModeType
 
 /**
  * This class provides some simple APIs to interact with the database.
@@ -224,11 +225,11 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
             // persist metadata
-            em.persist(cpiMetadataEntity)
+            em.merge(cpiMetadataEntity)
             // persist file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
-                em.persist(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
             }
         }
     }
@@ -257,7 +258,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
 
-            val updatedMetadata = existingMetadataEntity.createUpdated(
+            val updatedMetadata = existingMetadataEntity.update(
                 fileUploadRequestId = requestId,
                 fileName = cpiFileName,
                 fileChecksum = checksum.toString(),
@@ -287,7 +288,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             version,
             signerSummaryHash
         )
-        return entityManager.find(CpiMetadataEntity::class.java, primaryKey)
+
+        return entityManager.find(
+            CpiMetadataEntity::class.java,
+            primaryKey,
+            // In case of force update, we want the entity to change regardless of whether the CPI being uploaded
+            //  is identical to an existing.
+            //  OPTIMISTIC_FORCE_INCREMENT means the version number will always be bumped.
+            LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     }
 
     private fun getCpiMetadataEntity(name: String, version: String, signerSummaryHash: String): CpiMetadataEntity? {

@@ -116,6 +116,7 @@ class MemberProcessorTestUtils {
             virtualNodeInfoReader: VirtualNodeInfoReadService,
             cpiInfoReadService: CpiInfoReadService,
             holdingIdentity: HoldingIdentity,
+            cryptoConnectionId: UUID,
             groupPolicy: String = sampleGroupPolicy1
         ) {
             val cpiVersion = UUID.randomUUID().toString()
@@ -127,8 +128,10 @@ class MemberProcessorTestUtils {
                 cpiVersion = cpiVersion
             )
             val virtualNodeInfo = VirtualNodeInfo(
-                holdingIdentity, cpiMetadata.cpiId,
-                null, UUID.randomUUID(), null, UUID.randomUUID()
+                holdingIdentity = holdingIdentity,
+                cpiIdentifier = cpiMetadata.cpiId,
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = cryptoConnectionId
             )
 
             // Publish test data
@@ -203,7 +206,7 @@ class MemberProcessorTestUtils {
         }
 
         fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
-            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.owningKey))
+            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.sessionInitiationKey))
             assertNotNull(result)
             result!!
         }

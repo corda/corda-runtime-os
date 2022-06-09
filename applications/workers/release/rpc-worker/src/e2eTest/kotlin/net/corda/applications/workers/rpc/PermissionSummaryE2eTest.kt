@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
+import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * These tests make assertions about permission summaries utilizing the `getPermissionSummary` API.
  */
+@SkipWhenRpcEndpointUnavailable
 class PermissionSummaryE2eTest {
 
     companion object {

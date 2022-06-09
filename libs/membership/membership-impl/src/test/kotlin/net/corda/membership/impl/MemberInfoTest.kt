@@ -6,12 +6,12 @@ import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toWire
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS
-import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
@@ -67,7 +67,7 @@ class MemberInfoTest {
             EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
             EndpointInfoImpl("https://google.com", 10)
         )
-        private val identityKeys = listOf(key, key)
+        private val ledgerKeys = listOf(key, key)
         private val testObjects = listOf(
             DummyObjectWithNumberAndText(1, "dummytext1"),
             DummyObjectWithNumberAndText(2, "dummytext2")
@@ -94,7 +94,7 @@ class MemberInfoTest {
             memberProvidedContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
                 sortedMapOf(
                     PARTY_NAME to "O=Alice,L=London,C=GB",
-                    PARTY_OWNING_KEY to KEY,
+                    PARTY_SESSION_KEY to KEY,
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                     *convertPublicKeys().toTypedArray(),
                     *convertEndpoints().toTypedArray(),
@@ -128,7 +128,7 @@ class MemberInfoTest {
         }
 
         private fun convertPublicKeys(): List<Pair<String, String>> =
-            identityKeys.mapIndexed { i, identityKey -> String.format(IDENTITY_KEYS_KEY, i) to keyEncodingService.encodeAsString(identityKey) }
+            ledgerKeys.mapIndexed { i, ledgerKey -> String.format(LEDGER_KEYS_KEY, i) to keyEncodingService.encodeAsString(ledgerKey) }
 
         private fun convertTestObjects(): List<Pair<String, String>> {
             val result = mutableListOf<Pair<String, String>>()
@@ -212,9 +212,9 @@ class MemberInfoTest {
         }
 
         assertEquals(memberInfo, recreatedMemberInfo)
-        assertEquals(memberInfo?.identityKeys, recreatedMemberInfo?.identityKeys)
+        assertEquals(memberInfo?.ledgerKeys, recreatedMemberInfo?.ledgerKeys)
         assertEquals(memberInfo?.name, recreatedMemberInfo?.name)
-        assertEquals(memberInfo?.owningKey, recreatedMemberInfo?.owningKey)
+        assertEquals(memberInfo?.sessionInitiationKey, recreatedMemberInfo?.sessionInitiationKey)
         assertEquals(memberInfo?.endpoints, recreatedMemberInfo?.endpoints)
         assertEquals(memberInfo?.modifiedTime, recreatedMemberInfo?.modifiedTime)
         assertEquals(memberInfo?.isActive, recreatedMemberInfo?.isActive)
@@ -250,9 +250,9 @@ class MemberInfoTest {
 
     @Test
     fun `parsing value fails when casting is impossible`() {
-        val keys = memberInfo?.identityKeys
-        assertEquals(identityKeys, keys)
-        assertFailsWith<ValueNotFoundException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(IDENTITY_KEYS) }
+        val keys = memberInfo?.ledgerKeys
+        assertEquals(ledgerKeys, keys)
+        assertFailsWith<ValueNotFoundException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(LEDGER_KEYS) }
     }
 
     @Test
