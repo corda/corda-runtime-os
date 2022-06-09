@@ -12,6 +12,7 @@ import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
+import net.corda.data.membership.db.response.query.QueryFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -112,7 +113,8 @@ class MembershipPersistenceRPCProcessorTest {
 
         assertThat(responseFuture).isCompleted
         with(responseFuture.get()) {
-            assertThat(payload).isNull()
+            assertThat(payload).isNotNull
+            assertThat(payload).isInstanceOf(QueryFailedResponse::class.java)
 
             with(context) {
                 assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
