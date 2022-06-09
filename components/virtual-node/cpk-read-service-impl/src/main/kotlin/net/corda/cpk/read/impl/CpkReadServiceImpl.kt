@@ -184,5 +184,9 @@ class CpkReadServiceImpl (
         configSubscription = null
         cpkChunksKafkaReaderSubscription?.close()
         cpkChunksKafkaReaderSubscription = null
+        for (cpk in cpksById.values) {
+            cpk.close()
+        }
+        cpksById.clear()
     }
 }
