@@ -33,19 +33,21 @@ class VirtualNodeLoaderImpl @Activate constructor(
 
     override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
         // TODO - refactor this when CPI loader code moves from api to runtime-os
-        val cpi = cpiResources.computeIfAbsent(resourceName) { key ->
+        cpiResources.computeIfAbsent(resourceName) { key ->
             cpiLoader.loadCPI(key).also { cpi ->
                 resourcesLookup[cpi.metadata.cpiId] = key
             }
+        }.use { cpi ->
+            return VirtualNodeInfo(
+                holdingIdentity,
+                CpiIdentifier(
+                    cpi.metadata.cpiId.name,
+                    cpi.metadata.cpiId.version,
+                    cpi.metadata.cpiId.signerSummaryHash
+                ),
+                null, UUID.randomUUID(), null, UUID.randomUUID(), null
+            ).also(::put)
         }
-        return VirtualNodeInfo(
-            holdingIdentity,
-            CpiIdentifier(
-                cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.version,
-                cpi.metadata.cpiId.signerSummaryHash),
-            null, UUID.randomUUID(), null, UUID.randomUUID(), null
-        ).also(::put)
     }
 
     override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
