@@ -1,6 +1,5 @@
 package net.corda.poc.typeevolution
 
-import net.corda.cpk.read.CpkReadService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
@@ -31,10 +30,6 @@ class Main @Activate constructor(
     private val sandboxCreationService: SandboxCreationService,
     @Reference
     private val configurationAdmin: ConfigurationAdmin,
-    @Reference
-    private val cpkReadService: CpkReadService,
-    @Reference
-    private val cpkReadServiceLoader: CpkReadServiceLoader,
 ) : Application {
     private companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
