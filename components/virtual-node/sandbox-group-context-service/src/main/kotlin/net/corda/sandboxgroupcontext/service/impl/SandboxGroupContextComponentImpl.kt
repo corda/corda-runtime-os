@@ -131,7 +131,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         stop()
         coordinator.close()
         sandboxGroupContextService?.close()
-        cpkReadService.stop()
+        cpkReadService.close()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -157,13 +157,15 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 SANDBOX_CACHE_SIZE_DEFAULT
             }
 
-            if(null == sandboxGroupContextService)
+            val service = sandboxGroupContextService ?: run {
                 initCache(cacheSize)
-            else if (sandboxGroupContextService!!.cache.cacheSize != cacheSize) {
+                sandboxGroupContextService ?: throw IllegalStateException("SandboxGroupContextService not initialized")
+            }
+            if (service.cache.cacheSize != cacheSize) {
                 // this means the cache size has been reconfigured, which means we need to recreate the cache
                 logger.info("Re-creating Sandbox cache with size: $cacheSize")
-                val oldCache = sandboxGroupContextService!!.cache
-                sandboxGroupContextService!!.cache = SandboxGroupContextCacheImpl(cacheSize)
+                val oldCache = service.cache
+                service.cache = SandboxGroupContextCacheImpl(cacheSize)
                 oldCache.close()
             }
 

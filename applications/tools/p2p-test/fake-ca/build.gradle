@@ -5,6 +5,12 @@ plugins {
 
 description "P2P Testing tools - Fake CA"
 
+configurations {
+    app {
+        canBeResolved = false
+    }
+}
+
 dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
     implementation project(':libs:crypto:certificate-generation')
@@ -38,12 +44,22 @@ def appJar = tasks.register('appJar', Jar) {
     with jar.get()
 }
 
+artifacts {
+    archives appJar
+    app appJar
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
             groupId project.group
             artifactId appJarBaseName
             artifact appJar
+
+            try {
+                artifact tasks.named('sourcesJar', Jar)
+            } catch (UnknownTaskException ignored) {
+            }
         }
     }
 }

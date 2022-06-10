@@ -39,6 +39,8 @@ allprojects {
             toolchain {
                 languageVersion = of(javaVersion.majorVersion.toInteger())
             }
+
+            withSourcesJar()
         }
     }
 

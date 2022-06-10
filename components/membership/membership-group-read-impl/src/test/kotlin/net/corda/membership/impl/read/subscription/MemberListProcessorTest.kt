@@ -39,14 +39,16 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import net.corda.test.util.time.TestClock
 import java.time.Instant
 
 class MemberListProcessorTest {
     companion object {
+        private val clock = TestClock(Instant.ofEpochSecond(100))
         private val keyEncodingService: CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"
-        private val modifiedTime = Instant.now()
+        private val modifiedTime = clock.instant()
         private val endpoints = listOf(
             EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
