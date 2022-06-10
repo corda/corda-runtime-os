@@ -9,5 +9,5 @@ package net.corda.membership.httprpc.v1.types.request
 data class MemberRegistrationRequest(
     val holdingIdentityId: String,
     val action: RegistrationAction,
-    val memberContext: Map<String, String>
+    val properties: Map<String, String>
 )

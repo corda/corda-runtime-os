@@ -108,7 +108,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
     override fun register(
         member: HoldingIdentity,
-        memberContext: Map<String, String>
+        properties: Map<String, String>
     ): MembershipRequestRegistrationResult {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             return MembershipRequestRegistrationResult(

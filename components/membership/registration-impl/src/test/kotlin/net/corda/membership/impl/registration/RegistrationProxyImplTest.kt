@@ -233,20 +233,20 @@ class RegistrationProxyImplTest {
     class RegistrationProtocol1 : AbstractRegistrationProtocol() {
         override fun register(
             member: HoldingIdentity,
-            memberContext: Map<String, String>
+            properties: Map<String, String>
         ): MembershipRequestRegistrationResult = registrationResult1
     }
 
     class RegistrationProtocol2 : AbstractRegistrationProtocol() {
         override fun register(
             member: HoldingIdentity,
-            memberContext: Map<String, String>
+            properties: Map<String, String>
         ): MembershipRequestRegistrationResult = registrationResult2
     }
 
     abstract class AbstractRegistrationProtocol : MemberRegistrationService {
         var started = 0
-        override fun register(member: HoldingIdentity, memberContext: Map<String, String>) =
+        override fun register(member: HoldingIdentity, properties: Map<String, String>) =
             MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED, "mock")
 
         override val isRunning = true
