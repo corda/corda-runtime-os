@@ -21,13 +21,41 @@ dependencies {
         api project(':persistence')
         api project(':serialization')
 
-        api "javax.persistence:javax.persistence-api:$javaxPersistenceApiVersion"
-        api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-        api "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
-        api "org.osgi:osgi.annotation:$osgiVersion"
-        api "org.osgi:osgi.core:$osgiVersion"
-        api "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-        api "org.slf4j:slf4j-api:$slf4jVersion"
+        api('javax.persistence:javax.persistence-api') {
+            version {
+                require javaxPersistenceApiVersion
+            }
+        }
+        api('net.corda.kotlin:kotlin-stdlib-jdk8-osgi') {
+            version {
+                require kotlinVersion
+            }
+        }
+        api('net.corda.kotlin:kotlin-stdlib-jdk7-osgi') {
+            version {
+                require kotlinVersion
+            }
+        }
+        api('org.osgi:osgi.annotation') {
+            version {
+                require osgiVersion
+            }
+        }
+        api('org.osgi:osgi.core') {
+            version {
+                require osgiVersion
+            }
+        }
+        api('org.osgi:org.osgi.service.component.annotations') {
+            version {
+                require osgiScrAnnotationVersion
+            }
+        }
+        api('org.slf4j:slf4j-api') {
+            version {
+                require slf4jVersion
+            }
+        }
     }
 }
 
