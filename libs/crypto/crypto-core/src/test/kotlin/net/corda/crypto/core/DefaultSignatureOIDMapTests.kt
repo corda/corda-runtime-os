@@ -11,8 +11,6 @@ import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
-import net.corda.v5.crypto.ECDSA_SHA384_SIGNATURE_SPEC
-import net.corda.v5.crypto.ECDSA_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.ParameterizedSignatureSpec
@@ -125,11 +123,7 @@ class DefaultSignatureOIDMapTests {
                     null
                 ),
                 Arguments.of(ecdsak1, ECDSA_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_ECDSA_K1),
-                Arguments.of(ecdsak1, ECDSA_SHA384_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA384_ECDSA_K1),
-                Arguments.of(ecdsak1, ECDSA_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA512_ECDSA_K1),
-                Arguments.of(ecdsar1, ECDSA_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_ECDSA_R1),
-                Arguments.of(ecdsar1, ECDSA_SHA384_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA384_ECDSA_R1),
-                Arguments.of(ecdsar1, ECDSA_SHA512_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA512_ECDSA_R1),
+                Arguments.of(ecdsar1, ECDSA_SHA256_SIGNATURE_SPEC, DefaultSignatureOIDMap.SHA256_ECDSA_R1)
             )
         }
 
