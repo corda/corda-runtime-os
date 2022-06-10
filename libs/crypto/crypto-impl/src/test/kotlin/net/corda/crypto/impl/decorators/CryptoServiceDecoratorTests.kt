@@ -468,11 +468,11 @@ class CryptoServiceDecoratorTests {
         }
     }
 
-    private fun createDecorator(retries: Int = 0): CryptoServiceDecorator {
+    private fun createDecorator(maxAttempts: Int = 1): CryptoServiceDecorator {
         return CryptoServiceDecorator(
             cryptoService,
             Duration.ofMillis(250),
-            retries = retries
+            maxAttempts = maxAttempts
         )
     }
 }

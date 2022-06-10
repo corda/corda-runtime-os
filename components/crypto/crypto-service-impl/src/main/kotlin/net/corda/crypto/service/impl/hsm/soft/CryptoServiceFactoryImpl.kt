@@ -167,8 +167,8 @@ class CryptoServiceFactoryImpl @Activate constructor(
                 CryptoServiceDecorator.create(
                     provider,
                     encryptor.decrypt(serviceConfig),
-                    info.retries,
-                    Duration.ofMillis(info.timeoutMills)
+                    info.maxAttempts,
+                    Duration.ofMillis(info.attemptTimeoutMills)
                 )
             }
 

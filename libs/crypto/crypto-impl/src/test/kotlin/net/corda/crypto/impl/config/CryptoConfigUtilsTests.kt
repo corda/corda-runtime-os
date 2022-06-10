@@ -112,8 +112,8 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, config.maximumSize)
         assertEquals("soft-salt", config.salt)
         assertEquals("soft-passphrase", config.passphrase)
-        assertEquals(0, config.retries)
-        assertEquals(20000, config.timeoutMills)
+        assertEquals(0, config.maxAttempts)
+        assertEquals(20000, config.attemptTimeoutMills)
     }
 
     @Test
@@ -128,7 +128,7 @@ class CryptoConfigUtilsTests {
         val config = smartConfig.hsmPersistence()
         assertEquals(240, config.expireAfterAccessMins)
         assertEquals(1000, config.maximumSize)
-        assertEquals(3, config.downstreamRetries)
+        assertEquals(3, config.downstreamMaxAttempts)
     }
 
     @Test
@@ -221,7 +221,7 @@ class CryptoConfigUtilsTests {
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<CryptoConfigurationException> {
-            config.retries
+            config.maxAttempts
         }
     }
 
@@ -231,7 +231,7 @@ class CryptoConfigUtilsTests {
             configFactory.create(ConfigFactory.empty())
         )
         assertThrows<CryptoConfigurationException> {
-            config.timeoutMills
+            config.attemptTimeoutMills
         }
     }
 
@@ -282,8 +282,8 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("soft-salt", sofPersistence.salt)
         assertEquals("soft-passphrase", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.retries)
-        assertEquals(20000, sofPersistence.timeoutMills)
+        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
         assertEquals(20, signingPersistence.keyNumberLimit)
@@ -294,7 +294,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
-        assertEquals(3, hsmPersistence.downstreamRetries)
+        assertEquals(3, hsmPersistence.downstreamMaxAttempts)
         assertTrue(config.hasPath("instanceId"))
     }
 
@@ -330,8 +330,8 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.retries)
-        assertEquals(20000, sofPersistence.timeoutMills)
+        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
         assertEquals(20, signingPersistence.keyNumberLimit)
@@ -342,7 +342,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
-        assertEquals(3, hsmPersistence.downstreamRetries)
+        assertEquals(3, hsmPersistence.downstreamMaxAttempts)
         assertTrue(config.hasPath("instanceId"))
     }
 
@@ -376,8 +376,8 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("soft-passphrase", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.retries)
-        assertEquals(20000, sofPersistence.timeoutMills)
+        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
         assertEquals(20, signingPersistence.keyNumberLimit)
@@ -388,7 +388,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
-        assertEquals(3, hsmPersistence.downstreamRetries)
+        assertEquals(3, hsmPersistence.downstreamMaxAttempts)
         assertTrue(config.hasPath("instanceId"))
     }
 
@@ -422,8 +422,8 @@ class CryptoConfigUtilsTests {
         assertEquals(1000, sofPersistence.maximumSize)
         assertEquals("soft-salt", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.retries)
-        assertEquals(20000, sofPersistence.timeoutMills)
+        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(90, signingPersistence.keysExpireAfterAccessMins)
         assertEquals(20, signingPersistence.keyNumberLimit)
@@ -434,7 +434,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(240, hsmPersistence.expireAfterAccessMins)
         assertEquals(1000, hsmPersistence.maximumSize)
-        assertEquals(3, hsmPersistence.downstreamRetries)
+        assertEquals(3, hsmPersistence.downstreamMaxAttempts)
         assertTrue(config.hasPath("instanceId"))
     }
 
@@ -480,8 +480,8 @@ class CryptoConfigUtilsTests {
         assertEquals(77, sofPersistence.maximumSize)
         assertEquals("s2", sofPersistence.salt)
         assertEquals("p2", sofPersistence.passphrase)
-        assertEquals(0, sofPersistence.retries)
-        assertEquals(20000, sofPersistence.timeoutMills)
+        assertEquals(0, sofPersistence.maxAttempts)
+        assertEquals(20000, sofPersistence.attemptTimeoutMills)
         val signingPersistence = cryptoConfig.signingPersistence()
         assertEquals(42, signingPersistence.keysExpireAfterAccessMins)
         assertEquals(21, signingPersistence.keyNumberLimit)
@@ -492,7 +492,7 @@ class CryptoConfigUtilsTests {
         val hsmPersistence = cryptoConfig.hsmPersistence()
         assertEquals(11, hsmPersistence.expireAfterAccessMins)
         assertEquals(222, hsmPersistence.maximumSize)
-        assertEquals(17, hsmPersistence.downstreamRetries)
+        assertEquals(17, hsmPersistence.downstreamMaxAttempts)
         assertTrue(config.hasPath("instanceId"))
     }
 }

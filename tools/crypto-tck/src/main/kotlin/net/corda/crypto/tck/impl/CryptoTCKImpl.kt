@@ -131,8 +131,8 @@ class CryptoTCKImpl @Activate constructor(
         out.println("COMPLETED COMPLIANCE TESTS: $version")
         out.println("options.${spec.options::serviceName.name}=${spec.options.serviceName}")
         out.println("options.${spec.options::concurrency.name}=${spec.options.concurrency}")
-        out.println("options.${spec.options::retries.name}=${spec.options.retries}")
-        out.println("options.${spec.options::timeout.name}=${spec.options.timeout}")
+        out.println("options.${spec.options::maxAttempts.name}=${spec.options.maxAttempts}")
+        out.println("options.${spec.options::attemptTimeout.name}=${spec.options.attemptTimeout}")
         if (spec.options.sessionComplianceSpec != null) {
             out.println(
                 "options.${spec.options::sessionComplianceTimeout.name}=" +

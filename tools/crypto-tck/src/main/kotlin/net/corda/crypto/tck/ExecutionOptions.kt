@@ -16,8 +16,8 @@ import java.time.Duration
  * The recommended value is 20, the minimum is 4.
  * @property sessionComplianceSpec the spec that should be used for the session inactivity test suite.
  * @property sessionComplianceTimeout the session timeout to test, must exceed the login session timeout.
- * @property retries number of retries when the call to the HSM fails.
- * @property timeout the HSM call execution timeout for each try.
+ * @property maxAttempts number of retries when the call to the HSM fails.
+ * @property attemptTimeout the HSM call execution timeout for each try.
  * @property tests which test suites to execute.
  */
 @Suppress("LongParameterList")
@@ -28,8 +28,8 @@ class ExecutionOptions(
     val concurrency: Int = 20,
     val sessionComplianceSpec: Pair<String, SignatureSpec>? = null,
     val sessionComplianceTimeout: Duration = Duration.ofMinutes(20),
-    val retries: Int = 2,
-    val timeout: Duration = Duration.ofSeconds(10),
+    val maxAttempts: Int = 2,
+    val attemptTimeout: Duration = Duration.ofSeconds(10),
     val tests: List<ComplianceTestType> = listOf(
         ComplianceTestType.CRYPTO_SERVICE
     )

@@ -3,15 +3,16 @@ package net.corda.crypto.impl
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.slf4j.Logger
+import java.lang.Integer.max
 import java.lang.Integer.min
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeoutException
 
-open class Executor(
+open class CryptoRetryingExecutor(
     private val logger: Logger,
-    rawRetryCount: Int,
+    rawMaxAttempts: Int,
     private val waitBetween: Duration = Duration.ofMillis(100)
 ) {
     companion object {
@@ -26,18 +27,18 @@ open class Executor(
         )
     }
 
-    private val retryCount = min(rawRetryCount, MAX_RETRY_GUARD)
+    private val maxAttempts = min(max(rawMaxAttempts, 1), MAX_RETRY_GUARD)
 
     fun <R> executeWithRetry(block: () -> R): R {
-        var remaining = retryCount
+        var remaining = maxAttempts
         var opId = ""
         while (true) {
             try {
-                if (remaining < retryCount) {
+                if (remaining < maxAttempts) {
                     logger.info("Retrying operation (opId={},remaining={})", opId, remaining)
                 }
                 val result = execute(block)
-                if (remaining < retryCount) {
+                if (remaining < maxAttempts) {
                     logger.info("Retrying was successful (opId={},remaining={})", opId, remaining)
                 }
                 return result
@@ -80,11 +81,11 @@ open class Executor(
         }
 }
 
-open class ExecutorWithTimeout(
+class CryptoRetryingExecutorWithTimeout(
     logger: Logger,
-    retryCount: Int,
-    private val retryTimeout: Duration?,
+    maxAttempts: Int,
+    private val attemptTimeout: Duration?,
     waitBetween: Duration = Duration.ofMillis(100)
-) : Executor(logger, retryCount, waitBetween) {
-    override fun <R> execute(block: () -> R): R = CompletableFuture.supplyAsync(block).getOrThrow(retryTimeout)
+) : CryptoRetryingExecutor(logger, maxAttempts, waitBetween) {
+    override fun <R> execute(block: () -> R): R = CompletableFuture.supplyAsync(block).getOrThrow(attemptTimeout)
 }

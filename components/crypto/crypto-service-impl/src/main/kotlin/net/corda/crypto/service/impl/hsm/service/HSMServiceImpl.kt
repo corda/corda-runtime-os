@@ -8,7 +8,7 @@ import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLIC
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.Executor
+import net.corda.crypto.impl.CryptoRetryingExecutor
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
@@ -54,7 +54,7 @@ class HSMServiceImpl(
 
     private val hsmConfig = config.hsmPersistence()
 
-    private val executor = Executor(logger, hsmConfig.downstreamRetries)
+    private val executor = CryptoRetryingExecutor(logger, hsmConfig.downstreamMaxAttempts)
 
     fun putHSMConfig(info: HSMInfo, serviceConfig: ByteArray): String {
         logger.info("putHSMConfig(id={},description={})", info.id, info.description)
@@ -238,8 +238,8 @@ class HSMServiceImpl(
             "Standard Soft HSM configuration",
             MasterKeyPolicy.NEW,
             null,
-            softConfig.retries,
-            softConfig.timeoutMills,
+            softConfig.maxAttempts,
+            softConfig.attemptTimeoutMills,
             SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.key.codeName },
             SOFT_HSM_SERVICE_NAME,
             -1

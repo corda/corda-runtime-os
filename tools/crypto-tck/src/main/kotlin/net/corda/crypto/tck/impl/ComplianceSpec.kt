@@ -14,8 +14,8 @@ class ComplianceSpec(
         CryptoServiceDecorator.create(
             provider = providers.get(options.serviceName),
             serviceConfig = CryptoServiceDecorator.objectMapper.writeValueAsBytes(options.serviceConfig),
-            retries = options.retries,
-            timeout = options.timeout
+            maxAttempts = options.maxAttempts,
+            attemptTimeout = options.attemptTimeout
         )
 
     fun generateRandomIdentifier(len: Int = 12) =

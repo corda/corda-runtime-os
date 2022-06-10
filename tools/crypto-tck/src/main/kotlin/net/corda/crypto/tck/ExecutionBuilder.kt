@@ -130,8 +130,8 @@ class ExecutionBuilder(
                         null
                     },
                 sessionComplianceTimeout = sessionComplianceTimeout,
-                retries = retries,
-                timeout = timeout,
+                maxAttempts = retries,
+                attemptTimeout = timeout,
                 tests = tests
             )
         )

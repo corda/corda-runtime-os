@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.crypto.impl.ExecutorWithTimeout
+import net.corda.crypto.impl.CryptoRetryingExecutorWithTimeout
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
@@ -21,8 +21,8 @@ import java.time.Duration
 
 class CryptoServiceDecorator(
     private val cryptoService: CryptoService,
-    private val timeout: Duration,
-    private val retries: Int
+    private val attemptTimeout: Duration,
+    private val maxAttempts: Int
 ) : CryptoService, AutoCloseable {
     companion object {
         private val logger = contextLogger()
@@ -40,18 +40,18 @@ class CryptoServiceDecorator(
         fun create(
             provider: CryptoServiceProvider<Any>,
             serviceConfig: ByteArray,
-            retries: Int,
-            timeout: Duration
+            maxAttempts: Int,
+            attemptTimeout: Duration
         ): CryptoService = CryptoServiceDecorator(
             cryptoService = CryptoServiceThrottlingDecorator(
                 provider.getInstance(objectMapper.readValue(serviceConfig, provider.configType))
             ),
-            timeout = timeout,
-            retries = retries
+            attemptTimeout = attemptTimeout,
+            maxAttempts = maxAttempts
         )
     }
 
-    private val withTimeout = ExecutorWithTimeout(logger, retries, timeout)
+    private val withTimeout = CryptoRetryingExecutorWithTimeout(logger, maxAttempts, attemptTimeout)
 
     override fun close() {
         (cryptoService as? AutoCloseable)?.close()
