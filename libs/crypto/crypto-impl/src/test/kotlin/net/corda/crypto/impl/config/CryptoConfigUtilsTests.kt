@@ -458,7 +458,7 @@ class CryptoConfigUtilsTests {
                         "signingPersistence.connectionNumberLimit" to "3",
                         "hsmPersistence.expireAfterAccessMins" to "11",
                         "hsmPersistence.maximumSize" to 222,
-                        "hsmPersistence.downstreamRetries" to 17
+                        "hsmPersistence.downstreamMaxAttempts" to 17
                     )
                 )
             )
