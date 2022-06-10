@@ -52,16 +52,16 @@ internal open class SandboxImpl(
         }
     }
 
-    override fun unload() = allBundles.mapNotNull { bundle ->
+    override fun unload() = allBundles.groupBy { bundle ->
         try {
             bundle.uninstall()
-            null
+            true
         } catch (e: IllegalStateException) {
             logger.warn("Bundle ${bundle.symbolicName} is not installed", e)
-            null
+            true
         } catch (e: Exception) {
             logger.warn("Bundle ${bundle.symbolicName} could not be uninstalled", e)
-            bundle
+            false
         }
     }
 
