@@ -46,7 +46,6 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
-        id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
