@@ -46,6 +46,8 @@ class Main @Activate constructor(
     private val sandboxCreationService: SandboxCreationService,
     @Reference
     private val configurationAdmin: ConfigurationAdmin,
+    @Reference
+    private val cpkReadServiceLoader: CpkReadServiceLoader,
     @Reference(cardinality = MULTIPLE, policyOption = GREEDY)
     private val internalCustomSerializers: List<InternalCustomSerializer<out Any>>
 ) : Application {
