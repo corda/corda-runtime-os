@@ -55,7 +55,7 @@ class CpkReadServiceImpl (
         configReadService: ConfigurationReadService,
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory
-    ) : this(
+    ): this(
         coordinatorFactory,
         configReadService,
         subscriptionFactory,
@@ -75,10 +75,8 @@ class CpkReadServiceImpl (
 
     @VisibleForTesting
     internal var configReadServiceRegistration: RegistrationHandle? = null
-
     @VisibleForTesting
     internal var configSubscription: AutoCloseable? = null
-
     @VisibleForTesting
     internal var cpkChunksKafkaReaderSubscription: AutoCloseable? = null
 
@@ -102,10 +100,7 @@ class CpkReadServiceImpl (
             coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
     }
 
-    private fun onRegistrationStatusChangeEvent(
-        event: RegistrationStatusChangeEvent,
-        coordinator: LifecycleCoordinator
-    ) {
+    private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
             configSubscription?.close()
             configSubscription = configReadService.registerComponentForUpdates(
