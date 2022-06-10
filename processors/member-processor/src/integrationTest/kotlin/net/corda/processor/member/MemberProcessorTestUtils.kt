@@ -185,7 +185,7 @@ class MemberProcessorTestUtils {
                 waitBetween = Duration.ofMillis(1000)
             ) {
                 assertDoesNotThrow {
-                    registrationProxy.register(holdingIdentity)
+                    registrationProxy.register(holdingIdentity, emptyMap())
                 }
             }
 

@@ -112,7 +112,7 @@ class MemberOpsClientTest {
         changeConfig()
     }
 
-    private val request = MemberRegistrationRequestDto(HOLDING_IDENTITY_ID, RegistrationActionDto.REQUEST_JOIN)
+    private val request = MemberRegistrationRequestDto(HOLDING_IDENTITY_ID, RegistrationActionDto.REQUEST_JOIN, mock())
 
     @BeforeEach
     fun setUp() {

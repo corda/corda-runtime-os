@@ -46,7 +46,7 @@ class MemberOpsServiceProcessorTest {
         @BeforeAll
         fun setup() {
             registrationProxy = mock {
-                on { register(holdingIdentity) } doReturn (MembershipRequestRegistrationResult(
+                on { register(holdingIdentity, mock()) } doReturn (MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.SUBMITTED
                 ))
             }
