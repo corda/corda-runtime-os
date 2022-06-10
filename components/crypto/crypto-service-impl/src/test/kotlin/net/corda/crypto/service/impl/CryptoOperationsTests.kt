@@ -46,6 +46,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -119,7 +120,7 @@ class CryptoOperationsTests {
             category = CryptoConsts.Categories.LEDGER
             wrappingKeyAlias = factory.wrappingKeyAlias
             cryptoService = factory.cryptoService
-            softAliasedKeys = supportedSchemes().associateWith {
+            softAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
                         keyScheme = it,
@@ -133,7 +134,7 @@ class CryptoOperationsTests {
                     )
                 ) as GeneratedWrappedKey
             }
-            softFreshKeys = supportedSchemes().associateWith {
+            softFreshKeys = cryptoService.supportedSchemes.keys.associateWith {
                 cryptoService.generateKeyPair(
                     KeyGenerationSpec(
                         keyScheme = it,
@@ -147,7 +148,7 @@ class CryptoOperationsTests {
                     )
                 ) as GeneratedWrappedKey
             }
-            signingAliasedKeys = supportedSchemes().associateWith {
+            signingAliasedKeys = cryptoService.supportedSchemes.keys.associateWith {
                 val signingService = factory.createSigningService()
                 val alias = UUID.randomUUID().toString()
                 SigningAliasedKeyInfo(
@@ -161,7 +162,7 @@ class CryptoOperationsTests {
                     )
                 )
             }
-            signingFreshKeys = supportedSchemes().associateWith {
+            signingFreshKeys = cryptoService.supportedSchemes.keys.associateWith {
                 val signingService = factory.createSigningService()
                 val externalId = UUID.randomUUID().toString()
                 SigningFreshKeyInfo(
@@ -175,7 +176,7 @@ class CryptoOperationsTests {
                     )
                 )
             }
-            signingFreshKeysWithoutExternalId = supportedSchemes().associateWith {
+            signingFreshKeysWithoutExternalId = cryptoService.supportedSchemes.keys.associateWith {
                 val signingService = factory.createSigningService()
                 SigningFreshKeyInfo(
                     externalId = null,
@@ -187,20 +188,31 @@ class CryptoOperationsTests {
                     )
                 )
             }
-            unknownKeyPairs = supportedSchemes().associateWith {
+            unknownKeyPairs = cryptoService.supportedSchemes.keys.associateWith {
                 generateKeyPair(schemeMetadata, it.codeName)
             }
         }
 
         @JvmStatic
-        fun supportedSchemes(): List<KeyScheme> =
-            cryptoService.supportedSchemes.keys.toList()
+        fun supportedSchemes(): List<Arguments> {
+            val list = mutableListOf<Arguments>()
+            cryptoService.supportedSchemes.forEach { entry ->
+                entry.value.forEach { spec ->
+                    list.add(Arguments.of(entry.key, spec))
+                }
+            }
+            return list
+        }
+
+        @JvmStatic
+        fun keySchemes(): Collection<KeyScheme> =
+            cryptoService.supportedSchemes.keys
 
         private fun getInferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
             schemeMetadata.inferableDigestNames(scheme)
 
         private fun getAllStandardSignatureSpecs(scheme: KeyScheme): List<SignatureSpec> =
-            schemeMetadata.supportedSignatureSpec(scheme)
+            cryptoService.supportedSchemes[scheme] ?: emptyList()
 
         private fun getAllCustomSignatureSpecs(scheme: KeyScheme): List<SignatureSpec> =
             schemeMetadata.digests.mapNotNull { digest ->
@@ -369,16 +381,17 @@ class CryptoOperationsTests {
     @MethodSource("supportedSchemes")
     @Suppress("MaxLineLength")
     fun `SoftCryptoService should throw IllegalStateException when signing with unknown wrapping key for all supported schemes`(
-        scheme: KeyScheme
+        scheme: KeyScheme,
+        spec: SignatureSpec
     ) {
-        fun verifySign(key: GeneratedWrappedKey) {
+        fun verifySign(key: GeneratedWrappedKey, spec: SignatureSpec) {
             assertThrows<IllegalStateException> {
                 cryptoService.sign(
                     SigningWrappedSpec(
                         keyMaterial = key.keyMaterial,
                         masterKeyAlias = UUID.randomUUID().toString(),
                         keyScheme = scheme,
-                        signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first(),
+                        signatureSpec = spec,
                         encodingVersion = key.encodingVersion
                     ),
                     UUID.randomUUID().toString().toByteArray(),
@@ -388,8 +401,8 @@ class CryptoOperationsTests {
                 )
             }
         }
-        verifySign(softAliasedKeys.getValue(scheme))
-        verifySign(softFreshKeys.getValue(scheme))
+        verifySign(softAliasedKeys.getValue(scheme), spec)
+        verifySign(softFreshKeys.getValue(scheme), spec)
     }
 
     @Test
@@ -634,7 +647,8 @@ class CryptoOperationsTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     fun `SoftCryptoService should fail to use aliased key generated for another wrapping key for all supported schemes`(
-        scheme: KeyScheme
+        scheme: KeyScheme,
+        spec: SignatureSpec
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
         cryptoService.createWrappingKey(
@@ -652,7 +666,7 @@ class CryptoOperationsTests {
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = anotherWrappingKey,
                     keyScheme = scheme,
-                    signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first(),
+                    signatureSpec = spec,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
@@ -666,7 +680,8 @@ class CryptoOperationsTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     fun `SoftCryptoService should fail to use fresh key generated for another wrapping key for all supported schemes`(
-        scheme: KeyScheme
+        scheme: KeyScheme,
+        spec: SignatureSpec
     ) {
         val anotherWrappingKey = UUID.randomUUID().toString()
         cryptoService.createWrappingKey(
@@ -683,7 +698,7 @@ class CryptoOperationsTests {
                     keyMaterial = key.keyMaterial,
                     masterKeyAlias = anotherWrappingKey,
                     keyScheme = scheme,
-                    signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first(),
+                    signatureSpec = spec,
                     encodingVersion = key.encodingVersion
                 ),
                 testData,
@@ -760,7 +775,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should lookup by id for aliased key in all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -772,7 +787,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should lookup by id for fresh key in all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -784,7 +799,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should return empty collection when looking up for not existing ids in all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -796,7 +811,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should lookup for key in all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -816,7 +831,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should return empty collection when looking up for noy matching key parameters in all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -835,7 +850,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should not find public key when key pair hasn't been generated yet for all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -847,14 +862,17 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
-    fun `Should fail signing with unknown public key for all supported schemes`(scheme: KeyScheme) {
+    fun `Should fail signing with unknown public key for all supported schemes`(
+        scheme: KeyScheme,
+        spec: SignatureSpec
+    ) {
         val unknownPublicKey = unknownKeyPairs.getValue(scheme).public
         val info = signingFreshKeys.getValue(scheme)
         assertThrows<CryptoServiceException> {
             info.signingService.sign(
                 tenantId = tenantId,
                 publicKey = unknownPublicKey,
-                signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first(),
+                signatureSpec = spec,
                 data = UUID.randomUUID().toString().toByteArray()
             )
         }
@@ -863,7 +881,8 @@ class CryptoOperationsTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     fun `Should throw CryptoServiceException to sign for unknown tenant for all supported schemes`(
-        scheme: KeyScheme
+        scheme: KeyScheme,
+        spec: SignatureSpec
     ) {
         val info = signingAliasedKeys.getValue(scheme)
         verifyCachedKeyRecord(info.publicKey, info.alias, null, scheme)
@@ -872,14 +891,14 @@ class CryptoOperationsTests {
             info.signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = info.publicKey,
-                signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first(),
+                signatureSpec = spec,
                 data = UUID.randomUUID().toString().toByteArray()
             )
         }
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should generate aliased keys and then sign and verify for all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -891,7 +910,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should generate fresh keys and then sign and verify for all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -903,7 +922,7 @@ class CryptoOperationsTests {
     }
 
     @ParameterizedTest
-    @MethodSource("supportedSchemes")
+    @MethodSource("keySchemes")
     fun `Should generate fresh keys without external id and then sign and verify for all supported schemes`(
         scheme: KeyScheme
     ) {
@@ -917,7 +936,8 @@ class CryptoOperationsTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     fun `Signing service should use first known aliased key from CompositeKey when signing for all supported schemes`(
-        scheme: KeyScheme
+        scheme: KeyScheme,
+        spec: SignatureSpec
     ) {
         val info = signingAliasedKeys.getValue(scheme)
         val testData = UUID.randomUUID().toString().toByteArray()
@@ -930,16 +950,16 @@ class CryptoOperationsTests {
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
             .build(threshold = 2)
-        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
-        val signature = info.signingService.sign(tenantId, aliceAndBob, signatureSpec, testData)
+        val signature = info.signingService.sign(tenantId, aliceAndBob, spec, testData)
         assertEquals(bobPublicKey, signature.by)
-        validateSignatureUsingExplicitSignatureSpec(signature.by, signatureSpec, signature.bytes, testData)
+        validateSignatureUsingExplicitSignatureSpec(signature.by, spec, signature.bytes, testData)
     }
 
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     fun `Signing service should use first known fresh key from CompositeKey when signing for all supported schemes`(
-        scheme: KeyScheme
+        scheme: KeyScheme,
+        spec: SignatureSpec
     ) {
         val info = signingFreshKeys.getValue(scheme)
         val testData = UUID.randomUUID().toString().toByteArray()
@@ -952,10 +972,9 @@ class CryptoOperationsTests {
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
             .build(threshold = 2)
-        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
-        val signature = info.signingService.sign(tenantId, aliceAndBob, signatureSpec, testData)
+        val signature = info.signingService.sign(tenantId, aliceAndBob, spec, testData)
         assertEquals(bobPublicKey, signature.by)
-        validateSignatureUsingExplicitSignatureSpec(signature.by, signatureSpec, signature.bytes, testData)
+        validateSignatureUsingExplicitSignatureSpec(signature.by, spec, signature.bytes, testData)
     }
 }
 
