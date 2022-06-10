@@ -42,14 +42,14 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         val cpiList = scanCPIs(repositoryFolder, getTempDir("flow-worker-setup-cpi"))
 
-        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB", "CN=Alice, O=Alice Corp, L=LDN, C=GB")
+        val x500Identities = listOf("CN=Bob, O=Bob Corp, L=LDN, C=GB","CN=Alice, O=Alice Corp, L=LDN, C=GB")
 
         val virtualNodes = cpiList.flatMap { cpi ->
             x500Identities.map { x500 -> cpi to VirtualNodeInfo(
-                    HoldingIdentity(x500, cpi.metadata.cpiId.name),
-                    cpi.metadata.cpiId,
-                    vaultDmlConnectionId = UUID.randomUUID(),
-                    cryptoDmlConnectionId = UUID.randomUUID()
+                HoldingIdentity(x500, cpi.metadata.cpiId.name),
+                cpi.metadata.cpiId,
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID()
             ) }
         }
 
@@ -69,11 +69,10 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
         }
 
 
-        val vNodeCpiRecords = virtualNodes.flatMap { (cpi, virtualNodeInfo) ->
+        val vNodeCpiRecords = virtualNodes.flatMap {
             listOf(
-                Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity.toAvro(), virtualNodeInfo.toAvro()),
-                Record(CPI_INFO_TOPIC, cpi.metadata.cpiId.toAvro(), cpi.metadata.toAvro())
-            )
+                Record(VIRTUAL_NODE_INFO_TOPIC, it.second.holdingIdentity.toAvro(), it.second.toAvro()),
+                Record(CPI_INFO_TOPIC, it.first.metadata.cpiId.toAvro(), it.first.metadata.toAvro()))
         }
 
         context.publish(vNodeCpiRecords)

@@ -35,7 +35,7 @@ class CpiValidatorImpl(
         validationFunctions.checkSignature(fileInfo)
 
         publisher.update(requestId, "Validating CPI")
-        val cpi = validationFunctions.checkCpi(fileInfo)
+        val cpi: Cpi = validationFunctions.checkCpi(fileInfo)
 
         publisher.update(requestId, "Checking group id in CPI")
         validationFunctions.getGroupId(cpi)
