@@ -100,8 +100,6 @@ internal class DatabaseChunkPersistenceTest {
         }
     }
 
-    private val random = Random(0)
-
     @Suppress("Unused")
     @AfterAll
     fun cleanup() {
@@ -430,8 +428,10 @@ internal class DatabaseChunkPersistenceTest {
         assertThat(persistence.cpkExists(checksum)).isTrue
     }
 
-    private fun newRandomSecureHash() =
-        SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+    private fun newRandomSecureHash(): SecureHash {
+        val random = Random(0)
+        return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+    }
 
     @Test
     fun `database chunk persistence can write multiple cpks into database`() {
@@ -520,7 +520,8 @@ internal class DatabaseChunkPersistenceTest {
         val cpks = listOf(cpk1)
         val cpi = mockCpi(cpks)
 
-        val cpiMetadataEntity = persistence.persistMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        val cpiFileName = "test${UUID.randomUUID()}.cpi"
+        val cpiMetadataEntity = persistence.persistMetadataAndCpks(cpi, cpiFileName, cpiChecksum, UUID.randomUUID().toString(), "abcdef")
         assertThat(cpiMetadataEntity.entityVersion).isEqualTo(1)
 
         val initialLoadedCpi = entityManagerFactory.createEntityManager().transaction {
@@ -543,7 +544,7 @@ internal class DatabaseChunkPersistenceTest {
         // cpi with different CPKs but same ID
         val updatedCpi = mockCpiWithId(updatedCpks, cpi.metadata.cpiId)
 
-        val updatedCpiMetadataEntity = persistence.updateMetadataAndCpks(updatedCpi, "test.cpi", updatedCpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        val updatedCpiMetadataEntity = persistence.updateMetadataAndCpks(updatedCpi, cpiFileName, updatedCpiChecksum, UUID.randomUUID().toString(), "abcdef")
         assertThat(updatedCpiMetadataEntity.entityVersion > 1).isTrue
 
         val updatedLoadedCpi = entityManagerFactory.createEntityManager().transaction {
@@ -556,9 +557,10 @@ internal class DatabaseChunkPersistenceTest {
 
         assertThat(updatedLoadedCpi.cpks.size).isEqualTo(2)
         assertThat(updatedLoadedCpi.entityVersion).isEqualTo(3)
-        val sortedCpks = updatedLoadedCpi.cpks.sortedBy { it.insertTimestamp }
-        assertThat(sortedCpks[0].entityVersion).isEqualTo(1)
-        assertThat(sortedCpks[1].entityVersion).isEqualTo(0)
+        val firstCpk = updatedLoadedCpi.cpks.first { it.cpkFileChecksum == cpkChecksum.toString() }
+        val secondCpk = updatedLoadedCpi.cpks.first { it.cpkFileChecksum == updatedCpkChecksum.toString() }
+        assertThat(firstCpk.entityVersion).isEqualTo(1)
+        assertThat(secondCpk.entityVersion).isEqualTo(0)
     }
 
     @Test
