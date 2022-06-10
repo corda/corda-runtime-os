@@ -27,6 +27,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
+import net.corda.libs.cpi.datamodel.CpkKey
 
 /**
  * This class provides some simple APIs to interact with the database.
@@ -229,7 +230,13 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             // persist file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
-                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(
+                    CpkFileEntity(
+                        CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
+                        cpkChecksum,
+                        Files.readAllBytes(it.path!!)
+                    )
+                )
             }
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -273,7 +280,13 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
                 // Using `merge` here as exactly the same CPK may already exist
-                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(
+                    CpkFileEntity(
+                        CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
+                        cpkChecksum,
+                        Files.readAllBytes(it.path!!)
+                    )
+                )
             }
             return cpiMetadataEntity
         }
@@ -351,10 +364,8 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             val cpkMetadataEntity =
                 // TODO - format version
                 CpkMetadataEntity(
+                    CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHashForDbQuery),
                     cpkChecksum,
-                    cpkName = it.metadata.cpkId.name,
-                    cpkVersion = it.metadata.cpkId.version,
-                    cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
                     formatVersion = "1",
                     serializedMetadata = it.metadata.toJsonAvro()
                 )
