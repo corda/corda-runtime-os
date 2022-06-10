@@ -67,7 +67,7 @@ class TweakableHashDigestProvider(
 
 // This doesn't support log audit proofs as it uses depth in the node hashes
 // However, it is suited to low entropy leaves, such as blockchain transactions
-class NonceHashDigestProvider(
+open class NonceHashDigestProvider(
     override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
     private val digestService: DigestService,
     val entropy: ByteArray,
@@ -78,29 +78,25 @@ class NonceHashDigestProvider(
         random: Random = SecureRandom()
     ) : this(digestAlgorithmName, digestService, createNonce(random))    // @todo: original implementation seems to have used DRBG.
 
-    companion object {
-        // use this instance if only verification is required and thus don't need to reveal the entropy
-        fun getVerifyInstance(
-            digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
-            digestService: DigestService
-        ) = NonceHashDigestProvider(digestAlgorithmName, digestService, ByteArray(0))
+    // use this class if only verification is required and thus don't need to reveal the entropy
+    class Verify(
+        digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+        digestService: DigestService
+    ): NonceHashDigestProvider(digestAlgorithmName, digestService, ByteArray(0))
 
-        fun getSizeOnlyVerifyInstance(
-            digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
-            digestService: DigestService
-        ) = object: MerkleTreeHashDigestProvider {
-            override val digestAlgorithmName: DigestAlgorithmName = digestAlgorithmName
+    class SizeOnlyVerify(
+        override val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
+        private val digestService: DigestService
+    ): MerkleTreeHashDigestProvider {
+        override fun leafNonce(index: Int): ByteArray? = null
 
-            override fun leafNonce(index: Int): ByteArray? = null
+        override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
+            require(nonce == null) { "Nonce must not be null" }
+            return SecureHash("SHA-256", bytes) // @todo: original was: SecureHash.deserialize(bytes) but that looked too avro specific.
+        }
 
-            override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
-                require(nonce == null) { "Nonce must not be null" }
-                return SecureHash("SHA-256", bytes) // @todo: original was: SecureHash.deserialize(bytes) but that looked too avro specific.
-            }
-
-            override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-                return digestService.hash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes), digestAlgorithmName)
-            }
+        override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
+            return digestService.hash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes), digestAlgorithmName)
         }
     }
 

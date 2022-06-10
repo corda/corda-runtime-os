@@ -32,7 +32,7 @@ class MerkleTreeTest {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             defaultHashDigestProvider = DefaultHashDigestProvider(digestAlgorithm, digestService)
-            nonceVerify = NonceHashDigestProvider.getVerifyInstance(digestAlgorithm, digestService)
+            nonceVerify = NonceHashDigestProvider.Verify(digestAlgorithm, digestService)
             zeroHash = digestService.hash(ByteArray(0), digestAlgorithm)
         }
     }
@@ -268,7 +268,7 @@ class MerkleTreeTest {
         assertEquals(leafData.size, sizeOnlyProof.leaves.size)
         assertEquals(
             true,
-            sizeOnlyProof.verify(nonceMerkleTree.root, NonceHashDigestProvider.getSizeOnlyVerifyInstance(digestAlgorithm, digestService))
+            sizeOnlyProof.verify(nonceMerkleTree.root, NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService))
         )
     }
 }
