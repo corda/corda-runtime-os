@@ -205,7 +205,7 @@ open class SigningServiceImpl(
             store.act(tenantId) {
                 it.save(cryptoService.toSaveKeyContext(generatedKey, alias, scheme, externalId))
             }
-            generatedKey.publicKey
+            schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
         } catch (e: Throwable) {
             throw CryptoServiceException(
                 "Cannot generate key pair for category=$category and alias=$alias, tenant=$tenantId",
