@@ -71,7 +71,7 @@ internal class MerkleTreeImpl(
         hashSet
     }
 
-    override val depth: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val depth: Int by lazy(LazyThreadSafetyMode.PUBLICATION) {
         treeDepth(leaves.size)
     }
 
