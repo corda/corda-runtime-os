@@ -47,6 +47,8 @@ def plugin = tasks.register('plugin', Jar) {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
         exclude "META-INF/*.RSA"
+        exclude "module-info.class"
+        exclude "META-INF/versions/*/module-info.class"
 
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
