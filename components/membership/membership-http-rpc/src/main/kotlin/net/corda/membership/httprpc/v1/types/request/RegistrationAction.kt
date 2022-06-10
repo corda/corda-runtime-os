@@ -5,6 +5,7 @@ package net.corda.membership.httprpc.v1.types.request
  *
  * @param action The action to take during registration.
  */
+@Suppress("EnumNaming")
 enum class RegistrationAction(private val action: String) {
     requestJoin("requestJoin");
 
