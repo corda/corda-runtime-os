@@ -24,6 +24,7 @@ class DbManagerImpl : DbManager {
         return Query.newBuilder()
             .setRequest(request)
             .setRequestId(requestId)
+            .setRetries(0)
             .setResponse(null)
             .setSendTimestamp(request.timestamp)
             .build()

@@ -12,10 +12,9 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.persistence.CordaPersistenceException
 import net.cordapp.flowworker.development.messages.TestFlowInput
-import net.cordapp.flowworker.development.messages.TestFlowOutput
 
 /**
  * The Test Flow exercises various basic features of a flow, this flow
@@ -41,60 +40,46 @@ class PersistenceFlow(private val jsonArg: String) : Flow<String> {
     @CordaInject
     lateinit var persistenceService: PersistenceService
 
-
     @Suspendable
     override fun call(): String {
         log.info("Starting Test Flow...")
         try {
+            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(jsonArg)
+
             val id = UUID.randomUUID()
             val dog = Dog(id, "Penny", Instant.now(), "Alice")
             persistenceService.persist(dog)
+            log.info("Persisted Dog: $dog")
+
+            if (inputs.throwException) {
+                try {
+                    persistenceService.persist(dog)
+                    log.error("Persisted second Dog incorrectly: $dog")
+
+                } catch (e: CordaPersistenceException) {
+                    return "Dog operations failed successfully!"
+                }
+            }
 
             val foundDog = persistenceService.find(Dog::class.java, id)
-            log.info("Found Cat: $foundDog")
+            log.info("Found Dog: $foundDog")
 
             val mergeDog = Dog(id, "Penny", Instant.now(), "Bob")
             val updatedDog = persistenceService.merge(mergeDog)
             log.info("Updated Dog: $updatedDog")
 
             val findDogAfterMerge = persistenceService.find(Dog::class.java, id)
-            log.info("Found Dog: $findDogAfterMerge")
+            log.info("Found Updated Dog: $findDogAfterMerge")
 
-            if (findDogAfterMerge != null) {
+            if (findDogAfterMerge != null && inputs.inputValue == "delete") {
                 persistenceService.remove(findDogAfterMerge)
                 log.info("Deleted Dog")
+
+                val dogFindNull = persistenceService.find(Dog::class.java, id)
+                log.info("Query for deleted dog returned: $dogFindNull")
             }
 
-            val dogFindNull = persistenceService.find(Dog::class.java, id)
-            log.info("Query for deleted dog returned: $dogFindNull")
-
-
-            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(jsonArg)
-            if(inputs.throwException){
-                throw IllegalStateException("Caller requested exception to be raised")
-            }
-
-            val foundMemberInfo = if(inputs.memberInfoLookup==null){
-                "No member lookup requested."
-            }else{
-                val lookupResult = memberLookupService.lookup(MemberX500Name.parse(inputs.memberInfoLookup!!))
-                lookupResult?.name?.toString() ?: "Failed to find MemberInfo for ${inputs.memberInfoLookup!!}"
-            }
-
-            /**
-             * For now this is removed to allow others to test while the issue preventing this
-             * from working is investigated
-            val subFlow = TestGetNodeNameSubFlow()
-            val myIdentity = flowEngine.subFlow(subFlow)
-            */
-
-            val response = TestFlowOutput(
-                inputs.inputValue?:"No input value",
-                "dummy",
-                foundMemberInfo
-            )
-
-            return jsonMarshallingService.formatJson(response)
+            return "Dog operations are complete"
 
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow",e )
