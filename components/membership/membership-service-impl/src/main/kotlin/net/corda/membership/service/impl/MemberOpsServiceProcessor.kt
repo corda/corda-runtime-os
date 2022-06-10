@@ -105,7 +105,7 @@ class MemberOpsServiceProcessor(
             val holdingIdentity = virtualNodeInfoReadService.getById(request.holdingIdentityId)?.holdingIdentity
                 ?: throw MembershipRegistrationException("Could not find holding identity associated with ${request.holdingIdentityId}")
             val result = try {
-                registrationProxy.register(holdingIdentity)
+                registrationProxy.register(holdingIdentity, request.memberContext)
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.")
                 null

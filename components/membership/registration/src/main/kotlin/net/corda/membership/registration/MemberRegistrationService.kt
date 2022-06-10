@@ -24,9 +24,10 @@ interface MemberRegistrationService : Lifecycle {
      * qualified member within a membership group.
      *
      * @param member The holding identity of the virtual node requesting registration.
+     * @param memberContext TODO
      *
      * @return The status of the registration request. NOT_SUBMITTED is returned when
      * something went wrong during creating the request.
      */
-    fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
+    fun register(member: HoldingIdentity, memberContext: Map<String, String>): MembershipRequestRegistrationResult
 }

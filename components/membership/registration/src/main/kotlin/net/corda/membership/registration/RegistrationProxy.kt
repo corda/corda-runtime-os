@@ -14,11 +14,12 @@ interface RegistrationProxy : Lifecycle {
      * configuration, and forwards the registration request to it.
      *
      * @param member The holding identity of the virtual node requesting registration.
+     * @param memberContext TODO
      *
      * @return The status of the registration request as reported by the [MemberRegistrationService].
      * NOT_SUBMITTED is returned if something goes wrong while creating the request.
      *
      * @throws [RegistrationProtocolSelectionException] when the registration protocol could not be selected.
      */
-    fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
+    fun register(member: HoldingIdentity, memberContext: Map<String, String>): MembershipRequestRegistrationResult
 }
