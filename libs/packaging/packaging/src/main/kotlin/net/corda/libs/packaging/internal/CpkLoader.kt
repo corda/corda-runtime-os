@@ -161,7 +161,8 @@ internal object CpkLoader {
 
             return CpkImpl(
                 metadata = metadata,
-                jarFile = JarFile(finalCpkFile, verifySignature),
+                jarFile = finalCpkFile,
+                verifySignature = verifySignature,
                 path = finalCpkFile.toPath(),
                 originalFileName = cpkFileName
             )

@@ -86,11 +86,6 @@ class CPKTests {
         referenceUnzipMethod(workflowCPKPath, referenceExtractionPath)
     }
 
-    @AfterAll
-    fun teardown() {
-        workflowCPK.close()
-    }
-
     companion object {
         private val DUMMY_HASH =
             Base64.getEncoder().encodeToString(SecureHash(DigestAlgorithmName.SHA2_256.name, ByteArray(32)).bytes)
@@ -424,7 +419,6 @@ class CPKTests {
         }
         assertThrows<PackagingException> {
             Files.newInputStream(nonJarFile).use { CpkReader.readCpk(it, processedWorkflowCPKPath, nonJarFile.toString()) }
-                .also(Cpk::close)
         }
     }
 

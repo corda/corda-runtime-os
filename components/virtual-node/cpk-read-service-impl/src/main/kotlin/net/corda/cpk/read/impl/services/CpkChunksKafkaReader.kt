@@ -22,12 +22,10 @@ class CpkChunksKafkaReader(
     private val cpkPartsDir: Path,
     private val cpkChunksFileManager: CpkChunksFileManager,
     private val onCpkAssembled: (CpkIdentifier, Cpk) -> Unit
-) : CompactedProcessor<CpkChunkId, Chunk>, AutoCloseable {
+) : CompactedProcessor<CpkChunkId, Chunk> {
     companion object {
         val logger = contextLogger()
     }
-
-    private val openCpks: MutableList<Cpk> = mutableListOf()
 
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.
     // This is not intended to be used as a cache, as it will not work among workers in different processes.
@@ -88,13 +86,10 @@ class CpkChunksKafkaReader(
             val cpk = Files.newInputStream(it).use { inStream ->
                 CpkReader.readCpk(inStream, cpkPartsDir)
             }
-            openCpks.add(cpk)
             onCpkAssembled(cpk.metadata.cpkId, cpk)
         } ?: logger.warn("CPK assemble has failed for: $cpkChecksum")
         receivedCpkChunksCache.remove(cpkChecksum)
     }
-
-    override fun close() = openCpks.forEach(Cpk::close)
 }
 
 private fun Chunk.isZeroChunk() = this.data.limit() == 0
