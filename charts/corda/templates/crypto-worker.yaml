@@ -88,6 +88,7 @@ spec:
         {{- end }}
       volumes:
       {{- include "corda.workerVolumes" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        kubernetes.io/os: linux
-        kubernetes.io/arch: amd64
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

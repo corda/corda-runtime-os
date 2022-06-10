@@ -13,7 +13,7 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: run-topic-script
-          image: bitnami/kafka:3.1.0-debian-10-r89
+          image: {{ include "corda.kafkaClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           resources:
             requests:
@@ -37,7 +37,7 @@ spec:
             {{- end }}
       initContainers:
         - name: create-trust-store
-          image: bitnami/kafka:3.1.0-debian-10-r89
+          image: {{ include "corda.kafkaClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           command:
             - /bin/bash
