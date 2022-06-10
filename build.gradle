@@ -10,7 +10,14 @@ plugins {
     id 'io.snyk.gradle.plugin.snykplugin'
 }
 
-  
+snyk {
+    api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
+    arguments = project.findProperty("snykArguments") ?: '--all-sub-projects'
+    severity = project.findProperty("snykSeverity") ?: 'low'
+    autoDownload = true
+    autoUpdate = true
+}
+
 ext.pluginsDir = "$buildDir/plugins"
 
 if (System.getenv("RELEASE_VERSION")?.trim()) {
