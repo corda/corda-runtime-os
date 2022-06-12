@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.testing.akka.Environment
 import net.corda.testing.akka.ExamplePersistentBehavior
 import net.corda.testing.akka.ExamplePersistentBehaviorCommands
+import net.corda.testing.calculator.ChannelIdentity
 import net.corda.testing.calculator.PersistentStateMachine
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.ClassRule
@@ -52,7 +53,7 @@ class TestingTest {
         }
     }
 
-    class ResponderProcess(val event: String, val future: CompletableFuture<String>) {
+   /* class ResponderProcess(val event: String, val future: CompletableFuture<String>) {
         val t = thread {
             EventFlow(null).apply {
                 process(null, event)
@@ -61,7 +62,7 @@ class TestingTest {
                 future.complete(uncheckedCast(this.computedResult))
             }
         }
-    }
+    } */
 
     class EventFlow(val testEnvSpawnResponder: ((String)->String)?) : PersistentStateMachine.Context() {
         var selectedAsset : String? = null
@@ -71,7 +72,10 @@ class TestingTest {
             start {
                 val uuid = UUID.randomUUID().toString()
                 val sessionId = testEnvSpawnResponder!!.invoke(uuid)
+
+                establishPersistentSession("PartyA")
                 StateMachineEvent.WaitFor(String::class.java, sessionId)
+
             }.then { assetTypeID: String ->
 
                 if (!SecureRandom.getInstanceStrong().nextBoolean()) {
@@ -114,7 +118,8 @@ class TestingTest {
 
                 EventFlow(null).let { flowStateMachine ->
                     val res : PersistentStateMachine.Context.StateMachineEvent.ProceedNow = uncheckedCast(flowStateMachine.start(uuid))
-                    val finish: PersistentStateMachine.Context.StateMachineEvent.Finish = uncheckedCast(flowStateMachine.process(res.eventForNextStep))
+                    val finish: PersistentStateMachine.Context.StateMachineEvent.Finish = uncheckedCast(flowStateMachine.process(
+                        uncheckedCast(res.eventForNextStep)))
                     responderResult.complete(uncheckedCast(finish.result))
                 }
             }
@@ -124,14 +129,14 @@ class TestingTest {
 
         val flow = EventFlow(::spawnResponder)
 
-        val waitFor : PersistentStateMachine.Context.StateMachineEvent.WaitFor = uncheckedCast(flow.start())
-        var res = flow.process(responderResult.get(), waitFor.from)
+        val waitFor : PersistentStateMachine.Context.StateMachineEvent.WaitFor = uncheckedCast(flow.start(UUID.randomUUID().toString()))
+        var res = flow.process(UUID.randomUUID().toString(), responderResult.get(), waitFor.from)
         while (res !is PersistentStateMachine.Context.StateMachineEvent.ProceedNow) {
             //Wont work for revert to, but can't be bothered to mock it in a test
-            res = flow.process(responderResult.get(), waitFor.from)
+            res = flow.process(UUID.randomUUID().toString(), responderResult.get(), waitFor.from)
         }
 
-        val finishResult : PersistentStateMachine.Context.StateMachineEvent.Finish = uncheckedCast(flow.process(res.eventForNextStep))
+        val finishResult : PersistentStateMachine.Context.StateMachineEvent.Finish = uncheckedCast(flow.process(UUID.randomUUID().toString(), res.eventForNextStep))
         println(finishResult)
     }
 

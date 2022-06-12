@@ -62,7 +62,7 @@ class FlowManager(
                 val onComplete: CompletableFuture<ActorRef<SessionMessage>>
             ) : ProcessCommands()
 
-            data class FinishProcess(val processId: String) : ProcessCommands()
+            data class FinishProcess(val processId: String, val result: Any? = null) : ProcessCommands()
         }
 
 
@@ -401,9 +401,16 @@ class PersistentStateMachine(
 
         lateinit var runContext : RunningContext
 
-        fun start(id: String, event: Any? = null) : StateMachineEvent {
+        private fun selectContextToRun(event: Any? = null) : RunningContext {
             val contextToProgress = event?.let { respondingStages[event.javaClass]!! } ?: initiatingStages
-            runContext = RunningContext(context = contextToProgress)
+            return RunningContext(context = contextToProgress)
+        }
+
+        var isStarted : Boolean = false
+
+        fun start(id: String, event: Any? = null) : StateMachineEvent {
+            runContext = selectContextToRun(event)
+            isStarted = true
             return process(id, event)
         }
 
@@ -449,7 +456,52 @@ class PersistentStateMachine(
 
         data class MultipleEvents(val events: List<Pair<Any?, Any?>>)
 
+        val processedEvents = mutableSetOf<String>()
+
+        fun synchronize(persistedEvent: Events.EventProcessed) {
+            if (processedEvents.contains(persistedEvent.id))
+                return
+
+            processedEvents.add(persistedEvent.id)
+
+            if (!isStarted)
+                runContext = selectContextToRun(persistedEvent.eventValue)
+
+            val stateMachineEvent = persistedEvent.result
+            when (stateMachineEvent) {
+                StateMachineEvent.Fresh -> {
+
+                }
+                StateMachineEvent.EventBuffered -> {
+                    matchArgs(stateMachineEvent, persistedEvent.eventValue, persistedEvent.eventSender)
+                }
+                is StateMachineEvent.Cancel -> {
+
+                }
+                is StateMachineEvent.Finish -> {
+                    runContext.stage++
+                    bufferedEvents.clear()
+                }
+                is StateMachineEvent.ProceedNow -> {
+                    runContext.stage++
+                    bufferedEvents.clear()
+                }
+                is StateMachineEvent.RevertTo -> {
+                    runContext.stage = stateMachineEvent.step
+                }
+                is StateMachineEvent.WaitAll -> {
+                    runContext.stage++
+                    bufferedEvents.clear()
+                }
+                is StateMachineEvent.WaitFor -> {
+                    runContext.stage++
+                    bufferedEvents.clear()
+                }
+            }
+        }
+
         fun process(id: String, event: Any? = null, from: Any? = null) : StateMachineEvent {
+            processedEvents.add(id)
             when (matchArgs(runContext.state, event, from)) {
                 MatchResult.WAIT_FOR_MORE -> return StateMachineEvent.EventBuffered
                 MatchResult.FAIL -> return StateMachineEvent.Cancel()
@@ -489,7 +541,7 @@ class PersistentStateMachine(
         }
     }
 
-    data class State(val eventLog: Context)
+    data class State(val context: Context)
 
     override fun emptyState(): State {
         return State(executionContext)
@@ -497,8 +549,12 @@ class PersistentStateMachine(
 
 
     sealed class Events {
-        data class EventProcessed(val eventValue: Any?, val eventSender: Any?, val result: Context.StateMachineEvent, val id: String) : Events()
-        //data class EventProcessed(val result: Context.StateMachineEvent, val eventId: String) : Events(eventId)
+        data class EventProcessed(
+            val eventValue: Any?,
+            val eventSender: Any?,
+            val result: Context.StateMachineEvent,
+            val id: String
+        ) : Events()
     }
 
     sealed class Commands : SessionMessage() {
@@ -511,9 +567,13 @@ class PersistentStateMachine(
     override fun eventHandler(): EventHandler<State, Events> {
         return newEventHandlerBuilder()
             .forAnyState()
-           /* .onEvent(Events.Start::class.java) { state, event ->
+            .onEvent(Events.EventProcessed::class.java) { state, event ->
+                executionContext.apply { synchronize(event) }
 
-            } */
+                state.apply {
+
+                }
+            }
             .build()
     }
 
@@ -526,22 +586,39 @@ class PersistentStateMachine(
                 val event = Events.EventProcessed(cmd.event, null, result, id)
 
                 Effect()
-                    .persist(event)
+                    .persist(event).thenRun {
+                        if (result is Context.StateMachineEvent.ProceedNow) {
+                            context.self.tell(Commands.DeliverMessage(result.eventForNextStep))
+                        } else if (result is Context.StateMachineEvent.Finish) {
+                            flowManagerRef.tell(comms.authenticate(FlowManager.Commands.ProcessCommands.FinishProcess(persistenceID.id(), result.result)))
+                        }
+                    }
             }.onCommand(Commands.DeliverMessage::class.java) { cmd ->
                 val id = UUID.randomUUID().toString()
                 val result = executionContext.start(id, cmd.event)
                 val event = Events.EventProcessed(cmd.event, cmd.from, result, id)
 
                 Effect()
-                    .persist(event)
+                    .persist(event).thenRun {
+                        if (result is Context.StateMachineEvent.ProceedNow) {
+                            context.self.tell(Commands.DeliverMessage(result.eventForNextStep))
+                        } else if (result is Context.StateMachineEvent.Finish) {
+                            flowManagerRef.tell(comms.authenticate(FlowManager.Commands.ProcessCommands.FinishProcess(persistenceID.id(), result.result)))
+                        }
+                    }
             }.onCommand(Commands.DeliverSignal::class.java) { cmd ->
                 val id = UUID.randomUUID().toString()
                 val result = executionContext.start(id, cmd.signal)
                 val event = Events.EventProcessed(cmd.signal, null, result, id)
 
                 Effect()
-                    .persist(event)
-
+                    .persist(event).thenRun {
+                        if (result is Context.StateMachineEvent.ProceedNow) {
+                            context.self.tell(Commands.DeliverMessage(result.eventForNextStep))
+                        } else if (result is Context.StateMachineEvent.Finish) {
+                            flowManagerRef.tell(comms.authenticate(FlowManager.Commands.ProcessCommands.FinishProcess(persistenceID.id(), result.result)))
+                        }
+                    }
             }
             .build()
     }
