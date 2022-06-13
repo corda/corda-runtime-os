@@ -7,6 +7,7 @@ import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHash
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.membership.impl.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash

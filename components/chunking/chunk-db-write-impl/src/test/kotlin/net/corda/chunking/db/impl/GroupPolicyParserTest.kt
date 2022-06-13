@@ -1,7 +1,7 @@
 package net.corda.chunking.db.impl
 
-import net.corda.chunking.db.impl.validation.GroupPolicyParser
-import net.corda.chunking.db.impl.validation.GroupPolicyParser.MGM_GROUP_ID
+import net.corda.membership.impl.GroupPolicyParser
+import net.corda.membership.impl.GroupPolicyParser.Companion.MGM_GROUP_ID
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

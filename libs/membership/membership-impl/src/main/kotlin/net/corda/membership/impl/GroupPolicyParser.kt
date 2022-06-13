@@ -1,5 +1,6 @@
 package net.corda.membership.impl
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
@@ -7,11 +8,13 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.membership.MemberInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.*
 
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParser @Activate constructor(
@@ -25,6 +28,18 @@ class GroupPolicyParser @Activate constructor(
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
         const val MGM_INFO_FAILURE = "Failed to build MGM MemberInfo from GroupPolicy file."
         const val MGM_INFO = "mgmInfo"
+        const val MGM_GROUP_ID = "CREATE_ID"
+
+        fun groupId(groupPolicyJson: String): String {
+            try {
+                val groupId = ObjectMapper().readTree(groupPolicyJson).get("groupId").asText()
+                return if (groupId == MGM_GROUP_ID) UUID.randomUUID().toString() else groupId
+            } catch (e: NullPointerException) {
+                throw CordaRuntimeException("Failed to parse group policy file - could not find `groupId` in the JSON", e)
+            } catch (e: JsonParseException) {
+                throw CordaRuntimeException("Failed to parse group policy file", e)
+            }
+        }
     }
 
     private val objectMapper = ObjectMapper()
