@@ -118,6 +118,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
                 FlowContinuation.Run(Unit)
             }
             else -> {
+                log.error("Tried to get payload for request type not yet handled: ${request.request::class.java}")
                 FlowContinuation.Continue
             }
         }

@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
+@Suppress("TooManyFunctions")
 @Component(service = [PersistenceService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
 class PersistenceServiceImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)

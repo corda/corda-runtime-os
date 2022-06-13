@@ -24,6 +24,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 
+@Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
     private var nullableCheckpoint: Checkpoint?,
     private val config: SmartConfig,
