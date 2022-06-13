@@ -7,26 +7,25 @@ if (System.getenv('CORDA_ARTIFACTORY_USERNAME') != null || project.hasProperty('
     logger.info("External user - using standard maven publishing")
     pluginManager.apply('maven-publish')
     pluginManager.withPlugin('java') {
-        publishing {
-            publications {
-                maven(MavenPublication) { mvn ->
-                    afterEvaluate {
-                        artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
-                        groupId group.toString()
-                        from components.findByName('cordapp') ?: components.findByName('kotlin') ?: components.java
+        afterEvaluate {
+            publishing {
+                if (publications.isEmpty()) {
+                    // If we haven't already created a MavenPublication then create one now.
+                    publications {
+                        maven(MavenPublication) {
+                            artifactId = tasks.named('jar', Jar).flatMap { it.archiveBaseName }.get()
+                            groupId group.toString()
+                            from components.findByName('cordapp') ?: components.findByName('kotlin') ?: components.java
 
-                        try {
-                            artifact tasks.named('sourcesJar', Jar)
-                        } catch (UnknownTaskException ignored) {
-                        }
+                            try {
+                                artifact tasks.named('sourcesJar', Jar)
+                            } catch (UnknownTaskException ignored) {
+                            }
 
-                        try {
-                            artifact tasks.named('javadocJar', Jar)
-                        } catch (UnknownTaskException ignored) {
-                        }
-
-                        mvn.artifacts = mvn.artifacts.findAll { a ->
-                            !(a instanceof MavenArtifact) || a.classifier != 'ignore'
+                            try {
+                                artifact tasks.named('javadocJar', Jar)
+                            } catch (UnknownTaskException ignored) {
+                            }
                         }
                     }
                 }

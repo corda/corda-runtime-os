@@ -6,6 +6,12 @@ plugins {
 
 description "P2P Testing tools - P2P layer deployment"
 
+configurations {
+    deployments {
+        canBeConsumed = false
+    }
+}
+
 dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
     implementation project(':libs:crypto:certificate-generation')
@@ -21,44 +27,33 @@ dependencies {
     testImplementation "com.typesafe:config:$typeSafeConfigVersion"
     testRuntimeOnly project(':applications:tools:p2p-test:p2p-setup')
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
+    deployments project(path: ':applications:tools:p2p-test:p2p-setup', configuration: 'app')
+    deployments project(path: ':applications:tools:kafka-setup', configuration: 'app')
 }
+
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'
 }
 
-def binaryProjects = [
-        'p2p-test:p2p-setup',
-        'kafka-setup'
-]
+def jarsDir = layout.buildDirectory.dir('jars')
 
-binaryProjects.forEach {name->
-    def shortName = name.split(':').last()
-    def copyJars = tasks.register("copyJars$shortName", Copy) {
-        def project = ":applications:tools:$name"
-        def task = rootProject.findProject(project).tasks.getByName('appJar')
-        dependsOn(task)
-        from task.outputs.files.first()
-        into "$buildDir/jars/"
-        rename {
-            "${shortName}.jar"
-        }
-    }
-    processResources.dependsOn(copyJars)
+def copyJars = tasks.register('copyJars', Copy) {
+    from configurations.deployments
+    into jarsDir
+
+    rename "corda-(.*)-\\Q${version}\\E\\.jar", '\$1.jar'
 }
-jacocoTestReport {
-    dependsOn test
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, includes: [
-                    "net/corda/**",
-            ])
-        }))
-    }
-}
+
 sourceSets {
     main {
         resources {
-            srcDirs "$buildDir/jars"
+            srcDirs files(jarsDir).builtBy(copyJars)
         }
     }
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.named('test', Test)
+    classDirectories.setFrom sourceSets.main.output.classesDirs
 }
