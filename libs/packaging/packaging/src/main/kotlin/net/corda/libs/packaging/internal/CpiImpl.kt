@@ -21,6 +21,4 @@ internal class CpiImpl(override val metadata: CpiMetadata, cpks : Iterable<Cpk>)
     }
 
     override fun getCpkById(id: CpkIdentifier): Cpk? = cpkMap[id]
-
-    override fun close() = cpks.forEach(Cpk::close)
 }
