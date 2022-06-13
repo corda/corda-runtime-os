@@ -15,8 +15,6 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
-import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
@@ -90,8 +88,6 @@ internal class ConfigProcessor(
             config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
             //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
             // exist to preserve defaulting logic present
-            config[RPC_CONFIG] = configMerger.getRPCConfig(bootConfig, config[RPC_CONFIG])
-            config[RECONCILIATION_CONFIG] = configMerger.getReconciliationConfig(bootConfig, config[RECONCILIATION_CONFIG])
             config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
             config
         } else {
@@ -108,7 +104,7 @@ internal class ConfigProcessor(
     private fun addToCache(configSection: String, configuration: Configuration?) {
         if (configuration != null) {
             val versionedRecord = object : VersionedRecord<String, Configuration> {
-                override val version = configuration.version.toInt()
+                override val version = configuration.version
                 override val isDeleted = false
                 override val key = configSection
                 override val value: Configuration = configuration

@@ -28,24 +28,6 @@ interface ConfigMerger {
     //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
     // exist to preserve defaulting logic present
     /**
-     * Merge values from the [bootConfig] into the [rpcConfig] received from the config topic and return the resulting rpc
-     * config.
-     * @param bootConfig boot config created on startup
-     * @param rpcConfig RPC config taken from the topic
-     * @return RPC config with boot config values merged into it.
-     */
-    fun getRPCConfig(bootConfig: SmartConfig, rpcConfig: SmartConfig?) : SmartConfig
-
-    /**
-     * Merge values from the [bootConfig] into the [reconciliation] received from the config topic and return the resulting reconciliation
-     * config.
-     * @param bootConfig boot config created on startup
-     * @param reconciliation reconciliation config taken from the topic
-     * @return Reconciliation config with boot config values merged into it.
-     */
-    fun getReconciliationConfig(bootConfig: SmartConfig, reconciliation: SmartConfig?) : SmartConfig
-
-    /**
      * Merge values from the [bootConfig] into the [cryptoConfig] received from the config topic and return the resulting crypto
      * config.
      * @param bootConfig boot config created on startup
