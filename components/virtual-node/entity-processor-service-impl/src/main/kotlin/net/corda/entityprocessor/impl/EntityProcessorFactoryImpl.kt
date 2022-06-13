@@ -30,6 +30,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
 ) : EntityProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "virtual.node.entity.processor"
+        private const val CORDA_MESSAGE_OVERHEAD = 1024
     }
 
     class PayloadChecker(private val maxPayloadSize: Int) {
@@ -53,7 +54,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
     override fun create(config: SmartConfig): FlowPersistenceProcessor {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
         // max allowed msg size minus headroom for wrapper message
-        val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - 1024
+        val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - CORDA_MESSAGE_OVERHEAD
         val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), PayloadChecker(maxPayLoadSize)::checkSize)
 
         val subscription = subscriptionFactory.createDurableSubscription(

@@ -22,7 +22,7 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
         const val KB = 1024
         const val MB = 1024 * KB
 
-        const val BUFFER_SIZE = 1024 * 10
+        const val CORDA_MESSAGE_OVERHEAD = 1024 * 10
 
         private fun Map<String, String?>.toAvro(): KeyValuePairList {
             return KeyValuePairList.newBuilder().setItems(
@@ -34,7 +34,7 @@ internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val prope
     var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    val chunkSize = maxAllowedMessageSize - BUFFER_SIZE
+    val chunkSize = maxAllowedMessageSize - CORDA_MESSAGE_OVERHEAD
 
     override fun write(fileName: String, inputStream: InputStream) : ChunkWriter.Request {
         if (chunkWriteCallback == null) {

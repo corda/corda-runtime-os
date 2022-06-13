@@ -76,7 +76,7 @@ class ChunkReadingTest {
 
         val chunkCount = 5
 
-        val writer = ChunkWriterImpl(32 + ChunkWriterImpl.BUFFER_SIZE).apply {
+        val writer = ChunkWriterImpl(32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD).apply {
             // guaranteed to be in order in this test
             onChunk(chunks::add)
         }
@@ -98,7 +98,7 @@ class ChunkReadingTest {
     @Test
     fun `can read out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterImpl(32 + ChunkWriterImpl.BUFFER_SIZE).apply {
+        val writer = ChunkWriterImpl(32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD).apply {
             onChunk(chunks::add)
         }
 
@@ -141,7 +141,7 @@ class ChunkReadingTest {
     @Test
     fun `can read overlapping files with out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + ChunkWriterImpl.BUFFER_SIZE //bytes
+        val chunkSize = 32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD //bytes
         val writer = ChunkWriterImpl(chunkSize).apply {
             onChunk(chunks::add)
         }
@@ -192,7 +192,7 @@ class ChunkReadingTest {
         }
 
         val divisor = 10
-        val chunkSize = (loremIpsum.length / divisor) + ChunkWriterImpl.BUFFER_SIZE
+        val chunkSize = (loremIpsum.length / divisor) + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD
         assertThat(chunkSize * 10)
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(loremIpsum.length)
@@ -240,7 +240,7 @@ class ChunkReadingTest {
         val path = createEmptyFile(0)
         val ourFileName = randomFileName()
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + ChunkWriterImpl.BUFFER_SIZE //bytes
+        val chunkSize = 32 + ChunkWriterImpl.CORDA_MESSAGE_OVERHEAD //bytes
         val writer = ChunkWriterImpl(chunkSize).apply {
             onChunk(chunks::add)
         }
