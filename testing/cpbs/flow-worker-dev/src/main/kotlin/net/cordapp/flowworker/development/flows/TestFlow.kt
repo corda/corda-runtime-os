@@ -1,11 +1,11 @@
 package net.cordapp.flowworker.development.flows
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -18,8 +18,7 @@ import net.cordapp.flowworker.development.messages.TestFlowOutput
  * is used as a basic flow worker smoke test.
  */
 @Suppress("unused")
-@StartableByRPC
-class TestFlow(private val jsonArg: String) : Flow<String> {
+class TestFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -35,10 +34,10 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = jsonMarshallingService.parse<TestFlowInput>(jsonArg)
+            val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
             if(inputs.throwException){
                 throw IllegalStateException("Caller requested exception to be raised")
             }

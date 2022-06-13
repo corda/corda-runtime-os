@@ -1,10 +1,10 @@
 package com.example.cpk
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -12,8 +12,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
-@StartableByRPC
-class ExampleFlow(private val json: String) : Flow<String> {
+class ExampleFlow : RPCStartableFlow {
     private val logger = loggerFor<ExampleFlow>()
 
     @CordaInject
@@ -31,9 +30,9 @@ class ExampleFlow(private val json: String) : Flow<String> {
     }
 
     @Suspendable
-    override fun call(): String {
-        logger.info("Invoked: JSON=$json")
-        val input = jsonMarshaller.parse<FlowInput>(json)
+    override fun call(requestBody: RPCRequestData): String {
+        logger.info("Invoked: JSON=${requestBody.getRequestBody()}")
+        val input = requestBody.getRequestBodyAs<FlowInput>(jsonMarshaller)
         return hashOf(
             bytes = input.message?.toByteArray() ?: byteArrayOf()
         ).also { result ->

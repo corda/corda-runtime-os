@@ -84,8 +84,10 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
                 stream.filter {
                     val fileName = it.fileName.toString()
                     Cpi.fileExtensions.any(fileName::endsWith)
-                }.map {
-                    CpiReader.readCpi(Files.newInputStream(it), cacheDir, it.toString(), true)
+                }.map { filePath ->
+                    Files.newInputStream(filePath).use { inputStream ->
+                        CpiReader.readCpi(inputStream, cacheDir, filePath.toString(), true)
+                    }
                 }.toList()
             }
         } ?: listOf()
