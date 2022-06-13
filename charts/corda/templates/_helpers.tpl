@@ -112,7 +112,12 @@ Worker JAVA_TOOL_OPTIONS
 {{- define "corda.workerJavaToolOptions" -}}
 {{- if ( get .Values.workers .worker ).debug.enabled -}}
 - name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}{{- if .Values.kafka.sasl.enabled -}} -Djava.security.auth.login.config=/etc/config/jaas.conf {{ end }}
+{{- else -}}
+{{- if .Values.kafka.sasl.enabled -}}
+- name: JAVA_TOOL_OPTIONS
+  value: -Djava.security.auth.login.config=/etc/config/jaas.conf 
+{{- end }}
 {{- end }}
 {{- end }}
 
@@ -174,24 +179,33 @@ resources:
 Volume mounts for corda workers
 */}}
 {{- define "corda.workerVolumeMounts" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - mountPath: "/certs"
   name: "certs"
   readOnly: true
 {{- end }}
+{{- if .Values.kafka.sasl.enabled  }}
+- mountPath: "/etc/config"
+  name: "jaas-conf"
+{{- end }}
 {{- end }}
 
 {{/*
-Volume mounts for corda workers
+Volumes for corda workers
 */}}
 {{- define "corda.workerVolumes" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - name: certs
   secret:
     secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
     items:
       - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
         path: "ca.crt"
+{{- end -}}
+{{- if .Values.kafka.sasl.enabled  }}
+- name: jaas-conf
+  configMap:
+    name: {{ include "corda.fullname" . }}-sasl
 {{- end }}
 {{- end }}
 
