@@ -1,9 +1,9 @@
-package net.corda.membership.ledger.identity.converter
+package net.corda.ledger.consensual.impl.converter
 
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.membership.ledger.identity.PartyImpl
-import net.corda.v5.ledger.obsolete.identity.Party
+import net.corda.ledger.consensual.impl.PartyImpl
+import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
