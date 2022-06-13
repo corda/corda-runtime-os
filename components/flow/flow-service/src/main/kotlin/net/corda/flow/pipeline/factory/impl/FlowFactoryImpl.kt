@@ -3,10 +3,15 @@ package net.corda.flow.pipeline.factory.impl
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.fiber.FlowLogicAndArgs
+import net.corda.flow.fiber.InitiatedFlow
+import net.corda.flow.fiber.RPCRequestDataImpl
+import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -17,28 +22,30 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 class FlowFactoryImpl  @Activate constructor(
     @Reference(service = FlowSessionFactory::class)
-    private val flowSessionFactory: FlowSessionFactory
+    private val flowSessionFactory: FlowSessionFactory,
+    @Reference(service = FlowFiberService::class)
+    private val flowFiberService: FlowFiberService
 ): FlowFactory {
 
-    override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): Flow<*> {
-        val flowClass: Class<Flow<*>> =
+    override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
+        val flowClass: Class<RPCStartableFlow> =
             uncheckedCast(
                 sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                     startFlowEvent.startContext.flowClassName,
-                    Flow::class.java
+                    RPCStartableFlow::class.java
                 )
             )
+        val logic = flowClass.getDeclaredConstructor().newInstance()
+        val args = RPCRequestDataImpl(flowFiberService)
 
-        return flowClass
-            .getDeclaredConstructor(String::class.java)
-            .newInstance(startFlowEvent.flowStartArgs)
+        return RPCStartedFlow(logic, args)
     }
 
-    override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): Flow<*> {
-        val flowClass: Class<Flow<*>> = uncheckedCast(
+    override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
+        val flowClass: Class<ResponderFlow> = uncheckedCast(
             sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
                 flowStartContext.flowClassName,
-                Flow::class.java
+                ResponderFlow::class.java
             )
         )
 
@@ -47,10 +54,9 @@ class FlowFactoryImpl  @Activate constructor(
             MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
             initiated = true
         )
+        val logic = flowClass.getDeclaredConstructor().newInstance()
 
-        return flowClass
-            .getDeclaredConstructor(FlowSession::class.java)
-            .newInstance(flowSession)
+        return InitiatedFlow(logic, flowSession)
     }
 }
 

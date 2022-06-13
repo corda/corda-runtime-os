@@ -614,6 +614,49 @@ class FlowCheckpointImplTest {
         // Defaults to configured value
         assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
     }
+
+    @Test
+    fun `checkpoint can be read after markDeleted called`() {
+        val fiber = ByteBuffer.wrap(byteArrayOf(1))
+        val flow = NonInitiatingFlowExample()
+        val session1 = SessionState().apply { sessionId = "S1" }
+        val waitingFor = WaitingFor(Any())
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+        }
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        flowCheckpoint.suspendedOn = "A"
+        flowCheckpoint.waitingFor = waitingFor
+        val flowStackItem = flowCheckpoint.flowStack.push(flow)
+        flowCheckpoint.putSessionState(session1)
+        flowCheckpoint.serializedFiber = fiber
+
+        flowCheckpoint.markDeleted()
+
+        assertThat(flowCheckpoint.suspendedOn).isEqualTo("A")
+        assertThat(flowCheckpoint.waitingFor).isEqualTo(waitingFor)
+        assertThat(flowCheckpoint.flowStack.pop()).isEqualTo(flowStackItem)
+        assertThat(flowCheckpoint.sessions.first()).isEqualTo(session1)
+        assertThat(flowCheckpoint.serializedFiber).isEqualTo(fiber)
+    }
+
+    @Test
+    fun `checkpoint cannot be modified after markDeleted called`() {
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+        }
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        flowCheckpoint.markDeleted()
+
+        assertThrows<IllegalStateException> { flowCheckpoint.putSessionState(SessionState()) }
+        assertThrows<IllegalStateException> { flowCheckpoint.markForRetry(FlowEvent(), RuntimeException()) }
+        assertThrows<IllegalStateException> { flowCheckpoint.markRetrySuccess() }
+        assertThrows<IllegalStateException> { flowCheckpoint.setFlowSleepDuration(1) }
+    }
 }
 
 @InitiatingFlow("valid-example")
