@@ -428,9 +428,28 @@ internal class DatabaseChunkPersistenceTest {
         assertThat(persistence.cpkExists(checksum)).isTrue
     }
 
+    private val random = Random(0)
     private fun newRandomSecureHash(): SecureHash {
-        val random = Random(0)
         return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+    }
+
+    @Test
+    fun `assert new secure hash created every time`() {
+        val s1 = newRandomSecureHash()
+        val s2 = newRandomSecureHash()
+        val s3 = newRandomSecureHash()
+        val s4 = newRandomSecureHash()
+        val s5 = newRandomSecureHash()
+
+        val inASet = setOf(
+            s1.toString(),
+            s2.toString(),
+            s3.toString(),
+            s4.toString(),
+            s5.toString(),
+        )
+
+        assertThat(inASet).hasSize(5)
     }
 
     @Test
