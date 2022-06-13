@@ -22,7 +22,7 @@ import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
@@ -71,7 +71,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
             ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            EDDSA_ED25519_TEMPLATE to EDDSA_ED25519_NONE_SIGNATURE_SPEC,
+            EDDSA_ED25519_TEMPLATE to EDDSA_ED25519_SIGNATURE_SPEC,
             GOST3410_GOST3411_TEMPLATE to GOST3410_GOST3411_SIGNATURE_SPEC,
             RSA_CODE_NAME to RSA_SHA512_SIGNATURE_SPEC,
             SM2_CODE_NAME to SM2_SM3_SIGNATURE_SPEC,

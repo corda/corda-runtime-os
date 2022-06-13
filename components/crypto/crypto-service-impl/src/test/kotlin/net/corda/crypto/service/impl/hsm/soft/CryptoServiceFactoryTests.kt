@@ -1,8 +1,7 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.service.SoftCryptoServiceConfig
-import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.hsm.HSMCategoryInfo
 import net.corda.data.crypto.wire.hsm.HSMInfo
@@ -76,7 +75,7 @@ class CryptoServiceFactoryTests {
                 null,
                 0,
                 5000,
-                SoftCryptoService.produceSupportedSchemes(factory.schemeMetadata).map { it.codeName },
+                factory.softHSMSupportedSchemas,
                 CustomCryptoServiceProvider.NAME,
                 500
             ),

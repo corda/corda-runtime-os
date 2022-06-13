@@ -1,12 +1,13 @@
 package net.corda.crypto.impl.infra
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
 import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -47,9 +48,7 @@ fun signData(
         signatureSpec.signatureName,
         schemeMetadata.providers[scheme.providerName]
     )
-    if(signatureSpec.params != null) {
-        signature.setParameter(signatureSpec.params)
-    }
+    signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
     signature.initSign(keyPair.private, schemeMetadata.secureRandom)
     signature.update(data)
     return signature.sign()
@@ -63,7 +62,7 @@ fun CipherSchemeMetadata.inferSignatureSpecOrCreateDefault(publicKey: PublicKey,
     return when(val codeName = findKeyScheme(publicKey).codeName) {
         RSA_CODE_NAME -> RSA_SHA256_SIGNATURE_SPEC
         ECDSA_SECP256R1_CODE_NAME, ECDSA_SECP256K1_CODE_NAME -> ECDSA_SHA256_SIGNATURE_SPEC
-        EDDSA_ED25519_CODE_NAME -> EDDSA_ED25519_NONE_SIGNATURE_SPEC
+        EDDSA_ED25519_CODE_NAME -> EDDSA_ED25519_SIGNATURE_SPEC
         SM2_CODE_NAME -> SM2_SM3_SIGNATURE_SPEC
         GOST3410_GOST3411_CODE_NAME -> GOST3410_GOST3411_SIGNATURE_SPEC
         SPHINCS256_CODE_NAME -> SPHINCS256_SHA512_SIGNATURE_SPEC
