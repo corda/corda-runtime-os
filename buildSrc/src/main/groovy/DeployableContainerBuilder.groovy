@@ -1,5 +1,6 @@
 import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
+import com.google.cloud.tools.jib.api.buildplan.Platform
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.model.ObjectFactory
@@ -199,6 +200,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             }
         }
         builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
+
+        if (System.properties['os.arch'] == "aarch64") {
+            logger.quiet("Detected arm64 host, switching Jib to produce arm64 images")
+            Set<Platform> platformSet = new HashSet<Platform>()
+            platformSet.add(new Platform("arm64", "linux"))
+            builder.setPlatforms(platformSet)
+        }
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 
