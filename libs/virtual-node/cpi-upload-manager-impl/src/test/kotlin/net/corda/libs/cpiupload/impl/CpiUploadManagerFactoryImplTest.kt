@@ -3,7 +3,6 @@ package net.corda.libs.cpiupload.impl
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
