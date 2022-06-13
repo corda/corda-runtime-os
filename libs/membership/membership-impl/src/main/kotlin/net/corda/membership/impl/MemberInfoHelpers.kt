@@ -3,7 +3,7 @@ package net.corda.membership.impl
 import net.corda.data.KeyValuePairList
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.MerkleTree
+import net.corda.v5.ledger.obsolete.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -41,8 +41,9 @@ fun KeyValuePairList.toSortedMap(): SortedMap<String, String?> {
 /**
  * Builds the Merkle tree used for the mgm's signature.
  * The leaves are the [MemberContext] and [MGMContext].
+ * //TODO: CORE-4984 transition this to the new merkle tree implementation
  */
-fun buildMerkleTree(memberContext: ByteBuffer, mgmContext: ByteBuffer, digestService: DigestService): MerkleTree {
+    fun buildMerkleTree(memberContext: ByteBuffer, mgmContext: ByteBuffer, digestService: DigestService): MerkleTree {
     val leaves = mutableListOf(
         digestService.hash(memberContext.array(), DigestAlgorithmName.SHA2_256),
         digestService.hash(mgmContext.array(), DigestAlgorithmName.SHA2_256)
