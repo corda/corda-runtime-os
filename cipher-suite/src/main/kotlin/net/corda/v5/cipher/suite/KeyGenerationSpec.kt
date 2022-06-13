@@ -25,5 +25,9 @@ class KeyGenerationSpec(
     val alias: String?,
     val masterKeyAlias: String?,
     val secret: ByteArray?
-)
+) {
+    override fun toString(): String {
+        return "$keyScheme,alias=$alias,masterKeyAlias=$masterKeyAlias"
+    }
+}
 

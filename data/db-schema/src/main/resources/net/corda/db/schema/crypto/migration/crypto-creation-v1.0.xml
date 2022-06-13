@@ -46,10 +46,10 @@
             <column name="supported_schemes" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="retries" type="INT">
+            <column name="max_attempts" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="timeout_mills" type="BIGINT">
+            <column name="attempt_timeout_mills" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
             <column name="service_name" type="VARCHAR(512)">

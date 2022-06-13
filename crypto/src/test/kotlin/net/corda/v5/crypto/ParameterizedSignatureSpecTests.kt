@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import java.util.UUID
 
-class SignatureSpecTests {
+class ParameterizedSignatureSpecTests {
     companion object {
         private lateinit var digestService: DigestService
 
@@ -21,16 +23,32 @@ class SignatureSpecTests {
     @Test
     fun `Should throw IllegalArgumentException when initializing with blank signature name`() {
         assertThrows<IllegalArgumentException> {
-            SignatureSpec(
-                signatureName = "  "
+            ParameterizedSignatureSpec(
+                signatureName = "  ",
+                PSSParameterSpec(
+                    "SHA-256",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA256,
+                    32,
+                    1
+                )
             )
         }
     }
 
     @Test
     fun `getSigningData should return passed byte array for standard digest calculation`() {
-        val spec = ECDSA_SHA256_SIGNATURE_SPEC
+        val spec = ParameterizedSignatureSpec(
+            "RSASSA-PSS",
+            PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1
+            )
+        )
         val data = UUID.randomUUID().toString().toByteArray()
         assertArrayEquals(data, spec.getSigningData(digestService, data))
     }
-}
+ }

@@ -57,14 +57,14 @@
           "minimum": 0,
           "default": 1000
         },
-        "retries": {
-          "description": "Number of retries if call to the SOFT HSM fails, that value is copied to the corresponding HSM configuration.",
+        "maxAttempts": {
+          "description": "Maximum number of attempts to call the SOFT HSM, that value is copied to the corresponding HSM configuration.",
           "type": "integer",
           "minimum": 0,
           "default": 0
         },
-        "timeoutMills": {
-          "description": "Timeout in milliseconds when calling the SOFT HSM, it should be kept fairly big as RSA key generation may take a few seconds in a shared computing environment, that value is copied to the corresponding HSM configuration.",
+        "attemptTimeoutMills": {
+          "description": "Timeout in milliseconds for each attempt when calling the SOFT HSM, it should be kept fairly big as RSA key generation may take a few seconds in a shared computing environment, that value is copied to the corresponding HSM configuration.",
           "type": "integer",
           "minimum": 2000,
           "default": 20000
@@ -161,8 +161,8 @@
           "minimum": 0,
           "default": 1000
         },
-        "downstreamRetries": {
-          "description": "Number of retries when calling downstream services, like creating wrapping key on configuring new HSM.",
+        "downstreamMaxAttempts": {
+          "description": "Maximum number of attempts when calling downstream services, like creating wrapping key on configuring new HSM.",
           "type": "integer",
           "minimum": 3,
           "default": 3

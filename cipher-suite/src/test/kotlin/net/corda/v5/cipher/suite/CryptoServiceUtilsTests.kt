@@ -19,6 +19,45 @@ class CryptoServiceUtilsTests {
     }
 
     @Test
+    @Suppress("ForEachOnRange")
+    fun `computeHSMAlias should throw IllegalArgumentException incorrect take value`() {
+        (0..11).forEach {
+            assertThrows<IllegalArgumentException> {
+                computeHSMAlias(
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    generateSecret(),
+                    it
+                )
+            }
+        }
+        (33..40).forEach {
+            assertThrows<IllegalArgumentException> {
+                computeHSMAlias(
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    generateSecret(),
+                    it
+                )
+            }
+        }
+    }
+
+    @Test
+    @Suppress("ForEachOnRange")
+    fun `computeHSMAlias should take specified number of characters`() {
+        (12..32).forEach {
+            val result = computeHSMAlias(
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
+                generateSecret(),
+                it
+            )
+            assertEquals(it, result.length)
+        }
+    }
+
+    @Test
     fun `computeHSMAlias should throw IllegalArgumentException for blank tenant id`() {
         assertThrows<IllegalArgumentException> {
             computeHSMAlias(
@@ -71,6 +110,8 @@ class CryptoServiceUtilsTests {
             alias,
             secret
         )
+        assertEquals(12, a1.length)
+        assertEquals(12, a2.length)
         assertEquals(a1, a2)
         assertEquals(a1, a3)
     }
@@ -89,6 +130,8 @@ class CryptoServiceUtilsTests {
             alias,
             secret
         )
+        assertEquals(12, a1.length)
+        assertEquals(12, a2.length)
         assertNotEquals(a1, a2)
     }
 
@@ -106,6 +149,8 @@ class CryptoServiceUtilsTests {
             UUID.randomUUID().toString(),
             secret
         )
+        assertEquals(12, a1.length)
+        assertEquals(12, a2.length)
         assertNotEquals(a1, a2)
     }
 
@@ -125,6 +170,8 @@ class CryptoServiceUtilsTests {
             alias,
             secret2
         )
+        assertEquals(12, a1.length)
+        assertEquals(12, a2.length)
         assertNotEquals(a1, a2)
     }
 }

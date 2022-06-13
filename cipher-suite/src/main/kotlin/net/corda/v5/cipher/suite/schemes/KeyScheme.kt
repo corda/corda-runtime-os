@@ -31,5 +31,8 @@ data class KeyScheme(
         require(algorithmName.isNotBlank()) { "The algorithmName must not be blank." }
         require(algorithmOIDs.isNotEmpty()) { "The algorithmOIDs must not be empty." }
     }
+
+    override fun toString(): String =
+        "$codeName($providerName,$algorithmName)"
 }
 

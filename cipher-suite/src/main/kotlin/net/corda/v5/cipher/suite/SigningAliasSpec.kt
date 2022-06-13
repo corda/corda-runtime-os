@@ -18,4 +18,7 @@ class SigningAliasSpec(
     val hsmAlias: String,
     override val keyScheme: KeyScheme,
     override val signatureSpec: SignatureSpec
-) : SigningSpec
+) : SigningSpec {
+    override fun toString(): String =
+        "$keyScheme,hsmAlias=$hsmAlias,sig=$signatureSpec"
+}

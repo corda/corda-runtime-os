@@ -44,14 +44,14 @@
       "doc": "If masterKeyPolicy=SHARED then this field must be specified with the wrapping key name."
     },
     {
-      "name": "retries",
+      "name": "maxAttempts",
       "type": "int",
-      "doc": "Number of retries when calling the HSM."
+      "doc": "Maximum number of attempts when calling the HSM."
     },
     {
-      "name": "timeoutMills",
+      "name": "attemptTimeoutMills",
       "type": "long",
-      "doc": "For how long to wait for a response in milliseconds."
+      "doc": "For how long to wait for a response in milliseconds for each attempt."
     },
     {
       "name": "supportedSchemes",

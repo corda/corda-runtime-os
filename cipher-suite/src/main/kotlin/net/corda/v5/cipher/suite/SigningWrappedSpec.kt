@@ -19,4 +19,7 @@ class SigningWrappedSpec(
     val encodingVersion: Int,
     override val keyScheme: KeyScheme,
     override val signatureSpec: SignatureSpec
-) : SigningSpec
+) : SigningSpec {
+    override fun toString(): String =
+        "$keyScheme,masterKeyAlias=$masterKeyAlias,encVer=$encodingVersion,sig=$signatureSpec"
+}

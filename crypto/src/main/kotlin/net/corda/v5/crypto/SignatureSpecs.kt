@@ -41,7 +41,7 @@ val RSA_SHA512_SIGNATURE_SPEC = SignatureSpec(
  * RSASSA-PSS with SHA256 [SignatureSpec]
  */
 @JvmField
-val RSASSA_PSS_SHA256_SIGNATURE_SPEC = SignatureSpec(
+val RSASSA_PSS_SHA256_SIGNATURE_SPEC = ParameterizedSignatureSpec(
     "RSASSA-PSS",
     PSSParameterSpec(
         "SHA-256",
@@ -56,7 +56,7 @@ val RSASSA_PSS_SHA256_SIGNATURE_SPEC = SignatureSpec(
  * RSASSA-PSS with SHA384 [SignatureSpec]
  */
 @JvmField
-val RSASSA_PSS_SHA384_SIGNATURE_SPEC = SignatureSpec(
+val RSASSA_PSS_SHA384_SIGNATURE_SPEC = ParameterizedSignatureSpec(
     "RSASSA-PSS",
     PSSParameterSpec(
         "SHA-384",
@@ -71,7 +71,7 @@ val RSASSA_PSS_SHA384_SIGNATURE_SPEC = SignatureSpec(
  * RSASSA-PSS with SHA512 [SignatureSpec]
  */
 @JvmField
-val RSASSA_PSS_SHA512_SIGNATURE_SPEC = SignatureSpec(
+val RSASSA_PSS_SHA512_SIGNATURE_SPEC = ParameterizedSignatureSpec(
     "RSASSA-PSS",
     PSSParameterSpec(
         "SHA-512",
@@ -81,6 +81,24 @@ val RSASSA_PSS_SHA512_SIGNATURE_SPEC = SignatureSpec(
         1
     )
 )
+
+/**
+ * RSASSA-PSS with SHA256 and MGF1 [SignatureSpec]
+ */
+@JvmField
+val RSA_SHA256_WITH_MGF1_SIGNATURE_SPEC = SignatureSpec("SHA256WITHRSAANDMGF1")
+
+/**
+ * RSASSA-PSS with SHA384 and MGF1 [SignatureSpec]
+ */
+@JvmField
+val RSA_SHA384_WITH_MGF1_SIGNATURE_SPEC = SignatureSpec("SHA384WITHRSAANDMGF1")
+
+/**
+ * RSASSA-PSS with SHA512 and MGF1 [SignatureSpec]
+ */
+@JvmField
+val RSA_SHA512_WITH_MGF1_SIGNATURE_SPEC = SignatureSpec("SHA512WITHRSAANDMGF1")
 
 /**
  * SHA256withECDSA [SignatureSpec]
@@ -110,7 +128,7 @@ val ECDSA_SHA512_SIGNATURE_SPEC = SignatureSpec(
  * EdDSA [SignatureSpec]
  */
 @JvmField
-val EDDSA_ED25519_NONE_SIGNATURE_SPEC = SignatureSpec(
+val EDDSA_ED25519_SIGNATURE_SPEC = SignatureSpec(
     signatureName = "EdDSA"
 )
 
@@ -129,6 +147,12 @@ val SPHINCS256_SHA512_SIGNATURE_SPEC = SignatureSpec(
 val SM2_SM3_SIGNATURE_SPEC = SignatureSpec(
     signatureName = "SM3withSM2"
 )
+
+/**
+ * SHA256withSM2 [SignatureSpec]
+ */
+@JvmField
+val SM2_SHA256_SIGNATURE_SPEC = SignatureSpec("SHA256withSM2")
 
 /**
  * GOST3411withGOST3410 [SignatureSpec]
