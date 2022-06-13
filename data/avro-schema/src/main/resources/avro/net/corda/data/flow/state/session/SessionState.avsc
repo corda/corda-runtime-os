@@ -67,6 +67,11 @@
         ]
       },
       "doc": "The status of the session."
+    },
+    {
+      "name": "hasScheduledCleanup",
+      "type": "boolean",
+      "doc": "Whether the session state has already scheduled a cleanup event with the flow mapper."
     }
   ]
 }
