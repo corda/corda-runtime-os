@@ -66,7 +66,9 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
         val currentBundle = FrameworkUtil.getBundle(KafkaProducer::class.java)
 
         return try {
-            Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+            if (currentBundle != null) {
+                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+            }
             KafkaConsumer(
                 kafkaProperties,
                 CordaAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
