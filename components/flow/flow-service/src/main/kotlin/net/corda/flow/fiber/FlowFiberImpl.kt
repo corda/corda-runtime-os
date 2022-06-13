@@ -5,7 +5,6 @@ import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
 import net.corda.data.flow.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -17,12 +16,11 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
-@Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
-class FlowFiberImpl<R>(
+class FlowFiberImpl(
     override val flowId: UUID,
-    override val flowLogic: Flow<R>,
+    override val flowLogic: FlowLogicAndArgs,
     scheduler: FiberScheduler
-) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber<R> {
+) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber {
 
     private fun interface SerializableFiberWriter : FiberWriter, Serializable
 
@@ -60,14 +58,7 @@ class FlowFiberImpl<R>(
         val outcomeOfFlow = try {
             suspend(FlowIORequest.InitialCheckpoint)
 
-            /**
-             * TODOs: Need to review/discuss how/where to ensure the user code can only return
-             * a string
-             */
-            when (val result = flowLogic.call()) {
-                is String -> FlowIORequest.FlowFinished(result)
-                else -> throw IllegalStateException("The flow result has to be a string.")
-            }
+            FlowIORequest.FlowFinished(flowLogic.invoke())
         } catch (e: Exception) {
             log.error("Flow failed", e)
             FlowIORequest.FlowFailed(e)

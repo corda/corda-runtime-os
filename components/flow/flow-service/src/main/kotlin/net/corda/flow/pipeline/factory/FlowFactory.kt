@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.factory
 
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.flows.Flow
 
@@ -18,7 +19,7 @@ interface FlowFactory {
      *
      * @return A new [Flow] instance.
      */
-    fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): Flow<*>
+    fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs
 
     /**
      * Creates an initiated [Flow].
@@ -28,5 +29,8 @@ interface FlowFactory {
      *
      * @return A new [Flow] instance.
      */
-    fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): Flow<*>
+    fun createInitiatedFlow(
+        flowStartContext: FlowStartContext,
+        sandboxGroupContext: SandboxGroupContext
+    ): FlowLogicAndArgs
 }

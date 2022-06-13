@@ -1,8 +1,8 @@
 package net.corda.flow.rpcops.impl.factory
 
 import net.corda.data.flow.FlowInitiatorType
-import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStates
@@ -32,6 +32,7 @@ class MessageFactoryImpl : MessageFactory {
             virtualNode.cpiIdentifier.name,
             virtualNode.holdingIdentity,
             flowClassName,
+            flowStartArgs,
             Instant.now()
         )
 
