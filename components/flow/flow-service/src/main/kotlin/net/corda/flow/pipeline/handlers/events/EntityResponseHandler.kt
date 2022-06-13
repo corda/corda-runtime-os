@@ -24,11 +24,11 @@ class EntityResponseHandler @Activate constructor(
     override fun preProcess(context: FlowEventContext<EntityResponse>): FlowEventContext<EntityResponse> {
         val checkpoint = context.checkpoint
         val entityResponse = context.inputEventPayload
-        log.debug { "Entity response: ${entityResponse.responseType::class.java}" }
+        log.debug { "Entity response received. Id ${entityResponse.requestId}, result: ${entityResponse.responseType::class.java}" }
         val query = checkpoint.query
         if (query == null) {
-            //TODO - error handling
-            log.error("Query was null")
+            //Duplicate response
+            log.warn("Received db response but query in checkpoint was null. requestId ${entityResponse.requestId}")
         } else {
             val updatedQuery = dbManager.processMessageReceived(query, entityResponse)
             checkpoint.query = updatedQuery

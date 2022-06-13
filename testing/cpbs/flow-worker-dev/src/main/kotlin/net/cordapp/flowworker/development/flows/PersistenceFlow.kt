@@ -5,9 +5,7 @@ import java.util.UUID
 import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -17,8 +15,7 @@ import net.corda.v5.persistence.CordaPersistenceException
 import net.cordapp.flowworker.development.messages.TestFlowInput
 
 /**
- * The Test Flow exercises various basic features of a flow, this flow
- * is used as a basic flow worker smoke test.
+ * The PersistenceFlow exercises various basic db interactions in a flow.
  */
 @Suppress("unused")
 @StartableByRPC
@@ -27,12 +24,6 @@ class PersistenceFlow(private val jsonArg: String) : Flow<String> {
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var memberLookupService: MemberLookup
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService

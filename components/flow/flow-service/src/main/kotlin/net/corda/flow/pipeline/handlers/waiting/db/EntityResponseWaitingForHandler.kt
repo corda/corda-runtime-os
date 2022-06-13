@@ -44,6 +44,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
             log.debug { "Response received of type ${response.responseType::class} for request id ${response.requestId}" }
             if (responseType is EntityResponseSuccess) {
                 val entityResponse = getPayloadFromResponse(query.request, responseType)
+                //reset query to null now that it is complete
                 context.checkpoint.query = null
                 entityResponse
             } else {
