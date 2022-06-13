@@ -17,7 +17,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
  *   }
  *
  *   @InitiatedBy(protocol = "myprotocol")
- *   class MyFlowResponder : Flow {
+ *   class MyFlowResponder : ResponderFlow {
  *    ...
  *   }
  * ```
