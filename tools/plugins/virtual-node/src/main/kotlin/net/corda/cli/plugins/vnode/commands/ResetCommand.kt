@@ -56,6 +56,7 @@ class ResetCommand : Runnable {
             with(connection.proxy) {
                 val cpi = File(cpiFileName)
                 val result = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name))
+                print(result.id)
             }
         }
     }
