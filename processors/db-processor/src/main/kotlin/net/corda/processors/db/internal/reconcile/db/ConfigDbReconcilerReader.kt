@@ -11,7 +11,7 @@ val getAllConfigDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<St
     em.findAllConfig().map { configEntity ->
         val config = Configuration(
             configEntity.config,
-            configEntity.version.toString(),
+            configEntity.version,
             ConfigurationSchemaVersion(configEntity.schemaVersionMajor, configEntity.schemaVersionMinor)
         )
         object : VersionedRecord<String, Configuration> {
