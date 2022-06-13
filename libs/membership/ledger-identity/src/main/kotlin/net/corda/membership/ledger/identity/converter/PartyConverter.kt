@@ -10,7 +10,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-
+// TODO: move to obsolete/delete?
 /**
  * Converter class, converting from String to [Party] object.
  */
