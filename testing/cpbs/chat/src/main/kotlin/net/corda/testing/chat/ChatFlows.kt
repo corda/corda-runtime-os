@@ -2,6 +2,7 @@ package net.corda.testing.chat
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.StartableByRPC
@@ -26,10 +27,12 @@ import net.corda.v5.base.util.contextLogger
 @InitiatingFlow(protocol = "chatProtocol")
 @StartableByRPC
 class ChatOutgoingFlow(private val jsonArg: String) : Flow<String> {
-
     private companion object {
         val log = contextLogger()
     }
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -39,7 +42,8 @@ class ChatOutgoingFlow(private val jsonArg: String) : Flow<String> {
 
     @Suspendable
     override fun call(): String {
-        log.info("Chat outgoing flow starting...")
+        val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
+        log.info("Chat outgoing flow starting in ${thisVirtualNodeName}...")
 
         val inputs = jsonMarshallingService.parseJson<OutgoingChatMessage>(jsonArg)
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
@@ -56,32 +60,38 @@ class ChatOutgoingFlow(private val jsonArg: String) : Flow<String> {
 }
 
 /**
- * Incoming message flow, instantiated for receiving chat messages by Corda as part of the chat protocol pair. Messages
- * are placed in the message store. To read outstanding messages, poll the ChatReaderFlow.
+ * Incoming message flow, instantiated for receiving chat messages by Corda as part of the declared chat protocol.
+ * Messages are placed in the message store. To read outstanding messages, poll the ChatReaderFlow.
  */
-@InitiatedBy(protocol = "chatProtocol")
+    @InitiatedBy(protocol = "chatProtocol")
 class ChatIncomingFlow(private val session: FlowSession) : Flow<String> {
 
     private companion object {
         val log = contextLogger()
     }
 
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
+
     @Suspendable
     override fun call(): String {
-        log.info("Chat incoming flow starting...")
+        val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
+        log.info("Chat incoming flow starting in {$thisVirtualNodeName}...")
 
-        val sender = session.counterparty.x500Principal.toString()
+        val sender = session.counterparty.toString()
         val message = session.receive<MessageContainer>().unwrap { it.message }
 
         MessageStore.add(IncomingChatMessage(sender, message))
 
-        log.info("Added incoming message to message store")
+        log.info("Added incoming message from ${sender} to message store")
         return ""
     }
 }
 
 /**
- * Returns any outstanding messages unread to the caller. Read messages are removed from the store.
+ * Returns any outstanding messages unread to the caller. Read messages are removed from the store thus it becomes the
+ * responsibility of the caller to keep track of them after this point. This mechanism allows a client to poll for new
+ * messages to a member repeatedly, however precludes multiple clients reading chats to the same member.
  * The output will look something like:
  * {
  *   "messages": [
@@ -104,11 +114,18 @@ class ChatReaderFlow(private val jsonArg: String) : Flow<String> {
     }
 
     @CordaInject
+    lateinit var flowEngine: FlowEngine
+
+    @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
     override fun call(): String {
-        log.info("Chat reader flow starting...")
-        return jsonMarshallingService.formatJson(MessageStore.readAndClear())
+        val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
+        log.info("Chat reader flow starting in {$thisVirtualNodeName}...")
+        with (MessageStore.readAndClear()) {
+            log.info("Returning ${this.messages.size} unread messages")
+            return jsonMarshallingService.formatJson(this)
+        }
     }
 }
