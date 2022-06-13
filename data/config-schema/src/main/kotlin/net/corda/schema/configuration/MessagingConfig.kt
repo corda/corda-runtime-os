@@ -14,7 +14,7 @@ object MessagingConfig {
 
         const val AUTO_OFFSET_RESET = "auto.offset.reset"
 
-        //kafka values
+        // kafka values
         const val KAFKA_PROPERTIES = "$BUS.kafkaProperties"
         const val KAFKA_PROPERTIES_COMMON = "$KAFKA_PROPERTIES.common"
         const val KAFKA_BOOTSTRAP_SERVERS = "$KAFKA_PROPERTIES_COMMON.bootstrap.servers"
@@ -23,14 +23,14 @@ object MessagingConfig {
         const val KAFKA_PROPERTIES_PRODUCER = "$KAFKA_PROPERTIES.producer"
         const val KAFKA_PRODUCER_CLIENT_ID = "$KAFKA_PROPERTIES_PRODUCER.client.id"
 
-        //db values
+        // db values
         const val JDBC_URL = "jdbcUrl"
         const val JDBC_USER = "user"
         const val JDBC_PASS = "pass"
         const val DB_MAX_POLL_RECORDS = "maxPollRecords"
 
         const val DB_PROPERTIES = "$BUS.dbProperties"
-        const val DB_JDBC_URL= "$DB_PROPERTIES.$JDBC_URL"
+        const val DB_JDBC_URL = "$DB_PROPERTIES.$JDBC_URL"
         const val DB_USER = "$DB_PROPERTIES.$JDBC_USER"
         const val DB_PASS = "$DB_PROPERTIES.$JDBC_PASS"
         const val DB_PROPERTIES_CONSUMER = "$DB_PROPERTIES.consumer"
@@ -59,4 +59,11 @@ object MessagingConfig {
         const val CLOSE_TIMEOUT = "$PUBLISHER.closeTimeout"
         const val TRANSACTIONAL = "$PUBLISHER.transactional"
     }
+
+    /**
+     * Maximum Allowed Message Size (in Bytes)
+     * NOTE: this is not sync'ed with the actual Kafka configuration and is just a guide for
+     * producers to keep under this limit when publishing messages.
+     */
+    const val MAX_ALLOWED_MSG_SIZE = "maxAllowedMessageSize"
 }
