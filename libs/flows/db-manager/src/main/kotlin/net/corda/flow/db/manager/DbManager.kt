@@ -24,6 +24,14 @@ interface DbManager {
      */
     fun processMessageReceived(query: Query, response: EntityResponse) : Query
 
-
+    /**
+     * Checks the query to see if there is a request to send.
+     * Request will be returned if the query request is not null and the request id due to be sent.
+     * Requests can be resent if there is no response and the configurable resendWindow has been surpased.
+     * @param query Query object
+     * @param instant Current time
+     * @param config Flow config
+     * @return Updated Query object and the request to be sent. Request is null if no request to be sent.
+     */
     fun getMessageToSend(query: Query, instant: Instant, config: SmartConfig) : Pair<Query, EntityRequest?>
 }
