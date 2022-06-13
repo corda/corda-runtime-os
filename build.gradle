@@ -16,12 +16,21 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
     id "org.gradle.test-retry" apply false
+    id 'io.snyk.gradle.plugin.snykplugin'
     id 'org.ajoberstar.grgit' // used for GIT interaction (e.g. extract commit hash)
     id 'corda.root-publish'
     id 'jacoco' // test coverage
     id 'com.dorongold.task-tree' // utility to visualise Gradle task DAG
     id 'org.jetbrains.dokka'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
+}
+
+snyk {
+    api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
+    arguments = project.findProperty("snykArguments") ?: '--all-sub-projects'
+    severity = project.findProperty("snykSeverity") ?: 'low'
+    autoDownload = true
+    autoUpdate = true
 }
 
 def rootProjectDir = rootDir
