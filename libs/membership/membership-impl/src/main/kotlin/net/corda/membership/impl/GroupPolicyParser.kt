@@ -6,21 +6,15 @@ import net.corda.layeredpropertymap.create
 import net.corda.membership.GroupPolicy
 import net.corda.membership.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
-import net.corda.membership.impl.MemberInfoExtension.Companion.SESSION_KEY
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.MemberInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.PublicKey
 
 @Component(service = [GroupPolicyParser::class])
 class GroupPolicyParser @Activate constructor(
-    @Reference(service = KeyEncodingService::class)
-    val keyEncodingService: KeyEncodingService,
     @Reference(service = LayeredPropertyMapFactory::class)
     val layeredPropertyMapFactory: LayeredPropertyMapFactory
 ) {
@@ -74,18 +68,10 @@ class GroupPolicyParser @Activate constructor(
         val groupPolicy = parse(groupPolicyJson)
         val mgmInfo = groupPolicy[MGM_INFO] as? Map<String, String> ?: return null
         try {
-            val encodedSessionKey = mgmInfo[SESSION_KEY]
-                ?: throw IllegalArgumentException("Session key must be specified in the group policy.")
-            val sessionKey = keyEncodingService.decodePublicKey(encodedSessionKey)
             val now = clock.instant().toString()
             return MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-                    (mgmInfo + mapOf(
-                        GROUP_ID to groupPolicy.groupId,
-                        *convertKeys(listOf(encodedSessionKey)).toTypedArray(),
-                        *generateKeyHashes(listOf(sessionKey)).toTypedArray(),
-                        MemberInfoExtension.PARTY_OWNING_KEY to encodedSessionKey
-                    )).toSortedMap()
+                    (mgmInfo + mapOf(GROUP_ID to groupPolicy.groupId)).toSortedMap()
                 ),
                 mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
                     sortedMapOf(
@@ -98,36 +84,6 @@ class GroupPolicyParser @Activate constructor(
             )
         } catch (e: Exception) {
             throw BadGroupPolicyException(MGM_INFO_FAILURE, e)
-        }
-    }
-
-    /**
-     * Converts keys from JSON format to the keys expected in [MemberInfo].
-     */
-    private fun convertKeys(
-        keys: List<String>
-    ): List<Pair<String, String>> {
-        require(keys.isNotEmpty()) { "List of MGM keys cannot be empty." }
-        return keys.mapIndexed { index, identityKey ->
-            String.format(
-                MemberInfoExtension.IDENTITY_KEYS_KEY,
-                index
-            ) to identityKey
-        }
-    }
-
-    /**
-     * Generates key hashes from MGM keys.
-     */
-    private fun generateKeyHashes(
-        keys: List<PublicKey>
-    ): List<Pair<String, String>> {
-        return keys.mapIndexed { index, identityKey ->
-            val hash = identityKey.calculateHash()
-            String.format(
-                MemberInfoExtension.IDENTITY_KEY_HASHES_KEY,
-                index
-            ) to hash.toString()
         }
     }
 }

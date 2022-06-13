@@ -2,7 +2,6 @@ package net.corda.processor.member
 
 import com.typesafe.config.ConfigRenderOptions
 import java.time.Duration
-import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -75,6 +74,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -265,7 +266,7 @@ class MemberProcessorIntegrationTest {
                             UUID.randomUUID(),
                             db.name,
                             DbPrivilege.DML,
-                            Instant.now(),
+                            clock.instant(),
                             "sa",
                             "Test ${db.name}",
                             configAsString
@@ -279,6 +280,8 @@ class MemberProcessorIntegrationTest {
             }
             return ids
         }
+
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     @Test

@@ -17,6 +17,7 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'biz.aQute.bnd.builder' apply false
     id "org.gradle.test-retry" apply false
+    id 'io.snyk.gradle.plugin.snykplugin'
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
@@ -32,6 +33,14 @@ wrapper {
 
 def javaVersion = VERSION_11
 
+snyk {
+    api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
+    arguments = project.findProperty("snykArguments") ?: '--all-sub-projects'
+    severity = project.findProperty("snykSeverity") ?: 'low'
+    autoDownload = true
+    autoUpdate = true
+}
+
 allprojects {
 
     pluginManager.withPlugin('java') {
@@ -39,6 +48,8 @@ allprojects {
             toolchain {
                 languageVersion = of(javaVersion.majorVersion.toInteger())
             }
+
+            withSourcesJar()
         }
     }
 

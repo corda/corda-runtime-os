@@ -107,6 +107,20 @@ CLI image
 {{- end }}
 
 {{/*
+DB client image
+*/}}
+{{- define "corda.dbClientImage" -}}
+"{{- if .Values.db.clientImage.registry }}{{.Values.db.clientImage.registry}}/{{- end }}{{ .Values.db.clientImage.repository }}:{{ .Values.db.clientImage.tag }}"
+{{- end }}
+
+{{/*
+Kafka client image
+*/}}
+{{- define "corda.kafkaClientImage" -}}
+"{{- if .Values.kafka.clientImage.registry }}{{.Values.kafka.clientImage.registry}}/{{- end }}{{ .Values.kafka.clientImage.repository }}:{{ .Values.kafka.clientImage.tag }}"
+{{- end }}
+
+{{/*
 Worker JAVA_TOOL_OPTIONS
 */}}
 {{- define "corda.workerJavaToolOptions" -}}

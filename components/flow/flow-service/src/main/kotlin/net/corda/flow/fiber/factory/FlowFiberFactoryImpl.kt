@@ -8,7 +8,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.flows.Flow
+import net.corda.flow.fiber.FlowLogicAndArgs
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import java.util.UUID
@@ -24,7 +24,7 @@ class FlowFiberFactoryImpl : FlowFiberFactory {
         ScheduledSingleThreadExecutor()
     )
 
-    override fun createFlowFiber(flowId: String, logic: Flow<*>): FlowFiber<Any?> {
+    override fun createFlowFiber(flowId: String, logic: FlowLogicAndArgs): FlowFiber {
         try {
             val id = UUID.fromString(flowId)
             return FlowFiberImpl(id, logic, currentScheduler)

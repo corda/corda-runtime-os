@@ -51,11 +51,12 @@ spec:
           httpGet:
             path: /isHealthy
             port: health
-          periodSeconds: 10
-          failureThreshold: 5
+          periodSeconds: 5
+          failureThreshold: 20
         {{- end }}
       volumes:
       {{- include "corda.workerVolumes" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
       nodeSelector:
-        kubernetes.io/os: linux
-        kubernetes.io/arch: amd64
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

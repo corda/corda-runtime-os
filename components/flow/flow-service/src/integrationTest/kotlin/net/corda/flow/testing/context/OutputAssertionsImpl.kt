@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -18,6 +19,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -83,6 +85,21 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun scheduleFlowMapperCleanupEvents(vararg key: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response, "Test run response value")
+            val eventRecords = getMatchedFlowMapperEventRecords(testRun.response!!)
+            val filteredEvents = eventRecords.filter { it.value?.payload is ScheduleCleanup }
+            val filteredKeys = filteredEvents.map { it.key }
+
+            assertEquals(
+                key.toList(),
+                filteredKeys,
+                "Expected keys: ${key.toList()} but found $filteredKeys when expecting ${ScheduleCleanup::class.simpleName} events"
+            )
+        }
+    }
+
     override fun flowDidNotResume() {
         asserts.add { testRun ->
             assertNull(testRun.flowContinuation, "Not expecting the flow to resume")
@@ -96,7 +113,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun <T: Throwable> flowResumedWithError(exceptionClass: Class<T>) {
+    override fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>) {
         asserts.add { testRun ->
             assertInstanceOf(FlowContinuation.Error::class.java, testRun.flowContinuation)
             assertInstanceOf(exceptionClass, (testRun.flowContinuation as FlowContinuation.Error).exception)
@@ -154,7 +171,7 @@ class OutputAssertionsImpl(
                 testRun.response!!.responseEvents.any {
                     matchStatusRecord(flowId, state, result, errorType, errorMessage, it)
                 },
-                "Expected Flow Status: ${state}, result = ${result ?: "NA"} error = ${errorMessage ?: "NA"}"
+                "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
             )
         }
     }
@@ -166,7 +183,7 @@ class OutputAssertionsImpl(
         initiatedIdentity: HoldingIdentity?
     ): List<SessionEvent> {
         assertNotNull(testRun.response, "Test run response value")
-        val eventRecords = getMatchedFlowMapperEventRecords(testRun.response!!)
+        val eventRecords = getMatchedFlowMapperEventRecords(testRun.response!!).map { it.value as FlowMapperEvent }
 
         val sessionEvents =
             getMatchedSessionEvents(
@@ -230,10 +247,10 @@ class OutputAssertionsImpl(
 
     private fun getMatchedFlowMapperEventRecords(
         response: StateAndEventProcessor.Response<Checkpoint>
-    ): List<FlowMapperEvent> {
+    ): List<Record<*, FlowMapperEvent>> {
         return response.responseEvents
             .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
-            .map { it.value as FlowMapperEvent }
+            .map { uncheckedCast(it) }
     }
 
     private fun getMatchedSessionEvents(

@@ -1,26 +1,12 @@
 package net.corda.libs.packaging
 
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.packaging.internal.CpkLoader
-import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefault
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
 
 /** Represents a Cpk file in the filesystem */
-interface Cpk : AutoCloseable {
-
-    companion object {
-        @JvmStatic
-        @JvmOverloads
-        fun from(inputStream : InputStream,
-                 cacheDir : Path,
-                 cpkLocation : String? = null,
-                 verifySignature : Boolean = jarSignatureVerificationEnabledByDefault(),
-                 cpkFileName: String? = null
-        ) : Cpk =
-            CpkLoader.loadCPK(inputStream, cacheDir, cpkLocation, verifySignature, cpkFileName)
-    }
+interface Cpk {
 
     /**
      * Stores the metadata associated with this Cpk file
@@ -48,3 +34,4 @@ interface Cpk : AutoCloseable {
     @Throws(IOException::class)
     fun getResourceAsStream(resourceName : String) : InputStream
 }
+

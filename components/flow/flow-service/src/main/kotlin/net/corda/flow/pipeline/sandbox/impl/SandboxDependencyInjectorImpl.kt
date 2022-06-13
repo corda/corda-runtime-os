@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
@@ -33,7 +32,7 @@ class SandboxDependencyInjectorImpl(
         closeable.close()
     }
 
-    override fun injectServices(flow: Flow<*>) {
+    override fun injectServices(flow: Any) {
 
         val requiredFields = flow::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
@@ -65,13 +64,9 @@ class SandboxDependencyInjectorImpl(
      * Finally, we need to filter so that only fields annotated with [CordaInject] are returned.
      */
     private fun Class<*>.getFieldsForInjection(): Collection<Field> {
-        return this.getFieldsForInjection(CordaInject::class.java)
-    }
-
-    private fun Class<*>.getFieldsForInjection(annotationType: Class<out Annotation>): Collection<Field> {
         return getSuperClassesFor(this).flatMap { it.declaredFields.toSet() }
             .filter { field ->
-                field.isAnnotationPresent(annotationType)
+                field.isAnnotationPresent(CordaInject::class.java)
             }
     }
 

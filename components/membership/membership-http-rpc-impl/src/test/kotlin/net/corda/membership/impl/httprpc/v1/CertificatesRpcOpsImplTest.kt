@@ -2,12 +2,15 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -46,8 +50,14 @@ class CertificatesRpcOpsImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
+    private val certificatesClient = mock<CertificatesClient>()
 
-    private val certificatesOps = CertificatesRpcOpsImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory)
+    private val certificatesOps = CertificatesRpcOpsImpl(
+        cryptoOpsClient,
+        keyEncodingService,
+        lifecycleCoordinatorFactory,
+        certificatesClient,
+    )
 
     @Nested
     inner class LifeCycleTests {
@@ -116,7 +126,7 @@ class CertificatesRpcOpsImplTest {
                 cryptoOpsClient.sign(
                     eq(holdingIdentityId),
                     eq(publicKey),
-                    eq(SignatureSpec("SHA512withECDSA")),
+                    argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                     any(),
                     eq(emptyMap())
                 )
@@ -160,7 +170,7 @@ class CertificatesRpcOpsImplTest {
             verify(cryptoOpsClient).sign(
                 eq(holdingIdentityId),
                 eq(publicKey),
-                eq(SignatureSpec("SHA512withECDSA")),
+                argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                 any(),
                 eq(emptyMap())
             )
@@ -280,6 +290,32 @@ class CertificatesRpcOpsImplTest {
             return PEMParser(this.reader()).use { parser ->
                 parser.readObject() as PKCS10CertificationRequest
             }
+        }
+    }
+
+    @Nested
+    inner class ImportCertificatesTests {
+        @Test
+        fun `invalid certificate will throw an exception`() {
+            val certificateText = "hello"
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificate("tenant", "alias", certificate)
+            }
+        }
+        @Test
+        fun `valid certificate will send it to the client`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            certificatesOps.importCertificate("tenant", "alias", certificate)
+
+            verify(certificatesClient).importCertificate("tenant", "alias", certificateText)
         }
     }
 }

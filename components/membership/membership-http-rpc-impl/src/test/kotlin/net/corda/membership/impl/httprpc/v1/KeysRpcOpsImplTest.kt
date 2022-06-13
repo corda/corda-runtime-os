@@ -1,6 +1,12 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -24,6 +30,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Instant
 
 class KeysRpcOpsImplTest {
     private val cryptoOpsClient = mock<CryptoOpsClient>()
@@ -45,30 +52,177 @@ class KeysRpcOpsImplTest {
                 val aliasToReturn = "alias-$it"
                 val categoryToReturn = "category:$it"
                 val scheme = "scheme($it)"
+                val createdTimestamp = Instant.ofEpochMilli(it * 1000L)
+                val mka = "master key alias $it"
                 mock<CryptoSigningKey> {
                     on { id } doReturn idToReturn
                     on { alias } doReturn aliasToReturn
                     on { category } doReturn categoryToReturn
                     on { schemeCodeName } doReturn scheme
+                    on { created } doReturn createdTimestamp
+                    on { masterKeyAlias } doReturn mka
                 }
             }
-            whenever(cryptoOpsClient.lookup("id", 0, 500, CryptoKeyOrderBy.NONE, emptyMap())).doReturn(keys)
+            whenever(cryptoOpsClient.lookup("id", 4, 400, CryptoKeyOrderBy.ALIAS, emptyMap())).doReturn(keys)
 
-            val list = keysOps.listKeys("id")
+            val list = keysOps.listKeys(
+                tenantId = "id",
+                skip = 4,
+                take = 400,
+                orderBy = "alias",
+                category = null,
+                alias = null,
+                masterKeyAlias = null,
+                createdAfter = null,
+                createdBefore = null,
+                schemeCodeName = null,
+                ids = null
+            )
 
-            assertThat(list)
-                .containsEntry(
-                    "id.1", KeyMetaData("id.1", "alias-1", "category:1", "scheme(1)")
+            val expectedKeys = (1..4).map {
+                KeyMetaData(
+                    keyId = "id.$it",
+                    alias = "alias-$it",
+                    hsmCategory = "category:$it",
+                    scheme = "scheme($it)",
+                    created = Instant.ofEpochMilli(it * 1000L),
+                    masterKeyAlias = "master key alias $it"
                 )
-                .containsEntry(
-                    "id.2", KeyMetaData("id.2", "alias-2", "category:2", "scheme(2)")
+            }.associateBy { it.keyId }
+
+            assertThat(list).containsAllEntriesOf(expectedKeys)
+        }
+
+        @Test
+        fun `listKeys with IDs calls the correct function`() {
+            val keys = (1..3).map {
+                val idToReturn = "id.$it"
+                val aliasToReturn = "alias-$it"
+                val categoryToReturn = "category:$it"
+                val scheme = "scheme($it)"
+                val createdTimestamp = Instant.ofEpochMilli(it * 1000L)
+                val mka = "master key alias $it"
+                mock<CryptoSigningKey> {
+                    on { id } doReturn idToReturn
+                    on { alias } doReturn aliasToReturn
+                    on { category } doReturn categoryToReturn
+                    on { schemeCodeName } doReturn scheme
+                    on { created } doReturn createdTimestamp
+                    on { masterKeyAlias } doReturn mka
+                }
+            }
+            whenever(cryptoOpsClient.lookup(any(), any())).doReturn(keys)
+
+            val list = keysOps.listKeys(
+                tenantId = "id",
+                skip = 4,
+                take = 400,
+                orderBy = "alias",
+                category = null,
+                alias = null,
+                masterKeyAlias = null,
+                createdAfter = null,
+                createdBefore = null,
+                schemeCodeName = null,
+                ids = listOf("a", "b"),
+            )
+
+            val expectedKeys = (1..3).map {
+                KeyMetaData(
+                    keyId = "id.$it",
+                    alias = "alias-$it",
+                    hsmCategory = "category:$it",
+                    scheme = "scheme($it)",
+                    created = Instant.ofEpochMilli(it * 1000L),
+                    masterKeyAlias = "master key alias $it"
                 )
-                .containsEntry(
-                    "id.3", KeyMetaData("id.3", "alias-3", "category:3", "scheme(3)")
+            }.associateBy { it.keyId }
+            assertThat(list).containsAllEntriesOf(expectedKeys)
+        }
+
+        @Test
+        fun `listKeys with invalid order by will throw an exception`() {
+            assertThrows<ResourceNotFoundException> {
+                keysOps.listKeys(
+                    tenantId = "id",
+                    skip = 4,
+                    take = 400,
+                    orderBy = "nopp",
+                    category = null,
+                    alias = null,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    schemeCodeName = null,
+                    ids = emptyList(),
                 )
-                .containsEntry(
-                    "id.4", KeyMetaData("id.4", "alias-4", "category:4", "scheme(4)")
+            }
+        }
+
+        @Test
+        fun `listKeys will send the correct filter values`() {
+            val filterMap = argumentCaptor<Map<String, String>>()
+            whenever(cryptoOpsClient.lookup(any(), any(), any(), any(), filterMap.capture())).doReturn(emptyList())
+
+            keysOps.listKeys(
+                tenantId = "id",
+                skip = 4,
+                take = 400,
+                orderBy = "alias",
+                category = "c1",
+                alias = "a1",
+                masterKeyAlias = "mka1",
+                createdAfter = "1970-01-01T01:00:00.000Z",
+                createdBefore = "1980-01-01T01:00:00.000Z",
+                schemeCodeName = "sc1",
+                ids = emptyList(),
+            )
+
+            assertThat(filterMap.firstValue)
+                .containsEntry(CATEGORY_FILTER, "c1")
+                .containsEntry(SCHEME_CODE_NAME_FILTER, "sc1")
+                .containsEntry(ALIAS_FILTER, "a1")
+                .containsEntry(MASTER_KEY_ALIAS_FILTER, "mka1")
+                .containsEntry(CREATED_BEFORE_FILTER, "1980-01-01T01:00:00.000Z")
+                .containsEntry(CREATED_AFTER_FILTER, "1970-01-01T01:00:00.000Z")
+        }
+
+        @Test
+        fun `listKeys will throw an exception for invalid before time`() {
+            assertThrows<ResourceNotFoundException> {
+                keysOps.listKeys(
+                    tenantId = "id",
+                    skip = 4,
+                    take = 400,
+                    orderBy = "alias",
+                    category = null,
+                    alias = null,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = "nop",
+                    schemeCodeName = null,
+                    ids = null,
                 )
+            }
+        }
+
+        @Test
+        fun `listKeys will throw an exception for invalid after time`() {
+            assertThrows<ResourceNotFoundException> {
+                keysOps.listKeys(
+                    tenantId = "id",
+                    skip = 4,
+                    take = 400,
+                    orderBy = "alias",
+                    category = null,
+                    alias = null,
+                    masterKeyAlias = null,
+                    createdAfter = "nop",
+                    createdBefore = null,
+                    schemeCodeName = null,
+                    ids = null,
+                )
+            }
         }
 
         @Test
