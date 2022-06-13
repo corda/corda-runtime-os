@@ -53,8 +53,8 @@ internal class StubLinkManagerHostingMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        managedChildren = setOf(subscriptionTile, blockingTile),
-        dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName)
+        dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName),
+        managedChildren = setOf(subscriptionTile.toManagedChild(), blockingTile.toManagedChild())
     )
 
 

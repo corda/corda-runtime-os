@@ -67,6 +67,6 @@ internal class OutboundLinkManager(
             commonComponents.dominoTile.coordinatorName,
             commonComponents.inboundAssignmentListener.dominoTile.coordinatorName,
         ),
-        managedChildren = setOf(deliveryTracker.dominoTile)
+        managedChildren = setOf(deliveryTracker.dominoTile.toManagedChild())
     )
 }

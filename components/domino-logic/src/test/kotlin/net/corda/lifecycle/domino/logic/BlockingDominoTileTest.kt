@@ -5,6 +5,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -23,6 +25,12 @@ class BlockingDominoTileTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private var currentStatus: LifecycleStatus = LifecycleStatus.DOWN
     private val coordinator = mock<LifecycleCoordinator> {
+        on { start() } doAnswer {
+            handler.lastValue.processEvent(StartEvent(), mock)
+        }
+        on { stop() } doAnswer {
+            handler.lastValue.processEvent(StopEvent(), mock)
+        }
         on { postEvent(any()) } doAnswer {
             handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }

@@ -42,6 +42,12 @@ class ComplexDominoTileTest {
 
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
+        on { start() } doAnswer {
+            handler.lastValue.processEvent(StartEvent(), mock)
+        }
+        on { stop() } doAnswer {
+            handler.lastValue.processEvent(StopEvent(), mock)
+        }
         on { postEvent(any()) } doAnswer {
             handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
@@ -79,30 +85,30 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `start will update the status to UP`() {
+        fun `start will set is running to true`() {
             val tile = tile()
 
             tile.start()
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.UP)
+            assertThat(tile.isRunning).isTrue
         }
 
         @Test
-        fun `stop will update the status to stopped`() {
+        fun `stop will set is running to false`() {
             val tile = tile()
             tile.stop()
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+            assertThat(tile.isRunning).isFalse
         }
 
         @Test
-        fun `stop will update the status the tile is started`() {
+        fun `start and then stop will set is running to false`() {
             val tile = tile()
             tile.start()
 
             tile.stop()
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+            assertThat(tile.isRunning).isFalse
         }
 
         @Test
@@ -140,7 +146,7 @@ class ComplexDominoTileTest {
 
             handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.ERROR)
+            assertThat(tile.coordinator.status).isEqualTo(LifecycleStatus.ERROR)
         }
 
         @Test
@@ -182,12 +188,12 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `close will not change the tiles state`() {
+        fun `close will not set isRunning to false`() {
             val tile = tile()
             tile.start()
             tile.close()
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.UP)
+            assertThat(tile.isRunning).isTrue
         }
 
         @Test
@@ -217,12 +223,12 @@ class ComplexDominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isNotEqualTo(DominoTileState.Started)
+            assertThat(tile.isRunning).isFalse
         }
     }
 
     @Nested
-    inner class LeafTileWithResourcesTests {
+    inner class LeafTileWithOnStartTests {
 
         @Test
         fun `startTile called onStart`() {
@@ -386,10 +392,9 @@ class ComplexDominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
             outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+            assertThat(tile.isRunning).isFalse
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
             assertThat(tile.isRunning).isFalse
         }
 
@@ -418,11 +423,10 @@ class ComplexDominoTileTest {
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+            assertThat(tile.isRunning).isFalse
 
             outerConfigUpdateResult!!.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.UP)
             assertThat(tile.isRunning).isTrue
         }
 
@@ -494,11 +498,11 @@ class ComplexDominoTileTest {
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
             outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+            assertThat(tile.isRunning).isFalse
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to goodConfig))
             outerConfigUpdateResult!!.complete(Unit)
-            assertThat(tile.state).isEqualTo(LifecycleStatus.UP)
+            assertThat(tile.isRunning).isTrue
 
             assertThat(calledNewConfigurations).contains(Configuration(17) to Configuration(5))
         }
@@ -566,7 +570,7 @@ class ComplexDominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+            assertThat(tile.isRunning).isFalse
         }
 
         @Test
@@ -604,7 +608,7 @@ class ComplexDominoTileTest {
                 factory,
                 mock(),
                 dependentChildren = dependentChildren,
-                managedChildren = managedChildren
+                managedChildren = managedChildren.map { it.toManagedChild() }
             )
 
         @Nested
@@ -683,7 +687,6 @@ class ComplexDominoTileTest {
                 children[2].first.setState(LifecycleStatus.UP)
                 handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[2].second, LifecycleStatus.UP), coordinator)
                 assertThat(tile.isRunning).isTrue
-                assertThat(tile.state).isEqualTo(LifecycleStatus.UP)
             }
 
             @Test
@@ -704,7 +707,6 @@ class ComplexDominoTileTest {
                 children[1].first.setState(LifecycleStatus.UP)
                 handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[1].second, LifecycleStatus.UP), coordinator)
 
-                assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
                 assertThat(tile.isRunning).isFalse
             }
 
@@ -732,7 +734,7 @@ class ComplexDominoTileTest {
                 children[0].first.setState(LifecycleStatus.DOWN)
                 handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[0].second, LifecycleStatus.DOWN), coordinator)
 
-                assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+                assertThat(tile.isRunning).isFalse
             }
         }
 
@@ -826,6 +828,7 @@ class ComplexDominoTileTest {
                     mock {
                         on { close() } doThrow RuntimeException("")
                         on { coordinatorName } doReturn LifecycleCoordinatorName("component", "1")
+                        on { toManagedChild() } doReturn ManagedChild(mock(), this.mock)
                     }
                 )
                 val registration = mock<RegistrationHandle>()
@@ -842,9 +845,10 @@ class ComplexDominoTileTest {
 
         val dominoTile by lazy {
             mock<ComplexDominoTile> {
-                on { state } doAnswer { currentState }
+//                on { state } doAnswer { currentState }
                 on { this.coordinatorName } doReturn coordinatorName
                 on { isRunning } doAnswer { currentState == LifecycleStatus.UP }
+                on { toManagedChild() } doReturn ManagedChild(mock(), this.mock)
             }
         }
         private var currentState: LifecycleStatus = LifecycleStatus.DOWN

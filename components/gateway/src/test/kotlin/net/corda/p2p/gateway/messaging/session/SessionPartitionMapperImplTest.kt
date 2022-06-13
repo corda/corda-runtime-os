@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.session
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -29,6 +30,9 @@ class SessionPartitionMapperImplTest {
     private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
+    private val blockingTile = Mockito.mockConstruction(BlockingDominoTile::class.java) { mock, _ ->
+        whenever(mock.toManagedChild()).thenReturn(mock())
+    }
 
     private val factory = mock<LifecycleCoordinatorFactory>()
     private val subscription = mock<CompactedSubscription<String, SessionPartitions>>()
@@ -42,6 +46,7 @@ class SessionPartitionMapperImplTest {
     fun cleanUp() {
         dominoTile.close()
         subscriptionTile.close()
+        blockingTile.close()
     }
 
     @Test

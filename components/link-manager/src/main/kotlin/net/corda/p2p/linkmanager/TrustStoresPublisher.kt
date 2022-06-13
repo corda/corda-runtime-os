@@ -62,7 +62,7 @@ internal class TrustStoresPublisher(
 
     override fun groupAdded(groupInfo: GroupPolicyListener.GroupInfo) {
         toPublish.offer(groupInfo)
-        if (dominoTile.isRunning) publishQueue()
+        publishQueueIfPossible()
     }
 
     override val dominoTile = ComplexDominoTile(
@@ -70,9 +70,9 @@ internal class TrustStoresPublisher(
         lifecycleCoordinatorFactory,
         onStart = ::onStart,
         managedChildren = listOf(
-            publisher.dominoTile,
-            subscriptionTile,
-            blockingDominoTile
+            publisher.dominoTile.toManagedChild(),
+            subscriptionTile.toManagedChild(),
+            blockingDominoTile.toManagedChild()
         ),
         dependentChildren = listOf(
             publisher.dominoTile.coordinatorName,
@@ -91,6 +91,7 @@ internal class TrustStoresPublisher(
                 }
             )
             ready.complete(Unit)
+            publishQueueIfPossible()
         }
 
         override fun onNext(
@@ -107,13 +108,12 @@ internal class TrustStoresPublisher(
         }
     }
 
-    private fun onStart(): CompletableFuture<Unit> {
-        publishQueue()
-        return CompletableFuture.completedFuture(Unit)
+    private fun onStart() {
+        publishQueueIfPossible()
     }
 
-    private fun publishQueue() {
-        while (true) {
+    private fun publishQueueIfPossible() {
+        while ((publisher.isRunning) && (ready.isDone)) {
             val groupInfo = toPublish.poll() ?: return
             val groupId = groupInfo.groupId
             val certificates = groupInfo.trustedCertificates
@@ -123,6 +123,7 @@ internal class TrustStoresPublisher(
 
     private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
         publishedGroups.compute(groupId) { _, publishedCertificates ->
+            logger.info("Publishing Group: $groupId")
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))

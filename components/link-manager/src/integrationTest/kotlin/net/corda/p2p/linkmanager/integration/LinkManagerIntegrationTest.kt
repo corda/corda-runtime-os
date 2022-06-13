@@ -17,7 +17,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.domino.logic.DependenciesVerifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -129,7 +127,7 @@ class LinkManagerIntegrationTest {
             val invalidConfig = createLinkManagerConfiguration(-1)
             configPublisher.publishLinkManagerConfig(invalidConfig)
             eventually {
-                assertThat(linkManager.dominoTile.state).isEqualTo(LifecycleStatus.DOWN)
+                assertThat(linkManager.dominoTile.coordinator.status).isEqualTo(LifecycleStatus.DOWN)
             }
 
             logger.info("Publishing valid configuration again")
@@ -137,21 +135,6 @@ class LinkManagerIntegrationTest {
             eventually {
                 assertThat(linkManager.isRunning).isTrue
             }
-        }
-    }
-
-    @Test
-    fun `domino logic dependencies are setup successfully for link manager`() {
-        val linkManager = LinkManager(
-            subscriptionFactory,
-            publisherFactory,
-            lifecycleCoordinatorFactory,
-            configReadService,
-            bootstrapConfig,
-        )
-
-        assertDoesNotThrow {
-            DependenciesVerifier.verify(linkManager.dominoTile)
         }
     }
 }

@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 
 internal class DynamicKeyStore(
@@ -33,6 +34,7 @@ internal class DynamicKeyStore(
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_certificates_truststores_reader"
+        private val logger = contextLogger()
     }
     override val aliasToCertificates = ConcurrentHashMap<Alias, CertificateChain>()
 
@@ -72,11 +74,15 @@ internal class DynamicKeyStore(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        managedChildren = listOf(subscriptionTile, signer.dominoTile, blockingDominoTile),
         dependentChildren = listOf(
             subscriptionTile.coordinatorName,
             signer.dominoTile.coordinatorName,
             blockingDominoTile.coordinatorName
+        ),
+        managedChildren = listOf(
+            subscriptionTile.toManagedChild(),
+            signer.dominoTile.toManagedChild(),
+            blockingDominoTile.toManagedChild()
         ),
     )
 
@@ -98,7 +104,7 @@ internal class DynamicKeyStore(
                     }
                 }
             )
-
+            logger.info("Got Dynamic Key Stores Snapshot Keys: ${currentData.keys}")
             ready.complete(Unit)
         }
 
@@ -114,7 +120,9 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId.remove(publicKey)
                     }
                 }
+                logger.info("Got Dynamic Key Stores update key removed: ${currentData.keys}")
             } else {
+                logger.info("Got Dynamic Key Stores update key added: ${currentData.keys}")
                 aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
                         certificateFactory.generateCertificate(it)

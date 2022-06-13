@@ -211,7 +211,7 @@ class P2PLayerEndToEndTest {
         val numberOfMessages = 10
         Host(
             "www.alice.net",
-            10500,
+            10504,
             "O=Alice, L=London, C=GB",
             "sslkeystore_alice",
             "truststore",
@@ -221,7 +221,7 @@ class P2PLayerEndToEndTest {
         ).use { hostA ->
             Host(
                 "chip.net",
-                10501,
+                10505,
                 "O=Chip, L=London, C=GB",
                 "sslkeystore_chip",
                 "truststore",

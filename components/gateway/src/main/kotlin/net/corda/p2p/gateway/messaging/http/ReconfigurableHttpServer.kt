@@ -43,12 +43,8 @@ class ReconfigurableHttpServer(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
-        dependentChildren = listOf(
-            dynamicKeyStore.dominoTile.coordinatorName,
-        ),
-        managedChildren = listOf(
-            dynamicKeyStore.dominoTile,
-        ),
+        dependentChildren = listOf(dynamicKeyStore.dominoTile.coordinatorName),
+        managedChildren = listOf(dynamicKeyStore.dominoTile.toManagedChild()),
     )
 
     companion object {

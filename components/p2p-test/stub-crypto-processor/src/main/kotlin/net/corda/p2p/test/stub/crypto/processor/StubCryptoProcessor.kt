@@ -50,8 +50,8 @@ class StubCryptoProcessor(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        managedChildren = listOf(subscriptionTile, blockingDominoTile),
         dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
+        managedChildren = listOf(subscriptionTile.toManagedChild(), blockingDominoTile.toManagedChild()),
     )
 
     override fun sign(

@@ -72,7 +72,7 @@ internal class TlsCertificatesPublisher(
 
     override fun identityAdded(identityInfo: HostingMapListener.IdentityInfo) {
         toPublish.offer(identityInfo)
-        if (dominoTile.isRunning) publishQueue()
+        publishQueueIfPossible()
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {
@@ -85,6 +85,7 @@ internal class TlsCertificatesPublisher(
                 }
             )
             ready.complete(Unit)
+            publishQueueIfPossible()
         }
 
         override fun onNext(
@@ -121,24 +122,24 @@ internal class TlsCertificatesPublisher(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
         onStart = ::onStart,
-        managedChildren = listOf(
-            publisher.dominoTile,
-            subscriptionDominoTile,
-            blockingDominoTile
-        ),
         dependentChildren = listOf(
             publisher.dominoTile.coordinatorName,
             subscriptionDominoTile.coordinatorName,
             blockingDominoTile.coordinatorName
+        ),
+        managedChildren = listOf(
+            publisher.dominoTile.toManagedChild(),
+            subscriptionDominoTile.toManagedChild(),
+            blockingDominoTile.toManagedChild()
         )
     )
 
     private fun onStart() {
-        publishQueue()
+        publishQueueIfPossible()
     }
 
-    private fun publishQueue() {
-        while (true) {
+    private fun publishQueueIfPossible() {
+        while ((publisher.isRunning) && (ready.isDone)) {
             val identityInfo = toPublish.poll() ?: return
             publishIfNeeded(identityInfo)
         }

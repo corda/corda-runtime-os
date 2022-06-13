@@ -8,8 +8,9 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.domino.logic.ManagedChild
 import net.corda.messaging.api.subscription.Subscription
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -30,6 +31,9 @@ class SubscriptionDominoTileBaseTest {
 
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
+        on { start() } doAnswer {
+            handler.lastValue.processEvent(StartEvent(), mock)
+        }
         on { postEvent(any()) } doAnswer {
             handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
@@ -70,7 +74,12 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile starts all managed children when started`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            subscription,
+            children.map { it.coordinatorName },
+            children.map { it.toManagedChild() }
+        )
 
         subscriptionTile.start()
         children.forEach {
@@ -80,7 +89,12 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile stops all managed children when stopped`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            subscription,
+            children.map { it.coordinatorName },
+            children.map { it.toManagedChild() }
+        )
 
         subscriptionTile.stop()
         children.forEach {
@@ -90,17 +104,22 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `subscription tile waits for dependent children before starting the subscription`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            subscription,
+            children.map { it.coordinatorName },
+            children.map { it.toManagedChild() }
+        )
 
         subscriptionTile.start()
         verify(subscription, never()).start()
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
         verify(subscription, times(1)).start()
-        assertThat(subscriptionTile.state).isNotEqualTo(DominoTileState.Started)
+        assertThat(subscriptionTile.isRunning).isFalse
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
-        assertThat(subscriptionTile.state).isEqualTo(LifecycleStatus.UP)
+        assertThat(subscriptionTile.isRunning).isTrue
     }
 
     @Test
@@ -112,12 +131,17 @@ class SubscriptionDominoTileBaseTest {
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
         verify(subscription, times(1)).start()
-        assertThat(subscriptionTile.state).isNotEqualTo(DominoTileState.Started)
+        assertThat(subscriptionTile.isRunning).isFalse
     }
 
     @Test
     fun `subscription tile goes down if any of the dependent children goes down`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            subscription,
+            children.map { it.coordinatorName },
+            children.map { it.toManagedChild() }
+        )
 
         subscriptionTile.start()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
@@ -126,12 +150,17 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.DOWN), coordinator)
         verify(subscription, times(1)).stop()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
-        assertThat(subscriptionTile.state).isEqualTo(LifecycleStatus.DOWN)
+        assertThat(subscriptionTile.isRunning).isFalse
     }
 
     @Test
     fun `subscription tile goes down if any of the dependent children errors`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            subscription,
+            children.map { it.coordinatorName },
+            children.map { it.toManagedChild() }
+        )
 
         subscriptionTile.start()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
@@ -140,24 +169,30 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.ERROR), coordinator)
         verify(subscription, times(1)).stop()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
-        assertThat(subscriptionTile.state).isEqualTo(LifecycleStatus.DOWN)
+        assertThat(subscriptionTile.isRunning).isFalse
     }
 
     @Test
     fun `tile errors if subscription errors`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, children.map { it.coordinatorName }, children)
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            subscription,
+            children.map { it.coordinatorName },
+            children.map { it.toManagedChild() }
+        )
 
         subscriptionTile.start()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.ERROR), coordinator)
-        assertThat(subscriptionTile.state).isEqualTo(LifecycleStatus.ERROR)
+        assertThat(subscriptionTile.coordinator.status).isEqualTo(LifecycleStatus.ERROR)
     }
 
     private fun mockTile(name: LifecycleCoordinatorName): DominoTile {
         return mock {
             on { coordinatorName } doReturn name
+            on { toManagedChild() } doReturn ManagedChild(mock(), this.mock)
         }
     }
 
@@ -165,7 +200,7 @@ class SubscriptionDominoTileBaseTest {
         coordinatorFactory: LifecycleCoordinatorFactory,
         subscription: Subscription<K, V>,
         dependentChildren: Collection<LifecycleCoordinatorName>,
-        managedChildren: Collection<DominoTile>
+        managedChildren: Collection<ManagedChild>
     ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
 
 }

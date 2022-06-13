@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.ManagedChild
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -39,15 +40,10 @@ class PublisherWithDominoLogic(
     override val dominoTile = object: DominoTile {
 
         override val coordinatorName = LifecycleCoordinatorName(componentName, instancesIndex.getAndAdd(1).toString())
-        private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+        override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
         override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet()
-        override val managedChildren: Collection<DominoTile> = emptySet()
-
-        override val state : LifecycleStatus
-            get() = coordinator.status
-        override val isRunning: Boolean
-            get() = state == LifecycleStatus.UP
+        override val managedChildren: Collection<ManagedChild> = emptySet()
 
         override fun start() {
             coordinator.start()
@@ -67,7 +63,7 @@ class PublisherWithDominoLogic(
                 when (event) {
                     is StartEvent -> {
                         lifecycleLock.write {
-                            if (state == LifecycleStatus.DOWN) {
+                            if (coordinator.status == LifecycleStatus.DOWN) {
                                 val newPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfiguration)
                                 newPublisher.start()
                                 publisher.set(newPublisher)
@@ -77,7 +73,7 @@ class PublisherWithDominoLogic(
                     }
                     is StopEvent -> {
                         lifecycleLock.write {
-                            if (state != LifecycleStatus.DOWN) {
+                            if (coordinator.status != LifecycleStatus.DOWN) {
                                 val oldPublisher = publisher.getAndSet(null)
                                 oldPublisher.close()
                                 coordinator.updateStatus(LifecycleStatus.DOWN)

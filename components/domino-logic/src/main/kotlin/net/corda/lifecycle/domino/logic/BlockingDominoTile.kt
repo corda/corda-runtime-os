@@ -39,17 +39,10 @@ class BlockingDominoTile(componentName: String,
         )
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
     private val internalState = AtomicReference(LifecycleStatus.DOWN)
 
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
-    override val managedChildren: Collection<DominoTile> = emptyList()
-
-    override val state: LifecycleStatus
-        get() = coordinator.status
-
-    override val isRunning: Boolean
-        get() = state == LifecycleStatus.UP
 
     override fun start() {
         coordinator.start()
@@ -62,9 +55,7 @@ class BlockingDominoTile(componentName: String,
         }
     }
 
-    override fun stop() {
-        coordinator.postEvent(StopEvent())
-    }
+    override val managedChildren: Collection<ManagedChild> = emptyList()
 
     private object AsynchronousReady : LifecycleEvent
     private data class AsynchronousException(val exception: Throwable) : LifecycleEvent
@@ -86,7 +77,7 @@ class BlockingDominoTile(componentName: String,
                     }
                 }
                 is StopEvent -> {
-                    if (state == LifecycleStatus.UP) {
+                    if (coordinator.status == LifecycleStatus.UP) {
                         internalState.set(LifecycleStatus.DOWN)
                         coordinator.updateStatus(LifecycleStatus.DOWN)
                     }

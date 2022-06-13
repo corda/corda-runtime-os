@@ -74,9 +74,9 @@ internal class InboundMessageHandler(
             server.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            sessionPartitionMapper.dominoTile,
-            p2pInPublisher.dominoTile,
-            server.dominoTile,
+            sessionPartitionMapper.dominoTile.toManagedChild(),
+            p2pInPublisher.dominoTile.toManagedChild(),
+            server.dominoTile.toManagedChild(),
         )
     )
 

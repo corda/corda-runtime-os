@@ -35,7 +35,7 @@ class SimpleDominoTileTest {
     fun `stop will change the status to stop by parent`() {
         tile.stop()
 
-        assertThat(tile.state).isEqualTo(LifecycleStatus.DOWN)
+        assertThat(tile.coordinator.status).isEqualTo(LifecycleStatus.DOWN)
     }
 
     @Test
@@ -58,7 +58,7 @@ class SimpleDominoTileTest {
     fun `updateState change the state`() {
         tile.updateState(LifecycleStatus.UP)
 
-        assertThat(tile.state).isEqualTo(LifecycleStatus.UP)
+        assertThat(tile.coordinator.status).isEqualTo(LifecycleStatus.UP)
     }
 
     @Test

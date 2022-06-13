@@ -42,8 +42,8 @@ import kotlin.concurrent.write
  *
  * @param onStart the callback method used to signal some external component when the tile starts.
  * @param onClose the callback method used to signal some external component when the tile is closed.
- * @param managedChildren the children tiles this tile is responsible for starting when it starts.
- * @param dependentChildren the children tiles this component requires in order to function properly.
+ * @param managedChildren the children this tile is responsible for starting when it starts.
+ * @param dependentChildren the children this component requires in order to function properly.
  *  If one of them goes down, this tile will also go down.
  * @param configurationChangeHandler the callback handler that handles new configuration.
  * If no configuration is needed, it can be left undefined.
@@ -55,15 +55,13 @@ class ComplexDominoTile(
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet(),
-    override val managedChildren: Collection<DominoTile> = emptySet(),
+    override val managedChildren: Collection<ManagedChild> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : DominoTile {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
-    private object StartTile : LifecycleEvent
-    private object StopTile : LifecycleEvent
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
     private data class NewConfig(val config: Config) : LifecycleEvent
 
@@ -86,11 +84,10 @@ class ComplexDominoTile(
 
     override fun start() {
         coordinator.start()
-        coordinator.postEvent(StartTile)
     }
 
     override fun stop() {
-        coordinator.postEvent(StopTile)
+        coordinator.stop()
     }
 
     fun <T> withLifecycleLock(access: () -> T): T {
@@ -105,7 +102,7 @@ class ComplexDominoTile(
         }
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
     private val configResources = ResourcesHolder()
 
     private val registrationToChildMap: Map<RegistrationHandle, LifecycleCoordinatorName> = dependentChildren.associateBy {
@@ -148,12 +145,6 @@ class ComplexDominoTile(
         }
     }
 
-    override val state: LifecycleStatus
-        get() = coordinator.status
-
-    override val isRunning: Boolean
-        get() = state == LifecycleStatus.UP
-
     private fun newConfig(config: Config) {
         coordinator.postEvent(NewConfig(config))
     }
@@ -184,27 +175,20 @@ class ComplexDominoTile(
                     updateState(StoppedDueToError)
                 }
                 is StartEvent -> {
-                    // The coordinator had started, set the children state map - from
-                    // now on we should receive messages of any change
                     latestChildStateMap += dependentChildren.associateWith {
                         LifecycleStatus.DOWN
                     }
-                }
-                is StopEvent -> {
-                    // We don't do anything when stopping the coordinator
-                }
-                is StopTile -> {
-                    if (internalState != StoppedByParent) {
-                        stopTile()
-                        updateState(StoppedByParent)
-                    }
-                }
-                is StartTile -> {
                     when (internalState) {
                         Created, StoppedByParent -> startDependenciesIfNeeded()
                         Started, StoppedDueToChildStopped -> {} // Do nothing
                         StoppedDueToError -> logger.warn("Can not start, since currently being stopped due to an error")
                         StoppedDueToBadConfig -> logger.warn("Can not start, since currently being stopped due to bad config")
+                    }
+                }
+                is StopEvent -> {
+                    if (internalState != StoppedByParent) {
+                        stopTile()
+                        updateState(StoppedByParent)
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
@@ -317,8 +301,7 @@ class ComplexDominoTile(
 
     private fun startDependenciesIfNeeded() {
         managedChildren.forEach {
-            logger.info("Starting child ${it.coordinatorName}")
-            it.start()
+            it.lifecycle.start()
         }
 
         // if there are dependent children, we wait for them before starting resources. Otherwise, we can start them immediately.
@@ -375,8 +358,8 @@ class ComplexDominoTile(
 
     private fun stopChildren() {
         managedChildren.forEach {
-            logger.info("Stopping child ${it.coordinatorName}")
-            it.stop()
+            logger.info("Stopping child ${it.coordinator.name}")
+            it.lifecycle.stop()
         }
     }
 
@@ -413,15 +396,15 @@ class ComplexDominoTile(
         managedChildren.forEach {
             @Suppress("TooGenericExceptionCaught")
             try {
-                it.close()
+                it.lifecycle.close()
             } catch (e: Throwable) {
-                logger.warn("Could not close ${it.coordinatorName}", e)
+                logger.warn("Could not close ${it.coordinator.name}", e)
             }
         }
     }
 
     override fun toString(): String {
-        return "$coordinatorName (state: $state, dependent children: ${dependentChildren.map { it }}, " +
-                "managed children: ${managedChildren.map { it.coordinatorName }})"
+        return "$coordinatorName (state: ${coordinator.status}, dependent children: ${dependentChildren.map { it }}, " +
+                "managed children: ${managedChildren.map { it.coordinator.name }})"
     }
 }

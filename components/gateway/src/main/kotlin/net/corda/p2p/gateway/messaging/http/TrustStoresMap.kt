@@ -17,6 +17,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTruststore
 import net.corda.schema.Schemas
+import net.corda.v5.base.util.contextLogger
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -28,6 +29,7 @@ internal class TrustStoresMap(
 
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_tls_truststores_reader"
+        private val logger = contextLogger()
     }
     private val ready = CompletableFuture<Unit>()
     private val subscription = subscriptionFactory.createCompactedSubscription(
@@ -57,8 +59,8 @@ internal class TrustStoresMap(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        managedChildren = listOf(subscriptionTile, blockingDominoTile),
         dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
+        managedChildren = listOf(subscriptionTile.toManagedChild(), blockingDominoTile.toManagedChild()),
     )
 
     class TrustedCertificates(
@@ -89,6 +91,7 @@ internal class TrustStoresMap(
                     TrustedCertificates(it.value.trustedCertificates, certificateFactory)
                 }
             )
+            logger.info("Got Trust Stores Snapshot Keys: ${currentData.keys}")
             ready.complete(Unit)
         }
 
@@ -102,8 +105,10 @@ internal class TrustStoresMap(
             }
 
             if (store != null) {
+                logger.info("Got Trust Stores Key: ${newRecord.key}")
                 groupIdToTrustRoots[newRecord.key] = store
             } else {
+                logger.info("Removed Trust store Key: ${newRecord.key}")
                 groupIdToTrustRoots.remove(newRecord.key)
             }
         }
