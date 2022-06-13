@@ -200,8 +200,8 @@ class TestHSMStore : HSMStore {
             masterKeyPolicy = net.corda.crypto.persistence.db.model.MasterKeyPolicy.valueOf(masterKeyPolicy.name),
             masterKeyAlias = masterKeyAlias,
             supportedSchemes = supportedSchemes.joinToString(","),
-            retries = retries,
-            timeoutMills = timeoutMills,
+            maxAttempts = maxAttempts,
+            attemptTimeoutMills = attemptTimeoutMills,
             serviceName = serviceName,
             capacity = capacity,
             serviceConfig = serviceConfig
@@ -214,8 +214,8 @@ class TestHSMStore : HSMStore {
             description,
             MasterKeyPolicy.valueOf(masterKeyPolicy.name),
             masterKeyAlias,
-            retries,
-            timeoutMills,
+            maxAttempts,
+            attemptTimeoutMills,
             supportedSchemes.split(","),
             serviceName,
             capacity

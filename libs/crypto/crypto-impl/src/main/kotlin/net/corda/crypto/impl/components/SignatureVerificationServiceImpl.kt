@@ -4,11 +4,13 @@ import net.corda.crypto.impl.SignatureInstances
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.v5.cipher.suite.getParamsSafely
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -109,7 +111,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
             "Clear data is empty, nothing to verify!"
         }
         val signingData = signatureSpec.getSigningData(hashingService, clearData)
-        return if (signatureSpec.precalculateHash && scheme.algorithmName == "RSA") {
+        return if (signatureSpec is CustomSignatureSpec && scheme.algorithmName == "RSA") {
             val cipher = Cipher.getInstance(
                 signatureSpec.signatureName,
                 schemeMetadata.providers.getValue(scheme.providerName)
@@ -117,13 +119,11 @@ class SignatureVerificationServiceImpl @Activate constructor(
             cipher.init(Cipher.DECRYPT_MODE, publicKey)
             cipher.doFinal(signatureData).contentEquals(signingData)
         } else {
-            signatureInstances.withSignature(scheme, signatureSpec) {
-                if(signatureSpec.params != null) {
-                    it.setParameter(signatureSpec.params)
-                }
-                it.initVerify(publicKey)
-                it.update(signingData)
-                it.verify(signatureData)
+            signatureInstances.withSignature(scheme, signatureSpec) { signature ->
+                signatureSpec.getParamsSafely()?.let { params -> signature.setParameter(params) }
+                signature.initVerify(publicKey)
+                signature.update(signingData)
+                signature.verify(signatureData)
             }
         }
     }

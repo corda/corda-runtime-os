@@ -71,14 +71,19 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
 
-        val sandboxGroupsToRemove = bundleIdToSandboxGroup.filter { entry -> entry.value === sandboxGroup }
-        sandboxGroupsToRemove.forEach { entry -> bundleIdToSandboxGroup.remove(entry.key) }
-
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            val sandboxesToRemove = bundleIdToSandbox.filter { entry -> entry.value === sandbox }
-            sandboxesToRemove.forEach { entry -> bundleIdToSandbox.remove(entry.key) }
+            val unloaded = sandbox.unload()
+            unloaded[false]?.also(zombieBundles::addAll)
+            unloaded[true]?.forEach { bundle ->
+                val bundleId = bundle.bundleId
+                bundleIdToSandbox.remove(bundleId)
+                bundleIdToSandboxGroup.remove(bundleId)
+            }
+        }
 
-            zombieBundles.addAll((sandbox as Sandbox).unload())
+        // Tell the OSGi framework that these bundles need updating (i.e. removing, in this case).
+        bundleUtils.refreshBundles(sandboxGroup.metadata.keys) { evt ->
+            logger.debug("Refreshed bundle {}", evt.bundle)
         }
     }
 

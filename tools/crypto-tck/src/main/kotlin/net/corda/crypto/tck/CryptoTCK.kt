@@ -1,13 +1,12 @@
 package net.corda.crypto.tck
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 
 /**
  * Crypto Technical Compliance Kit provider. It's an OSGi component.
  * Use the junit capability to run OSGi tests.
  *
- * If the service supports [CryptoServiceDeleteOps] then the tests will do the best to delete the generated keys.
+ * If the service supports the key deletion extension then the tests will do the best to delete the generated keys.
  *
  * Example (Kotlin):
  *  @ExtendWith(ServiceExtension::class)
@@ -28,7 +27,7 @@ import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
  *                  ComplianceTestType.CRYPTO_SERVICE,
  *                  ComplianceTestType.SESSION_INACTIVITY,
  *              ),
- *              sessionComplianceSpec = Pair(EDDSA_ED25519_CODE_NAME, EDDSA_ED25519_NONE_SIGNATURE_SPEC),
+ *              sessionComplianceSpec = Pair(EDDSA_ED25519_CODE_NAME, EDDSA_ED25519_SIGNATURE_SPEC),
  *              sessionComplianceTimeout = Duration.ofMinutes(30),
  *              signatureSpecs = mapOf(
  *                  RSA_CODE_NAME to listOf(

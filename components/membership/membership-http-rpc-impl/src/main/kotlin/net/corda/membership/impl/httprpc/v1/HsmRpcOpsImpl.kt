@@ -53,9 +53,9 @@ class HsmRpcOpsImpl @Activate constructor(
                     else -> None
                 },
                 createdAt = this.timestamp,
-                retries = this.retries,
+                maxAttempts = this.maxAttempts,
                 serviceName = this.serviceName,
-                timeout = Duration.ofMillis(this.timeoutMills)
+                attemptTimeout = Duration.ofMillis(this.attemptTimeoutMills)
             )
 
         private fun String.toCategory() = this.uppercase().also {

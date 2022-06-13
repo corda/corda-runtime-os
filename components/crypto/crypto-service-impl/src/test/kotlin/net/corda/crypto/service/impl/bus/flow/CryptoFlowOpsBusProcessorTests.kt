@@ -27,7 +27,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -349,7 +349,7 @@ class CryptoFlowOpsBusProcessorTests {
                         value = transformer.createSign(
                             tenantId,
                             publicKey,
-                            EDDSA_ED25519_NONE_SIGNATURE_SPEC,
+                            EDDSA_ED25519_SIGNATURE_SPEC,
                             data,
                             operationContext
                         )
@@ -364,7 +364,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertEquals(tenantId, passedTenantId)
         assertArrayEquals(keyEncodingService.encodeAsByteArray(publicKey), passedPublicKey.array())
         assertArrayEquals(data, passedData.array())
-        assertEquals(EDDSA_ED25519_NONE_SIGNATURE_SPEC.signatureName, passedSignatureSpec.signatureName)
+        assertEquals(EDDSA_ED25519_SIGNATURE_SPEC.signatureName, passedSignatureSpec.signatureName)
         assertNotNull(passedContext.items)
         assertEquals(1, passedContext.items.size)
         assertTrue {

@@ -7,11 +7,13 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
+import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.common.KafkaException
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -50,9 +52,10 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
 
     private fun createKafkaProducer(kafkaProperties: Properties): KafkaProducer<Any, Any> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
+        val currentBundle = FrameworkUtil.getBundle(KafkaProducer::class.java)
 
         return try {
-            Thread.currentThread().contextClassLoader = null
+            Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
             KafkaProducer(
                 kafkaProperties,
                 CordaAvroSerializerImpl(avroSchemaRegistry),
