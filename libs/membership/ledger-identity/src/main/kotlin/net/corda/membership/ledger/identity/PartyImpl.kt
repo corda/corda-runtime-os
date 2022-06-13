@@ -8,7 +8,7 @@ import net.corda.v5.ledger.obsolete.identity.Party
 import net.corda.v5.ledger.obsolete.identity.PartyAndReference
 import java.security.PublicKey
 import java.security.cert.X509Certificate
-
+// TODO: move to obsolete/delete?
 class PartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party {
     constructor(certificate: X509Certificate)
             : this(MemberX500Name.build(certificate.subjectX500Principal), certificate.publicKey)
