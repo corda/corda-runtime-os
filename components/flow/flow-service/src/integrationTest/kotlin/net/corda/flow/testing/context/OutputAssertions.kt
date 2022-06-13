@@ -35,6 +35,8 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun scheduleFlowMapperCleanupEvents(vararg key: String)
+
     fun flowDidNotResume()
 
     fun flowResumedWith(value: Any)

@@ -30,6 +30,7 @@ fun buildSessionState(
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)
+        .setHasScheduledCleanup(false)
         .build()
 }
 
