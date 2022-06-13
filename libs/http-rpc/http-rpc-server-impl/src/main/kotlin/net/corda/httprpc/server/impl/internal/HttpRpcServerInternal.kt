@@ -321,12 +321,16 @@ internal class HttpRpcServerInternal(
     }
 
     private fun buildJsonResult(result: Any?, ctx: Context, routeInfo: RouteInfo) {
-        if (result != null) {
-            ctx.json(result)
-        } else {
-            // if the method has no return type we don't return null
-            if(routeInfo.method.method.returnType != Void.TYPE) {
-                ctx.result("null")
+        when {
+            (result as? String) != null ->
+                ctx.contentType(contentTypeApplicationJson).result(result)
+            result != null ->
+                ctx.json(result)
+            else -> {
+                // if the method has no return type we don't return null
+                if (routeInfo.method.method.returnType != Void.TYPE) {
+                    ctx.result("null")
+                }
             }
         }
     }
