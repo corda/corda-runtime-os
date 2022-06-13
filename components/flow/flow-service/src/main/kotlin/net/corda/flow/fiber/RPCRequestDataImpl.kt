@@ -8,6 +8,11 @@ import net.corda.v5.application.serialization.JsonMarshallingService
  * checkpoint for an RPC started flow.
  */
 class RPCRequestDataImpl(private val fiberService: FlowFiberService) : RPCRequestData {
+
+    companion object {
+        private const val MAX_STRING_LENGTH = 200
+    }
+
     override fun getRequestBody(): String {
         return fiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowStartContext.startArgs
             ?: throw IllegalStateException("Failed to find the start args for RPC started flow")
@@ -15,5 +20,10 @@ class RPCRequestDataImpl(private val fiberService: FlowFiberService) : RPCReques
 
     override fun <T> getRequestBodyAs(jsonMarshallingService: JsonMarshallingService, clazz: Class<T>): T {
         return jsonMarshallingService.parseJson(getRequestBody(), clazz)
+    }
+
+    override fun toString(): String {
+        // Truncate the JSON object to ensure that we don't try and write too much data into logs.
+        return "RPCRequestData(input=${getRequestBody().take(MAX_STRING_LENGTH)})"
     }
 }
