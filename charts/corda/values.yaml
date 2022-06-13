@@ -57,6 +57,8 @@ kafka:
   replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
+  # -- Specifies whether we should delete the previous topics with the given prefix before trying to create new ones. Uses provided prefix, and NOPs if set to true, but no topics are found
+  cleanUp: false
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
