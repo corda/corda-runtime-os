@@ -32,7 +32,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a subFlow contains only initiated sessions when the subFlow fails session error events are sent`() {
+    fun `Given a subFlow contains only initiated sessions when the subFlow fails a wakeup event is scheduled session error events are sent and session cleanup is scheduled`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -50,12 +50,13 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_1, SESSION_ID_2)
                 wakeUpEvent()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
             }
         }
     }
 
     @Test
-    fun `Given a subFlow contains an initiated and closed session when the subFlow fails a single session error event is sent to the initiated session`() {
+    fun `Given a subFlow contains an initiated and closed session when the subFlow fails a wakeup event is scheduled a single session error event is sent to the initiated session and session cleanup is schedule`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -76,6 +77,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_2)
                 wakeUpEvent()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
             }
         }
     }
@@ -161,7 +163,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given an initiated top level flow with an initiated session when it finishes and calls SubFlowFailed a session error event is sent`() {
+    fun `Given an initiated top level flow with an initiated session when it finishes and calls SubFlowFailed a session error event is sent and session cleanup is scheduled`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
@@ -169,13 +171,19 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
-                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFailed(
+                        RuntimeException(),
+                        FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))
+                    )
+                )
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 wakeUpEvent()
                 sessionErrorEvents(INITIATED_SESSION_ID_1)
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -192,7 +200,12 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFailed(
+                        RuntimeException(),
+                        FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))
+                    )
+                )
         }
 
         then {
@@ -215,7 +228,12 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFailed(
+                        RuntimeException(),
+                        FlowStackItem(FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1))
+                    )
+                )
         }
 
         then {

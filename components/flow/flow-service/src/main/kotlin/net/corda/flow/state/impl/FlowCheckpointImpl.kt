@@ -66,6 +66,8 @@ class FlowCheckpointImpl(
         get() = checkNotNull(nullableSessionsMap)
         { "Attempt to access checkpoint before initialisation" }
 
+    private var deleted = false
+
     override val flowId: String
         get() = checkpoint.flowId
 
@@ -110,7 +112,7 @@ class FlowCheckpointImpl(
         }
 
     override val doesExist: Boolean
-        get() = nullableCheckpoint != null
+        get() = nullableCheckpoint != null && !deleted
 
     override val currentRetryCount: Int
         get() = checkpoint.retryState?.retryCount ?: -1
@@ -157,11 +159,12 @@ class FlowCheckpointImpl(
     }
 
     override fun putSessionState(sessionState: SessionState) {
+        checkFlowNotDeleted()
         sessionMap[sessionState.sessionId] = sessionState
     }
 
     override fun markDeleted() {
-        nullableCheckpoint = null
+        deleted = true
     }
 
     override fun rollback() {
@@ -169,6 +172,7 @@ class FlowCheckpointImpl(
     }
 
     override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
+        checkFlowNotDeleted()
         if (checkpoint.retryState == null) {
             checkpoint.retryState = RetryState().apply {
                 retryCount = 1
@@ -189,15 +193,17 @@ class FlowCheckpointImpl(
     }
 
     override fun markRetrySuccess() {
+        checkFlowNotDeleted()
         checkpoint.retryState = null
     }
 
     override fun setFlowSleepDuration(sleepTimeMs: Int) {
+        checkFlowNotDeleted()
         checkpoint.maxFlowSleepDuration = min(sleepTimeMs, checkpoint.maxFlowSleepDuration)
     }
 
     override fun toAvro(): Checkpoint? {
-        if (nullableCheckpoint == null) {
+        if (nullableCheckpoint == null || deleted) {
             return null
         }
 
@@ -250,6 +256,11 @@ class FlowCheckpointImpl(
             errorType = FLOW_TRANSIENT_EXCEPTION
             errorMessage = exception.message
         }
+    }
+
+    private fun checkFlowNotDeleted() {
+        // Does not prevent changes to the Avro objects, but will give us some protection from bugs moving forward.
+        check(!deleted) { "Flow has been marked for deletion but is currently being modified" }
     }
 
     private class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack {

@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.persistence.EntityRequest
@@ -42,11 +41,11 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
         )
     }
 
-    override fun createFlowMapperSessionEventRecord(sessionEvent: SessionEvent): Record<String, FlowMapperEvent> {
+    override fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
         return Record(
             topic = FLOW_MAPPER_EVENT_TOPIC,
-            key = sessionEvent.sessionId,
-            value = FlowMapperEvent(sessionEvent)
+            key = key,
+            value = FlowMapperEvent(payload)
         )
     }
 }

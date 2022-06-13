@@ -18,9 +18,9 @@ interface FlowRecordFactory {
     /**
      * Creates a generic [FlowEvent] record
      *
-     * @param flowId the id of the flow generating or receiving the event.
-     * @param payload the instance of the specific flow event to be carried by the record.
-     * valid types are [StartFlow], [Wakeup], [SessionEvent]
+     * @param flowId The id of the flow generating or receiving the event.
+     * @param payload The instance of the specific flow event to be carried by the record. Valid types are [StartFlow], [Wakeup],
+     * [SessionEvent].
      * @return a new instance of a [FlowEvent] record.
      */
     fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent>
@@ -36,16 +36,17 @@ interface FlowRecordFactory {
     /**
      * Creates a [FlowStatus] record
      *
-     * @param status the status to be carried by the record
-     * @return a new instance of a [FlowStatus] record.
+     * @param status The status to be carried by the record
+     * @return A new instance of a [FlowStatus] record.
      */
     fun createFlowStatusRecord(status: FlowStatus): Record<FlowKey, FlowStatus>
 
     /**
      * Creates a [FlowMapperEvent] record
      *
-     * @param sessionEvent the session event to be carried by the record
-     * @return a new instance of a [FlowMapperEvent] record.
+     * @param key The key of the created record.
+     * @param payload The instance of the specific flow mapper event to be carried by the record.
+     * @return A new instance of a [FlowMapperEvent] record.
      */
-    fun createFlowMapperSessionEventRecord(sessionEvent: SessionEvent): Record<String, FlowMapperEvent>
+    fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent>
 }
