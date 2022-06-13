@@ -7,6 +7,7 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
 import io.javalin.http.UnauthorizedResponse
+import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.MultipartUtil
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
@@ -71,12 +72,9 @@ internal class HttpRpcServerInternal(
         internal const val CONTENT_LENGTH_EXCEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
     }
 
-    init {
-        JavalinJackson.configure(serverJacksonObjectMapper)
-    }
-
     private val credentialResolver = DefaultCredentialResolver()
     private val server = Javalin.create {
+        it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
         it.registerPlugin(RedirectToLowercasePathPlugin())
         val rendererBundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java)
         // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`. We load
@@ -90,7 +88,7 @@ internal class HttpRpcServerInternal(
             if (swaggerUiBundle != null) {
                 val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
                 executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                    it.addStaticFiles("/META-INF/resources/")
+                    it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
                 }
             }
         } else {
