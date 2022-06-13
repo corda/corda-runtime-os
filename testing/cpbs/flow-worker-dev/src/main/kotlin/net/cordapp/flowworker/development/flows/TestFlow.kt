@@ -1,17 +1,17 @@
 package net.cordapp.flowworker.development.flows
 
-import net.cordapp.flowworker.development.messages.TestFlowInput
-import net.cordapp.flowworker.development.messages.TestFlowOutput
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.cordapp.flowworker.development.messages.TestFlowInput
+import net.cordapp.flowworker.development.messages.TestFlowOutput
 
 /**
  * The Test Flow exercises various basic features of a flow, this flow
@@ -38,7 +38,7 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
     override fun call(): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(jsonArg)
+            val inputs = jsonMarshallingService.parse<TestFlowInput>(jsonArg)
             if(inputs.throwException){
                 throw IllegalStateException("Caller requested exception to be raised")
             }
@@ -63,7 +63,7 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
                 foundMemberInfo
             )
 
-            return jsonMarshallingService.formatJson(response)
+            return jsonMarshallingService.format(response)
 
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow",e )

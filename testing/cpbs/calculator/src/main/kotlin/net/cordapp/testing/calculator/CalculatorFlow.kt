@@ -4,8 +4,8 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
@@ -27,7 +27,7 @@ class CalculatorFlow(private val jsonArg: String) : Flow<String> {
         log.info("Calculator starting...")
         var resultMessage = ""
         try {
-            val inputs = jsonMarshallingService.parseJson<InputMessage>(jsonArg)
+            val inputs = jsonMarshallingService.parse<InputMessage>(jsonArg)
             val result = (inputs.a ?: 0) + (inputs.b ?: 0)
             log.info("Calculated result ${inputs.a} + ${inputs.b} = ${result}, formatting for response...")
             val outputFormatter = OutputFormattingFlow(result)

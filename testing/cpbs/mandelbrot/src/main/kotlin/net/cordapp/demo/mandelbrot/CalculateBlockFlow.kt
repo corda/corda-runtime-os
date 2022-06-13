@@ -3,8 +3,8 @@ package net.cordapp.demo.mandelbrot
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
@@ -282,7 +282,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
         log.info("Starting mandelbrot calc...")
 
         try {
-            val requestMessage = jsonMarshallingService.parseJson<RequestMessage>(jsonArg)
+            val requestMessage = jsonMarshallingService.parse<RequestMessage>(jsonArg)
 
             val response = Array(requestMessage.pixelWidth * requestMessage.pixelHeight) { IntArray(3) { 0 } }
 
@@ -323,7 +323,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
                 sy++
             }
 
-            return jsonMarshallingService.formatJson(response)
+            return jsonMarshallingService.format(response)
 
         } catch (e: Exception) {
             log.error("Failed to calculate mandelbrot '$jsonArg' because '${e.message}'")
