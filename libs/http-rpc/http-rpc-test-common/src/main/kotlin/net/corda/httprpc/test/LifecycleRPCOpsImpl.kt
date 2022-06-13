@@ -14,7 +14,9 @@ class LifecycleRPCOpsImpl : LifecycleRPCOps, PluggableRPCOps<LifecycleRPCOps>, L
     override val protocolVersion: Int
         get() = 2
 
-    override fun hello(pathParam: String, param: Int?) = "Hello $param : $pathParam"
+    override fun hello(pathParam: String, param: Int?) : String {
+        return "Hello $param : $pathParam"
+    }
 
     override val isRunning: Boolean
         get() = _running

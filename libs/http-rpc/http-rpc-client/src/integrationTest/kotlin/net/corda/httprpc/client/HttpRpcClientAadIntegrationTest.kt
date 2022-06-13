@@ -60,7 +60,7 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
                 val connection = client.start()
 
                 with(connection.proxy) {
-                    assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                    assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 }
             }
         }
