@@ -33,7 +33,7 @@ class DbManagerImpl : DbManager {
     override fun processMessageReceived(query: Query, response: EntityResponse): Query {
         logger.debug { "Processing received query response of status ${response.responseType::class} with id ${response.requestId} "}
         if (response.requestId == query.requestId) {
-            logger.debug("Query response matched last sent request")
+            logger.debug { "Query response with id ${response.requestId} matched last sent request" }
             query.response = response
         }
         return query
@@ -41,7 +41,9 @@ class DbManagerImpl : DbManager {
 
     override fun getMessageToSend(query: Query, instant: Instant, config: SmartConfig): Pair<Query, EntityRequest?> {
         val request = query.request
-        return if (request != null && query.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER)) {
+        val waitingForResponse = request != null && query.response == null
+        val requestSendWindowValid = query.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER)
+        return if (waitingForResponse && requestSendWindowValid) {
             logger.debug { "Resending query message which was last sent at ${request.timestamp}"}
             query.sendTimestamp = instant.plusMillis(config.getLong(DB_MESSAGE_RESEND_WINDOW))
             request.timestamp = instant
