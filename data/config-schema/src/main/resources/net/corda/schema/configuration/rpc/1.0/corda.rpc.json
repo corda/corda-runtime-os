@@ -4,5 +4,46 @@
   "title": "Corda RPC Configuration Schema",
   "description": "Configuration schema for the RPC subsection.",
   "type": "object",
-  "properties": {}
+  "default": {},
+  "properties": {
+    "address": {
+      "description": "",
+      "type": "string",
+      "default": "0.0.0.0:8888"
+    },
+    "context": {
+      "description": "",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "description": {
+          "description": "",
+          "type": "string",
+          "default": "Exposing RPCOps interfaces as OpenAPI WebServices"
+        },
+        "title": {
+          "description": "",
+          "type": "string",
+          "default": "HTTP RPC"
+        }
+      }
+    },
+    "maxContentLength": {
+      "description": "",
+      "type": "integer",
+      "default": 2000000000
+    },
+    "endpoint": {
+      "description": "",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "timeoutMs": {
+          "description": "",
+          "type": "integer",
+          "default": 12000
+        }
+      }
+    }
+  }
 }

@@ -4,5 +4,31 @@
   "title": "Corda Reconciliation Configuration Schema",
   "description": "Configuration schema for the reconciliation subsection.",
   "type": "object",
-  "properties": {}
+  "default": {},
+  "properties": {
+    "permissionSummaryIntervalMs": {
+      "description": "",
+      "type": "integer",
+      "minimum": 5000,
+      "default": 30000
+    },
+    "cpkWriteIntervalMs": {
+      "description": "",
+      "type": "integer",
+      "minimum": 5000,
+      "default": 30000
+    },
+    "cpiInfoIntervalMs": {
+      "description": "",
+      "type": "integer",
+      "minimum": 5000,
+      "default": 30000
+    },
+    "configIntervalMs": {
+      "description": "",
+      "type": "integer",
+      "minimum": 5000,
+      "default": 30000
+    }
+  }
 }

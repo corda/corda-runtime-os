@@ -9,7 +9,7 @@
     },
     {
       "name": "version",
-      "type": "string"
+      "type": "int"
     },
     {
       "name": "schemaVersion",
