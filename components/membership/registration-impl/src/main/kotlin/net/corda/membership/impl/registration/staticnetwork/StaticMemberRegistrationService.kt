@@ -80,7 +80,7 @@ class StaticMemberRegistrationService @Activate constructor(
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
 
-        private const val DUMMY_CERTIFICATE = """
+        private val DUMMY_CERTIFICATE = """
             -----BEGIN CERTIFICATE-----
             MIIBKjCB0qADAgECAgEDMAoGCCqGSM49BAMCMBAxDjAMBgNVBAYTBVVLIENOMB4X
             DTIyMDYxMzEwMDIwM1oXDTIyMDcxMzEwMDIwM1owEDEOMAwGA1UEBhMFVUsgQ04w
@@ -90,13 +90,13 @@ class StaticMemberRegistrationService @Activate constructor(
             LjfTXpntpsuM3QUKoqViPyT8OraIXx+x79BqnQIgTejO2fShMBuVF1ininmwYcY7
             nOEL3FPCmO4TaDct7E0=
             -----END CERTIFICATE-----
-        """
-        private const val DUMMY_PUBLIC_SESSION_KEY = """
+        """.trimIndent()
+        private val DUMMY_PUBLIC_SESSION_KEY = """
             -----BEGIN PUBLIC KEY-----
             MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4SBc982Pox28yb29m9EpdcUOU9ei
             +N5ihAvKeWRt6Mew2k5TGSiJeDao30siZQ/1lF2nES98/QAE3CTceXh//w==
             -----END PUBLIC KEY-----
-        """
+        """.trimIndent()
     }
 
     // Handler for lifecycle events
