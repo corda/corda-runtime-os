@@ -1,0 +1,15 @@
+{{- if .Values.kafka.sasl.enabled  -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "corda.fullname" . }}-sasl
+  labels: 
+    {{- include "corda.labels" . | nindent 4 }}
+data:
+  jaas.conf: |
+    KafkaClient {
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username={{ .Values.kafka.sasl.username }}
+        password={{ .Values.kafka.sasl.password }};
+    };
+{{- end }}
