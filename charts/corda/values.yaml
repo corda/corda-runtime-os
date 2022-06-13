@@ -21,11 +21,11 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
-# resource limits and requests configuration for the Corda worker containers
+# default resource limits and requests configuration for the Corda containers
 resources:
-  # -- the CPU/memory resource limits for the Corda worker containers
+  # -- the default CPU/memory resource limits for the Corda containers
   limits: {}
-  # -- the CPU/memory resource request for the Corda worker containers
+  # -- the default CPU/memory resource request for the Corda containers
   requests: {}
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
@@ -101,6 +101,12 @@ bootstrap:
     repository: "corda-os-plugins"
     # -- cli default tag
     tag: ""
+  # resource limits and requests configuration for the bootstrapper
+  resources:
+    # -- the CPU/memory resource requests for the bootstrapper
+    requests: { }
+    # -- the CPU/memory resource limits for the bootstrapper
+    limits: { }
 
 # worker configuration
 workers:
