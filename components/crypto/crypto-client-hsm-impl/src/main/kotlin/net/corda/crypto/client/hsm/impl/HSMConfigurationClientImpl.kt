@@ -24,6 +24,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.util.UUID
 
 class HSMConfigurationClientImpl(
     private val sender: RPCSender<HSMConfigurationRequest, HSMConfigurationResponse>
@@ -100,7 +101,7 @@ class HSMConfigurationClientImpl(
 
     private fun createRequest(request: Any): HSMConfigurationRequest =
         HSMConfigurationRequest(
-            createWireRequestContext<HSMConfigurationClientImpl>(CryptoTenants.CRYPTO),
+            createWireRequestContext<HSMConfigurationClientImpl>(requestId = UUID.randomUUID().toString(), CryptoTenants.CRYPTO),
             request
         )
 

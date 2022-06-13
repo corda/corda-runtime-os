@@ -17,6 +17,7 @@ import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Duration
+import java.util.UUID
 
 class HSMRegistrationClientImpl(
     private val sender: RPCSender<HSMRegistrationRequest, HSMRegistrationResponse>
@@ -85,7 +86,7 @@ class HSMRegistrationClientImpl(
 
     private fun createRequest(tenantId: String, request: Any): HSMRegistrationRequest =
         HSMRegistrationRequest(
-            createWireRequestContext<HSMRegistrationClientImpl>(tenantId),
+            createWireRequestContext<HSMRegistrationClientImpl>(requestId = UUID.randomUUID().toString(), tenantId),
             request
         )
 

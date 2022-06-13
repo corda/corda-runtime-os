@@ -16,6 +16,7 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig.PERSISTENCE_MAX_RETRIES
 import net.corda.v5.base.util.contextLogger
@@ -48,11 +49,11 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
                 is EntityResponseSuccess -> {
                     val entityResponse = getPayloadFromResponse(persistenceState.request, responseType)
                     //reset persistenceState to null now that it is complete
-                    context.checkpoint.persistenceState = null
+                    checkpoint.persistenceState = null
                     entityResponse
                 }
                 is EntityResponseFailure -> {
-                    handleErrorResponse(response.responseType as EntityResponseFailure, config, persistenceState)
+                    handleErrorResponse(response.responseType as EntityResponseFailure, config, persistenceState, checkpoint)
                 }
                 else -> {
                     log.error("Received unexpected response from the db worker")
@@ -69,6 +70,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
         errorResponse: EntityResponseFailure,
         config: SmartConfig,
         persistenceState: PersistenceState,
+        checkpoint: FlowCheckpoint
     ): FlowContinuation {
         val errorType = errorResponse.errorType
         val errorException = errorResponse.exception
@@ -79,33 +81,35 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
         return when (errorType) {
             Error.FATAL -> {
                 log.error("$errorMessage. Exception: $errorException")
+                checkpoint.persistenceState = null
                 FlowContinuation.Error(CordaPersistenceException(errorException.errorMessage))
             }
-            Error.NOT_READY -> {
-                log.warn(retryErrorMessage)
-                persistenceState.retries = retries.inc()
-                FlowContinuation.Continue
-            }
-            Error.VIRTUAL_NODE, Error.DATABASE -> {
-                handleRetriableError(config, errorException, maxRetryErrorMessage, retryErrorMessage, persistenceState)
+            Error.VIRTUAL_NODE, Error.DATABASE, Error.NOT_READY -> {
+                handleRetriableError(config, errorException, maxRetryErrorMessage, retryErrorMessage, persistenceState, checkpoint)
             }
             else -> {
                 log.error("Unexpected error type returned from the DB worker: $errorType")
+                checkpoint.persistenceState = null
                 FlowContinuation.Error(CordaPersistenceException(errorException.errorMessage))
             }
+        }.also {
+            persistenceState.response = null
         }
     }
 
+    @Suppress("LongParameterList")
     private fun handleRetriableError(
         config: SmartConfig,
         errorException: ExceptionEnvelope,
         maxRetryErrorMessage: String,
         retryErrorMessage: String,
-        persistenceState: PersistenceState
+        persistenceState: PersistenceState,
+        checkpoint: FlowCheckpoint
     ) : FlowContinuation {
         val retries = persistenceState.retries
         return if (retries >= config.getLong(PERSISTENCE_MAX_RETRIES)) {
             log.error(maxRetryErrorMessage)
+            checkpoint.persistenceState = null
             FlowContinuation.Error(CordaPersistenceException(errorException.errorMessage))
         } else {
             log.warn(retryErrorMessage)

@@ -1,7 +1,6 @@
 package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
-import net.corda.data.identity.HoldingIdentity;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
@@ -17,6 +16,7 @@ import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.application.serialization.SerializationService;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.serialization.SerializedBytes;
+import net.corda.virtualnode.HoldingIdentity;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
