@@ -75,7 +75,7 @@ class EntityMessageProcessor(
                 // If we're catching at this point, it's an unrecoverable error.
                 failureResponse(it.key, e, Error.FATAL)
             }
-            val flowId = it.value!!.flowKey.id
+            val flowId = it.value!!.flowId
             responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, response)))
         }
 

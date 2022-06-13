@@ -36,7 +36,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
         val config = context.config
         val query = checkpoint.query
         if (query?.request?.request != null) {
-            log.debug { "Check for response for request type ${query.request.request::class} and id ${query.requestId}" }
+            log.debug { "Checking to see if response received for request type ${query.request.request::class} and id ${query.requestId}" }
         }
         val response = query?.response
         return if (response != null) {

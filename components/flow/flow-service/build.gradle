@@ -52,7 +52,6 @@ dependencies {
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
 
     testImplementation project(":libs:flows:session-manager-impl")
-    testImplementation project(":libs:flows:session-manager-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")

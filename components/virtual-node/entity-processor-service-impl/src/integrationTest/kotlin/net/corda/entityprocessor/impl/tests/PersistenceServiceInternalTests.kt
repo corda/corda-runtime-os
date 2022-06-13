@@ -280,6 +280,7 @@ class PersistenceServiceInternalTests {
         )
         val catRequest = EntityRequest(
             dogRequest.timestamp,
+            dogRequest.flowId,
             dogRequest.flowKey,
             PersistEntity(ctx.serialize(cat))
         )

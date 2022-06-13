@@ -70,7 +70,7 @@ class FlowCheckpointImpl(
         get() = checkpoint.flowId
 
     override val flowKey: FlowKey
-        get() = FlowKey(flowId, holdingIdentity)
+        get() = checkpoint.flowStartContext.statusKey
 
     override val flowStartContext: FlowStartContext
         get() = checkpoint.flowStartContext

@@ -28,7 +28,8 @@ class DeleteRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Delete): FlowEventContext<Any> {
         val deleteRequest = DeleteEntity(ByteBuffer.wrap(request.obj))
-        val entityRequest = EntityRequest(Instant.now(), context.checkpoint.flowKey, deleteRequest)
+        val checkpoint = context.checkpoint
+        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.flowKey, deleteRequest)
         context.checkpoint.query  = dbManager.processMessageToSend(request.requestId, entityRequest)
         return context
     }

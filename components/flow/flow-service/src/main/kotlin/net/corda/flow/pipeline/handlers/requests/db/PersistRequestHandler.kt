@@ -28,7 +28,8 @@ class PersistRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Persist): FlowEventContext<Any> {
         val persistRequest = PersistEntity(ByteBuffer.wrap(request.obj))
-        val entityRequest = EntityRequest(Instant.now(), context.checkpoint.flowKey, persistRequest)
+        val checkpoint = context.checkpoint
+        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.flowKey, persistRequest)
         return context.apply { checkpoint.query = dbManager.processMessageToSend(request.requestId, entityRequest) }
     }
 }

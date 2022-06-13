@@ -28,7 +28,8 @@ class MergeRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Merge): FlowEventContext<Any> {
         val persistRequest = MergeEntity(ByteBuffer.wrap(request.obj))
-        val entityRequest = EntityRequest(Instant.now(), context.checkpoint.flowKey, persistRequest)
+        val checkpoint = context.checkpoint
+        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.flowKey, persistRequest)
         return context.apply { checkpoint.query = dbManager.processMessageToSend(request.requestId, entityRequest) }
     }
 }

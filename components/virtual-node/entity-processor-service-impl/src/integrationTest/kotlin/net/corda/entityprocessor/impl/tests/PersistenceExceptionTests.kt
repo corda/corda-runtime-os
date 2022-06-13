@@ -164,7 +164,7 @@ class PersistenceExceptionTests {
     fun `exception raised when sent a missing command`() {
         val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
-        val badRequest = EntityRequest(Instant.now(), oldRequest.flowKey, unknownCommand)
+        val badRequest = EntityRequest(Instant.now(), oldRequest.flowId, oldRequest.flowKey, unknownCommand)
 
         val entitySandboxService =
             EntitySandboxServiceImpl(

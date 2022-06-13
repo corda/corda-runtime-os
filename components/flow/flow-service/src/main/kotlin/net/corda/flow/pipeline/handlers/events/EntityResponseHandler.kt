@@ -9,6 +9,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+/**
+ * Handles responses from the db worker for persistence queries.
+ */
 @Component(service = [FlowEventHandler::class])
 class EntityResponseHandler @Activate constructor(
     @Reference(service = DbManager::class)

@@ -26,7 +26,10 @@ interface FlowRecordFactory {
     fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent>
 
     /**
-     *
+     * Wrap an EntityRequest obj in a record to be sent to the db entity processor.
+     * @param requestId UUID of the request. Set as the record key.
+     * @param payload Request payload. Set as record value.
+     * @return Record to be sent to the db entity processor.
      */
     fun createEntityRequestRecord(requestId: String, payload: EntityRequest): Record<String, EntityRequest>
 

@@ -28,7 +28,8 @@ class FindRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Find): FlowEventContext<Any> {
         val findRequest = FindEntity(request.className, ByteBuffer.wrap(request.primaryKey))
-        val entityRequest = EntityRequest(Instant.now(), context.checkpoint.flowKey, findRequest)
+        val checkpoint = context.checkpoint
+        val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.flowKey, findRequest)
         return context.apply { checkpoint.query = dbManager.processMessageToSend(request.requestId, entityRequest) }
     }
 }
