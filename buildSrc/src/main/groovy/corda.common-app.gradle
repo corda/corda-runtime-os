@@ -60,6 +60,10 @@ configurations {
     compileClassPath.shouldResolveConsistentlyWith(runtimeClasspath)
     systemPackages.shouldResolveConsistentlyWith(runtimeClasspath)
     bootstrapClasspath.shouldResolveConsistentlyWith(runtimeClasspath)
+
+    app {
+        canBeResolved = false
+    }
 }
 
 dependencies {
@@ -451,6 +455,7 @@ def appJar = tasks.register('appJar', Jar) {
 
 artifacts {
     archives appJar
+    app appJar
 }
 
 pluginManager.withPlugin('maven-publish') {
@@ -463,6 +468,11 @@ pluginManager.withPlugin('maven-publish') {
                 afterEvaluate { proj ->
                     groupId proj.group
                     version proj.version
+
+                    try {
+                        artifact tasks.named('sourcesJar', Jar)
+                    } catch (UnknownTaskException ignored) {
+                    }
                 }
             }
         }

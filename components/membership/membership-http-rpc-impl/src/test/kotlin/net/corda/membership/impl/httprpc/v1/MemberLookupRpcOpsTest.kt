@@ -16,7 +16,7 @@ import net.corda.membership.impl.MemberInfoExtension
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -41,6 +41,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
+import net.corda.test.util.time.TestClock
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -49,6 +50,7 @@ class MemberLookupRpcOpsTest {
     companion object {
         private const val KNOWN_KEY = "12345"
         private const val HOLDING_IDENTITY_STRING = "test"
+        private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
     private var coordinatorIsRunning = false
@@ -110,7 +112,7 @@ class MemberLookupRpcOpsTest {
         memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 PARTY_NAME to name,
-                PARTY_OWNING_KEY to KNOWN_KEY,
+                PARTY_SESSION_KEY to KNOWN_KEY,
                 GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                 *convertPublicKeys().toTypedArray(),
                 *convertEndpoints().toTypedArray(),
@@ -122,17 +124,17 @@ class MemberLookupRpcOpsTest {
         mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.STATUS to MEMBER_STATUS_ACTIVE,
-                MemberInfoExtension.MODIFIED_TIME to Instant.now().toString()
+                MemberInfoExtension.MODIFIED_TIME to clock.instant().toString()
             )
         )
     )
 
     private fun convertPublicKeys(): List<Pair<String, String>> =
-        keys.mapIndexed { index, identityKey ->
+        keys.mapIndexed { index, ledgerKey ->
             String.format(
-                MemberInfoExtension.IDENTITY_KEYS_KEY,
+                MemberInfoExtension.LEDGER_KEYS_KEY,
                 index
-            ) to keyEncodingService.encodeAsString(identityKey)
+            ) to keyEncodingService.encodeAsString(ledgerKey)
         }
 
     private fun convertEndpoints(): List<Pair<String, String>> {

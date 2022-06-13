@@ -3,7 +3,9 @@ package net.corda.sandbox.internal.utilities
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
+import org.osgi.framework.FrameworkListener
 import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.wiring.FrameworkWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,4 +41,11 @@ internal class BundleUtils @Activate constructor(
 
     /** Returns the list of all installed bundles. */
     val allBundles get() = bundleContext.bundles.toList()
+
+    /**
+     * Force the update or removal of bundles.
+     */
+    fun refreshBundles(bundles: Collection<Bundle>, refreshListener: FrameworkListener) {
+        systemBundle.adapt(FrameworkWiring::class.java).refreshBundles(bundles, refreshListener)
+    }
 }

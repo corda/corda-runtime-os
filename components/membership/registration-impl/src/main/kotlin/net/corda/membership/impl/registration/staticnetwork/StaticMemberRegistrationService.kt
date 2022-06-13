@@ -21,7 +21,7 @@ import net.corda.membership.impl.MemberInfoExtension
 import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.SOFTWARE_VERSION
@@ -154,17 +154,18 @@ class StaticMemberRegistrationService @Activate constructor(
         } ?: throw IllegalArgumentException("Our membership " + memberName + " is not listed in the static member list.")
 
         validateStaticMemberDeclaration(staticMemberInfo)
-        val memberKey = getIdentityKey(staticMemberInfo, memberId)
+        // single key used as both session and ledger key
+        val memberKey = getOrGenerateKeyPair(memberId)
         val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
 
         @Suppress("SpreadOperator")
         val memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 PARTY_NAME to memberName,
-                PARTY_OWNING_KEY to encodedMemberKey,
+                PARTY_SESSION_KEY to encodedMemberKey,
                 GROUP_ID to groupId,
-                *generateIdentityKeys(encodedMemberKey).toTypedArray(),
-                *generateIdentityKeyHashes(memberKey).toTypedArray(),
+                *generateLedgerKeys(encodedMemberKey).toTypedArray(),
+                *generateLedgerKeyHashes(memberKey).toTypedArray(),
                 *convertEndpoints(staticMemberInfo).toTypedArray(),
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
                 PLATFORM_VERSION to staticMemberInfo.platformVersion,
@@ -247,21 +248,7 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    /**
-     * If the keyAlias is not defined in the static template, we are going to use the id of the HoldingIdentity as default.
-     */
-    private fun getIdentityKey(
-        member: StaticMember,
-        memberId: String
-    ): PublicKey {
-        var keyAlias = member.keyAlias
-        if (keyAlias.isNullOrBlank()) {
-            keyAlias = memberId
-        }
-        return getOrGenerateKeyPair(memberId, keyAlias)
-    }
-
-    private fun getOrGenerateKeyPair(tenantId: String, keyAlias: String): PublicKey {
+    private fun getOrGenerateKeyPair(tenantId: String): PublicKey {
         return with(cryptoOpsClient) {
             lookup(
                 tenantId = tenantId,
@@ -269,14 +256,14 @@ class StaticMemberRegistrationService @Activate constructor(
                 take = 10,
                 orderBy = CryptoKeyOrderBy.NONE,
                 filter = mapOf(
-                    ALIAS_FILTER to keyAlias,
+                    ALIAS_FILTER to tenantId,
                 )
             ).firstOrNull()?.let {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
             } ?: generateKeyPair(
                 tenantId = tenantId,
                 category = CryptoConsts.Categories.LEDGER,
-                alias = keyAlias,
+                alias = tenantId,
                 scheme = ECDSA_SECP256R1_CODE_NAME // @Charlie - you will have to have a way of specifying that now
             )
         }
@@ -311,33 +298,33 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     /**
-     * Only going to contain the owningKey for passing the checks on the MemberInfo creation side.
+     * Only going to contain the common session and ledger key for passing the checks on the MemberInfo creation side.
      * For the static network we don't need the rotated keys.
      */
-    private fun generateIdentityKeys(
-        owningKey: String
+    private fun generateLedgerKeys(
+        memberKey: String
     ): List<Pair<String, String>> {
-        val identityKeys = listOf(owningKey)
-        return identityKeys.mapIndexed { index, identityKey ->
+        val ledgerKeys = listOf(memberKey)
+        return ledgerKeys.mapIndexed { index, ledgerKey ->
             String.format(
-                MemberInfoExtension.IDENTITY_KEYS_KEY,
+                MemberInfoExtension.LEDGER_KEYS_KEY,
                 index
-            ) to identityKey
+            ) to ledgerKey
         }
     }
 
     /**
-     * Only going to contain hash of the owningKey for passing the checks on the MemberInfo creation side.
+     * Only going to contain hash of the common session and ledger key for passing the checks on the MemberInfo creation side.
      * For the static network we don't need hashes of the rotated keys.
      */
-    private fun generateIdentityKeyHashes(
-        owningKey: PublicKey
+    private fun generateLedgerKeyHashes(
+        memberKey: PublicKey
     ): List<Pair<String, String>> {
-        val identityKeys = listOf(owningKey)
-        return identityKeys.mapIndexed { index, identityKey ->
-            val hash = identityKey.calculateHash()
+        val ledgerKeys = listOf(memberKey)
+        return ledgerKeys.mapIndexed { index, ledgerKey ->
+            val hash = ledgerKey.calculateHash()
             String.format(
-                MemberInfoExtension.IDENTITY_KEY_HASHES_KEY,
+                MemberInfoExtension.LEDGER_KEY_HASHES_KEY,
                 index
             ) to hash.toString()
         }
