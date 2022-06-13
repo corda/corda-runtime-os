@@ -15,7 +15,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -24,7 +23,6 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
     companion object {
         const val JSON_PROCESSING_ERROR_TITLE = "Error during processing of request JSON."
         const val MISSING_JSON_FIELD_TITLE = "Missing or invalid field in JSON request body."
-        const val SERIALIZATION_ERROR = "Couldn't deserialize body to ObjectNode"
         const val MISSING_VALUE_ERROR = "value failed for JSON property str due to missing (therefore NULL) value"
         const val DATE_PARSE_ERROR = "Cannot deserialize value of type `java.util.Date` from String"
 
@@ -68,7 +66,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
         assertEquals("application/json", pingResponse.headers["Content-Type"])
-        assertTrue(pingResponse.body.contains(SERIALIZATION_ERROR))
+        assertThat(pingResponse.body).contains("Duplicate field 'data'")
     }
 
     @Test
@@ -82,7 +80,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         )
         assertEquals(HttpStatus.SC_BAD_REQUEST, plusDoubleResponse.responseStatus)
         assertNotNull(plusDoubleResponse.body)
-        assertTrue(plusDoubleResponse.body.contains(SERIALIZATION_ERROR))
+        assertThat(plusDoubleResponse.body).contains("Unexpected character ('0' (code 48))")
     }
 
     @Test
