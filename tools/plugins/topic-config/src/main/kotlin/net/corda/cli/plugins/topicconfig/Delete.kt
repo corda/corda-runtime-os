@@ -53,6 +53,7 @@ class Delete(
             "cat $outputPath"
         )
         val topicFilter = createFilter()
+        @Suppress("MaxLineLength")
         val topicDeletions = listOf(
             "while read -r topic; do kafka-topics.sh --command-config /tmp/working_dir/config.properties --bootstrap-server $address --delete --topic \"\$topic\"; done"
         )
