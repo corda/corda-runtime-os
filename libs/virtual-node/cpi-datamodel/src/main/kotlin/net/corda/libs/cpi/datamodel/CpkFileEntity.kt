@@ -71,7 +71,10 @@ fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
         .resultList
 }
 
-fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = find(
-    CpkFileEntity::class.java,
-    checksum
+fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = createQuery(
+    "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
+    CpkFileEntity::class.java
 )
+    .setParameter("checksum", checksum)
+    .resultList
+    .firstOrNull()

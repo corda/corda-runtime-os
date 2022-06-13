@@ -55,17 +55,18 @@ class CpiEntitiesIntegrationTest {
     fun `can persist cpi and cpks`() {
         val cpiId = UUID.randomUUID()
         val cpkId = UUID.randomUUID().toString()
+        val signerSummaryHash = randomChecksumString()
         val cpkData = CpkFileEntity(
-            CpkKey(cpkId, "cpkVer", "cpkSSH"),
+            CpkKey(cpkId, "1.2.3", signerSummaryHash),
             "cpk-checksum-$cpkId",
             ByteArray(2000),
         )
         val cpkMeta =
             CpkMetadataEntityFactory.create(
                 cpkData.fileChecksum,
-                "test-cpk",
+                cpkId,
                 "1.2.3",
-                randomChecksumString(),
+                signerSummaryHash,
             )
         val cpi = CpiMetadataEntityFactory.create(cpiId, listOf(Pair("test-cpk", cpkMeta)))
 
