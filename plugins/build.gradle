@@ -26,7 +26,15 @@ subprojects { subProject ->
 
         dependsOn configurations.runtimeClasspath
         from {
-            configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+            configurations.runtimeClasspath.collect { zipTree(it) }
+        } {
+            exclude "META-INF/*.SF"
+            exclude "META-INF/*.DSA"
+            exclude "META-INF/*.RSA"
+            exclude "module-info.class"
+            exclude "META-INF/versions/*/module-info.class"
+
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
     }
 
