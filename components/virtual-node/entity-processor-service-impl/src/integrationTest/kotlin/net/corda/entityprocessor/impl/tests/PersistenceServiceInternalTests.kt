@@ -1,5 +1,13 @@
 package net.corda.entityprocessor.impl.tests
 
+import java.nio.ByteBuffer
+import java.nio.file.Path
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
+import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowKey
 import net.corda.data.persistence.DeleteEntity
@@ -48,7 +56,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -62,14 +69,6 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
-import java.util.Calendar
-import java.util.UUID
 
 
 /**
@@ -226,7 +225,7 @@ class PersistenceServiceInternalTests {
 
         // create persist request for the sandbox that isn't dog-aware
         val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro())
-        val request = EntityRequest(Instant.now(), flowKey, PersistEntity(sandboxOne.serialize(dog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), flowKey, PersistEntity(sandboxOne.serialize(dog)))
         val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
@@ -647,7 +646,7 @@ class PersistenceServiceInternalTests {
     private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
         val flowKey = FlowKey(UUID.randomUUID().toString(), holdingId.toAvro())
         logger.info("Entity Request - flow: $flowKey, entity: ${entity.javaClass.simpleName} $entity")
-        return EntityRequest(Instant.now(), flowKey, entity)
+        return EntityRequest(Instant.now(), UUID.randomUUID().toString(), flowKey, entity)
     }
 
     /** Find all for class name and assert

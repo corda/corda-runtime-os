@@ -1,5 +1,9 @@
 package net.corda.entityprocessor.impl.tests
 
+import java.nio.ByteBuffer
+import java.nio.file.Path
+import java.time.Instant
+import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
@@ -42,10 +46,6 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.time.Instant
-import java.util.UUID
 
 
 /**
@@ -220,7 +220,7 @@ class PersistenceExceptionTests {
 
         // create persist request for the sandbox that isn't dog-aware
         val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro())
-        val request = EntityRequest(Instant.now(), flowKey, PersistEntity(ByteBuffer.wrap(serialisedDog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), flowKey, PersistEntity(ByteBuffer.wrap(serialisedDog)))
         return Pair(dbConnectionManager, request)
     }
 }
