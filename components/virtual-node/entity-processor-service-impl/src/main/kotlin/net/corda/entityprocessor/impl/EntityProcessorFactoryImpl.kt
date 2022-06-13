@@ -10,6 +10,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -29,27 +30,31 @@ class EntityProcessorFactoryImpl @Activate constructor(
 ) : EntityProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "virtual.node.entity.processor"
+    }
 
-        private val log = contextLogger()
+    class PayloadChecker(private val maxPayloadSize: Int) {
+        companion object {
+            private val log = contextLogger()
+        }
 
-        // Temporary until we look this up from Kafka/config.
-        private const val MAX_BYTES = 6 * 1024 * 1024
-        fun payloadSizeCheck(
+        fun checkSize(
             bytes: ByteBuffer
         ): ByteBuffer {
             val kb = bytes.array().size / 1024
-            val maxKb = MAX_BYTES / (1024)
-            if (bytes.array().size > MAX_BYTES) {
-                throw KafkaMessageSizeException("Payload $kb kb, exceeds max Kafka payload size $maxKb kb")
+            if (bytes.array().size > maxPayloadSize) {
+                throw KafkaMessageSizeException("Payload $kb kb, exceeds max Kafka payload size ${maxPayloadSize / (1024)} kb")
             }
-            log.debug("Payload $kb kb < max Kafka payload size $maxKb kb")
+            if(log.isDebugEnabled)
+                log.debug("Payload $kb kb < max Kafka payload size ${maxPayloadSize / (1024)} kb")
             return bytes
         }
     }
 
     override fun create(config: SmartConfig): FlowPersistenceProcessor {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
-        val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), EntityProcessorFactoryImpl::payloadSizeCheck)
+        // max allowed msg size minus headroom for wrapper message
+        val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - 1024
+        val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), PayloadChecker(maxPayLoadSize)::checkSize)
 
         val subscription = subscriptionFactory.createDurableSubscription(
             subscriptionConfig,

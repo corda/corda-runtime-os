@@ -1,6 +1,5 @@
 package net.corda.libs.cpiupload.impl
 
-import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
@@ -24,6 +23,7 @@ class CpiUploadManagerImplTest {
     private val ackProcessor = UploadStatusProcessor()
     private val publisher = mock(Publisher::class.java)
     private val subscription: Subscription<UploadStatusKey, UploadStatus> = mock()
+    private val maxAllowedMessageSize = 97280
 
     companion object {
         const val DUMMY_FILE_NAME = "dummyFileName"
@@ -33,7 +33,12 @@ class CpiUploadManagerImplTest {
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
         cpiUploadManagerImpl =
-            CpiUploadManagerImpl(Schemas.VirtualNode.CPI_UPLOAD_TOPIC, publisher, subscription, ackProcessor)
+            CpiUploadManagerImpl(
+                Schemas.VirtualNode.CPI_UPLOAD_TOPIC,
+                publisher,
+                subscription,
+                ackProcessor,
+                maxAllowedMessageSize)
     }
 
     @Test
@@ -52,7 +57,7 @@ class CpiUploadManagerImplTest {
         }
         val expectedNoZeroChunkCount = 3
         val expectedChunkCount = expectedNoZeroChunkCount + 1
-        val cpiBytes = ByteArray(ChunkWriterFactory.SUGGESTED_CHUNK_SIZE * expectedNoZeroChunkCount)
+        val cpiBytes = ByteArray(maxAllowedMessageSize * expectedNoZeroChunkCount)
         val request = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
 
         assertThat(chunkCount).isNotEqualTo(expectedChunkCount)
@@ -73,7 +78,7 @@ class CpiUploadManagerImplTest {
         }
 
         val expectedNoZeroChunkCount = 3
-        val cpiBytes = ByteArray(ChunkWriterFactory.SUGGESTED_CHUNK_SIZE * expectedNoZeroChunkCount)
+        val cpiBytes = ByteArray(maxAllowedMessageSize * expectedNoZeroChunkCount)
         val request = cpiUploadManagerImpl.uploadCpi(DUMMY_FILE_NAME, ByteArrayInputStream(cpiBytes))
 
         // send a single message with 'last' = true.  sequence number doesn't matter here since it's a test.

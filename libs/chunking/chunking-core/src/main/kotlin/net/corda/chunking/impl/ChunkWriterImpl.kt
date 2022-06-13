@@ -17,10 +17,12 @@ import java.util.UUID
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
-internal class ChunkWriterImpl(val chunkSize: Int, private val properties: Map<String, String?>? = null) : ChunkWriter {
+internal class ChunkWriterImpl(val maxAllowedMessageSize: Int, private val properties: Map<String, String?>? = null) : ChunkWriter {
     companion object {
         const val KB = 1024
         const val MB = 1024 * KB
+
+        const val BUFFER_SIZE = 1024 * 10
 
         private fun Map<String, String?>.toAvro(): KeyValuePairList {
             return KeyValuePairList.newBuilder().setItems(
@@ -30,6 +32,9 @@ internal class ChunkWriterImpl(val chunkSize: Int, private val properties: Map<S
     }
 
     var chunkWriteCallback: ChunkWriteCallback? = null
+
+    // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
+    val chunkSize = maxAllowedMessageSize - BUFFER_SIZE
 
     override fun write(fileName: String, inputStream: InputStream) : ChunkWriter.Request {
         if (chunkWriteCallback == null) {
