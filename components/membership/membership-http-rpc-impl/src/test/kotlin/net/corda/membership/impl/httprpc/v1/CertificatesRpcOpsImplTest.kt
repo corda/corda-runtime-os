@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -125,7 +126,7 @@ class CertificatesRpcOpsImplTest {
                 cryptoOpsClient.sign(
                     eq(holdingIdentityId),
                     eq(publicKey),
-                    eq(SignatureSpec("SHA512withECDSA")),
+                    argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                     any(),
                     eq(emptyMap())
                 )
@@ -169,7 +170,7 @@ class CertificatesRpcOpsImplTest {
             verify(cryptoOpsClient).sign(
                 eq(holdingIdentityId),
                 eq(publicKey),
-                eq(SignatureSpec("SHA512withECDSA")),
+                argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
                 any(),
                 eq(emptyMap())
             )
