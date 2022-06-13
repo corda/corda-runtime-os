@@ -434,25 +434,6 @@ internal class DatabaseChunkPersistenceTest {
     }
 
     @Test
-    fun `assert new secure hash created every time`() {
-        val s1 = newRandomSecureHash()
-        val s2 = newRandomSecureHash()
-        val s3 = newRandomSecureHash()
-        val s4 = newRandomSecureHash()
-        val s5 = newRandomSecureHash()
-
-        val inASet = setOf(
-            s1.toString(),
-            s2.toString(),
-            s3.toString(),
-            s4.toString(),
-            s5.toString(),
-        )
-
-        assertThat(inASet).hasSize(5)
-    }
-
-    @Test
     fun `database chunk persistence can write multiple cpks into database`() {
         val cpks = listOf(
             mockCpk("${UUID.randomUUID()}.cpk", newRandomSecureHash()),
