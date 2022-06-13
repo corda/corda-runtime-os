@@ -59,6 +59,7 @@ class SessionInitProcessorSend(
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
             .setSendEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
             .setStatus(SessionStateType.CREATED)
+            .setHasScheduledCleanup(false)
             .build()
 
         logger.debug { "Creating new session with id $newSessionId on key $key for SessionInit sent. sessionState $newSessionState" }

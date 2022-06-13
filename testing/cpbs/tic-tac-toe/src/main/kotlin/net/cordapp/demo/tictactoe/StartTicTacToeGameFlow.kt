@@ -1,16 +1,15 @@
 package net.cordapp.demo.tictactoe
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-@StartableByRPC
-class StartTicTacToeGameFlow(private val jsonArg: String) : Flow<String> {
+class StartTicTacToeGameFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -23,11 +22,11 @@ class StartTicTacToeGameFlow(private val jsonArg: String) : Flow<String> {
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting a game of Tic-tac-toe...")
 
         try {
-            val startGame = jsonMarshallingService.parseJson<StartGameMessage>(jsonArg)
+            val startGame = requestBody.getRequestBodyAs<StartGameMessage>(jsonMarshallingService)
 
             val startingColumn = checkNotNull(startGame.startingColumnPlayed) { "No starting column specified" }
             val startingRow = checkNotNull(startGame.startingRowPlayed) { "No starting row specified" }
@@ -48,7 +47,7 @@ class StartTicTacToeGameFlow(private val jsonArg: String) : Flow<String> {
             log.info("Game Started for player 1 = '${player1}' player 2 ='${player2}'.")
             return jsonMarshallingService.formatJson(gameState)
         } catch (e: Throwable) {
-            log.error("Failed to start game for '$jsonArg' because '${e.message}'")
+            log.error("Failed to start game for '$requestBody' because '${e.message}'")
             throw e
         }
     }

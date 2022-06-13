@@ -10,8 +10,15 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SM2_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA384_SIGNATURE_SPEC
+import net.corda.v5.crypto.ECDSA_SHA512_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_SHA384_SIGNATURE_SPEC
+import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
+import net.corda.v5.crypto.SM2_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.SM2_SM3_SIGNATURE_SPEC
 import net.corda.v5.crypto.SPHINCS256_SHA512_SIGNATURE_SPEC
 import net.corda.v5.crypto.SignatureSpec
@@ -42,9 +49,9 @@ abstract class KeySchemeInfo private constructor(
 class RSAKeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(provider, RSA_TEMPLATE, mapOf(
-        DigestAlgorithmName("SHA-256") to SignatureSpec("SHA256withRSA"),
-        DigestAlgorithmName("SHA-384") to SignatureSpec("SHA384withRSA"),
-        DigestAlgorithmName("SHA-512") to SignatureSpec("SHA512withRSA")
+        DigestAlgorithmName.SHA2_256 to RSA_SHA256_SIGNATURE_SPEC,
+        DigestAlgorithmName.SHA2_384 to RSA_SHA384_SIGNATURE_SPEC,
+        DigestAlgorithmName.SHA2_512 to RSA_SHA512_SIGNATURE_SPEC
     )
 )
 
@@ -52,9 +59,9 @@ abstract class ECDSAKeySchemeInfo(
     provider: Provider,
     template: KeySchemeTemplate
 ) : KeySchemeInfo(provider, template, mapOf(
-        DigestAlgorithmName("SHA-256") to SignatureSpec("SHA256withECDSA"),
-        DigestAlgorithmName("SHA-384") to SignatureSpec("SHA384withECDSA"),
-        DigestAlgorithmName("SHA-512") to SignatureSpec("SHA512withECDSA")
+        DigestAlgorithmName.SHA2_256 to ECDSA_SHA256_SIGNATURE_SPEC,
+        DigestAlgorithmName.SHA2_384 to ECDSA_SHA384_SIGNATURE_SPEC,
+        DigestAlgorithmName.SHA2_512 to ECDSA_SHA512_SIGNATURE_SPEC
     )
 )
 
@@ -70,7 +77,7 @@ class EDDSAKeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
     provider, EDDSA_ED25519_TEMPLATE, mapOf(
-        DigestAlgorithmName("NONE") to EDDSA_ED25519_NONE_SIGNATURE_SPEC
+        DigestAlgorithmName("NONE") to EDDSA_ED25519_SIGNATURE_SPEC
     )
 )
 
@@ -79,7 +86,7 @@ class SM2KeySchemeInfo(
 ) : KeySchemeInfo(
     provider, SM2_TEMPLATE, mapOf(
         DigestAlgorithmName("SM3") to SM2_SM3_SIGNATURE_SPEC,
-        DigestAlgorithmName("SHA-256") to SignatureSpec("SHA256withSM2")
+        DigestAlgorithmName.SHA2_256 to SM2_SHA256_SIGNATURE_SPEC
     )
 )
 
@@ -95,6 +102,6 @@ class SPHINCS256KeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
     provider, SPHINCS256_TEMPLATE, mapOf(
-        DigestAlgorithmName("SHA-512") to SPHINCS256_SHA512_SIGNATURE_SPEC
+        DigestAlgorithmName.SHA2_512 to SPHINCS256_SHA512_SIGNATURE_SPEC
     )
 )

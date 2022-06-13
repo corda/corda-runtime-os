@@ -79,7 +79,7 @@ class FlowRPCOpsImpl @Activate constructor(
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
         val records = listOf(
-            Record(FLOW_MAPPER_EVENT_TOPIC, status.key, startEvent),
+            Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent),
             Record(FLOW_STATUS_TOPIC, status.key, status),
         )
 
