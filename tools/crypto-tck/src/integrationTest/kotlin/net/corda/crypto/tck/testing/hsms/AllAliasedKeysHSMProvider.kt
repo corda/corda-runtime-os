@@ -14,18 +14,15 @@ class AllAliasedKeysHSMProvider @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = DigestService::class)
     private val digestService: DigestService
-) : CryptoServiceProvider<AllAliasedKeysHSMProvider.Configuration> {
-
-    class Configuration(val userName: String)
-
+) : CryptoServiceProvider<AllAliasedKeysHSMConfiguration> {
     companion object {
         const val NAME = "AllAliasedKeysHSM"
     }
 
-    override val configType: Class<Configuration> = Configuration::class.java
+    override val configType: Class<AllAliasedKeysHSMConfiguration> = AllAliasedKeysHSMConfiguration::class.java
 
     override val name: String = NAME
 
-    override fun getInstance(config: Configuration): CryptoService =
-        AllAliasedKeysHSM(config.userName, schemeMetadata, digestService)
+    override fun getInstance(config: AllAliasedKeysHSMConfiguration): CryptoService =
+        AllAliasedKeysHSM(config, schemeMetadata, digestService)
 }

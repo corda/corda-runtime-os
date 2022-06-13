@@ -28,14 +28,14 @@ data class HsmInfo(
     val description: String?,
 
     /**
-     * Number of retries when calling the HSM.
+     * Max number of attempts when calling the HSM.
      */
-    val retries: Int,
+    val maxAttempts: Int,
 
     /**
-     * For how long to wait for a response.
+     * For how long to wait for a response on each attempt.
      */
-    val timeout: Duration,
+    val attemptTimeout: Duration,
 
     /**
      * How to generate wrapping key on the HSM registration

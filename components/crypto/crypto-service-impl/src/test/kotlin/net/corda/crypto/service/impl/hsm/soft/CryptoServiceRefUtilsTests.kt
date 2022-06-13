@@ -1,4 +1,4 @@
-package net.corda.crypto.service.impl.signing
+package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
@@ -18,7 +18,9 @@ import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.RSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -50,9 +52,9 @@ class CryptoServiceRefUtilsTests {
 
     @Test
     fun `Should return supported schemes`() {
-        val expectedResult = listOf(
-            ECDSA_SECP256R1_TEMPLATE.makeScheme("BC"),
-            RSA_TEMPLATE.makeScheme("BC"),
+        val expectedResult = mapOf(
+            ECDSA_SECP256R1_TEMPLATE.makeScheme("BC") to listOf(ECDSA_SHA256_SIGNATURE_SPEC),
+            RSA_TEMPLATE.makeScheme("BC") to listOf(RSA_SHA256_SIGNATURE_SPEC),
         )
         val ref = CryptoServiceRef(
             tenantId = UUID.randomUUID().toString(),
@@ -61,13 +63,13 @@ class CryptoServiceRefUtilsTests {
             aliasSecret = UUID.randomUUID().toString().toByteArray(),
             associationId = UUID.randomUUID().toString(),
             instance = mock {
-                on { supportedSchemes() } doReturn expectedResult
+                on { supportedSchemes } doReturn expectedResult
             }
         )
         val result = ref.getSupportedSchemes()
         assertEquals(2, result.size)
         assertThat(result).containsAll(listOf(ECDSA_SECP256R1_CODE_NAME, RSA_CODE_NAME))
-        Mockito.verify(ref.instance, times(1)).supportedSchemes()
+        Mockito.verify(ref.instance, times(1)).supportedSchemes
     }
 
     @Test
