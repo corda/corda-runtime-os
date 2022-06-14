@@ -1,6 +1,6 @@
 package com.example.sandbox.scr
 
-import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.Subflow
 import net.corda.v5.base.util.loggerFor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -12,7 +12,7 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime
 class UnauthorisedComponent @Activate constructor(
     @Reference
     private val scr: ServiceComponentRuntime
-) : Flow<List<String>> {
+) : Subflow<List<String>> {
     init {
         loggerFor<UnauthorisedComponent>().info("Activated!")
     }

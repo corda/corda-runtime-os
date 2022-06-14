@@ -1,11 +1,11 @@
 package net.cordapp.testing.calculator
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.Subflow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 
-class OutputFormattingFlow(private val result: Int) : Flow<String> {
+class OutputFormattingFlow(private val result: Int) : Subflow<String> {
 
     private companion object {
         val log = contextLogger()

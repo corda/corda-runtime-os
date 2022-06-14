@@ -3,6 +3,7 @@ package net.corda.flow.state
 import net.corda.data.flow.FlowStackItem
 import net.corda.data.flow.state.Checkpoint
 import net.corda.serialization.checkpoint.NonSerializable
+import net.corda.v5.application.flows.Flow
 
 /**
  * The FlowStack provides an API for managing the flow/sub-flow call stack, stored in the [Checkpoint] state.
@@ -17,7 +18,7 @@ interface FlowStack : NonSerializable {
      * @param flow the flow to be pushed onto the stack
      * @return the [FlowStackItem] created
      */
-    fun push(flow: Any): FlowStackItem
+    fun push(flow: Flow): FlowStackItem
 
     /**
      * Finds the nearest matching [FlowStackItem] to the top of the stack that matches the predicate

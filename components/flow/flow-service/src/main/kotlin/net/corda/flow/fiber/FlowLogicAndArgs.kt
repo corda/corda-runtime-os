@@ -1,5 +1,6 @@
 package net.corda.flow.fiber
 
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.annotations.Suspendable
 
 /**
@@ -12,7 +13,7 @@ interface FlowLogicAndArgs {
     /**
      * Retrieve the flow logic. Used by the platform to perform dependency injection and do housekeeping.
      */
-    val logic: Any
+    val logic: Flow
 
     /**
      * Start the flow, providing any required arguments.

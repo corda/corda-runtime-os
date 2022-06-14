@@ -4,8 +4,8 @@ import net.corda.data.flow.FlowStackItem
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.Subflow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -44,7 +44,7 @@ class FlowEngineImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <R> subFlow(subLogic: Flow<R>): R {
+    override fun <R> subFlow(subLogic: Subflow<R>): R {
 
         val subFlowClassName = subLogic.javaClass.name
 

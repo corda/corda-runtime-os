@@ -8,6 +8,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.Subflow
 import net.corda.v5.application.messaging.FlowSession
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -69,7 +70,7 @@ class FlowProtocolStoreFactoryImplTest {
     }
 
     @InitiatingFlow(protocol = PROTOCOL)
-    private class MyInitiatingFlow : Flow<Unit> {
+    private class MyInitiatingFlow : Subflow<Unit> {
         override fun call() {
         }
     }
