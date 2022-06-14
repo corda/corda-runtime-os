@@ -13,26 +13,26 @@
 workers:
   crypto:
     replicaCount: 1
-    #debug:
-    #  enabled: true
-    #  suspend: true
+#    debug:
+#      enabled: true
+#      suspend: true
   db:
     replicaCount: 1
-    debug:
-      enabled: true
-      suspend: true
+#    debug:
+#      enabled: true
+#      suspend: true
   flow:
     replicaCount: 1
-    #debug:
-    #  enabled: true
-    #  suspend: true
+#    debug:
+#      enabled: true
+#      suspend: true
   membership:
     replicaCount: 1
-    #debug:
-    #  enabled: true
-    #  suspend: true
+#    debug:
+#      enabled: true
+#      suspend: true
   rpc:
     replicaCount: 1
-    #debug:
-    #  enabled: true
-    #  suspend: true
+#    debug:
+#      enabled: true
+#      suspend: true
