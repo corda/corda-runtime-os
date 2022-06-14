@@ -96,13 +96,8 @@ spec:
               name: working-volume
         - name: run-delete-script
           image: bitnami/kafka:3.1.0-debian-10-r89
-          resources:
-            requests:
-              cpu: 2000m
-              memory: 750Mi
-            limits:
-              cpu: 2000m
-              memory: 2000Mi
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
