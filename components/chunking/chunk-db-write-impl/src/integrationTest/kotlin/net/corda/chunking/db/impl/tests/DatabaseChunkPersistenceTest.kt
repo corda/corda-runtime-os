@@ -1,11 +1,13 @@
 package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
+import net.corda.chunking.ChunkWriter
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.RequestId
 import net.corda.chunking.datamodel.ChunkEntity
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.AllChunksReceived
+import net.corda.chunking.db.impl.ChunkDbWriterImpl
 import net.corda.chunking.db.impl.persistence.DatabaseChunkPersistence
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.Chunk
@@ -166,7 +168,7 @@ internal class DatabaseChunkPersistenceTest {
             .withFailMessage("The test string should not be a multiple of $divisor so that we have a final odd sized chunk ")
             .isNotEqualTo(mockCpkContent.length)
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize).apply {
+        val writer = ChunkWriterFactory.create(chunkSize + 10240).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...

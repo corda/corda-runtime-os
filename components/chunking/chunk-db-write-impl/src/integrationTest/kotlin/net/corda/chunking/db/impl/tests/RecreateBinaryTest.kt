@@ -81,7 +81,7 @@ class RecreateBinaryTest {
         val chunkSize = loremIpsum.length / divisor
 
         val chunks = mutableListOf<Chunk>()
-        val writer = ChunkWriterFactory.create(chunkSize).apply {
+        val writer = ChunkWriterFactory.create(chunkSize + 10240).apply {
             onChunk { chunks.add(it) }
         }
         // end of setup...
