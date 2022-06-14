@@ -5,6 +5,12 @@ plugins {
 
 description "P2P Testing tools - P2P Setup tool"
 
+configurations {
+    app {
+        canBeResolved = false
+    }
+}
+
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
@@ -39,8 +45,15 @@ dependencies {
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 }
-task appJar(type: Jar) {
-    destinationDirectory = file("$buildDir/bin")
+
+def jar = tasks.named('jar', Jar) {
+    archiveClassifier = 'ignore'
+}
+
+def appJar = tasks.register('appJar', Jar) {
+    dependsOn jar
+
+    destinationDirectory = layout.buildDirectory.dir('bin')
     archiveBaseName = "corda-${project.name}"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
@@ -51,5 +64,10 @@ task appJar(type: Jar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    with jar
+    with jar.get()
+}
+
+artifacts {
+    archives appJar
+    app appJar
 }

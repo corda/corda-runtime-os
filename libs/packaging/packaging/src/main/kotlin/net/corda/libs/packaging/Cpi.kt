@@ -3,7 +3,7 @@ package net.corda.libs.packaging
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 
-interface Cpi : AutoCloseable {
+interface Cpi {
 
     companion object {
         /**

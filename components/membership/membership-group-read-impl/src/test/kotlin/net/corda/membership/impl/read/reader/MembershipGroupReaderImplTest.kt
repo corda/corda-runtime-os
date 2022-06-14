@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEY_HASHES
+import net.corda.membership.impl.MemberInfoExtension.Companion.LEDGER_KEY_HASHES
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
@@ -35,9 +35,9 @@ class MembershipGroupReaderImplTest {
     private val knownKeyHash = PublicKeyHash.parse(knownKeyAsByteArray.sha256Bytes())
     private val suspendedMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
-        on { identityKeys } doReturn listOf(knownKey)
+        on { ledgerKeys } doReturn listOf(knownKey)
         val mockedMemberProvidedContext = mock<MemberContext> {
-            on { parseSet(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
+            on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
         }
         on { memberProvidedContext } doReturn mockedMemberProvidedContext
         on { isActive } doReturn false
@@ -45,9 +45,9 @@ class MembershipGroupReaderImplTest {
 
     private val activeMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceName
-        on { identityKeys } doReturn listOf(knownKey)
+        on { ledgerKeys } doReturn listOf(knownKey)
         val mockedMemberProvidedContext = mock<MemberContext> {
-            on { parseSet(eq(IDENTITY_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
+            on { parseSet(eq(LEDGER_KEY_HASHES), eq(PublicKeyHash::class.java)) } doReturn setOf(knownKeyHash)
         }
         on { memberProvidedContext } doReturn mockedMemberProvidedContext
         on { isActive } doReturn true

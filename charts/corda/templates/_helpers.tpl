@@ -107,6 +107,42 @@ CLI image
 {{- end }}
 
 {{/*
+DB client image
+*/}}
+{{- define "corda.dbClientImage" -}}
+"{{- if .Values.db.clientImage.registry }}{{.Values.db.clientImage.registry}}/{{- end }}{{ .Values.db.clientImage.repository }}:{{ .Values.db.clientImage.tag }}"
+{{- end }}
+
+{{/*
+Kafka client image
+*/}}
+{{- define "corda.kafkaClientImage" -}}
+"{{- if .Values.kafka.clientImage.registry }}{{.Values.kafka.clientImage.registry}}/{{- end }}{{ .Values.kafka.clientImage.repository }}:{{ .Values.kafka.clientImage.tag }}"
+{{- end }}
+
+{{/*
+Resources for the bootstrapper
+*/}}
+{{- define "corda.bootstrapResources" }}
+
+resources:
+  requests:
+  {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
+    cpu: {{ default .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
+  {{- end }}
+  {{- if or .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
+    memory: {{ default .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
+  {{- end}}
+  limits:
+  {{- if or .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
+    cpu: {{ default .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
+  {{- end }}
+  {{- if or .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
+    memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Worker JAVA_TOOL_OPTIONS
 */}}
 {{- define "corda.workerJavaToolOptions" -}}
@@ -150,7 +186,6 @@ resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
     cpu: {{ default .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
-
   {{- end }}
   {{- if or .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
     memory: {{ default .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
@@ -158,7 +193,6 @@ resources:
   limits:
   {{- if or .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
-
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  

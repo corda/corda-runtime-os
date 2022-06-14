@@ -13,14 +13,9 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: run-topic-script
-          image: bitnami/kafka:3.1.0-debian-10-r89
-          resources:
-            requests:
-              cpu: 2000m
-              memory: 750Mi
-            limits:
-              cpu: 2000m
-              memory: 2000Mi
+          image: {{ include "corda.kafkaClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
@@ -39,7 +34,9 @@ spec:
             {{- end }}
       initContainers:
         - name: create-trust-store
-          image: bitnami/kafka:3.1.0-debian-10-r89
+          image: {{ include "corda.kafkaClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
@@ -66,6 +63,8 @@ spec:
             {{- end }}
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [
             'topic',
             'create',

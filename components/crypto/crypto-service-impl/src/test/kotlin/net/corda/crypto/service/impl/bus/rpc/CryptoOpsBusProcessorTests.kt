@@ -33,12 +33,13 @@ import net.corda.data.crypto.wire.ops.rpc.queries.SupportedSchemesRpcQuery
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.CustomSignatureSpec
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.assertj.core.api.Assertions.assertThat
@@ -47,6 +48,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -57,22 +60,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CryptoOpsBusProcessorTests {
-    companion object {
-        private fun getECDSAFullCustomSignatureSpec(): SignatureSpec =
-            SignatureSpec(
-                signatureName = "NONEwithECDSA",
-                customDigestName = DigestAlgorithmName.SHA2_512
-            )
-
-        private fun getCustomSignatureSpec(): SignatureSpec =
-            SignatureSpec(
-                signatureName = "SHA512withECDSA"
-            )
-
-        private fun getRSAasCustomSignatureSpecWithParams(): SignatureSpec =
-            RSASSA_PSS_SHA256_SIGNATURE_SPEC
-    }
-
     private lateinit var factory: TestServicesFactory
     private lateinit var tenantId: String
     private lateinit var schemeMetadata: CipherSchemeMetadata
@@ -134,9 +121,11 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context,
-                ByIdsRpcQuery(listOf(
-                    publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
-                ))
+                ByIdsRpcQuery(
+                    listOf(
+                        publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+                    )
+                )
             ),
             future
         )
@@ -216,9 +205,11 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                ByIdsRpcQuery(listOf(
-                    publicKeyIdFromBytes(info.publicKey)
-                ))
+                ByIdsRpcQuery(
+                    listOf(
+                        publicKeyIdFromBytes(info.publicKey)
+                    )
+                )
             ),
             future2
         )
@@ -254,9 +245,18 @@ class CryptoOpsBusProcessorTests {
     }
 
     @Test
-    fun `Should generate key pair and be able to find and lookup and then sign with custom signature params`() {
+    fun `Should generate key pair and be able to find and lookup and then sign with parameterised signature params`() {
         setup()
-        val signatureSpec4 = getRSAasCustomSignatureSpecWithParams()
+        val signatureSpec4 = ParameterizedSignatureSpec(
+            "RSASSA-PSS",
+            PSSParameterSpec(
+                "SHA-256",
+                "MGF1",
+                MGF1ParameterSpec.SHA256,
+                32,
+                1
+            )
+        )
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         // generate
@@ -299,9 +299,11 @@ class CryptoOpsBusProcessorTests {
         processor.onNext(
             RpcOpsRequest(
                 context2,
-                ByIdsRpcQuery(listOf(
-                    publicKeyIdFromBytes(info.publicKey)
-                ))
+                ByIdsRpcQuery(
+                    listOf(
+                        publicKeyIdFromBytes(info.publicKey)
+                    )
+                )
             ),
             future2
         )
@@ -334,8 +336,8 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, schemeMetadata.decodePublicKey(key3.keys[0].publicKey.array()))
         //
         val context4 = createRequestContext()
-        val future4= CompletableFuture<RpcOpsResponse>()
-        val serializedParams4 = schemeMetadata.serialize(signatureSpec4.params!!)
+        val future4 = CompletableFuture<RpcOpsResponse>()
+        val serializedParams4 = schemeMetadata.serialize(signatureSpec4.params)
         processor.onNext(
             RpcOpsRequest(
                 context4,
@@ -343,7 +345,7 @@ class CryptoOpsBusProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         signatureSpec4.signatureName,
-                        signatureSpec4.customDigestName?.name,
+                        null,
                         CryptoSignatureParameterSpec(
                             serializedParams4.clazz,
                             ByteBuffer.wrap(serializedParams4.bytes)
@@ -660,7 +662,10 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature2.publicKey.array()))
         verifier.verify(publicKey, signatureSpec2, signature2.bytes.array(), data)
         // sign using public key and full custom scheme
-        val signatureSpec3 = getECDSAFullCustomSignatureSpec()
+        val signatureSpec3 = CustomSignatureSpec(
+            signatureName = "NONEwithECDSA",
+            customDigestName = DigestAlgorithmName.SHA2_512
+        )
         val context3 = createRequestContext()
         val future3 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -670,7 +675,7 @@ class CryptoOpsBusProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         signatureSpec3.signatureName,
-                        signatureSpec3.customDigestName?.name,
+                        signatureSpec3.customDigestName.name,
                         null
                     ),
                     ByteBuffer.wrap(data),
@@ -686,7 +691,9 @@ class CryptoOpsBusProcessorTests {
         assertEquals(publicKey, schemeMetadata.decodePublicKey(signature3.publicKey.array()))
         verifier.verify(publicKey, signatureSpec3, signature3.bytes.array(), data)
         // sign using public key and custom scheme
-        val signatureSpec4 = getCustomSignatureSpec()
+        val signatureSpec4 = SignatureSpec(
+            signatureName = "SHA512withECDSA"
+        )
         val context4 = createRequestContext()
         val future4 = CompletableFuture<RpcOpsResponse>()
         processor.onNext(
@@ -696,7 +703,7 @@ class CryptoOpsBusProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     CryptoSignatureSpec(
                         signatureSpec4.signatureName,
-                        signatureSpec4.customDigestName?.name,
+                        null,
                         null
                     ),
                     ByteBuffer.wrap(data),

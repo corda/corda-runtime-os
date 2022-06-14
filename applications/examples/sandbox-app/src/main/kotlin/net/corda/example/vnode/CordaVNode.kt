@@ -138,6 +138,7 @@ class CordaVNode @Activate constructor(
                 virtualNodeInfo.cpiIdentifier.name,
                 virtualNodeInfo.holdingIdentity,
                 "com.example.cpk.ExampleFlow",
+                "{\"message\":\"Bongo!\"}",
                 Instant.now(),
             ),  "{\"message\":\"Bongo!\"}"
         )

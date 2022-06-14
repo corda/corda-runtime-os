@@ -122,7 +122,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with(connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
-                assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
             }
@@ -305,7 +305,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with(connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
-                assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
                 assertThatThrownBy {
@@ -351,18 +351,18 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
 
                 SoftAssertions.assertSoftly {
                     it.assertThat(create(TestEntityRpcOps.CreationParams("TestName", 20)))
-                        .isEqualTo("\"Created using: CreationParams(name=TestName, amount=20)\"")
+                        .isEqualTo("Created using: CreationParams(name=TestName, amount=20)")
 
-                    it.assertThat(getUsingPath("MyId")).isEqualTo("\"Retrieved using id: MyId\"")
+                    it.assertThat(getUsingPath("MyId")).isEqualTo("Retrieved using id: MyId")
 
-                    it.assertThat(getUsingQuery("MyQuery")).isEqualTo("\"Retrieved using query: MyQuery\"")
+                    it.assertThat(getUsingQuery("MyQuery")).isEqualTo("Retrieved using query: MyQuery")
 
                     it.assertThat(update(TestEntityRpcOps.UpdateParams("myId", "TestName", 20)))
-                        .isEqualTo("\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"")
+                        .isEqualTo("Updated using params: UpdateParams(id=myId, name=TestName, amount=20)")
 
-                    it.assertThat(deleteUsingPath("MyId")).isEqualTo("\"Deleted using id: MyId\"")
+                    it.assertThat(deleteUsingPath("MyId")).isEqualTo("Deleted using id: MyId")
 
-                    it.assertThat(deleteUsingQuery("MyQuery")).isEqualTo("\"Deleted using query: MyQuery\"")
+                    it.assertThat(deleteUsingQuery("MyQuery")).isEqualTo("Deleted using query: MyQuery")
                 }
             }
         }
@@ -392,19 +392,19 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     it.assertThat(
                         upload(text.byteInputStream())
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())}\""
+                        generateChecksum(text.byteInputStream())
                     )
 
                     it.assertThat(
                         uploadWithName("someName", text.byteInputStream())
                     ).isEqualTo(
-                        "\"someName, ${generateChecksum(text.byteInputStream())}\""
+                        "someName, ${generateChecksum(text.byteInputStream())}"
                     )
 
                     it.assertThat(
                         multiInputStreamFileUpload(text.byteInputStream(), text2.byteInputStream())
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                        "${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}"
                     )
                 }
             }
@@ -435,7 +435,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     it.assertThat(
                         fileUpload(HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 123L))
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())}\""
+                        generateChecksum(text.byteInputStream())
                     )
 
                     it.assertThat(
@@ -444,7 +444,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
                         )
                     ).isEqualTo(
-                        "\"tenant1, ${generateChecksum(text.byteInputStream())}\""
+                        "tenant1, ${generateChecksum(text.byteInputStream())}"
                     )
 
                     it.assertThat(
@@ -453,7 +453,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text.byteInputStream(), "", "", "SampleFile.txt", 0L)
                         )
                     ).isEqualTo(
-                        "\"tenant1, ${generateChecksum(text.byteInputStream())}\""
+                        "tenant1, ${generateChecksum(text.byteInputStream())}"
                     )
 
                     it.assertThat(
@@ -462,7 +462,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text2.byteInputStream(), "", "", "SampleFile2.txt", 123L),
                         )
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                        "${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}"
                     )
 
                     // test client ability to send list of files
@@ -474,7 +474,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             )
                         )
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}\""
+                        "${generateChecksum(text.byteInputStream())}, ${generateChecksum(text2.byteInputStream())}"
                     )
 
                     it.assertThat(
@@ -482,7 +482,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                             HttpFileUpload(text.byteInputStream(), "SampleFile.txt")
                         )
                     ).isEqualTo(
-                        "\"${generateChecksum(text.byteInputStream())}\""
+                        generateChecksum(text.byteInputStream())
                     )
                 }
             }
@@ -507,7 +507,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
 
             with(connection.proxy) {
                 // Extra set of quotes will be fixed by https://r3-cev.atlassian.net/browse/CORE-4248
-                assertThat(stringMethodWithNameInAnnotation("foo")).isEqualTo("\"Completed foo\"")
+                assertThat(stringMethodWithNameInAnnotation("foo")).isEqualTo("Completed foo")
             }
         }
     }
@@ -598,10 +598,10 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
             val connection = client.start()
 
             with(connection.proxy) {
-                assertThat(hello("name", 1)).isEqualTo(""""Hello 1 : name"""")
-                assertThat(hello("name", null)).isEqualTo(""""Hello null : name"""")
-                assertThat(hello2("world", "name")).isEqualTo(""""Hello queryParam: world, pathParam : name"""")
-                assertThat(hello2(null, "name")).isEqualTo(""""Hello queryParam: null, pathParam : name"""")
+                assertThat(hello("name", 1)).isEqualTo("Hello 1 : name")
+                assertThat(hello("name", null)).isEqualTo("Hello null : name")
+                assertThat(hello2("world", "name")).isEqualTo("Hello queryParam: world, pathParam : name")
+                assertThat(hello2(null, "name")).isEqualTo("Hello queryParam: null, pathParam : name")
             }
         }
     }
