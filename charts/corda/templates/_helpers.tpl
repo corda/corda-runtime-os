@@ -148,6 +148,11 @@ Worker Kafka arguments
 - "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
 {{- end }}
 {{- end }}
+{{- else }}
+{{-if .Values.kafka.sasl.enabled }}
+- "-msecurity.protocol=SASL_PLAINTEXT"
+- "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
+{{- end }}
 {{- end }}
 {{- end }}
 
@@ -187,6 +192,7 @@ Volume mounts for corda workers
 {{- if .Values.kafka.sasl.enabled  }}
 - mountPath: "/etc/config"
   name: "jaas-conf"
+  readOnly: true
 {{- end }}
 {{- end }}
 
@@ -204,8 +210,8 @@ Volumes for corda workers
 {{- end -}}
 {{- if .Values.kafka.sasl.enabled  }}
 - name: jaas-conf
-  configMap:
-    name: {{ include "corda.fullname" . }}-sasl
+  secret:
+    secretName: {{ include "corda.fullname" . }}-sasl
 {{- end }}
 {{- end }}
 

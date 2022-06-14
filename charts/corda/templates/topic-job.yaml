@@ -61,6 +61,12 @@ spec:
                 echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/working_dir/config.properties
                 {{- end }}
                 {{- end }}
+                {{- else }}
+                {{-if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
                 {{- end }}
           volumeMounts:
             - mountPath: /tmp/working_dir
