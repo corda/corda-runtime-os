@@ -9,14 +9,13 @@ import kotlin.test.assertNotEquals
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.impl.components.DigestServiceImpl
-
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.getZeroHash
 import net.corda.v5.crypto.merkle.MerkleProof
 import org.junit.jupiter.api.BeforeAll
-
+import java.security.SecureRandom
 
 class MerkleTreeTest {
     companion object {
@@ -24,16 +23,21 @@ class MerkleTreeTest {
 
         private lateinit var digestService: DigestService
         private lateinit var defaultHashDigestProvider: DefaultHashDigestProvider
-        private lateinit var nonceVerify: NonceHashDigestProvider
-        private lateinit var zeroHash: SecureHash
+        private lateinit var nonceHashDigestProvider: NonceHashDigestProvider
+        private lateinit var nonceHashDigestProviderVerify: NonceHashDigestProvider
+        private lateinit var secureRandom: SecureRandom
+
 
         @BeforeAll
         @JvmStatic
         fun setup() {
             val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
+            secureRandom = schemeMetadata.secureRandom
+
             defaultHashDigestProvider = DefaultHashDigestProvider(digestAlgorithm, digestService)
-            nonceVerify = NonceHashDigestProvider.Verify(digestAlgorithm, digestService)
+            nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
+            nonceHashDigestProviderVerify = NonceHashDigestProvider.Verify(digestAlgorithm, digestService)
         }
     }
 
@@ -189,7 +193,7 @@ class MerkleTreeTest {
     fun `merkle proofs`() {
         for (treeSize in 1 until 16) {
             val leafData = (0 until treeSize).map { it.toByteArray() }
-            val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, NonceHashDigestProvider(digestAlgorithm, digestService))
+            val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, nonceHashDigestProvider)
             val root = merkleTree.root
             for (i in 1 until (1 shl treeSize)) {
                 val powerSet = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
@@ -197,7 +201,7 @@ class MerkleTreeTest {
                 for (leaf in proof.leaves) {
                     val data = leaf.leafData
                     data[0] = data[0] xor 1
-                    assertEquals(false, proof.verify(root, nonceVerify))
+                    assertEquals(false, proof.verify(root, nonceHashDigestProviderVerify))
                     data[0] = data[0] xor 1
                 }
                 for (j in 0 until proof.hashes.size) { // review CORE-4984
@@ -207,21 +211,21 @@ class MerkleTreeTest {
                     badHashes[j] = SecureHash(DigestAlgorithmName.SHA2_256D.name, badHashBytes)
                     val badProof : MerkleProof =
                         MerkleProofImpl(proof.treeSize, proof.leaves, badHashes)
-                    assertEquals(false, badProof.verify(root, nonceVerify))
+                    assertEquals(false, badProof.verify(root, nonceHashDigestProviderVerify))
                 }
                 val badProof1: MerkleProof =
                     MerkleProofImpl(proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
                         digestAlgorithm))
-                assertEquals(false, badProof1.verify(root, nonceVerify))
+                assertEquals(false, badProof1.verify(root, nonceHashDigestProviderVerify))
                 if (proof.hashes.size > 1) {
                     val badProof2: MerkleProof =
                         MerkleProofImpl(proof.treeSize, proof.leaves, proof.hashes.take(proof.hashes.size - 1))
-                    assertEquals(false, badProof2.verify(root, nonceVerify))
+                    assertEquals(false, badProof2.verify(root, nonceHashDigestProviderVerify))
                 }
                 if (proof.leaves.size > 1) {
                     val badProof3: MerkleProof =
                         MerkleProofImpl(proof.treeSize, proof.leaves.take(proof.leaves.size - 1), proof.hashes)
-                    assertEquals(false, badProof3.verify(root, nonceVerify))
+                    assertEquals(false, badProof3.verify(root, nonceHashDigestProviderVerify))
                 }
             }
         }
@@ -249,12 +253,14 @@ class MerkleTreeTest {
         val merkleTreeTweaked = MerkleTreeImpl.createMerkleTree(leafData, tweakedHash)
         val proof2 = merkleTreeTweaked.createAuditProof(leafList)
         assertEquals(true, proof2.verify(merkleTreeTweaked.root, tweakedHash))
-        val nonceMerkleTree1 = MerkleTreeImpl.createMerkleTree(leafData, NonceHashDigestProvider(digestAlgorithm, digestService))
+        val nonceMerkleTree1 = MerkleTreeImpl.createMerkleTree(leafData,
+            NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom))
         val proof3 = nonceMerkleTree1.createAuditProof(leafList)
-        assertEquals(true, proof3.verify(nonceMerkleTree1.root, nonceVerify))
-        val nonceMerkleTree2 = MerkleTreeImpl.createMerkleTree(leafData, NonceHashDigestProvider(digestAlgorithm, digestService))
+        assertEquals(true, proof3.verify(nonceMerkleTree1.root, nonceHashDigestProviderVerify))
+        val nonceMerkleTree2 = MerkleTreeImpl.createMerkleTree(leafData,
+            NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom))
         val proof4 = nonceMerkleTree2.createAuditProof(leafList)
-        assertEquals(true, proof4.verify(nonceMerkleTree2.root, nonceVerify))
+        assertEquals(true, proof4.verify(nonceMerkleTree2.root, nonceHashDigestProviderVerify))
         val roots = setOf(merkleTreeDefault.root, merkleTreeTweaked.root, nonceMerkleTree1.root, nonceMerkleTree2.root)
         assertEquals(4, roots.size)
         assertNotEquals(proof3, proof4)
@@ -263,7 +269,7 @@ class MerkleTreeTest {
     @Test
     fun `Size only proof for NonceHashDigestProvider`() {
         val leafData = (0 until 18).map { it.toByteArray() }
-        val nonceDigest = NonceHashDigestProvider(digestAlgorithm, digestService)
+        val nonceDigest = nonceHashDigestProvider
         val nonceMerkleTree = MerkleTreeImpl.createMerkleTree(leafData, nonceDigest)
         val sizeOnlyProof = nonceDigest.getSizeProof(leafData)
         assertEquals(leafData.size, sizeOnlyProof.leaves.size)

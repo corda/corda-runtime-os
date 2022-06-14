@@ -75,8 +75,8 @@ open class NonceHashDigestProvider(
     constructor(
         digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
         digestService: DigestService,
-        random: Random = SecureRandom()
-    ) : this(digestAlgorithmName, digestService, createNonce(random))    // @todo: original implementation seems to have used DRBG.
+        random: SecureRandom
+    ) : this(digestAlgorithmName, digestService, createNonce(random))
 
     // use this class if only verification is required and thus don't need to reveal the entropy
     class Verify(
