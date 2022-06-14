@@ -318,7 +318,6 @@ class ComplexDominoTile(
     }
 
     private fun createResourcesAndStart() {
-        onStart?.invoke()
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config updates.")
             configRegistration =
@@ -328,6 +327,7 @@ class ComplexDominoTile(
                     )
         }
         if (shouldNotWaitForConfig() && shouldNotWaitForChildren()) {
+            onStart?.invoke()
             updateState(Started)
         }
     }

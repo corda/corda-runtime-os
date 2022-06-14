@@ -574,8 +574,8 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `second start will not restart if the configuration had error`() {
-            val resourceCreated = AtomicInteger(0)
+        fun `start will not call on start if configuration had error`() {
+            val onStartCalls = AtomicInteger(0)
             whenever(configFactory.invoke(any())).thenThrow(RuntimeException("Bad configuration"))
             val config = mock<SmartConfig>()
             whenever(service.registerForUpdates(any())).doAnswer {
@@ -588,14 +588,12 @@ class ComplexDominoTileTest {
                 factory,
                 configurationChangeHandler = TileConfigurationChangeHandler(),
                 onStart = {
-                    resourceCreated.incrementAndGet()
+                    onStartCalls.incrementAndGet()
                 }
             )
             tile.start()
 
-            tile.start()
-
-            assertThat(resourceCreated).hasValue(1)
+            assertThat(onStartCalls).hasValue(0)
         }
     }
 
