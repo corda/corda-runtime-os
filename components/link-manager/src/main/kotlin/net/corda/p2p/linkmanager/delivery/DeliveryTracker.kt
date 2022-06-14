@@ -112,13 +112,15 @@ internal class DeliveryTracker(
         override val dominoTile = publisher.dominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            if (!isRunning) {
-                throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
-            }
+            publisher.withLifecycleLock {
+                if (!isRunning) {
+                    throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
+                }
 
-            val records = processAuthenticatedMessage(message)
-            logger.debug { "Replaying data message ${message.message.header.messageId}." }
-            publisher.publish(records)
+                val records = processAuthenticatedMessage(message)
+                logger.debug { "Replaying data message ${message.message.header.messageId}." }
+                publisher.publish(records)
+            }
         }
     }
 

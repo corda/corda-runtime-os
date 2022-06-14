@@ -278,8 +278,8 @@ internal class ReplayScheduler<M>(
                     exception
                 )
             } else {
-                logger.error("An exception was thrown when replaying a message. The task was removed from the replay scheduler, so won't" +
-                    " be retried.\nException:",
+                logger.error("An exception was thrown when replaying a message. The task had already been removed from the replay " +
+                    "scheduler, so won't be retried.\nException:",
                     exception
                 )
             }

@@ -82,10 +82,6 @@ class ComplexDominoTile(
 
     private val controlLock = ReentrantReadWriteLock()
 
-    override fun start() {
-        coordinator.start()
-    }
-
     override fun stop() {
         coordinator.stop()
     }

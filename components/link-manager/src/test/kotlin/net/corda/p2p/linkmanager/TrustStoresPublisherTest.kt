@@ -162,8 +162,27 @@ class TrustStoresPublisherTest {
         }
 
         @Test
-        fun `groupAdded will not publish before the domino tile is started`() {
-            whenever(mockDominoTile.constructed().single().isRunning).doReturn(false)
+        fun `groupAdded will not publish before the subscription started`() {
+            trustStoresPublisher.groupAdded(groupInfo)
+
+            verify(mockPublisher.constructed().first(), never()).publish(any())
+        }
+
+        @Test
+        fun `groupAdded will not publish before it has the snapshots`() {
+            trustStoresPublisher.start()
+
+            trustStoresPublisher.groupAdded(groupInfo)
+
+            verify(mockPublisher.constructed().first(), never()).publish(any())
+        }
+
+        @Test
+        fun `groupAdded will not publish before the publisher is ready`() {
+            trustStoresPublisher.start()
+            whenever(mockPublisher.constructed().first().isRunning).doReturn(false)
+            processor.firstValue.onSnapshot(emptyMap())
+
             trustStoresPublisher.groupAdded(groupInfo)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())

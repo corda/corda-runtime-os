@@ -80,14 +80,9 @@ internal class StubMembershipGroupReader(
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ::onStart,
         dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName),
         managedChildren = setOf(subscriptionTile.toManagedChild(), blockingTile.toManagedChild())
     )
-
-    private fun onStart(): CompletableFuture<Unit> {
-        return readyFuture
-    }
 
     private val membersInformation = ConcurrentHashMap<HoldingIdentity, LinkManagerMembershipGroupReader.MemberInfo>()
     private val publicHashToMemberInformation =

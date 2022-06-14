@@ -170,8 +170,27 @@ class TlsCertificatesPublisherTest {
         }
 
         @Test
-        fun `identityAdded will not publish before the domino tile is started`() {
-            whenever(mockDominoTile.constructed().single().isRunning).doReturn(false)
+        fun `identityAdded will not publish before the subscription started`() {
+            publisher.identityAdded(identityInfo)
+
+            verify(mockPublisher.constructed().first(), never()).publish(any())
+        }
+
+        @Test
+        fun `identityAdded will not publish before it has the snapshots`() {
+            publisher.start()
+
+            publisher.identityAdded(identityInfo)
+
+            verify(mockPublisher.constructed().first(), never()).publish(any())
+        }
+
+        @Test
+        fun `identityAdded will not publish before the publisher is ready`() {
+            publisher.start()
+            whenever(mockPublisher.constructed().first().isRunning).doReturn(false)
+            processor.firstValue.onSnapshot(emptyMap())
+
             publisher.identityAdded(identityInfo)
 
             verify(mockPublisher.constructed().first(), never()).publish(any())
