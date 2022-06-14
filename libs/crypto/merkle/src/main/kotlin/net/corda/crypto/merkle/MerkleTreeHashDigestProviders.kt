@@ -9,9 +9,8 @@ import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import java.security.SecureRandom
-import java.util.*
 
-private fun createNonce(random: Random): ByteArray {
+private fun createNonce(random: SecureRandom): ByteArray {
     val nonce = ByteArray(16)
     random.nextBytes(nonce)
     return nonce
@@ -75,8 +74,8 @@ open class NonceHashDigestProvider(
     constructor(
         digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
         digestService: DigestService,
-        random: Random = SecureRandom()
-    ) : this(digestAlgorithmName, digestService, createNonce(random))    // @todo: original implementation seems to have used DRBG.
+        random: SecureRandom
+    ) : this(digestAlgorithmName, digestService, createNonce(random))
 
     // use this class if only verification is required and thus don't need to reveal the entropy
     class Verify(
