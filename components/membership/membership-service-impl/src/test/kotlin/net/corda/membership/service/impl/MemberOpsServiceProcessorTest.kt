@@ -40,13 +40,14 @@ class MemberOpsServiceProcessorTest {
         private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
         private val holdingIdentity = HoldingIdentity("test", "0")
+        private val mockProperties: Map<String, String> = mock()
         private const val HOLDING_IDENTITY_STRING = "test"
 
         @JvmStatic
         @BeforeAll
         fun setup() {
             registrationProxy = mock {
-                on { register(holdingIdentity, mock()) } doReturn (MembershipRequestRegistrationResult(
+                on { register(holdingIdentity, mockProperties) } doReturn (MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.SUBMITTED
                 ))
             }

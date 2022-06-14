@@ -177,7 +177,7 @@ class MemberOpsClientImpl @Activate constructor(
                 RegistrationRpcRequest(
                     memberRegistrationRequest.holdingIdentityId,
                     RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
-                    memberRegistrationRequest.properties
+                    memberRegistrationRequest.context
                 )
             )
 

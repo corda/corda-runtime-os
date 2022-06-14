@@ -122,9 +122,6 @@ class MGMRegistrationServiceTest {
     )
 
     private val properties = mapOf(
-        "corda.party.name" to mgmName.toString(),
-        "corda.endpoints.0.connectionURL" to "localhost:1080",
-        "corda.endpoints.0.protocolVersion" to "1",
         "corda.party.session.key.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
@@ -133,6 +130,8 @@ class MGMRegistrationServiceTest {
         "corda.group.key.session.policy" to "Combined",
         "corda.group.pki.session" to "Standard",
         "corda.group.pki.tls" to "C5",
+        "corda.endpoints.0.connectionURL" to "localhost:1080",
+        "corda.endpoints.0.protocolVersion" to "1",
         "corda.group.truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
         "corda.group.truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
     )

@@ -41,7 +41,7 @@ class RegistrationProxyImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationProxy {
-        fun register(member: HoldingIdentity, memberContext: Map<String, String>): MembershipRequestRegistrationResult
+        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
     }
 
     companion object {
@@ -125,13 +125,13 @@ class RegistrationProxyImpl @Activate constructor(
 
     override fun register(
         member: HoldingIdentity,
-        memberContext: Map<String, String>
-    ): MembershipRequestRegistrationResult = impl.register(member, memberContext)
+        context: Map<String, String>
+    ): MembershipRequestRegistrationResult = impl.register(member, context)
 
     private object InactiveImpl : InnerRegistrationProxy {
         override fun register(
             member: HoldingIdentity,
-            memberContext: Map<String, String>
+            context: Map<String, String>
         ): MembershipRequestRegistrationResult =
             throw IllegalStateException("RegistrationProxy currently inactive.")
 
@@ -140,7 +140,7 @@ class RegistrationProxyImpl @Activate constructor(
     private inner class ActiveImpl: InnerRegistrationProxy {
         override fun register(
             member: HoldingIdentity,
-            memberContext: Map<String, String>
+            context: Map<String, String>
         ): MembershipRequestRegistrationResult {
             val service = getRegistrationService(
                 try {
@@ -152,7 +152,7 @@ class RegistrationProxyImpl @Activate constructor(
                     throw RegistrationProtocolSelectionException(err, e)
                 }
             )
-            return service.register(member, memberContext)
+            return service.register(member, context)
         }
 
         private fun getRegistrationService(protocol: String): MemberRegistrationService {

@@ -12,6 +12,8 @@ import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension
 import net.corda.membership.impl.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
@@ -30,6 +32,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
@@ -38,8 +41,9 @@ import java.io.StringWriter
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
-class MGMRegistrationService(
+class MGMRegistrationService @Activate constructor(
     @Reference(service = PublisherFactory::class)
     val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -53,8 +57,9 @@ class MGMRegistrationService(
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
 ) : MemberRegistrationService {
-    companion object {
-        private val logger: Logger = contextLogger()
+    private companion object {
+        val logger: Logger = contextLogger()
+        const val errorMessageTemplate = "No %s was provided."
 
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
@@ -68,7 +73,19 @@ class MGMRegistrationService(
         const val TRUSTSTORE_SESSION = "corda.group.truststore.session.%s"
         const val TRUSTSTORE_TLS = "corda.group.truststore.tls.%s"
 
-        private val keyIdList = listOf(SESSION_KEY_ID, ECDH_KEY_ID)
+        val keyIdList = listOf(SESSION_KEY_ID, ECDH_KEY_ID)
+        val errorMessageMap = errorMessageTemplate.run {
+            mapOf(
+                SESSION_KEY_ID to format("session key"),
+                ECDH_KEY_ID to format("ECDH key"),
+                REGISTRATION_PROTOCOL to format("registration protocol"),
+                SYNCHRONISATION_PROTOCOL to format("synchronisation protocol"),
+                P2P_MODE to format("P2P mode"),
+                SESSION_KEY_POLICY to format("session key policy"),
+                PKI_SESSION to format("session PKI property"),
+                PKI_TLS to format("TLS PKI property"),
+            )
+        }
     }
 
     // Handler for lifecycle events
@@ -97,7 +114,7 @@ class MGMRegistrationService(
 
     override fun register(
         member: HoldingIdentity,
-        properties: Map<String, String>
+        context: Map<String, String>
     ): MembershipRequestRegistrationResult {
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             return MembershipRequestRegistrationResult(
@@ -106,19 +123,20 @@ class MGMRegistrationService(
             )
         }
         try {
-            validateProperties(properties)
-            val sessionKey = getPemKeyFromId(properties[SESSION_KEY_ID]!!, member.id)
-            val ecdhKey = getPemKeyFromId(properties[ECDH_KEY_ID]!!, member.id)
+            validateProperties(context)
+            val sessionKey = getPemKeyFromId(context[SESSION_KEY_ID]!!, member.id)
+            val ecdhKey = getPemKeyFromId(context[ECDH_KEY_ID]!!, member.id)
             val now = clock.instant().toString()
             val mgmInfo =  MemberInfoImpl(
                 memberProvidedContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-                    (properties.filter { !keyIdList.contains(it.key) } + mapOf(
-                        MemberInfoExtension.GROUP_ID to UUID.randomUUID().toString(),
+                    (context.filter { !keyIdList.contains(it.key) } + mapOf(
+                        GROUP_ID to UUID.randomUUID().toString(),
+                        PARTY_NAME to member.x500Name,
                         PARTY_SESSION_KEY to sessionKey,
                         ECDH_KEY to ecdhKey,
                         PLATFORM_VERSION to "5000",
                         SOFTWARE_VERSION to "5.0.0",
-                        SERIAL to "1"
+                        SERIAL to "1",
                     )).toSortedMap()
                 ),
                 mgmProvidedContext = layeredPropertyMapFactory.create<MGMContextImpl>(
@@ -156,42 +174,21 @@ class MGMRegistrationService(
     }
 
     private fun validateProperties(properties: Map<String, String>) {
+        for (key in errorMessageMap.keys) {
+            properties[key] ?: throw IllegalArgumentException(errorMessageMap[key])
+        }
         require(
             properties.keys.any { URL_KEY.format("[0-9]+").toRegex().matches(it) }
-        ) { "Endpoint URLs are not provided." }
+        ) { "No endpoint URL was provided." }
         require(
             properties.keys.any { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }
-        ) { "Endpoint protocols are not provided." }
-        require(
-            properties.keys.any { it == SESSION_KEY_ID }
-        ) { "Session initiation key is not provided." }
-        require(
-            properties.keys.any { it == ECDH_KEY_ID }
-        ) { "ECDH key is not provided." }
-        require(
-            properties.keys.any { it == REGISTRATION_PROTOCOL }
-        ) { "Registration protocol is not provided." }
-        require(
-            properties.keys.any { it == SYNCHRONISATION_PROTOCOL }
-        ) { "Synchronisation protocol is not provided." }
-        require(
-            properties.keys.any { it == P2P_MODE }
-        ) { "P2P mode is not provided." }
-        require(
-            properties.keys.any { it == SESSION_KEY_POLICY }
-        ) { "Session key policy is not provided." }
-        require(
-            properties.keys.any { it == PKI_SESSION }
-        ) { "Session PKI property is not provided." }
-        require(
-            properties.keys.any { it == PKI_TLS }
-        ) { "TLS PKI property is not provided." }
+        ) { "No endpoint protocol was provided." }
         require(
             properties.keys.any { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }
-        ) { "Session truststore is not provided." }
+        ) { "No session truststore was provided." }
         require(
             properties.keys.any { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }
-        ) { "TLS truststore is not provided." }
+        ) { "No TLS truststore was provided." }
     }
 
     private fun getPemKeyFromId(keyId: String, tenantId: String): String {
