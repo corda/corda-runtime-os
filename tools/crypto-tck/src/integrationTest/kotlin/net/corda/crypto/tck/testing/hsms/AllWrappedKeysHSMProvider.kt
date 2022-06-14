@@ -14,18 +14,15 @@ class AllWrappedKeysHSMProvider @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = DigestService::class)
     private val digestService: DigestService
-) : CryptoServiceProvider<AllWrappedKeysHSMProvider.Configuration> {
-
-    class Configuration(val userName: String)
-
+) : CryptoServiceProvider<AllWrappedKeysHSMConfiguration> {
     companion object {
         const val NAME = "AllWrappedKeysHSM"
     }
 
-    override val configType: Class<Configuration> = Configuration::class.java
+    override val configType: Class<AllWrappedKeysHSMConfiguration> = AllWrappedKeysHSMConfiguration::class.java
 
     override val name: String = NAME
 
-    override fun getInstance(config: Configuration): CryptoService =
-        AllWrappedKeysHSM(config.userName, schemeMetadata, digestService)
+    override fun getInstance(config: AllWrappedKeysHSMConfiguration): CryptoService =
+        AllWrappedKeysHSM(config, schemeMetadata, digestService)
 }

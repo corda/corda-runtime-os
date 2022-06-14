@@ -21,18 +21,18 @@ class CryptoSoftPersistenceConfig(internal val config: SmartConfig) : SmartConfi
             throw CryptoConfigurationException("Failed to get ${this::maximumSize.name}", e)
         }
 
-    val retries: Int
+    val maxAttempts: Int
         get() = try {
-            config.getInt(this::retries.name)
+            config.getInt(this::maxAttempts.name)
         } catch (e: Throwable) {
-            throw CryptoConfigurationException("Failed to get ${this::retries.name}", e)
+            throw CryptoConfigurationException("Failed to get ${this::maxAttempts.name}", e)
         }
 
-    val timeoutMills: Long
+    val attemptTimeoutMills: Long
         get() = try {
-            config.getLong(this::timeoutMills.name)
+            config.getLong(this::attemptTimeoutMills.name)
         } catch (e: Throwable) {
-            throw CryptoConfigurationException("Failed to get ${this::timeoutMills.name}", e)
+            throw CryptoConfigurationException("Failed to get ${this::attemptTimeoutMills.name}", e)
         }
 
     val salt: String

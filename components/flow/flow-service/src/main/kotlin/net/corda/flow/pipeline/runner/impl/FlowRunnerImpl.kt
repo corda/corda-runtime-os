@@ -6,20 +6,19 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Future
 
-@Suppress("unused", "LongParameterList")
 @Component(service = [FlowRunner::class])
 class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberFactory::class)
@@ -74,16 +73,16 @@ class FlowRunnerImpl @Activate constructor(
 
     private fun startFlow(
         context: FlowEventContext<Any>,
-        createFlow: (SandboxGroupContext) -> Flow<*>,
+        createFlow: (SandboxGroupContext) -> FlowLogicAndArgs,
         updateFlowStackItem: (FlowStackItem) -> Unit
     ): Future<FlowIORequest<*>> {
         val checkpoint = context.checkpoint
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         val flow = createFlow(fiberContext.sandboxGroupContext)
         val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowId, flow)
-        val stackItem = fiberContext.flowStackService.push(flow)
+        val stackItem = fiberContext.flowStackService.push(flow.logic)
         updateFlowStackItem(stackItem)
-        fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow)
+        fiberContext.sandboxGroupContext.dependencyInjector.injectServices(flow.logic)
 
         return flowFiber.startFlow(fiberContext)
     }

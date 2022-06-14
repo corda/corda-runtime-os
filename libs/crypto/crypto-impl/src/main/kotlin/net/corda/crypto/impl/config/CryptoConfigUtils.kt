@@ -16,17 +16,18 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 /*
 {
   "rootKey": {
-    "salt": "<plain-text-value>",
-    "passphrase": {
-        "configSecret": {
-            "encryptedSecret": "<encrypted-value>"
+        "salt": "<plain-text-value>",
+        "passphrase": {
+            "configSecret": {
+                "encryptedSecret": "<encrypted-value>"
+            }
         }
     },
     "softPersistence": {
         "expireAfterAccessMins": 240,
         "maximumSize": 1000,
-        "retries": 0,
-        "timeoutMills": 20000,
+        "maxAttempts": 1,
+        "attemptTimeoutMills": 20000,
         "salt": "<plain-text-value>",
         "passphrase": {
             "configSecret": {
@@ -45,7 +46,7 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
     "hsmPersistence": {
         "expireAfterAccessMins": 240,
         "maximumSize": 1000,
-        "downstreamRetries": 3
+        "downstreamMaxAttempts": 3
     }
 }
  */
@@ -155,8 +156,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                         CryptoSoftPersistenceConfig::passphrase.name to ConfigValueFactory.fromMap(
                             makeSecret(softKey.passphrase).root().unwrapped()
                         ),
-                        CryptoSoftPersistenceConfig::retries.name to "0",
-                        CryptoSoftPersistenceConfig::timeoutMills.name to "20000"
+                        CryptoSoftPersistenceConfig::maxAttempts.name to "0",
+                        CryptoSoftPersistenceConfig::attemptTimeoutMills.name to "20000"
                     )
                 )
             )
@@ -176,7 +177,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
                     mapOf(
                         CryptoHSMPersistenceConfig::expireAfterAccessMins.name to "240",
                         CryptoHSMPersistenceConfig::maximumSize.name to "1000",
-                        CryptoHSMPersistenceConfig::downstreamRetries.name to "3",
+                        CryptoHSMPersistenceConfig::downstreamMaxAttempts.name to "3",
                     )
                 )
             )

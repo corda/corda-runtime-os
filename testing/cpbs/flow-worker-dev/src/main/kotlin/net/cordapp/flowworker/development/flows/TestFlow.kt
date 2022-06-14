@@ -1,25 +1,24 @@
 package net.cordapp.flowworker.development.flows
 
-import net.cordapp.flowworker.development.messages.TestFlowInput
-import net.cordapp.flowworker.development.messages.TestFlowOutput
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.cordapp.flowworker.development.messages.TestFlowInput
+import net.cordapp.flowworker.development.messages.TestFlowOutput
 
 /**
  * The Test Flow exercises various basic features of a flow, this flow
  * is used as a basic flow worker smoke test.
  */
 @Suppress("unused")
-@StartableByRPC
-class TestFlow(private val jsonArg: String) : Flow<String> {
+class TestFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -35,10 +34,10 @@ class TestFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(jsonArg)
+            val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
             if(inputs.throwException){
                 throw IllegalStateException("Caller requested exception to be raised")
             }

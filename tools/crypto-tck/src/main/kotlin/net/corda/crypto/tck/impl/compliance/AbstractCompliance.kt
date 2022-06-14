@@ -2,6 +2,8 @@ package net.corda.crypto.tck.impl.compliance
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.impl.decorators.requiresWrappingKey
+import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.tck.impl.ComplianceSpec
 import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
@@ -10,7 +12,6 @@ import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_WRAPPING
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceDeleteOps
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
@@ -20,13 +21,17 @@ import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.fail
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentLinkedQueue
 
 abstract class AbstractCompliance {
-    protected val logger = LoggerFactory.getLogger(this::class.java)
+    protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     protected lateinit var compliance: ComplianceSpec
     protected lateinit var service: CryptoService
@@ -38,9 +43,10 @@ abstract class AbstractCompliance {
     protected fun setup(spec: ComplianceSpec, providers: CryptoServiceProviderMap) {
         compliance = spec
         service = compliance.createService(providers)
-        logger.info("serviceName=${compliance.options.serviceName}")
+        spec.options.usedSignatureSpecs = service.supportedSchemes.toMap()
+            logger.info("serviceName=${compliance.options.serviceName}")
         tenantId = compliance.generateRandomIdentifier()
-        if (service.requiresWrappingKey()) {
+        if (service.requiresWrappingKey) {
             masterKeyAlias = compliance.generateRandomIdentifier()
             service.createWrappingKey(
                 masterKeyAlias!!, true, mapOf(
@@ -50,22 +56,40 @@ abstract class AbstractCompliance {
         }
     }
 
-    protected fun deleteKeyPair(alias: String) = try {
-        (service as? CryptoServiceDeleteOps)?.delete(alias, mapOf(
-            CRYPTO_TENANT_ID to tenantId,
-            CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
-        ))
-    } catch (e: Throwable) {
-        logger.warn("Failed to delete a ky with alias=$alias", e)
+    protected fun deleteKeyPair(hsmAlias: String) {
+        if (!service.supportsKeyDelete) {
+            logger.info("Service doesn't support key deletion.")
+            return
+        }
+        try {
+            logger.info("About to delete {} key.", hsmAlias)
+            service.delete(
+                hsmAlias, mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
+                )
+            )
+        } catch (e: Throwable) {
+            logger.warn("Failed to delete a ky with alias=$hsmAlias", e)
+        }
     }
 
-    protected fun deleteWrappingKey(alias: String) = try {
-        (service as? CryptoServiceDeleteOps)?.delete(alias, mapOf(
-            CRYPTO_TENANT_ID to tenantId,
-            CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_WRAPPING
-        ))
-    } catch (e: Throwable) {
-        logger.warn("Failed to delete a ky with alias=$alias", e)
+    protected fun deleteWrappingKey(alias: String) {
+        if (!service.supportsKeyDelete) {
+            logger.info("Service doesn't support key deletion.")
+            return
+        }
+        try {
+            logger.info("About to delete {} key.", alias)
+            service.delete(
+                alias, mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_WRAPPING
+                )
+            )
+        } catch (e: Throwable) {
+            logger.warn("Failed to delete a ky with alias=$alias", e)
+        }
     }
 
     protected fun `Should generate key with expected key scheme`(
@@ -147,21 +171,21 @@ abstract class AbstractCompliance {
         val keyScheme = try {
             CryptoServiceCompliance.schemeMetadata.findKeyScheme(key.publicKey)
         } catch (e: Throwable) {
-            Assertions.fail("The public key (algorithm=${key.publicKey.algorithm}) must be recognisable by scheme metadata.")
+            fail("The public key (algorithm=${key.publicKey.algorithm}) must be recognisable by scheme metadata.")
         }
-        Assertions.assertEquals(expected, keyScheme, "The public key scheme must match ${expected.codeName}")
+        assertEquals(expected, keyScheme, "The public key scheme must match ${expected.codeName}")
         when (key) {
             is GeneratedWrappedKey -> {
-                Assertions.assertTrue(key.keyMaterial.isNotEmpty(), "The generated key must have keyMaterial.")
+                assertTrue(key.keyMaterial.isNotEmpty(), "The generated key must have keyMaterial.")
             }
             is GeneratedPublicKey -> {
-                Assertions.assertTrue(key.hsmAlias.isNotBlank(), "The alias generated by HSM must not be blank.")
+                assertTrue(key.hsmAlias.isNotBlank(), "The alias generated by HSM must not be blank.")
                 if (!alias.isNullOrBlank()) {
-                    Assertions.assertNotEquals(key.hsmAlias, alias, "The alias used by HSM must not match the passed.")
+                    assertNotEquals(key.hsmAlias, alias, "The alias used by HSM must not match the passed.")
                 }
             }
             else -> {
-                Assertions.fail("Unexpected type of the generated key '${key::class.java.name}'")
+                fail("Unexpected type of the generated key '${key::class.java.name}'")
             }
         }
     }

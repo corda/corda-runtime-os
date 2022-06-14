@@ -103,7 +103,7 @@ class MembershipGroupReaderProviderIntegrationTest {
                     Record(
                         Schemas.Config.CONFIG_TOPIC,
                         ConfigKeys.MESSAGING_CONFIG,
-                        Configuration(messagingConf, "1", schemaVersion)
+                        Configuration(messagingConf, 0, schemaVersion)
                     )
                 )
             )[0]
@@ -221,7 +221,7 @@ class MembershipGroupReaderProviderIntegrationTest {
     }
 
     private fun Publisher.publishMessagingConf() =
-        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, "1", schemaVersion))
+        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))
 
     private fun <K : Any, V : Any> Publisher.publishRecord(topic: String, key: K, value: V) =
         publish(listOf(Record(topic, key, value)))
