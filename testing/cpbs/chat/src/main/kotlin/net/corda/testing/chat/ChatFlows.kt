@@ -1,17 +1,18 @@
 package net.corda.testing.chat
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -25,8 +26,7 @@ import net.corda.v5.base.util.contextLogger
  * }
  */
 @InitiatingFlow(protocol = "chatProtocol")
-@StartableByRPC
-class ChatOutgoingFlow(private val jsonArg: String) : Flow<String> {
+class ChatOutgoingFlow : RPCStartableFlow {
     private companion object {
         val log = contextLogger()
     }
@@ -41,11 +41,9 @@ class ChatOutgoingFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(): String {
-        val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
-        log.info("Chat outgoing flow starting in ${thisVirtualNodeName}...")
-
-        val inputs = jsonMarshallingService.parseJson<OutgoingChatMessage>(jsonArg)
+    override fun call(requestBody: RPCRequestData): String {
+        log.info("Chat outgoing flow starting in ${flowEngine.virtualNodeName}...")
+        val inputs = requestBody.getRequestBodyAs<OutgoingChatMessage>(jsonMarshallingService)
         inputs.recipientX500Name ?: throw IllegalArgumentException("Recipient X500 name not supplied")
         inputs.message ?: throw IllegalArgumentException("Chat message not supplied")
 
@@ -64,7 +62,7 @@ class ChatOutgoingFlow(private val jsonArg: String) : Flow<String> {
  * Messages are placed in the message store. To read outstanding messages, poll the ChatReaderFlow.
  */
     @InitiatedBy(protocol = "chatProtocol")
-class ChatIncomingFlow(private val session: FlowSession) : Flow<String> {
+class ChatIncomingFlow : ResponderFlow {
 
     private companion object {
         val log = contextLogger()
@@ -74,7 +72,7 @@ class ChatIncomingFlow(private val session: FlowSession) : Flow<String> {
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(): String {
+    override fun call(session: FlowSession) {
         val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
         log.info("Chat incoming flow starting in {$thisVirtualNodeName}...")
 
@@ -84,7 +82,6 @@ class ChatIncomingFlow(private val session: FlowSession) : Flow<String> {
         MessageStore.add(IncomingChatMessage(sender, message))
 
         log.info("Added incoming message from ${sender} to message store")
-        return ""
     }
 }
 
@@ -106,8 +103,7 @@ class ChatIncomingFlow(private val session: FlowSession) : Flow<String> {
  *   ]
  * }
  */
-@StartableByRPC
-class ChatReaderFlow(private val jsonArg: String) : Flow<String> {
+class ChatReaderFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -120,9 +116,8 @@ class ChatReaderFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(): String {
-        val thisVirtualNodeName = flowEngine.virtualNodeName.toString()
-        log.info("Chat reader flow starting in {$thisVirtualNodeName}...")
+    override fun call(requestBody: RPCRequestData): String {
+        log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
         with (MessageStore.readAndClear()) {
             log.info("Returning ${this.messages.size} unread messages")
             return jsonMarshallingService.formatJson(this)
