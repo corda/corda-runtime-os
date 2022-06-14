@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Membership certificates data model'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-db-schema'
+}
+
+// This is required for Hibernate Proxy generation. Without it OSGi will report:
+// java.lang.ClassNotFoundException: org.hibernate.proxy.HibernateProxy
+tasks.named('jar', Jar) {
+    bnd '''\
+    DynamicImport-Package: org.hibernate.proxy
+    '''
+}

@@ -14,7 +14,6 @@ import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefaul
 import net.corda.libs.packaging.internal.summaryHash
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -65,7 +64,9 @@ class CPKTests {
 
         workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
         processedWorkflowCPKPath = testDir.resolve(workflowCPKPath.fileName)
-        workflowCPK = Cpk.from(Files.newInputStream(workflowCPKPath), processedWorkflowCPKPath, workflowCPKPath.toString())
+        workflowCPK = Files.newInputStream(workflowCPKPath).use {
+            CpkReader.readCpk(it, processedWorkflowCPKPath, workflowCPKPath.toString())
+        }
         cordappJarPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cordapp")))
         nonJarFile = Files.createFile(testDir.resolve("someFile.bin"))
         workflowCPKLibraries = System.getProperty("net.corda.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
@@ -82,11 +83,6 @@ class CPKTests {
         }
         referenceExtractionPath = testDir.resolve("unzippedCPK")
         referenceUnzipMethod(workflowCPKPath, referenceExtractionPath)
-    }
-
-    @AfterAll
-    fun teardown() {
-        workflowCPK.close()
     }
 
     companion object {
@@ -421,8 +417,7 @@ class CPKTests {
                 jarSignatureVerificationEnabledByDefault())
         }
         assertThrows<PackagingException> {
-            Cpk.from(Files.newInputStream(nonJarFile), processedWorkflowCPKPath, nonJarFile.toString())
-                .also(Cpk::close)
+            Files.newInputStream(nonJarFile).use { CpkReader.readCpk(it, processedWorkflowCPKPath, nonJarFile.toString()) }
         }
     }
 

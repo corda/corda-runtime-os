@@ -375,7 +375,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given two sessions receiving a single session error event does not resume the flow`() {
+    fun `Given two sessions receiving a single session error event does not resume the flow and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -395,12 +395,13 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
         }
     }
 
     @Test
-    fun `Given two sessions receiving a session data event for one and a session error event for the other resumes the flow with an error`() {
+    fun `Given two sessions receiving a session data event for one and a session error event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -426,12 +427,13 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
         }
     }
 
     @Test
-    fun `Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error`() {
+    fun `Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -452,6 +454,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
 
             expectOutputForFlow(FLOW_ID1) {

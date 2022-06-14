@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -78,8 +79,11 @@ class SandboxBundleIsolationTest {
             sandboxFactory.createSandboxGroupFor(CPI_ONE)
         }
         try {
-            assertEquals(sandboxFactory.group1.metadata.keys.names, copyOne.metadata.keys.names)
-            assertNotEquals(sandboxFactory.group1.metadata.keys.ids, copyOne.metadata.keys.ids)
+            assertAll(
+                { assertTrue(copyOne.metadata.keys.stream().allMatch { bundle -> bundle.state == Bundle.ACTIVE }) },
+                { assertEquals(sandboxFactory.group1.metadata.keys.names, copyOne.metadata.keys.names) },
+                { assertNotEquals(sandboxFactory.group1.metadata.keys.ids, copyOne.metadata.keys.ids) }
+            )
         } finally {
             sandboxFactory.destroySandboxGroup(copyOne)
         }

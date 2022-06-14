@@ -1,5 +1,4 @@
 plugins {
-    id 'corda.common-publishing'
     id 'corda.common-app'
 }
 

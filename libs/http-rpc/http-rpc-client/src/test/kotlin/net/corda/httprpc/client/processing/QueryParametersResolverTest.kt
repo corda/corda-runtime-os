@@ -20,8 +20,7 @@ class QueryParametersResolverTest {
     fun `queryParametersResolver_withQueryParametersMethodAndNullQueryParam_returnsPopulatedMap`() {
         val result = TestHealthCheckAPI::hello2.javaMethod!!.queryParametersFrom(arrayOf(null, null))
 
-        assertTrue(result.contains("id"))
-        assertEquals(null, result["id"])
+        assertTrue(result.isEmpty())
     }
 
     @Test

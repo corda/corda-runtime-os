@@ -21,7 +21,7 @@ class PartyConverterTest {
         private const val PARTY = "corda.party"
         private const val partyName = "O=Alice,L=London,C=GB"
         private const val notaryName = "O=Notary,L=London,C=GB"
-        private const val NOTARY_SERVICE_PARTY = "corda.notaryServiceParty"
+        private const val NOTARY_SERVICE_PARTY = "corda.notaryService"
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
@@ -31,9 +31,9 @@ class PartyConverterTest {
         val memberContext = layeredPropertyMapFactory.create<MemberContextImpl>(
             sortedMapOf(
                 MemberInfoExtension.PARTY_NAME to partyName,
-                MemberInfoExtension.PARTY_OWNING_KEY to KEY,
+                MemberInfoExtension.PARTY_SESSION_KEY to KEY,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_NAME to notaryName,
-                MemberInfoExtension.NOTARY_SERVICE_PARTY_KEY to KEY
+                MemberInfoExtension.NOTARY_SERVICE_SESSION_KEY to KEY
             )
         )
 

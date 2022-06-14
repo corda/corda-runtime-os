@@ -1,5 +1,6 @@
 package net.corda.crypto.delegated.signing
 
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import java.io.ByteArrayOutputStream
 import java.security.AlgorithmParameters
@@ -30,10 +31,14 @@ internal class DelegatedSignature(
     }
 
     override fun engineSign(): ByteArray? {
-        val spec = SignatureSpec(
-            signatureName = signatureName,
-            params = parameterSpec
-        )
+        val spec = if (parameterSpec != null) {
+            ParameterizedSignatureSpec(
+                signatureName = signatureName,
+                params = parameterSpec!!
+            )
+        } else {
+            SignatureSpec(signatureName)
+        }
         return try {
             val key = signingKey ?: throw SecurityException(
                 "'engineSign' invoked without a key having been assigned previously via 'engineInitSign'"

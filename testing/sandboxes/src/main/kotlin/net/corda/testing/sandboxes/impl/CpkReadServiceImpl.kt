@@ -6,6 +6,7 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
@@ -64,12 +65,10 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun loadCPI(resourceName: String): Cpi {
         return getInputStream(resourceName).buffered().use { input ->
-            Cpi.from(input, expansionLocation = cpkDir, verifySignature = true)
+            CpiReader.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.cpiId
-            cpis.putIfAbsent(cpiId, newCpi)?.also {
-                newCpi.close()
-            } ?: newCpi
+            cpis.putIfAbsent(cpiId, newCpi) ?: newCpi
         }
     }
 
@@ -79,7 +78,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun removeCpiMetadata(id: CpiIdentifier) {
         logger.info("Removing CPI {}", id)
-        cpis.remove(id)?.close()
+        cpis.remove(id)
     }
 
     override fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>> {

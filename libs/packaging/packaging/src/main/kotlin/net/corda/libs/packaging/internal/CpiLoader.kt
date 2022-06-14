@@ -2,6 +2,7 @@ package net.corda.libs.packaging.internal
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
+import net.corda.libs.packaging.CpkReader
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
@@ -28,10 +29,10 @@ internal object CpiLoader {
 
     fun loadCpi(inputStream : InputStream, expansionLocation : Path, cpiLocation : String?, verifySignature : Boolean) : Cpi {
         val ctx = load(inputStream, expansionLocation, cpiLocation, verifySignature)
-        return CpiImpl(ctx.metadata, ctx.cpks!!)
+        return CpiImpl(ctx.metadata, ctx.cpks)
     }
 
-    private class CpiContext(val metadata : CpiMetadata, val cpks : List<Cpk>?)
+    private class CpiContext(val metadata : CpiMetadata, val cpks : List<Cpk>)
 
     @Suppress("NestedBlockDepth", "ComplexMethod")
     private fun load(inputStream : InputStream, expansionLocation : Path?, cpiLocation : String?, verifySignature : Boolean) : CpiContext {
@@ -57,8 +58,7 @@ internal object CpiLoader {
                         /** We need to do this as [Cpk.from] closes the stream, while we still need it afterward **/
                         val uncloseableInputStream = UncloseableInputStream(jarInputStream)
                         if(expansionLocation != null) {
-                            val cpk = Cpk.from(
-                                uncloseableInputStream,
+                            val cpk = CpkReader.readCpk(uncloseableInputStream,
                                 expansionLocation,
                                 cpkLocation = cpiLocation.plus("/${entry.name}"),
                                 verifySignature = verifySignature,
@@ -89,6 +89,6 @@ internal object CpiLoader {
             cpksMetadata = cpkMetadata,
             groupPolicy = groupPolicy,
             timestamp = Instant.now()
-        ), cpks.takeIf { expansionLocation != null } )
+        ), cpks)
     }
 }

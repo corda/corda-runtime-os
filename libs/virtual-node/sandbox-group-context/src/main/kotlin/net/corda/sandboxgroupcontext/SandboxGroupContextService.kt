@@ -66,7 +66,8 @@ interface SandboxGroupContextService: AutoCloseable {
 
     /**
      * This function registers instances of the service classes
-     * identified within the [SandboxGroup]'s [CPK.Metadata].
+     * identified within the [SandboxGroup][net.corda.sandbox.SandboxGroup]'s
+     * [CpkMetadata].
      * Each OSGi service will be a singleton containing an extra
      * `corda.sandbox=true` service property.
      *
@@ -80,7 +81,7 @@ interface SandboxGroupContextService: AutoCloseable {
      * service also implements [VirtualNodeContext.serviceMarkerType].
      *
      * You should register these metadata services as part of the
-     * [ServiceContextGroupInitializer].
+     * [SandboxGroupContextInitializer].
      *
      * @param sandboxGroupContext
      * @param serviceNames A lambda to extract the service class names from the CPK metadata.
@@ -100,7 +101,7 @@ interface SandboxGroupContextService: AutoCloseable {
     /**
      * This function registers any [DigestAlgorithmFactory][net.corda.v5.cipher.suite.DigestAlgorithmFactory]
      * instances that exist inside the [SandboxGroup][net.corda.sandbox.SandboxGroup]'s CPKs.
-     * The [DigestAlgorithmFactoryProvider][net.corda.crypto.DigestAlgorithmFactoryProvider]
+     * The [DigestAlgorithmFactoryProvider][net.corda.crypto.core.DigestAlgorithmFactoryProvider]
      * component will discover these services when the sandbox uses its
      * [DigestService][net.corda.v5.crypto.DigestService] for the first time.
      *

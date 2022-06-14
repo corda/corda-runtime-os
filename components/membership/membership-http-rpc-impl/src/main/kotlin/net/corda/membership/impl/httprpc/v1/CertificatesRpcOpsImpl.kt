@@ -3,21 +3,26 @@ package net.corda.membership.impl.httprpc.v1
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.EDDSA_ED25519_NONE_SIGNATURE_SPEC
+import net.corda.v5.crypto.EDDSA_ED25519_SIGNATURE_SPEC
 import net.corda.v5.crypto.GOST3410_GOST3411_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.RSA_SHA512_SIGNATURE_SPEC
@@ -45,6 +50,7 @@ import org.osgi.service.component.annotations.Reference
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 import java.security.PublicKey
+import java.security.cert.CertificateFactory
 import javax.security.auth.x500.X500Principal
 
 @Component(service = [PluggableRPCOps::class])
@@ -55,13 +61,17 @@ class CertificatesRpcOpsImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = CertificatesClient::class)
+    private val certificatesClient: CertificatesClient,
 ) : CertificatesRpcOps, PluggableRPCOps<CertificatesRpcOps>, Lifecycle {
 
     private companion object {
+        private val logger = contextLogger()
+
         private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
             ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            EDDSA_ED25519_TEMPLATE to EDDSA_ED25519_NONE_SIGNATURE_SPEC,
+            EDDSA_ED25519_TEMPLATE to EDDSA_ED25519_SIGNATURE_SPEC,
             GOST3410_GOST3411_TEMPLATE to GOST3410_GOST3411_SIGNATURE_SPEC,
             RSA_CODE_NAME to RSA_SHA512_SIGNATURE_SPEC,
             SM2_CODE_NAME to SM2_SM3_SIGNATURE_SPEC,
@@ -127,6 +137,28 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
+    override fun importCertificate(tenantId: String, alias: String, certificate: HttpFileUpload) {
+        // validate certificate
+        val rawCertificate = certificate.content.reader().readText()
+        try {
+            CertificateFactory
+                .getInstance("X.509")
+                .generateCertificate(rawCertificate.byteInputStream())
+        } catch (e: Exception) {
+            logger.warn("Invalid certificate", e)
+            throw InvalidInputDataException(
+                details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
+            )
+        }
+
+        try {
+            certificatesClient.importCertificate(tenantId, alias, rawCertificate)
+        } catch (e: Exception) {
+            logger.warn("Could not import certificate", e)
+            throw InternalServerException("Could not import certificate: ${e.message}")
+        }
+    }
+
     override val targetInterface = CertificatesRpcOps::class.java
 
     override val protocolVersion = 1
@@ -151,6 +183,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         ::deactivate,
         setOf(
             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+            LifecycleCoordinatorName.forComponent<CertificatesClient>(),
         )
     )
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)
