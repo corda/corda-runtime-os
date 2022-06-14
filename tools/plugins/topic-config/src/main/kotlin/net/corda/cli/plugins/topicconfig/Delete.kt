@@ -15,12 +15,12 @@ class Delete(
 ) : Runnable {
     @CommandLine.Option(
         names = ["-f", "--prefix"],
-        description = ["Set topic prefix for created topics"]
+        description = ["Prefix for deleted topics"]
     )
     var topicPrefix: String? = null
     @CommandLine.Option(
         names = ["-a", "--address"],
-        description = ["Bootstrap server address for topic create"],
+        description = ["Bootstrap server address for topic deletion"],
         required = true
     )
     var bootstrapAddress: String? = null
@@ -37,7 +37,7 @@ class Delete(
 
     private fun createFilter(): List<String> {
         return if (topicPrefix != null) {
-            listOf("grep -ie '^$topicPrefix'")
+            listOf("grep -e '^$topicPrefix'")
         } else {
             emptyList()
         }
@@ -68,11 +68,11 @@ class Delete(
             ).joinToString(System.lineSeparator())
 
         if (outputLocation != null) {
-            logger.info("Wrote to path $outputLocation")
             val writer = writerFactory(outputLocation!!)
             writer.write(output)
             writer.flush()
             writer.close()
+            logger.info("Wrote to path $outputLocation")
         } else {
             println(
                 listOf(output)

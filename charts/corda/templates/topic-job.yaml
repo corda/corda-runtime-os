@@ -79,9 +79,11 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
-        {{- if .Values.kafka.cleanUp }}
+        {{- if .Values.kafka.cleanup }}
         - name: delete-topic-script
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [
             'topic',
             'delete',
