@@ -608,7 +608,7 @@ class ComplexDominoTileTest {
                 factory,
                 mock(),
                 dependentChildren = dependentChildren,
-                managedChildren = managedChildren.map { it.toManagedChild() }
+                managedChildren = managedChildren
             )
 
         @Nested
@@ -828,7 +828,6 @@ class ComplexDominoTileTest {
                     mock {
                         on { close() } doThrow RuntimeException("")
                         on { coordinatorName } doReturn LifecycleCoordinatorName("component", "1")
-                        on { toManagedChild() } doReturn ManagedChild(mock(), this.mock)
                     }
                 )
                 val registration = mock<RegistrationHandle>()
@@ -845,10 +844,8 @@ class ComplexDominoTileTest {
 
         val dominoTile by lazy {
             mock<ComplexDominoTile> {
-//                on { state } doAnswer { currentState }
                 on { this.coordinatorName } doReturn coordinatorName
                 on { isRunning } doAnswer { currentState == LifecycleStatus.UP }
-                on { toManagedChild() } doReturn ManagedChild(mock(), this.mock)
             }
         }
         private var currentState: LifecycleStatus = LifecycleStatus.DOWN

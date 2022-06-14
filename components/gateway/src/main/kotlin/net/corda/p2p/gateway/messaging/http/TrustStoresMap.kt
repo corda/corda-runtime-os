@@ -60,7 +60,7 @@ internal class TrustStoresMap(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
-        managedChildren = listOf(subscriptionTile.toManagedChild(), blockingDominoTile.toManagedChild()),
+        managedChildren = listOf(subscriptionTile, blockingDominoTile),
     )
 
     class TrustedCertificates(

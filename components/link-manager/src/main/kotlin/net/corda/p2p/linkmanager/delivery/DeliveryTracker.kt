@@ -79,15 +79,12 @@ internal class DeliveryTracker(
             sessionManager.dominoTile.coordinatorName,
             appMessageReplayer.dominoTile.coordinatorName
         ),
-        setOf(
-            replayScheduler.dominoTile.toManagedChild(),
-            appMessageReplayer.dominoTile.toManagedChild()
-        )
+        setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
     )
 
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
         dependentChildren = setOf(messageTrackerSubscriptionTile.coordinatorName),
-        managedChildren = setOf(messageTrackerSubscriptionTile.toManagedChild())
+        managedChildren = setOf(messageTrackerSubscriptionTile)
     )
 
     private class AppMessageReplayer(

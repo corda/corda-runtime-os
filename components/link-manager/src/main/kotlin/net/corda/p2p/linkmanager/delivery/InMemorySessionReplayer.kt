@@ -52,7 +52,7 @@ internal class InMemorySessionReplayer(
         coordinatorFactory,
         dependentChildren = setOf(replayScheduler.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             groups.dominoTile.coordinatorName, members.dominoTile.coordinatorName),
-        managedChildren = setOf(replayScheduler.dominoTile.toManagedChild(), publisher.dominoTile.toManagedChild())
+        managedChildren = setOf(replayScheduler.dominoTile, publisher.dominoTile)
     )
 
     data class SessionMessageReplay(

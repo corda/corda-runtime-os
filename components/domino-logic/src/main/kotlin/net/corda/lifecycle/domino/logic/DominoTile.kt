@@ -31,7 +31,7 @@ interface DominoTile: Lifecycle {
      * This tile is responsible for invoking [start] on these children when it is started.
      * It is also responsible for invoking [stop] when it is stopped.
      */
-    val managedChildren: Collection<ManagedChild>
+    val managedChildren: Collection<Lifecycle>
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
@@ -46,9 +46,5 @@ interface DominoTile: Lifecycle {
 
     override fun stop() {
         coordinator.stop()
-    }
-
-    fun toManagedChild(): ManagedChild {
-        return ManagedChild(this.coordinator, this)
     }
 }

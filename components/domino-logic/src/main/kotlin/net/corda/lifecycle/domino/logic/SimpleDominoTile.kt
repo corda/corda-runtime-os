@@ -1,5 +1,6 @@
 package net.corda.lifecycle.domino.logic
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -48,7 +49,7 @@ class SimpleDominoTile(
     private val currentState = AtomicReference(LifecycleStatus.DOWN)
 
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
-    override val managedChildren: Collection<ManagedChild> = emptyList()
+    override val managedChildren: Collection<Lifecycle> = emptyList()
 
     fun updateState(newState: LifecycleStatus) {
         val oldState = currentState.getAndSet(newState)

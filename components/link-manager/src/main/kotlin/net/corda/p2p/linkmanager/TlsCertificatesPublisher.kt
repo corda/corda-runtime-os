@@ -127,11 +127,7 @@ internal class TlsCertificatesPublisher(
             subscriptionDominoTile.coordinatorName,
             blockingDominoTile.coordinatorName
         ),
-        managedChildren = listOf(
-            publisher.dominoTile.toManagedChild(),
-            subscriptionDominoTile.toManagedChild(),
-            blockingDominoTile.toManagedChild()
-        )
+        managedChildren = listOf(publisher.dominoTile, subscriptionDominoTile, blockingDominoTile)
     )
 
     private fun onStart() {
