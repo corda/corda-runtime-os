@@ -110,14 +110,23 @@ internal class Registration(
      */
     override fun close() {
         if (!isClosed.getAndSet(true)) {
-            try {
+            closeSafely {
                 registeringCoordinator.postEvent(StopTrackingRegistration(this))
-                coordinators.forEach { it.postEvent(CancelRegistration(this)) }
-            } catch (ex: LifecycleException) {
-                // An error here means we're probably already in the process of closing, so we can safely ignore it
-                logger.debug { "Caught but ignoring exception during Registration close: $ex" }
             }
+            coordinators.forEach { coordinator ->
+                closeSafely {
+                    coordinator.postEvent(CancelRegistration(this))
+                }
+            }
+        }
+    }
 
+    private fun closeSafely(block: () -> Unit) {
+        try {
+            block()
+        } catch (ex: LifecycleException) {
+            // An error here means we're probably already in the process of closing, so we can safely ignore it
+            logger.debug { "Caught but ignoring exception during Registration close: $ex" }
         }
     }
 

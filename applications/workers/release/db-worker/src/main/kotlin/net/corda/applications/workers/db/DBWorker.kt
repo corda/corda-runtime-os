@@ -13,10 +13,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.BootConfig.BOOT_RECONCILIATION
 import net.corda.processors.uniqueness.UniquenessProcessor
-import net.corda.schema.configuration.ConfigDefaults
-import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -54,32 +51,14 @@ class DBWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val reconciliationTaskConfig = getReconciliationTaskConfigWithDefaults(params.reconciliationTaskParams)
         val config = getBootstrapConfig(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                databaseConfig,
-                reconciliationTaskConfig
-            )
+            listOf(databaseConfig)
         )
 
         processor.start(config)
         uniquenessProcessor.start()
-    }
-
-    private fun getReconciliationTaskConfigWithDefaults(reconciliationTaskParams: Map<String, String>): PathAndConfig {
-        val fallback: MutableMap<String, String> = mutableMapOf(
-            ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to
-                    ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS_DEFAULT.toString(),
-            ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS to
-                    ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT.toString(),
-            ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS to
-                    ConfigDefaults.RECONCILIATION_CPI_INFO_INTERVAL_MS_DEFAULT.toString(),
-
-            )
-        fallback.putAll(reconciliationTaskParams)
-        return PathAndConfig(BOOT_RECONCILIATION, fallback)
     }
 
     override fun shutdown() {
@@ -96,7 +75,4 @@ private class DBWorkerParams {
 
     @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
-
-    @Option(names = ["-r", "--reconciliationTaskParams"], description = ["Parameters for reconciliation tasks run on the database worker."])
-    var reconciliationTaskParams: Map<String, String> = emptyMap()
 }

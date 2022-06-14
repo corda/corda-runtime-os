@@ -190,7 +190,7 @@ class CryptoProcessorTests {
                     Record(
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
-                        Configuration(messagingConfig.root().render(), "1", ConfigurationSchemaVersion(1, 0))
+                        Configuration(messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             )

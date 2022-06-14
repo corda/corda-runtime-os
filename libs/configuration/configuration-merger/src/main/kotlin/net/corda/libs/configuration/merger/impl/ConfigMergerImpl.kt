@@ -7,8 +7,6 @@ import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.BootConfig.BOOT_RECONCILIATION
-import net.corda.schema.configuration.BootConfig.BOOT_RPC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,22 +21,10 @@ class ConfigMergerImpl @Activate constructor(
         return busConfigMerger.getMessagingConfig(bootConfig, messagingConfig)
     }
 
-    override fun getRPCConfig(bootConfig: SmartConfig, rpcConfig: SmartConfig?): SmartConfig {
-        val updatedRPCConfig = rpcConfig?: SmartConfigImpl.empty()
-        val bootRPCConfig = bootConfig.getConfigOrEmpty(BOOT_RPC)
-        return bootRPCConfig.withFallback(updatedRPCConfig)
-    }
-
     override fun getCryptoConfig(bootConfig: SmartConfig, cryptoConfig: SmartConfig?): SmartConfig {
         val updatedCryptoConfig = cryptoConfig?: SmartConfigImpl.empty()
         val bootCryptoConfig = bootConfig.getConfigOrEmpty(BOOT_CRYPTO)
         return bootCryptoConfig.withFallback(updatedCryptoConfig)
-    }
-
-    override fun getReconciliationConfig(bootConfig: SmartConfig, reconciliation: SmartConfig?): SmartConfig {
-        val updatedReconciliation = reconciliation?: SmartConfigImpl.empty()
-        val bootReconConfig = bootConfig.getConfigOrEmpty(BOOT_RECONCILIATION)
-        return bootReconConfig.withFallback(updatedReconciliation)
     }
 
     override fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig {
