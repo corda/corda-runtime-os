@@ -2,7 +2,7 @@ package net.corda.flow.fiber
 
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
-import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -24,7 +24,7 @@ class RPCStartedFlowTest {
             return REQUEST_BODY
         }
 
-        override fun <T> getRequestBodyAs(jsonMarshallingService: JsonMarshallingService, clazz: Class<T>): T {
+        override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
             TODO("Not yet implemented")
         }
     }

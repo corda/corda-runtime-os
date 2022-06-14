@@ -66,18 +66,6 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
             extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
         }
 
-//        cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.rpcStartableFlows }.forEach { flow ->
-//            logger.info("Reading RPC startable flow $flow for protocols")
-//            val flowClass = sandboxGroup.loadClassFromMainBundles(flow, RPCStartableFlow::class.java)
-//            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
-//        }
-//
-//        cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.initiatedFlows }.forEach { flow ->
-//            logger.info("Reading initiated flow $flow for protocols")
-//            val flowClass = sandboxGroup.loadClassFromMainBundles(flow, ResponderFlow::class.java)
-//            extractDataForFlow(flow, flowClass, initiatorToProtocol, protocolToResponder)
-//        }
-
         return FlowProtocolStoreImpl(initiatorToProtocol, protocolToResponder)
     }
 }
