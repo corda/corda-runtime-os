@@ -14,7 +14,10 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.getZeroHash
 import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import java.security.SecureRandom
 
 class MerkleTreeTest {
@@ -38,6 +41,17 @@ class MerkleTreeTest {
             defaultHashDigestProvider = DefaultHashDigestProvider(digestAlgorithm, digestService)
             nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
             nonceHashDigestProviderVerify = NonceHashDigestProvider.Verify(digestAlgorithm, digestService)
+        }
+
+        @JvmStatic
+        fun supportedDigestProviders(): List<MerkleTreeHashDigestProvider>{
+            return listOf(
+                DefaultHashDigestProvider(digestAlgorithm, digestService),
+                TweakableHashDigestProvider(digestAlgorithm, digestService, "0".toByteArray(), "1".toByteArray()),
+                NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom),
+                NonceHashDigestProvider.Verify(digestAlgorithm, digestService),
+                NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService),
+            )
         }
     }
 
@@ -277,5 +291,18 @@ class MerkleTreeTest {
             true,
             sizeOnlyProof.verify(nonceMerkleTree.root, NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService))
         )
+    }
+
+    @ParameterizedTest(name = "{0} digest provider should guarantee the same hash used in the whole tree")
+    @MethodSource("supportedDigestProviders")
+    fun `Digest Providers should guarantee the same hash used in the whole tree`(candidate: MerkleTreeHashDigestProvider) {
+        val matching = SecureHash(digestAlgorithm.name, "abc".toByteArray())
+        val nonMatching = SecureHash(DigestAlgorithmName.SHA2_256.name, "abc".toByteArray())
+        assertFailsWith(IllegalArgumentException::class) {
+            candidate.nodeHash(1, matching, nonMatching)
+        }
+        assertFailsWith(IllegalArgumentException::class) {
+            candidate.nodeHash(1, nonMatching, nonMatching)
+        }
     }
 }

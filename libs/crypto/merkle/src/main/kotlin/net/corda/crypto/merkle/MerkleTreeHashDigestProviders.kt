@@ -36,6 +36,7 @@ class DefaultHashDigestProvider(
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
+        checkMatchingAlgorithms(left, right)
         return digestService.hash(concatByteArrays(ONE_BYTE, left.serialize(), right.serialize()), digestAlgorithmName)
     }
 }
@@ -62,6 +63,7 @@ class TweakableHashDigestProvider(
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
+        checkMatchingAlgorithms(left, right)
         return digestService.hash(concatByteArrays(nodePrefix, left.serialize(), right.serialize()), digestAlgorithmName)
     }
 }
@@ -97,6 +99,7 @@ open class NonceHashDigestProvider(
         }
 
         override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
+            checkMatchingAlgorithms(left, right)
             return digestService.hash(concatByteArrays(depth.toByteArray(), left.serialize(), right.serialize()), digestAlgorithmName)
         }
     }
@@ -121,6 +124,7 @@ open class NonceHashDigestProvider(
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
+        checkMatchingAlgorithms(left, right)
         return digestService.hash(concatByteArrays(depth.toByteArray(), left.serialize(), right.serialize()), digestAlgorithmName)
     }
 
@@ -140,6 +144,14 @@ open class NonceHashDigestProvider(
     override fun hashCode(): Int {
         return 31 * digestAlgorithmName.hashCode() + entropy.contentHashCode()
     }
+}
+
+private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHash, right: SecureHash){
+    require(
+    left.algorithm == digestAlgorithmName.name &&
+    left.algorithm == right.algorithm
+    ) { "Nodes should use the same digest algorithm as the Hash Digest Provider! (L: ${left.algorithm} " +
+            "R: ${right.algorithm} HDP: ${digestAlgorithmName.name})"}
 }
 
 const val SERIALIZATION_SEPARATOR: Char = ':'
