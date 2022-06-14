@@ -1,7 +1,7 @@
 package net.corda.p2p.setup
 
 import net.corda.messaging.api.records.Record
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -24,7 +24,7 @@ class RemoveGroup : Callable<Collection<Record<String, *>>> {
             "Topic to write the member information records to."
         ]
     )
-    private var groupInfoTopic: String = TestSchema.GROUP_POLICIES_TOPIC
+    private var groupInfoTopic: String = GROUP_POLICIES_TOPIC
 
     @Parameters(
         description = [

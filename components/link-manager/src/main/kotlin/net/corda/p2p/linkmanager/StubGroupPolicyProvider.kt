@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 

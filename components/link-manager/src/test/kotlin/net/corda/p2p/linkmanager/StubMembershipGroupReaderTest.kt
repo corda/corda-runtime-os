@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -209,7 +209,7 @@ class StubMembershipGroupReaderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 null
             ),
@@ -250,7 +250,7 @@ class StubMembershipGroupReaderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 carol
             ),
