@@ -1,6 +1,8 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -8,7 +10,9 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowProcessingException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
+import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.libs.configuration.SmartConfig
@@ -105,6 +109,17 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(exception: FlowEventException): StateAndEventProcessor.Response<Checkpoint> {
         log.warn("A non critical error was reported while processing the event.", exception)
         return flowEventContextConverter.convert(exception.getFlowContext())
+    }
+
+    override fun process(exception: FlowPlatformException): StateAndEventProcessor.Response<Checkpoint> {
+        val context = exception.getFlowContext()
+        val checkpoint = context.checkpoint
+
+        checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message ?: "")
+        checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
+
+        val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+        return flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
     }
 
     private fun FlowProcessingException.getFlowContext(): FlowEventContext<*> {

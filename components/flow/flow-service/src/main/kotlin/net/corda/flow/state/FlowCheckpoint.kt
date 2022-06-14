@@ -1,5 +1,6 @@
 package net.corda.flow.state
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -42,6 +43,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val retryEvent: FlowEvent
 
+    val pendingPlatformError: ExceptionEnvelope?
+
     fun initFromNew(flowId: String, flowStartContext: FlowStartContext)
 
     fun getSessionState(sessionId: String): SessionState?
@@ -56,7 +59,11 @@ interface FlowCheckpoint : NonSerializable {
 
     fun markRetrySuccess()
 
+    fun clearPendingPlatformError()
+
     fun setFlowSleepDuration(sleepTimeMs: Int)
+
+    fun setPendingPlatformError(type: String, message: String)
 
     fun toAvro(): Checkpoint?
 }

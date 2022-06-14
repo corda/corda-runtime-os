@@ -48,7 +48,7 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionData] messages to send.
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun sendDataMessages(
         checkpoint: FlowCheckpoint,
@@ -65,7 +65,7 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionClose] messages to send.
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun sendCloseMessages(
         checkpoint: FlowCheckpoint,
@@ -82,7 +82,7 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionError] messages to send.
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun sendErrorMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, throwable: Throwable, instant: Instant): List<SessionState>
 
@@ -96,7 +96,7 @@ interface FlowSessionManager {
      *
      * @return A list of [SessionState]s to [SessionEvent]s. Sessions without session events are not contained in this list.
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun getReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): List<Pair<SessionState, SessionEvent>>
 
@@ -115,7 +115,7 @@ interface FlowSessionManager {
      *
      * @return `true`, if all sessions have received their next session event, `false` otherwise.
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun hasReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): Boolean
 
@@ -128,7 +128,7 @@ interface FlowSessionManager {
      *
      * @return A list of [SessionState]s that have a [SessionState.status] of [status].
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun getSessionsWithStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): List<SessionState>
 
@@ -141,7 +141,17 @@ interface FlowSessionManager {
      *
      * @return `true`, if all sessions have status [status], `false` otherwise.
      *
-     * @throws FlowSessionMissingException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws [FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
+
+    /**
+     * Checks the sessions to ensure they are in valid state for communication with a peer
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to check the status of.
+     *
+     * @throws FlowSessionStateException If any of the sessions don't exist, or they are not in the CONFIRMED state
+     */
+    fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>)
 }

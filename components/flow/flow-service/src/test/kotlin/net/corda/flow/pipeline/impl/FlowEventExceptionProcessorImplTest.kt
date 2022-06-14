@@ -3,12 +3,15 @@ package net.corda.flow.pipeline.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
@@ -40,7 +43,7 @@ class FlowEventExceptionProcessorImplTest {
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2))
     private val smartFlowConfig = SmartConfigFactory.create(flowConfig).create(flowConfig)
     private val inputEvent = Wakeup()
-    private val context = buildFlowEventContext<Any>(checkpoint =  flowCheckpoint, inputEventPayload =  inputEvent)
+    private val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
     private val converterResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
         listOf<Record<String, String>>()
@@ -81,13 +84,13 @@ class FlowEventExceptionProcessorImplTest {
         val result = target.process(error)
 
         assertThat(result).isSameAs(converterResponse)
-        verify(flowEventContextConverter).convert(argThat{
+        verify(flowEventContextConverter).convert(argThat {
             assertThat(this.outputRecords).containsOnly(flowStatusUpdateRecord)
             true
-            }
+        }
         )
         verify(flowCheckpoint).rollback()
-        verify(flowCheckpoint).markForRetry(context.inputEvent,error)
+        verify(flowCheckpoint).markForRetry(context.inputEvent, error)
     }
 
     @Test
@@ -96,11 +99,13 @@ class FlowEventExceptionProcessorImplTest {
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(2)
-        whenever(flowMessageFactory.createFlowFailedStatusMessage(
-            flowCheckpoint,
-            FlowProcessingExceptionTypes.FLOW_FAILED,
-            "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
-        )).thenReturn(flowStatusUpdate)
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+            )
+        ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
         val result = target.process(error)
@@ -116,11 +121,13 @@ class FlowEventExceptionProcessorImplTest {
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
 
-        whenever(flowMessageFactory.createFlowFailedStatusMessage(
-            flowCheckpoint,
-            FlowProcessingExceptionTypes.FLOW_FAILED,
-            "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
-        )).thenReturn(flowStatusUpdate)
+        whenever(
+            flowMessageFactory.createFlowFailedStatusMessage(
+                flowCheckpoint,
+                FlowProcessingExceptionTypes.FLOW_FAILED,
+                "Flow processing has failed due to a fatal exception, the flow will be moved to the DLQ"
+            )
+        ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
         val result = target.process(error)
@@ -128,6 +135,27 @@ class FlowEventExceptionProcessorImplTest {
         assertThat(result.updatedState).isNull()
         assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
         assertThat(result.markForDLQ).isTrue
+    }
+
+    @Test
+    fun `flow platform exception marks sets pending exception and outputs wakeup`() {
+        val flowId = "f1"
+        val error = FlowPlatformException("error", context)
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
+
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
+
+        val result = target.process(error)
+
+        assertThat(result).isSameAs(converterResponse)
+        verify(flowEventContextConverter).convert(argThat {
+            assertThat(this.outputRecords).containsOnly(flowEventRecord)
+            true
+        })
+
+        verify(flowCheckpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
+        verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message!!)
     }
 
     @Test

@@ -6,6 +6,7 @@ import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
@@ -63,6 +64,8 @@ class FlowEventProcessorImpl(
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e)
         } catch (e: FlowEventException) {
+            flowEventExceptionProcessor.process(e)
+        } catch (e: FlowPlatformException) {
             flowEventExceptionProcessor.process(e)
         } catch (e: FlowFatalException) {
             flowEventExceptionProcessor.process(e)
