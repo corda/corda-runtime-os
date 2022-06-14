@@ -22,7 +22,6 @@ spec:
           args:
             - |
               set -e
-              export KAFKA_HEAP_OPTS="-Xmx1G"
               bash "/tmp/working_dir/create-topics.sh"
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -106,7 +105,6 @@ spec:
           args:
             - |
               set -e
-              export KAFKA_HEAP_OPTS="-Xmx1G"
               bash -x "/tmp/working_dir/delete-topics.sh"
           volumeMounts:
             - mountPath: /tmp/working_dir
