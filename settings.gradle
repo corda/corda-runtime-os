@@ -46,11 +46,11 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
-        id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
+        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
     }
 }
 
@@ -77,6 +77,7 @@ include 'applications:tools:p2p-test:app-simulator'
 include 'applications:tools:p2p-test:p2p-setup'
 include 'applications:tools:p2p-test:p2p-layer-deployment'
 include 'applications:tools:p2p-test:fake-ca'
+include 'applications:tools:p2p-test:dump-topic'
 include 'applications:workers:release:combined-worker'
 include 'applications:workers:release:crypto-worker'
 include 'applications:workers:release:db-worker'
@@ -128,6 +129,10 @@ include 'components:membership:registration'
 include 'components:membership:registration-impl'
 include 'components:membership:membership-service'
 include 'components:membership:membership-service-impl'
+include 'components:membership:certificates-client'
+include 'components:membership:certificates-client-impl'
+include 'components:membership:certificates-service'
+include 'components:membership:certificates-service-impl'
 include 'components:permissions:permission-management-service'
 include 'components:permissions:permission-management-cache-service'
 include 'components:permissions:permission-storage-reader-service'
@@ -214,6 +219,7 @@ include 'libs:lifecycle:registry'
 include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
 include 'libs:membership:membership-impl'
+include 'libs:membership:certificates-datamodel'
 include 'libs:messaging:db-message-bus-datamodel'
 include 'libs:messaging:db-message-bus-impl'
 include 'libs:messaging:db-topic-admin-impl'
@@ -327,9 +333,11 @@ include 'testing:test-utilities'
 include 'testing:uniqueness'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
+include 'tools:crypto-tck'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:secret-config'
+include 'tools:plugins:topic-config'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.

@@ -16,18 +16,19 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 /*
 {
   "rootKey": {
-    "salt": "<plain-text-value>"
-    "passphrase": {
-        "configSecret": {
-            "encryptedSecret": "<encrypted-value>"
+        "salt": "<plain-text-value>",
+        "passphrase": {
+            "configSecret": {
+                "encryptedSecret": "<encrypted-value>"
+            }
         }
     },
     "softPersistence": {
-        "expireAfterAccessMins": 60,
-        "maximumSize": 100,
-        "retries": 0,
-        "timeoutMills": 20000,
-        "salt": "<plain-text-value>"
+        "expireAfterAccessMins": 240,
+        "maximumSize": 1000,
+        "maxAttempts": 1,
+        "attemptTimeoutMills": 20000,
+        "salt": "<plain-text-value>",
         "passphrase": {
             "configSecret": {
                 "encryptedSecret": "<encrypted-value>"
@@ -35,13 +36,17 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
         }
     },
     "signingPersistence": {
-        "expireAfterAccessMins": 60,
-        "maximumSize": 100
+        "keysExpireAfterAccessMins": 90,
+        "keyNumberLimit": 20,
+        "vnodesExpireAfterAccessMins": 120,
+        "vnodeNumberLimit": 100,
+        "connectionsExpireAfterAccessMins": 15,
+        "connectionNumberLimit": 2
     },
     "hsmPersistence": {
-        "expireAfterAccessMins": 60,
-        "maximumSize": 100,
-        "downstreamRetries": 3
+        "expireAfterAccessMins": 240,
+        "maximumSize": 1000,
+        "downstreamMaxAttempts": 3
     }
 }
  */
@@ -145,30 +150,34 @@ fun SmartConfigFactory.createDefaultCryptoConfig(
             .withValue(
                 SOFT_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        "expireAfterAccessMins" to "240",
-                        "maximumSize" to "1000",
+                        CryptoSoftPersistenceConfig::expireAfterAccessMins.name to "240",
+                        CryptoSoftPersistenceConfig::maximumSize.name to "1000",
                         CryptoSoftPersistenceConfig::salt.name to softKey.salt,
                         CryptoSoftPersistenceConfig::passphrase.name to ConfigValueFactory.fromMap(
                             makeSecret(softKey.passphrase).root().unwrapped()
                         ),
-                        CryptoSoftPersistenceConfig::retries.name to "0",
-                        CryptoSoftPersistenceConfig::timeoutMills.name to "20000"
+                        CryptoSoftPersistenceConfig::maxAttempts.name to "0",
+                        CryptoSoftPersistenceConfig::attemptTimeoutMills.name to "20000"
                     )
                 )
             )
             .withValue(
                 SIGNING_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        "expireAfterAccessMins" to "90",
-                        "maximumSize" to "20"
+                        CryptoSigningPersistenceConfig::keysExpireAfterAccessMins.name to "90",
+                        CryptoSigningPersistenceConfig::keyNumberLimit.name to "20",
+                        CryptoSigningPersistenceConfig::vnodesExpireAfterAccessMins.name to "120",
+                        CryptoSigningPersistenceConfig::vnodeNumberLimit.name to "100",
+                        CryptoSigningPersistenceConfig::connectionsExpireAfterAccessMins.name to "15",
+                        CryptoSigningPersistenceConfig::connectionNumberLimit.name to "2"
                     )
                 )
             ).withValue(
                 HSM_PERSISTENCE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        "expireAfterAccessMins" to "240",
-                        "maximumSize" to "1000",
-                        CryptoHSMPersistenceConfig::downstreamRetries.name to "3",
+                        CryptoHSMPersistenceConfig::expireAfterAccessMins.name to "240",
+                        CryptoHSMPersistenceConfig::maximumSize.name to "1000",
+                        CryptoHSMPersistenceConfig::downstreamMaxAttempts.name to "3",
                     )
                 )
             )

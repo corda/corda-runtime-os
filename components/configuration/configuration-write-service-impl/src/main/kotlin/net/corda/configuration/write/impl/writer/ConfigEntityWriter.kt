@@ -2,15 +2,14 @@ package net.corda.configuration.write.impl.writer
 
 import net.corda.configuration.write.WrongConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.orm.utils.transaction
 import java.time.Clock
+import javax.persistence.EntityManagerFactory
 
 /** A gateway for writing configuration entities to the cluster database. */
-internal class ConfigEntityWriter(dbConnectionManager: DbConnectionManager) {
-    private val entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+internal class ConfigEntityWriter(private val entityManagerFactory: EntityManagerFactory) {
 
     /**
      * Creates the [ConfigEntity] and [ConfigAuditEntity] represented by [req], using [clock] to generate the current

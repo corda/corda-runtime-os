@@ -38,7 +38,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
 
     override val protocolVersion = 1
 
-    private var impl: InnerMemberRegistrationRpcOps = InactiveImpl(className)
+    private var impl: InnerMemberRegistrationRpcOps = InactiveImpl
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<MemberRegistrationRpcOps>(
         protocolVersion.toString()
@@ -74,13 +74,13 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         impl.checkRegistrationProgress(holdingIdentityId)
 
     fun activate(reason: String) {
-        impl = ActiveImpl(memberOpsClient)
+        impl = ActiveImpl()
         updateStatus(LifecycleStatus.UP, reason)
     }
 
     fun deactivate(reason: String) {
         updateStatus(LifecycleStatus.DOWN, reason)
-        impl = InactiveImpl(className)
+        impl = InactiveImpl
     }
 
     private fun updateStatus(status: LifecycleStatus, reason: String) {
@@ -89,19 +89,19 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         }
     }
 
-    private class InactiveImpl(
-        val className: String
-    ) : InnerMemberRegistrationRpcOps {
+    private object InactiveImpl : InnerMemberRegistrationRpcOps {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest) =
-            throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+            throw ServiceUnavailableException(
+                "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
 
         override fun checkRegistrationProgress(holdingIdentityId: String) =
-            throw ServiceUnavailableException("$className is not running. Operation cannot be fulfilled.")
+            throw ServiceUnavailableException(
+                "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
     }
 
-    private class ActiveImpl(
-        val memberOpsClient: MemberOpsClient
-    ) : InnerMemberRegistrationRpcOps {
+    private inner class ActiveImpl : InnerMemberRegistrationRpcOps {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequest): RegistrationRequestProgress {
             return memberOpsClient.startRegistration(memberRegistrationRequest.toDto()).fromDto()
         }

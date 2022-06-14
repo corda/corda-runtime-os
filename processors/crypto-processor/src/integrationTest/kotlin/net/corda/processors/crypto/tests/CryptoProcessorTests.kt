@@ -26,6 +26,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -44,13 +45,14 @@ import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
+import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
-import net.corda.processors.crypto.tests.infra.randomTenantId
 import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.DigitalSignature
@@ -59,6 +61,9 @@ import net.corda.v5.crypto.RSASSA_PSS_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -114,13 +119,21 @@ class CryptoProcessorTests {
         @InjectService(timeout = 5000)
         lateinit var lbm: LiquibaseSchemaMigrator
 
+        @InjectService(timeout = 5000)
+        lateinit var virtualNodeInfoReader: VirtualNodeInfoReadService
+
         private lateinit var publisher: Publisher
 
         private lateinit var flowOpsResponses: FlowOpsResponses
 
         private lateinit var transformer: CryptoFlowOpsTransformer
 
-        private val vnodeId: String = randomTenantId()
+        private val vnodeIdentity = HoldingIdentity(
+            "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+            UUID.randomUUID().toString()
+        )
+
+        private val vnodeId: String = vnodeIdentity.id
 
         private val clusterDb = TestDbInfo.createConfig()
 
@@ -133,6 +146,8 @@ class CryptoProcessorTests {
             name = "vnode_crypto_$vnodeId",
             schemaName = "vnode_crypto"
         )
+
+        private lateinit var connectionIds: Map<String, UUID>
 
         private val boostrapConfig = makeBootstrapConfig(
             mapOf(
@@ -147,7 +162,9 @@ class CryptoProcessorTests {
         fun setup() {
             setupPrerequisites()
             setupDatabases()
+            setupVirtualNodeInfo()
             startDependencies()
+            waitForVirtualNodeInfoReady()
             assignHSMs()
         }
 
@@ -173,7 +190,7 @@ class CryptoProcessorTests {
                     Record(
                         CONFIG_TOPIC,
                         MESSAGING_CONFIG,
-                        Configuration(messagingConfig.root().render(), "1", ConfigurationSchemaVersion(1, 0))
+                        Configuration(messagingConfig.root().render(), 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             )
@@ -195,21 +212,25 @@ class CryptoProcessorTests {
                 "vnode-crypto",
                 CryptoEntities.classes
             ).close()
-            addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
+            connectionIds = addDbConnectionConfigs(configEmf, cryptoDb, vnodeDb)
             configEmf.close()
         }
 
-        private fun addDbConnectionConfigs(configEmf: EntityManagerFactory, vararg dbs: TestDbInfo) {
+        private fun addDbConnectionConfigs(
+            configEmf: EntityManagerFactory,
+            vararg dbs: TestDbInfo
+        ): Map<String, UUID> {
+            val ids = mutableMapOf<String, UUID>()
             dbs.forEach { db ->
                 val configAsString = db.config.root().render(ConfigRenderOptions.concise())
                 configEmf.transaction {
                     val existing = it.createQuery("""
                         SELECT c FROM DbConnectionConfig c WHERE c.name=:name AND c.privilege=:privilege
-                    """.trimIndent())
+                    """.trimIndent(), DbConnectionConfig::class.java)
                         .setParameter("name", db.name)
                         .setParameter("privilege", DbPrivilege.DML)
                         .resultList
-                    if(existing.isEmpty()) {
+                    ids[db.name] = if(existing.isEmpty()) {
                         val record = DbConnectionConfig(
                             UUID.randomUUID(),
                             db.name,
@@ -220,9 +241,28 @@ class CryptoProcessorTests {
                             configAsString
                         )
                         it.persist(record)
+                        record.id
+                    } else {
+                        existing.first().id
                     }
                 }
             }
+            return ids
+        }
+
+        private fun setupVirtualNodeInfo() {
+            publisher.publishVirtualNodeInfo(
+                VirtualNodeInfo(
+                    holdingIdentity = vnodeIdentity,
+                    cpiIdentifier = CpiIdentifier(
+                        name = "cpi",
+                        version = "1",
+                        signerSummaryHash = null
+                    ),
+                    cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
+                    vaultDmlConnectionId = UUID.randomUUID()
+                )
+            )
         }
 
         private fun startDependencies() {
@@ -239,6 +279,14 @@ class CryptoProcessorTests {
             ).also { it.startAndWait() }
             tracker.waitUntilAllUp(Duration.ofSeconds(60))
             tracker.stop()
+        }
+
+        private fun waitForVirtualNodeInfoReady() {
+            eventually {
+                val info = virtualNodeInfoReader.get(vnodeIdentity)
+                assertNotNull(info)
+                assertEquals(connectionIds.getValue(vnodeDb.name), info!!.cryptoDmlConnectionId)
+            }
         }
 
         private fun assignHSMs() {

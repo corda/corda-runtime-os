@@ -3,6 +3,8 @@ kind: Job
 {{- if .Values.bootstrap.auto }}
 metadata:
   name: corda-setup-db
+  labels:
+    {{- include "corda.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
@@ -13,19 +15,27 @@ spec:
       containers:
         - name: fin
           image: {{ include "corda.bootstrapImage" . }}
-          command: ['sh', '-c', "echo 'SQL applied'; cat /tmp/working_dir/*.sql"]
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          command:
+            - /bin/sh
+            - -e
+            - -c
+          args: ["echo", "'DB Bootstrapped'"]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
       initContainers:
         - name: create-db-schemas
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [ 'database', 'spec', '-c', '-l', '/tmp/working_dir' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
         - name: apply-db-schemas
-          image: bitnami/postgresql:14.2.0-debian-10-r88
+          image: {{ include "corda.dbClientImage" . }}
           command: [ 'sh', '-c', 'for f in /tmp/working_dir/*.sql; do psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f "$f" --dbname {{ include "corda.clusterDbName" . }}; done' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -38,6 +48,8 @@ spec:
                   key: password
         - name: create-initial-rbac-db-config
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [ 'initial-config', 'create-db-config', '-u', 'rbac_user', '-p', 'rbac_password', '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -54,7 +66,9 @@ spec:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
         - name: apply-initial-rbac-db-config
-          image: bitnami/postgresql:14.2.0-debian-10-r88
+          image: {{ include "corda.dbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -67,6 +81,8 @@ spec:
                   key: password
         - name: create-initial-crypto-db-config
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [ 'initial-config', 'create-db-config', '-u', 'crypto_user', '-p', 'crypto_password', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -83,7 +99,9 @@ spec:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
         - name: apply-initial-crypto-db-config
-          image: bitnami/postgresql:14.2.0-debian-10-r88
+          image: {{ include "corda.dbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/db-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -96,6 +114,8 @@ spec:
                   key: password
         - name: create-initial-rpc-admin
           image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [ 'initial-config', 'create-user-config', '-l', '/tmp/working_dir', 'create-dev-config']
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -112,7 +132,9 @@ spec:
                   name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
                   key: passphrase
         - name: apply-initial-rpc-admin
-          image: bitnami/postgresql:14.2.0-debian-10-r88
+          image: {{ include "corda.dbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/rbac-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -124,7 +146,9 @@ spec:
                   name: {{ include "corda.clusterDbSecretName" . }}
                   key: password
         - name: create-db-users-and-grant
-          image: bitnami/postgresql:14.2.0-debian-10-r88
+          image: {{ include "corda.dbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command: [ '/bin/sh', '-e', '-c' ]
           args:
             - |

@@ -87,6 +87,13 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import java.net.HttpURLConnection.HTTP_BAD_REQUEST
+import java.net.http.HttpClient as JavaHttpClient
+import java.net.http.HttpRequest as JavaHttpRequest
+import java.net.http.HttpResponse.BodyHandlers
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 class GatewayIntegrationTest : TestBase() {
     companion object {
@@ -165,6 +172,50 @@ class GatewayIntegrationTest : TestBase() {
 
     @Nested
     inner class ClientToGatewayTests {
+        @Test
+        @Timeout(30)
+        fun `gateway response to invalid request`() {
+            val port = getOpenPort()
+            val serverAddress = URI.create("https://www.alice.net:$port")
+
+            val tmf = TrustManagerFactory
+                .getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            tmf.init(truststoreKeyStore)
+
+            val myTm = tmf.trustManagers.filterIsInstance(X509TrustManager::class.java).first()
+
+            val sslContext = SSLContext.getInstance("TLSv1.3")
+            sslContext.init(null, arrayOf(myTm), null)
+
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serverAddress.host,
+                        serverAddress.port,
+                        aliceSslConfig
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+            ).use {
+                publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
+                it.startAndWaitForStarted()
+                val httpClient = JavaHttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .build()
+
+                val request = JavaHttpRequest.newBuilder()
+                    .uri(serverAddress)
+                    .build()
+
+                val response = httpClient.send(request, BodyHandlers.discarding())
+                assertThat(response.statusCode()).isEqualTo(HTTP_BAD_REQUEST)
+            }
+        }
+
         @Test
         @Timeout(30)
         fun `http client to gateway`() {

@@ -253,6 +253,9 @@ class PersistenceServiceInternalTests {
     @Test
     fun `persist to an actual database`() {
         // request persist - cats & dogs are in different CPKs/bundles
+
+        // Firstly, create a 'dog'.  Note that we've used reflection (if you click through) to construct the dog
+        // object so that we're using the cpks that we have *loaded* into this process from the resources.
         val dogId = UUID.randomUUID()
         val dog = ctx.sandbox.createDogInstance(
             dogId,
@@ -262,6 +265,8 @@ class PersistenceServiceInternalTests {
             "me"
         )
         val dogRequest = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistEntity(ctx.serialize(dog)))
+
+        // Now create a cat instance in the same way.
         val catId = UUID.randomUUID()
         val catName = "Garfield"
         val ownerId = UUID.randomUUID()
@@ -279,20 +284,31 @@ class PersistenceServiceInternalTests {
             PersistEntity(ctx.serialize(cat))
         )
 
+        // Now send the two messages (both 'persist') to the message processor.  This is the point where we would
+        // 'receive them' from the flow-worker via Kafka
         val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, dogRequest), Record(TOPIC, requestId, catRequest))
+
+        // Process the messages (and assert them).  This will persist the cat+dog to the db.
         val responses = assertSuccessResponses(processor.onNext(records))
 
         // assert persisted
         assertThat(responses.size).isEqualTo(2)
 
+        // check the db directly (rather than using our code)
         val findDog = ctx.findDog(dogId)
+
+        // It's the dog we persisted.
         assertThat(findDog).isEqualTo(dog)
         logger.info("Woof $findDog")
 
+        // use our 'find' code to find the cat, which has a *composite key*
+        // (that we also need to create via reflection)
         val catKey = ctx.sandbox.createCatKeyInstance(catId, catName)
         val bytes = assertFindEntity(CAT_CLASS_NAME, ctx.serialize(catKey))
+
+        // It's the cat we persisted.
         assertThat(ctx.deserialize(bytes!!)).isEqualTo(cat)
     }
 
@@ -307,6 +323,8 @@ class PersistenceServiceInternalTests {
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             "me"
         )
+
+        // write the dog *directly* to the database (don't use 'our' code).
         ctx.persist(basilTheDog)
 
         // use API to find it

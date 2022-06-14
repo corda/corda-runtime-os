@@ -4,11 +4,15 @@ import java.nio.file.Path
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.assertAll
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -22,6 +26,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 /** Tests the isolation of bundles across sandbox groups. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
+@Suppress("FunctionName")
 class SandboxBundleIsolationTest {
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
@@ -66,5 +71,29 @@ class SandboxBundleIsolationTest {
         val bundles = runFlow<List<Bundle>>(thisGroup, BUNDLES_FLOW)
 
         assertTrue(bundles.none { bundle -> sandboxGroupContainsBundle(otherGroup, bundle) })
+    }
+
+    @Test
+    fun `we can load two copies of the same sandbox`() {
+        val copyOne = assertDoesNotThrow {
+            sandboxFactory.createSandboxGroupFor(CPI_ONE)
+        }
+        try {
+            assertAll(
+                { assertTrue(copyOne.metadata.keys.stream().allMatch { bundle -> bundle.state == Bundle.ACTIVE }) },
+                { assertEquals(sandboxFactory.group1.metadata.keys.names, copyOne.metadata.keys.names) },
+                { assertNotEquals(sandboxFactory.group1.metadata.keys.ids, copyOne.metadata.keys.ids) }
+            )
+        } finally {
+            sandboxFactory.destroySandboxGroup(copyOne)
+        }
+    }
+
+    private val Iterable<Bundle>.names: Set<String> get() {
+        return mapTo(LinkedHashSet()) { "${it.symbolicName}:${it.version}" }
+    }
+
+    private val Iterable<Bundle>.ids: Set<Long> get() {
+        return mapTo(LinkedHashSet(), Bundle::getBundleId)
     }
 }

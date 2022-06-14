@@ -10,14 +10,13 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntityKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
@@ -79,12 +78,19 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.create(signerSummaryHash))
-        val expectedCpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID")
+        val expectedCpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
-                id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID", false
+                id.name,
+                id.version,
+                signerSummaryHash,
+                "TestFile",
+                fileChecksum,
+                "Test Group Policy",
+                "Test Group ID",
+                "Request ID",
+                emptySet(),
             )
         }
 
@@ -272,13 +278,20 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.create(signerSummaryHash))
-        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID")
+        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = HoldingIdentity("X500 Name 4", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
-                id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID", false
+                id.name,
+                id.version,
+                signerSummaryHash,
+                "TestFile",
+                fileChecksum,
+                "Test Group Policy",
+                "Test Group ID",
+                "Request ID",
+                emptySet()
             )
         }
         val holdingIdentityEntity = with(holdingIdentity) {
@@ -309,13 +322,20 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.create(signerSummaryHash))
-        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID")
+        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = HoldingIdentity("X500 Name 5", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
-                id.name, id.version, signerSummaryHash, "TestFile", fileChecksum,
-                "Test Group Policy", "Test Group ID", "Request ID", false
+                id.name,
+                id.version,
+                signerSummaryHash,
+                "TestFile",
+                fileChecksum,
+                "Test Group Policy",
+                "Test Group ID",
+                "Request ID",
+                emptySet()
             )
         }
         val holdingIdentityEntity = with(holdingIdentity) {

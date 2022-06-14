@@ -1,0 +1,68 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+}
+
+group 'net.corda.cli.deployment'
+
+dependencies {
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt "info.picocli:picocli-codegen:$picocliVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-topic-schema'
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
+}
+
+// the plugin task will put the files into a jar file with the correct manifest
+def plugin = tasks.register('plugin', Jar) {
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    archiveBaseName = "plugin-$pluginId-$version"
+
+    manifest {
+        attributes['Plugin-Class'] = pluginClass
+        attributes['Plugin-Id'] = pluginId
+        attributes['Plugin-Version'] = version
+        attributes['Plugin-Provider'] = pluginProvider
+        attributes['Plugin-Description'] = pluginDescription
+    }
+
+    from sourceSets.main.output
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "module-info.class"
+        exclude "META-INF/versions/*/module-info.class"
+
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+
+tasks.named("installDist") {
+    dependsOn plugin
+    def homePath = System.properties['user.home']
+    from plugin
+    into "$homePath/.corda/cli/plugins"
+}
+
+artifacts {
+    archives plugin
+}

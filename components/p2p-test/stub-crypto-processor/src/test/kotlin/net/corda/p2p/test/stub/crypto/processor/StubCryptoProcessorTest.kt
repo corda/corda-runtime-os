@@ -13,7 +13,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -64,7 +64,7 @@ class StubCryptoProcessorTest {
     }
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java)
     private val algorithmParameterSpec = mock<AlgorithmParameterSpec>()
-    private val spec = SignatureSpec("signature-name", params = algorithmParameterSpec)
+    private val spec = ParameterizedSignatureSpec("signature-name", params = algorithmParameterSpec)
     private val data = "data".toByteArray()
     private val rsaSignature = mock<Signature> {
         on { sign() } doReturn "RSA-Signature".toByteArray()

@@ -8,9 +8,9 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.impl.config.createDefaultCryptoConfig
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.persistence.hsm.HSMCacheProvider
-import net.corda.crypto.persistence.signing.SigningKeyCacheProvider
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheProvider
+import net.corda.crypto.persistence.hsm.HSMStoreProvider
+import net.corda.crypto.persistence.signing.SigningKeyStoreProvider
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreProvider
 import net.corda.crypto.service.CryptoFlowOpsBusService
 import net.corda.crypto.service.CryptoOpsBusService
 import net.corda.crypto.service.CryptoServiceFactory
@@ -44,6 +44,7 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -57,10 +58,10 @@ class CryptoProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = SoftCryptoKeyCacheProvider::class)
-    private val softCryptoKeyCacheProvider: SoftCryptoKeyCacheProvider,
-    @Reference(service = SigningKeyCacheProvider::class)
-    private val signingKeyCacheProvider: SigningKeyCacheProvider,
+    @Reference(service = SoftCryptoKeyStoreProvider::class)
+    private val softCryptoKeyStoreProvider: SoftCryptoKeyStoreProvider,
+    @Reference(service = SigningKeyStoreProvider::class)
+    private val signingKeyStoreProvider: SigningKeyStoreProvider,
     @Reference(service = SigningServiceFactory::class)
     private val signingServiceFactory: SigningServiceFactory,
     @Reference(service = CryptoOpsBusService::class)
@@ -79,14 +80,16 @@ class CryptoProcessorImpl @Activate constructor(
     private val hsmConfiguration: HSMConfigurationBusService,
     @Reference(service = HSMRegistrationBusService::class)
     private val hsmRegistration: HSMRegistrationBusService,
-    @Reference(service = HSMCacheProvider::class)
-    private val hsmCacheProvider: HSMCacheProvider,
+    @Reference(service = HSMStoreProvider::class)
+    private val hsmStoreProvider: HSMStoreProvider,
     @Reference(service = JpaEntitiesRegistry::class)
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = ConfigMerger::class)
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val vnodeInfo: VirtualNodeInfoReadService
 ) : CryptoProcessor {
     private companion object {
         const val CRYPTO_PROCESSOR_CLIENT_ID = "crypto.processor"
@@ -104,8 +107,8 @@ class CryptoProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::softCryptoKeyCacheProvider,
-        ::signingKeyCacheProvider,
+        ::softCryptoKeyStoreProvider,
+        ::signingKeyStoreProvider,
         ::signingServiceFactory,
         ::cryptoOspService,
         ::cryptoFlowOpsBusService,
@@ -115,8 +118,9 @@ class CryptoProcessorImpl @Activate constructor(
         ::hsmService,
         ::hsmConfiguration,
         ::hsmRegistration,
-        ::hsmCacheProvider,
-        ::dbConnectionManager
+        ::hsmStoreProvider,
+        ::dbConnectionManager,
+        ::vnodeInfo
     )
 
     override val isRunning: Boolean
@@ -188,7 +192,7 @@ class CryptoProcessorImpl @Activate constructor(
                 )
             }.root().render()
             logger.info("Crypto Worker config\n: {}", configValue)
-            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, "1", ConfigurationSchemaVersion(1, 0)))
+            val record = Record(CONFIG_TOPIC, CRYPTO_CONFIG, Configuration(configValue, 0, ConfigurationSchemaVersion(1, 0)))
             it.publish(listOf(record)).forEach { future -> future.get() }
         }
     }

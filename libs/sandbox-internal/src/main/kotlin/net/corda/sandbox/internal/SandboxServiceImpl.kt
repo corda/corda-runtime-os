@@ -15,6 +15,7 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
+import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
@@ -31,7 +32,8 @@ import kotlin.streams.asSequence
 @RequireSandboxHooks
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
-    private val bundleUtils: BundleUtils
+    private val bundleUtils: BundleUtils,
+    private val bundleContext: BundleContext
 ) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
     private val serviceComponentRuntimeBundleId = bundleUtils.getServiceRuntimeComponentBundle()?.bundleId
         ?: throw SandboxException(
@@ -69,14 +71,19 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
 
-        val sandboxGroupsToRemove = bundleIdToSandboxGroup.filter { entry -> entry.value === sandboxGroup }
-        sandboxGroupsToRemove.forEach { entry -> bundleIdToSandboxGroup.remove(entry.key) }
-
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            val sandboxesToRemove = bundleIdToSandbox.filter { entry -> entry.value === sandbox }
-            sandboxesToRemove.forEach { entry -> bundleIdToSandbox.remove(entry.key) }
+            val unloaded = sandbox.unload()
+            unloaded[false]?.also(zombieBundles::addAll)
+            unloaded[true]?.forEach { bundle ->
+                val bundleId = bundle.bundleId
+                bundleIdToSandbox.remove(bundleId)
+                bundleIdToSandboxGroup.remove(bundleId)
+            }
+        }
 
-            zombieBundles.addAll((sandbox as Sandbox).unload())
+        // Tell the OSGi framework that these bundles need updating (i.e. removing, in this case).
+        bundleUtils.refreshBundles(sandboxGroup.metadata.keys) { evt ->
+            logger.debug("Refreshed bundle {}", evt.bundle)
         }
     }
 
@@ -217,7 +224,9 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
         val bundle = try {
-            bundleUtils.installAsBundle(sandboxLocation.toString(), inputStream)
+            inputStream.use {
+                bundleContext.installBundle(sandboxLocation.toString(), it)
+            }
         } catch (e: BundleException) {
             if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
                 logger.warn(
@@ -243,7 +252,7 @@ internal class SandboxServiceImpl @Activate constructor(
     private fun startBundles(bundles: Collection<Bundle>) {
         bundles.forEach { bundle ->
             try {
-                bundleUtils.startBundle(bundle)
+                bundle.start()
             } catch (e: BundleException) {
                 throw SandboxException("Bundle $bundle could not be started.", e)
             }

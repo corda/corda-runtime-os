@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 
 class StubCryptoProcessor(
@@ -74,7 +75,7 @@ class StubCryptoProcessor(
             providerName
         )
         signature.initSign(privateKey)
-        signature.setParameter(spec.params)
+        (spec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
         signature.update(data)
         return signature.sign()
     }

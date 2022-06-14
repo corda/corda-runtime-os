@@ -9,16 +9,10 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.configuration.BootConfig.BOOT_CPI_INFO_INTERVAL
-import net.corda.schema.configuration.BootConfig.BOOT_CPK_WRITE_INTERVAL
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
-import net.corda.schema.configuration.BootConfig.BOOT_PERMISSION_SUMMARY_INTERVAL
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.ConfigDefaults
-import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
-import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS
 import net.corda.v5.base.versioning.Version
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -53,10 +47,7 @@ class ConfigTests {
             WORKSPACE_DIR,
             TEMP_DIR,
             "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
-            "$BOOT_DB_PARAMS.$DB_KEY_ONE",
-            BOOT_PERMISSION_SUMMARY_INTERVAL,
-            BOOT_CPK_WRITE_INTERVAL,
-            BOOT_CPI_INFO_INTERVAL,
+            "$BOOT_DB_PARAMS.$DB_KEY_ONE"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -65,51 +56,6 @@ class ConfigTests {
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(TOPIC_PREFIX))
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$BOOT_KAFKA_COMMON.$MSG_KEY_ONE"))
         assertEquals(DB_VAL_ONE, config.getAnyRef("$BOOT_DB_PARAMS.$DB_KEY_ONE"))
-
-        assertEquals(
-            ConfigDefaults.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS_DEFAULT,
-            config.getLong(BOOT_PERMISSION_SUMMARY_INTERVAL)
-        )
-        assertEquals(
-            ConfigDefaults.RECONCILIATION_CPK_WRITE_INTERVAL_MS_DEFAULT,
-            config.getLong(BOOT_CPK_WRITE_INTERVAL)
-        )
-    }
-
-    @Test
-    fun `reconciliation params are passed through to the processor`() {
-        val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
-        val args = arrayOf(
-            FLAG_RECONCILIATION_TASKS_PARAM,
-            "$RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS=1234",
-            FLAG_RECONCILIATION_TASKS_PARAM,
-            "$RECONCILIATION_CPK_WRITE_INTERVAL_MS=5678"
-        )
-        dbWorker.startup(args)
-        val config = dbProcessor.config!!
-
-        val expectedKeys = setOf(
-            INSTANCE_ID,
-            TOPIC_PREFIX,
-            WORKSPACE_DIR,
-            TEMP_DIR,
-            BOOT_PERMISSION_SUMMARY_INTERVAL,
-            BOOT_CPK_WRITE_INTERVAL,
-            BOOT_CPI_INFO_INTERVAL,
-        )
-
-        val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
-        assertEquals(expectedKeys, actualKeys)
-
-        assertEquals(
-            1234L,
-            config.getLong(BOOT_PERMISSION_SUMMARY_INTERVAL)
-        )
-        assertEquals(
-            5678L,
-            config.getLong(BOOT_CPK_WRITE_INTERVAL)
-        )
     }
 
     @Test
@@ -128,10 +74,7 @@ class ConfigTests {
             INSTANCE_ID,
             TOPIC_PREFIX,
             WORKSPACE_DIR,
-            TEMP_DIR,
-            BOOT_PERMISSION_SUMMARY_INTERVAL,
-            BOOT_CPK_WRITE_INTERVAL,
-            BOOT_CPI_INFO_INTERVAL,
+            TEMP_DIR
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -149,10 +92,7 @@ class ConfigTests {
             INSTANCE_ID,
             TOPIC_PREFIX,
             WORKSPACE_DIR,
-            TEMP_DIR,
-            BOOT_PERMISSION_SUMMARY_INTERVAL,
-            BOOT_CPK_WRITE_INTERVAL,
-            BOOT_CPI_INFO_INTERVAL,
+            TEMP_DIR
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)

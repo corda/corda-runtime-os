@@ -11,7 +11,6 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
-import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,8 +23,6 @@ import picocli.CommandLine.Mixin
 class FlowWorker @Activate constructor(
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
-    @Reference(service = LinkManagerProcessor::class)
-    private val linkManagerProcessor: LinkManagerProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = HealthMonitor::class)
@@ -50,13 +47,11 @@ class FlowWorker @Activate constructor(
         val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator())
 
         flowProcessor.start(config)
-        linkManagerProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
         flowProcessor.stop()
-        linkManagerProcessor.stop()
         healthMonitor.stop()
     }
 }

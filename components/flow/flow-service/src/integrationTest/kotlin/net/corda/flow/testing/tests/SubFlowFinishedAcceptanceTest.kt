@@ -100,6 +100,30 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `Calling 'close' on an initiated and closing session sends session close events`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+        }
+
+        `when` {
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
+            }
+        }
+    }
+
+    @Test
     fun `Given a subFlow contains an initiated and closed session when the subFlow finishes a single session close event is sent`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
@@ -329,7 +353,29 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given two sessions receiving a single session close event does not resume the flow and sends a session ack`() {
+    fun `Receiving a session data event instead of a close resumes the flow with an error`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
+            }
+        }
+    }
+
+    @Test
+    fun `Given two sessions receiving a single session close event does not resume the flow sends a session ack and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -349,12 +395,13 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
                 sessionAckEvents(SESSION_ID_1)
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
         }
     }
 
     @Test
-    fun `Given two sessions receiving all session close events resumes the flow and sends session acks`() {
+    fun `Given two sessions receiving all session close events resumes the flow sends session acks and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -377,59 +424,13 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
                 sessionAckEvents(SESSION_ID_1)
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 sessionAckEvents(SESSION_ID_2)
-            }
-        }
-    }
-
-    /**
-     * Given two sessions where:
-     *
-     * - `SESSION_ID_1` has already received a session close event.
-     * - The subFlow finished.
-     * - `SESSION_ID_2` receives a session close event.
-     *
-     * The flow does not resume and sends `SESSION_ID_2` a session ack.
-     */
-    @Test
-    fun `Given two sessions where one has already received a session close event calling close and then receiving a session close event for the other session does not resume the flow and sends a session ack`() {
-        given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
-        `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                sessionCloseEvents(SESSION_ID_1, SESSION_ID_2)
-            }
-
-            expectOutputForFlow(FLOW_ID1) {
-                sessionAckEvents(SESSION_ID_2)
-            }
-
-            expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(Unit)
-                sessionAckEvents()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
         }
     }
@@ -471,11 +472,13 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
                 sessionAckEvents(SESSION_ID_2)
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 sessionAckEvents()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
         }
     }
@@ -522,12 +525,13 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 sessionAckEvents(SESSION_ID_2)
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
         }
     }
 
     @Test
-    fun `Given two sessions receiving a single session error event does not resume the flow and sends a session ack`() {
+    fun `Given two sessions receiving a single session error event does not resume the flow and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -546,12 +550,13 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
         }
     }
 
     @Test
-    fun `Given two sessions receiving two session error events resumes the flow with an error and sends session acks`() {
+    fun `Given two sessions receiving two session error events resumes the flow with an error and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -572,16 +577,18 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
         }
     }
 
     @Test
-    fun `Given two sessions receiving a session error event for one session and a session close event for the other resumes the flow with an error`() {
+    fun `Given two sessions receiving a session error event for one session and a session close event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
@@ -602,10 +609,76 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
+            }
+        }
+    }
+
+    @Test
+    fun `Given two sessions receiving a session data event for one session and a session close event for the other resumes the flow with an error and schedules session cleanup`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
+                sessionAckEvents(SESSION_ID_2)
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
+            }
+        }
+    }
+
+    @Test
+    fun `Given two sessions receiving session data events for both sessions resumes the flow with an error and schedules session cleanup`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_1))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.InitiateFlow(initiatedIdentityMemberName, SESSION_ID_2))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.SubFlowFinished(initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowDidNotResume()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
+                scheduleFlowMapperCleanupEvents(SESSION_ID_2)
             }
         }
     }

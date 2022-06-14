@@ -1,6 +1,13 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
+import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -16,6 +23,8 @@ import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
+import java.time.format.DateTimeParseException
 
 @Component(service = [PluggableRPCOps::class])
 class KeysRpcOpsImpl @Activate constructor(
@@ -26,6 +35,17 @@ class KeysRpcOpsImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : KeysRpcOps, PluggableRPCOps<KeysRpcOps>, Lifecycle {
+    private companion object {
+        fun CryptoSigningKey.toMetaData() = KeyMetaData(
+            keyId = this.id,
+            alias = this.alias,
+            hsmCategory = this.category,
+            scheme = this.schemeCodeName,
+            masterKeyAlias = this.masterKeyAlias,
+            created = this.created
+        )
+    }
+
     override fun listSchemes(
         tenantId: String,
         hsmCategory: String,
@@ -34,14 +54,85 @@ class KeysRpcOpsImpl @Activate constructor(
         category = hsmCategory
     )
 
-    override fun listKeys(tenantId: String): Map<String, KeyMetaData> {
+    @Suppress("ComplexMethod")
+    override fun listKeys(
+        tenantId: String,
+        skip: Int,
+        take: Int,
+        orderBy: String,
+        category: String?,
+        schemeCodeName: String?,
+        alias: String?,
+        masterKeyAlias: String?,
+        createdAfter: String?,
+        createdBefore: String?,
+        ids: List<String>?,
+    ): Map<String, KeyMetaData> {
+        if (ids?.isNotEmpty() == true) {
+            return cryptoOpsClient.lookup(
+                tenantId = tenantId,
+                ids = ids
+            ).associate { it.id to it.toMetaData() }
+        }
+        val realOrderBy = try {
+            CryptoKeyOrderBy.valueOf(orderBy.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw ResourceNotFoundException("Invalid order by: $orderBy, must be one of: ${CryptoKeyOrderBy.values().joinToString()}")
+        }
+        val filterMap = emptyMap<String, String>().let {
+            if (category != null) {
+                it + mapOf(CATEGORY_FILTER to category)
+            } else {
+                it
+            }
+        }.let {
+            if (schemeCodeName != null) {
+                it + mapOf(SCHEME_CODE_NAME_FILTER to schemeCodeName)
+            } else {
+                it
+            }
+        }.let {
+            if (alias != null) {
+                it + mapOf(ALIAS_FILTER to alias)
+            } else {
+                it
+            }
+        }.let {
+            if (masterKeyAlias != null) {
+                it + mapOf(MASTER_KEY_ALIAS_FILTER to masterKeyAlias)
+            } else {
+                it
+            }
+        }.let {
+            if (createdBefore != null) {
+                try {
+                    Instant.parse(createdBefore)
+                } catch (e: DateTimeParseException) {
+                    throw ResourceNotFoundException("Invalid created before time ($createdBefore)")
+                }
+                it + mapOf(CREATED_BEFORE_FILTER to createdBefore.toString())
+            } else {
+                it
+            }
+        }.let {
+            if (createdAfter != null) {
+                try {
+                    Instant.parse(createdAfter)
+                } catch (e: DateTimeParseException) {
+                    throw ResourceNotFoundException("Invalid created after time ($createdAfter)")
+                }
+                it + mapOf(CREATED_AFTER_FILTER to createdAfter.toString())
+            } else {
+                it
+            }
+        }
         return cryptoOpsClient.lookup(
             tenantId,
-            0,
-            500,
-            CryptoKeyOrderBy.NONE,
-            emptyMap()
-        ).associate { it.id to KeyMetaData(keyId = it.id, alias = it.alias, hsmCategory = it.category, scheme = it.schemeCodeName) }
+            skip,
+            take,
+            realOrderBy,
+            filterMap,
+        ).associate { it.id to it.toMetaData() }
     }
 
     override fun generateKeyPair(
@@ -60,7 +151,7 @@ class KeysRpcOpsImpl @Activate constructor(
 
     override fun generateKeyPem(
         tenantId: String,
-        keyId: String
+        keyId: String,
     ): String {
         val key = cryptoOpsClient.lookup(
             tenantId = tenantId,

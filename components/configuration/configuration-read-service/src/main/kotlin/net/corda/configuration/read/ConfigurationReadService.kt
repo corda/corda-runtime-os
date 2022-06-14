@@ -61,7 +61,7 @@ interface ConfigurationReadService : Lifecycle {
     fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable
 
     /**
-     * Provide bootstrap configuration to the configuration service.
+     * Provide bootstrap configuration to the configuration read service.
      *
      * This should be called by the application, providing enough initial configuration to connect to the message bus
      * and retrieve the full configuration. Other services will not need to call this.

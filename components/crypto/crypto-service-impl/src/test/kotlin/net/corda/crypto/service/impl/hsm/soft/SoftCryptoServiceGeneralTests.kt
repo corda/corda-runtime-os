@@ -2,9 +2,7 @@ package net.corda.crypto.service.impl.hsm.soft
 
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
-import net.corda.crypto.persistence.signing.SigningKeyCacheActions
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCache
-import net.corda.crypto.persistence.soft.SoftCryptoKeyCacheActions
+import net.corda.crypto.persistence.soft.SoftCryptoKeyStoreActions
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
@@ -13,20 +11,15 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import java.util.UUID
-import kotlin.test.assertSame
 
 class SoftCryptoServiceGeneralTests {
     companion object {
@@ -42,90 +35,54 @@ class SoftCryptoServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceBadRequestException when master alias exists and failIfExists is true`() {
-        val cacheActions = mock<SoftCryptoKeyCacheActions> {
+    fun `Should throw IllegalStateException when master alias exists and failIfExists is true`() {
+        val actions = mock<SoftCryptoKeyStoreActions> {
             on { findWrappingKey(any()) } doReturn WrappingKey.generateWrappingKey(schemeMetadata)
         }
         val service = SoftCryptoService(
             mock {
-                on { act() } doReturn cacheActions
-                on { act<SoftCryptoKeyCacheActions>(any()) }.thenCallRealMethod()
+                on { act() } doReturn actions
+                on { act<SoftCryptoKeyStoreActions>(any()) }.thenCallRealMethod()
             },
             schemeMetadata,
             mock()
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalStateException> {
             service.createWrappingKey(UUID.randomUUID().toString(), true, emptyMap())
         }
-        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any(), any())
+        Mockito.verify(actions, never()).saveWrappingKey(any(), any(), any())
     }
 
     @Test
     fun `Should not generate new master key when master alias exists and failIfExists is false`() {
-        val cacheActions = mock<SoftCryptoKeyCacheActions> {
+        val actions = mock<SoftCryptoKeyStoreActions> {
             on { findWrappingKey(any()) } doReturn WrappingKey.generateWrappingKey(schemeMetadata)
         }
         val service = SoftCryptoService(
             mock {
-                on { act() } doReturn cacheActions
-                on { act<SoftCryptoKeyCacheActions>(any()) }.thenCallRealMethod()
+                on { act() } doReturn actions
+                on { act<SoftCryptoKeyStoreActions>(any()) }.thenCallRealMethod()
             },
             schemeMetadata,
             mock()
         )
         service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
-        Mockito.verify(cacheActions, never()).saveWrappingKey(any(), any(), any())
+        Mockito.verify(actions, never()).saveWrappingKey(any(), any(), any())
     }
 
     @Test
-    fun `Should re-throw same CryptoServiceException when failing createWrappingKey`() {
-        val exception = CryptoServiceException("")
-        val cache = mock<SoftCryptoKeyCache> {
-            on { act<SoftCryptoKeyCacheActions>(any()) } doThrow exception
-        }
-        val service = SoftCryptoService(
-            cache,
-            schemeMetadata,
-            mock()
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
-        }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any())
-    }
-
-    @Test
-    fun `Should wrap in CryptoServiceException when failing createWrappingKey`() {
-        val exception = RuntimeException("")
-        val cache = mock<SoftCryptoKeyCache> {
-            on { act<SoftCryptoKeyCacheActions>(any()) } doThrow exception
-        }
-        val service = SoftCryptoService(
-            cache,
-            schemeMetadata,
-            mock()
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            service.createWrappingKey(UUID.randomUUID().toString(), false, emptyMap())
-        }
-        assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any())
-    }
-
-    @Test
-    fun `Should throw CryptoServiceBadRequestException when generating key pair and masterKeyAlias is null`() {
+    fun `Should throw IllegalArgumentException when generating key pair and masterKeyAlias is null`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
             mock()
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = null,
-                    keyScheme = service.supportedSchemes()[0],
+                    keyScheme = service.supportedSchemes.keys.first(),
                     secret = null
                 ),
                 mapOf(
@@ -138,13 +95,13 @@ class SoftCryptoServiceGeneralTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should throw CryptoServiceBadRequestException when generating key pair and signature scheme is not supported`() {
+    fun `Should throw IllegalArgumentException when generating key pair and signature scheme is not supported`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
             mock()
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
@@ -162,18 +119,18 @@ class SoftCryptoServiceGeneralTests {
 
     @Test
     @Suppress("MaxLineLength")
-    fun `Should throw CryptoServiceBadRequestException when generating key pair and wrapping key is not generated yet`() {
+    fun `Should throw IllegalStateException when generating key pair and wrapping key is not generated yet`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
             mock()
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalStateException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
                     alias = UUID.randomUUID().toString(),
                     masterKeyAlias = UUID.randomUUID().toString(),
-                    keyScheme = service.supportedSchemes()[0],
+                    keyScheme = service.supportedSchemes.keys.first(),
                     secret = null
                 ),
                 mapOf(
@@ -185,73 +142,15 @@ class SoftCryptoServiceGeneralTests {
     }
 
     @Test
-    fun `Should re-throw same CryptoServiceException when failing generating key pair`() {
-        val exception = CryptoServiceException("")
-        val cache = mock<SoftCryptoKeyCache> {
-            on { act<SoftCryptoKeyCacheActions>(any()) } doThrow exception
-        }
-        val service = SoftCryptoService(
-            cache,
-            schemeMetadata,
-            mock()
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            service.generateKeyPair(
-                KeyGenerationSpec(
-                    alias = UUID.randomUUID().toString(),
-                    masterKeyAlias = UUID.randomUUID().toString(),
-                    keyScheme = service.supportedSchemes()[0],
-                    secret = null
-                ),
-                mapOf(
-                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
-                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
-                )
-            )
-        }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any())
-    }
-
-    @Test
-    fun `Should wrap in CryptoServiceException when failing generating key pair`() {
-        val exception = RuntimeException("")
-        val cache = mock<SoftCryptoKeyCache> {
-            on { act<SoftCryptoKeyCacheActions>(any()) } doThrow exception
-        }
-        val service = SoftCryptoService(
-            cache,
-            schemeMetadata,
-            mock()
-        )
-        val thrown = assertThrows<CryptoServiceException> {
-            service.generateKeyPair(
-                KeyGenerationSpec(
-                    alias = UUID.randomUUID().toString(),
-                    masterKeyAlias = UUID.randomUUID().toString(),
-                    keyScheme = service.supportedSchemes()[0],
-                    secret = null
-                ),
-                mapOf(
-                    CRYPTO_TENANT_ID to UUID.randomUUID().toString(),
-                    CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER
-                )
-            )
-        }
-        assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any())
-    }
-
-    @Test
-    fun `Should throw CryptoServiceBadRequestException when signing and masterKeyAlias is null`() {
+    fun `Should throw IllegalArgumentException when signing and masterKeyAlias is null`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
             mock()
         )
-        val scheme = service.supportedSchemes().first()
+        val scheme = service.supportedSchemes.keys.first()
         val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalArgumentException> {
             service.sign(
                 SigningWrappedSpec(
                     keyMaterial = ByteArray(2),
@@ -269,13 +168,13 @@ class SoftCryptoServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceBadRequestException when signing and spec is not SigningWrappedSpec`() {
+    fun `Should throw IllegalArgumentException when signing and spec is not SigningWrappedSpec`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
             mock()
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalArgumentException> {
             service.sign(
                 mock(),
                 ByteArray(2),
@@ -285,15 +184,15 @@ class SoftCryptoServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceBadRequestException when signing and masterKeyAlias is not exists yet`() {
+    fun `Should throw IllegalStateException when signing and masterKeyAlias is not exists yet`() {
         val service = SoftCryptoService(
             mock(),
             schemeMetadata,
             mock()
         )
-        val scheme = service.supportedSchemes().first()
+        val scheme = service.supportedSchemes.keys.first()
         val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<IllegalStateException> {
             service.sign(
                 SigningWrappedSpec(
                     keyMaterial = ByteArray(2),
@@ -308,69 +207,5 @@ class SoftCryptoServiceGeneralTests {
                 )
             )
         }
-    }
-
-    @Test
-    fun `Should re-throw same CryptoServiceException when failing signing`() {
-        val exception = CryptoServiceException("")
-        val cache = mock<SoftCryptoKeyCache> {
-            on { act<SoftCryptoKeyCacheActions>(any()) } doThrow exception
-        }
-        val service = SoftCryptoService(
-            cache,
-            schemeMetadata,
-            mock()
-        )
-        val scheme = service.supportedSchemes().first()
-        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
-        val thrown = assertThrows<CryptoServiceException> {
-            service.sign(
-                SigningWrappedSpec(
-                    keyMaterial = ByteArray(2),
-                    masterKeyAlias = UUID.randomUUID().toString(),
-                    encodingVersion = 1,
-                    keyScheme = scheme,
-                    signatureSpec = signatureSpec
-                ),
-                ByteArray(2),
-                mapOf(
-                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
-                )
-            )
-        }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any())
-    }
-
-    @Test
-    fun `Should wrap in CryptoServiceException when failing signing`() {
-        val exception = RuntimeException("")
-        val cache = mock<SoftCryptoKeyCache> {
-            on { act<SoftCryptoKeyCacheActions>(any()) } doThrow exception
-        }
-        val service = SoftCryptoService(
-            cache,
-            schemeMetadata,
-            mock()
-        )
-        val scheme = service.supportedSchemes().first()
-        val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
-        val thrown = assertThrows<CryptoServiceException> {
-            service.sign(
-                SigningWrappedSpec(
-                    keyMaterial = ByteArray(2),
-                    masterKeyAlias = UUID.randomUUID().toString(),
-                    encodingVersion = 1,
-                    keyScheme = scheme,
-                    signatureSpec = signatureSpec
-                ),
-                ByteArray(2),
-                mapOf(
-                    CRYPTO_TENANT_ID to UUID.randomUUID().toString()
-                )
-            )
-        }
-        assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any())
     }
 }

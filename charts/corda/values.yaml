@@ -21,12 +21,15 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
-# resource limits and requests configuration for the Corda worker containers
+# default resource limits and requests configuration for the Corda containers
 resources:
-  # -- the CPU/memory resource limits for the Corda worker containers
+  # -- the default CPU/memory resource limits for the Corda containers
   limits: {}
-  # -- the CPU/memory resource request for the Corda worker containers
+  # -- the default CPU/memory resource request for the Corda containers
   requests: {}
+
+# -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
+nodeSelector: {}
 
 # Database configuration
 db:
@@ -46,6 +49,13 @@ db:
     password: ""
     # -- the name of an existing secret containing the cluster database password with a key of 'password'
     existingSecret: ""
+  clientImage:
+    # -- registry for image containing a db client, used to set up the db
+    registry: ""
+    # -- repository for image containing a db client, used to set up the db
+    repository: bitnami/postgresql
+    # -- tag for image containing a db client, used to set up the db
+    tag: 14.2.0-debian-10-r88
 
 # Kafka configuration
 kafka:
@@ -53,6 +63,8 @@ kafka:
   bootstrapServers: ""
   # -- Kafka topic partitions
   partitions: 3
+  # -- Kafka topic replicas
+  replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
   # TLS configuration for client connections to Kafka
@@ -71,6 +83,13 @@ kafka:
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: ""
+  clientImage:
+    # -- registry for image containing a Kafka client, used to set up Kafka
+    registry: ""
+    # -- repository for image containing a Kafka client, used to set up Kafka
+    repository: bitnami/kafka
+    # -- tag for image containing a Kafka client, used to set up Kafka
+    tag: 3.1.0-debian-10-r89
 
 # Configuration for the bootstrapper
 bootstrap:
@@ -82,6 +101,12 @@ bootstrap:
     repository: "corda-os-plugins"
     # -- cli default tag
     tag: ""
+  # resource limits and requests configuration for the bootstrapper
+  resources:
+    # -- the CPU/memory resource requests for the bootstrapper
+    requests: { }
+    # -- the CPU/memory resource limits for the bootstrapper
+    limits: { }
 
 # worker configuration
 workers:

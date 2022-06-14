@@ -10,19 +10,19 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.crypto.persistence.signing.SigningCachedKey
-import net.corda.crypto.persistence.signing.SigningKeyCache
-import net.corda.crypto.persistence.signing.SigningKeyCacheActions
+import net.corda.crypto.persistence.signing.SigningKeyStore
+import net.corda.crypto.persistence.signing.SigningKeyStoreActions
 import net.corda.crypto.persistence.signing.SigningKeyOrderBy
 import net.corda.crypto.persistence.signing.SigningKeyStatus
 import net.corda.crypto.persistence.signing.SigningPublicKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
+import net.corda.crypto.service.impl.infra.generateKeyPair
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -39,6 +39,7 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 
 class SigningServiceGeneralTests {
@@ -55,7 +56,7 @@ class SigningServiceGeneralTests {
     @Test
     fun `Should throw IllegalArgumentException when the lookup by ids keys is passed more than 20 items`() {
         val signingService = SigningServiceImpl(
-            cache = mock(),
+            store = mock(),
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -72,13 +73,13 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should re-throw same CryptoServiceException when failing signing`() {
+    fun `Should wrap CryptoServiceException into another with more information when failing signing`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -93,18 +94,18 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        assertNotSame(exception, thrown)
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing signing`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -120,24 +121,24 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
-    fun `Should throw CryptoServiceBadRequestException when key is not found for signing`() {
-        val actions = mock<SigningKeyCacheActions> {
+    fun `Should throw CryptoServiceException when key is not found for signing`() {
+        val actions = mock<SigningKeyStoreActions> {
             on { find(any<PublicKey>()) } doReturn null
         }
-        val cache = mock<SigningKeyCache> {
+        val store = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<CryptoServiceException> {
             signingService.sign(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = mock {
@@ -151,7 +152,7 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw CryptoServiceBadRequestException when generating key with existing alias`() {
+    fun `Should throw CryptoServiceException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
             id = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
@@ -168,19 +169,19 @@ class SigningServiceGeneralTests {
             timestamp = Instant.now(),
             status = SigningKeyStatus.NORMAL
         )
-        val actions = mock<SigningKeyCacheActions> {
+        val actions = mock<SigningKeyStoreActions> {
             on { find(any<String>()) } doReturn existingKey
         }
-        val cache = mock<SigningKeyCache> {
+        val store = mock<SigningKeyStore> {
             on { act(any()) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<CryptoServiceException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -189,7 +190,7 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertThrows<CryptoServiceBadRequestException> {
+        assertThrows<CryptoServiceException> {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -202,13 +203,13 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should re-throw same CryptoServiceException when failing aliased key generation`() {
+    fun `Should throw CryptoServiceException when failing aliased key generation`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -221,7 +222,7 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertSame(exception, thrown)
+        assertNotSame(exception, thrown)
         thrown = assertThrows {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
@@ -232,18 +233,18 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(2)).act<SigningKeyCacheActions>(any(), any())
+        assertNotSame(exception, thrown)
+        Mockito.verify(store, times(2)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing aliased key generation`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -268,17 +269,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(2)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(store, times(2)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
-    fun `Should re-throw same CryptoServiceException when failing fresh key generation`() {
+    fun `Should throw CryptoServiceException when failing fresh key generation`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -289,18 +290,18 @@ class SigningServiceGeneralTests {
                 scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        assertNotSame(exception, thrown)
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing fresh key generation`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -312,17 +313,17 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
-    fun `Should re-throw same CryptoServiceException when failing fresh key generation with external id`() {
+    fun `Should throw CryptoServiceException when failing fresh key generation with external id`() {
         val exception = CryptoServiceException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -334,18 +335,18 @@ class SigningServiceGeneralTests {
                 scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
             )
         }
-        assertSame(exception, thrown)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        assertNotSame(exception, thrown)
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
     fun `Should wrap in CryptoServiceException when failing fresh key generation with external id`() {
         val exception = RuntimeException("")
-        val cache = mock<SigningKeyCache> {
-            on { act<SigningKeyCacheActions>(any(), any()) } doThrow exception
+        val store = mock<SigningKeyStore> {
+            on { act<SigningKeyStoreActions>(any(), any()) } doThrow exception
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -358,7 +359,7 @@ class SigningServiceGeneralTests {
             )
         }
         assertSame(exception, thrown.cause)
-        Mockito.verify(cache, times(1)).act<SigningKeyCacheActions>(any(), any())
+        Mockito.verify(store, times(1)).act<SigningKeyStoreActions>(any(), any())
     }
 
     @Test
@@ -373,13 +374,13 @@ class SigningServiceGeneralTests {
         val masterKeyAlias: String = UUID.randomUUID().toString()
         val createdAfter: Instant = Instant.now().plusSeconds(-5)
         val createdBefore: Instant = Instant.now()
-        val actions = mock<SigningKeyCacheActions>()
-        val cache = mock<SigningKeyCache> {
+        val actions = mock<SigningKeyStoreActions>()
+        val store = mock<SigningKeyStore> {
             on { act(tenantId) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
@@ -414,13 +415,13 @@ class SigningServiceGeneralTests {
             val skip = 17
             val take = 21
             val tenantId: String = UUID.randomUUID().toString()
-            val actions = mock<SigningKeyCacheActions>()
-            val cache = mock<SigningKeyCache> {
+            val actions = mock<SigningKeyStoreActions>()
+            val store = mock<SigningKeyStore> {
                 on { act(tenantId) } doReturn actions
-                on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+                on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
             }
             val signingService = SigningServiceImpl(
-                cache = cache,
+                store = store,
                 cryptoServiceFactory = mock(),
                 schemeMetadata = schemeMetadata
             )
@@ -447,15 +448,15 @@ class SigningServiceGeneralTests {
     @Suppress("ComplexMethod")
     fun `Should save generated key with alias`() {
         val generatedKey = GeneratedPublicKey(
-            publicKey = mock(),
+            publicKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
             hsmAlias = UUID.randomUUID().toString()
         )
         val tenantId = UUID.randomUUID().toString()
         val expectedAlias = UUID.randomUUID().toString()
-        val actions = mock<SigningKeyCacheActions>()
-        val cache = mock<SigningKeyCache> {
+        val actions = mock<SigningKeyStoreActions>()
+        val store = mock<SigningKeyStore> {
             on { act(tenantId) } doReturn actions
-            on { act<SigningKeyCacheActions>(any(), any()) }.thenCallRealMethod()
+            on { act<SigningKeyStoreActions>(any(), any()) }.thenCallRealMethod()
         }
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val ref = CryptoServiceRef(
@@ -469,7 +470,7 @@ class SigningServiceGeneralTests {
             }
         )
         val signingService = SigningServiceImpl(
-            cache = cache,
+            store = store,
             cryptoServiceFactory = mock {
                 on { this.getInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
             },

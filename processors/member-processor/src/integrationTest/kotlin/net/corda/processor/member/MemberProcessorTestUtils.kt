@@ -40,11 +40,15 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.lang.IllegalStateException
-import java.time.Instant
 import java.util.UUID
+import net.corda.test.util.time.TestClock
+import java.time.Instant
 
 class MemberProcessorTestUtils {
     companion object {
+
+        private val clock = TestClock(Instant.ofEpochSecond(100))
+
         private const val MESSAGING_CONFIGURATION_VALUE: String = """
             componentVersion="5.1"
             subscription {
@@ -112,6 +116,7 @@ class MemberProcessorTestUtils {
             virtualNodeInfoReader: VirtualNodeInfoReadService,
             cpiInfoReadService: CpiInfoReadService,
             holdingIdentity: HoldingIdentity,
+            cryptoConnectionId: UUID,
             groupPolicy: String = sampleGroupPolicy1
         ) {
             val cpiVersion = UUID.randomUUID().toString()
@@ -123,8 +128,10 @@ class MemberProcessorTestUtils {
                 cpiVersion = cpiVersion
             )
             val virtualNodeInfo = VirtualNodeInfo(
-                holdingIdentity, cpiMetadata.cpiId,
-                null, UUID.randomUUID(), null, UUID.randomUUID()
+                holdingIdentity = holdingIdentity,
+                cpiIdentifier = cpiMetadata.cpiId,
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = cryptoConnectionId
             )
 
             // Publish test data
@@ -199,7 +206,7 @@ class MemberProcessorTestUtils {
         }
 
         fun lookUpFromPublicKey(groupReader: MembershipGroupReader, member: MemberInfo?) = eventually {
-            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.owningKey))
+            val result = groupReader.lookup(PublicKeyHash.calculate(member!!.sessionInitiationKey))
             assertNotNull(result)
             result!!
         }
@@ -261,7 +268,7 @@ class MemberProcessorTestUtils {
             emptyList(),
             groupPolicy,
             -1,
-            Instant.now()
+            clock.instant()
         )
 
         private fun getVirtualNodeInfo(virtualNodeInfoReader: VirtualNodeInfoReadService, holdingIdentity: HoldingIdentity) =
@@ -291,7 +298,7 @@ class MemberProcessorTestUtils {
 
         private val schemaVersion = ConfigurationSchemaVersion(1,0)
         private fun Publisher.publishConf(configKey: String, conf: String) =
-            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, "1", schemaVersion))
+            publishRecord(Schemas.Config.CONFIG_TOPIC, configKey, Configuration(conf, 0, schemaVersion))
 
         private fun Publisher.publishCpiMetadata(cpiMetadata: CpiMetadata) =
             publishRecord(Schemas.VirtualNode.CPI_INFO_TOPIC, cpiMetadata.cpiId.toAvro(), cpiMetadata.toAvro())

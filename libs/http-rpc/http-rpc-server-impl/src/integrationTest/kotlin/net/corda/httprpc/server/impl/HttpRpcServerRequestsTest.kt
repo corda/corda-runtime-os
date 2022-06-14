@@ -94,7 +94,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     fun `GET sanity returns Sane value`() {
         val sanityResponse = client.call(GET, WebRequest<Any>("health/sanity"), userName, password)
         assertEquals(HttpStatus.SC_OK, sanityResponse.responseStatus)
-        assertEquals(""""Sane"""", sanityResponse.body)
+        assertEquals("Sane", sanityResponse.body)
     }
 
     @Test
@@ -103,7 +103,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val pingResponse = client.call(POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
         assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
         assertEquals("application/json", pingResponse.headers["Content-Type"])
-        assertEquals(""""Pong for str = stringdata"""", pingResponse.body)
+        assertEquals("Pong for str = stringdata", pingResponse.body)
     }
 
     //https://r3-cev.atlassian.net/browse/CORE-2491
@@ -112,7 +112,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         val pingResponse = client.call(POST, WebRequest("health/ping", ""), userName, password)
         assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
-        assertEquals(""""Pong for null"""", pingResponse.body)
+        assertEquals("Pong for null", pingResponse.body)
     }
 
     @Test
@@ -150,7 +150,15 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         val helloResponse = client.call(GET, WebRequest<Any>("health/hello/world?id=1"), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
-        assertEquals(""""Hello 1 : world"""", helloResponse.body)
+        assertEquals("Hello 1 : world", helloResponse.body)
+    }
+
+    @Test
+    fun `GET hello name returns string without optional query param`() {
+
+        val helloResponse = client.call(GET, WebRequest<Any>("health/hello/world"), userName, password)
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("Hello null : world", helloResponse.body)
     }
 
     @Test
@@ -159,7 +167,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val fullUrl = "health/hello2/pathString?id=id"
         val helloResponse = client.call(GET, WebRequest<Any>(fullUrl), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
-        assertEquals(""""Hello queryParam: id, pathParam : pathString"""", helloResponse.body)
+        assertEquals("Hello queryParam: id, pathParam : pathString", helloResponse.body)
 
         // Check full URL received by the Security Manager
         assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1).allMatch { it.contains(fullUrl) }
@@ -183,7 +191,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val fullUrl = "testentity/1234"
         val helloResponse = client.call(GET, WebRequest<Any>(fullUrl), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
-        assertEquals("\"Retrieved using id: 1234\"", helloResponse.body)
+        assertEquals("Retrieved using id: 1234", helloResponse.body)
 
         // Check full URL received by the Security Manager
         assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1).allMatch { it.contains(fullUrl) }
@@ -193,7 +201,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     fun `missing not required query parameter should not throw`() {
         val helloResponse = client.call(GET, WebRequest<Any>("health/hello2/pathString"), userName, password)
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
-        assertEquals(""""Hello queryParam: null, pathParam : pathString"""", helloResponse.body)
+        assertEquals("Hello queryParam: null, pathParam : pathString", helloResponse.body)
     }
 
     @Test
@@ -245,7 +253,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         val reverseTextResponse = client.call(GET, WebRequest<Any>("java/reverse/txet"), userName, password)
         assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
-        assertEquals(""""text"""", reverseTextResponse.body)
+        assertEquals("text", reverseTextResponse.body)
     }
 
     private fun String.asMapFromJson() = Gson().fromJson(this, Map::class.java)
@@ -302,21 +310,21 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     fun `POST body playground should not fail when values are passed`() {
         val reverseTextResponse = client.call(POST, WebRequest<Any>("health/bodyplayground", """ { "s1": "a", "s2": "b" } """), userName, password)
         assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
-        assertEquals(""""a b"""", reverseTextResponse.body)
+        assertEquals("a b", reverseTextResponse.body)
     }
 
     @Test
     fun `POST body playground should not fail when values are passed as null`() {
         val reverseTextResponse = client.call(POST, WebRequest<Any>("health/bodyplayground", """ { "s1": null, "s2": null } """), userName, password)
         assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
-        assertEquals(""""null null"""", reverseTextResponse.body)
+        assertEquals("null null", reverseTextResponse.body)
     }
 
     @Test
     fun `POST body playground should not fail when optional values are not passed`() {
         val reverseTextResponse = client.call(POST, WebRequest<Any>("health/bodyplayground", """ { "s1": null } """), userName, password)
         assertEquals(HttpStatus.SC_OK, reverseTextResponse.responseStatus)
-        assertEquals(""""null null"""", reverseTextResponse.body)
+        assertEquals("null null", reverseTextResponse.body)
     }
 
     @Test
@@ -338,7 +346,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val timeCallResponse = client.call(POST, WebRequest<Any>("health/timecall", """ { "time": { "time": "$time" } } """), userName, password)
 
         assertEquals(HttpStatus.SC_OK, timeCallResponse.responseStatus)
-        assertEquals(""""2020-01-01T11:00Z[UTC]"""", timeCallResponse.body)
+        assertEquals("2020-01-01T11:00Z[UTC]", timeCallResponse.body)
     }
 
     @Test
@@ -352,7 +360,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val date = "2021-07-29T13:13:14"
         val dateCallResponse = client.call(POST, WebRequest<Any>("health/datecall", """ { "date": { "date": "$date" } } """), userName, password)
         assertEquals(HttpStatus.SC_OK, dateCallResponse.responseStatus)
-        assertThat(dateCallResponse.body!!).contains("\"2021-07-29T13:13:14\"")
+        assertThat(dateCallResponse.body!!).contains("2021-07-29T13:13:14")
     }
 
     @Test
@@ -362,7 +370,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val instantCallResponse = client.call(POST, WebRequest<Any>("health/instantcall", """ { "instant": { "instant": "$instant" } } """), userName, password)
 
         assertEquals(HttpStatus.SC_OK, instantCallResponse.responseStatus)
-        assertEquals(""""$instant"""", instantCallResponse.body)
+        assertEquals(instant, instantCallResponse.body)
     }
 
     @Test
@@ -399,7 +407,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         )
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"Created using: CreationParams(name=TestName, amount=20)\"", createEntityResponse.body)
+        assertEquals("Created using: CreationParams(name=TestName, amount=20)", createEntityResponse.body)
     }
 
     @Test
@@ -407,7 +415,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val createEntityResponse = client.call(GET, WebRequest<Any>("testentity/myId"), userName, password)
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"Retrieved using id: myId\"", createEntityResponse.body)
+        assertEquals("Retrieved using id: myId", createEntityResponse.body)
     }
 
     @Test
@@ -420,7 +428,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         )
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"Retrieved using query: MyQuery\"", createEntityResponse.body)
+        assertEquals("Retrieved using query: MyQuery", createEntityResponse.body)
     }
 
     @Test
@@ -437,7 +445,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
         assertEquals(
-            "\"Updated using params: UpdateParams(id=myId, name=TestName, amount=20)\"",
+            "Updated using params: UpdateParams(id=myId, name=TestName, amount=20)",
             createEntityResponse.body
         )
     }
@@ -447,7 +455,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val createEntityResponse = client.call(DELETE, WebRequest<Any>("testentity/myId"), userName, password)
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"Deleted using id: myId\"", createEntityResponse.body)
+        assertEquals("Deleted using id: myId", createEntityResponse.body)
     }
 
     @Test
@@ -460,7 +468,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         )
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"Deleted using query: MyQuery\"", createEntityResponse.body)
+        assertEquals("Deleted using query: MyQuery", createEntityResponse.body)
     }
 
     @Test
@@ -492,7 +500,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val expectedChecksum = ChecksumUtil.generateChecksum(text.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"$expectedChecksum\"", createEntityResponse.body)
+        assertEquals(expectedChecksum, createEntityResponse.body)
     }
 
     @Test
@@ -514,7 +522,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val expectedResult = "some-text-as-parameter, ${ChecksumUtil.generateChecksum(text.byteInputStream())}"
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+        assertEquals(expectedResult, createEntityResponse.body)
     }
 
     @Test
@@ -535,7 +543,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val expectedResult = ChecksumUtil.generateChecksum(text.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+        assertEquals(expectedResult, createEntityResponse.body)
     }
 
     @Test
@@ -558,7 +566,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + ", " + ChecksumUtil.generateChecksum(text2.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+        assertEquals(expectedResult, createEntityResponse.body)
     }
 
     @Test
@@ -583,7 +591,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream()) + ", " + ChecksumUtil.generateChecksum(text2.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+        assertEquals(expectedResult, createEntityResponse.body)
     }
 
     @Test
@@ -604,7 +612,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val expectedResult = ChecksumUtil.generateChecksum(text1.byteInputStream())
 
         assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
-        assertEquals("\"$expectedResult\"", createEntityResponse.body)
+        assertEquals(expectedResult, createEntityResponse.body)
     }
 
     @Test
@@ -619,7 +627,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
             userName, password
         )
         assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
-        assertEquals(""""Completed foo"""", helloResponse.body)
+        assertEquals("Completed foo", helloResponse.body)
     }
 
     @Test

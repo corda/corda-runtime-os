@@ -19,6 +19,7 @@ import java.time.Duration
     subcommands = [
         CreateCa::class,
         CreateCertificate::class,
+        SignCertificate::class,
     ],
     showAtFileInUsageHelp = true,
     subcommandsRepeatable = true,
@@ -66,6 +67,13 @@ class Ca {
         completionCandidates = ValidCurvedNames::class
     )
     private var curveName: String = "secp256r1"
+
+    @Option(
+        names = ["--stacktrace"],
+        description = ["Print out the stacktrace for all exceptions"],
+        hidden = true,
+    )
+    private var _stackTrace: Boolean = false
 
     internal val authority by lazy {
         if (certificatesDurationInDays <= 0) {
