@@ -79,25 +79,10 @@ class StaticMemberRegistrationService @Activate constructor(
         private val logger: Logger = contextLogger()
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
-
-        private val DUMMY_CERTIFICATE = """
-            -----BEGIN CERTIFICATE-----
-            MIIBKjCB0qADAgECAgEDMAoGCCqGSM49BAMCMBAxDjAMBgNVBAYTBVVLIENOMB4X
-            DTIyMDYxMzEwMDIwM1oXDTIyMDcxMzEwMDIwM1owEDEOMAwGA1UEBhMFVUsgQ04w
-            WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASe7Nywwu2zF8x+C6754R9nEkQR8d4W
-            qogGkYq6Sv69QuuN1YX3mK/Kw64U/marhwyksLvCC3iZs6hn8+p/DgiLox0wGzAZ
-            BgNVHREBAf8EDzANggtleGFtcGxlLmNvbTAKBggqhkjOPQQDAgNHADBEAiAletny
-            LjfTXpntpsuM3QUKoqViPyT8OraIXx+x79BqnQIgTejO2fShMBuVF1ininmwYcY7
-            nOEL3FPCmO4TaDct7E0=
-            -----END CERTIFICATE-----
-        """.trimIndent()
-        private val DUMMY_PUBLIC_SESSION_KEY = """
-            -----BEGIN PUBLIC KEY-----
-            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4SBc982Pox28yb29m9EpdcUOU9ei
-            +N5ihAvKeWRt6Mew2k5TGSiJeDao30siZQ/1lF2nES98/QAE3CTceXh//w==
-            -----END PUBLIC KEY-----
-        """.trimIndent()
     }
+
+    private val DUMMY_CERTIFICATE = this::class.java.getResource("/static_network_dummy_certificate.pem")!!.readText()
+    private val DUMMY_PUBLIC_SESSION_KEY = this::class.java.getResource("/static_network_dummy_session_key.pem")!!.readText()
 
     // Handler for lifecycle events
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
