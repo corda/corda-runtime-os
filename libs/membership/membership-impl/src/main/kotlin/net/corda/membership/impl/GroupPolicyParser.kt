@@ -29,20 +29,22 @@ class GroupPolicyParser @Activate constructor(
         const val MGM_INFO_FAILURE = "Failed to build MGM MemberInfo from GroupPolicy file."
         const val MGM_INFO = "mgmInfo"
         const val MGM_GROUP_ID = "CREATE_ID"
+        private val objectMapper = ObjectMapper()
 
         fun groupId(groupPolicyJson: String): String {
             try {
-                val groupId = ObjectMapper().readTree(groupPolicyJson).get("groupId").asText()
-                return if (groupId == MGM_GROUP_ID) UUID.randomUUID().toString() else groupId
-            } catch (e: NullPointerException) {
-                throw CordaRuntimeException("Failed to parse group policy file - could not find `groupId` in the JSON", e)
+                val groupId = objectMapper.readTree(groupPolicyJson).get("groupId")
+                    ?: throw CordaRuntimeException("Failed to parse group policy file - could not find `groupId` in the JSON")
+                return if (groupId.asText() == MGM_GROUP_ID)
+                    UUID.randomUUID().toString()
+                else
+                    groupId.asText()
             } catch (e: JsonParseException) {
                 throw CordaRuntimeException("Failed to parse group policy file", e)
             }
         }
     }
 
-    private val objectMapper = ObjectMapper()
     private val clock = UTCClock()
 
     /**
