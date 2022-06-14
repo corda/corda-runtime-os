@@ -53,7 +53,7 @@ class SchemaTests {
                         if (it.companionObject == null) {
                             callable.call()
                         } else {
-                            callable.call(null)
+                            callable.call(it.companionObject?.objectInstance)
                         } as String
                     }
             }

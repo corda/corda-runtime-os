@@ -118,6 +118,8 @@ class Schemas {
         companion object {
             const val P2P_OUT_TOPIC = "p2p.out"
             const val P2P_OUT_MARKERS = "p2p.out.markers"
+            val P2P_OUT_MARKERS_STATE = getStateAndEventStateTopic(P2P_OUT_MARKERS)
+            val P2P_OUT_MARKERS_DLQ = getStateAndEventDLQTopic(P2P_OUT_MARKERS)
             const val P2P_IN_TOPIC = "p2p.in"
             const val P2P_HOSTED_IDENTITIES_TOPIC = "p2p.hosted.identities"
             const val LINK_OUT_TOPIC = "link.out"
@@ -125,6 +127,13 @@ class Schemas {
             const val SESSION_OUT_PARTITIONS = "session.out.partitions"
             const val GATEWAY_TLS_TRUSTSTORES = "gateway.tls.truststores"
             const val GATEWAY_TLS_CERTIFICATES = "gateway.tls.certs"
+
+            /**
+             * Topics for (temporary) stub components.
+             */
+            const val CRYPTO_KEYS_TOPIC = "p2p.crypto.keys"
+            const val GROUP_POLICIES_TOPIC = "p2p.group.policies"
+            const val MEMBER_INFO_TOPIC = "p2p.members.info"
         }
     }
 
