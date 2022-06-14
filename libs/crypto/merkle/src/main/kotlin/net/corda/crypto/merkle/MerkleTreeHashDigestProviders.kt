@@ -8,6 +8,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import java.nio.charset.Charset
 import java.security.SecureRandom
 import java.util.*
 
@@ -35,7 +36,7 @@ class DefaultHashDigestProvider(
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-        return digestService.hash(concatByteArrays(ONE_BYTE, left.bytes, right.bytes), digestAlgorithmName)
+        return digestService.hash(concatByteArrays(ONE_BYTE, left.serialize(), right.serialize()), digestAlgorithmName)
     }
 }
 
@@ -61,7 +62,7 @@ class TweakableHashDigestProvider(
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-        return digestService.hash(concatByteArrays(nodePrefix, left.bytes, right.bytes), digestAlgorithmName)
+        return digestService.hash(concatByteArrays(nodePrefix, left.serialize(), right.serialize()), digestAlgorithmName)
     }
 }
 
@@ -92,11 +93,11 @@ open class NonceHashDigestProvider(
 
         override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
             require(nonce == null) { "Nonce must not be null" }
-            return SecureHash("SHA-256", bytes) // @todo: original was: SecureHash.deserialize(bytes) but that looked too avro specific.
+            return SecureHash.deserialize(bytes, digestService)
         }
 
         override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-            return digestService.hash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes), digestAlgorithmName)
+            return digestService.hash(concatByteArrays(depth.toByteArray(), left.serialize(), right.serialize()), digestAlgorithmName)
         }
     }
 
@@ -104,14 +105,14 @@ open class NonceHashDigestProvider(
         val merkleTree = MerkleTreeImpl.createMerkleTree(leaves, this)
         val allLeavesProof = merkleTree.createAuditProof(merkleTree.leaves.indices.toList())
         val preHashedLeaves = allLeavesProof.leaves.map {
-            IndexedMerkleLeaf(it.index, null, leafHash(it.index, it.nonce, it.leafData).bytes)
+            IndexedMerkleLeaf(it.index, null, leafHash(it.index, it.nonce, it.leafData).serialize())
         }
         return MerkleProofImpl(allLeavesProof.treeSize, preHashedLeaves, allLeavesProof.hashes)
     }
 
     override fun leafNonce(index: Int): ByteArray {
         require(entropy.isNotEmpty()) { "No entropy! NonceHashDigestProvider.Verify being used to create proof by mistake?" }
-        return digestService.hash(concatByteArrays(index.toByteArray(), entropy), digestAlgorithmName).bytes // todo: original: .serialize()
+        return digestService.hash(concatByteArrays(index.toByteArray(), entropy), digestAlgorithmName).serialize()
     }
 
     override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
@@ -120,7 +121,7 @@ open class NonceHashDigestProvider(
     }
 
     override fun nodeHash(depth: Int, left: SecureHash, right: SecureHash): SecureHash {
-        return digestService.hash(concatByteArrays(depth.toByteArray(), left.bytes, right.bytes), digestAlgorithmName)
+        return digestService.hash(concatByteArrays(depth.toByteArray(), left.serialize(), right.serialize()), digestAlgorithmName)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -139,4 +140,24 @@ open class NonceHashDigestProvider(
     override fun hashCode(): Int {
         return 31 * digestAlgorithmName.hashCode() + entropy.contentHashCode()
     }
+}
+
+const val SERIALIZATION_SEPARATOR: Char = ':'
+
+internal fun SecureHash.Companion.deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
+    val idxOfSeparator = bytes.indexOf(SERIALIZATION_SEPARATOR.code.toByte())
+    if (idxOfSeparator == -1) {
+        throw IllegalArgumentException("Provided argument: $bytes should be of format algorithm:bytes")
+    }
+    val digestAlgorithmName = DigestAlgorithmName(String(bytes.take(idxOfSeparator).toByteArray()))
+    val data = bytes.drop(idxOfSeparator+1).toByteArray()
+    val digestLength = digestService.digestLength(digestAlgorithmName)
+    return when (data.size) {
+        digestLength -> SecureHash(digestAlgorithmName.name, data)
+        else -> throw IllegalArgumentException("Provided argument has ${data.size} bytes not $digestLength bytes: $data")
+    }
+}
+
+internal fun SecureHash.serialize(): ByteArray {
+    return ("$algorithm${SERIALIZATION_SEPARATOR}").toByteArray(Charset.forName("UTF8")) + bytes
 }
