@@ -5,6 +5,7 @@
 
     <property name="schema.name" value="CONFIG"/>
 
+    <property name="now" value="now()" dbms="hsqldb"/>
     <property name="now" value="now()" dbms="postgresql"/>
 
     <changeSet author="R3.Corda" id="config-creation-v1.0">
@@ -49,7 +50,7 @@
             <column name="schema_version_minor" value="0"/>
             <column name="version" value="0"/>
             <column name="is_deleted" value="false"/>
-            <column name="update_ts" value="${now}"/>
+            <column name="update_ts" valueDate="${now}"/>
             <column name="update_actor" value="admin"/>
         </insert>
 
@@ -60,7 +61,7 @@
             <column name="schema_version_minor" value="0"/>
             <column name="version" value="0"/>
             <column name="is_deleted" value="false"/>
-            <column name="update_ts" value="${now}"/>
+            <column name="update_ts" valueDate="${now}"/>
             <column name="update_actor" value="admin"/>
         </insert>
 
