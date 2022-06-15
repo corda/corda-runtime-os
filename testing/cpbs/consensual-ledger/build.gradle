@@ -6,7 +6,7 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "Consensual States Example"
+        name "Consensual states example"
         versionId 1
         vendor "R3"
     }
@@ -16,4 +16,5 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-ledger'
+    //cordaProvided 'net.corda:corda-ledger:models'
 }
