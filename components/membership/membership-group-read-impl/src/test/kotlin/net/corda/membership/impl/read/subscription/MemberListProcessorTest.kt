@@ -25,7 +25,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.membership.impl.MemberInfoImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.membership.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
