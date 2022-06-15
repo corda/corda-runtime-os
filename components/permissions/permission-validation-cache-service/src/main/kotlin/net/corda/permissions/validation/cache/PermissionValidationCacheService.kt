@@ -66,7 +66,6 @@ class PermissionValidationCacheService @Activate constructor(
     private var configHandle: AutoCloseable? = null
 
     private var configRegistration: RegistrationHandle? = null
-    private var topicsRegistration: RegistrationHandle? = null
 
     private var permissionSummarySnapshotReceived: Boolean = false
 
@@ -119,8 +118,6 @@ class PermissionValidationCacheService @Activate constructor(
 
         configHandle?.close()
         configHandle = null
-        topicsRegistration?.close()
-        topicsRegistration = null
         permissionSummarySubscription?.close()
         permissionSummarySubscription = null
         permissionSummarySnapshotReceived = false
@@ -135,14 +132,11 @@ class PermissionValidationCacheService @Activate constructor(
         val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
 
         permissionSummarySubscription?.close()
-        val permissionSummarySubscription = createPermissionSummarySubscription(permissionSummaryData, config)
+        createPermissionSummarySubscription(permissionSummaryData, config)
             .also {
                 it.start()
                 permissionSummarySubscription = it
             }
-
-        topicsRegistration?.close()
-        topicsRegistration = coordinator.followStatusChangesByName(setOf(permissionSummarySubscription.subscriptionName))
 
         _permissionValidationCache?.close()
         _permissionValidationCache = permissionValidationCacheFactory.createPermissionValidationCache(permissionSummaryData)
