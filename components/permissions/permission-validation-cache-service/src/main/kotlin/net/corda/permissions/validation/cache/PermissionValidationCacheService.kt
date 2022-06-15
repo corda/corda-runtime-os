@@ -1,10 +1,10 @@
 package net.corda.permissions.validation.cache
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.validation.cache.factory.PermissionValidationCacheFactory
 import net.corda.libs.permissions.validation.cache.factory.PermissionValidationCacheTopicProcessorFactory
@@ -18,7 +18,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,6 +29,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [PermissionValidationCacheService::class])
 class PermissionValidationCacheService @Activate constructor(
@@ -134,6 +134,7 @@ class PermissionValidationCacheService @Activate constructor(
     private fun createAndStartSubscriptionsAndCache(config: SmartConfig) {
         val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
 
+        topicsRegistration?.close()
         permissionSummarySubscription?.close()
         val permissionSummarySubscription = createPermissionSummarySubscription(permissionSummaryData, config)
             .also {
@@ -141,7 +142,6 @@ class PermissionValidationCacheService @Activate constructor(
                 permissionSummarySubscription = it
             }
 
-        topicsRegistration?.close()
         topicsRegistration = coordinator.followStatusChangesByName(setOf(permissionSummarySubscription.subscriptionName))
 
         _permissionValidationCache?.close()
