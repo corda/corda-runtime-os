@@ -38,6 +38,8 @@ import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.hibernate.osgi.OsgiClassLoader
+import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
@@ -76,20 +78,16 @@ internal class HttpRpcServerInternal(
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
         it.registerPlugin(RedirectToLowercasePathPlugin())
-        val rendererBundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java)
-        // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`. We load
-        // Swagger UI's static files manually instead.
-        if (rendererBundle != null) {
-            val swaggerUiBundle = rendererBundle
-                .bundleContext
-                .bundles
-                .find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
 
-            if (swaggerUiBundle != null) {
-                val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
-                executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                    it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
-                }
+        val swaggerUiBundle = getSwaggerUiBundle()
+        // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
+        // We instruct to load Swagger UI's static files manually instead.
+        // Note: `addStaticFiles` perform a check that resource does exist.
+        // The actual loading of resources though is happening at `start()` time below.
+        if (swaggerUiBundle != null) {
+            val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
+            executeWithThreadContextClassLoader(swaggerUiClassloader) {
+                it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
             }
         } else {
             it.enableWebjars()
@@ -126,6 +124,14 @@ internal class HttpRpcServerInternal(
                     configurationsProvider.maxContentLength().toLong(),
                     1024))
         }
+    }
+
+    private fun getSwaggerUiBundle(): Bundle? {
+        val rendererBundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java) ?: return null
+        return rendererBundle
+            .bundleContext
+            .bundles
+            .find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
     }
 
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
@@ -379,10 +385,13 @@ internal class HttpRpcServerInternal(
             // classloading during `start` method invocation.
             val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
             if (bundle != null) {
-                bundle.loadClass(WebSocketServletFactory::class.java.name).classLoader.let { classLoader ->
-                    executeWithThreadContextClassLoader(classLoader) {
-                        server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
-                    }
+                val osgiClassLoader = OsgiClassLoader().also {
+                    it.addBundle(bundle)
+                    getSwaggerUiBundle()?.apply { it.addBundle(this) }
+                }
+                // Correct context classloader need to be set at start time
+                executeWithThreadContextClassLoader(osgiClassLoader) {
+                    server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
                 }
             } else {
                 server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
