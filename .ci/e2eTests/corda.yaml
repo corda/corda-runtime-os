@@ -17,8 +17,8 @@ db:
 
 resources:
   requests:
-    memory: 620Mi
-    cpu: 500m
+    memory: 2500Mi
+    cpu: 2000m
   limits:
-    memory: 1250Mi
-    cpu: 1000m
+    memory: 2500Mi
+    cpu: 2000m
