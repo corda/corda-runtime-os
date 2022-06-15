@@ -32,34 +32,34 @@ class ZipTweakerTest {
     @Test
     @Suppress("ComplexMethod")
     fun `Ensure a jar with removed signature can be read`() {
-        CpkReader.readCpk(workflowCPKPath.openStream(), testDir).use { cpk ->
-            val algo = "SHA-256"
-            val originalEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
-                generateSequence { zipInputStream.nextEntry }.map {
-                    it.name to let {
-                        val md = MessageDigest.getInstance(algo)
-                        DigestInputStream(zipInputStream, md).copyTo(OutputStream.nullOutputStream())
-                        SecureHash(algo, md.digest())
-                    }
-                }.filter {
-                    !it.first.uppercase().endsWith(".SF")
-                }.associate { it }
-            }
-            val dest = testDir.resolve("mainBundle.jar")
-            Files.newOutputStream(testDir.resolve("mainBundle.jar")).use { outputStream ->
-                cpk.getResourceAsStream(cpk.metadata.mainBundle).use {
-                    it.transferTo(outputStream)
+        val cpk = workflowCPKPath.openStream().use { CpkReader.readCpk(it, testDir) }
+        val algo = "SHA-256"
+        val originalEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
+            generateSequence { zipInputStream.nextEntry }.map {
+                it.name to let {
+                    val md = MessageDigest.getInstance(algo)
+                    DigestInputStream(zipInputStream, md).copyTo(OutputStream.nullOutputStream())
+                    SecureHash(algo, md.digest())
                 }
+            }.filter {
+                !it.first.uppercase().endsWith(".SF")
+            }.associate { it }
+        }
+        val dest = testDir.resolve("mainBundle.jar")
+        Files.newOutputStream(testDir.resolve("mainBundle.jar")).use { outputStream ->
+            cpk.getResourceAsStream(cpk.metadata.mainBundle).use {
+                it.transferTo(outputStream)
             }
-            ZipTweaker.removeJarSignature(dest)
-            JarInputStream(Files.newInputStream(dest), true).use { jarInputStream ->
-                while(true) {
-                    val jarEntry = jarInputStream.nextJarEntry ?: break
-                    Assertions.assertNull(jarEntry.codeSigners)
-                    jarInputStream.copyTo(OutputStream.nullOutputStream())
-                }
+        }
+        ZipTweaker.removeJarSignature(dest)
+        JarInputStream(Files.newInputStream(dest), true).use { jarInputStream ->
+            while (true) {
+                val jarEntry = jarInputStream.nextJarEntry ?: break
+                Assertions.assertNull(jarEntry.codeSigners)
+                jarInputStream.copyTo(OutputStream.nullOutputStream())
             }
-            val unsignedJarEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
+        }
+        val unsignedJarEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
                 generateSequence { zipInputStream.nextEntry }.map {
                     it.name to let {
                         val md = MessageDigest.getInstance(algo)
@@ -71,7 +71,6 @@ class ZipTweakerTest {
                 }.associate { it }
             }
 
-            Assertions.assertEquals(originalEntries, unsignedJarEntries)
-        }
+        Assertions.assertEquals(originalEntries, unsignedJarEntries)
     }
 }

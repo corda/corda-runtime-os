@@ -25,7 +25,7 @@ class FlowSessionImpl(
         val log = contextLogger()
     }
 
-    private val fiber: FlowFiber<*> get() = flowFiberService.getExecutingFiber()
+    private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {

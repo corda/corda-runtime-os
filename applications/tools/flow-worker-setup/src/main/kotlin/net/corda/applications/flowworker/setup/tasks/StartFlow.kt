@@ -45,6 +45,7 @@ class StartFlow(private val context: TaskContext) : Task {
             "flow-worker-dev",
             identity,
             flowName,
+            jsonArgs,
             Instant.now()
         )
 

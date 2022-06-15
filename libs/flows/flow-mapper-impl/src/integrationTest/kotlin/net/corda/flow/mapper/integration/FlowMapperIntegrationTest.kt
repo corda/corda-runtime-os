@@ -44,6 +44,7 @@ class FlowMapperIntegrationTest {
             "cpi id",
             identity,
             "className",
+            null,
             Instant.MIN
         ), null
     )

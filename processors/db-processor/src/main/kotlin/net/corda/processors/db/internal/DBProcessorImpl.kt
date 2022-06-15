@@ -11,6 +11,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
+import net.corda.data.config.Configuration
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
@@ -39,12 +40,14 @@ import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader
+import net.corda.processors.db.internal.reconcile.db.getAllConfigDBVersionedRecords
 import net.corda.processors.db.internal.reconcile.db.getAllCpiInfoDBVersionedRecords
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -132,6 +135,8 @@ class DBProcessorImpl @Activate constructor(
 
     private var cpiInfoDbReconcilerReader: DbReconcilerReader<CpiIdentifier, CpiMetadata>? = null
     private var cpiInfoReconciler: Reconciler? = null
+    private var configDbReconcilerReader: DbReconcilerReader<String, Configuration>? = null
+    private var configReconciler: Reconciler? = null
 
     // keeping track of the DB Managers registration handler specifically because the bootstrap process needs to be split
     //  into 2 parts.
@@ -157,6 +162,9 @@ class DBProcessorImpl @Activate constructor(
 
         when (event) {
             is StartEvent -> {
+                // First Config reconciliation needs to run at least once. It cannot wait for its configuration as
+                // it is the one to offer the DB Config (therefore its own configuration too) to `ConfigurationReadService`.
+                createOrUpdateConfigReconciler(3600000)
                 dependentComponents.registerAndStartAll(coordinator)
                 dbManagerRegistrationHandler = lifecycleCoordinator.followStatusChangesByName(
                     setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>()))
@@ -183,6 +191,11 @@ class DBProcessorImpl @Activate constructor(
                         log.info("Cpi info reconciliation interval set to $cpiInfoReconciliationIntervalMs ms")
                         createOrUpdateCpiInfoReconciler(cpiInfoReconciliationIntervalMs)
                     }
+                event.config[ConfigKeys.RECONCILIATION_CONFIG]?.getLong(RECONCILIATION_CONFIG_INTERVAL_MS)
+                    ?.let { configReconciliationIntervalMs ->
+                        log.info("Config reconciliation interval set to $configReconciliationIntervalMs ms")
+                        createOrUpdateConfigReconciler(configReconciliationIntervalMs)
+                    }
             }
             is BootConfigEvent -> {
                 val bootstrapConfig = event.config
@@ -205,6 +218,10 @@ class DBProcessorImpl @Activate constructor(
                 cpiInfoReconciler = null
                 cpiInfoDbReconcilerReader?.close()
                 cpiInfoDbReconcilerReader = null
+                configReconciler?.close()
+                configReconciler = null
+                configDbReconcilerReader?.close()
+                configDbReconcilerReader = null
                 dbManagerRegistrationHandler?.close()
                 dbManagerRegistrationHandler = null
             }
@@ -242,6 +259,35 @@ class DBProcessorImpl @Activate constructor(
         } else {
             log.info("Updating Cpi Info ${Reconciler::class.java.name}")
             cpiInfoReconciler!!.updateInterval(cpiInfoReconciliationIntervalMs)
+        }
+    }
+
+    private fun createOrUpdateConfigReconciler(configReconciliationIntervalMs: Long) {
+        if (configDbReconcilerReader == null) {
+            configDbReconcilerReader =
+                DbReconcilerReader(
+                    coordinatorFactory,
+                    dbConnectionManager,
+                    String::class.java,
+                    Configuration::class.java,
+                    getAllConfigDBVersionedRecords
+                ).also {
+                    it.start()
+                }
+        }
+
+        if (configReconciler == null) {
+            configReconciler = reconcilerFactory.create(
+                dbReader = configDbReconcilerReader!!,
+                kafkaReader = configBusReconcilerReader,
+                writer = configPublishService,
+                keyClass = String::class.java,
+                valueClass = Configuration::class.java,
+                reconciliationIntervalMs = configReconciliationIntervalMs
+            ).also { it.start() }
+        } else {
+            log.info("Updating Config ${Reconciler::class.java.name}")
+            configReconciler!!.updateInterval(configReconciliationIntervalMs)
         }
     }
 }

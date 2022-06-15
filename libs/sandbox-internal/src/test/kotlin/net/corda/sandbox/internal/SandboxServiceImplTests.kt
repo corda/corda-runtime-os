@@ -518,6 +518,5 @@ private data class CpkAndContents(
             cordappCertificates = emptySet(),
             timestamp = Instant.now())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
-        override fun close() {}
     }
 }

@@ -1,15 +1,20 @@
 package net.corda.configuration.write.impl.publish
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,7 +30,9 @@ class ConfigPublishServiceImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
     @Reference(service = ConfigMerger::class)
-    configMerger: ConfigMerger
+    configMerger: ConfigMerger,
+    @Reference(service = ConfigurationValidatorFactory::class)
+    configurationValidatorFactory: ConfigurationValidatorFactory
 ) : ConfigPublishService {
 
     private val handler = ConfigPublishServiceHandler(publisherFactory, configMerger)
@@ -37,17 +44,42 @@ class ConfigPublishServiceImpl @Activate constructor(
         handler
     )
 
+    private val validator = configurationValidatorFactory.createConfigValidator()
+    private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
+
     private val publisher: Publisher
         get() =
             handler.publisher ?: throw IllegalStateException("Config publish service publisher is null")
 
     override fun put(configSection: String, config: Configuration) {
+        val configWithDefaults = validateConfigAndApplyDefaults(
+            configSection,
+            config.value,
+            config.schemaVersion.majorVersion,
+            config.schemaVersion.minorVersion
+        )
+        config.value = configWithDefaults.root().render(ConfigRenderOptions.concise())
 
         // TODO - CORE-3404 - Check new config against current Kafka config to avoid overwriting.
         val futures = publisher.publish(listOf(Record(CONFIG_TOPIC, configSection, config)))
 
         // TODO - CORE-3730 - Define timeout policy.
         futures.first().get()
+    }
+
+    private fun validateConfigAndApplyDefaults(
+        configSection: String,
+        configValue: String,
+        configMajorVersion: Int,
+        configMinorVersion: Int
+    ): SmartConfig {
+        val config = smartConfigFactory.create(ConfigFactory.parseString(configValue))
+        return validator.validate(
+            configSection,
+            Version(configMajorVersion, configMinorVersion),
+            config,
+            applyDefaults = true
+        )
     }
 
     override fun bootstrapConfig(bootConfig: SmartConfig) {

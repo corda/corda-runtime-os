@@ -1,15 +1,14 @@
 package net.cordapp.demo.mandelbrot
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
-@StartableByRPC
-class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
+class CalculateBlockFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -278,11 +277,11 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
 
     @Suppress("NestedBlockDepth")
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting mandelbrot calc...")
 
         try {
-            val requestMessage = jsonMarshallingService.parseJson<RequestMessage>(jsonArg)
+            val requestMessage = requestBody.getRequestBodyAs<RequestMessage>(jsonMarshallingService)
 
             val response = Array(requestMessage.pixelWidth * requestMessage.pixelHeight) { IntArray(3) { 0 } }
 
@@ -326,7 +325,7 @@ class CalculateBlockFlow(private val jsonArg: String) : Flow<String> {
             return jsonMarshallingService.formatJson(response)
 
         } catch (e: Exception) {
-            log.error("Failed to calculate mandelbrot '$jsonArg' because '${e.message}'")
+            log.error("Failed to calculate mandelbrot '$requestBody' because '${e.message}'")
             throw e
         }
     }

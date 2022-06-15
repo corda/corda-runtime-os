@@ -21,8 +21,9 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
+import kotlin.math.min
+import kotlin.math.pow
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -267,8 +268,8 @@ class FlowCheckpointImpl(
 
         override val size: Int get() = flowStackItems.size
 
-        override fun push(flow: Flow<*>): FlowStackItem {
-            val stackItem = FlowStackItem(flow.javaClass.name, flow.getIsInitiatingFlow(), mutableListOf())
+        override fun push(flow: Any): FlowStackItem {
+            val stackItem = FlowStackItem(flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf())
             flowStackItems.add(stackItem)
             return stackItem
         }
@@ -295,8 +296,8 @@ class FlowCheckpointImpl(
             return stackEntry
         }
 
-        private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
+        private fun Class<*>.getIsInitiatingFlow(): Boolean {
+            return this.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

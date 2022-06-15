@@ -15,7 +15,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class MockFlowFiberService : FlowFiberService {
-    val flowFiber = mock<FlowFiber<*>>()
+    val flowFiber = mock<FlowFiber>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     val flowCheckpoint: FlowCheckpoint = mock()
     val flowStack: FlowStack = mock()
@@ -44,7 +44,7 @@ class MockFlowFiberService : FlowFiberService {
         whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
     }
 
-    override fun getExecutingFiber(): FlowFiber<*> {
+    override fun getExecutingFiber(): FlowFiber {
         return flowFiber
     }
 }
