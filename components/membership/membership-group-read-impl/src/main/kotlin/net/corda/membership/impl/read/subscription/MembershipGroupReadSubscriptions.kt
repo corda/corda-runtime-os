@@ -52,7 +52,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
             throw CordaRuntimeException("Must provide membership configuration in order to start the subscriptions.")
         }
 
-        override fun stop() = subscriptions.forEach { it?.stop() }
+        override fun stop() = subscriptions.forEach { it?.close() }
 
         /**
          * Start the member list subscription.
