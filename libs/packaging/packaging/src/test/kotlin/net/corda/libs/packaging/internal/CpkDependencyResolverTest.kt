@@ -1,7 +1,10 @@
 package net.corda.libs.packaging.internal
 
+import net.corda.libs.packaging.CpkDependencyResolver
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
+import net.corda.libs.packaging.hash
+import net.corda.libs.packaging.secureHashComparator
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
