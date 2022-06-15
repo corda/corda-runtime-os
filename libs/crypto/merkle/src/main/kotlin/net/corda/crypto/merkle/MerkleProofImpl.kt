@@ -13,6 +13,7 @@ internal class MerkleProofImpl(
 
     // CORE-5111: add serialize/deserialize (and its test)
 
+    @Suppress("NestedBlockDepth", "ComplexMethod")
     override fun verify(root: SecureHash, digestProvider: MerkleTreeHashDigestProvider): Boolean {
         if (leaves.isEmpty()) {
             return false

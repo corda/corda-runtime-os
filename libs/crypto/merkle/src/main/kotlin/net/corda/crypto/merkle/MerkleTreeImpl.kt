@@ -78,6 +78,8 @@ internal class MerkleTreeImpl(
     override val root: SecureHash by lazy(LazyThreadSafetyMode.PUBLICATION) {
         nodeHashes.last().single()
     }
+
+    @Suppress("NestedBlockDepth", "ComplexMethod")
     override fun createAuditProof(leafIndices: List<Int>): MerkleProof {
         require(leafIndices.isNotEmpty()) { "Proof requires at least one leaf" }
         require(leafIndices.all { it >= 0 && it < leaves.size }) { "Leaf indices out of bounds" }
