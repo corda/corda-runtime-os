@@ -14,11 +14,12 @@ import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.messaging.api.publisher.RPCSender
+import java.util.concurrent.atomic.AtomicReference
 
 class PermissionEntityManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-    private val permissionManagementCache: PermissionManagementCache,
+    private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
 ) : PermissionEntityManager {
 
     private val writerTimeout = config.getEndpointTimeout()
@@ -42,7 +43,12 @@ class PermissionEntityManagerImpl(
     }
 
     override fun getPermission(permissionRequestDto: GetPermissionRequestDto): PermissionResponseDto? {
-        val cachedPermission: Permission = permissionManagementCache.getPermission(permissionRequestDto.permissionId) ?: return null
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+
+        val cachedPermission: Permission =
+            permissionManagementCache.getPermission(permissionRequestDto.permissionId) ?: return null
         return cachedPermission.convertToResponseDto()
     }
 }

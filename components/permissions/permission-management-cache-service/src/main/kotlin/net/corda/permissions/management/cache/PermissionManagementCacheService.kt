@@ -38,6 +38,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [PermissionManagementCacheService::class])
@@ -61,11 +62,13 @@ class PermissionManagementCacheService @Activate constructor(
         const val CONSUMER_GROUP = "PERMISSION_SERVICE"
     }
 
-    val permissionManagementCache: PermissionManagementCache?
-        get() {
-            return _permissionManagementCache
-        }
-    private var _permissionManagementCache: PermissionManagementCache? = null
+    /**
+     * Permission management cache may not be instantly initialized
+     * The call sites, however, should be able to get hold of the reference which eventually will
+     * be set to a working instance
+     */
+    val permissionManagementCacheRef = AtomicReference<PermissionManagementCache?>(null)
+
     private var userSubscription: CompactedSubscription<String, User>? = null
     private var groupSubscription: CompactedSubscription<String, Group>? = null
     private var roleSubscription: CompactedSubscription<String, Role>? = null
@@ -136,8 +139,8 @@ class PermissionManagementCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                _permissionManagementCache?.close()
-                _permissionManagementCache = null
+                permissionManagementCacheRef.get()?.close()
+                permissionManagementCacheRef.set(null)
             }
         }
     }
@@ -212,14 +215,14 @@ class PermissionManagementCacheService @Activate constructor(
             )
         )
 
-        _permissionManagementCache?.close()
-        _permissionManagementCache = permissionManagementCacheFactory.createPermissionManagementCache(
+        permissionManagementCacheRef.get()?.close()
+        permissionManagementCacheRef.set(permissionManagementCacheFactory.createPermissionManagementCache(
             userData,
             groupData,
             roleData,
             permissionData
         )
-            .also { it.start() }
+            .also { it.start() })
     }
 
     private fun createUserSubscription(
