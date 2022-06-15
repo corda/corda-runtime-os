@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/packaging/cpk/2.0/corda.cpk.dependencies.json",
+  "title": "Corda CPK 2.0 Schema",
+  "description": "Schema for CPK dependencies",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "description": "CPK name",
+        "type": "string"
+      },
+      "version": {
+        "description": "CPK version",
+        "type": "string"
+      },
+      "verifyFileHash": {
+        "description": "File hash of third party CPK",
+        "type": "object",
+        "properties": {
+          "algorithm": {
+            "description": "Hash algorithm name",
+            "type": "string"
+          },
+          "fileHash": {
+            "description": "Base64 encoded hash",
+            "type": "string"
+          }
+        },
+        "required": [
+          "algorithm",
+          "fileHash"
+        ]
+      },
+      "verifySameSignerAsMe": {
+        "description": "Used for dependencies built by the same developer",
+        "enum": [ true ]
+      }
+    },
+    "required": [
+      "name",
+      "version"
+    ],
+    "oneOf": [
+      {
+        "required": [
+          "verifyFileHash"
+        ]
+      },
+      {
+        "required": [
+          "verifySameSignerAsMe"
+        ]
+      }
+    ],
+    "additionalProperties": false
+  }
+}

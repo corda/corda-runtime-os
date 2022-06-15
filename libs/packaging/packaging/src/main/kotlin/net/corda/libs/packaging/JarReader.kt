@@ -15,7 +15,7 @@ import java.util.jar.Manifest
 class JarReader(val jarName: String, jarBytes: ByteArray, val trustedCerts: Collection<X509Certificate>) {
     val manifest: Manifest
     val entries: List<Entry>
-    val codeSigners: Array<CodeSigner>
+    val codeSigners: List<CodeSigner>
 
     constructor(jarName: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate>) :
         this(jarName, inputStream.readAllBytesAndClose(), trustedCerts)

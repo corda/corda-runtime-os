@@ -1,14 +1,21 @@
-package net.corda.libs.packaging.verify
+package net.corda.libs.packaging.verify.internal.cpk
 
+import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
+import net.corda.libs.packaging.verify.InMemoryZipFile
+import net.corda.libs.packaging.verify.TestUtils
 import net.corda.libs.packaging.verify.TestUtils.addFile
 import net.corda.libs.packaging.verify.TestUtils.signedBy
+import net.corda.libs.packaging.verify.TestUtils.toBase64
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
 internal class TestCpkV2Builder {
-    var name = "testCpkV2.cpk"
+    var name = "testCpkV2-1.0.0.0.cpk"
         private set
-    var version = "1.0.0.0"
+    var bundleName = "test.cpk"
+        private set
+    var bundleVersion = "1.0.0.0"
         private set
     var manifest: Manifest? = null
         private set
@@ -20,7 +27,8 @@ internal class TestCpkV2Builder {
         private set
 
     fun name(name: String) = apply { this.name = name }
-    fun version(version: String) = apply { this.version = version }
+    fun bundleName(bundleName: String) = apply { this.bundleName = bundleName }
+    fun bundleVersion(bundleVersion: String) = apply { this.bundleVersion = bundleVersion }
     fun manifest(manifest: Manifest) = apply { this.manifest = manifest }
     fun libraries(vararg libraries: TestUtils.Library) = apply { this.libraries = arrayOf(*libraries) }
     fun dependencies(vararg dependencies: TestUtils.Dependency) = apply { this.dependencies = arrayOf(*dependencies) }
@@ -41,9 +49,8 @@ internal class TestCpkV2Builder {
                 ByteArrayInputStream("""
                 Manifest-Version: 1.0
                 Corda-CPK-Format: 2.0
-                Corda-CPK-Cordapp-Name: $name
-                Corda-CPK-Cordapp-Version: $version
-                Corda-CPK-Cordapp-Vendor: R3
+                $CPK_BUNDLE_NAME_ATTRIBUTE: $bundleName
+                $CPK_BUNDLE_VERSION_ATTRIBUTE: $bundleVersion
                 """.trimIndent().plus("\n").toByteArray())
             )
         }
@@ -53,14 +60,31 @@ internal class TestCpkV2Builder {
             append("[")
             dependencies.forEachIndexed { i, it ->
                 if (i > 0) append(",")
-                append("""
-                {
-                    "name": "${it.name}",
-                    "version": "${it.version}",
-                    "verifySameSignerAsMe": true
-                }
-                """.trimIndent().plus("\n"))
+                if (it.hash != null) append(hashDependency(it))
+                else append(signerDependency(it))
             }
             append("]")
         }
+
+    private fun hashDependency(dependency: TestUtils.Dependency) =
+        """
+        {
+            "name": "${dependency.name}",
+            "version": "${dependency.version}",
+            "verifyFileHash": {
+                "algorithm": "${dependency.hash!!.algorithm}",
+                "fileHash": "${dependency.hash.toBase64()}"
+            }
+        }
+        """.trimIndent().plus("\n")
+
+    private fun signerDependency(dependency: TestUtils.Dependency) =
+        """
+        {
+            "name": "${dependency.name}",
+            "version": "${dependency.version}",
+            "verifySameSignerAsMe": true
+        }
+        """.trimIndent().plus("\n")
+
 }
