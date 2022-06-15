@@ -9,8 +9,8 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.impl.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.membership.impl.converter.PublicKeyConverter
-import net.corda.membership.impl.converter.PublicKeyHashConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.KeyEncodingService
 import org.assertj.core.api.SoftAssertions.assertSoftly

@@ -19,8 +19,8 @@ import net.corda.membership.impl.GroupPolicyParser
 import net.corda.membership.impl.MGMContextImpl
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.converter.EndpointInfoConverter
-import net.corda.membership.impl.converter.PublicKeyConverter
-import net.corda.membership.impl.converter.PublicKeyHashConverter
+import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.membership.impl.toMemberInfo
 import net.corda.membership.impl.toSortedMap
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException

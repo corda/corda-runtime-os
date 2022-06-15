@@ -40,6 +40,7 @@ dependencies {
 
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':testing:db-testkit')
+    testImplementation project(":libs:crypto:crypto-impl")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
