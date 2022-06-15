@@ -32,7 +32,6 @@ internal class RPCSubscriptionFactory(
     /**
      * Creates a [ConfigurationManagementRPCSubscription] using the provided [messagingConfig].
      * @param messagingConfig messaging config to create the subscription
-     * @param publisher Used to write config to the topic
      * @param validator New configs received will be validated by the config [validator] with defaults applied.
      * @return RPC subscription for the [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
      */
