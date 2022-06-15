@@ -1,0 +1,38 @@
+# values file suitable for local deployment of a debuggable corda cluster.
+# Uncomment values for workers to debug.
+#
+# First use `./gradlew publishOSGiImage --parallel` to create local docker images
+# Then deploy using:
+#
+#  helm upgrade --install corda -n corda \
+#  charts/corda \
+#  --values values.yaml \
+#  --values debug.yaml \
+#  --wait
+#
+workers:
+  crypto:
+    replicaCount: 1
+#    debug:
+#      enabled: true
+#      suspend: true
+  db:
+    replicaCount: 1
+#    debug:
+#      enabled: true
+#      suspend: true
+  flow:
+    replicaCount: 1
+#    debug:
+#      enabled: true
+#      suspend: true
+  membership:
+    replicaCount: 1
+#    debug:
+#      enabled: true
+#      suspend: true
+  rpc:
+    replicaCount: 1
+#    debug:
+#      enabled: true
+#      suspend: true
