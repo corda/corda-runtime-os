@@ -136,7 +136,12 @@ internal class PermissionManagementServiceEventHandler(
         permissionManager?.close()
         log.info("Creating and starting permission manager.")
         permissionManager =
-            permissionManagerFactory.createPermissionManager(config, rpcSender!!, permissionManagementCacheRef, permissionValidationCacheRef)
+            permissionManagerFactory.createPermissionManager(
+                config,
+                rpcSender!!,
+                permissionManagementCacheRef,
+                permissionValidationCacheRef
+            )
                 .also { it.start() }
 
         basicAuthenticationService?.close()
