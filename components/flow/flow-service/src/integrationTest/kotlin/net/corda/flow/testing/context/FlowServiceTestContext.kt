@@ -1,6 +1,9 @@
 package net.corda.flow.testing.context
 
 import com.typesafe.config.ConfigFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowInitiatorType
@@ -33,9 +36,8 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.ManifestCorDappInfo
-import net.corda.messaging.api.records.Record
-import net.corda.libs.packaging.Cpk
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -49,9 +51,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -75,6 +74,8 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private val testConfig = mutableMapOf<String, Any>(
+        FlowConfig.PERSISTENCE_MAX_RETRIES to 5,
+        FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,

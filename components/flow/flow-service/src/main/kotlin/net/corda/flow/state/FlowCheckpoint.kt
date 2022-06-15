@@ -5,7 +5,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.state.db.Query
+import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
@@ -34,7 +34,7 @@ interface FlowCheckpoint : NonSerializable {
 
     val sessions: List<SessionState>
 
-    var query: Query?
+    var persistenceState: PersistenceState?
 
     val doesExist: Boolean
 

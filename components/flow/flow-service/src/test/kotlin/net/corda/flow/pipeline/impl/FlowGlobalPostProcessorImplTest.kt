@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import java.util.stream.Stream
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -7,7 +8,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
-import net.corda.flow.db.manager.DbManager
+import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -26,7 +27,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Stream
 
 class FlowGlobalPostProcessorImplTest {
 
@@ -70,7 +70,7 @@ class FlowGlobalPostProcessorImplTest {
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
     private val sessionManager = mock<SessionManager>()
-    private val dbManager = mock<DbManager>()
+    private val dbManager = mock<PersistenceManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()

@@ -12,7 +12,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.RetryState
 import net.corda.data.flow.state.StateMachineState
-import net.corda.data.flow.state.db.Query
+import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
@@ -56,7 +56,7 @@ class FlowCheckpointImpl(
     private var nullableWaitingFor: WaitingFor? = null
     private var nullableSessionsMap: MutableMap<String, SessionState>? = null
     private var nullableFlowStack: FlowStackImpl? = null
-    private var nullableQuery: Query? = null
+    private var nullablePersistenceState: PersistenceState? = null
 
     private val checkpoint: Checkpoint
         get() = checkNotNull(nullableCheckpoint)
@@ -105,10 +105,10 @@ class FlowCheckpointImpl(
     override val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
-    override var query: Query?
-        get() = nullableQuery
+    override var persistenceState: PersistenceState?
+        get() = nullablePersistenceState
         set(value) {
-            nullableQuery = value
+            nullablePersistenceState = value
         }
 
     override val doesExist: Boolean
@@ -207,7 +207,7 @@ class FlowCheckpointImpl(
             return null
         }
 
-        checkpoint.query = nullableQuery
+        checkpoint.persistenceState = nullablePersistenceState
         checkpoint.flowState.suspendedOn = nullableSuspendOn
         checkpoint.flowState.waitingFor = nullableWaitingFor
         checkpoint.sessions = sessionMap.values.toList()
@@ -219,11 +219,11 @@ class FlowCheckpointImpl(
         validateAndAddStateFields()
         validateAndAddSessions()
         validateAndAddFlowStack()
-        validateAndAddFlowQuery()
+        validateAndAddPersistenceState()
     }
 
-    private fun validateAndAddFlowQuery() {
-        nullableQuery = checkpoint.query
+    private fun validateAndAddPersistenceState() {
+        nullablePersistenceState = checkpoint.persistenceState
     }
     private fun validateAndAddStateFields() {
         nullableSuspendOn = checkpoint.flowState.suspendedOn

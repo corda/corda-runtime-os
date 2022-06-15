@@ -37,7 +37,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
         val request = FlowIORequest.Find(UUID.randomUUID().toString(), entityClass.canonicalName, serialize(primaryKey))
-        log.debug { "Preparing to send Find Query for class of type ${request.className} with id ${request.requestId} " }
+        log.debug { "Preparing to send Find query for class of type ${request.className} with id ${request.requestId} " }
         val received = fiber.suspend(request)
         return if (received != null) deserializeReceivedPayload(received.array(), entityClass) else null
     }
@@ -51,7 +51,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun <R : Any> merge(entity: R): R? {
         val entityClass = entity::class.java
         val request = FlowIORequest.Merge(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Merge Query for class of type $entityClass with id ${request.requestId} " }
+        log.debug { "Preparing to send Merge query for class of type $entityClass with id ${request.requestId} " }
         val received = fiber.suspend(request)
         return if (received != null) deserializeReceivedPayload(received.array(), entityClass) else null
     }
@@ -64,7 +64,7 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun persist(entity: Any) {
         val request = FlowIORequest.Persist(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Persist Query for class of type ${entity::class.java} with id ${request.requestId} " }
+        log.debug { "Preparing to send Persist query for class of type ${entity::class.java} with id ${request.requestId} " }
         fiber.suspend(request)
     }
 
@@ -108,7 +108,7 @@ class PersistenceServiceImpl @Activate constructor(
         val entityClass = entity::class.java
         enforceNotPrimitive(entityClass)
         val request = FlowIORequest.Delete(UUID.randomUUID().toString(), serialize(entity))
-        log.debug { "Preparing to send Delete Query for class of type $entityClass with id ${request.requestId} " }
+        log.debug { "Preparing to send Delete query for class of type $entityClass with id ${request.requestId} " }
         fiber.suspend(request)
     }
 
