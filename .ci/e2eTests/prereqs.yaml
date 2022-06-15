@@ -7,11 +7,11 @@ global:
 kafka:
   resources:
     requests:
-      memory: 390Mi
-      cpu: 1000m
+      memory: 1500Mi
+      cpu: 2000m
     limits:
-      memory: 800Mi
-      cpu: 1000m
+      memory: 1500Mi
+      cpu: 2000m
 
 postgresql:
   primary:
