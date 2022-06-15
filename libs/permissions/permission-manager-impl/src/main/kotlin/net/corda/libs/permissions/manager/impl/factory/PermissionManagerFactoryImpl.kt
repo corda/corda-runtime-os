@@ -32,7 +32,7 @@ class PermissionManagerFactoryImpl @Activate constructor(
         config: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
-        permissionValidationCache: PermissionValidationCache
+        permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>
     ): PermissionManager {
 
         return PermissionManagerImpl(
@@ -40,7 +40,7 @@ class PermissionManagerFactoryImpl @Activate constructor(
                 config,
                 rpcSender,
                 permissionManagementCacheRef,
-                permissionValidationCache,
+                permissionValidationCacheRef,
                 passwordServiceFactory.createPasswordService(SecureRandom())
             ),
             PermissionGroupManagerImpl(config, rpcSender, permissionManagementCacheRef),

@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 internal class PermissionManagementServiceEventHandlerTest {
     private val permissionManagementCacheRef = AtomicReference(mock<PermissionManagementCache>())
-    private val permissionValidationCache = mock<PermissionValidationCache>()
+    private val permissionValidationCacheRef = AtomicReference(mock<PermissionValidationCache>())
     private val permissionManagementCacheService = mock<PermissionManagementCacheService>()
     private val permissionValidationCacheService = mock<PermissionValidationCacheService>()
     private val permissionValidationService = mock<PermissionValidationService>()
@@ -66,13 +66,13 @@ internal class PermissionManagementServiceEventHandlerTest {
         whenever(permissionManagementCacheService.permissionManagementCacheRef)
             .thenReturn(permissionManagementCacheRef)
 
-        whenever(permissionValidationCacheService.permissionValidationCache)
-            .thenReturn(permissionValidationCache)
+        whenever(permissionValidationCacheService.permissionValidationCacheRef)
+            .thenReturn(permissionValidationCacheRef)
 
         whenever(publisherFactory.createRPCSender(any<RPCConfig<PermissionManagementRequest, PermissionManagementResponse>>(), any()))
             .thenReturn(rpcSender)
 
-        whenever(permissionManagerFactory.createPermissionManager(config, rpcSender, permissionManagementCacheRef, permissionValidationCache))
+        whenever(permissionManagerFactory.createPermissionManager(config, rpcSender, permissionManagementCacheRef, permissionValidationCacheRef))
             .thenReturn(permissionManager)
 
         whenever(

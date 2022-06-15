@@ -88,11 +88,8 @@ class PermissionValidationService @Activate constructor(
     }
 
     private fun startValidationComponent() {
-        checkNotNull(permissionValidationCacheService.permissionValidationCache) {
-            "Permission Validation Service received status UP but permission validation cache was null."
-        }
         _permissionValidator?.close()
-        _permissionValidator = permissionValidatorFactory.create(permissionValidationCacheService.permissionValidationCache!!)
+        _permissionValidator = permissionValidatorFactory.create(permissionValidationCacheService.permissionValidationCacheRef)
             .also { it.start() }
     }
 

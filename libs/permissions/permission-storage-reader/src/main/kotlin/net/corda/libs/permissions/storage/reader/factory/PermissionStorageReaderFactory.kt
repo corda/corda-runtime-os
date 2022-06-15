@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 interface PermissionStorageReaderFactory {
 
     fun create(
-        permissionValidationCache: PermissionValidationCache,
+        permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         publisher: Publisher,
         entityManagerFactory: EntityManagerFactory

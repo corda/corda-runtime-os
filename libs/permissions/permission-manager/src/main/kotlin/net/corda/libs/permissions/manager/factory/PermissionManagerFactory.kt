@@ -22,13 +22,13 @@ interface PermissionManagerFactory {
      * type [PermissionManagementResponse].
      * @param permissionManagementCacheRef the permission management cache holding permission data used for permission management read
      * operations.
-     * @param permissionValidationCache the cache holding data used for permission validation
+     * @param permissionValidationCacheRef the cache holding data used for permission validation
      */
     fun createPermissionManager(
         config: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
-        permissionValidationCache: PermissionValidationCache
+        permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>
     ): PermissionManager
 
     /**

@@ -317,7 +317,7 @@ class PermissionStorageReaderImplTest {
     private val reconciler = mock<PermissionSummaryReconciler>()
 
     private val processor =
-        PermissionStorageReaderImpl(permissionValidationCache, AtomicReference(permissionManagementCache), permissionRepository, publisher, reconciler)
+        PermissionStorageReaderImpl(AtomicReference(permissionValidationCache), AtomicReference(permissionManagementCache), permissionRepository, publisher, reconciler)
 
     @Test
     fun `starting the reader publishes stored users, groups, roles and permissions`() {

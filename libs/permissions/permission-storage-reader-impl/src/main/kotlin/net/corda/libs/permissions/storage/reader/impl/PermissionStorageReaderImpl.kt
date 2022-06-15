@@ -34,7 +34,7 @@ import net.corda.data.permissions.User as AvroUser
 
 @Suppress("TooManyFunctions")
 class PermissionStorageReaderImpl(
-    private val permissionValidationCache: PermissionValidationCache,
+    private val permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>,
     private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
     private val permissionRepository: PermissionRepository,
     private val publisher: Publisher,
@@ -96,6 +96,10 @@ class PermissionStorageReaderImpl(
         val startTime = System.currentTimeMillis()
 
         val permissionSummariesFromDb: Map<UserLogin, InternalUserPermissionSummary> = permissionRepository.findAllPermissionSummaries()
+
+        val permissionValidationCache = checkNotNull(permissionValidationCacheRef.get()) {
+            "Permission validation cache is null."
+        }
 
         val permissionsToReconcile: Map<UserLogin, AvroUserPermissionSummary?> = permissionSummaryReconciler.getSummariesForReconciliation(
             permissionSummariesFromDb,

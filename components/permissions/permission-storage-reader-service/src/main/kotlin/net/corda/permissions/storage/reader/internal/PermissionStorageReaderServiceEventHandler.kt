@@ -159,9 +159,7 @@ class PermissionStorageReaderServiceEventHandler(
 
         permissionStorageReader?.close()
         permissionStorageReader = permissionStorageReaderFactory.create(
-            checkNotNull(permissionValidationCacheService.permissionValidationCache) {
-                "The ${PermissionValidationCacheService::class.java} should be up and ready to provide the cache"
-            },
+            permissionValidationCacheService.permissionValidationCacheRef,
             permissionManagementCacheService.permissionManagementCacheRef,
             checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
             entityManagerFactoryCreator()

@@ -80,7 +80,7 @@ class PermissionUserManagerImplTest {
     private val config = mock<SmartConfig>()
 
     private val manager =
-        PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef, permissionValidationCache, passwordService)
+        PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef, AtomicReference(permissionValidationCache), passwordService)
 
     private val defaultTimeout = Duration.ofSeconds(30)
 
@@ -213,7 +213,7 @@ class PermissionUserManagerImplTest {
         whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
         whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
 
-        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef, permissionValidationCache, passwordService)
+        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef, AtomicReference(permissionValidationCache), passwordService)
 
         val result = manager.createUser(createUserRequestDto)
 

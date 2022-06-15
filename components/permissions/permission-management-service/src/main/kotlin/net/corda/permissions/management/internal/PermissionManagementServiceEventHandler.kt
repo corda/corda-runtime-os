@@ -131,15 +131,12 @@ internal class PermissionManagementServiceEventHandler(
     private fun createPermissionManager(config: SmartConfig) {
         val permissionManagementCacheRef = permissionManagementCacheService.permissionManagementCacheRef
 
-        val permissionValidationCache = permissionValidationCacheService.permissionValidationCache
-        checkNotNull(permissionValidationCache) {
-            "Configuration received for permission manager but permission validation cache was null."
-        }
+        val permissionValidationCacheRef = permissionValidationCacheService.permissionValidationCacheRef
 
         permissionManager?.close()
         log.info("Creating and starting permission manager.")
         permissionManager =
-            permissionManagerFactory.createPermissionManager(config, rpcSender!!, permissionManagementCacheRef, permissionValidationCache)
+            permissionManagerFactory.createPermissionManager(config, rpcSender!!, permissionManagementCacheRef, permissionValidationCacheRef)
                 .also { it.start() }
 
         basicAuthenticationService?.close()

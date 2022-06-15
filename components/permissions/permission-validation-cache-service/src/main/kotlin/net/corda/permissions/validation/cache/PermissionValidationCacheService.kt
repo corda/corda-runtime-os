@@ -30,6 +30,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [PermissionValidationCacheService::class])
 class PermissionValidationCacheService @Activate constructor(
@@ -55,12 +56,7 @@ class PermissionValidationCacheService @Activate constructor(
     /**
      * Instance of the cache used in this service.
      */
-    val permissionValidationCache: PermissionValidationCache?
-        get() {
-            return _permissionValidationCache
-        }
-
-    private var _permissionValidationCache: PermissionValidationCache? = null
+    val permissionValidationCacheRef = AtomicReference<PermissionValidationCache?>(null)
 
     private var permissionSummarySubscription: CompactedSubscription<String, UserPermissionSummary>? = null
     private var configHandle: AutoCloseable? = null
@@ -107,8 +103,8 @@ class PermissionValidationCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                _permissionValidationCache?.close()
-                _permissionValidationCache = null
+                permissionValidationCacheRef.get()?.close()
+                permissionValidationCacheRef.set(null)
             }
         }
     }
@@ -138,9 +134,11 @@ class PermissionValidationCacheService @Activate constructor(
                 permissionSummarySubscription = it
             }
 
-        _permissionValidationCache?.close()
-        _permissionValidationCache = permissionValidationCacheFactory.createPermissionValidationCache(permissionSummaryData)
-            .also { it.start() }
+        permissionValidationCacheRef.get()?.close()
+        permissionValidationCacheRef.set(permissionValidationCacheFactory.createPermissionValidationCache(
+            permissionSummaryData
+        )
+            .also { it.start() })
     }
 
     private fun createPermissionSummarySubscription(

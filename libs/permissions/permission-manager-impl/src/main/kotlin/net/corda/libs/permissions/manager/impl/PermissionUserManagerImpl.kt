@@ -27,7 +27,7 @@ class PermissionUserManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
     private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
-    private val permissionValidationCache: PermissionValidationCache,
+    private val permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>,
     private val passwordService: PasswordService
 ) : PermissionUserManager {
 
@@ -102,6 +102,10 @@ class PermissionUserManagerImpl(
     }
 
     override fun getPermissionSummary(permissionSummaryRequestDto: GetPermissionSummaryRequestDto): UserPermissionSummaryResponseDto? {
+
+        val permissionValidationCache = checkNotNull(permissionValidationCacheRef.get()) {
+            "Permission validation cache is null."
+        }
 
         val cachedPermissionSummary = permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
 

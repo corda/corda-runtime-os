@@ -16,14 +16,14 @@ import java.util.concurrent.atomic.AtomicReference
 class PermissionStorageReaderFactoryImpl : PermissionStorageReaderFactory {
 
     override fun create(
-        permissionValidationCache: PermissionValidationCache,
+        permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         publisher: Publisher,
         entityManagerFactory: EntityManagerFactory
     ): PermissionStorageReader {
 
         return PermissionStorageReaderImpl(
-            permissionValidationCache,
+            permissionValidationCacheRef,
             permissionManagementCacheRef,
             PermissionRepositoryImpl(entityManagerFactory),
             publisher,
