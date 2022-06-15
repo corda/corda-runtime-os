@@ -65,9 +65,7 @@ internal class ConfigReadServiceEventHandlerTest {
         )
         configMerger  = mock {
             on { getMessagingConfig(bootConfig, null) } doAnswer { SmartConfigImpl.empty() }
-            on { getRPCConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
             on { getDbConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
-            on { getReconciliationConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
             on { getCryptoConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
         }
 

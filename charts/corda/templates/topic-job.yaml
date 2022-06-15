@@ -15,10 +15,7 @@ spec:
         - name: run-topic-script
           image: {{ include "corda.kafkaClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
-          resources:
-            requests:
-              cpu: 2000m
-              memory: 750Mi
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
@@ -39,6 +36,7 @@ spec:
         - name: create-trust-store
           image: {{ include "corda.kafkaClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
@@ -66,6 +64,7 @@ spec:
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [
             'topic',
             'create',
