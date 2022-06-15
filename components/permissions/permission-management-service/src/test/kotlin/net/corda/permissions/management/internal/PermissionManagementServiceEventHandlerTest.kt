@@ -72,7 +72,14 @@ internal class PermissionManagementServiceEventHandlerTest {
         whenever(publisherFactory.createRPCSender(any<RPCConfig<PermissionManagementRequest, PermissionManagementResponse>>(), any()))
             .thenReturn(rpcSender)
 
-        whenever(permissionManagerFactory.createPermissionManager(config, rpcSender, permissionManagementCacheRef, permissionValidationCacheRef))
+        whenever(
+            permissionManagerFactory.createPermissionManager(
+                config,
+                rpcSender,
+                permissionManagementCacheRef,
+                permissionValidationCacheRef
+            )
+        )
             .thenReturn(permissionManager)
 
         whenever(
