@@ -2,7 +2,7 @@ package net.corda.sandboxtests
 
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import org.junit.jupiter.api.fail
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
@@ -10,10 +10,10 @@ import java.util.function.Function
 
 /** Loads the [Flow] with [className] from the sandbox [group], runs it, and casts the result to [T]. */
 internal fun <T : Any> runFlow(group: SandboxGroup, className: String): T {
-    val flowClass = group.loadClassFromMainBundles(className, Subflow::class.java)
+    val flowClass = group.loadClassFromMainBundles(className, SubFlow::class.java)
 
     val context = FrameworkUtil.getBundle(flowClass).bundleContext
-    val flowServices = context.getServiceReferences(Subflow::class.java, null).map(context::getService)
+    val flowServices = context.getServiceReferences(SubFlow::class.java, null).map(context::getService)
 
     val flow = flowServices.filterIsInstance(flowClass).firstOrNull() ?: fail("No service for $flowClass.")
 

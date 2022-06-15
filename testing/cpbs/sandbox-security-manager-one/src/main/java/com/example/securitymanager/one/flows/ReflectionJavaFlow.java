@@ -1,13 +1,13 @@
 package com.example.securitymanager.one.flows;
 
-import net.corda.v5.application.flows.Subflow;
+import net.corda.v5.application.flows.SubFlow;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
 import java.lang.reflect.Field;
 
 @Component
-public class ReflectionJavaFlow implements Subflow<String> {
+public class ReflectionJavaFlow implements SubFlow<String> {
     @Activate
     public ReflectionJavaFlow() {
         super();

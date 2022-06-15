@@ -2,20 +2,20 @@ package com.example.sandbox.cpk1
 
 import com.example.sandbox.library.Wrapper
 import com.example.sandbox.library.WrapperFactory
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import org.osgi.service.component.annotations.Component
 
 /** Invokes methods on an implementation class from a non-exported package of another bundle. */
 @Suppress("unused")
 @Component(name = "invoke.private.impl.flow")
-class InvokePrivateImplFlow: Subflow<String> {
+class InvokePrivateImplFlow: SubFlow<String> {
     override fun call() = WrapperFactory.create().data
 }
 
 /** Creates a class that uses a generic from a non-exported package of another bundle. */
 @Suppress("unused")
 @Component(name = "private.impl.as.generic.flow")
-class PrivateImplAsGenericFlow: Subflow<String> {
+class PrivateImplAsGenericFlow: SubFlow<String> {
     override fun call(): String {
         val wrapper = WrapperFactory.create()
         return GenericClass(wrapper).call()

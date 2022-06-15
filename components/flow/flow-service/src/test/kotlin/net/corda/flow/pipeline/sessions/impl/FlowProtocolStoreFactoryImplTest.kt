@@ -11,7 +11,7 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -97,7 +97,7 @@ class FlowProtocolStoreFactoryImplTest {
     }
 
     @InitiatingFlow(protocol = PROTOCOL)
-    private class MyInitiatingFlow : Subflow<Unit> {
+    private class MyInitiatingFlow : SubFlow<Unit> {
         override fun call() {
         }
     }

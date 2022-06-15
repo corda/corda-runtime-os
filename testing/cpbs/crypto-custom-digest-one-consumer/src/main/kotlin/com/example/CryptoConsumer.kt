@@ -1,7 +1,7 @@
 package com.example
 
 import com.example.crypto.TripleSha256Digest
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Reference
  */
 @Component
 class CryptoConsumer
-@Activate constructor(@Reference private val digestService: DigestService) : Subflow<SecureHash> {
+@Activate constructor(@Reference private val digestService: DigestService) : SubFlow<SecureHash> {
     override fun call(): SecureHash {
         return digestService.hash("some random string for PoC".toByteArray(), DigestAlgorithmName(TripleSha256Digest.ALGORITHM))
     }

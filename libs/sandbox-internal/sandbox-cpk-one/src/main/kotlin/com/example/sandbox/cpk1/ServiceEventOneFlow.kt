@@ -1,7 +1,7 @@
 package com.example.sandbox.cpk1
 
 import com.example.sandbox.library.SandboxQuery
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import org.osgi.framework.ServiceEvent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -13,6 +13,6 @@ import org.osgi.service.component.annotations.Reference
 class ServiceEventOneFlow @Activate constructor(
     @Reference(target = "(component.name=sandbox.query)")
     private val sandboxQuery: SandboxQuery
-) : Subflow<List<ServiceEvent>> {
+) : SubFlow<List<ServiceEvent>> {
     override fun call() = sandboxQuery.getServiceEvents()
 }

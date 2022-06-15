@@ -2,7 +2,7 @@ package net.corda.flow.pipeline.sandbox
 
 import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -75,7 +75,7 @@ class Service2Impl : Service2, SingletonSerializeAsToken
 
 class DuplicateService2Impl : Service2, SingletonSerializeAsToken
 
-class ExampleFlow : Subflow<String> {
+class ExampleFlow : SubFlow<String> {
     @CordaInject
     internal lateinit var service1: Service1
 
@@ -88,7 +88,7 @@ class ExampleFlow : Subflow<String> {
 }
 
 interface UnavailableService
-class ExampleInvalidFlow : Subflow<String> {
+class ExampleInvalidFlow : SubFlow<String> {
     @CordaInject
     lateinit var service: UnavailableService
 

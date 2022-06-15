@@ -8,7 +8,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.Subflow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -79,7 +79,7 @@ class VirtualNodeService @Activate constructor(
     fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext): T {
         val workflowClass = groupContext.sandboxGroup.loadClassFromMainBundles(className, Flow::class.java)
         val context = FrameworkUtil.getBundle(workflowClass).bundleContext
-        val reference = context.getServiceReferences(Subflow::class.java, "(component.name=$className)")
+        val reference = context.getServiceReferences(SubFlow::class.java, "(component.name=$className)")
             .firstOrNull() ?: fail("No service found for $className.")
         return context.getService(reference)?.let { service ->
             try {
