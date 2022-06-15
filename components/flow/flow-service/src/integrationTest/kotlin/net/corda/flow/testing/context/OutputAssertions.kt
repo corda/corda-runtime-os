@@ -39,7 +39,7 @@ interface OutputAssertions {
 
     fun flowDidNotResume()
 
-    fun flowResumedWith(value: Any)
+    fun flowResumedWith(value: Any?)
 
     fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
@@ -56,6 +56,10 @@ interface OutputAssertions {
     fun nullStateRecord()
 
     fun markedForDlq()
+
+    fun entityRequestSent(expectedRequestPayload: Any)
+
+    fun noEntityRequestSent()
 }
 
 inline fun <reified T: Throwable> OutputAssertions.flowResumedWithError() = flowResumedWithError(T::class.java)

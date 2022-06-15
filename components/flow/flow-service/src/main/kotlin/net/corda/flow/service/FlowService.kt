@@ -126,6 +126,7 @@ class FlowService @Activate constructor(
     private fun getConfig(config: Map<String, SmartConfig>): Map<String, SmartConfig> {
         val flowConfig = ConfigFactory.empty()
             .withValue(FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(5000L))
+            .withValue(FlowConfig.PERSISTENCE_RESEND_BUFFER, ConfigValueFactory.fromAnyRef(100L))
             .withValue(FlowConfig.PERSISTENCE_MAX_RETRIES, ConfigValueFactory.fromAnyRef(1))
             .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))

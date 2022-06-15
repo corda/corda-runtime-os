@@ -1,6 +1,9 @@
 package net.corda.flow.testing.context
 
+import java.nio.ByteBuffer
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.persistence.Error
 import net.corda.v5.base.types.MemberX500Name
 
 interface StepSetup {
@@ -77,4 +80,17 @@ interface StepSetup {
     ): FlowIoRequestSetup
 
     fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
+
+    fun entityResponseSuccessReceived(
+        flowId: String,
+        requestId: String,
+        byteBuffer: ByteBuffer?,
+    ): FlowIoRequestSetup
+
+    fun entityResponseErrorReceived(
+        flowId: String,
+        requestId: String,
+        errorType: Error,
+        exception: ExceptionEnvelope
+    ): FlowIoRequestSetup
 }

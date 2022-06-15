@@ -7,6 +7,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW
+import net.corda.schema.configuration.FlowConfig.PERSISTENCE_RESEND_BUFFER
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
@@ -46,7 +47,8 @@ class PersistenceManagerImpl : PersistenceManager {
     ): Pair<PersistenceState, EntityRequest?> {
         val request = persistenceState.request
         val waitingForResponse = request != null && persistenceState.response == null
-        val requestSendWindowValid = persistenceState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER)
+        val requestSendWindowValid = persistenceState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() +
+                config.getLong(PERSISTENCE_RESEND_BUFFER))
         return if (waitingForResponse && requestSendWindowValid) {
             logger.debug { "Resending query message which was last sent at ${request.timestamp}" }
             persistenceState.sendTimestamp = instant.plusMillis(config.getLong(PERSISTENCE_MESSAGE_RESEND_WINDOW))

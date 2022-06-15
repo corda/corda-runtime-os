@@ -32,7 +32,7 @@ class PersistenceServiceImpl @Activate constructor(
         val log = contextLogger()
     }
 
-    private val fiber: FlowFiber<*> get() = flowFiberService.getExecutingFiber()
+    private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
