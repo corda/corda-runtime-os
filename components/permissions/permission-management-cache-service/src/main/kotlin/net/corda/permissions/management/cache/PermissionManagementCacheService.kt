@@ -1,6 +1,5 @@
 package net.corda.permissions.management.cache
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.Group
@@ -8,6 +7,7 @@ import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.management.cache.events.GroupTopicSnapshotReceived
 import net.corda.libs.permissions.management.cache.events.PermissionTopicSnapshotReceived
@@ -25,7 +25,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -39,6 +38,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [PermissionManagementCacheService::class])
 class PermissionManagementCacheService @Activate constructor(
@@ -175,6 +175,8 @@ class PermissionManagementCacheService @Activate constructor(
         val roleData = ConcurrentHashMap<String, Role>()
         val permissionData = ConcurrentHashMap<String, Permission>()
 
+        topicsRegistration?.close()
+
         userSubscription?.close()
         val userSubscription = createUserSubscription(userData, config)
             .also {
@@ -203,7 +205,6 @@ class PermissionManagementCacheService @Activate constructor(
                 permissionSubscription = it
             }
 
-        topicsRegistration?.close()
         topicsRegistration = coordinator.followStatusChangesByName(
             setOf(
                 userSubscription.subscriptionName, groupSubscription.subscriptionName,
