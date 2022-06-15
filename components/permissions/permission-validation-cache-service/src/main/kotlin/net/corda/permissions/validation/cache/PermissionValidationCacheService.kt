@@ -57,7 +57,7 @@ class PermissionValidationCacheService @Activate constructor(
      */
     val permissionValidationCache: PermissionValidationCache?
         get() {
-            return _permissionValidationCache!!
+            return _permissionValidationCache
         }
 
     private var _permissionValidationCache: PermissionValidationCache? = null
