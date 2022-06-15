@@ -38,7 +38,7 @@ class MembershipGroupReadSubscriptionsTest {
     private val memberListSubscription =
         mock<CompactedSubscription<String, SignedMemberInfo>>().apply {
             doAnswer { memberListSubscriptionStarted = true }.whenever(this).start()
-            doAnswer { memberListSubscriptionStarted = false }.whenever(this).stop()
+            doAnswer { memberListSubscriptionStarted = false }.whenever(this).close()
             doAnswer { memberListSubscriptionStarted }.whenever(this).isRunning
         }
 
