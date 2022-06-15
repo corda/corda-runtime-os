@@ -67,6 +67,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
                 "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
                 "net.corda.ledger",
+                "net.corda.ledger.models",
                 "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
