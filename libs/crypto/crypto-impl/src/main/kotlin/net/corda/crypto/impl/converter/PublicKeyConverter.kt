@@ -1,4 +1,4 @@
-package net.corda.membership.impl.converter
+package net.corda.crypto.impl.converter
 
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter

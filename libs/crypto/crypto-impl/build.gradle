@@ -14,6 +14,7 @@ dependencies {
 
     api "net.corda:corda-cipher-suite"
     api 'net.corda:corda-serialization'
+    api project(':libs:layered-property-map')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
@@ -31,6 +32,8 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":libs:membership:membership-impl")
 }
 
 tasks.named('jar', Jar) {

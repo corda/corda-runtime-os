@@ -1,7 +1,7 @@
-package net.corda.membership.impl
+package net.corda.crypto.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.impl.converter.PublicKeyHashConverter
+import net.corda.membership.impl.MemberContextImpl
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseOrNull
