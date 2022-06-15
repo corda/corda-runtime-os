@@ -162,9 +162,7 @@ class PermissionStorageReaderServiceEventHandler(
             checkNotNull(permissionValidationCacheService.permissionValidationCache) {
                 "The ${PermissionValidationCacheService::class.java} should be up and ready to provide the cache"
             },
-            checkNotNull(permissionManagementCacheService.permissionManagementCache) {
-                "The ${permissionManagementCacheService::class.java} should be up and ready to provide the cache"
-            },
+            permissionManagementCacheService.permissionManagementCacheRef,
             checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
             entityManagerFactoryCreator()
         ).also {

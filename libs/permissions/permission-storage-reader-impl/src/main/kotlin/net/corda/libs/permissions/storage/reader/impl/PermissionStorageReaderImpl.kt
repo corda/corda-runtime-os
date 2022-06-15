@@ -26,6 +26,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
+import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
@@ -34,7 +35,7 @@ import net.corda.data.permissions.User as AvroUser
 @Suppress("TooManyFunctions")
 class PermissionStorageReaderImpl(
     private val permissionValidationCache: PermissionValidationCache,
-    private val permissionManagementCache: PermissionManagementCache,
+    private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
     private val permissionRepository: PermissionRepository,
     private val publisher: Publisher,
     private val permissionSummaryReconciler: PermissionSummaryReconciler,
@@ -47,6 +48,11 @@ class PermissionStorageReaderImpl(
     override val isRunning: Boolean get() = !stopped
 
     private var stopped = false
+
+    private val permissionManagementCache: PermissionManagementCache
+        get() = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
 
     override fun start() {
         stopped = false
@@ -119,6 +125,7 @@ class PermissionStorageReaderImpl(
         val updated = users.map { user ->
             Record(RPC_PERM_USER_TOPIC, key = user.loginName, value = user.toAvroUser())
         }
+
         val removed: List<Record<String, AvroUser>> = permissionManagementCache.users
             .filterKeys { loginName -> loginName !in userNames }
             .map { (loginName, _) -> Record(RPC_PERM_USER_TOPIC, key = loginName, value = null) }

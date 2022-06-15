@@ -8,6 +8,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * The [PermissionManagerFactory] constructs instances of [PermissionManager].
@@ -19,14 +20,14 @@ interface PermissionManagerFactory {
      * @param config the configuration for the permission manager.
      * @param rpcSender the [RPCSender] responsible for posting requests of type [PermissionManagementRequest] and accepting responses of
      * type [PermissionManagementResponse].
-     * @param permissionManagementCache the permission management cache holding permission data used for permission management read
+     * @param permissionManagementCacheRef the permission management cache holding permission data used for permission management read
      * operations.
      * @param permissionValidationCache the cache holding data used for permission validation
      */
     fun createPermissionManager(
         config: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-        permissionManagementCache: PermissionManagementCache,
+        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         permissionValidationCache: PermissionValidationCache
     ): PermissionManager
 
@@ -34,6 +35,6 @@ interface PermissionManagerFactory {
      * Create a service for performing basic authentication utilizing the permission management cache.
      */
     fun createBasicAuthenticationService(
-        permissionManagementCache: PermissionManagementCache
+        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>
     ): BasicAuthenticationService
 }

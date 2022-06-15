@@ -10,20 +10,21 @@ import org.osgi.service.component.annotations.Component
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.storage.reader.impl.summary.PermissionSummaryReconcilerImpl
+import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [PermissionStorageReaderFactory::class])
 class PermissionStorageReaderFactoryImpl : PermissionStorageReaderFactory {
 
     override fun create(
         permissionValidationCache: PermissionValidationCache,
-        permissionManagementCache: PermissionManagementCache,
+        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         publisher: Publisher,
         entityManagerFactory: EntityManagerFactory
     ): PermissionStorageReader {
 
         return PermissionStorageReaderImpl(
             permissionValidationCache,
-            permissionManagementCache,
+            permissionManagementCacheRef,
             PermissionRepositoryImpl(entityManagerFactory),
             publisher,
             PermissionSummaryReconcilerImpl()

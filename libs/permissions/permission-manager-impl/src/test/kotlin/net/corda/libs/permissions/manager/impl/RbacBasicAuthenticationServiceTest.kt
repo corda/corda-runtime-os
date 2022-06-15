@@ -23,13 +23,14 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationServiceTest {
 
     companion object {
         private val passwordService: PasswordService = mock()
-        private val permissionManagementCache: PermissionManagementCache = mock()
-        private val rbacBasicAuthenticationService = RbacBasicAuthenticationService(permissionManagementCache, passwordService)
+        private val permissionManagementCache = mock<PermissionManagementCache>()
+        private val rbacBasicAuthenticationService = RbacBasicAuthenticationService(AtomicReference(permissionManagementCache), passwordService)
 
         private val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private val permissionString = "flow/start/com.myapp.MyFlow"

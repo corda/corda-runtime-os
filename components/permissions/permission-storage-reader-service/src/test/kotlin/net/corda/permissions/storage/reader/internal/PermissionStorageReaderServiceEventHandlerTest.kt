@@ -39,6 +39,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicReference
 
 class PermissionStorageReaderServiceEventHandlerTest {
 
@@ -50,9 +51,9 @@ class PermissionStorageReaderServiceEventHandlerTest {
     private val permissionValidationCacheService = mock<PermissionValidationCacheService>().apply {
         whenever(permissionValidationCache).thenReturn(pvCache)
     }
-    private val pmCache = mock<PermissionManagementCache>()
+    private val pmCacheRef = AtomicReference(mock<PermissionManagementCache>())
     private val permissionManagementCacheService = mock<PermissionManagementCacheService>().apply {
-        whenever(permissionManagementCache).thenReturn(pmCache)
+        whenever(permissionManagementCacheRef).thenReturn(pmCacheRef)
     }
     private val permissionStorageReader = mock<PermissionStorageReader>()
     private val permissionStorageReaderFactory = mock<PermissionStorageReaderFactory>().apply {
@@ -193,7 +194,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     @Test
     fun `processing an onConfigurationUpdated event creates publisher and permission storage reader`() {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
-        whenever(permissionStorageReaderFactory.create(eq(pvCache), eq(pmCache), eq(publisher), any()))
+        whenever(permissionStorageReaderFactory.create(eq(pvCache), eq(pmCacheRef), eq(publisher), any()))
             .thenReturn(permissionStorageReader)
 
         handler.processEvent(

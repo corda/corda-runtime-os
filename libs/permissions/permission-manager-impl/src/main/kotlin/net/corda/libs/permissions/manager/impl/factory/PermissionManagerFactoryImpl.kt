@@ -20,6 +20,7 @@ import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.libs.permissions.manager.impl.RbacBasicAuthenticationService
 import net.corda.libs.permissions.manager.impl.PermissionEntityManagerImpl
+import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [PermissionManagerFactory::class])
 class PermissionManagerFactoryImpl @Activate constructor(
@@ -30,7 +31,7 @@ class PermissionManagerFactoryImpl @Activate constructor(
     override fun createPermissionManager(
         config: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-        permissionManagementCache: PermissionManagementCache,
+        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         permissionValidationCache: PermissionValidationCache
     ): PermissionManager {
 
@@ -38,20 +39,20 @@ class PermissionManagerFactoryImpl @Activate constructor(
             PermissionUserManagerImpl(
                 config,
                 rpcSender,
-                permissionManagementCache,
+                permissionManagementCacheRef,
                 permissionValidationCache,
                 passwordServiceFactory.createPasswordService(SecureRandom())
             ),
-            PermissionGroupManagerImpl(config, rpcSender, permissionManagementCache),
-            PermissionRoleManagerImpl(config, rpcSender, permissionManagementCache),
-            PermissionEntityManagerImpl(config, rpcSender, permissionManagementCache)
+            PermissionGroupManagerImpl(config, rpcSender, permissionManagementCacheRef),
+            PermissionRoleManagerImpl(config, rpcSender, permissionManagementCacheRef),
+            PermissionEntityManagerImpl(config, rpcSender, permissionManagementCacheRef)
         )
     }
 
-    override fun createBasicAuthenticationService(permissionManagementCache: PermissionManagementCache): BasicAuthenticationService {
+    override fun createBasicAuthenticationService(permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>): BasicAuthenticationService {
 
         return RbacBasicAuthenticationService(
-            permissionManagementCache,
+            permissionManagementCacheRef,
             passwordServiceFactory.createPasswordService(SecureRandom())
         )
     }
