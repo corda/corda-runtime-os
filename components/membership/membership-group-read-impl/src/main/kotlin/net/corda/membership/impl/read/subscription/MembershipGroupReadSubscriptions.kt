@@ -58,6 +58,8 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
          * Start the member list subscription.
          */
         private fun startMemberListSubscription(config: SmartConfig) {
+            memberListSubscription?.close()
+
             val subscriptionConfig = SubscriptionConfig(
                 CONSUMER_GROUP,
                 MEMBER_LIST_TOPIC
@@ -71,7 +73,6 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
                 config
             ).apply {
                 start()
-                memberListSubscription?.close()
                 memberListSubscription = this
             }
         }
