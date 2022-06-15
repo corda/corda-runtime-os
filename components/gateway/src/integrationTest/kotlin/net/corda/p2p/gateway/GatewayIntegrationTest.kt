@@ -694,7 +694,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.coordinator.status).isEqualTo(LifecycleStatus.UP)
+                assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.UP)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -706,7 +706,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.coordinator.status).isEqualTo(LifecycleStatus.DOWN)
+                    assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
                 }
                 eventually(duration = 20.seconds) {
                     assertThrows<ConnectException> {
@@ -724,7 +724,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.coordinator.status).isEqualTo(LifecycleStatus.UP)
+                    assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.UP)
                 }
                 assertDoesNotThrow {
                     Socket(host, anotherPort).close()
@@ -733,7 +733,7 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.coordinator.status).isEqualTo(LifecycleStatus.DOWN)
+                    assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
                 }
                 eventually(duration = 20.seconds) {
                     assertThrows<ConnectException> {

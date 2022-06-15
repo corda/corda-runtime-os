@@ -46,7 +46,7 @@ abstract class SubscriptionDominoTileBase(
     private val subscriptionName: LifecycleCoordinatorName,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<Lifecycle>
-): DominoTile {
+): DominoTile() {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
@@ -74,7 +74,7 @@ abstract class SubscriptionDominoTileBase(
         )
     }
 
-    override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    final override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
     private val currentState = AtomicReference(Created)
 

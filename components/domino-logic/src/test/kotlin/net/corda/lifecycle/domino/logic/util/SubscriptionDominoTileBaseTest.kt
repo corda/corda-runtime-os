@@ -186,7 +186,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.ERROR), coordinator)
-        assertThat(subscriptionTile.coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+        assertThat(subscriptionTile.status).isEqualTo(LifecycleStatus.ERROR)
     }
 
     private fun mockTile(name: LifecycleCoordinatorName): DominoTile {

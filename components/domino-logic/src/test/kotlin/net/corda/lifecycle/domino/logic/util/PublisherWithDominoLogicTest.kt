@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -31,6 +32,9 @@ class PublisherWithDominoLogicTest {
         }
         on { start() } doAnswer {
             handler.lastValue.processEvent(StartEvent(), mock)
+        }
+        on { stop() } doAnswer {
+            handler.lastValue.processEvent(StopEvent(), mock)
         }
         on { updateStatus(any(), any()) } doAnswer { currentStatus =  it.getArgument(0) }
         on { status } doAnswer { currentStatus }

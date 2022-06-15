@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference
 class SimpleDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-) : DominoTile {
+) : DominoTile() {
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }

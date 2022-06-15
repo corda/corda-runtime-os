@@ -37,21 +37,13 @@ class PublisherWithDominoLogic(
     private val publisher = AtomicReference<Publisher>()
     private val lifecycleLock = ReentrantReadWriteLock()
 
-    override val dominoTile = object: DominoTile {
+    override val dominoTile = object: DominoTile() {
 
         override val coordinatorName = LifecycleCoordinatorName(componentName, instancesIndex.getAndAdd(1).toString())
         override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
         override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet()
         override val managedChildren: Collection<Lifecycle> = emptySet()
-
-        override fun start() {
-            coordinator.start()
-        }
-
-        override fun stop() {
-            coordinator.postEvent(StopEvent())
-        }
 
         override fun close() {
             coordinator.postEvent(StopEvent())
@@ -75,7 +67,7 @@ class PublisherWithDominoLogic(
                         lifecycleLock.write {
                             if (coordinator.status != LifecycleStatus.DOWN) {
                                 val oldPublisher = publisher.getAndSet(null)
-                                oldPublisher.close()
+                                oldPublisher?.close()
                                 coordinator.updateStatus(LifecycleStatus.DOWN)
                             }
                         }
@@ -92,10 +84,14 @@ class PublisherWithDominoLogic(
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return publisher.get()?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
+        return lifecycleLock.read {
+            publisher.get()?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
+        }
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return publisher.get()?.publish(records) ?: throw IllegalStateException("Publisher had not started")
+        return lifecycleLock.read {
+            publisher.get()?.publish(records) ?: throw IllegalStateException("Publisher had not started")
+        }
     }
 }

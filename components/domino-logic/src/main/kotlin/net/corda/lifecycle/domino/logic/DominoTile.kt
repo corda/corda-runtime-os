@@ -8,30 +8,30 @@ import net.corda.lifecycle.LifecycleStatus
 /**
  * This interface can be implemented by classes the encapsulate more elaborate domino logic that can be reused easily.
  */
-interface DominoTile: Lifecycle {
+abstract class DominoTile: Lifecycle {
     /**
      * The coordinator name that will be used by this domino tile for lifecycle events.
      */
-    val coordinatorName: LifecycleCoordinatorName
+    abstract val coordinatorName: LifecycleCoordinatorName
 
     /**
      * This tiles coordinator.
      */
-    val coordinator: LifecycleCoordinator
+    internal abstract val coordinator: LifecycleCoordinator
 
     /**
      * Coordinators this tile is dependent upon.
      * This tile will wait for these children to have [LifecycleStatus.UP] before starting itself.
      * If any of them goes down or has an error, it will also go down.
      */
-    val dependentChildren: Collection<LifecycleCoordinatorName>
+    abstract val dependentChildren: Collection<LifecycleCoordinatorName>
 
     /**
      * Lifecycle components that are managed by this tile.
      * This tile is responsible for invoking [start] on these children when it is started.
      * It is also responsible for invoking [stop] when it is stopped.
      */
-    val managedChildren: Collection<Lifecycle>
+    abstract val managedChildren: Collection<Lifecycle>
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
@@ -47,4 +47,7 @@ interface DominoTile: Lifecycle {
     override fun stop() {
         coordinator.stop()
     }
+
+    val status: LifecycleStatus
+        get() = coordinator.status
 }

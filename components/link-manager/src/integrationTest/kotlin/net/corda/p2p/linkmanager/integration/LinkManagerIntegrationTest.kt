@@ -127,7 +127,7 @@ class LinkManagerIntegrationTest {
             val invalidConfig = createLinkManagerConfiguration(-1)
             configPublisher.publishLinkManagerConfig(invalidConfig)
             eventually {
-                assertThat(linkManager.dominoTile.coordinator.status).isEqualTo(LifecycleStatus.DOWN)
+                assertThat(linkManager.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
             }
 
             logger.info("Publishing valid configuration again")

@@ -58,7 +58,7 @@ class ComplexDominoTile(
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet(),
     override val managedChildren: Collection<Lifecycle> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
-) : DominoTile {
+) : DominoTile() {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()

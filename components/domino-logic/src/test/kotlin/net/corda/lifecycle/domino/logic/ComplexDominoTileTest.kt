@@ -146,7 +146,7 @@ class ComplexDominoTileTest {
 
             handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
 
-            assertThat(tile.coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+            assertThat(tile.status).isEqualTo(LifecycleStatus.ERROR)
         }
 
         @Test

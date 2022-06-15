@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 class BlockingDominoTile(componentName: String,
                          coordinatorFactory: LifecycleCoordinatorFactory,
                          private val startTile: CompletableFuture<Unit>
-): DominoTile {
+): DominoTile() {
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
