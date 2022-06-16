@@ -104,7 +104,7 @@ internal class DynamicKeyStore(
                     }
                 }
             )
-            logger.info("Got Dynamic Key Stores Snapshot Keys: ${currentData.keys}")
+            logger.info("Received initial set of TLS certificates for the following identities: ${currentData.keys}.")
             ready.complete(Unit)
         }
 
@@ -120,9 +120,8 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId.remove(publicKey)
                     }
                 }
-                logger.info("Got Dynamic Key Stores update key removed: ${currentData.keys}")
+                logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
-                logger.info("Got Dynamic Key Stores update key added: ${currentData.keys}")
                 aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
                         certificateFactory.generateCertificate(it)
@@ -132,6 +131,7 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId[publicKey] = chain.tenantId
                     }
                 }
+                logger.info("TLS certificate updated for the following identities: ${currentData.keys}")
             }
         }
     }

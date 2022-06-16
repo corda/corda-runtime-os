@@ -91,7 +91,7 @@ internal class TrustStoresMap(
                     TrustedCertificates(it.value.trustedCertificates, certificateFactory)
                 }
             )
-            logger.info("Got Trust Stores Snapshot Keys: ${currentData.keys}")
+            logger.info("Received initial set of trust roots for the following groups: ${currentData.keys}")
             ready.complete(Unit)
         }
 
@@ -105,11 +105,11 @@ internal class TrustStoresMap(
             }
 
             if (store != null) {
-                logger.info("Got Trust Stores Key: ${newRecord.key}")
                 groupIdToTrustRoots[newRecord.key] = store
+                logger.info("Trust roots updated for the following groups: ${currentData.keys}")
             } else {
-                logger.info("Removed Trust store Key: ${newRecord.key}")
                 groupIdToTrustRoots.remove(newRecord.key)
+                logger.info("Trust roots removed for the following for the following groups: ${currentData.keys}.")
             }
         }
     }

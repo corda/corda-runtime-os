@@ -123,7 +123,7 @@ internal class TrustStoresPublisher(
 
     private fun publishGroupIfNeeded(groupId: String, certificates: List<PemCertificates>) {
         publishedGroups.compute(groupId) { _, publishedCertificates ->
-            logger.info("Publishing Group: $groupId")
+            logger.info("Publishing trust roots for group $groupId to the gateway.")
             val certificatesSet = certificates.toSet()
             if (certificatesSet != publishedCertificates) {
                 val record = Record(GATEWAY_TLS_TRUSTSTORES, groupId, GatewayTruststore(certificates))
