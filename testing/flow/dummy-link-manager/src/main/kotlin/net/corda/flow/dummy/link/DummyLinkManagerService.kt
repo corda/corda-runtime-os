@@ -2,6 +2,7 @@ package net.corda.flow.dummy.link
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,7 +14,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -70,7 +70,7 @@ class DummyLinkManagerService @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 logger.info("Dummy link manager component configuration received")
-                restartFlowMapperService(event)
+                restartDummyLinkManagerService(event)
             }
             is StopEvent -> {
                 logger.info("Stopping dummy link manager component.")
@@ -82,7 +82,7 @@ class DummyLinkManagerService @Activate constructor(
         }
     }
 
-    private fun restartFlowMapperService(event: ConfigChangedEvent) {
+    private fun restartDummyLinkManagerService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
         durableSub?.close()
@@ -95,6 +95,7 @@ class DummyLinkManagerService @Activate constructor(
         )
 
         durableSub?.start()
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override val isRunning: Boolean
