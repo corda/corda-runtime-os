@@ -76,6 +76,13 @@ class MerkleTreeTest {
     }
 
     @Test
+    fun `Should throw IllegalArgumentException when building Merkle tree with empty list of leaves`() {
+        assertFailsWith<IllegalArgumentException> {
+            MerkleTreeImpl.createMerkleTree(emptyList(), defaultHashDigestProvider)
+        }
+    }
+
+    @Test
     fun `tree test 1 node`() {
         val leafData = (0..0).map { it.toByteArray() }
         val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, defaultHashDigestProvider)
@@ -201,6 +208,16 @@ class MerkleTreeTest {
         val node6 = merkleTree.digestProvider.nodeHash(1, node3, node4)
         val manualRoot = merkleTree.digestProvider.nodeHash(0, node5, node6)
         assertEquals(manualRoot, root)
+    }
+
+    @Test
+    fun `Different merkle trees should not be equal`() {
+        val leaves1 = "abcdef".map { it.toString().toByteArray() }
+        val leaves2 = "ghijkl".map { it.toString().toByteArray() }
+        val tree1 = MerkleTreeImpl.createMerkleTree(leaves1, defaultHashDigestProvider)
+        val tree2 = MerkleTreeImpl.createMerkleTree(leaves2, defaultHashDigestProvider)
+        assertNotEquals(tree1.root, tree2.root)
+        assertNotEquals(tree1, tree2)
     }
 
     @Test
