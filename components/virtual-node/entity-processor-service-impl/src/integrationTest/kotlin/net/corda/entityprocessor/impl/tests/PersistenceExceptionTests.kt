@@ -6,7 +6,6 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.FlowKey
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -164,7 +163,7 @@ class PersistenceExceptionTests {
     fun `exception raised when sent a missing command`() {
         val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
-        val badRequest = EntityRequest(Instant.now(), oldRequest.flowId, oldRequest.flowKey, unknownCommand)
+        val badRequest = EntityRequest(Instant.now(), oldRequest.flowId, oldRequest.holdingIdentity, unknownCommand)
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -219,8 +218,7 @@ class PersistenceExceptionTests {
         val serialisedDog = sandboxOne.getSerializer().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
-        val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro())
-        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), flowKey, PersistEntity(ByteBuffer.wrap(serialisedDog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoOne.holdingIdentity.toAvro(), PersistEntity(ByteBuffer.wrap(serialisedDog)))
         return Pair(dbConnectionManager, request)
     }
 }

@@ -33,12 +33,12 @@ class PersistenceManagerImplTest {
             .setHoldingIdentity(HoldingIdentity("Alice", "Group1"))
             .build()
     }
-    private val dbManager = PersistenceManagerImpl()
+    private val persistenceManager = PersistenceManagerImpl()
 
 
     @Test
     fun `processing a new query`() {
-        val query = dbManager.processMessageToSend(requestId, persistRequest)
+        val query = persistenceManager.processMessageToSend(requestId, persistRequest)
         assertThat(query.retries).isEqualTo(0)
         assertThat(query.request).isEqualTo(persistRequest)
         assertThat(query.requestId).isEqualTo(requestId)
@@ -61,7 +61,7 @@ class PersistenceManagerImplTest {
             .setTimestamp(Instant.now())
             .build()
 
-        val updatedQuery = dbManager.processMessageReceived(query, responseSuccess)
+        val updatedQuery = persistenceManager.processMessageReceived(query, responseSuccess)
         assertThat(updatedQuery.response).isEqualTo(responseSuccess)
     }
 
@@ -80,7 +80,7 @@ class PersistenceManagerImplTest {
             .setTimestamp(Instant.now())
             .build()
 
-        val updatedQuery = dbManager.processMessageReceived(query, responseSuccess)
+        val updatedQuery = persistenceManager.processMessageReceived(query, responseSuccess)
         assertThat(updatedQuery.response).isNull()
     }
 
@@ -93,7 +93,7 @@ class PersistenceManagerImplTest {
             .setRequestId(requestId)
             .build()
 
-        val (updatedQuery, request) = dbManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli), flowConfig)
+        val (updatedQuery, request) = persistenceManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli), flowConfig)
         assertThat(request).isEqualTo(persistRequest)
         assertThat(updatedQuery.sendTimestamp.toEpochMilli()).isEqualTo(persistRequest.timestamp.toEpochMilli() + resendWindow)
     }
@@ -113,7 +113,7 @@ class PersistenceManagerImplTest {
             .setRequestId(requestId)
             .build()
 
-        val (_, request) = dbManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli), flowConfig)
+        val (_, request) = persistenceManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli), flowConfig)
         assertThat(request).isNull()
     }
 
@@ -126,7 +126,7 @@ class PersistenceManagerImplTest {
             .setRequestId(requestId)
             .build()
 
-        val (updatedQuery, request) = dbManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli - 10000L), flowConfig)
+        val (updatedQuery, request) = persistenceManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli - 10000L), flowConfig)
         assertThat(request).isNull()
         assertThat(updatedQuery.sendTimestamp.toEpochMilli()).isEqualTo(persistRequest.timestamp.toEpochMilli())
     }

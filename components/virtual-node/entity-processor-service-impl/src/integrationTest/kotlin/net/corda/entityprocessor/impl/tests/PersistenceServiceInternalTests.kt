@@ -9,7 +9,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.flow.FlowKey
 import net.corda.data.persistence.DeleteEntity
 import net.corda.data.persistence.DeleteEntityById
 import net.corda.data.persistence.EntityRequest
@@ -224,8 +223,7 @@ class PersistenceServiceInternalTests {
         val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
-        val flowKey = FlowKey(UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro())
-        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), flowKey, PersistEntity(sandboxOne.serialize(dog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro(), PersistEntity(sandboxOne.serialize(dog)))
         val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
@@ -280,7 +278,7 @@ class PersistenceServiceInternalTests {
         val catRequest = EntityRequest(
             dogRequest.timestamp,
             dogRequest.flowId,
-            dogRequest.flowKey,
+            dogRequest.holdingIdentity,
             PersistEntity(ctx.serialize(cat))
         )
 
@@ -644,9 +642,8 @@ class PersistenceServiceInternalTests {
     }
 
     private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
-        val flowKey = FlowKey(UUID.randomUUID().toString(), holdingId.toAvro())
-        logger.info("Entity Request - flow: $flowKey, entity: ${entity.javaClass.simpleName} $entity")
-        return EntityRequest(Instant.now(), UUID.randomUUID().toString(), flowKey, entity)
+        logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
+        return EntityRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
     }
 
     /** Find all for class name and assert

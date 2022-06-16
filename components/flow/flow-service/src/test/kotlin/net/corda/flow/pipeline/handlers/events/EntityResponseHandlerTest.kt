@@ -5,7 +5,7 @@ import net.corda.data.flow.state.persistence.PersistenceState
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseSuccess
-import net.corda.flow.test.utils.mockDbManagerAndStubContext
+import net.corda.flow.test.utils.mockPersistenceManagerAndStubContext
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -19,12 +19,12 @@ class EntityResponseHandlerTest {
     fun `PersistenceState was null`() {
         val instant = Instant.now()
         val response = EntityResponse(instant, "request1", EntityResponseSuccess())
-        val (mockDbManager, mockContext) = mockDbManagerAndStubContext(response)
+        val (mockPersistenceManager, mockContext) = mockPersistenceManagerAndStubContext(response)
 
-        val entityResponseHandler = EntityResponseHandler(mockDbManager)
+        val entityResponseHandler = EntityResponseHandler(mockPersistenceManager)
         entityResponseHandler.preProcess(mockContext)
 
-        verify(mockDbManager, times(0)).processMessageReceived(anyOrNull(), any())
+        verify(mockPersistenceManager, times(0)).processMessageReceived(anyOrNull(), any())
     }
 
     @Test
@@ -32,7 +32,7 @@ class EntityResponseHandlerTest {
         val instant = Instant.now()
         val persistenceState = PersistenceState("request1", instant, EntityRequest(), 0, null)
         val response = EntityResponse(instant, "request1", EntityResponseSuccess())
-        val (mockDbManager, mockContext) = mockDbManagerAndStubContext(response, persistenceState)
+        val (mockDbManager, mockContext) = mockPersistenceManagerAndStubContext(response, persistenceState)
 
         whenever(mockContext.inputEventPayload).thenReturn(response)
 

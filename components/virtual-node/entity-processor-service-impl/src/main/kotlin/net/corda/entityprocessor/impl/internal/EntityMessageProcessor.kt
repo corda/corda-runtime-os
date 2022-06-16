@@ -83,7 +83,7 @@ class EntityMessageProcessor(
     }
 
     private fun processRequest(requestId: String, request: EntityRequest): EntityResponse {
-        val holdingIdentity = request.flowKey.identity.toCorda()
+        val holdingIdentity = request.holdingIdentity.toCorda()
 
         // Get the sandbox for the given request.
         // Handle any exceptions as close to the throw-site as possible.
@@ -108,7 +108,7 @@ class EntityMessageProcessor(
         requestId: String,
         request: EntityRequest
     ): EntityResponse {
-        val holdingIdentity = request.flowKey.identity.toCorda()
+        val holdingIdentity = request.holdingIdentity.toCorda()
 
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()

@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
@@ -18,8 +18,7 @@ import net.cordapp.flowworker.development.messages.TestFlowInput
  * The PersistenceFlow exercises various basic db interactions in a flow.
  */
 @Suppress("unused")
-@StartableByRPC
-class PersistenceFlow(private val jsonArg: String) : Flow<String> {
+class PersistenceFlow(private val jsonArg: String) : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -32,7 +31,7 @@ class PersistenceFlow(private val jsonArg: String) : Flow<String> {
     lateinit var persistenceService: PersistenceService
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Starting Test Flow...")
         try {
             val inputs = jsonMarshallingService.parseJson<TestFlowInput>(jsonArg)

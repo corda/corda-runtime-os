@@ -16,6 +16,7 @@ import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.PersistEntity
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.state.impl.FlowCheckpointImpl
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfig
@@ -24,6 +25,7 @@ import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class EntityResponseWaitingForHandlerTest {
 
@@ -119,8 +121,9 @@ class EntityResponseWaitingForHandlerTest {
     fun `unexpected type for response`(){
         persistenceState.response = EntityResponse()
         val context = stubFlowContext(EntityResponse(), persistenceState)
-        val result = entityResponseWaitingForHandler.runOrContinue(context, net.corda.data.flow.state.waiting.EntityResponse(requestId))
-        assertThat(result::class.java).isEqualTo(FlowContinuation.Error::class.java)
+        assertThrows<FlowFatalException> {
+            entityResponseWaitingForHandler.runOrContinue(context, net.corda.data.flow.state.waiting.EntityResponse(requestId))
+        }
     }
 
     @Test

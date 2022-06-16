@@ -70,14 +70,14 @@ class FlowGlobalPostProcessorImplTest {
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
     private val sessionManager = mock<SessionManager>()
-    private val dbManager = mock<PersistenceManager>()
+    private val persistenceManager = mock<PersistenceManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val testContext = buildFlowEventContext(checkpoint, Any())
     private val flowGlobalPostProcessor = FlowGlobalPostProcessorImpl(
         sessionManager,
-        dbManager,
+        persistenceManager,
         flowMessageFactory,
         flowRecordFactory
     )

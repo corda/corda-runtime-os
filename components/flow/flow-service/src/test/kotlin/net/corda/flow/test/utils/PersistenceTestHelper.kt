@@ -10,26 +10,28 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 /**
- * Get a mock instance of a DbManager and a stubbed flowContext
+ * Get a mock instance of a PersistenceManager and a stubbed flowContext
  */
-fun <R> mockDbManagerAndStubContext(inputEventPayload: R, stubPersistenceState: PersistenceState? = null,
-                                    config: SmartConfig = SmartConfigImpl.empty()
+fun <R> mockPersistenceManagerAndStubContext(
+    inputEventPayload: R, stubPersistenceState: PersistenceState? = null,
+    config: SmartConfig = SmartConfigImpl.empty()
 ): Pair<PersistenceManagerImpl, FlowEventContext<R>> {
-        val mockDbManager = mock<PersistenceManagerImpl>()
-        val flowContext = mockPersistenceStateInFlowContext(inputEventPayload, stubPersistenceState, config)
-        return Pair(mockDbManager, flowContext)
+    val mockPersistenceManager = mock<PersistenceManagerImpl>()
+    val flowContext = mockPersistenceStateInFlowContext(inputEventPayload, stubPersistenceState, config)
+    return Pair(mockPersistenceManager, flowContext)
 }
 
 /**
  * Mock a checkpoint in a stubbed flow context and have it return the given [stubPersistenceState], [inputEventPayload] and [config]
  */
-fun <R> mockPersistenceStateInFlowContext(inputEventPayload: R,
-                                          stubPersistenceState: PersistenceState? = null,
-                                          config: SmartConfig = SmartConfigImpl.empty()
+fun <R> mockPersistenceStateInFlowContext(
+    inputEventPayload: R,
+    stubPersistenceState: PersistenceState? = null,
+    config: SmartConfig = SmartConfigImpl.empty()
 ): FlowEventContext<R> {
-        val mockCheckpoint = mock<FlowCheckpointImpl>()
-        val stubContext = buildFlowEventContext(mockCheckpoint, inputEventPayload, config)
-        whenever(mockCheckpoint.persistenceState).thenReturn(stubPersistenceState)
-        return stubContext
+    val mockCheckpoint = mock<FlowCheckpointImpl>()
+    val stubContext = buildFlowEventContext(mockCheckpoint, inputEventPayload, config)
+    whenever(mockCheckpoint.persistenceState).thenReturn(stubPersistenceState)
+    return stubContext
 }
 

@@ -78,7 +78,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     /**
-     * Check to see if any persistence messages need to be sent
+     * Check to see if any persistence message need to be sent
      * or resent due to no response being received within a given time period.
      */
     private fun getPersistenceMessage(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {

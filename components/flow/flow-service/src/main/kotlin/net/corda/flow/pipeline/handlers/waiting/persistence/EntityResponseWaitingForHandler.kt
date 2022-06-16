@@ -14,6 +14,7 @@ import net.corda.data.persistence.MergeEntity
 import net.corda.data.persistence.PersistEntity
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig.PERSISTENCE_MAX_RETRIES
@@ -55,7 +56,7 @@ class EntityResponseWaitingForHandler : FlowWaitingForHandler<EntityResponse> {
                 }
                 else -> {
                     log.error("Received unexpected response from the db worker")
-                    FlowContinuation.Error(CordaPersistenceException("Unexpected error occurred."))
+                    throw FlowFatalException("Received unexpected response from the db worker", context)
                 }
             }
         } else {
