@@ -4,19 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.schema.Schemas.Companion.getStateAndEventDLQTopic
 import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_CERTIFICATES
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
-import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
-import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import java.io.File
 import java.io.StringWriter
 import java.lang.Integer.min
@@ -47,7 +47,7 @@ class KafkaSetup(
             GATEWAY_TLS_CERTIFICATES to compactedConfig,
             GATEWAY_TLS_TRUSTSTORES to compactedConfig,
             GROUP_POLICIES_TOPIC to compactedConfig,
-            HOSTED_MAP_TOPIC to compactedConfig,
+            P2P_HOSTED_IDENTITIES_TOPIC to compactedConfig,
             LINK_IN_TOPIC to simpleConfig,
             LINK_OUT_TOPIC to simpleConfig,
             MEMBER_INFO_TOPIC to compactedConfig,
