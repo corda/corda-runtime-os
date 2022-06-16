@@ -42,11 +42,13 @@ import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.atomic.AtomicReference
 
 class PermissionUserManagerImplTest {
 
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
     private val permissionManagementCache = mock<PermissionManagementCache>()
+    private val permissionManagementCacheRef = AtomicReference(permissionManagementCache)
     private val permissionValidationCache = mock<PermissionValidationCache>()
     private val passwordService = mock<PasswordService>()
 
@@ -77,8 +79,10 @@ class PermissionUserManagerImplTest {
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
     private val config = mock<SmartConfig>()
 
-    private val manager =
-        PermissionUserManagerImpl(config, rpcSender, permissionManagementCache, permissionValidationCache, passwordService)
+    private val manager = PermissionUserManagerImpl(
+            config, rpcSender, permissionManagementCacheRef,
+            AtomicReference(permissionValidationCache), passwordService
+        )
 
     private val defaultTimeout = Duration.ofSeconds(30)
 
@@ -211,7 +215,8 @@ class PermissionUserManagerImplTest {
         whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
         whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
 
-        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCache, permissionValidationCache, passwordService)
+        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef,
+            AtomicReference(permissionValidationCache), passwordService)
 
         val result = manager.createUser(createUserRequestDto)
 
