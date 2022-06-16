@@ -17,6 +17,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
+import net.corda.p2p.markers.LinkManagerReplayMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.schema.Schemas
@@ -559,13 +560,13 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `processReplayedAuthenticatedMessage produces TtlExpiredMarker if TTL expiry is true and replay is true`() {
+    fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker, LinkManagerReplayMarker if TTL expiry true, replay true`() {
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity,
                 localIdentity,
-                null, "message-id", "trace-id", "system-1"
+                null, "MessageId", "trace-id", "system-1"
             ),
             ByteBuffer.wrap("payload".toByteArray())
         )
@@ -577,11 +578,16 @@ class OutboundMessageProcessorTest {
 
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
-        assertThat(records).allSatisfy { record ->
-            assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
-            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
-            val marker = record.value as AppMessageMarker
-            assertThat(marker.marker).isInstanceOf(TtlExpiredMarker::class.java)
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("MessageId")
+            }
+            it.assertThat(markers).hasSize(2)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReplayMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker }).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
     }
 
@@ -611,6 +617,32 @@ class OutboundMessageProcessorTest {
             it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker }).hasSize(1)
             it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+        }
+    }
+
+    @Test
+    fun `processReplayedAuthenticatedMessage produces LinkManagerReplayMarker if TTL expiry is false and replay is true`() {
+        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                remoteIdentity,
+                localIdentity,
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap("payload".toByteArray())
+        )
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMsg,
+            "key"
+        )
+
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        assertThat(records).allSatisfy { record ->
+            assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
+            assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
+            val marker = record.value as AppMessageMarker
+            assertThat(marker.marker).isInstanceOf(LinkManagerReplayMarker::class.java)
         }
     }
 }
