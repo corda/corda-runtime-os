@@ -61,7 +61,7 @@ spec:
                 {{- end }}
                 {{- end }}
                 {{- else }}
-                {{-if .Values.kafka.sasl.enabled }}
+                {{- if .Values.kafka.sasl.enabled }}
                 echo "security.protocol=SASL_PLAINTEXT\n" >> /tmp/working_dir/config.properties
 
                 echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties

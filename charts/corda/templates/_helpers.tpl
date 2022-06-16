@@ -163,7 +163,7 @@ Worker Kafka arguments
 {{- end }}
 {{- end }}
 {{- else }}
-{{-if .Values.kafka.sasl.enabled }}
+{{- if .Values.kafka.sasl.enabled }}
 - "-msecurity.protocol=SASL_PLAINTEXT"
 - "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
 {{- end }}

@@ -94,7 +94,7 @@ kafka:
     # -- enabled/disable SASL for client connection to Kafka 
     enabled: false
 
-clientImage:
+  clientImage:
     # -- registry for image containing a Kafka client, used to set up Kafka
     registry: ""
     # -- repository for image containing a Kafka client, used to set up Kafka
