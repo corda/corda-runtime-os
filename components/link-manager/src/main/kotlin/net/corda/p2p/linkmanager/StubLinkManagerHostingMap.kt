@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.HostedIdentityEntry
-import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -36,7 +36,7 @@ internal class StubLinkManagerHostingMap(
     private val subscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(
             GROUP_NAME,
-            HOSTED_MAP_TOPIC,
+            P2P_HOSTED_IDENTITIES_TOPIC,
         ),
         Processor(),
         configuration,

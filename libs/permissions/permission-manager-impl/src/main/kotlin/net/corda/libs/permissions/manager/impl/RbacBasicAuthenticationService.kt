@@ -6,9 +6,10 @@ import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationService(
-    private val permissionManagementCache: PermissionManagementCache,
+    private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
     private val passwordService: PasswordService
 ) : BasicAuthenticationService {
 
@@ -18,6 +19,9 @@ class RbacBasicAuthenticationService(
 
     override fun authenticateUser(loginName: String, password: CharArray): Boolean {
         logger.debug { "Checking authentication for user $loginName." }
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
         val user = permissionManagementCache.getUser(loginName) ?: return false
 
         if (user.saltValue == null || user.hashedPassword == null) {
