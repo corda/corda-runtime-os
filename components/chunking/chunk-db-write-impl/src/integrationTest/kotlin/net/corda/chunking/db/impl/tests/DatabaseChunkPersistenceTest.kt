@@ -486,7 +486,8 @@ internal class DatabaseChunkPersistenceTest {
         val cpks = listOf(cpk1)
         val cpi = mockCpi(cpks)
 
-        persistence.persistMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        val cpiMetadataEntity = persistence.persistMetadataAndCpks(cpi, "test.cpi", cpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        assertThat(cpiMetadataEntity.entityVersion).isEqualTo(1)
 
         val updatedCpiChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
         val updatedCpkChecksum = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
@@ -494,7 +495,8 @@ internal class DatabaseChunkPersistenceTest {
         // cpi with different CPKs but same ID
         val updatedCpi = mockCpiWithId(updatedCpks, cpi.metadata.cpiId)
 
-        persistence.updateMetadataAndCpks(updatedCpi, "test.cpi", updatedCpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        val updatedCpiMetadataEntity = persistence.updateMetadataAndCpks(updatedCpi, "test.cpi", updatedCpiChecksum, UUID.randomUUID().toString(), "abcdef")
+        assertThat(updatedCpiMetadataEntity.entityVersion > 1).isTrue
 
         val loadedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(CpiMetadataEntity::class.java, CpiMetadataEntityKey(

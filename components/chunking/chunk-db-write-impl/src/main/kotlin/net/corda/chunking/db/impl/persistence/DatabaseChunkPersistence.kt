@@ -221,16 +221,17 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String
-    ) {
+    ): CpiMetadataEntity {
         val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
             // persist metadata
-            em.merge(cpiMetadataEntity)
+            val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
             // persist file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
                 em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
             }
+            return@persistMetadataAndCpks managedCpiMetadataEntity
         }
     }
 
@@ -240,7 +241,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String
-    ) {
+    ): CpiMetadataEntity {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
 
@@ -267,13 +268,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
 
             // Perform update
             //  update metadata
-            em.merge(updatedMetadata)
+            val cpiMetadataEntity = em.merge(updatedMetadata)
             //  update file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
                 // Using `merge` here as exactly the same CPK may already exist
                 em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
             }
+            return cpiMetadataEntity
         }
     }
 
