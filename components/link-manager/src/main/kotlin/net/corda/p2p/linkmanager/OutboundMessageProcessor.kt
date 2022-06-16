@@ -11,11 +11,12 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
+import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.Component
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.markers.TtlExpiredMarker
+import net.corda.p2p.markers.LinkManagerReplayMarker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.debug
@@ -224,5 +225,13 @@ internal class OutboundMessageProcessor(
 
     private fun recordsForNewSessions(state: SessionManager.SessionState.NewSessionsNeeded): List<Record<String, *>> {
         return recordsForNewSessions(state, inboundAssignmentListener, logger)
+    }
+
+    private fun recordForLMReplayMarker(
+        message: AuthenticatedMessageAndKey,
+        messageId: String
+    ): Record<String, AppMessageMarker> {
+        val marker = AppMessageMarker(LinkManagerReplayMarker(message), clock.instant().toEpochMilli())
+        return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
 }
