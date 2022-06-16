@@ -33,6 +33,7 @@ class PersistenceManagerImplTest {
             .setHoldingIdentity(HoldingIdentity("Alice", "Group1"))
             .build()
     }
+
     private val persistenceManager = PersistenceManagerImpl()
 
 
@@ -55,7 +56,7 @@ class PersistenceManagerImplTest {
             .setRequestId(requestId)
             .build()
 
-        val responseSuccess =  EntityResponse.newBuilder()
+        val responseSuccess = EntityResponse.newBuilder()
             .setResponseType(EntityResponseSuccess())
             .setRequestId(requestId)
             .setTimestamp(Instant.now())
@@ -74,7 +75,7 @@ class PersistenceManagerImplTest {
             .setRequestId(requestId)
             .build()
 
-        val responseSuccess =  EntityResponse.newBuilder()
+        val responseSuccess = EntityResponse.newBuilder()
             .setResponseType(EntityResponseSuccess())
             .setRequestId("invalidId")
             .setTimestamp(Instant.now())
@@ -100,7 +101,7 @@ class PersistenceManagerImplTest {
 
     @Test
     fun `get message to send for a query which already has a response`() {
-        val responseSuccess =  EntityResponse.newBuilder()
+        val responseSuccess = EntityResponse.newBuilder()
             .setResponseType(EntityResponseSuccess())
             .setRequestId(requestId)
             .setTimestamp(Instant.now())
@@ -126,7 +127,11 @@ class PersistenceManagerImplTest {
             .setRequestId(requestId)
             .build()
 
-        val (updatedQuery, request) = persistenceManager.getMessageToSend(query, Instant.ofEpochMilli(persistTimeStampMilli - 10000L), flowConfig)
+        val (updatedQuery, request) = persistenceManager.getMessageToSend(
+            query,
+            Instant.ofEpochMilli(persistTimeStampMilli - 10000L),
+            flowConfig
+        )
         assertThat(request).isNull()
         assertThat(updatedQuery.sendTimestamp.toEpochMilli()).isEqualTo(persistRequest.timestamp.toEpochMilli())
     }
