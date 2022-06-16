@@ -24,6 +24,7 @@ import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
+import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -38,7 +39,6 @@ import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
-import org.hibernate.osgi.OsgiClassLoader
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -81,7 +81,7 @@ internal class HttpRpcServerInternal(
 
         val swaggerUiBundle = getSwaggerUiBundle()
         // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
-        // We instruct to load Swagger UI's static files manually instead.
+        // We instruct loading Swagger UI static files manually instead.
         // Note: `addStaticFiles` perform a check that resource does exist.
         // The actual loading of resources though is happening at `start()` time below.
         if (swaggerUiBundle != null) {
@@ -385,10 +385,8 @@ internal class HttpRpcServerInternal(
             // classloading during `start` method invocation.
             val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
             if (bundle != null) {
-                val osgiClassLoader = OsgiClassLoader().also {
-                    it.addBundle(bundle)
-                    getSwaggerUiBundle()?.apply { it.addBundle(this) }
-                }
+                val bundleList = listOfNotNull(bundle, getSwaggerUiBundle())
+                val osgiClassLoader = OsgiClassLoader(bundleList)
                 // Correct context classloader need to be set at start time
                 executeWithThreadContextClassLoader(osgiClassLoader) {
                     server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
