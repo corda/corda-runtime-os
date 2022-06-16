@@ -22,6 +22,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation "net.corda:corda-membership"
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
@@ -33,7 +34,6 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
-    testImplementation project(":libs:membership:membership-impl")
 }
 
 tasks.named('jar', Jar) {
