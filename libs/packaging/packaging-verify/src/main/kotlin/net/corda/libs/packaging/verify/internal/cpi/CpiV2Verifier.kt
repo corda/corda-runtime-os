@@ -44,7 +44,7 @@ class CpiV2Verifier(jarReader: JarReader): CpiVerifier {
     }
 
     private fun isGroupPolicy(entry: JarReader.Entry): Boolean =
-        entry.name.equals(CPI_GROUP_POLICY_ENTRY, ignoreCase = true)
+        entry.name.equals("META_INF/$CPI_GROUP_POLICY_ENTRY", ignoreCase = true)
 
     private fun verifyManifest() {
         with (manifest) {
