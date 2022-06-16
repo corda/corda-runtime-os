@@ -14,6 +14,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 
 internal class ValidationFunctions(
     private val cpiCacheDir: Path,
@@ -89,7 +90,7 @@ internal class ValidationFunctions(
         cpi: Cpi,
         fileInfo: FileInfo,
         requestId: RequestId
-    ) {
+    ): CpiMetadataEntity {
         // Cannot compare the CPI.metadata.hash to our checksum above
         // because two different digest algorithms might have been used to create them.
         // We'll publish to the database using the de-chunking checksum.
@@ -102,7 +103,7 @@ internal class ValidationFunctions(
                 cpi.metadata.cpiId.version,
                 cpi.metadata.cpiId.signerSummaryHashForDbQuery)
 
-            if (cpiExists && fileInfo.forceUpload) {
+            return if (cpiExists && fileInfo.forceUpload) {
                 log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
                 chunkPersistence.updateMetadataAndCpks(cpi, fileInfo.name, fileInfo.checksum, requestId, groupId)
             } else if (!cpiExists) {
