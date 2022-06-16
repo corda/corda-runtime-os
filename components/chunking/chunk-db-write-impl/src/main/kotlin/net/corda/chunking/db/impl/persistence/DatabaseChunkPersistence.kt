@@ -27,6 +27,8 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
+import javax.persistence.NonUniqueResultException
+import net.corda.libs.cpi.datamodel.CpkKey
 
 /**
  * This class provides some simple APIs to interact with the database.
@@ -205,11 +207,16 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      * @return true if checksum exists in database
      */
     override fun cpkExists(cpkChecksum: SecureHash): Boolean {
-        val entity = entityManagerFactory.createEntityManager().transaction {
-            it.find(CpkFileEntity::class.java, cpkChecksum.toString())
+        val query = "SELECT count(c) FROM ${CpkFileEntity::class.simpleName} c WHERE c.fileChecksum = :cpkFileChecksum"
+        val entitiesFound = entityManagerFactory.createEntityManager().transaction {
+            it.createQuery(query)
+                .setParameter("cpkFileChecksum", cpkChecksum.toString())
+                .singleResult as Long
         }
 
-        return entity != null
+        if (entitiesFound > 1) throw NonUniqueResultException("CpkFileEntity with fileChecksum = $cpkChecksum was not unique")
+
+        return entitiesFound > 0
     }
 
     override fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean =
@@ -229,7 +236,13 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             // persist file data
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
-                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(
+                    CpkFileEntity(
+                        CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
+                        cpkChecksum,
+                        Files.readAllBytes(it.path!!)
+                    )
+                )
             }
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -273,7 +286,13 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             cpi.cpks.forEach {
                 val cpkChecksum = it.metadata.fileChecksum.toString()
                 // Using `merge` here as exactly the same CPK may already exist
-                em.merge(CpkFileEntity(cpkChecksum, Files.readAllBytes(it.path!!)))
+                em.merge(
+                    CpkFileEntity(
+                        CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
+                        cpkChecksum,
+                        Files.readAllBytes(it.path!!)
+                    )
+                )
             }
             return cpiMetadataEntity
         }
@@ -347,14 +366,11 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      */
     private fun createCpkMetadata(cpks: Collection<Cpk>): List<Pair<String, CpkMetadataEntity>> {
         return cpks.map {
-            val cpkChecksum = it.metadata.fileChecksum.toString()
             val cpkMetadataEntity =
                 // TODO - format version
                 CpkMetadataEntity(
-                    cpkChecksum,
-                    cpkName = it.metadata.cpkId.name,
-                    cpkVersion = it.metadata.cpkId.version,
-                    cpkSignerSummaryHash = it.metadata.cpkId.signerSummaryHashForDbQuery,
+                    CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
+                    it.metadata.fileChecksum.toString(),
                     formatVersion = "1",
                     serializedMetadata = it.metadata.toJsonAvro()
                 )

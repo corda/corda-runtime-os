@@ -109,10 +109,13 @@ data class CpiMetadataEntity(
                             name,
                             version,
                             signerSummaryHash,
-                            it.second.cpkFileChecksum,
+                            it.second.id.cpkName,
+                            it.second.id.cpkVersion,
+                            it.second.id.cpkSignerSummaryHash,
                         ),
                         cpkFileName = it.first,
                         metadata = it.second,
+                        cpkFileChecksum = it.second.cpkFileChecksum
                     )
                 }.toSet()
             )
@@ -141,10 +144,13 @@ data class CpiMetadataEntity(
                         name,
                         version,
                         signerSummaryHash,
-                        it.second.cpkFileChecksum,
+                        it.second.id.cpkName,
+                        it.second.id.cpkVersion,
+                        it.second.id.cpkSignerSummaryHash,
                     ),
                     cpkFileName = it.first,
                     metadata = it.second,
+                    cpkFileChecksum = it.second.cpkFileChecksum
                 )
             }.toSet(),
         )
