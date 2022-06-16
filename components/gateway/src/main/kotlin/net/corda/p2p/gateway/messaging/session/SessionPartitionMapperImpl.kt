@@ -46,7 +46,7 @@ class SessionPartitionMapperImpl(
 
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,
         dependentChildren = setOf(sessionPartitionSubscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
-        managedChildren = setOf(sessionPartitionSubscriptionTile, blockingDominoTile)
+        managedChildren = setOf(sessionPartitionSubscriptionTile.toManagedChild(), blockingDominoTile.toManagedChild())
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {

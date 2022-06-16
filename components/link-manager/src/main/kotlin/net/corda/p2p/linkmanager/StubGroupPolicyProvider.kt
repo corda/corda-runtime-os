@@ -90,7 +90,7 @@ internal class StubGroupPolicyProvider(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(groupSubscriptionTile.coordinatorName, blockingTile.coordinatorName),
-        managedChildren = setOf(groupSubscriptionTile, blockingTile)
+        managedChildren = setOf(groupSubscriptionTile.toManagedChild(), blockingTile.toManagedChild())
     )
 
     private val groups = ConcurrentHashMap<String, GroupPolicyListener.GroupInfo>()

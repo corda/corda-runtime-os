@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.StateAndEventSubscriptionDominoTile
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -56,6 +57,7 @@ class DeliveryTrackerTest {
 
     @AfterEach
     fun cleanUp() {
+        publisherWithDominoLogic.close()
         dominoTile.close()
         subscriptionTile.close()
         replayScheduler.close()
@@ -66,6 +68,12 @@ class DeliveryTrackerTest {
         return listOf(Record("TOPIC", "Key", messageAndKey))
     }
 
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.toManagedChild()).thenReturn(mock())
+        }
+        whenever(mock.dominoTile).thenReturn(mockDominoTile)
+    }
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }

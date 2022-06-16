@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -56,7 +55,7 @@ class ComplexDominoTile(
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet(),
-    override val managedChildren: Collection<Lifecycle> = emptySet(),
+    override val managedChildren: Collection<ManagedChild> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : DominoTile() {
 
@@ -220,7 +219,7 @@ class ComplexDominoTile(
                                 logger.info("Received valid config for $coordinatorName.")
                             }
                             configReady = true
-                            createResourcesAndStart()
+                            startIfDependantChildrenAndConfigReady()
                         }
                         is ConfigUpdateResult.Error -> {
                             logger.warn("Config error ${event.configUpdateResult.e}")
@@ -282,7 +281,7 @@ class ComplexDominoTile(
         if (!isRunning) {
             if (shouldNotWaitForChildren()) {
                 logger.info("Starting resources, since all children are now up.")
-                createResourcesAndStart()
+                startIfDependantChildrenAndConfigReady()
             }
         }
     }
@@ -295,14 +294,15 @@ class ComplexDominoTile(
 
     private fun startDependenciesIfNeeded() {
         managedChildren.forEach {
-            it.start()
+            logger.info("Starting child ${it.name}")
+            it.lifecycle.start()
         }
 
         // if there are dependent children, we wait for them before starting resources. Otherwise, we can start them immediately.
         if (dependentChildren.isEmpty()) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                createResourcesAndStart()
+                startIfDependantChildrenAndConfigReady()
             } catch (e: Throwable) {
                 coordinator.postEvent(ErrorEvent(e))
             }
@@ -317,7 +317,7 @@ class ComplexDominoTile(
         return dependentChildren.all { latestChildStateMap[it] == LifecycleStatus.UP }
     }
 
-    private fun createResourcesAndStart() {
+    private fun startIfDependantChildrenAndConfigReady() {
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config updates.")
             configRegistration =
@@ -345,8 +345,8 @@ class ComplexDominoTile(
 
     private fun stopChildren() {
         managedChildren.forEach {
-            logger.info("Stopping child $it")
-            it.stop()
+            logger.info("Stopping child ${it.name}")
+            it.lifecycle.stop()
         }
     }
 
@@ -379,19 +379,19 @@ class ComplexDominoTile(
                 logger.debug("Could not close coordinator", e)
             }
         }
-        onClose?.invoke()
         managedChildren.forEach {
             @Suppress("TooGenericExceptionCaught")
             try {
-                it.close()
+                it.lifecycle.close()
             } catch (e: Throwable) {
-                logger.warn("Could not close $it", e)
+                logger.warn("Could not close ${it.name}", e)
             }
         }
+        onClose?.invoke()
     }
 
     override fun toString(): String {
         return "$coordinatorName (state: ${coordinator.status}, dependent children: ${dependentChildren.map { it }}, " +
-                "managed children: ${managedChildren.map { it }})"
+                "managed children: ${managedChildren.map { it.name }})"
     }
 }

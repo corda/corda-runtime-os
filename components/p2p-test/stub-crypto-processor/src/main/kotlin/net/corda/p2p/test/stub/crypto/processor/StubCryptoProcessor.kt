@@ -52,7 +52,7 @@ class StubCryptoProcessor(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(subscriptionTile.coordinatorName, blockingDominoTile.coordinatorName),
-        managedChildren = listOf(subscriptionTile, blockingDominoTile),
+        managedChildren = listOf(subscriptionTile.toManagedChild(), blockingDominoTile.toManagedChild()),
     )
 
     override fun sign(

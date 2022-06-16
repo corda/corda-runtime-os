@@ -1,6 +1,5 @@
 package net.corda.lifecycle.domino.logic
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -56,7 +55,7 @@ class BlockingDominoTile(componentName: String,
         }
     }
 
-    override val managedChildren: Collection<Lifecycle> = emptyList()
+    override val managedChildren: Collection<ManagedChild> = emptyList()
 
     private object AsynchronousReady : LifecycleEvent
     private data class AsynchronousException(val exception: Throwable) : LifecycleEvent

@@ -69,7 +69,11 @@ internal class TrustStoresPublisher(
         this.javaClass.simpleName,
         lifecycleCoordinatorFactory,
         onStart = ::onStart,
-        managedChildren = listOf(publisher.dominoTile, subscriptionTile, blockingDominoTile),
+        managedChildren = listOf(
+            publisher.dominoTile.toManagedChild(),
+            subscriptionTile.toManagedChild(),
+            blockingDominoTile.toManagedChild()
+        ),
         dependentChildren = listOf(
             publisher.dominoTile.coordinatorName,
             subscriptionTile.coordinatorName,

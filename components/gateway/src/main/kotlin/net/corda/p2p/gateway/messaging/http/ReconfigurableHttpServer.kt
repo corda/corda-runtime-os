@@ -44,7 +44,7 @@ class ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler(),
         dependentChildren = listOf(dynamicKeyStore.dominoTile.coordinatorName),
-        managedChildren = listOf(dynamicKeyStore.dominoTile),
+        managedChildren = listOf(dynamicKeyStore.dominoTile.toManagedChild()),
     )
 
     companion object {
