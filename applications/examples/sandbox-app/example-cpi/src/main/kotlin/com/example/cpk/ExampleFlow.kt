@@ -3,8 +3,8 @@ package com.example.cpk
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
-import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -31,8 +31,9 @@ class ExampleFlow : RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
-        logger.info("Invoked: JSON=${requestBody.getRequestBody()}")
-        val input = requestBody.getRequestBodyAs<FlowInput>(jsonMarshaller)
+        val json = requestBody.getRequestBody()
+        logger.info("Invoked: JSON=$json")
+        val input = jsonMarshaller.parseJson<FlowInput>(json)
         return hashOf(
             bytes = input.message?.toByteArray() ?: byteArrayOf()
         ).also { result ->

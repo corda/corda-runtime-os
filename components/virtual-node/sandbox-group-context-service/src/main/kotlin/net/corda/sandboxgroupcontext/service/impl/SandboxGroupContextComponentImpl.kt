@@ -28,6 +28,7 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.Collections.unmodifiableList
@@ -127,6 +128,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override fun stop() = coordinator.stop()
 
+    @Deactivate
     override fun close() {
         stop()
         coordinator.close()

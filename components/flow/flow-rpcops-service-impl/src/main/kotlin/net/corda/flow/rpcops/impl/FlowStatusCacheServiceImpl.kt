@@ -23,7 +23,7 @@ import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
+import java.util.Collections
 
 @Component(immediate = true, service = [FlowStatusCacheService::class])
 class FlowStatusCacheServiceImpl @Activate constructor(
@@ -49,8 +49,8 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     override fun stop() = lifecycleCoordinator.stop()
 
     override fun initialise(config: SmartConfig) {
-        flowStatusSubscription?.close()
         subReg?.close()
+        flowStatusSubscription?.close()
 
         flowStatusSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(
