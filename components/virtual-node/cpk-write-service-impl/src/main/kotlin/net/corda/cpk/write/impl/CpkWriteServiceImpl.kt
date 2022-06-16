@@ -1,9 +1,9 @@
 package net.corda.cpk.write.impl
 
+import net.corda.chunking.ChunkWriter
 import java.io.ByteArrayInputStream
 import java.time.Duration
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -39,6 +39,7 @@ import net.corda.schema.Schemas.VirtualNode
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -91,6 +92,8 @@ class CpkWriteServiceImpl @Activate constructor(
     internal var cpkChunksPublisher: CpkChunksPublisher? = null
     @VisibleForTesting
     internal var cpkStorage: CpkStorage? = null
+
+    private var chunkWriter: ChunkWriter? = null
 
     /**
      * Event loop
@@ -150,22 +153,23 @@ class CpkWriteServiceImpl @Activate constructor(
      * We've received a config event that we care about, we can now write cpks
      */
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.getConfig(MESSAGING_CONFIG)
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val reconciliationConfig = event.config.getConfig(RECONCILIATION_CONFIG)
         // TODO fill the following with configuration once we know where they lie?
+        chunkWriter = ChunkWriterFactory.create(messagingConfig.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE))
         timeout = 20.seconds
 
         timerEventIntervalMs = reconciliationConfig.getLong(RECONCILIATION_CPK_WRITE_INTERVAL_MS)
         logger.info("CPK write reconciliation interval set to $timerEventIntervalMs ms.")
 
         try {
-            createCpkChunksPublisher(config)
+            createCpkChunksPublisher(messagingConfig)
         } catch (e: Exception) {
             closeResources()
             coordinator.updateStatus(LifecycleStatus.DOWN)
             return
         }
-        createCpkChecksumsCache(config)
+        createCpkChecksumsCache(messagingConfig)
         createCpkStorage()
 
         coordinator.updateStatus(LifecycleStatus.UP)
@@ -176,7 +180,7 @@ class CpkWriteServiceImpl @Activate constructor(
         try {
             putMissingCpk()
         } catch (e: Exception) {
-            logger.warn("Caught exception $e")
+            logger.warn("CPK Reconciliation exception: $e")
         }
         setReconciliationTimerEvent(coordinator)
     }
@@ -223,12 +227,13 @@ class CpkWriteServiceImpl @Activate constructor(
         logger.debug { "Publishing CPK ${cpkChecksumToData.checksum}" }
         val cpkChecksum = cpkChecksumToData.checksum
         val cpkData = cpkChecksumToData.data
-        val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
-        chunkWriter.onChunk { chunk ->
+        if(null == chunkWriter)
+            throw CordaRuntimeException("CPK Chunk Writer not ready.")
+        chunkWriter!!.onChunk { chunk ->
             val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
             put(cpkChunkId, chunk)
         }
-        chunkWriter.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
+        chunkWriter!!.write(cpkChecksum.toFileName(), ByteArrayInputStream(cpkData))
     }
 
     override val isRunning: Boolean
