@@ -7,18 +7,21 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation project(":libs:http-rpc:http-rpc-client")
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    compileOnly "net.corda.cli.host:api:${pluginHostVersion}"
+    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt "info.picocli:picocli-codegen:$picocliVersion"
 
-    compileOnly "org.pf4j:pf4j:${pf4jVersion}"
-    kapt "org.pf4j:pf4j:${pf4jVersion}"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    testImplementation "net.corda.cli.host:api:${pluginHostVersion}"
-    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }
 
 // the plugin task will put the files into a jar file with the correct manifest
@@ -26,7 +29,7 @@ def plugin = tasks.register('plugin', Jar) {
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    archiveBaseName = "plugin-$pluginId-$version"
+    archiveBaseName = "plugin-${pluginId}"
 
     manifest {
         attributes['Plugin-Class'] = pluginClass

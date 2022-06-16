@@ -17,14 +17,14 @@ class VirtualNodeCliPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     override fun start() {
-        logger.info("Virtual Node plugin stopped.")
+        logger.info("starting virtual node plugin")
     }
 
     override fun stop() {
-        logger.info("Virtual Node plugin stopped.")
+        logger.info("stopping virtual node plugin")
     }
 
     @Extension
-    @CommandLine.Command(name = "vnode", subcommands = [ResetCommand::class], description = ["manages a virtual node"])
+    @CommandLine.Command(name = "vnode", subcommands = [ResetCommand::class], description = ["Manages a virtual node"])
     class PluginEntryPoint : CordaCliPlugin
 }

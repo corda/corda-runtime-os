@@ -1,18 +1,14 @@
 package net.corda.cli.plugins.vnode.commands
 
-import net.corda.cli.api.serviceUsers.HttpServiceUser
-import net.corda.cli.api.services.HttpService
+import net.corda.cli.plugins.vnode.VirtualNodeCliPlugin
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.client.HttpRpcClient
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
-import picocli.CommandLine
-import picocli.CommandLine.Mixin
+
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.io.InputStream
-
 
 @Command(
     name = "reset",
@@ -38,7 +34,14 @@ class ResetCommand : Runnable {
     @Option(names = ["-c", "--cpi"], required = true, description = ["CPI file to reset the virtual node with."])
     lateinit var cpiFileName: String
 
+    @Option(names = ["-w", "--wait"], required = false, description = ["polls for result"])
+    var wait: Boolean = false
+
     override fun run() {
+        val oldCl = Thread.currentThread().contextClassLoader
+        Thread.currentThread().contextClassLoader = VirtualNodeCliPlugin.classLoader
+        print("running")
+
         val client = HttpRpcClient(
             baseAddress = "$targetUrl/api/v1/",
             VirtualNodeMaintenanceRPCOps::class.java,
@@ -56,8 +59,17 @@ class ResetCommand : Runnable {
             with(connection.proxy) {
                 val cpi = File(cpiFileName)
                 val result = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name))
-                print(result.id)
+                if(wait) {
+
+                    // polling logic to go here
+
+
+                } else {
+                    print(result.id)
+                }
             }
         }
+
+        Thread.currentThread().contextClassLoader = oldCl
     }
 }
