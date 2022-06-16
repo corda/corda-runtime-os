@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -23,7 +23,7 @@ import java.util.concurrent.Callable
 )
 class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
     companion object {
-        fun Config.toMemberRecord(topic: String = TestSchema.MEMBER_INFO_TOPIC): Record<String, MemberInfoEntry> {
+        fun Config.toMemberRecord(topic: String = MEMBER_INFO_TOPIC): Record<String, MemberInfoEntry> {
             val x500Name = this.getString("x500name")
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
@@ -51,7 +51,7 @@ class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
             "Topic to write the member information records to."
         ]
     )
-    private var memberInfoTopic: String = TestSchema.MEMBER_INFO_TOPIC
+    private var memberInfoTopic: String = MEMBER_INFO_TOPIC
 
     @Parameters(
         description = [

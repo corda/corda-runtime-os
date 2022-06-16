@@ -12,7 +12,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.linkmanager.StubGroupPolicyProvider.Companion.toGroupInfo
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -135,7 +135,7 @@ class StubGroupPolicyProviderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_POLICIES_TOPIC,
+                GROUP_POLICIES_TOPIC,
                 "group1",
                 null
             ),
@@ -162,7 +162,7 @@ class StubGroupPolicyProviderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_POLICIES_TOPIC,
+                GROUP_POLICIES_TOPIC,
                 "g",
                 groupThree
             ),
@@ -191,7 +191,7 @@ class StubGroupPolicyProviderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.GROUP_POLICIES_TOPIC,
+                GROUP_POLICIES_TOPIC,
                 "g",
                 groupThree,
             ),

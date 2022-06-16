@@ -7,7 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -24,7 +24,7 @@ import java.util.concurrent.Callable
 )
 class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
     companion object {
-        internal fun Config.toGroupRecord(topic: String = TestSchema.GROUP_POLICIES_TOPIC): Record<String, GroupPolicyEntry> {
+        internal fun Config.toGroupRecord(topic: String = GROUP_POLICIES_TOPIC): Record<String, GroupPolicyEntry> {
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
             val networkType = dataConfig.getEnum(NetworkType::class.java, "networkType")
@@ -56,7 +56,7 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
             "Topic to write the group information records to."
         ]
     )
-    private var groupInfoTopic: String = TestSchema.GROUP_POLICIES_TOPIC
+    private var groupInfoTopic: String = GROUP_POLICIES_TOPIC
 
     @Parameters(
         description = [

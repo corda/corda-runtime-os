@@ -11,7 +11,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
-import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.crypto.ParameterizedSignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach

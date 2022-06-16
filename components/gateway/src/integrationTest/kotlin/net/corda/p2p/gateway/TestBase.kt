@@ -35,7 +35,6 @@ import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.schema.TestSchema
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -53,6 +52,7 @@ import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 
@@ -230,7 +230,7 @@ open class TestBase {
                 privateKey,
             )
             val keysRecord = Record(
-                TestSchema.CRYPTO_KEYS_TOPIC,
+                CRYPTO_KEYS_TOPIC,
                 alias,
                 TenantKeys(
                     tenantId,
