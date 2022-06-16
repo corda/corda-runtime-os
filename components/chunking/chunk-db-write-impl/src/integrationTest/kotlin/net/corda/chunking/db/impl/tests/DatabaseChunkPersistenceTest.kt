@@ -545,7 +545,7 @@ internal class DatabaseChunkPersistenceTest {
         val updatedCpi = mockCpiWithId(updatedCpks, cpi.metadata.cpiId)
 
         val updatedCpiMetadataEntity = persistence.updateMetadataAndCpks(updatedCpi, cpiFileName, updatedCpiChecksum, UUID.randomUUID().toString(), "abcdef")
-        assertThat(updatedCpiMetadataEntity.entityVersion > 1).isTrue
+        assertThat(updatedCpiMetadataEntity.entityVersion).isEqualTo(3)
 
         val updatedLoadedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(CpiMetadataEntity::class.java, CpiMetadataEntityKey(
