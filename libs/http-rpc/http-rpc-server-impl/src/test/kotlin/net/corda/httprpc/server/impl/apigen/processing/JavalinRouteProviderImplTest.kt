@@ -37,8 +37,8 @@ class JavalinRouteProviderImplTest {
 
         val testResource = Resource(resourceName, "", resourcePath, setOf(testEndpoint))
         val provider = JavalinRouteProviderImpl(basePath, apiVersion, listOf(testResource))
-        val expectedPath =
-            "/${basePath}/v${apiVersion}/${testResource.path}/abc/${pathParameterStartMarker}${testEndpointName}${pathParameterEndMarker}/def".lowercase()
+        val expectedPath = ("/${basePath}/v${apiVersion}/${testResource.path}/abc/" +
+                "${pathParameterStartMarker}${testEndpointName}${pathParameterEndMarker}/def").lowercase()
 
         val result = provider.httpGetRoutes
         assertEquals(expectedPath, result.single().fullPath)
