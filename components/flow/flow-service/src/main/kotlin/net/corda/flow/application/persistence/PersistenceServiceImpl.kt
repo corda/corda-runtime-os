@@ -1,4 +1,4 @@
-package net.corda.flow.application.db
+package net.corda.flow.application.persistence
 
 import java.io.NotSerializableException
 import java.util.UUID
