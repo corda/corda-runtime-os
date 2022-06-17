@@ -3,8 +3,8 @@ package net.corda.libs.cpi.datamodel
 import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
+import javax.persistence.EmbeddedId
 import javax.persistence.Entity
-import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.Table
 import javax.persistence.EntityManager
@@ -15,6 +15,7 @@ import javax.persistence.Version
  * NOTE: CPK binary is separate from the [CpkMetadataEntity] as it is possible a CPK is contained in
  * multiple CPIs. This is why the file checksum is the key.
  *
+ * @property id the composite primary key consisting of cpk name, version and signer summary hash
  * @property fileChecksum for the binary data
  * @property data
  * @property insertTimestamp when the CPK Data was inserted.
@@ -22,8 +23,9 @@ import javax.persistence.Version
 @Entity
 @Table(name = "cpk_file", schema = DbSchema.CONFIG)
 data class CpkFileEntity(
-    @Id
-    @Column(name = "file_checksum", nullable = false)
+    @EmbeddedId
+    var id: CpkKey,
+    @Column(name = "file_checksum", nullable = false, unique = true)
     val fileChecksum: String,
     @Lob
     @Column(name = "data", nullable = false)
@@ -69,7 +71,10 @@ fun EntityManager.findCpkChecksumsNotIn(checksums: List<String>): List<String> {
         .resultList
 }
 
-fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = find(
-    CpkFileEntity::class.java,
-    checksum
+fun EntityManager.findCpkDataEntity(checksum: String): CpkFileEntity? = createQuery(
+    "FROM ${CpkFileEntity::class.java.simpleName} WHERE fileChecksum = :checksum",
+    CpkFileEntity::class.java
 )
+    .setParameter("checksum", checksum)
+    .resultList
+    .firstOrNull()

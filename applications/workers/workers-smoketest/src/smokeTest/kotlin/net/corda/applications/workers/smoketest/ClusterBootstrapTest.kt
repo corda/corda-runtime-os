@@ -32,7 +32,7 @@ class ClusterBootstrapTest {
             // check all workers are up and "ready"
             healthChecks.map {
                 async {
-                    val response = tryUntil(Duration.ofSeconds(60)) { checkReady(it.key, it.value) }
+                    val response = tryUntil(Duration.ofSeconds(120)) { checkReady(it.key, it.value) }
                     if (response in 200..299)
                         println("${it.key} is ready")
                     else
