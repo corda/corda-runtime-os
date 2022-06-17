@@ -46,10 +46,6 @@ internal class ConfigProcessor(
 
             val config = mergeConfigs(currentData)
             coordinator.postEvent(NewConfigReceived(config))
-        } else {
-            logger.debug { "No initial data to read from configuration topic" }
-            val config = mapOf(MESSAGING_CONFIG to configMerger.getMessagingConfig(bootConfig, null))
-            coordinator.postEvent(NewConfigReceived(config))
         }
     }
 
