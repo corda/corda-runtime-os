@@ -128,9 +128,9 @@ internal class TlsCertificatesPublisher(
             blockingDominoTile.coordinatorName
         ),
         managedChildren = listOf(
-            publisher.dominoTile.toManagedChild(),
-            subscriptionDominoTile.toManagedChild(),
-            blockingDominoTile.toManagedChild()
+            publisher.dominoTile.toLifecycleWithCoordinatorName(),
+            subscriptionDominoTile.toLifecycleWithCoordinatorName(),
+            blockingDominoTile.toLifecycleWithCoordinatorName()
         )
     )
 

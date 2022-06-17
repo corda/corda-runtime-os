@@ -17,7 +17,7 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
-import net.corda.lifecycle.domino.logic.ManagedChild
+import net.corda.lifecycle.domino.logic.LifecycleWithCoordinatorName
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -46,7 +46,7 @@ abstract class SubscriptionDominoTileBase(
     private val subscription: Lifecycle,
     private val subscriptionName: LifecycleCoordinatorName,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
-    final override val managedChildren: Collection<ManagedChild>
+    final override val managedChildren: Collection<LifecycleWithCoordinatorName>
 ): DominoTile() {
 
     companion object {

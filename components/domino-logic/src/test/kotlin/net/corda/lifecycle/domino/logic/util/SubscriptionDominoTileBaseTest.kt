@@ -10,7 +10,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.ManagedChild
+import net.corda.lifecycle.domino.logic.LifecycleWithCoordinatorName
 import net.corda.messaging.api.subscription.Subscription
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -78,7 +78,7 @@ class SubscriptionDominoTileBaseTest {
             coordinatorFactory,
             subscription,
             children.map { it.coordinatorName },
-            children.map { it.toManagedChild() }
+            children.map { it.toLifecycleWithCoordinatorName() }
         )
 
         subscriptionTile.start()
@@ -93,7 +93,7 @@ class SubscriptionDominoTileBaseTest {
             coordinatorFactory,
             subscription,
             children.map { it.coordinatorName },
-            children.map { it.toManagedChild() }
+            children.map { it.toLifecycleWithCoordinatorName() }
         )
 
         subscriptionTile.stop()
@@ -108,7 +108,7 @@ class SubscriptionDominoTileBaseTest {
             coordinatorFactory,
             subscription,
             children.map { it.coordinatorName },
-            children.map { it.toManagedChild() }
+            children.map { it.toLifecycleWithCoordinatorName() }
         )
 
         subscriptionTile.start()
@@ -140,7 +140,7 @@ class SubscriptionDominoTileBaseTest {
             coordinatorFactory,
             subscription,
             children.map { it.coordinatorName },
-            children.map { it.toManagedChild() }
+            children.map { it.toLifecycleWithCoordinatorName() }
         )
 
         subscriptionTile.start()
@@ -159,7 +159,7 @@ class SubscriptionDominoTileBaseTest {
             coordinatorFactory,
             subscription,
             children.map { it.coordinatorName },
-            children.map { it.toManagedChild() }
+            children.map { it.toLifecycleWithCoordinatorName() }
         )
 
         subscriptionTile.start()
@@ -178,7 +178,7 @@ class SubscriptionDominoTileBaseTest {
             coordinatorFactory,
             subscription,
             children.map { it.coordinatorName },
-            children.map { it.toManagedChild() }
+            children.map { it.toLifecycleWithCoordinatorName() }
         )
 
         subscriptionTile.start()
@@ -192,7 +192,7 @@ class SubscriptionDominoTileBaseTest {
     private fun mockTile(name: LifecycleCoordinatorName): DominoTile {
         return mock {
             on { coordinatorName } doReturn name
-            on { toManagedChild() } doReturn ManagedChild(this.mock, mock())
+            on { toLifecycleWithCoordinatorName() } doReturn LifecycleWithCoordinatorName(this.mock, mock())
         }
     }
 
@@ -200,7 +200,7 @@ class SubscriptionDominoTileBaseTest {
         coordinatorFactory: LifecycleCoordinatorFactory,
         subscription: Subscription<K, V>,
         dependentChildren: Collection<LifecycleCoordinatorName>,
-        managedChildren: Collection<ManagedChild>
+        managedChildren: Collection<LifecycleWithCoordinatorName>
     ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
 
 }

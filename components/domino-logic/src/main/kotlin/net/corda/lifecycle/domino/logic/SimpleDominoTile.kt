@@ -48,7 +48,7 @@ class SimpleDominoTile(
     private val currentState = AtomicReference(LifecycleStatus.DOWN)
 
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
-    override val managedChildren: Collection<ManagedChild> = emptyList()
+    override val managedChildren: Collection<LifecycleWithCoordinatorName> = emptyList()
 
     fun updateState(newState: LifecycleStatus) {
         val oldState = currentState.getAndSet(newState)

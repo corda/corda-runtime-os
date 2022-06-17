@@ -31,7 +31,7 @@ class SessionPartitionMapperImplTest {
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
     private val blockingTile = Mockito.mockConstruction(BlockingDominoTile::class.java) { mock, _ ->
-        whenever(mock.toManagedChild()).thenReturn(mock())
+        whenever(mock.toLifecycleWithCoordinatorName()).thenReturn(mock())
     }
 
     private val factory = mock<LifecycleCoordinatorFactory>()

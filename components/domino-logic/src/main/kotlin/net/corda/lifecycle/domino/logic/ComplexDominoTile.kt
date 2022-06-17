@@ -55,7 +55,7 @@ class ComplexDominoTile(
     private val onStart: (() -> Unit)? = null,
     private val onClose: (() -> Unit)? = null,
     override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet(),
-    override val managedChildren: Collection<ManagedChild> = emptySet(),
+    override val managedChildren: Collection<LifecycleWithCoordinatorName> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : DominoTile() {
 

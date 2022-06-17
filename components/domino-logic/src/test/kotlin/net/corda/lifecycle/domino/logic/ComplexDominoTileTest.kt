@@ -606,7 +606,7 @@ class ComplexDominoTileTest {
                 factory,
                 mock(),
                 dependentChildren = dependentChildren,
-                managedChildren = managedChildren.map { it.toManagedChild() }
+                managedChildren = managedChildren.map { it.toLifecycleWithCoordinatorName() }
             )
 
         @Nested
@@ -826,7 +826,7 @@ class ComplexDominoTileTest {
                     mock {
                         on { close() } doThrow RuntimeException("")
                         on { coordinatorName } doReturn LifecycleCoordinatorName("component", "1")
-                        on { toManagedChild() } doReturn ManagedChild(this.mock, mock())
+                        on { toLifecycleWithCoordinatorName() } doReturn LifecycleWithCoordinatorName(this.mock, mock())
                     }
                 )
                 val registration = mock<RegistrationHandle>()
@@ -845,7 +845,7 @@ class ComplexDominoTileTest {
             mock<ComplexDominoTile> {
                 on { this.coordinatorName } doReturn coordinatorName
                 on { isRunning } doAnswer { currentState == LifecycleStatus.UP }
-                on { toManagedChild() } doReturn ManagedChild(this.mock, mock())
+                on { toLifecycleWithCoordinatorName() } doReturn LifecycleWithCoordinatorName(this.mock, mock())
             }
         }
         private var currentState: LifecycleStatus = LifecycleStatus.DOWN
