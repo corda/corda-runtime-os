@@ -14,6 +14,15 @@ internal class MerkleProofImpl(
     // CORE-5111: add serialize/deserialize (and its test)
 
     @Suppress("NestedBlockDepth", "ComplexMethod")
+    /**
+     * The verification process reconstructs the Merkle tree's root element from the proof.
+     * Then it compares it with the input parameter to check if they match.
+     *
+     * It walks through the levels of the tree from bottom to up following the same logic as the
+     * proof or tree creation. [MerkleTreeImpl.createAuditProof]
+     * It recreates the routes towards the root element from the items in the leaves to be proven with using
+     * the proof's hashes when they are needed.
+     */
     override fun verify(root: SecureHash, digestProvider: MerkleTreeHashDigestProvider): Boolean {
         if (leaves.isEmpty()) {
             return false
@@ -38,11 +47,12 @@ internal class MerkleProofImpl(
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                if (item.first < currentSize and 0x7FFFFFFE) {
-                    if (index < nodeHashes.size - 1) {
+                if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
+                                                                    // the last element later.
+                    if (index < nodeHashes.size - 1) {              // If there is a next element...
                         val next = nodeHashes[index + 1]
-                        if (item.first xor next.first == 1) {
-                            newItems += Pair(
+                        if (item.first xor next.first == 1) {       // ... and they are a pair with the current
+                            newItems += Pair(                       // in the original tree, we create their parent.
                                 item.first / 2,
                                 digestProvider.nodeHash(treeDepth, item.second, next.second)
                             )
@@ -50,21 +60,23 @@ internal class MerkleProofImpl(
                             continue
                         }
                     }
-                    if (hashIndex >= hashes.size) {
-                        return false
+                    if (hashIndex >= hashes.size) {                 // We'll need and more hash to continue. So if
+                        return false                                // we do not have more, the proof is incorrect.
                     }
-                    newItems += if (item.first and 1 == 0) {
+                                                                    // We pair the current element with a
+                                                                    // hash from the proof
+                    newItems += if (item.first and 1 == 0) {        // Even index means, that the item is on the left
                         Pair(
                             item.first / 2,
                             digestProvider.nodeHash(treeDepth, item.second, hashes[hashIndex++])
                         )
-                    } else {
+                    } else {                                        // Odd index means, that the item is on the right
                         Pair(
                             item.first / 2,
                             digestProvider.nodeHash(treeDepth, hashes[hashIndex++], item.second)
                         )
                     }
-                } else {
+                } else {                                            // The last odd element, just gets lifted.
                     newItems += Pair((item.first + 1) / 2, item.second)
                 }
                 ++index
