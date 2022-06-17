@@ -16,8 +16,6 @@ dependencies {
     kapt "org.pf4j:pf4j:$pf4jVersion"
     kapt "info.picocli:picocli-codegen:$picocliVersion"
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
@@ -50,6 +48,7 @@ def plugin = tasks.register('plugin', Jar) {
         exclude "META-INF/*.RSA"
         exclude "module-info.class"
         exclude "META-INF/versions/*/module-info.class"
+        exclude "org/slf4j/**"
 
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
