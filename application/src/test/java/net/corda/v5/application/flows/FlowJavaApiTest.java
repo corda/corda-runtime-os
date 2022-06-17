@@ -25,7 +25,7 @@ public class FlowJavaApiTest {
     }
 
 
-    static class StringFlow implements Flow<String> {
+    static class StringFlow implements SubFlow<String> {
 
         @Override
         public String call() {
@@ -33,7 +33,7 @@ public class FlowJavaApiTest {
         }
     }
 
-    static class VoidFlow implements Flow<Void> {
+    static class VoidFlow implements SubFlow<Void> {
 
         @Override
         public Void call() {
