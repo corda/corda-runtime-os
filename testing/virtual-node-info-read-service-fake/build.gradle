@@ -14,9 +14,11 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":components:reconciliation:reconciliation")
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")

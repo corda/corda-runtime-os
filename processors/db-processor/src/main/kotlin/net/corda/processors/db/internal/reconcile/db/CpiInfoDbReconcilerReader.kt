@@ -10,6 +10,9 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 
+/**
+ * Converts the database entity classes [CpiMetadataEntity] to [CpiMetadata], and also the identifier
+ */
 val getAllCpiInfoDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em ->
     em.findAllCpiMetadata().map { cpiMetadataEntity ->
         val cpiId = CpiIdentifier(

@@ -3,6 +3,8 @@ package net.corda.testing.sandboxes.impl
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.Cpi
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
@@ -14,7 +16,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.time.Instant
 import java.util.UUID
+import java.util.stream.Stream
 
 @Suppress("unused")
 @Component(service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ])
@@ -43,8 +47,14 @@ class VirtualNodeLoaderImpl @Activate constructor(
             CpiIdentifier(
                 cpi.metadata.cpiId.name,
                 cpi.metadata.cpiId.version,
-                cpi.metadata.cpiId.signerSummaryHash),
-            null, UUID.randomUUID(), null, UUID.randomUUID(), null
+                cpi.metadata.cpiId.signerSummaryHash
+            ),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            timestamp = Instant.now()
         ).also(::put)
     }
 
@@ -77,6 +87,13 @@ class VirtualNodeLoaderImpl @Activate constructor(
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {
         return AutoCloseable {}
     }
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+        TODO("Not yet implemented")
+    }
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = LifecycleCoordinatorName(VirtualNodeLoaderImpl::class.java.simpleName)
 
     override fun start() {
         logger.info("Started")
