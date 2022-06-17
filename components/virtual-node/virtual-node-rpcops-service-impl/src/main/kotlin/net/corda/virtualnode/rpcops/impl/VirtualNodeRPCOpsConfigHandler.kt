@@ -2,10 +2,10 @@ package net.corda.virtualnode.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
@@ -29,7 +29,7 @@ internal class VirtualNodeRPCOpsConfigHandler(
      * configuration is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (RPC_CONFIG in changedKeys) processRpcConfig(config)
+        if (RPC_CONFIG in changedKeys && MESSAGING_CONFIG in changedKeys) processRpcConfig(config)
         if (virtualNodeRPCOps.isRunning) coordinator.updateStatus(UP)
     }
 
