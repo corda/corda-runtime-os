@@ -1,4 +1,4 @@
-package net.corda.testing.chat
+package net.cordapp.testing.chat
 
 import net.corda.v5.base.annotations.CordaSerializable
 

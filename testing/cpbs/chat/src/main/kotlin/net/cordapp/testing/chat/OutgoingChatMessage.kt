@@ -1,4 +1,4 @@
-package net.corda.testing.chat
+package net.cordapp.testing.chat
 
 /**
  * An outgoing chat message, one being sent by this member to another.

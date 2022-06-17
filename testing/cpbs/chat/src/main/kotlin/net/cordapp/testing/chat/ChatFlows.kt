@@ -1,4 +1,4 @@
-package net.corda.testing.chat
+package net.cordapp.testing.chat
 
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -61,7 +61,7 @@ class ChatOutgoingFlow : RPCStartableFlow {
  * Incoming message flow, instantiated for receiving chat messages by Corda as part of the declared chat protocol.
  * Messages are placed in the message store. To read outstanding messages, poll the ChatReaderFlow.
  */
-    @InitiatedBy(protocol = "chatProtocol")
+@InitiatedBy(protocol = "chatProtocol")
 class ChatIncomingFlow : ResponderFlow {
 
     private companion object {

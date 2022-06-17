@@ -1,4 +1,4 @@
-package net.corda.testing.chat
+package net.cordapp.testing.chat
 
 /**
  * An incoming chat message, one received by this member sent from another.

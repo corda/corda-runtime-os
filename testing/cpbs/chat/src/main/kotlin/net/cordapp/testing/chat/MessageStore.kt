@@ -1,4 +1,4 @@
-package net.corda.testing.chat
+package net.cordapp.testing.chat
 
 /**
  * Static message store, which holds unread messages in memory. Should be replaced with use of the persistence api when
