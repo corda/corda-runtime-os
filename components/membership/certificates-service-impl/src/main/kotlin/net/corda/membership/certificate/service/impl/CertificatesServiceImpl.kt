@@ -127,6 +127,7 @@ class CertificatesServiceImpl @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
+                subscriptionRegistrationHandle?.close()
                 rpcSubscription?.close()
                 rpcSubscription = subscriptionFactory.createRPCSubscription(
                     rpcConfig = RPCConfig(
@@ -139,7 +140,6 @@ class CertificatesServiceImpl @Activate constructor(
                     responderProcessor = processor,
                     messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                 ).also {
-                    subscriptionRegistrationHandle?.close()
                     subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                     it.start()
                 }

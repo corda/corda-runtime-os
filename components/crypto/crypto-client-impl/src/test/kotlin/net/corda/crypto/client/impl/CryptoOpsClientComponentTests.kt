@@ -71,7 +71,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -1088,7 +1088,7 @@ class CryptoOpsClientComponentTests {
             kotlin.test.assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
-        Mockito.verify(sender, times(1)).stop()
+        Mockito.verify(sender, times(1)).close()
     }
 
     @Test
@@ -1116,6 +1116,6 @@ class CryptoOpsClientComponentTests {
         }
         assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.ops)
-        Mockito.verify(sender, atLeast(1)).stop()
+        Mockito.verify(sender, atLeast(1)).close()
     }
 }
