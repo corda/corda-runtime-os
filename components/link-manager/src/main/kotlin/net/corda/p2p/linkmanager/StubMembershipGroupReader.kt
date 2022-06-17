@@ -12,7 +12,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap

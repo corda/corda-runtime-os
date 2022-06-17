@@ -52,12 +52,14 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
             throw CordaRuntimeException("Must provide membership configuration in order to start the subscriptions.")
         }
 
-        override fun stop() = subscriptions.forEach { it?.stop() }
+        override fun stop() = subscriptions.forEach { it?.close() }
 
         /**
          * Start the member list subscription.
          */
         private fun startMemberListSubscription(config: SmartConfig) {
+            memberListSubscription?.close()
+
             val subscriptionConfig = SubscriptionConfig(
                 CONSUMER_GROUP,
                 MEMBER_LIST_TOPIC
@@ -71,7 +73,6 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
                 config
             ).apply {
                 start()
-                memberListSubscription?.close()
                 memberListSubscription = this
             }
         }

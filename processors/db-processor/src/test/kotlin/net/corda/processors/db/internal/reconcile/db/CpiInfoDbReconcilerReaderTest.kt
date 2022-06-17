@@ -26,6 +26,7 @@ import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 import kotlin.streams.toList
+import net.corda.libs.cpi.datamodel.CpkKey
 
 class CpiInfoDbReconcilerReaderTest {
     private val random = Random(0)
@@ -66,9 +67,7 @@ class CpiInfoDbReconcilerReaderTest {
 
     private val dummyCpk =
         CpkMetadataEntity(
-            "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
-            "test-cpk",
-            "2.3.4",
+            CpkKey("test-cpk", "2.3.4", "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90"),
             "SHA-256:98AF8725385586B41FEFF205B4E05A000823F78B5F8F5C02439CE8F67A781D90",
             "1.0",
             dummyCpkMetadata.toJsonAvro(),
@@ -91,9 +90,12 @@ class CpiInfoDbReconcilerReaderTest {
                     "test-cpi",
                     "1.2.3",
                     "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA",
-                    it.cpkFileChecksum
+                    it.id.cpkName,
+                    it.id.cpkVersion,
+                    it.id.cpkSignerSummaryHash
                 ),
-                "${it.cpkName}.cpk",
+                "${it.id.cpkName}.cpk",
+                it.cpkFileChecksum,
                 it
             ) }.toSet() }
         }

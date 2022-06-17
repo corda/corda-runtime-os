@@ -5,7 +5,6 @@ package net.corda.applications.flowworker.setup.tasks
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.chunking.ChunkWriterFactory
-import net.corda.chunking.ChunkWriterFactory.SUGGESTED_CHUNK_SIZE
 import net.corda.chunking.toAvro
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.packaging.Cpi
@@ -60,7 +59,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
 
         cpiList.flatMap { it.cpks }.map { cpk ->
             val cpkChecksum = cpk.metadata.fileChecksum
-            val chunkWriter = ChunkWriterFactory.create(SUGGESTED_CHUNK_SIZE)
+            val chunkWriter = ChunkWriterFactory.create(972800)
             chunkWriter.onChunk { chunk ->
                 val cpkChunkId = CpkChunkId(cpkChecksum.toAvro(), chunk.partNumber)
                 context.publish(Record(Schemas.VirtualNode.CPK_FILE_TOPIC, cpkChunkId, chunk))

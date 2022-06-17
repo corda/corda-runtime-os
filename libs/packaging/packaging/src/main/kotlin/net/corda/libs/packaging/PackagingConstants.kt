@@ -25,7 +25,7 @@ object PackagingConstants {
     const val CPB_NAME_ATTRIBUTE = "Corda-CPB-Name"
     const val CPB_VERSION_ATTRIBUTE = "Corda-CPB-Version"
 
-    const val CPI_GROUP_POLICY_ENTRY = "$META_INF_FOLDER/GroupPolicy.json"
+    const val CPI_GROUP_POLICY_ENTRY = "GroupPolicy.json"
     const val CPI_FORMAT_ATTRIBUTE = "Corda-CPI-Format"
     const val CPI_NAME_ATTRIBUTE = "Corda-CPI-Name"
     const val CPI_VERSION_ATTRIBUTE = "Corda-CPI-Version"

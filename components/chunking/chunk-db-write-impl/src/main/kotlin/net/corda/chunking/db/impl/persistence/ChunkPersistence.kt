@@ -3,6 +3,7 @@ package net.corda.chunking.db.impl.persistence
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.data.chunking.Chunk
+import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.v5.crypto.SecureHash
 
@@ -68,7 +69,7 @@ interface ChunkPersistence {
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String
-    )
+    ): CpiMetadataEntity
 
     /**
      * When CPI has previously been saved, delete all the stale data and update in place.
@@ -84,7 +85,7 @@ interface ChunkPersistence {
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String)
+        groupId: String): CpiMetadataEntity
 
     /** Get the group id for a given CPI */
     fun getGroupId(cpiName: String, cpiVersion: String, signerSummaryHash: String): String?

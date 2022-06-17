@@ -46,7 +46,7 @@ class CpiValidatorImpl(
         }
 
         publisher.update(requestId, "Persisting CPI")
-        validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
+        val cpiMetadataEntity = validationFunctions.persistToDatabase(persistence, cpi, fileInfo, requestId)
 
         publisher.update(requestId, "Notifying flow workers")
         val timestamp = Instant.now()
@@ -55,8 +55,7 @@ class CpiValidatorImpl(
             fileInfo.checksum,
             cpi.cpks.map { it.metadata },
             cpi.metadata.groupPolicy,
-            // TODO the below version should be populated from the DB as per https://r3-cev.atlassian.net/browse/CORE-4890
-            version = 0,
+            version = cpiMetadataEntity.entityVersion,
             timestamp
         )
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)

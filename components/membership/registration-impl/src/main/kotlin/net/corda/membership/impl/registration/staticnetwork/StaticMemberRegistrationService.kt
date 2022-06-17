@@ -37,7 +37,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
-import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -80,6 +80,9 @@ class StaticMemberRegistrationService @Activate constructor(
         private val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
         private val endpointProtocolIdentifier = ENDPOINT_PROTOCOL.substringBefore("-")
     }
+
+    private val DUMMY_CERTIFICATE = this::class.java.getResource("/static_network_dummy_certificate.pem")!!.readText()
+    private val DUMMY_PUBLIC_SESSION_KEY = this::class.java.getResource("/static_network_dummy_session_key.pem")!!.readText()
 
     // Handler for lifecycle events
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
@@ -203,18 +206,20 @@ class StaticMemberRegistrationService @Activate constructor(
         val memberId = registeringMember.id
         val groupId = groupPolicy.groupId
 
+        /**
+         * In the case of a static network, we do not need any TLS certificates or session initiation keys as communication will be purely
+         * internal within the cluster. For this reason, we pass through a set of "dummy" certificates/keys.
+         */
         val hostedIdentity = HostedIdentityEntry(
             net.corda.data.identity.HoldingIdentity(memberName, groupId),
             memberId,
             memberId,
-            // we don't have certs yet
-            listOf(""),
-            // and we don't have the session initiation public key
-            ""
+            listOf(DUMMY_CERTIFICATE),
+            DUMMY_PUBLIC_SESSION_KEY
         )
 
         return Record(
-            HOSTED_MAP_TOPIC,
+            P2P_HOSTED_IDENTITIES_TOPIC,
             "$memberName-$groupId",
             hostedIdentity
 
