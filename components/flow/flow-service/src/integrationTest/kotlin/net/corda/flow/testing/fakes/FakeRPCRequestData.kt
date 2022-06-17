@@ -11,4 +11,8 @@ class FakeRPCRequestData: RPCRequestData {
     override fun <T> getRequestBodyAs(marshallingService: MarshallingService, clazz: Class<T>): T {
         TODO("Not yet implemented")
     }
+
+    override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
+        TODO("Not yet implemented")
+    }
 }

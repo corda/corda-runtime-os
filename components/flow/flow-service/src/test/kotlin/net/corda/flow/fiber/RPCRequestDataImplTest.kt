@@ -6,6 +6,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.application.flows.getRequestBodyAs
+import net.corda.v5.application.flows.getRequestBodyAsList
 import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -16,18 +17,28 @@ class RPCRequestDataImplTest {
 
     private companion object {
         private const val TEST_START_ARGS = "{\"foo\":\"bar\"}"
+        private const val LIST_START_ARGS = "[{\"foo\":\"bar\"},{\"foo\":\"baz\"}]"
     }
 
     @Test
     fun `rpc request data is retrieved when getRequestBody is called`() {
-        val requestData = RPCRequestDataImpl(setupStartArgs())
+        val requestData = RPCRequestDataImpl(setupStartArgs(TEST_START_ARGS))
         assertEquals(TEST_START_ARGS, requestData.getRequestBody())
     }
 
     @Test
     fun `rpc request data can marshal request body to a type`() {
-        val requestData = RPCRequestDataImpl(setupStartArgs())
+        val requestData = RPCRequestDataImpl(setupStartArgs(TEST_START_ARGS))
         assertEquals(TestData("bar"), requestData.getRequestBodyAs<TestData>(TestMarshallingService()))
+    }
+
+    @Test
+    fun `rpc request data can marshal request body to a list of types`() {
+        val requestData = RPCRequestDataImpl(setupStartArgs(LIST_START_ARGS))
+        assertEquals(
+            listOf(TestData("bar"), TestData("baz")),
+            requestData.getRequestBodyAsList<TestData>(TestMarshallingService())
+        )
     }
 
 
@@ -35,6 +46,7 @@ class RPCRequestDataImplTest {
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
+
         override fun format(data: Any): String {
             throw NotImplementedError()
         }
@@ -44,18 +56,21 @@ class RPCRequestDataImplTest {
         }
 
         override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
-            throw NotImplementedError()
+            return objectMapper.readValue(
+                input,
+                objectMapper.typeFactory.constructCollectionType(List::class.java, clazz)
+            )
         }
     }
 
     private data class TestData(val foo: String)
 
-    private fun setupStartArgs(): FlowFiberService {
+    private fun setupStartArgs(args: String): FlowFiberService {
         val fiberService = mock<FlowFiberService>()
         val fiber = mock<FlowFiber>()
         val checkpoint = mock<FlowCheckpoint>()
         val startContext = FlowStartContext().apply {
-            startArgs = "{\"foo\":\"bar\"}"
+            startArgs = args
         }
         whenever(checkpoint.flowStartContext).thenReturn(startContext)
         val holdingIdentity = HoldingIdentity().apply {

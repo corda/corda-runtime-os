@@ -22,6 +22,10 @@ class RPCRequestDataImpl(private val fiberService: FlowFiberService) : RPCReques
         return marshallingService.parse(getRequestBody(), clazz)
     }
 
+    override fun <T> getRequestBodyAsList(marshallingService: MarshallingService, clazz: Class<T>): List<T> {
+        return marshallingService.parseList(getRequestBody(), clazz)
+    }
+
     override fun toString(): String {
         // Truncate the JSON object to ensure that we don't try and write too much data into logs.
         return "RPCRequestData(input=${getRequestBody().take(MAX_STRING_LENGTH)})"
