@@ -122,6 +122,8 @@ internal class MerkleTreeImpl(
     override fun createAuditProof(leafIndices: List<Int>): MerkleProof {
         require(leafIndices.isNotEmpty()) { "Proof requires at least one leaf" }
         require(leafIndices.all { it >= 0 && it < leaves.size }) { "Leaf indices out of bounds" }
+        require(leafIndices.toSet().size == leafIndices.size) {"Duplications are not allowed."}
+
         var inPath = List(leaves.size) { it in leafIndices }    // Initialize inPath with the input elements
         val outputHashes = mutableListOf<SecureHash>()
         var level = 0
