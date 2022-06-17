@@ -89,6 +89,7 @@ class CordaTransactionalDBProducerImpl(
     private fun doSendRecordsToTopicAndDB(
         dbRecords: List<TopicRecordEntry>
     ) {
+        log.info ( "Writing record $dbRecords" )
         dbAccess.writeRecords(dbRecords)
     }
 
@@ -123,6 +124,7 @@ class CordaTransactionalDBProducerImpl(
                         )
                     }
 
+                log.info ( "Send offsets to transaction $offsets" )
                 dbAccess.writeOffsets(offsets)
             }
     }
@@ -140,6 +142,7 @@ class CordaTransactionalDBProducerImpl(
                 transaction
             )
         }
+        log.info ( "Send all offsets to transaction $offsets" )
         dbAccess.writeOffsets(offsets)
     }
 

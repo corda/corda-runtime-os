@@ -44,7 +44,12 @@ class TopicRecordEntry(
     val transactionId: TransactionRecordEntry,
     @Column
     val timestamp: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
-)
+) {
+    @Suppress("MaxLineLength")
+    override fun toString(): String {
+        return "TopicRecordEntry(topic='$topic', partition=$partition, recordOffset=$recordOffset, key=${key.decodeToString()}, transactionId=$transactionId, timestamp=$timestamp)"
+    }
+}
 
 @Embeddable
 data class TopicRecordEntryKey(

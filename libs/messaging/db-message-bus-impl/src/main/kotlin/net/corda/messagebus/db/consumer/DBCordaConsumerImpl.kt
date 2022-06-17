@@ -126,6 +126,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         val result = dbRecords.takeWhile {
             it.transactionId.state == TransactionState.COMMITTED
         }.map { dbRecord ->
+            log.info("Read records: $dbRecord")
             CordaConsumerRecord(
                 dbRecord.topic,
                 dbRecord.partition,
@@ -158,7 +159,9 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                     event.partition,
                     event.offset,
                     ATOMIC_TRANSACTION,
-                )
+                ).also {
+                    log.info ( "Commit sync offsets $it" )
+                }
             )
         )
     }
