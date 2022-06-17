@@ -115,7 +115,12 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         val context = exception.getFlowContext()
         val checkpoint = context.checkpoint
 
-        checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message ?: "")
+        /**
+         * the exception message can't be null, we can remove the !! as
+         * part of this ticket:
+         * https://r3-cev.atlassian.net/browse/CORE-5170
+         */
+        checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message!!)
         checkpoint.waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
 
         val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
@@ -125,6 +130,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private fun FlowProcessingException.getFlowContext(): FlowEventContext<*> {
         /** Hack: the !! is temporary , for now we are leaving the FlowProcessingException with an optional flow event
          *  context this can be changed once all the exception handling is implemented.
+         *  https://r3-cev.atlassian.net/browse/CORE-5170
          */
         return flowEventContext!!
     }

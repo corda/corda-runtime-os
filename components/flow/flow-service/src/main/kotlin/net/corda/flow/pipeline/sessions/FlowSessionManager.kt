@@ -146,7 +146,7 @@ interface FlowSessionManager {
     fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
 
     /**
-     * Checks the sessions to ensure they are in valid state for communication with a peer
+     * Checks the sessions to ensure they are in valid state for sending data to a peer
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionIds The session ids to check the status of.
