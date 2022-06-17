@@ -8,7 +8,7 @@ import java.io.InputStream
 /**
  * DB Change Log for all CPKs for a Virtual Node, as used by Liquibase during VNode creation.
  *
- * @property changeLogs map of Change Log Entities per CPK
+ * @property changeLogs list of all [CpkDbChangeLogEntity] for all CPKs to be DB migrated.
  * @constructor Create empty Virtual node db change log
  */
 class VirtualNodeDbChangeLog(
