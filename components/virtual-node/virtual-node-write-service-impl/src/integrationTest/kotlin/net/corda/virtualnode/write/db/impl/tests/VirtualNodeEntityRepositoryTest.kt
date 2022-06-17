@@ -19,7 +19,7 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.write.db.impl.writer.CPIMetadata
+import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import org.assertj.core.api.Assertions
@@ -78,7 +78,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.create(signerSummaryHash))
-        val expectedCpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
+        val expectedCpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
@@ -278,7 +278,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.create(signerSummaryHash))
-        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
+        val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = HoldingIdentity("X500 Name 4", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
@@ -301,7 +301,7 @@ internal class VirtualNodeEntityRepositoryTest {
             )
         }
         val virtualNodeEntity =
-            VirtualNodeEntity(holdingIdentity.id, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
+            VirtualNodeEntity(holdingIdentityEntity, cpiId.name, cpiId.version, cpiId.signerSummaryHash.toString())
 
         entityManagerFactory.transaction {
             it.persist(cpiMetadataEntity)
@@ -322,7 +322,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
         val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.create(signerSummaryHash))
-        val cpiMetadata = CPIMetadata(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
+        val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = HoldingIdentity("X500 Name 5", "Group ID")
 
         val cpiMetadataEntity = with(cpiMetadata) {
@@ -354,14 +354,14 @@ internal class VirtualNodeEntityRepositoryTest {
             repository.putVirtualNode(it, holdingIdentity, cpiId)
         }
 
-        val key = VirtualNodeEntityKey(holdingIdentity.id, cpiId.name, cpiId.version, signerSummaryHash)
+        val key = VirtualNodeEntityKey(holdingIdentityEntity, cpiId.name, cpiId.version, signerSummaryHash)
         val virtualNodeEntity = entityManagerFactory.transaction {
             it.find(VirtualNodeEntity::class.java, key)
         }
 
         Assertions.assertThat(virtualNodeEntity).isNotNull
         with(virtualNodeEntity) {
-            Assertions.assertThat(holdingIdentityId).isEqualTo(holdingIdentity.id)
+            Assertions.assertThat(holdingIdentityEntity.holdingIdentityId).isEqualTo(holdingIdentity.id)
             Assertions.assertThat(cpiName).isEqualTo(cpiId.name)
             Assertions.assertThat(cpiVersion).isEqualTo(cpiId.version)
             Assertions.assertThat(cpiSignerSummaryHash).isEqualTo(signerSummaryHash)

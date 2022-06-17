@@ -3,6 +3,7 @@ package net.corda.virtualnode.read.fake
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import java.time.Instant
 import java.util.*
 
 object TestCatalogue {
@@ -33,7 +34,8 @@ object TestCatalogue {
                 identity,
                 cpiId,
                 cryptoDmlConnectionId = UUID.randomUUID(),
-                vaultDmlConnectionId = UUID.randomUUID()
+                vaultDmlConnectionId = UUID.randomUUID(),
+                timestamp = Instant.now()
             )
         }
     }
