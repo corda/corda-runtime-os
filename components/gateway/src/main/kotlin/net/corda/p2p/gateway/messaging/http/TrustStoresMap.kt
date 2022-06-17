@@ -109,7 +109,7 @@ internal class TrustStoresMap(
                 logger.info("Trust roots updated for the following groups: ${currentData.keys}")
             } else {
                 groupIdToTrustRoots.remove(newRecord.key)
-                logger.info("Trust roots removed for the following for the following groups: ${currentData.keys}.")
+                logger.info("Trust roots removed for the following groups: ${currentData.keys}.")
             }
         }
     }

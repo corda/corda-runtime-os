@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StopEvent
+import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -16,7 +17,8 @@ import java.util.concurrent.atomic.AtomicReference
  * external signal.
  *
  * @param startTile complete this future to signal that this tile should start. This is a one shot processes i.e. if the Tile starts,
- * then stops and then starts again, there is no way to delay the Tile starting for the second time.
+ * then stops and then starts again, there is no way to delay the Tile starting for the second time. If the future completes exceptionally
+ * then the tile will error, there is no way to recover from this state.
  */
 class BlockingDominoTile(componentName: String,
                          coordinatorFactory: LifecycleCoordinatorFactory,
@@ -24,6 +26,7 @@ class BlockingDominoTile(componentName: String,
 ): DominoTile() {
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
+        private val logger = contextLogger()
     }
 
     override val coordinatorName: LifecycleCoordinatorName by lazy {
@@ -73,6 +76,7 @@ class BlockingDominoTile(componentName: String,
                 is AsynchronousException -> {
                     if (currentInternalState != LifecycleStatus.ERROR) {
                         internalState.set(LifecycleStatus.ERROR)
+                        logger.error("Asynchronous error when starting tile $coordinatorName:", event.exception)
                         coordinator.updateStatus(LifecycleStatus.ERROR, event.exception.toString())
                     }
                 }
