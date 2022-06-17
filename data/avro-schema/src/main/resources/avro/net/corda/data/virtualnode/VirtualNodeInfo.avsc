@@ -35,6 +35,18 @@
       "name": "hsmConnectionId",
       "type": ["null", "string"],
       "doc": "ID of HSM connection. Null value means that HSM is not used."
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
     }
   ]
 }

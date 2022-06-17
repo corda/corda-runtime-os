@@ -6,4 +6,5 @@ object ReconciliationConfig {
         const val RECONCILIATION_CPK_WRITE_INTERVAL_MS = "cpkWriteIntervalMs"
         const val RECONCILIATION_CPI_INFO_INTERVAL_MS = "cpiInfoIntervalMs"
         const val RECONCILIATION_CONFIG_INTERVAL_MS = "configIntervalMs"
+        const val RECONCILIATION_VNODE_INFO_INTERVAL_MS ="vnodeInfoIntervalMs"
 }

@@ -24,6 +24,12 @@
       "minimum": 5000,
       "default": 30000
     },
+    "vnodeInfoIntervalMs": {
+      "description": "",
+      "type": "integer",
+      "minimum": 5000,
+      "default": 30000
+    },
     "configIntervalMs": {
       "description": "",
       "type": "integer",
