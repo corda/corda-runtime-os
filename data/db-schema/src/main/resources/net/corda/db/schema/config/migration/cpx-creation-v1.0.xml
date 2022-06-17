@@ -176,9 +176,6 @@
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 
-        <addUniqueConstraint tableName="cpk_db_change_log" columnNames="cpk_file_checksum" constraintName="db_cpk_db_change_log_uc1"
-                             schemaName="${schema.name}"/>
-
         <createTable tableName="cpi_cpk" schemaName="${schema.name}">
             <column name="cpi_name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
