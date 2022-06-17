@@ -11,7 +11,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class EntityResponseHandlerTest {
 
@@ -32,12 +31,12 @@ class EntityResponseHandlerTest {
         val instant = Instant.now()
         val persistenceState = PersistenceState("request1", instant, EntityRequest(), 0, null)
         val response = EntityResponse(instant, "request1", EntityResponseSuccess())
-        val (mockDbManager, mockContext) = mockPersistenceManagerAndStubContext(response, persistenceState)
+        val (mockDbManager, stubContext) = mockPersistenceManagerAndStubContext(response, persistenceState)
 
-        whenever(mockContext.inputEventPayload).thenReturn(response)
+        stubContext.inputEventPayload = response
 
         val entityResponseHandler = EntityResponseHandler(mockDbManager)
-        entityResponseHandler.preProcess(mockContext)
+        entityResponseHandler.preProcess(stubContext)
 
         verify(mockDbManager, times(1)).processMessageReceived(any(), any())
 
