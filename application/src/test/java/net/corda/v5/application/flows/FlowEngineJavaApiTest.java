@@ -30,7 +30,7 @@ public class FlowEngineJavaApiTest {
     @Test
     public void subFlow() {
         @SuppressWarnings("unchecked")
-        SubFlow<Object> flow = mock(SubFlow.class);
+        Flow<Object> flow = mock(Flow.class);
         doReturn(Object.class).when(flowEngine).subFlow(flow);
 
         Object result = flowEngine.subFlow(flow);

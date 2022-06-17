@@ -2,7 +2,7 @@ package net.corda.v5.ledger.notary
 
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.ledger.crypto.TransactionDigestAlgorithmNamesFactory
@@ -39,7 +39,7 @@ abstract class NotaryService : SingletonSerializeAsToken {
      * Produces a notary service flow which has the corresponding sends and receives as [NotaryClientFlow][net.corda.systemflows.NotaryClientFlow].
      * @param otherPartySession client [Party] making the request
      */
-    abstract fun createServiceFlow(otherPartySession: FlowSession): ResponderFlow
+    abstract fun createServiceFlow(otherPartySession: FlowSession): Flow<Void?>
 
     /**
      * Processes a [Query.Request] and returns a [Query.Result].

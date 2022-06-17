@@ -28,11 +28,11 @@ interface FlowEngine {
      * the existing sessions this flow has created with its counterparties. This allows for subflows which can act as
      * building blocks for other flows, for example removing the boilerplate of common sequences of sends and receives.
      *
-     * @throws FlowException This is either thrown by [subFlow] itself or propagated from any of the remote
+     * @throws FlowException This is either thrown by [subLogic] itself or propagated from any of the remote
      * [Flow]s it communicated with. The subflow can be retried by catching this exception.
      */
     @Suspendable
-    fun <R> subFlow(subFlow: SubFlow<R>): R
+    fun <R> subFlow(subLogic: Flow<R>): R
 
     /**
      * Suspends the flow and only wakes it up after at least [duration] time has passed.
