@@ -36,11 +36,15 @@ class RPCRequestDataImplTest {
             registerModule(KotlinModule.Builder().build())
         }
         override fun format(data: Any): String {
-            TODO("Not yet implemented")
+            throw NotImplementedError()
         }
 
         override fun <T> parse(input: String, clazz: Class<T>): T {
             return objectMapper.readValue(input, clazz)
+        }
+
+        override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
+            throw NotImplementedError()
         }
     }
 
