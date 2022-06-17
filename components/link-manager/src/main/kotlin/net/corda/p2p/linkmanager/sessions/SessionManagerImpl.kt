@@ -147,9 +147,8 @@ internal class SessionManagerImpl(
             pendingOutboundSessionMessageQueues.dominoTile.coordinatorName, publisher.dominoTile.coordinatorName,
             linkManagerHostingMap.dominoTile.coordinatorName, inboundAssignmentListener.dominoTile.coordinatorName,
         ),
-        managedChildren = setOf(heartbeatManager.dominoTile.toLifecycleWithCoordinatorName(),
-            sessionReplayer.dominoTile.toLifecycleWithCoordinatorName(),
-            publisher.dominoTile.toLifecycleWithCoordinatorName()),
+        managedChildren = setOf(heartbeatManager.dominoTile.toNamedLifecycle(), sessionReplayer.dominoTile.toNamedLifecycle(),
+            publisher.dominoTile.toNamedLifecycle()),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
@@ -738,7 +737,7 @@ internal class SessionManagerImpl(
                 members.dominoTile.coordinatorName,
                 publisher.dominoTile.coordinatorName
             ),
-            managedChildren = setOf(publisher.dominoTile.toLifecycleWithCoordinatorName()),
+            managedChildren = setOf(publisher.dominoTile.toNamedLifecycle()),
             configurationChangeHandler = HeartbeatManagerConfigChangeHandler(),
         )
 

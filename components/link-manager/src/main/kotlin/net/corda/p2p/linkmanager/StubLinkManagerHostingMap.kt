@@ -54,7 +54,7 @@ internal class StubLinkManagerHostingMap(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName),
-        managedChildren = setOf(subscriptionTile.toLifecycleWithCoordinatorName(), blockingTile.toLifecycleWithCoordinatorName())
+        managedChildren = setOf(subscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
 

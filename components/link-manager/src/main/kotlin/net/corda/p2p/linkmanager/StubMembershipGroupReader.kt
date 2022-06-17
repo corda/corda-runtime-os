@@ -81,7 +81,7 @@ internal class StubMembershipGroupReader(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(subscriptionTile.coordinatorName, blockingTile.coordinatorName),
-        managedChildren = setOf(subscriptionTile.toLifecycleWithCoordinatorName(), blockingTile.toLifecycleWithCoordinatorName())
+        managedChildren = setOf(subscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
     private val membersInformation = ConcurrentHashMap<HoldingIdentity, LinkManagerMembershipGroupReader.MemberInfo>()

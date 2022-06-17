@@ -70,7 +70,7 @@ class DeliveryTrackerTest {
 
     private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
         val mockDominoTile = mock<ComplexDominoTile> {
-            whenever(it.toLifecycleWithCoordinatorName()).thenReturn(mock())
+            whenever(it.toNamedLifecycle()).thenReturn(mock())
         }
         whenever(mock.dominoTile).thenReturn(mockDominoTile)
     }

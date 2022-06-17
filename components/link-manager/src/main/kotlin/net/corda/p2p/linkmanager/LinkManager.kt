@@ -87,9 +87,9 @@ class LinkManager(
             inboundLinkManager.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
-            commonComponents.dominoTile.toLifecycleWithCoordinatorName(),
-            outboundLinkManager.dominoTile.toLifecycleWithCoordinatorName(),
-            inboundLinkManager.dominoTile.toLifecycleWithCoordinatorName(),
+            commonComponents.dominoTile.toNamedLifecycle(),
+            outboundLinkManager.dominoTile.toNamedLifecycle(),
+            inboundLinkManager.dominoTile.toNamedLifecycle(),
         )
     )
 }

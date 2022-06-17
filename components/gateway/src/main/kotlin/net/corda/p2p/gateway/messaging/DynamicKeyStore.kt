@@ -80,9 +80,9 @@ internal class DynamicKeyStore(
             blockingDominoTile.coordinatorName
         ),
         managedChildren = listOf(
-            subscriptionTile.toLifecycleWithCoordinatorName(),
-            signer.dominoTile.toLifecycleWithCoordinatorName(),
-            blockingDominoTile.toLifecycleWithCoordinatorName()
+            subscriptionTile.toNamedLifecycle(),
+            signer.dominoTile.toNamedLifecycle(),
+            blockingDominoTile.toNamedLifecycle()
         ),
     )
 

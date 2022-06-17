@@ -70,9 +70,9 @@ internal class TrustStoresPublisher(
         lifecycleCoordinatorFactory,
         onStart = ::onStart,
         managedChildren = listOf(
-            publisher.dominoTile.toLifecycleWithCoordinatorName(),
-            subscriptionTile.toLifecycleWithCoordinatorName(),
-            blockingDominoTile.toLifecycleWithCoordinatorName()
+            publisher.dominoTile.toNamedLifecycle(),
+            subscriptionTile.toNamedLifecycle(),
+            blockingDominoTile.toNamedLifecycle()
         ),
         dependentChildren = listOf(
             publisher.dominoTile.coordinatorName,

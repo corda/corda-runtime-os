@@ -58,7 +58,7 @@ class BlockingDominoTile(componentName: String,
         }
     }
 
-    override val managedChildren: Collection<LifecycleWithCoordinatorName> = emptyList()
+    override val managedChildren: Collection<NamedLifecycle> = emptyList()
 
     private object AsynchronousReady : LifecycleEvent
     private data class AsynchronousException(val exception: Throwable) : LifecycleEvent

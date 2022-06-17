@@ -43,7 +43,7 @@ internal class InboundLinkManager(
             members.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            commonComponents.inboundAssignmentListener.dominoTile.toLifecycleWithCoordinatorName(),
+            commonComponents.inboundAssignmentListener.dominoTile.toNamedLifecycle(),
         )
     )
 }

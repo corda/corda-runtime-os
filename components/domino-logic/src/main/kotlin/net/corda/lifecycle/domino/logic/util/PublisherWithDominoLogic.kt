@@ -12,7 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithCoordinatorName
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -43,7 +43,7 @@ class PublisherWithDominoLogic(
         override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
         override val dependentChildren: Collection<LifecycleCoordinatorName> = emptySet()
-        override val managedChildren: Collection<LifecycleWithCoordinatorName> = emptySet()
+        override val managedChildren: Collection<NamedLifecycle> = emptySet()
 
         override fun close() {
             coordinator.postEvent(StopEvent())

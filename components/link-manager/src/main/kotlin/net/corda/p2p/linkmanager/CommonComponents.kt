@@ -82,14 +82,14 @@ internal class CommonComponents(
             tlsCertificatesPublisher.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            groups.dominoTile.toLifecycleWithCoordinatorName(),
-            members.dominoTile.toLifecycleWithCoordinatorName(),
-            linkManagerHostingMap.dominoTile.toLifecycleWithCoordinatorName(),
-            linkManagerCryptoProcessor.dominoTile.toLifecycleWithCoordinatorName(),
-            messagesPendingSession.dominoTile.toLifecycleWithCoordinatorName(),
-            sessionManager.dominoTile.toLifecycleWithCoordinatorName(),
-            trustStoresPublisher.dominoTile.toLifecycleWithCoordinatorName(),
-            tlsCertificatesPublisher.dominoTile.toLifecycleWithCoordinatorName(),
+            groups.dominoTile.toNamedLifecycle(),
+            members.dominoTile.toNamedLifecycle(),
+            linkManagerHostingMap.dominoTile.toNamedLifecycle(),
+            linkManagerCryptoProcessor.dominoTile.toNamedLifecycle(),
+            messagesPendingSession.dominoTile.toNamedLifecycle(),
+            sessionManager.dominoTile.toNamedLifecycle(),
+            trustStoresPublisher.dominoTile.toNamedLifecycle(),
+            tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
         )
     )
 }
