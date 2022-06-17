@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl.internal
 
 import io.javalin.http.Context
 import io.javalin.http.util.ContextUtil
+import io.javalin.plugin.json.jsonMapper
 import net.corda.httprpc.HttpFileUpload
 import net.corda.v5.base.util.contextLogger
 
@@ -62,5 +63,9 @@ internal class ParametersRetrieverContext(private val ctx: Context) {
     fun uploadedFiles(paramName: String): List<HttpFileUpload> {
         val files = ctx.uploadedFiles(paramName)
         return files.map { file -> HttpFileUpload(file.content, file.contentType, file.extension, file.filename, file.size) }
+    }
+
+    fun <T> fromJsonString(json: String, targetClass: Class<T>): T {
+        return ctx.jsonMapper().fromJsonString(json, targetClass)
     }
 }

@@ -7,6 +7,7 @@ description 'Utilities'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
