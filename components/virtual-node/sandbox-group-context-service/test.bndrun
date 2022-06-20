@@ -28,6 +28,7 @@
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
+    bnd.identity;id='net.corda.virtual-node-testing',\
     bnd.identity;id='sandbox-group-context-service-tests',\
     bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='org.apache.felix.framework.security',\

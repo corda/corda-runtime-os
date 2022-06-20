@@ -37,6 +37,8 @@ dependencies {
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
     integrationTestImplementation project(':components:virtual-node:entity-processor-service-impl')
 
+    testImplementation(testFixtures(project(':components:virtual-node:sandbox-group-context-service')))
+
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

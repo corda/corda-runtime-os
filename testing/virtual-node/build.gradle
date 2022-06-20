@@ -1,0 +1,43 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Helpers for testing virtual node functionality'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    api project(':libs:sandbox')
+    api project(':components:virtual-node:sandbox-group-context-service')
+    api project(':libs:virtual-node:virtual-node-info')
+    api project(':libs:virtual-node:sandbox-group-context')
+    api project(':libs:packaging:packaging')
+    api project(':testing:sandboxes')
+    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(':components:membership:membership-group-read')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:cpk-read-service')
+
+    implementation project(':libs:packaging:packaging-core')
+
+    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    runtimeOnly project(':libs:sandbox-internal')
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Bundle-SymbolicName: \${project.group}.virtual-node-testing
+'''
+    }
+}
