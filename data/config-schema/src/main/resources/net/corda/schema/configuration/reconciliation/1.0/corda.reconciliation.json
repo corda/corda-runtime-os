@@ -16,7 +16,7 @@
       "description": "",
       "type": "integer",
       "minimum": 5000,
-      "default": 30000
+      "default": 10000
     },
     "cpiInfoIntervalMs": {
       "description": "",
