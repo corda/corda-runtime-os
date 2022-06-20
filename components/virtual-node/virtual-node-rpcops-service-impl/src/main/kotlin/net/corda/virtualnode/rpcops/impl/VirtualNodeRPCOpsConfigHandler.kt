@@ -19,6 +19,10 @@ internal class VirtualNodeRPCOpsConfigHandler(
     private val virtualNodeRPCOps: VirtualNodeRPCOpsInternal
 ) : ConfigurationHandler {
 
+    private companion object {
+        val requiredKeys = setOf(MESSAGING_CONFIG, RPC_CONFIG)
+    }
+
     /**
      * When [RPC_CONFIG] configuration is received, updates [virtualNodeRPCOps]'s request timeout and creates and
      * starts [virtualNodeRPCOps]'s RPC sender if the relevant keys are present.
@@ -29,8 +33,12 @@ internal class VirtualNodeRPCOpsConfigHandler(
      * configuration is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (RPC_CONFIG in changedKeys && MESSAGING_CONFIG in changedKeys) processRpcConfig(config)
-        if (virtualNodeRPCOps.isRunning) coordinator.updateStatus(UP)
+        if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
+            processRpcConfig(config)
+        }
+        if (virtualNodeRPCOps.isRunning) {
+            coordinator.updateStatus(UP)
+        }
     }
 
     /**

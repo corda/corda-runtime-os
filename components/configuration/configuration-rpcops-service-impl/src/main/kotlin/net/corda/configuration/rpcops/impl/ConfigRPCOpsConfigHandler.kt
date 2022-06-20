@@ -18,6 +18,10 @@ internal class ConfigRPCOpsConfigHandler(
     private val configRPCOps: ConfigRPCOpsInternal
 ) : ConfigurationHandler {
 
+    private companion object {
+        val requiredKeys = setOf(MESSAGING_CONFIG, RPC_CONFIG)
+    }
+
     /**
      * When [RPC_CONFIG] configuration is received, updates [configRPCOps]'s request timeout and creates and starts
      * [configRPCOps]'s RPC sender if the relevant keys are present.
@@ -28,8 +32,12 @@ internal class ConfigRPCOpsConfigHandler(
      * is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (RPC_CONFIG in changedKeys && MESSAGING_CONFIG in changedKeys) processRPCConfig(config)
-        if (configRPCOps.isRunning) coordinator.updateStatus(UP)
+        if (requiredKeys.all { it in config.keys } and changedKeys.any { it in requiredKeys }) {
+            processRPCConfig(config)
+        }
+        if (configRPCOps.isRunning) {
+            coordinator.updateStatus(UP)
+        }
     }
 
     /**
