@@ -42,13 +42,26 @@ spec:
             - |
                 touch /tmp/working_dir/config.properties
                 {{- if .Values.kafka.tls.enabled }}
+                {{- if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- else }}
                 echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
+                {{- end }}
                 {{- if .Values.kafka.tls.truststore.secretRef.name }}
                 echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/working_dir/config.properties
                 echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/working_dir/config.properties
                 {{- if .Values.kafka.tls.truststore.password }}
                 echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/working_dir/config.properties
                 {{- end }}
+                {{- end }}
+                {{- else }}
+                {{- if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_PLAINTEXT\n" >> /tmp/working_dir/config.properties
+
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
                 {{- end }}
                 {{- end }}
           volumeMounts:
