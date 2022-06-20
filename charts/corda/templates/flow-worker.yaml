@@ -63,7 +63,7 @@ spec:
           httpGet:
             path: /isHealthy
             port: health
-          periodSeconds: 10
+          periodSeconds: 5
           failureThreshold: 20
         {{- end }}
       volumes:
