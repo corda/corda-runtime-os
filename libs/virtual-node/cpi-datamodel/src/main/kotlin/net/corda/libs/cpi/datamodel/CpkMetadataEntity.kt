@@ -29,6 +29,20 @@ data class CpkMetadataEntity(
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
+
+    fun update(
+        fileChecksum: String,
+        formatVersion: String,
+        serializedMetadata: String,
+        isDeleted: Boolean
+    ): CpkMetadataEntity {
+        return this.copy(
+            cpkFileChecksum = fileChecksum,
+            formatVersion = formatVersion,
+            serializedMetadata = serializedMetadata,
+            isDeleted = isDeleted
+        )
+    }
 }
 
 /**

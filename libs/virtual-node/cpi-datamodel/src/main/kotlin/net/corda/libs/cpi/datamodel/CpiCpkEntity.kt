@@ -54,6 +54,19 @@ data class CpiCpkEntity(
     fun onUpdate() {
         insertTimestamp = Instant.now()
     }
+
+    fun update(
+        cpkFileName: String,
+        cpkFileChecksum: String,
+        metadata: CpkMetadataEntity,
+    ): CpiCpkEntity {
+        return this.copy(
+            cpkFileName = cpkFileName,
+            cpkFileChecksum = cpkFileChecksum,
+            metadata = metadata,
+        )
+    }
+
 }
 
 @Embeddable

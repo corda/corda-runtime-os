@@ -28,11 +28,15 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
+import net.corda.libs.cpi.datamodel.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpkKey
+import net.corda.libs.packaging.core.CpkIdentifier
 
 /**
  * This class provides some simple APIs to interact with the database.
  */
+@Suppress("TooManyFunctions")
 class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFactory) : ChunkPersistence {
 
     private companion object {
@@ -229,21 +233,16 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         requestId: RequestId,
         groupId: String
     ): CpiMetadataEntity {
-        val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId)
         entityManagerFactory.createEntityManager().transaction { em ->
-            // persist metadata
+            val cpkMetadataEntities = createOrUpdateCpkMetadataEntities(cpi, findExistingCpiCpks(em, cpi))
+
+            val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpkMetadataEntities)
+            
             val managedCpiMetadataEntity = em.merge(cpiMetadataEntity)
-            // persist file data
-            cpi.cpks.forEach {
-                val cpkChecksum = it.metadata.fileChecksum.toString()
-                em.merge(
-                    CpkFileEntity(
-                        CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
-                        cpkChecksum,
-                        Files.readAllBytes(it.path!!)
-                    )
-                )
-            }
+            
+            val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
+            cpkFileEntities.forEach { em.merge(it) }
+
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
     }
@@ -272,28 +271,20 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 "Cannot find CPI metadata for ${cpiId.name} v${cpiId.version}"
             }
 
+            val cpiCpkEntities = createOrUpdateCpkMetadataEntities(cpi, existingMetadataEntity.cpks.associateBy { it.metadata.id })
+
             val updatedMetadata = existingMetadataEntity.update(
                 fileUploadRequestId = requestId,
                 fileName = cpiFileName,
                 fileChecksum = checksum.toString(),
-                cpks = createCpkMetadata(cpi.cpks),
+                cpks = cpiCpkEntities
             )
 
-            // Perform update
-            //  update metadata
             val cpiMetadataEntity = em.merge(updatedMetadata)
-            //  update file data
-            cpi.cpks.forEach {
-                val cpkChecksum = it.metadata.fileChecksum.toString()
-                // Using `merge` here as exactly the same CPK may already exist
-                em.merge(
-                    CpkFileEntity(
-                        CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
-                        cpkChecksum,
-                        Files.readAllBytes(it.path!!)
-                    )
-                )
-            }
+
+            val cpkFileEntities = createOrUpdateExistingCpkFileEntities(em, cpi.cpks)
+            cpkFileEntities.forEach { em.merge(it) }
+
             return cpiMetadataEntity
         }
     }
@@ -337,12 +328,14 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
      * @param checksum checksum/hash of the CPI
      * @param requestId the requestId originating from the chunk upload
      */
+    @Suppress("LongParameterList")
     private fun createCpiMetadataEntity(
         cpi: Cpi,
         cpiFileName: String,
         checksum: SecureHash,
         requestId: RequestId,
-        groupId: String
+        groupId: String,
+        cpiCpkEntities: List<Pair<String, CpiCpkEntity>>
     ): CpiMetadataEntity {
         val cpiMetadata = cpi.metadata
 
@@ -355,26 +348,108 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
             groupPolicy = cpi.metadata.groupPolicy!!,
             groupId = groupId,
             fileUploadRequestId = requestId,
-            cpks = createCpkMetadata(cpi.cpks)
+            cpks = cpiCpkEntities
         )
     }
 
-    /**
-     * For a given list of CPKs, create the metadata and returns as list of Pairs with the filename.
-     *
-     * @param cpks
-     */
-    private fun createCpkMetadata(cpks: Collection<Cpk>): List<Pair<String, CpkMetadataEntity>> {
-        return cpks.map {
-            val cpkMetadataEntity =
-                // TODO - format version
-                CpkMetadataEntity(
-                    CpkKey(it.metadata.cpkId.name, it.metadata.cpkId.version, it.metadata.cpkId.signerSummaryHash.toString()),
-                    it.metadata.fileChecksum.toString(),
-                    formatVersion = "1",
-                    serializedMetadata = it.metadata.toJsonAvro()
-                )
-            Pair(it.originalFileName!!, cpkMetadataEntity)
+    private fun findExistingCpiCpks(em: EntityManager, cpi: Cpi): Map<CpkKey, CpiCpkEntity> {
+        val query = """
+                FROM ${CpiCpkEntity::class.java.simpleName}
+                WHERE id IN :cpiCpkKeys
+            """.trimIndent()
+        return em.createQuery(query, CpiCpkEntity::class.java)
+            .setParameter("cpiCpkKeys", cpi.getCpiCpkKeys())
+            .resultList.associateBy { it.metadata.id }
+    }
+
+    private fun createOrUpdateCpkMetadataEntities(cpi: Cpi, existingCpks: Map<CpkKey, CpiCpkEntity>): List<Pair<String, CpiCpkEntity>> {
+        return cpi.cpks.map { cpk ->
+            val cpkKey = cpk.metadata.cpkId.toCpkKey()
+            val existingCpiCpkEntity = existingCpks[cpkKey]
+
+            val cpiCpkEntity: CpiCpkEntity = if(existingCpiCpkEntity != null) {
+                updateExistingCpiCpkEntity(existingCpiCpkEntity, cpk)
+            } else {
+                createNewCpiCpkEntity(cpi, cpk, cpkKey)
+            }
+            cpk.originalFileName!! to cpiCpkEntity
         }
+    }
+
+    private fun createNewCpiCpkEntity(
+        cpi: Cpi,
+        cpk: Cpk,
+        cpkKey: CpkKey
+    ) = CpiCpkEntity(
+        CpiCpkKey(
+            cpi.metadata.cpiId.name,
+            cpi.metadata.cpiId.version,
+            cpi.metadata.cpiId.signerSummaryHash.toString(),
+            cpk.metadata.cpkId.name,
+            cpk.metadata.cpkId.version,
+            cpk.metadata.cpkId.signerSummaryHash.toString(),
+        ),
+        cpk.originalFileName!!,
+        cpk.metadata.fileChecksum.toString(),
+        CpkMetadataEntity(
+            cpkKey,
+            cpk.metadata.fileChecksum.toString(),
+            "1",
+            cpk.metadata.toJsonAvro()
+        )
+    )
+
+    private fun updateExistingCpiCpkEntity(
+        existingCpiCpkEntity: CpiCpkEntity,
+        cpk: Cpk
+    ) = existingCpiCpkEntity.update(
+        cpk.originalFileName ?: existingCpiCpkEntity.cpkFileName,
+        cpk.metadata.fileChecksum.toString(),
+        existingCpiCpkEntity.metadata.update(
+            cpk.metadata.fileChecksum.toString(),
+            "1",
+            cpk.metadata.toJsonAvro(),
+            false
+        )
+    )
+
+    private fun createOrUpdateExistingCpkFileEntities(em: EntityManager, cpks: Collection<Cpk>): List<CpkFileEntity> {
+        val query = """
+                FROM ${CpkFileEntity::class.java.simpleName}
+                WHERE id IN :cpkKeys
+            """.trimIndent()
+
+        val existingCpkFileEntities = em.createQuery(query, CpkFileEntity::class.java)
+            .setParameter("cpkKeys", cpks.map { it.metadata.cpkId.toCpkKey() })
+            .setLockMode(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
+            .resultList.associateBy { it.id }
+
+        return cpks.map { cpk ->
+            val cpkKey = cpk.metadata.cpkId.toCpkKey()
+            val existingCpkFileEntity = existingCpkFileEntities[cpkKey]
+
+            existingCpkFileEntity?.update(
+                cpk.metadata.fileChecksum.toString(),
+                Files.readAllBytes(cpk.path!!)
+            )
+                ?: CpkFileEntity(
+                    cpkKey,
+                    cpk.metadata.fileChecksum.toString(),
+                    Files.readAllBytes(cpk.path!!)
+                )
+        }
+    }
+
+    private fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHash.toString())
+
+    private fun Cpi.getCpiCpkKeys() = this.cpks.map { cpk ->
+        CpiCpkKey(
+            metadata.cpiId.name,
+            metadata.cpiId.version,
+            metadata.cpiId.signerSummaryHash.toString(),
+            cpk.metadata.cpkId.name,
+            cpk.metadata.cpkId.version,
+            cpk.metadata.cpkId.signerSummaryHash.toString()
+        )
     }
 }
