@@ -4,7 +4,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import java.nio.ByteBuffer
 
-abstract class AuthenticatedMessageHandler : MessageHandler {
+internal abstract class AuthenticatedMessageHandler : MessageHandler {
     override fun invoke(header: Any, payload: ByteBuffer): Record<*, *> {
         if (header is AuthenticatedMessageHeader) {
             return invokeAutheticatedMessage(header, payload)

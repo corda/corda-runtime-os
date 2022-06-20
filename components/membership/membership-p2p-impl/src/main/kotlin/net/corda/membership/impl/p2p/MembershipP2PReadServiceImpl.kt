@@ -40,7 +40,7 @@ class MembershipP2PReadServiceImpl @Activate constructor(
 ) : MembershipP2PReadService {
 
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
 
         const val CONSUMER_GROUP = "membership_p2p_read"
     }

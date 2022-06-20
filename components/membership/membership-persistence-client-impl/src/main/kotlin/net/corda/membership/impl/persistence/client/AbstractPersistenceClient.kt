@@ -41,7 +41,7 @@ abstract class AbstractPersistenceClient(
 ) : Lifecycle {
 
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
         const val RPC_TIMEOUT_MS = 10000L
 
         private val clock: Clock = UTCClock()
@@ -66,7 +66,8 @@ abstract class AbstractPersistenceClient(
     )
 
     fun MembershipPersistenceRequest.execute(): MembershipPersistenceResponse {
-        if(rpcSender == null) {
+        val sender = rpcSender
+        if(sender == null) {
             val failureReason = "Persistence client could not send persistence request because the RPC sender has not been initialised."
             logger.warn(failureReason)
             return MembershipPersistenceResponse(
@@ -80,11 +81,12 @@ abstract class AbstractPersistenceClient(
             )
         }
         logger.info("Sending membership persistence RPC request.")
-        val response = rpcSender!!
-            .sendRequest(this)
-            .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
 
-        try {
+        return try {
+            val response = sender
+                .sendRequest(this)
+                .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
+
             with(context) {
                 require(holdingIdentity == response.context.holdingIdentity) {
                     "Holding identity in the response received does not match what was sent in the request."
@@ -99,8 +101,9 @@ abstract class AbstractPersistenceClient(
                     "Response timestamp is before the request timestamp"
                 }
             }
+            response
         } catch (e: IllegalArgumentException) {
-            return MembershipPersistenceResponse(
+            MembershipPersistenceResponse(
                 MembershipResponseContext(
                     context.requestTimestamp,
                     context.requestId,
@@ -110,7 +113,17 @@ abstract class AbstractPersistenceClient(
                 QueryFailedResponse("Invalid response. ${e.message}")
             )
         }
-        return response
+        catch (e: Exception) {
+            MembershipPersistenceResponse(
+                MembershipResponseContext(
+                    context.requestTimestamp,
+                    context.requestId,
+                    clock.instant(),
+                    context.holdingIdentity
+                ),
+                QueryFailedResponse("Exception occurred while sending RPC request. ${e.message}")
+            )
+        }
     }
 
     override val isRunning: Boolean
@@ -145,8 +158,11 @@ abstract class AbstractPersistenceClient(
                     "Component received stop event."
                 )
                 registrationHandle?.close()
+                registrationHandle = null
                 configHandle?.close()
+                configHandle = null
                 rpcSender?.close()
+                rpcSender = null
             }
             is RegistrationStatusChangeEvent -> {
                 logger.info("Handling registration changed event.")

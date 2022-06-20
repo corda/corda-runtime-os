@@ -38,24 +38,25 @@ import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.util.*
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipP2PIntegrationTest {
 
-    companion object {
+    private companion object {
         @InjectService(timeout = 5000)
         lateinit var publisherFactory: PublisherFactory
 
@@ -74,12 +75,12 @@ class MembershipP2PIntegrationTest {
         @InjectService
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
-        private val logger = contextLogger()
+        val logger = contextLogger()
 
-        private const val MEMBER_CONTEXT_KEY = "key"
-        private const val MEMBER_CONTEXT_VALUE = "value"
+        const val MEMBER_CONTEXT_KEY = "key"
+        const val MEMBER_CONTEXT_VALUE = "value"
 
-        private val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
+        val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
             .create(
                 ConfigFactory.parseString(
                     """
@@ -89,10 +90,10 @@ class MembershipP2PIntegrationTest {
                 )
             )
 
-        private lateinit var p2pSender: Publisher
-        private lateinit var registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest>
-        private lateinit var keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
-        private lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
+        lateinit var p2pSender: Publisher
+        lateinit var registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest>
+        lateinit var keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
+        lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
 
         @JvmStatic
         @BeforeAll
@@ -128,7 +129,7 @@ class MembershipP2PIntegrationTest {
 
             eventually {
                 logger.info("Waiting for required services to start...")
-                Assertions.assertEquals(LifecycleStatus.UP, coordinator.status)
+                assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
             }
         }
@@ -143,15 +144,13 @@ class MembershipP2PIntegrationTest {
         val registrationId = UUID.randomUUID().toString()
         val fakeKey = "fakeKey"
         val fakeSig = "fakeSig"
-        val countDownLatch = CountDownLatch(1)
-        var result: Pair<RegistrationState?, Record<String, RegistrationCommand>>? = null
+        val completableResult = CompletableFuture<Pair<RegistrationState?, Record<String, RegistrationCommand>>>()
 
         // Set up subscription to gather results of processing p2p message
         val registrationRequestSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("membership_p2p_test_receiver", REGISTRATION_COMMAND_TOPIC),
             getTestProcessor { s, e ->
-                result = Pair(s, e)
-                countDownLatch.countDown()
+                completableResult.complete(Pair(s, e))
             },
             messagingConfig = bootConfig
         ).also { it.start() }
@@ -184,12 +183,17 @@ class MembershipP2PIntegrationTest {
         )
 
         // Wait for latch to countdown so we know when processing has completed and results have been collected
-        assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue
+        val result = assertDoesNotThrow {
+            completableResult.getOrThrow(Duration.ofSeconds(5))
+        }
         registrationRequestSubscription.close()
         p2pSender.close()
 
         // Assert Results
-        assertThat(sendFuture.size).isEqualTo(1)
+        assertThat(sendFuture).hasSize(1)
+            .allSatisfy {
+                assertThat(it).isCompletedWithValue(Unit)
+            }
         assertThat(sendFuture.single().isDone).isTrue
         assertThat(result).isNotNull
         assertThat(result?.first).isNull()

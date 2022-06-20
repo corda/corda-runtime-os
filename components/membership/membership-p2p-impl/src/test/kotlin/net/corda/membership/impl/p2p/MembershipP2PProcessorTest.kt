@@ -17,7 +17,7 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.virtualnode.toCorda
-import org.junit.jupiter.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -33,7 +33,8 @@ class MembershipP2PProcessorTest {
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
 
     private val memberContext = KeyValuePairList(listOf(KeyValuePair("foo", "bar")))
-    private val testSig = CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer(), KeyValuePairList(emptyList()))
+    private val testSig =
+        CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer(), KeyValuePairList(emptyList()))
     private val registrationRequest = MembershipRegistrationRequest(
         UUID.randomUUID().toString(),
         memberContext.toByteBuffer(),
@@ -55,13 +56,13 @@ class MembershipP2PProcessorTest {
     @Test
     fun `empty input results in empty output`() {
         val result = membershipP2PProcessor.onNext(emptyList())
-        Assertions.assertEquals(0, result.size)
+        assertThat(result).isEmpty()
     }
 
     @Test
     fun `null value in input record results in empty output`() {
         val result = membershipP2PProcessor.onNext(listOf(Record("foo", "bar", null)))
-        Assertions.assertEquals(0, result.size)
+        assertThat(result).isEmpty()
     }
 
     @Test
@@ -73,18 +74,19 @@ class MembershipP2PProcessorTest {
         }
         val result = membershipP2PProcessor.onNext(listOf(Record("foo", "bar", appMessage)))
 
-        Assertions.assertTrue(result.isNotEmpty())
-        Assertions.assertEquals(1, result.size)
-        Assertions.assertEquals(REGISTRATION_COMMAND_TOPIC, result.first().topic)
-        Assertions.assertTrue(result.first().value is RegistrationCommand)
-        Assertions.assertEquals(source.toCorda().id, result.first().key)
+        assertThat(result)
+            .isNotEmpty
+            .hasSize(1)
+        assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+        assertThat(result.first().value).isInstanceOf(RegistrationCommand::class.java)
+        assertThat(result.first().key).isEqualTo(source.toCorda().id)
 
         val value = result.first().value as RegistrationCommand
-        Assertions.assertTrue(value.command is StartRegistration)
+        assertThat(value.command).isInstanceOf(StartRegistration::class.java)
         val command = value.command as StartRegistration
-        Assertions.assertEquals(destination, command.destination)
-        Assertions.assertEquals(source, command.source)
-        Assertions.assertEquals(registrationRequest, command.memberRegistrationRequest)
+        assertThat(command.destination).isEqualTo(destination)
+        assertThat(command.source).isEqualTo(source)
+        assertThat(command.memberRegistrationRequest).isEqualTo(registrationRequest)
     }
 
     @Test
@@ -96,7 +98,7 @@ class MembershipP2PProcessorTest {
         }
         val result = membershipP2PProcessor.onNext(listOf(Record("foo", "bar", appMessage)))
 
-        Assertions.assertTrue(result.isEmpty())
+        assertThat(result).isEmpty()
     }
 
     @Test
@@ -122,7 +124,7 @@ class MembershipP2PProcessorTest {
         }
         val result = membershipP2PProcessor.onNext(listOf(Record("foo", "bar", appMessage)))
 
-        Assertions.assertTrue(result.isEmpty())
+        assertThat(result).isEmpty()
     }
 
     private fun ByteBuffer.asUnauthenticatedAppMessagePayload(subsystem: String = MEMBERSHIP_P2P_SUBSYSTEM): AppMessage {

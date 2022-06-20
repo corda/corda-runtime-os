@@ -11,11 +11,11 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
-class RegistrationRequestHandler(
+internal class RegistrationRequestHandler(
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : UnauthenticatedMessageHandler() {
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
     }
 
     override fun invokeUnautheticatedMessage(
