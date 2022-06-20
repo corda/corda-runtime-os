@@ -1,11 +1,11 @@
 package net.cordapp.testing.calculator
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.flows.SubFlow
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 
-class OutputFormattingFlow(private val result: Int) : Flow<String> {
+class OutputFormattingFlow(private val result: Int) : SubFlow<String> {
 
     private companion object {
         val log = contextLogger()
@@ -16,7 +16,7 @@ class OutputFormattingFlow(private val result: Int) : Flow<String> {
 
     override fun call(): String {
         try {
-            return jsonMarshallingService.formatJson(OutputMessage(result))
+            return jsonMarshallingService.format(OutputMessage(result))
         } catch (e: Exception) {
             log.warn("could not serialise result '$result'")
             throw e

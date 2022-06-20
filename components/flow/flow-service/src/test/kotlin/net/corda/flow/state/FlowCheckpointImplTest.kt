@@ -17,8 +17,8 @@ import net.corda.flow.state.impl.FlowCheckpointImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.SubFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -660,12 +660,12 @@ class FlowCheckpointImplTest {
 }
 
 @InitiatingFlow("valid-example")
-class InitiatingFlowExample : Flow<Unit> {
+class InitiatingFlowExample : SubFlow<Unit> {
     override fun call() {
     }
 }
 
-class NonInitiatingFlowExample : Flow<Unit> {
+class NonInitiatingFlowExample : SubFlow<Unit> {
     override fun call() {
     }
 }

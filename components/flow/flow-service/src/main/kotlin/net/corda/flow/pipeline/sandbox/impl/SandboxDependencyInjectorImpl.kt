@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
@@ -32,7 +33,7 @@ class SandboxDependencyInjectorImpl(
         closeable.close()
     }
 
-    override fun injectServices(flow: Any) {
+    override fun injectServices(flow: Flow) {
 
         val requiredFields = flow::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
