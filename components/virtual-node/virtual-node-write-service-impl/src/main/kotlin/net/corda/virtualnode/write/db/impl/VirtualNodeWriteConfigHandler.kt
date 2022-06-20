@@ -36,10 +36,6 @@ internal class VirtualNodeWriteConfigHandler(
         val msgConfig = config.getConfig(MESSAGING_CONFIG)
 
         if (msgConfig.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {
-            if (eventHandler.virtualNodeWriter != null) throw VirtualNodeWriteServiceException(
-                "An attempt was made to initialise the virtual node writer twice."
-            )
-
             try {
                 eventHandler.virtualNodeWriter = virtualNodeWriterFactory
                     .create(msgConfig)
