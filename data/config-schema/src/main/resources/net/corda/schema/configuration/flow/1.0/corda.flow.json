@@ -4,10 +4,12 @@
   "title": "Corda Flow Configuration Schema",
   "description": "Configuration schema for the flow subsection.",
   "type": "object",
+  "default": {},
   "properties": {
     "processing": {
       "description": "Settings for flow pipeline processing",
       "type": "object",
+      "default": {},
       "properties": {
         "maxRetryAttempts": {
           "description": "The maximum number of retry attempts a transient error will be retried before failing the flow. a value of zero disables retries.",
