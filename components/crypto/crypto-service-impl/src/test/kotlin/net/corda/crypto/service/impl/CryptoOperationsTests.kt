@@ -54,18 +54,14 @@ import java.security.KeyPair
 import java.security.PublicKey
 import java.security.SignatureException
 import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 /**
  * Tests are combined to improve performance as it takes a lot of time to generate keys and considering the number
  * of permutations when especially running tests for customized signature specs (over 70) it makes sense
  * trying to generate keys once and run all related tests
  */
+@Ignore
 class CryptoOperationsTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata

@@ -1,22 +1,30 @@
 package net.corda.cli.plugins.vnode.commands
 
-import net.corda.cli.plugins.vnode.VirtualNodeCliPlugin
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
 import net.corda.httprpc.client.config.HttpRpcClientConfig
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
 
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.reflect.KClass
 
 @Command(
     name = "reset",
-    description = ["to do"]
+    description = ["Upload and overwrite earlier stored CPI record.",
+        "Any sandboxes running an overwritten version of CPI will be purged and optionally",
+        "vault data for the affected Virtual Nodes wiped out."]
 )
 class ResetCommand : Runnable {
 
-    @Option(names = ["-t", "--target"], required = true, description = ["The base address of the server (including port)."])
+    @Option(
+        names = ["-t", "--target"],
+        required = true,
+        description = ["The base address of the server (including port)."]
+    )
     lateinit var targetUrl: String
 
     @Option(names = ["-u", "--user"], description = ["User name"], required = true)
@@ -38,13 +46,41 @@ class ResetCommand : Runnable {
     var wait: Boolean = false
 
     override fun run() {
-        val oldCl = Thread.currentThread().contextClassLoader
-        Thread.currentThread().contextClassLoader = VirtualNodeCliPlugin.classLoader
-        print("running")
+        var virtualNodeMaintenanceResult: String
+        val virtualNodeMaintenance = createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class)
 
-        val client = HttpRpcClient(
+        virtualNodeMaintenance.use {
+            val connection = virtualNodeMaintenance.start()
+            with(connection.proxy) {
+                val cpi = File(cpiFileName)
+                virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
+            }
+        }
+        if (wait) {
+            pollForOKStatus(virtualNodeMaintenanceResult)
+        } else {
+            print(virtualNodeMaintenanceResult)
+        }
+    }
+
+    private fun pollForOKStatus(virtualNodeMaintenanceResult: String) {
+        val cpiUploadClient = createHttpRpcClient(CpiUploadRPCOps::class)
+
+        cpiUploadClient.use {
+            val connection = cpiUploadClient.start()
+            with(connection.proxy) {
+                while (this.status(virtualNodeMaintenanceResult).status != "OK") {
+                    java.lang.Thread.sleep(5000L)
+                }
+            }
+            print("CPI Successfully Uploaded and applied.")
+        }
+    }
+
+    private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
+        return HttpRpcClient(
             baseAddress = "$targetUrl/api/v1/",
-            VirtualNodeMaintenanceRPCOps::class.java,
+            rpcOps.java,
             HttpRpcClientConfig()
                 .enableSSL(useSSL)
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
@@ -52,24 +88,5 @@ class ResetCommand : Runnable {
                 .password(password),
             healthCheckInterval = 500
         )
-
-        client.use {
-            val connection = client.start()
-
-            with(connection.proxy) {
-                val cpi = File(cpiFileName)
-                val result = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name))
-                if(wait) {
-
-                    // polling logic to go here
-
-
-                } else {
-                    print(result.id)
-                }
-            }
-        }
-
-        Thread.currentThread().contextClassLoader = oldCl
     }
 }
