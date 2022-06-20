@@ -46,8 +46,6 @@ class GenerateGroupPolicyTest {
         }.apply {
             val memberList = memberList(this)
             memberList.find { it["name"].asText()=="C=GB, L=London, O=Alice" }.apply {
-                assertEquals("alice-alias", this?.get("keyAlias")?.asText())
-                assertEquals("alice-historic-alias-1", this?.get("rotatedKeyAlias-1")?.asText())
                 assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
                 assertEquals("https://alice.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
                 assertEquals("1", this?.get("endpointProtocol-1")?.asText())
@@ -109,8 +107,6 @@ class GenerateGroupPolicyTest {
         }.apply {
             memberList(this).forEach {
                 assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["keyAlias"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["rotatedKeyAlias-1"].asText().contains("C=GB, L=London, O=Member"))
                 assertEquals("ACTIVE", it["memberStatus"].asText())
                 assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
                 assertEquals("5", it["endpointProtocol-1"].asText())
@@ -166,8 +162,6 @@ class GenerateGroupPolicyTest {
         }.apply {
             memberList(this).forEach {
                 assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["keyAlias"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["rotatedKeyAlias-1"].asText().contains("C=GB, L=London, O=Member"))
                 assertTrue(it["memberStatus"].asText().contains("PENDING") || it["memberStatus"].asText().contains("ACTIVE"))
                 assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
             }
@@ -189,8 +183,6 @@ class GenerateGroupPolicyTest {
         }.apply {
             memberList(this).forEach {
                 assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["keyAlias"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["rotatedKeyAlias-1"].asText().contains("C=GB, L=London, O=Member"))
                 assertEquals("ACTIVE", it["memberStatus"].asText())
                 assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
                 assertEquals("5", it["endpointProtocol-1"].asText())

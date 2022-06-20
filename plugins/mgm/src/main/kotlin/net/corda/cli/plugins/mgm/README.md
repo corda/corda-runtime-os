@@ -4,7 +4,7 @@ This is a sub-command under the `mgm` plugin for generating a GroupPolicy.json f
 
 Running `groupPolicy` without any command line arguments prints a sample GroupPolicy file for the user to manually tweak.
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-beta.jar mgm groupPolicy
+java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-SNAPSHOT.jar mgm groupPolicy
 ```
 
 Alternatively, the following command line arguments can be used to define the static network section of the GroupPolicy:
@@ -20,7 +20,7 @@ To generate GroupPolicy using file input:
 > Sample files are available [here](#sample-files).
 
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-beta.jar mgm groupPolicy --file="app/build/resources/src.yaml"
+java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-SNAPSHOT.jar mgm groupPolicy --file="app/build/resources/src.yaml"
 ```
 Note:
 1. Only one of `memberNames` and `members` blocks may be present.
@@ -29,7 +29,7 @@ Note:
 
 To generate GroupPolicy using string parameters:
 ```shell
-java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-beta.jar mgm groupPolicy --name="C=GB, L=London, O=Member1" --name="C=GB, L=London, O=Member2" --endpoint-protocol=5 --endpoint="http://dummy-url"
+java -Dpf4j.pluginsDir=build/plugins -jar app/build/libs/corda-cli-0.0.1-SNAPSHOT.jar mgm groupPolicy --name="C=GB, L=London, O=Member1" --name="C=GB, L=London, O=Member2" --endpoint-protocol=5 --endpoint="http://dummy-url"
 ```
 Note:
 1. Passing one or more `--name` without specifying endpoint information will throw an error.

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.nio.file.Path
+import java.util.UUID
 
 /**
  * Subcommand for generating GroupPolicy.json file, containing the requirements for joining a group, can be used for
@@ -63,109 +64,71 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
      * Creates the content of the GroupPolicy JSON.
      */
     private fun generateGroupPolicyContent(): Map<String, Any> {
-        val groupPolicy = mutableMapOf<String, Any>()
-        groupPolicy["fileFormatVersion"] = 1
-        groupPolicy["groupId"] = "ABC123"
-        groupPolicy["registrationProtocol"] = "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService"
-        groupPolicy["synchronisationProtocolFactory"] = "net.corda.v5.mgm.MGMSynchronisationProtocolFactory"
-        groupPolicy["protocolParameters"] = mutableMapOf(
-            "identityTrustStore" to listOf(
-                "-----BEGIN CERTIFICATE-----\nMIICCDCJDBZFSiI=\n-----END CERTIFICATE-----\n",
-                "-----BEGIN CERTIFICATE-----\nMIIFPDCzIlifT20M\n-----END CERTIFICATE-----"
+        return mapOf(
+            "fileFormatVersion" to 1,
+            "groupId" to UUID.randomUUID().toString(),
+            "registrationProtocol" to "net.corda.membership.impl.registration.staticnetwork.StaticMemberRegistrationService",
+            "synchronisationProtocol" to "net.corda.membership.impl.sync.staticnetwork.StaticMemberSyncService",
+            "protocolParameters" to mapOf(
+                "sessionKeyPolicy" to "Combined",
+                "staticNetwork" to mapOf(
+                    "members" to members,
+                )
             ),
-            "tlsTrustStore" to listOf(
-                "-----BEGIN CERTIFICATE-----\nMIIDxTCCE6N36B9K\n-----END CERTIFICATE-----\n",
-                "-----BEGIN CERTIFICATE-----\nMIIDdTCCKSZp4A==\n-----END CERTIFICATE-----",
-                "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
+            "p2pParameters" to mapOf(
+                "sessionTrustRoots" to listOf(
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate0.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate1.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate2.pem").readText(),
+                ),
+                "tlsTrustRoots" to listOf(
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate3.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate4.pem").readText(),
+                    GenerateGroupPolicy::class.java.getResource("/certificates/certificate5.pem").readText(),
+                ),
+                "sessionPki" to "Standard",
+                "tlsPki" to "Standard",
+                "tlsVersion" to "1.3",
+                "protocolMode" to "Authentication_Encryption",
             ),
-            "tlsPki" to "C5",
-            "p2pProtocolMode" to "AUTHENTICATED_ENCRYPTION",
-            "mgmInfo" to mapOf(
-                "name" to "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
-                "sessionKey" to "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",
-                "certificate" to listOf(
-                    "-----BEGIN CERTIFICATE-----\nMIICxjCCRG11cu1\n-----END CERTIFICATE-----\n",
-                    "-----BEGIN CERTIFICATE-----\nMIIB/TCCDJOIjhJ\n-----END CERTIFICATE-----\n",
-                    "-----BEGIN CERTIFICATE-----\nMIICCDCCDZFSiI=\n-----END CERTIFICATE-----\n",
-                    "-----BEGIN CERTIFICATE-----\nMIIFPDCClifT20M\n-----END CERTIFICATE-----"
-                ),
-                "ecdhKey" to "-----BEGIN PUBLIC KEY-----\nMCowBQYDH8Tc=\n-----END PUBLIC KEY-----\n",
-                "keys" to listOf(
-                    "-----BEGIN PUBLIC KEY-----\nMFkwEwYHgcIALw==\n-----END PUBLIC KEY-----\n"
-                ),
-                "endpoints" to listOf(
-                    mapOf(
-                        "url" to "https://mgm.corda5.r3.com:10000",
-                        "protocolVersion" to 1
-                    ),
-                    mapOf(
-                        "url" to "https://mgm-dr.corda5.r3.com:10000",
-                        "protocolVersion" to 1
-                    )
-                ),
-                "platformVersion" to 1,
-                "softwareVersion" to "5.0.0",
-                "serial" to 1
-            ),
-            "identityPKI" to "Standard",
-            "identityKeyPolicy" to "Combined",
             "cipherSuite" to mapOf(
                 "corda.provider" to "default",
                 "corda.signature.provider" to "default",
                 "corda.signature.default" to "ECDSA_SECP256K1_SHA256",
                 "corda.signature.FRESH_KEYS" to "ECDSA_SECP256K1_SHA256",
                 "corda.digest.default" to "SHA256",
-                "corda.cryptoservice.provider" to "default"
+                "corda.cryptoservice.provider" to "default",
             ),
-            "roles" to mapOf(
-                "default" to mapOf(
-                    "validator" to "net.corda.v5.mgm.DefaultMemberInfoValidator",
-                    "requiredMemberInfo" to emptyList<Any>(),
-                    "optionalMemberInfo" to emptyList<Any>()
-                ),
-                "notary" to mapOf(
-                    "validator" to "net.corda.v5.mgm.NotaryMemberInfoValidator",
-                    "requiredMemberInfo" to listOf("notaryServiceParty"),
-                    "optionalMemberInfo" to emptyList<Any>()
-                )
-            ),
-            "staticNetwork" to mapOf(
-                "mgm" to mapOf(
-                    "keyAlias" to "mgm-alias"
-                ),
-                "members" to (
-                    memberListFromInput() ?: listOf(
-                        mapOf(
-                            "name" to "C=GB, L=London, O=Alice",
-                            "keyAlias" to "alice-alias",
-                            "rotatedKeyAlias-1" to "alice-historic-alias-1",
-                            "memberStatus" to "ACTIVE",
-                            "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                            "endpointProtocol-1" to 1
-                        ),
-                        mapOf(
-                            "name" to "C=GB, L=London, O=Bob",
-                            "keyAlias" to "bob-alias",
-                            "rotatedKeyAlias-1" to "bob-historic-alias-1",
-                            "rotatedKeyAlias-2" to "bob-historic-alias-2",
-                            "memberStatus" to "ACTIVE",
-                            "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                            "endpointProtocol-1" to 1
-                        ),
-                        mapOf(
-                            "name" to "C=GB, L=London, O=Charlie",
-                            "keyAlias" to "charlie-alias",
-                            "memberStatus" to "SUSPENDED",
-                            "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                            "endpointProtocol-1" to 1,
-                            "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                            "endpointProtocol-2" to 1
-                        )
-                    )
-                )
-            )
         )
-        return groupPolicy
+    }
+
+    private val defaultMembers by lazy {
+        listOf(
+            mapOf(
+                "name" to "C=GB, L=London, O=Alice",
+                "memberStatus" to "ACTIVE",
+                "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
+                "endpointProtocol-1" to 1,
+            ),
+            mapOf(
+                "name" to "C=GB, L=London, O=Bob",
+                "memberStatus" to "ACTIVE",
+                "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
+                "endpointProtocol-1" to 1,
+            ),
+            mapOf(
+                "name" to "C=GB, L=London, O=Charlie",
+                "memberStatus" to "SUSPENDED",
+                "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
+                "endpointProtocol-1" to 1,
+                "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
+                "endpointProtocol-2" to 1,
+            ),
+        )
+    }
+
+    private val members by lazy {
+        memberListFromInput() ?: defaultMembers
     }
 
     /**
@@ -197,8 +160,6 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 members.add(
                     mapOf(
                         "name" to name!!,
-                        "keyAlias" to name,
-                        "rotatedKeyAlias-1" to name.toString() + "_old",
                         "memberStatus" to MEMBER_STATUS_ACTIVE,
                         "endpointUrl-1" to content["endpoint"]!!,
                         "endpointProtocol-1" to content["endpointProtocol"]!!
@@ -214,13 +175,15 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 members.add(
                     mapOf(
                         "name" to x500,
-                        "keyAlias" to x500,
-                        "rotatedKeyAlias-1" to x500 + "_old",
                         "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
-                        "endpointUrl-1" to (member["endpoint"] ?: content["endpoint"]
-                        ?: throw IllegalArgumentException("No endpoint specified.")),
-                        "endpointProtocol-1" to (member["endpointProtocol"] ?: content["endpointProtocol"]
-                        ?: throw IllegalArgumentException("No endpoint protocol specified."))
+                        "endpointUrl-1" to (
+                            member["endpoint"] ?: content["endpoint"]
+                                ?: throw IllegalArgumentException("No endpoint specified.")
+                            ),
+                        "endpointProtocol-1" to (
+                            member["endpointProtocol"] ?: content["endpointProtocol"]
+                                ?: throw IllegalArgumentException("No endpoint protocol specified.")
+                            )
                     )
                 )
             }
@@ -243,8 +206,6 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
             members.add(
                 mapOf(
                     "name" to name,
-                    "keyAlias" to name,
-                    "rotatedKeyAlias-1" to name + "_old",
                     "memberStatus" to MEMBER_STATUS_ACTIVE,
                     "endpointUrl-1" to endpoint!!,
                     "endpointProtocol-1" to endpointProtocol!!
