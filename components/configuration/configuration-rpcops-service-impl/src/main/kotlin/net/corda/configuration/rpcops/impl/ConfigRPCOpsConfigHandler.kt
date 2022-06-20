@@ -50,12 +50,10 @@ internal class ConfigRPCOpsConfigHandler(
      *  [configRPCOps]'s RPC sender could not be started.
      */
     private fun processRPCConfig(configSnapshot: Map<String, SmartConfig>) {
-        val config = configSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
-            "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
-        )
+        val rpcConfig = configSnapshot.getConfig(RPC_CONFIG)
 
-        if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
-            val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
+        if (rpcConfig.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
+            val timeoutMillis = rpcConfig.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
             configRPCOps.setTimeout(timeoutMillis)
         }
 
@@ -67,6 +65,5 @@ internal class ConfigRPCOpsConfigHandler(
                 "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
             )
         }
-
     }
 }

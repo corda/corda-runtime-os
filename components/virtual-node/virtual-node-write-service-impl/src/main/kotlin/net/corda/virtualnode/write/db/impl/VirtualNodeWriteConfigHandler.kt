@@ -28,24 +28,28 @@ internal class VirtualNodeWriteConfigHandler(
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
         if (MESSAGING_CONFIG in changedKeys) {
-            val msgConfig = config.getConfig(MESSAGING_CONFIG)
+            createVirtualNodeWriter(config)
+        }
+    }
 
-            if (msgConfig.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {
-                if (eventHandler.virtualNodeWriter != null) throw VirtualNodeWriteServiceException(
-                    "An attempt was made to initialise the virtual node writer twice."
+    private fun createVirtualNodeWriter(config: Map<String, SmartConfig>) {
+        val msgConfig = config.getConfig(MESSAGING_CONFIG)
+
+        if (msgConfig.hasPath(KAFKA_BOOTSTRAP_SERVERS)) {
+            if (eventHandler.virtualNodeWriter != null) throw VirtualNodeWriteServiceException(
+                "An attempt was made to initialise the virtual node writer twice."
+            )
+
+            try {
+                eventHandler.virtualNodeWriter = virtualNodeWriterFactory
+                    .create(msgConfig)
+                    .apply { start() }
+                coordinator.updateStatus(UP)
+            } catch (e: Exception) {
+                coordinator.updateStatus(ERROR)
+                throw VirtualNodeWriteServiceException(
+                    "Could not start the virtual node writer for handling virtual node creation requests.", e
                 )
-
-                try {
-                    eventHandler.virtualNodeWriter = virtualNodeWriterFactory
-                        .create(msgConfig)
-                        .apply { start() }
-                    coordinator.updateStatus(UP)
-                } catch (e: Exception) {
-                    coordinator.updateStatus(ERROR)
-                    throw VirtualNodeWriteServiceException(
-                        "Could not start the virtual node writer for handling virtual node creation requests.", e
-                    )
-                }
             }
         }
     }

@@ -6,7 +6,6 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
@@ -51,14 +50,11 @@ internal class VirtualNodeRPCOpsConfigHandler(
      * or if [virtualNodeRPCOps]'s RPC sender could not be started.
      */
     private fun processRpcConfig(configSnapshot: Map<String, SmartConfig>) {
-        val config = configSnapshot[RPC_CONFIG]?.withFallback(configSnapshot[BOOT_CONFIG]) ?: throw VirtualNodeRPCOpsServiceException(
-            "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found."
-        )
-
+        val rpcConfig = configSnapshot.getConfig(RPC_CONFIG)
         val messagingConfig = configSnapshot.getConfig(MESSAGING_CONFIG)
 
-        if (config.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
-            val timeoutMillis = config.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
+        if (rpcConfig.hasPath(RPC_ENDPOINT_TIMEOUT_MILLIS)) {
+            val timeoutMillis = rpcConfig.getInt(RPC_ENDPOINT_TIMEOUT_MILLIS)
             virtualNodeRPCOps.setTimeout(timeoutMillis)
         }
 
