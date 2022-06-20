@@ -225,7 +225,7 @@ Volumes for corda workers
 {{- if .Values.kafka.sasl.enabled  }}
 - name: jaas-conf
   secret:
-    secretName: {{ include "corda.fullname" . }}kafka-sasl
+    secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
 {{- end }}
 
