@@ -8,11 +8,11 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.getRequestBodyAs
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.unwrap
-import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -120,7 +120,7 @@ class ChatReaderFlow : RPCStartableFlow {
         log.info("Chat reader flow starting in {$flowEngine.virtualNodeName}...")
         with (MessageStore.readAndClear()) {
             log.info("Returning ${this.messages.size} unread messages")
-            return jsonMarshallingService.formatJson(this)
+            return jsonMarshallingService.format(this)
         }
     }
 }

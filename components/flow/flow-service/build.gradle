@@ -49,6 +49,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(":libs:flows:session-manager-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
