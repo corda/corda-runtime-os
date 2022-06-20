@@ -66,7 +66,7 @@ internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
 fun Sequence<Certificate>.certSummaryHash() : SecureHash? = map { it.publicKey.encoded.hash() }.summaryHash()
 
 /** Verifies that signatures lead to trusted certificate */
-internal fun verifyCertificates(codeSigners: Array<CodeSigner>, trustedCerts: Collection<X509Certificate>) {
+internal fun verifyCertificates(codeSigners: List<CodeSigner>, trustedCerts: Collection<X509Certificate>) {
     require(codeSigners.isNotEmpty()) {
         "Code signers not set"
     }

@@ -31,7 +31,7 @@ class JarVerifier(
 ) {
     private var manifest: Manifest? = null
     private val jarEntries: MutableList<JarEntry> = mutableListOf()
-    var codeSigners: Array<CodeSigner> = emptyArray()
+    var codeSigners: List<CodeSigner> = emptyList()
 
     fun verify() {
         verifySignatures()
@@ -81,7 +81,7 @@ class JarVerifier(
             if (firstSignedEntry == null)
                 throw InvalidSignatureException("No signed files found in package \"$jarName\"")
 
-            codeSigners = firstSignedEntry.codeSigners
+            codeSigners = firstSignedEntry.codeSigners.toList()
         }
     }
 

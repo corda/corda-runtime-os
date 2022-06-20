@@ -1,7 +1,10 @@
-package net.corda.libs.packaging.verify
+package net.corda.libs.packaging.verify.internal.cpb
 
+import net.corda.libs.packaging.verify.InMemoryZipFile
+import net.corda.libs.packaging.verify.TestUtils
 import net.corda.libs.packaging.verify.TestUtils.addFile
 import net.corda.libs.packaging.verify.TestUtils.signedBy
+import net.corda.libs.packaging.verify.internal.cpk.TestCpkV1Builder
 import java.io.ByteArrayInputStream
 import java.util.jar.Manifest
 
@@ -9,7 +12,7 @@ internal class TestCpbV1Builder {
     companion object {
         val POLICY_FILE = "META-INF/GroupPolicy.json"
     }
-    var name = "testCpbV1"
+    var name = "testCpbV1.cpb"
         private set
     var version = "1.0.0.0"
         private set
@@ -18,9 +21,9 @@ internal class TestCpbV1Builder {
     var policy = "{\"groupId\":\"test\"}"
         private set
     var cpks = arrayOf<TestCpkV1Builder>(
-            TestCpkV1Builder().name("testCpk1.cpk").version("1.0.0.0"),
-            TestCpkV1Builder().name("testCpk2.cpk").version("2.0.0.0")
-                .dependencies(TestUtils.Dependency("testCpk1.cpk", "1.0.0.0"))
+            TestCpkV1Builder().name("testCpk1-1.0.0.0.cpk").bundleName("test.cpk1").bundleVersion("1.0.0.0"),
+            TestCpkV1Builder().name("testCpk2-2.0.0.0.cpk").bundleName("test.cpk2").bundleVersion("2.0.0.0")
+                .dependencies(TestUtils.Dependency("test.cpk1", "1.0.0.0"))
         )
         private set
     var signers = emptyArray<TestUtils.Signer>()
@@ -37,10 +40,10 @@ internal class TestCpbV1Builder {
             setManifest(manifest ?: cpbV1Manifest())
             addFile(POLICY_FILE, policy)
             cpks.forEach {
-                val fileName = "${it.name.removeSuffix(".cpk")}-$version.cpk"
-                val cpk = it.signers(signers = signers).build()
-                addFile(fileName, cpk.toByteArray())
-                cpk.close()
+                if (it.signers.isEmpty()) it.signers(signers = signers)
+                it.build().use { cpk ->
+                    addFile(it.name, cpk.toByteArray())
+                }
             }
         }.signedBy(signers = signers)
 
@@ -49,7 +52,7 @@ internal class TestCpbV1Builder {
             read(
                 ByteArrayInputStream("""
                 Manifest-Version: 1.0
-                Corda-CPI-Format: 1.0
+                Corda-CPB-Format: 1.0
                 Corda-CPB-Name: $name
                 Corda-CPB-Version: $version
                 """.trimIndent().plus("\n").toByteArray())
