@@ -3,6 +3,7 @@ package net.corda.sandboxgroupcontext.test
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll

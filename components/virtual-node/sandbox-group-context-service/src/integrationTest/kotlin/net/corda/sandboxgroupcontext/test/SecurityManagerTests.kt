@@ -6,6 +6,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.testing.securitymanager.denyPermissions
 import net.corda.testing.securitymanager.grantPermissions
+import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
