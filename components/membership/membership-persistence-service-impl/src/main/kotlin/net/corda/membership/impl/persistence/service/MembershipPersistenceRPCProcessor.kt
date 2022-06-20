@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
-class MembershipPersistenceRPCProcessor(
+internal class MembershipPersistenceRPCProcessor(
     private val clock: Clock,
     dbConnectionManager: DbConnectionManager,
     jpaEntitiesRegistry: JpaEntitiesRegistry,

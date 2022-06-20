@@ -27,7 +27,7 @@ class TestVirtualNodeInfoReadServiceImpl : TestVirtualNodeInfoReadService {
     }
     override var isRunning: Boolean = true
 
-    val vnodes: ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo> = ConcurrentHashMap()
+    private val vnodes: ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo> = ConcurrentHashMap()
 
     override fun putVNodeInfo(vnodeInfo: VirtualNodeInfo) {
         vnodes[vnodeInfo.holdingIdentity] = vnodeInfo

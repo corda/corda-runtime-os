@@ -67,7 +67,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<MembershipPersistenceService>(::handleEvent)
     private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
 
-    private var registrationHandle: RegistrationHandle? = null
+    private var dependencyServiceHandle: RegistrationHandle? = null
+    private var subHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
     override val isRunning: Boolean
@@ -86,68 +87,85 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Received event $event.")
         when (event) {
-            is StartEvent -> {
-                logger.info("Handling start event.")
-                registrationHandle?.close()
-                registrationHandle = coordinator.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+            is StartEvent -> handleStartEvent(coordinator)
+            is StopEvent -> handleStopEvent(coordinator)
+            is RegistrationStatusChangeEvent -> handleRegistrationStatusChangedEvent(event, coordinator)
+            is ConfigChangedEvent -> handleConfigChangedEvent(event, coordinator)
+        }
+    }
+
+    private fun handleStartEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Handling start event.")
+        dependencyServiceHandle?.close()
+        dependencyServiceHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+            )
+        )
+    }
+
+    private fun handleStopEvent(coordinator: LifecycleCoordinator) {
+        logger.info("Handling stop event.")
+        coordinator.updateStatus(
+            LifecycleStatus.DOWN,
+            "Component received stop event."
+        )
+        dependencyServiceHandle?.close()
+        dependencyServiceHandle = null
+        configHandle?.close()
+        configHandle = null
+        rpcSubscription?.close()
+        rpcSubscription = null
+    }
+
+    private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Handling registration changed event.")
+        when (event.status) {
+            LifecycleStatus.UP -> {
+                if (event.registration == dependencyServiceHandle) {
+                    configHandle?.close()
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
-                )
-            }
-            is StopEvent -> {
-                logger.info("Handling stop event.")
-                coordinator.updateStatus(
-                    LifecycleStatus.DOWN,
-                    "Component received stop event."
-                )
-                registrationHandle?.close()
-                configHandle?.close()
-                rpcSubscription?.close()
-            }
-            is RegistrationStatusChangeEvent -> {
-                logger.info("Handling registration changed event.")
-                when(event.status) {
-                    LifecycleStatus.UP -> {
-                        configHandle?.close()
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                        )
-                    } else -> {
-                        coordinator.updateStatus(LifecycleStatus.DOWN, "Dependencies are down.")
-                    }
+                } else if (event.registration == subHandle) {
+                    coordinator.updateStatus(
+                        LifecycleStatus.UP,
+                        "Received config and started RPC topic subscription."
+                    )
                 }
             }
-            is ConfigChangedEvent -> {
-                logger.info("Handling config changed event.")
-                rpcSubscription?.close()
-                rpcSubscription = subscriptionFactory.createRPCSubscription(
-                    rpcConfig = RPCConfig(
-                        groupName = GROUP_NAME,
-                        clientName = CLIENT_NAME,
-                        requestTopic = Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC,
-                        requestType = MembershipPersistenceRequest::class.java,
-                        responseType = MembershipPersistenceResponse::class.java
-                    ),
-                    responderProcessor = MembershipPersistenceRPCProcessor(
-                        clock,
-                        dbConnectionManager,
-                        jpaEntitiesRegistry,
-                        memberInfoFactory,
-                        cordaAvroSerializationFactory,
-                        virtualNodeInfoReadService
-                    ),
-                    messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-                ).also {
-                    it.start()
-                }
-                coordinator.updateStatus(
-                    LifecycleStatus.UP,
-                    "Received config and started RPC topic subscription."
-                )
+            else -> {
+                coordinator.updateStatus(LifecycleStatus.DOWN, "Dependencies are down.")
             }
+        }
+    }
+
+    private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Handling config changed event.")
+        rpcSubscription?.close()
+        rpcSubscription = subscriptionFactory.createRPCSubscription(
+            rpcConfig = RPCConfig(
+                groupName = GROUP_NAME,
+                clientName = CLIENT_NAME,
+                requestTopic = Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC,
+                requestType = MembershipPersistenceRequest::class.java,
+                responseType = MembershipPersistenceResponse::class.java
+            ),
+            responderProcessor = MembershipPersistenceRPCProcessor(
+                clock,
+                dbConnectionManager,
+                jpaEntitiesRegistry,
+                memberInfoFactory,
+                cordaAvroSerializationFactory,
+                virtualNodeInfoReadService
+            ),
+            messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        ).also {
+            it.start()
+            subHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
         }
     }
 }

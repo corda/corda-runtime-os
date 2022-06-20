@@ -44,6 +44,7 @@ import net.corda.membership.impl.toSortedMap
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -258,6 +259,11 @@ class MembershipPersistenceTest {
             if (Companion::vnodeEmf.isInitialized) {
                 vnodeEmf.close()
             }
+            configurationReadService.stop()
+            dbConnectionManager.stop()
+            membershipPersistenceService.stop()
+            membershipPersistenceClientWrapper.stop()
+            virtualNodeReadService.stop()
         }
 
         private fun Lifecycle.startAndWait() {
@@ -292,8 +298,7 @@ class MembershipPersistenceTest {
             )
         )
 
-        assertThat(result.payload).isNull()
-        assertThat(result.errorMsg).isNull()
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
@@ -341,8 +346,7 @@ class MembershipPersistenceTest {
             )
         )
 
-        assertThat(result.payload).isNull()
-        assertThat(result.errorMsg).isNull()
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.use {
             it.find(
@@ -357,21 +361,20 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.serialNumber).isEqualTo(1)
         assertThat(persistedEntity.status).isEqualTo(MEMBER_STATUS_ACTIVE)
 
-        fun contextIsEqual(actual: String?, expected: String) = assertThat(actual).isNotNull.isEqualTo(expected)
+        fun contextIsEqual(actual: String?, expected: String) = assertThat(actual).isEqualTo(expected)
 
         val persistedMgmContext = persistedEntity.mgmContext.deserializeContextAsMap()
         contextIsEqual(persistedMgmContext[STATUS], MEMBER_STATUS_ACTIVE)
 
         val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
-        with(persistedMemberContext) {
-            contextIsEqual(get(String.format(URL_KEY, "0")), endpointUrl)
-            contextIsEqual(get(String.format(PROTOCOL_VERSION, "0")), "1")
-            contextIsEqual(get(GROUP_ID), groupId)
-            contextIsEqual(get(PARTY_NAME), memberx500Name.toString())
-            contextIsEqual(get(PLATFORM_VERSION), "11")
-            contextIsEqual(get(SERIAL), "1")
-            contextIsEqual(get(SOFTWARE_VERSION), "5.0.0")
-        }
+        assertThat(persistedMemberContext)
+            .containsEntry(String.format(URL_KEY, "0"), endpointUrl)
+            .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
+            .containsEntry(GROUP_ID, groupId)
+            .containsEntry(PARTY_NAME, memberx500Name.toString())
+            .containsEntry(PLATFORM_VERSION, "11")
+            .containsEntry(SERIAL, "1")
+            .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =

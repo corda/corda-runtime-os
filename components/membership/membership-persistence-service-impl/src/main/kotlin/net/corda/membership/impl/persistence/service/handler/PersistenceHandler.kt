@@ -34,14 +34,14 @@ abstract class BasePersistenceHandler<REQUEST>(
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
 
-    fun <R> transaction(holdingIdentityId: String, block: (EntityManager) -> R) {
+    fun <R> transaction(holdingIdentityId: String, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getById(holdingIdentityId)
             ?: throw MembershipPersistenceException(
                 "Virtual node info can't be retrieved for " +
                         "holding identity ID $holdingIdentityId"
             )
 
-        getEntityManagerFactory(virtualNodeInfo).transaction(block)
+        return getEntityManagerFactory(virtualNodeInfo).transaction(block)
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {

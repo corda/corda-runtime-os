@@ -22,7 +22,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -37,12 +37,13 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.*
 
 class RegistrationProcessorTest {
 
     private companion object {
-        val clock = UTCClock()
+        val clock = TestClock(Instant.now())
         val registrationId = UUID.randomUUID().toString()
         val x500Name = MemberX500Name.parse("O=Tester,L=London,C=GB")
         val groupId = UUID.randomUUID().toString()
@@ -121,11 +122,16 @@ class RegistrationProcessorTest {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult()
-            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult()
+            on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
+            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult.Success()
         }
         membershipQueryClient = mock {
-            on { queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()) } doReturn MembershipQueryResult()
+            on {
+                queryMemberInfo(
+                    eq(mgmHoldingIdentity.toCorda()),
+                    any()
+                )
+            } doReturn MembershipQueryResult.Success<Collection<MemberInfo>>()
         }
 
         processor = RegistrationProcessor(

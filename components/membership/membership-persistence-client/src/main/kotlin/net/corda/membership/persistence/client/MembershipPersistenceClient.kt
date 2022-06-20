@@ -18,11 +18,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param memberInfos The list of member information to persist.
      *
      * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
      */
     fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>
-    ): MembershipPersistenceResult
+    ): MembershipPersistenceResult<Unit>
 
     /**
      * Persists a single member info record as viewed by a specific holding identity.
@@ -32,11 +33,12 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param memberInfo The member info to persist.
      *
      * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
      */
     fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfo: MemberInfo
-    ): MembershipPersistenceResult
+    ): MembershipPersistenceResult<Unit>
 
     /**
      * Persists a registration request record as viewed by a specific holding identity.
@@ -46,10 +48,11 @@ interface MembershipPersistenceClient : Lifecycle {
      * @param registrationRequest The registration request to persist.
      *
      * @return membership persistence result to indicate the result of the persistence operation.
+     *  No payload is returned in the case of success.
      */
     fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
-    ): MembershipPersistenceResult
+    ): MembershipPersistenceResult<Unit>
 }
 

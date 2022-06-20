@@ -66,7 +66,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<RegistrationManagementService>(::handleEvent)
 
-    private var registrationHandle: RegistrationHandle? = null
+    private var dependencyServiceRegistration: RegistrationHandle? = null
+    private var subRegistration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
     private var subscription: StateAndEventSubscription<String, RegistrationState, RegistrationCommand>? = null
@@ -89,31 +90,43 @@ class RegistrationManagementServiceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 logger.info("Processing start event.")
-                registrationHandle?.close()
-                registrationHandle = coordinator.followStatusChangesByName(
+                dependencyServiceRegistration?.close()
+                dependencyServiceRegistration = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     )
                 )
             }
             is StopEvent -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN, "Received stop event.")
-                registrationHandle?.close()
+                dependencyServiceRegistration?.close()
+                dependencyServiceRegistration = null
                 configHandle?.close()
+                configHandle = null
                 subscription?.close()
+                subscription = null
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Dependency services are UP. Registering to receive configuration.")
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        setOf(MESSAGING_CONFIG, BOOT_CONFIG)
-                    )
+                    if (event.registration == dependencyServiceRegistration) {
+                        logger.info("Dependency services are UP. Registering to receive configuration.")
+                        configHandle?.close()
+                        configHandle = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                        )
+                    } else if(event.registration == subRegistration) {
+                        logger.info("Received config, started subscriptions and setting status to UP")
+                        coordinator.updateStatus(LifecycleStatus.UP, "Received config, started subscriptions and setting status to UP")
+                    }
                 } else {
                     logger.info("Setting deactive state due to receiving registration status ${event.status}")
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     subscription?.close()
+                    subscription = null
                 }
             }
             is ConfigChangedEvent -> {
@@ -133,9 +146,10 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipQueryClient,
                     ),
                     messagingConfig
-                ).also { it.start() }
-                logger.info("Received config, started subscriptions and setting status to UP")
-                coordinator.updateStatus(LifecycleStatus.UP)
+                ).also {
+                    it.start()
+                    subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
+                }
             }
         }
     }

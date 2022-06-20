@@ -23,6 +23,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -145,16 +146,14 @@ class MembershipPersistenceClientImplTest {
     fun `persist member info before starting component`() {
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
 
-        assertThat(result.payload).isNull()
-        assertThat(result.errorMsg).isNotBlank
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
     fun `persist list of member info before starting component`() {
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
 
-        assertThat(result.payload).isNull()
-        assertThat(result.errorMsg).isNotBlank
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -164,8 +163,7 @@ class MembershipPersistenceClientImplTest {
             ourRegistrationRequest
         )
 
-        assertThat(result.payload).isNull()
-        assertThat(result.errorMsg).isNotBlank
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -379,10 +377,8 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse(true)
 
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNull()
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
     }
 
     @Test
@@ -390,10 +386,8 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse(false, null)
 
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNotNull
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -401,10 +395,8 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse(true)
 
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNull()
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
     }
 
     @Test
@@ -412,10 +404,8 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse(false, null)
 
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNotNull
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -425,10 +415,8 @@ class MembershipPersistenceClientImplTest {
             true,
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNotNull
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -438,10 +426,8 @@ class MembershipPersistenceClientImplTest {
             true,
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNotNull
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -451,10 +437,8 @@ class MembershipPersistenceClientImplTest {
             true,
             reqIdOverride = UUID.randomUUID().toString()
         )
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNotNull
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
     @Test
@@ -464,9 +448,7 @@ class MembershipPersistenceClientImplTest {
             true,
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
-        with(membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)) {
-            assertThat(payload).isNull()
-            assertThat(errorMsg).isNotNull
-        }
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 }

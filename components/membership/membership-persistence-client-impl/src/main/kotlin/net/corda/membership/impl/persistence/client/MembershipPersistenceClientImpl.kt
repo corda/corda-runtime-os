@@ -51,7 +51,7 @@ class MembershipPersistenceClientImpl @Activate constructor(
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>
-    ): MembershipPersistenceResult {
+    ): MembershipPersistenceResult<Unit> {
         logger.info("Persisting the ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val result = MembershipPersistenceRequest(
@@ -68,22 +68,22 @@ class MembershipPersistenceClientImpl @Activate constructor(
             )
         ).execute()
         return when (val failedResponse = result.payload as? QueryFailedResponse) {
-            null -> MembershipPersistenceResult(payload = result.payload)
-            else -> MembershipPersistenceResult(errorMsg = failedResponse.errorMessage)
+            null -> MembershipPersistenceResult.Success()
+            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
     }
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfo: MemberInfo
-    ): MembershipPersistenceResult {
+    ): MembershipPersistenceResult<Unit> {
         return persistMemberInfo(viewOwningIdentity, listOf(memberInfo))
     }
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest
-    ): MembershipPersistenceResult {
+    ): MembershipPersistenceResult<Unit> {
         logger.info("Persisting the member registration request.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
@@ -104,8 +104,8 @@ class MembershipPersistenceClientImpl @Activate constructor(
             )
         ).execute()
         return when (val failedResponse = result.payload as? QueryFailedResponse) {
-            null -> MembershipPersistenceResult(payload = result.payload)
-            else -> MembershipPersistenceResult(errorMsg = failedResponse.errorMessage)
+            null -> MembershipPersistenceResult.Success()
+            else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
     }
 }

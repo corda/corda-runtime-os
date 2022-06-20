@@ -19,7 +19,9 @@ import net.corda.membership.impl.toSortedMap
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
@@ -52,7 +54,7 @@ class StartRegistrationHandler(
 
     override fun invoke(command: Record<String, RegistrationCommand>): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
-            with(command.value!!.command as? StartRegistration) {
+            with(command.value?.command as? StartRegistration) {
                 require(this != null) {
                     "Incorrect handler used for command of type ${command.value!!.command::class.java}"
                 }
@@ -67,8 +69,9 @@ class StartRegistrationHandler(
             try {
                 logger.info("Persisting the received registration request.")
                 membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
-                    require(it.errorMsg == null) {
-                        "Failed to persist the received registration request. Reason: ${it.errorMsg}"
+                    require(it as? MembershipPersistenceResult.Failure == null) {
+                        "Failed to persist the received registration request. Reason: " +
+                                (it as MembershipPersistenceResult.Failure).errorMsg
                     }
                 }
 
@@ -82,11 +85,13 @@ class StartRegistrationHandler(
                 ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
                 // The MemberX500Name is not a duplicate
+                val queryExistingMemberInfo = membershipQueryClient.queryMemberInfo(
+                    mgmHoldingId,
+                    listOf(pendingMemberHoldingId)
+                )
                 validateRegistrationRequest(
-                    membershipQueryClient.queryMemberInfo(
-                        mgmHoldingId,
-                        listOf(pendingMemberHoldingId)
-                    ).payload.isNullOrEmpty()
+                    queryExistingMemberInfo is MembershipQueryResult.Success
+                            && queryExistingMemberInfo.payload.isNullOrEmpty()
                 ) { "Member Info already exists for applying member" }
 
                 // The group ID matches the group ID of the MGM
@@ -101,16 +106,19 @@ class StartRegistrationHandler(
 
                 // Persist pending member info
                 membershipPersistenceClient.persistMemberInfo(mgmHoldingId, pendingMemberInfo).also {
-                    require(it.errorMsg == null) {
-                        "Failed to persist pending member info. Reason: ${it.errorMsg}"
+                    require(it as? MembershipPersistenceResult.Failure == null) {
+                        "Failed to persist pending member info. Reason: " +
+                                (it as MembershipPersistenceResult.Failure).errorMsg
                     }
                 }
 
                 logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
                 VerifyMember()
             } catch (ex: InvalidRegistrationRequestException) {
+                logger.warn("Declined registration.", ex.originalMessage)
                 DeclineRegistration(ex.originalMessage)
             } catch (ex: Exception) {
+                logger.warn("Declined registration.", ex.message)
                 DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
             }
         )

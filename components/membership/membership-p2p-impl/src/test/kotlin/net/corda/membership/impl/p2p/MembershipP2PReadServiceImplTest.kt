@@ -45,7 +45,7 @@ class MembershipP2PReadServiceImplTest {
     }
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
+        on { createCoordinator(any(), eventHandlerCaptor.capture()) } doReturn coordinator
     }
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
@@ -73,7 +73,6 @@ class MembershipP2PReadServiceImplTest {
             subscriptionFactory,
             avroSchemaRegistry
         )
-        verify(lifecycleCoordinatorFactory).createCoordinator(any(), eventHandlerCaptor.capture())
     }
 
     @Test

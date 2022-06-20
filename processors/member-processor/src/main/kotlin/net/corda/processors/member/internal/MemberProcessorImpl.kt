@@ -54,7 +54,7 @@ class MemberProcessorImpl @Activate constructor(
     @Reference(service = RegistrationManagementService::class)
     private val registrationManagementService: RegistrationManagementService,
     @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MemberProcessor {
 
     companion object {

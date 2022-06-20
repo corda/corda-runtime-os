@@ -41,4 +41,5 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":testing:test-utilities")
 }

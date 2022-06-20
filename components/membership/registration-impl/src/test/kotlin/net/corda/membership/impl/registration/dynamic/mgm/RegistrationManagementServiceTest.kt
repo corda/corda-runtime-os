@@ -53,14 +53,20 @@ class RegistrationManagementServiceTest {
         on { followStatusChangesByName(any()) } doReturn registrationHandle
     }
 
-    private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var configurationReadService: ConfigurationReadService
-    private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var memberInfoFactory: MemberInfoFactory
-    private lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
-    private lateinit var membershipPersistenceClient: MembershipPersistenceClient
-    private lateinit var membershipQueryClient: MembershipQueryClient
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
+    }
+    private val configurationReadService: ConfigurationReadService = mock {
+        on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
+    }
+    private val subscriptionFactory: SubscriptionFactory = mock {
+        on { createStateAndEventSubscription(any(), any<RegistrationProcessor>(), any(), eq(null)) } doReturn subscription
+    }
+    private val memberInfoFactory: MemberInfoFactory = mock()
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock()
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val membershipPersistenceClient: MembershipPersistenceClient = mock()
+    private val membershipQueryClient: MembershipQueryClient = mock()
 
     private fun postStartEvent() = postEvent(StartEvent())
     private fun postStopEvent() = postEvent(StopEvent())
@@ -78,25 +84,10 @@ class RegistrationManagementServiceTest {
 
     private fun postEvent(event: LifecycleEvent) = lifecycleEventHandler.firstValue.processEvent(event, coordinator)
 
-    val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+    private val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
 
     @BeforeEach
     fun setUp() {
-        lifecycleCoordinatorFactory = mock {
-            on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
-        }
-        configurationReadService = mock {
-            on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
-        }
-        subscriptionFactory = mock {
-            on { createStateAndEventSubscription(any(), any<RegistrationProcessor>(), any(), eq(null)) } doReturn subscription
-        }
-        memberInfoFactory = mock()
-        membershipGroupReaderProvider = mock()
-        cordaAvroSerializationFactory = mock()
-        membershipPersistenceClient = mock()
-        membershipQueryClient = mock()
-
         registrationManagementService = RegistrationManagementServiceImpl(
             lifecycleCoordinatorFactory,
             configurationReadService,
@@ -122,17 +113,25 @@ class RegistrationManagementServiceTest {
     }
 
     @Test
-    fun `start event follow config read service`() {
+    fun `start event follows config read service`() {
         postStartEvent()
         verify(coordinator).followStatusChangesByName(eq(configServiceName))
         verify(registrationHandle, never()).close()
+    }
 
+    @Test
+    fun `start event follows config read service and closes registration handle if it already exists`() {
+        postStartEvent()
         postStartEvent()
         verify(coordinator, times(2)).followStatusChangesByName(eq(configServiceName))
         verify(registrationHandle).close()
+    }
 
+    @Test
+    fun `stop event closes registration handle`() {
+        postStartEvent()
         postStopEvent()
-        verify(registrationHandle, times(2)).close()
+        verify(registrationHandle).close()
     }
 
     @Test
@@ -174,6 +173,22 @@ class RegistrationManagementServiceTest {
         verify(configHandle).close()
         verify(configurationReadService, times(2)).registerComponentForUpdates(eq(coordinator), eq(configs))
 
+        postStopEvent()
+        verify(configHandle, times(2)).close()
+    }
+
+    @Test
+    fun `registration status lifecycle status up event additional times closes existing config handle`() {
+        postRegistrationStatusChangeEvent()
+        postRegistrationStatusChangeEvent()
+        verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(configHandle).close()
+        verify(configurationReadService, times(2)).registerComponentForUpdates(eq(coordinator), eq(configs))
+    }
+
+    @Test
+    fun `stop event closes config handle`() {
+        postRegistrationStatusChangeEvent()
         postStopEvent()
         verify(configHandle, times(2)).close()
     }

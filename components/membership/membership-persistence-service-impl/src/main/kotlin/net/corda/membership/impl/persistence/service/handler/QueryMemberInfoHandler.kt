@@ -30,27 +30,25 @@ class QueryMemberInfoHandler(
             MemberInfoQueryResponse(emptyList())
         } else {
             logger.info("Querying for ${request.queryIdentities.size} MemberInfo(s).")
-            val results = mutableListOf<PersistentMemberInfo>()
-            transaction(context.holdingIdentity.toCorda().id) { em ->
-                request.queryIdentities.mapNotNull { holdingIdentity ->
-                    em.find(
-                        MemberInfoEntity::class.java,
-                        MemberInfoEntityPrimaryKey(
-                            holdingIdentity.groupId,
-                            holdingIdentity.x500Name
-                        )
-                    )?.let {
-                        results.add(
-                            PersistentMemberInfo(
-                                context.holdingIdentity,
-                                keyValuePairListDeserializer.deserialize(it.memberContext),
-                                keyValuePairListDeserializer.deserialize(it.mgmContext)
+            MemberInfoQueryResponse(
+                transaction(context.holdingIdentity.toCorda().id) { em ->
+                    request.queryIdentities.mapNotNull { holdingIdentity ->
+                        em.find(
+                            MemberInfoEntity::class.java,
+                            MemberInfoEntityPrimaryKey(
+                                holdingIdentity.groupId,
+                                holdingIdentity.x500Name
                             )
+                        )
+                    }.map {
+                        PersistentMemberInfo(
+                            context.holdingIdentity,
+                            keyValuePairListDeserializer.deserialize(it.memberContext),
+                            keyValuePairListDeserializer.deserialize(it.mgmContext)
                         )
                     }
                 }
-            }
-            MemberInfoQueryResponse(results)
+            )
         }
     }
 }

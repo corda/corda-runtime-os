@@ -59,26 +59,22 @@ class MembershipQueryClientImpl @Activate constructor(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryMemberInfo(queryFilter.map { it.toAvro() })
         ).execute()
-        return when(val payload = result.payload) {
+        return when (val payload = result.payload) {
             is MemberInfoQueryResponse -> {
                 logger.info("Found ${(result.payload as MemberInfoQueryResponse).members.size} results.")
-                MembershipQueryResult(
-                    payload = (result.payload as MemberInfoQueryResponse).members.map { memberInfoFactory.create(it) }
+                MembershipQueryResult.Success(
+                    (result.payload as MemberInfoQueryResponse).members.map { memberInfoFactory.create(it) }
                 )
             }
             is QueryFailedResponse -> {
                 val err = "Query failed because of: ${payload.errorMessage}"
                 logger.warn(err)
-                MembershipQueryResult(
-                    errorMsg = err
-                )
+                MembershipQueryResult.Failure(err)
             }
             else -> {
                 val err = "Query returned unexpected payload."
                 logger.warn(err)
-                MembershipQueryResult(
-                    errorMsg = err
-                )
+                MembershipQueryResult.Failure(err)
             }
         }
     }

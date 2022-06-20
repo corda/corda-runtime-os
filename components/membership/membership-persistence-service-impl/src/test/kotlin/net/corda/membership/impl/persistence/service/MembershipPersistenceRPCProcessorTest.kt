@@ -28,6 +28,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -113,16 +114,18 @@ class MembershipPersistenceRPCProcessorTest {
 
         processor.onNext(rq, responseFuture)
 
-        assertThat(responseFuture).isCompleted
-        with(responseFuture.get()) {
-            assertThat(payload).isNotNull
-            assertThat(payload).isInstanceOf(QueryFailedResponse::class.java)
+        assertSoftly {
+            it.assertThat(responseFuture).isCompleted
+            with(responseFuture.get()) {
+                it.assertThat(payload).isNotNull
+                it.assertThat(payload).isInstanceOf(QueryFailedResponse::class.java)
 
-            with(context) {
-                assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
-                assertThat(requestId).isEqualTo(rqContext.requestId)
-                assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
-                assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                with(context) {
+                    it.assertThat(requestTimestamp).isEqualTo(rqContext.requestTimestamp)
+                    it.assertThat(requestId).isEqualTo(rqContext.requestId)
+                    it.assertThat(responseTimestamp).isAfterOrEqualTo(rqContext.requestTimestamp)
+                    it.assertThat(holdingIdentity).isEqualTo(rqContext.holdingIdentity)
+                }
             }
         }
     }

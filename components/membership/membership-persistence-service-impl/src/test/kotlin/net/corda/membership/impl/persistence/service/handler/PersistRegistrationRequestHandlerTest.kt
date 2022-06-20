@@ -39,7 +39,7 @@ import javax.persistence.EntityTransaction
 class PersistRegistrationRequestHandlerTest {
 
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
-    private val ourGroupId = UUID.randomUUID().toString()
+    private val ourGroupId = "cbdc24f5-35b0-4ef3-be9e-f428d273d7b1"
     private val ourHoldingIdentity = HoldingIdentity(
         ourX500Name.toString(),
         ourGroupId
