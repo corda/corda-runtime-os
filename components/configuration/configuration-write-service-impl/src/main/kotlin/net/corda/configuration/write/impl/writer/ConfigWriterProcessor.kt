@@ -1,7 +1,6 @@
 package net.corda.configuration.write.impl.writer
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigRenderOptions
 import java.time.Clock
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.data.ExceptionEnvelope
@@ -13,8 +12,8 @@ import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.v5.base.versioning.Version
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.v5.base.versioning.Version
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -45,31 +44,28 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-
-        // abstract the following to be re used here and in DB `ReconcilerReader`
-        if (validate(request, respFuture, false)) {
+        if (validateConfig(request, respFuture)) {
             val configEntity = publishConfigToDB(request, respFuture)
-            if (configEntity != null && validate(request, respFuture, true)) {
-                configEntity.config = request.config
+            if (configEntity != null) {
                 publishConfigToKafka(configEntity, respFuture)
             }
         }
     }
 
-    private fun validate(
+    private fun validateConfig(
         req: ConfigurationManagementRequest,
-        respFuture: ConfigurationManagementResponseFuture,
-        applyDefaults: Boolean
+        respFuture: ConfigurationManagementResponseFuture
     ): Boolean {
         return try {
-            val config = smartConfigFactory.create(ConfigFactory.parseString(req.config))
-            val updatedConfig = validator.validate(
-                req.section,
-                Version(req.schemaVersion.majorVersion, req.schemaVersion.minorVersion),
-                config,
-                applyDefaults
+            val configSection = req.section
+            val configSchemaVersion = Version(req.schemaVersion.majorVersion, req.schemaVersion.minorVersion)
+            val configValue = smartConfigFactory.create(ConfigFactory.parseString(req.config))
+            validator.validate(
+                configSection,
+                configSchemaVersion,
+                configValue,
+                applyDefaults = false
             )
-            req.config = updatedConfig.root().render(ConfigRenderOptions.concise())
             true
         } catch (e: Exception) {
             val errMsg = "New configuration represented by $req couldn't be validated. Cause: $e"
@@ -112,7 +108,7 @@ internal class ConfigWriterProcessor(
         val configSection = entity.section
         val config = Configuration(
             entity.config,
-            entity.version.toString(),
+            entity.version,
             ConfigurationSchemaVersion(entity.schemaVersionMajor, entity.schemaVersionMinor)
         )
         try {
@@ -126,7 +122,7 @@ internal class ConfigWriterProcessor(
                     config.schemaVersion.majorVersion,
                     config.schemaVersion.minorVersion
                 ),
-                config.version.toInt()
+                config.version
             )
             return
         }
@@ -140,7 +136,7 @@ internal class ConfigWriterProcessor(
                 config.schemaVersion.majorVersion,
                 config.schemaVersion.minorVersion
             ),
-            config.version.toInt()
+            config.version
         )
         respFuture.complete(response)
     }

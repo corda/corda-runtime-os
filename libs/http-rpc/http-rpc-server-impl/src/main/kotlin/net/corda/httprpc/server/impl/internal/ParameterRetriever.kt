@@ -1,7 +1,6 @@
 package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import io.javalin.plugin.json.JavalinJson
 import java.io.InputStream
 import java.lang.IllegalArgumentException
 import net.corda.httprpc.server.impl.apigen.processing.Parameter
@@ -122,7 +121,7 @@ private class BodyParameterRetriever(private val parameter: Parameter) : Paramet
             if (parameter.required && node == null) throw MissingParameterException("Missing body parameter \"${parameter.name}\".")
 
             val field = node?.toString() ?: "null"
-            return JavalinJson.fromJson(field, parameter.classType)
+            return ctx.fromJsonString(field, parameter.classType)
                 .also { log.trace { "Cast \"${parameter.name}\" to body parameter completed." } }
         } catch (e: Exception) {
             "Error during Cast \"${parameter.name}\" to body parameter".let {

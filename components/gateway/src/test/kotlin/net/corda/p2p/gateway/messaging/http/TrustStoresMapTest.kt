@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
@@ -34,9 +36,12 @@ class TrustStoresMapTest {
     private val subscription = mock<CompactedSubscription<String, GatewayTruststore>>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val creteResources = AtomicReference<(resources: ResourcesHolder) -> CompletableFuture<Unit>>()
-    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java) { _, context ->
+    private val mockDominoTile = mockConstruction(ComplexDominoTile::class.java)
+    private var future: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
-        creteResources.set(context.arguments()[2] as? (resources: ResourcesHolder) -> CompletableFuture<Unit>)
+        future = context.arguments()[2] as CompletableFuture<Unit>
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
     private val processor = argumentCaptor<CompactedProcessor<String, GatewayTruststore>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
@@ -53,13 +58,16 @@ class TrustStoresMapTest {
             KeyStore.getInstance("PKCS12")
         }.doReturn(keyStore)
     }
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+        whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+    }
 
     @AfterEach
     fun cleanUp() {
         mockKeyStore.close()
         mockDominoTile.close()
         subscriptionDominoTile.close()
+        blockingDominoTile.close()
     }
 
     private val testObject = TrustStoresMap(
@@ -71,15 +79,11 @@ class TrustStoresMapTest {
 
     @Test
     fun `createResources will not mark as ready before getting snapshot`() {
-        val future = creteResources.get()?.invoke(mock())
-
         assertThat(future).isNotCompleted
     }
 
     @Test
     fun `onSnapshot will mark as ready`() {
-        val future = creteResources.get()?.invoke(mock())
-
         processor.firstValue.onSnapshot(emptyMap())
 
         assertThat(future).isCompleted

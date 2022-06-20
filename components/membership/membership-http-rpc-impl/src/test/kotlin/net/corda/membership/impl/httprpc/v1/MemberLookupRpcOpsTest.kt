@@ -168,7 +168,8 @@ class MemberLookupRpcOpsTest {
         on { getById(HOLDING_IDENTITY_STRING) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
-            null, UUID.randomUUID(), null, UUID.randomUUID()
+            null, UUID.randomUUID(), null, UUID.randomUUID(),
+            timestamp = Instant.now()
         )
     }
 

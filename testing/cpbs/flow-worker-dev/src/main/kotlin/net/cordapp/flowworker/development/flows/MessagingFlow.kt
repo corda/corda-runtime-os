@@ -1,13 +1,13 @@
 package net.cordapp.flowworker.development.flows
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -111,7 +111,7 @@ class MessagingInitiatedFlow : ResponderFlow {
     }
 }
 
-class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
+class InlineSubFlow(private val session: FlowSession) : SubFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
@@ -127,7 +127,7 @@ class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
 }
 
 @InitiatingFlow(protocol = "subFlowDevProtocol")
-class InitiatingSubFlow : Flow<Unit> {
+class InitiatingSubFlow : SubFlow<Unit> {
 
     private companion object {
         val log = contextLogger()

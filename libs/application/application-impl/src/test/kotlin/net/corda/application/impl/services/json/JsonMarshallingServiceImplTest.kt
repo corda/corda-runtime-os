@@ -12,13 +12,13 @@ class JsonMarshallingServiceImplTest {
             it.quantity = 1
         }
 
-        val json = JsonMarshallingServiceImpl().formatJson(dto)
+        val json = JsonMarshallingServiceImpl().format(dto)
         assertThat(json).isEqualTo("{\"name\":\"n1\",\"quantity\":1}")
     }
 
     @Test
     fun `Can deserialize object from json string`() {
-        val dto = JsonMarshallingServiceImpl().parseJson(
+        val dto = JsonMarshallingServiceImpl().parse(
             "{\"name\":\"n1\",\"quantity\":1}", SimpleDto::class.java
         )
         assertThat(dto.name).isEqualTo("n1")
@@ -27,7 +27,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Can deserialize list from json string`() {
-        val dtoList = JsonMarshallingServiceImpl().parseJsonList(
+        val dtoList = JsonMarshallingServiceImpl().parseList(
             "[{\"name\":\"n1\",\"quantity\":1},{\"name\":\"n2\",\"quantity\":2}]", SimpleDto::class.java
         )
         assertThat(dtoList).hasSize(2)

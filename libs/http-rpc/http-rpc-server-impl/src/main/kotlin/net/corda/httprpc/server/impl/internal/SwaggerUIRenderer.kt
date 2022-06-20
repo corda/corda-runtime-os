@@ -20,12 +20,12 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
     }
 
     override fun handle(ctx: Context) {
-        val swaggerVersion = OptionalDependency.SWAGGERUI.version
+        val swaggerUiVersion = OptionalDependency.SWAGGERUI.version
 
         val bundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java)
         if (bundle == null) {
             // This branch is used by non-OSGi tests.
-            if (Util.getResourceUrl("META-INF/resources/webjars/swagger-ui/$swaggerVersion/swagger-ui.css") == null) {
+            if (Util.getResourceUrl("META-INF/resources/webjars/swagger-ui/$swaggerUiVersion/swagger-ui.css") == null) {
                 "Missing dependency '${OptionalDependency.SWAGGERUI.displayName}'".apply {
                     log.error(this)
                     throw InternalServerErrorResponse(this)
@@ -46,9 +46,9 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
                 <meta charset="UTF-8">
                 <title>Swagger UI</title>
                 <link rel="icon" type="image/png" 
-                href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/favicon-16x16.png" sizes="16x16" />
-                <link rel="stylesheet" href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/swagger-ui.css" >
-                <script src="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/swagger-ui-bundle.js"></script>
+                href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerUiVersion/favicon-16x16.png" sizes="16x16" />
+                <link rel="stylesheet" href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerUiVersion/swagger-ui.css" >
+                <script src="${ctx.contextPath()}/webjars/swagger-ui/$swaggerUiVersion/swagger-ui-bundle.js"></script>
                 <style>body{background:#fafafa;}</style>
             </head>
             <body>
@@ -74,7 +74,7 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
                         dom_id: "#swagger-ui",
                         deepLinking: true,
                         presets: [SwaggerUIBundle.presets.apis],
-                        oauth2RedirectUrl: `${"$"}{window.location.protocol}//${"$"}{window.location.host}${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/oauth2-redirect.html`,
+                        oauth2RedirectUrl: `${"$"}{window.location.protocol}//${"$"}{window.location.host}${ctx.contextPath()}/webjars/swagger-ui/$swaggerUiVersion/oauth2-redirect.html`,
                         onComplete: function() {
                     // "basicAuth" is the key name of the security scheme in securityDefinitions
                     ui.preauthorizeBasic("basicAuth", "", "");

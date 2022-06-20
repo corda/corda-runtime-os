@@ -24,6 +24,7 @@ internal class VirtualNodeInfoReadServiceFakeParserTest {
               groupId: ${vnode.holdingIdentity.groupId}
               x500Name: ${vnode.holdingIdentity.x500Name}
             vaultDmlConnectionId: ${vnode.vaultDmlConnectionId}
+            timestamp: ${vnode.timestamp}
         """.trimIndent())
 
         val all = VirtualNodeInfoReadServiceFakeParser.loadFrom(reader)

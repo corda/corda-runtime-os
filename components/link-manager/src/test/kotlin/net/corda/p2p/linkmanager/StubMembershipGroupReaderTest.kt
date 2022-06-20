@@ -3,15 +3,15 @@ package net.corda.p2p.linkmanager
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
@@ -33,11 +33,12 @@ class StubMembershipGroupReaderTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), eq(configuration)) } doReturn mock()
     }
-    private lateinit var ready: CompletableFuture<Unit>
-    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, context ->
+    private var ready: CompletableFuture<Unit>? = null
+    private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { _, context ->
         @Suppress("UNCHECKED_CAST")
-        val createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
-        ready = createResources.invoke(mock())
+        ready = context.arguments()[2] as CompletableFuture<Unit>
+    }
+    private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
     }
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
@@ -99,6 +100,7 @@ class StubMembershipGroupReaderTest {
     fun cleanUp() {
         subscriptionDominoTile.close()
         dominoTile.close()
+        blockingDominoTile.close()
         keyReader.close()
         keyHasher.close()
     }
@@ -209,7 +211,7 @@ class StubMembershipGroupReaderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 null
             ),
@@ -250,7 +252,7 @@ class StubMembershipGroupReaderTest {
 
         processor.firstValue.onNext(
             Record(
-                TestSchema.MEMBER_INFO_TOPIC,
+                MEMBER_INFO_TOPIC,
                 alice.holdingIdentity.x500Name,
                 carol
             ),

@@ -30,9 +30,7 @@ class ConfigProcessorTest {
     private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
-        on { getRPCConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
         on { getDbConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
-        on { getReconciliationConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
         on { getCryptoConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
     }
 
@@ -47,8 +45,8 @@ class ConfigProcessorTest {
     fun `config is forwarded on initial snapshot`() {
         val coordinator = mock<LifecycleCoordinator>()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, BOOT_CONFIG_STRING.toSmartConfig(), configMerger)
-        val config = Configuration(CONFIG_STRING, "1", schemaVersion)
-        val messagingConfig = Configuration(MESSAGING_CONFIG_STRING, "1", schemaVersion)
+        val config = Configuration(CONFIG_STRING, 0, schemaVersion)
+        val messagingConfig = Configuration(MESSAGING_CONFIG_STRING, 0, schemaVersion)
         configProcessor.onSnapshot(mapOf("BAR" to config, MESSAGING_CONFIG to messagingConfig))
         verify(coordinator).postEvent(capture(eventCaptor))
         assertThat(eventCaptor.value is NewConfigReceived)
@@ -59,7 +57,7 @@ class ConfigProcessorTest {
     fun `config is forwarded on update`() {
         val coordinator = mock<LifecycleCoordinator>()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, BOOT_CONFIG_STRING.toSmartConfig(), configMerger)
-        val config = Configuration(CONFIG_STRING, "1", schemaVersion)
+        val config = Configuration(CONFIG_STRING, 0, schemaVersion)
         configProcessor.onNext(Record("topic", "bar", config), null, mapOf("bar" to config))
         verify(coordinator).postEvent(capture(eventCaptor))
         assertThat(eventCaptor.value is NewConfigReceived)
@@ -83,7 +81,7 @@ class ConfigProcessorTest {
     fun `no config is forwarded if the update is null`() {
         val coordinator = mock<LifecycleCoordinator>()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, BOOT_CONFIG_STRING.toSmartConfig(), configMerger)
-        val config = Configuration(CONFIG_STRING, "1", schemaVersion)
+        val config = Configuration(CONFIG_STRING, 0, schemaVersion)
         configProcessor.onNext(Record("topic", "bar", null), null, mapOf("bar" to config))
         verify(coordinator, times(0)).postEvent(any())
     }

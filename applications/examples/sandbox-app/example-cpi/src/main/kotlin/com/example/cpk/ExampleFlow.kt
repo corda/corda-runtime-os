@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
-import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName

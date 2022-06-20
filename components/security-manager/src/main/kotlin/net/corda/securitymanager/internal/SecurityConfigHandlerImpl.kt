@@ -38,11 +38,12 @@ class SecurityConfigHandlerImpl @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<SecurityConfigHandler>(::eventHandler)
+    private val configReadServiceHandle: AutoCloseable
     private var configHandle: AutoCloseable? = null
 
     init {
         log.debug("Initializing SecurityConfigHandler")
-        coordinator.followStatusChangesByName(
+        configReadServiceHandle = coordinator.followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
             )
@@ -64,6 +65,7 @@ class SecurityConfigHandlerImpl @Activate constructor(
 
     @Deactivate
     override fun close() {
+        configReadServiceHandle.close()
         coordinator.close()
     }
 

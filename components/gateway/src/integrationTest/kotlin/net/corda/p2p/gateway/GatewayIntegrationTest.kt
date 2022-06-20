@@ -30,8 +30,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.domino.logic.DependenciesVerifier
-import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -66,11 +65,11 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.schema.TestSchema
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.test.util.eventually
@@ -112,7 +111,8 @@ class GatewayIntegrationTest : TestBase() {
         private val topicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
 
-        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
+        val lifecycleCoordinatorFactory =
+            LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
@@ -558,7 +558,10 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                messagingConfig = messagingConfig.withValue(
+                    INSTANCE_ID,
+                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
+                ),
                 partitionAssignmentListener = null
             )
             bobSubscription.start()
@@ -577,7 +580,10 @@ class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                messagingConfig = messagingConfig.withValue(
+                    INSTANCE_ID,
+                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
+                ),
                 partitionAssignmentListener = null
             )
             aliceSubscription.start()
@@ -641,7 +647,7 @@ class GatewayIntegrationTest : TestBase() {
             if (!allMessagesDelivered) {
                 fail(
                     "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                        "Alice received $aliceReceivedMessages (expected $messageCount)"
+                            "Alice received $aliceReceivedMessages (expected $messageCount)"
                 )
             }
 
@@ -688,7 +694,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 gateway.startAndWaitForStarted()
-                assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
+                assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.UP)
 
                 logger.info("Publishing bad config")
                 // -20 is invalid port, serer should fail
@@ -700,7 +706,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
                 }
                 eventually(duration = 20.seconds) {
                     assertThrows<ConnectException> {
@@ -718,7 +724,7 @@ class GatewayIntegrationTest : TestBase() {
                     )
                 )
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.Started)
+                    assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.UP)
                 }
                 assertDoesNotThrow {
                     Socket(host, anotherPort).close()
@@ -727,7 +733,7 @@ class GatewayIntegrationTest : TestBase() {
                 logger.info("Publishing bad config again")
                 configPublisher.publishBadConfig()
                 eventually(duration = 20.seconds) {
-                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                    assertThat(gateway.dominoTile.status).isEqualTo(LifecycleStatus.DOWN)
                 }
                 eventually(duration = 20.seconds) {
                     assertThrows<ConnectException> {
@@ -824,7 +830,8 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Publish the first key pair
-                val keyStore = firstCertificatesAuthority.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
+                val keyStore =
+                    firstCertificatesAuthority.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, keyStore)
 
                 // Client should now pass
@@ -835,7 +842,7 @@ class GatewayIntegrationTest : TestBase() {
                 // Delete the first pair
                 server.publish(
                     Record(
-                        TestSchema.CRYPTO_KEYS_TOPIC,
+                        CRYPTO_KEYS_TOPIC,
                         keyStore.keyStore.aliases().nextElement(),
                         null
                     )
@@ -881,7 +888,8 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Change the host
                 configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
-                val bobKeyStore = firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
+                val bobKeyStore =
+                    firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
 
                 // Client should pass with new host
@@ -897,7 +905,8 @@ class GatewayIntegrationTest : TestBase() {
                 )
 
                 // replace the first pair
-                val newKeyStore = secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
+                val newKeyStore =
+                    secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newKeyStore)
                 eventually {
                     testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
@@ -918,30 +927,12 @@ class GatewayIntegrationTest : TestBase() {
                 )
 
                 // publish new pair with new alias
-                val newerKeyStore = thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
+                val newerKeyStore =
+                    thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, newerKeyStore)
                 eventually {
                     testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
                 }
-            }
-        }
-    }
-
-    @Nested
-    inner class DominoLogicTests {
-        @Test
-        fun `domino logic dependencies are setup successfully for gateway`() {
-            val configPublisher = ConfigPublisher()
-            val gateway = Gateway(
-                configPublisher.readerService,
-                alice.subscriptionFactory,
-                alice.publisherFactory,
-                alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-            )
-
-            assertDoesNotThrow {
-                DependenciesVerifier.verify(gateway.dominoTile)
             }
         }
     }

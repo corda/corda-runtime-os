@@ -6,7 +6,6 @@ metadata:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
     spec:
@@ -15,17 +14,13 @@ spec:
         - name: run-topic-script
           image: {{ include "corda.kafkaClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
-          resources:
-            requests:
-              cpu: 2000m
-              memory: 750Mi
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
           args:
             - |
               set -e
-              export KAFKA_HEAP_OPTS="-Xmx1G"
               bash "/tmp/working_dir/create-topics.sh"
           volumeMounts:
             - mountPath: /tmp/working_dir
@@ -39,6 +34,7 @@ spec:
         - name: create-trust-store
           image: {{ include "corda.kafkaClientImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
             - /bin/bash
             - -c
@@ -66,6 +62,7 @@ spec:
         - name: create-topic-script
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [
             'topic',
             'create',
@@ -80,6 +77,43 @@ spec:
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
+        {{- if .Values.kafka.cleanup }}
+        - name: delete-topic-script
+          image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          args: [
+            'topic',
+            'delete',
+            '-a', '{{ include "corda.kafkaBootstrapServers" . }}',
+            {{- if .Values.kafka.topicPrefix }}
+            '-f', '"{{ .Values.kafka.topicPrefix }}"',
+            {{- end }}
+            '-l', '/tmp/working_dir/delete-topics.sh'
+          ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+        - name: run-delete-script
+          image: bitnami/kafka:3.1.0-debian-10-r89
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+              set -e
+              bash -x "/tmp/working_dir/delete-topics.sh"
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+            - mountPath: "/certs"
+              name: certs
+              readOnly: true
+            {{- end }}
+        {{- end }}
       volumes:
         - name: working-volume
           emptyDir: {}
