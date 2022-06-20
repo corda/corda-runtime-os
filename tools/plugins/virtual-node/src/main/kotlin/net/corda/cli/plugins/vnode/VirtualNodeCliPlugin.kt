@@ -11,8 +11,7 @@ import picocli.CommandLine
 
 class VirtualNodeCliPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
-    companion object {
-        val classLoader = this::class.java.classLoader
+    private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 

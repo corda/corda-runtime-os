@@ -6,6 +6,8 @@ import net.corda.httprpc.client.HttpRpcClient
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -20,10 +22,14 @@ import kotlin.reflect.KClass
 )
 class ResetCommand : Runnable {
 
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    }
+
     @Option(
         names = ["-t", "--target"],
         required = true,
-        description = ["The base address of the server (including port)."]
+        description = ["The target address of the HTTP RPC Endpoint (e.g. `https://host:port`)"]
     )
     lateinit var targetUrl: String
 
@@ -33,13 +39,10 @@ class ResetCommand : Runnable {
     @Option(names = ["-p", "--password"], description = ["Password"], required = true)
     lateinit var password: String
 
-    @Option(names = ["-ssl", "--ssl"], required = false, description = ["Use SSL."])
-    var useSSL: Boolean = true
-
     @Option(names = ["-pv", "--protocol-version"], required = false, description = ["Minimum protocol version."])
     var minimumServerProtocolVersion: Int = 1
 
-    @Option(names = ["-c", "--cpi"], required = true, description = ["CPI file to reset the virtual node with."])
+    @Option(names = ["-c", "--cpi"], required = true, description = ["The path to the CPI file to reset the virtual node with."])
     lateinit var cpiFileName: String
 
     @Option(names = ["-w", "--wait"], required = false, description = ["polls for result"])
@@ -62,6 +65,7 @@ class ResetCommand : Runnable {
                     virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
                 } catch (e: Exception) {
                     println(e.message)
+                    logger.error(e.stackTrace.toString())
                     return
                 }
             }
@@ -87,6 +91,7 @@ class ResetCommand : Runnable {
                     }
                 } catch (e: Exception) {
                     println(e.message)
+                    logger.error(e.stackTrace.toString())
                     return
                 }
             }
@@ -101,7 +106,7 @@ class ResetCommand : Runnable {
             baseAddress = "$targetUrl/api/v1/",
             rpcOps.java,
             HttpRpcClientConfig()
-                .enableSSL(useSSL)
+                .enableSSL(true)
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
                 .username(username)
                 .password(password),
