@@ -57,6 +57,7 @@ pluginManagement {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
         id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
         id "com.jfrog.artifactory" version artifactoryPluginVersion
+        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
     }
 }
 
