@@ -41,8 +41,6 @@ class FlowService @Activate constructor(
 
     companion object {
         private val logger = contextLogger()
-
-        //Hack: Removed FLOW_CONFIG from the list for now, needs to be reviewed as part of CORE-3780
         private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
     }
 
