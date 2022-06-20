@@ -9,6 +9,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -18,7 +19,11 @@ class FlowOpsResponses(
     subscriptionFactory: SubscriptionFactory
 ) : DurableProcessor<String, FlowEvent>, AutoCloseable {
 
-    private val subscription: Subscription<String, FlowEvent> =
+    companion object {
+        val logger = contextLogger()
+    }
+
+    private val subscription: Subscription<String, FlowOpsResponse> =
         subscriptionFactory.createDurableSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = "TEST",
@@ -37,6 +42,7 @@ class FlowOpsResponses(
 
     override fun onNext(events: List<Record<String, FlowEvent>>): List<Record<*, *>> {
         events.forEach {
+            logger.info("received event on key ${it.key}")
             receivedEvents[it.key] = (it.value as FlowEvent).payload as FlowOpsResponse
         }
         return emptyList()
@@ -53,3 +59,4 @@ class FlowOpsResponses(
         subscription.close()
     }
 }
+

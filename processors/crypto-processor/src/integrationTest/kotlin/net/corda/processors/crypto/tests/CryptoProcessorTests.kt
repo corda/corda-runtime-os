@@ -688,7 +688,10 @@ class CryptoProcessorTests {
                         value = event
                     )
                 )
-            ).forEach { it.get() }
+            ).forEach {
+                logger.info("Publishing on key $key")
+                it.get()
+            }
             logger.info("Waiting for response for createSign")
             val response = flowOpsResponses.waitForResponse(key)
             val signature = transformer.transform(response) as DigitalSignature.WithKey
