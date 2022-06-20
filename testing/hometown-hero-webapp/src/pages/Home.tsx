@@ -8,22 +8,20 @@ import VisualizationWrapper from '../components/Visualizations/VisualizationWrap
 
 const Home = () => {
     return (
-        <div>
-            <PageContentWrapper>
-                <PageHeader>Hometown Hero</PageHeader>
-                <div className="flex gap-4 mt-8 ml-4">
-                    <Button isLink to={LOGIN} iconLeft={'LoginVariant'} size={'large'} variant={'primary'}>
-                        Sign in
-                    </Button>
-                    <Button isLink to={REGISTER} iconLeft={'AccountPlus'} size={'large'} variant={'primary'}>
-                        Register
-                    </Button>
-                </div>
-                <VisualizationWrapper width={1000}>
-                    <HomeViz qrContent={document.location.href} />
-                </VisualizationWrapper>
-            </PageContentWrapper>
-        </div>
+        <PageContentWrapper>
+            <PageHeader>Hometown Hero</PageHeader>
+            <div className="flex gap-4 mt-8 ml-4">
+                <Button isLink to={LOGIN} iconLeft={'LoginVariant'} size={'large'} variant={'primary'}>
+                    Sign in
+                </Button>
+                <Button isLink to={REGISTER} iconLeft={'AccountPlus'} size={'large'} variant={'primary'}>
+                    Register
+                </Button>
+            </div>
+            <VisualizationWrapper width={1000}>
+                <HomeViz qrContent={document.location.href} />
+            </VisualizationWrapper>
+        </PageContentWrapper>
     );
 };
 
