@@ -4,10 +4,10 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS
@@ -28,7 +28,7 @@ internal class ConfigRPCOpsConfigHandler(
      * is provided in [config].
      */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (RPC_CONFIG in changedKeys) processRPCConfig(config)
+        if (RPC_CONFIG in changedKeys && MESSAGING_CONFIG in changedKeys) processRPCConfig(config)
         if (configRPCOps.isRunning) coordinator.updateStatus(UP)
     }
 

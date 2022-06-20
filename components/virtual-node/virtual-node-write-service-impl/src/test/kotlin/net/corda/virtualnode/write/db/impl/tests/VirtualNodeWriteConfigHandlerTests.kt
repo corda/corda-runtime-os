@@ -39,7 +39,8 @@ class VirtualNodeWriteConfigHandlerTests {
         }
         val configHandler = VirtualNodeWriteConfigHandler(mock(), coordinator, vnodeWriterFactory)
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG, MESSAGING_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to
+                config))
 
         verify(vnodeWriterFactory).create(config)
         verify(vnodeWriter).start()
@@ -59,7 +60,7 @@ class VirtualNodeWriteConfigHandlerTests {
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
             configHandler.onNewConfiguration(
-                setOf(RPC_CONFIG),
+                setOf(RPC_CONFIG, MESSAGING_CONFIG),
                 mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
             )
         }
@@ -84,7 +85,7 @@ class VirtualNodeWriteConfigHandlerTests {
 
         val e = assertThrows<VirtualNodeWriteServiceException> {
             configHandler.onNewConfiguration(
-                setOf(RPC_CONFIG),
+                setOf(RPC_CONFIG, MESSAGING_CONFIG),
                 mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config)
             )
         }
@@ -104,7 +105,7 @@ class VirtualNodeWriteConfigHandlerTests {
         val configHandler = VirtualNodeWriteConfigHandler(mock(), mock(), vnodeWriterFactory)
 
         assertDoesNotThrow {
-            configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to mock(), MESSAGING_CONFIG to mock()))
+            configHandler.onNewConfiguration(setOf(RPC_CONFIG, MESSAGING_CONFIG), mapOf(RPC_CONFIG to mock(), MESSAGING_CONFIG to mock()))
         }
     }
 
@@ -120,7 +121,8 @@ class VirtualNodeWriteConfigHandlerTests {
             whenever(withFallback(any())).thenReturn(this)
         }
 
-        configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to config))
+        configHandler.onNewConfiguration(setOf(RPC_CONFIG, MESSAGING_CONFIG), mapOf(RPC_CONFIG to config, BOOT_CONFIG to config, MESSAGING_CONFIG to
+                config))
 
         verify(coordinator).updateStatus(UP)
     }

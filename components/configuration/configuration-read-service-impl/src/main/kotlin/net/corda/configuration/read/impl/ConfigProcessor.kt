@@ -80,11 +80,18 @@ internal class ConfigProcessor(
                     )
                 }
             }.toMutableMap()
-            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
-            config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+
+            if (currentData.containsKey(MESSAGING_CONFIG)) {
+                config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+            }
+            if (currentData.containsKey(DB_CONFIG)) {
+                config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
+            }
             //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
             // exist to preserve defaulting logic present
-            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            if (currentData.containsKey(CRYPTO_CONFIG)) {
+                config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            }
             config
         } else {
             mutableMapOf()
