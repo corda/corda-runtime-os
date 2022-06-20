@@ -13,7 +13,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -30,6 +30,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -44,6 +45,7 @@ class PersistRegistrationRequestHandlerTest {
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
+    private val clock = TestClock(Instant.now())
 
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val cryptoDmlConnectionId = UUID.randomUUID()
@@ -51,7 +53,8 @@ class PersistRegistrationRequestHandlerTest {
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
         vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = cryptoDmlConnectionId
+        cryptoDmlConnectionId = cryptoDmlConnectionId,
+        timestamp = clock.instant()
     )
 
 
@@ -75,7 +78,6 @@ class PersistRegistrationRequestHandlerTest {
         on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
     }
 
-    private val clock = UTCClock()
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,

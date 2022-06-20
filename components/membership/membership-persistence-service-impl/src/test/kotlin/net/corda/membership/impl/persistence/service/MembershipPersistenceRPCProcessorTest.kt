@@ -19,8 +19,8 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.virtualnode.HoldingIdentity
@@ -35,6 +35,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
@@ -45,7 +46,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
 
-    private val clock: Clock = UTCClock()
+    private val clock: Clock = TestClock(Instant.now())
 
     private val requestId = UUID.randomUUID().toString()
     private val ourX500Name = MemberX500Name.parse("O=Alice, L=London, C=GB").toString()
@@ -59,7 +60,8 @@ class MembershipPersistenceRPCProcessorTest {
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
         vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = cryptoDmlConnectionId
+        cryptoDmlConnectionId = cryptoDmlConnectionId,
+        timestamp = clock.instant()
     )
 
     private val entityTransaction: EntityTransaction = mock()

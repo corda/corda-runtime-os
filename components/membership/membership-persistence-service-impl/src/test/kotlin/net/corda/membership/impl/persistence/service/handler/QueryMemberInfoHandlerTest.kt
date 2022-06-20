@@ -13,7 +13,7 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -31,6 +31,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -50,6 +51,7 @@ class QueryMemberInfoHandlerTest {
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
+    private val clock = TestClock(Instant.now())
 
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val cryptoDmlConnectionId = UUID.randomUUID()
@@ -57,7 +59,8 @@ class QueryMemberInfoHandlerTest {
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
         vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = cryptoDmlConnectionId
+        cryptoDmlConnectionId = cryptoDmlConnectionId,
+        timestamp = clock.instant()
     )
 
     private val memberContextBytes = "123".toByteArray()
@@ -99,7 +102,6 @@ class QueryMemberInfoHandlerTest {
         on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
     }
 
-    private val clock = UTCClock()
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,

@@ -15,7 +15,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.membership.impl.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -34,6 +34,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -48,6 +49,7 @@ class PersistMemberInfoHandlerTest {
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
+    private val clock = TestClock(Instant.now())
 
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
@@ -66,7 +68,8 @@ class PersistMemberInfoHandlerTest {
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
         vaultDmlConnectionId = vaultDmlConnectionId,
-        cryptoDmlConnectionId = cryptoDmlConnectionId
+        cryptoDmlConnectionId = cryptoDmlConnectionId,
+        timestamp = clock.instant()
     )
 
 
@@ -97,7 +100,6 @@ class PersistMemberInfoHandlerTest {
         on { getById(eq(ourHoldingIdentity.id)) } doReturn virtualNodeInfo
     }
 
-    private val clock = UTCClock()
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
