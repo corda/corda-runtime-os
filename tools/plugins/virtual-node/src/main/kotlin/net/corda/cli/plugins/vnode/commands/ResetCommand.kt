@@ -53,29 +53,48 @@ class ResetCommand : Runnable {
             val connection = virtualNodeMaintenance.start()
             with(connection.proxy) {
                 val cpi = File(cpiFileName)
-                virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
+                if (cpi.extension != "cpi") {
+                    println("File type must be .cpi")
+                    return
+                }
+                try {
+                    println("Uploading CPI to host: $targetUrl")
+                    virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
+                } catch (e: Exception) {
+                    println(e.message)
+                    return
+                }
             }
         }
         if (wait) {
             pollForOKStatus(virtualNodeMaintenanceResult)
         } else {
-            print(virtualNodeMaintenanceResult)
+            println(virtualNodeMaintenanceResult)
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun pollForOKStatus(virtualNodeMaintenanceResult: String) {
         val cpiUploadClient = createHttpRpcClient(CpiUploadRPCOps::class)
 
         cpiUploadClient.use {
             val connection = cpiUploadClient.start()
             with(connection.proxy) {
-                while (this.status(virtualNodeMaintenanceResult).status != "OK") {
-                    java.lang.Thread.sleep(5000L)
+                println("Polling for result.")
+                try {
+                    while (this.status(virtualNodeMaintenanceResult).status != "OK") {
+                        Thread.sleep(5000L)
+                    }
+                } catch (e: Exception) {
+                    println(e.message)
+                    return
                 }
             }
-            print("CPI Successfully Uploaded and applied.")
+            println("CPI Successfully Uploaded and applied. ")
         }
     }
+
+
 
     private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
         return HttpRpcClient(
