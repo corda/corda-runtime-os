@@ -13,7 +13,7 @@ class CordaAvroSerializerImpl<T : Any>(
 
     companion object {
         private val stringSerializer = StringSerializer()
-        val log = contextLogger()
+        private val log = contextLogger()
     }
 
     override fun serialize(data: T): ByteArray? {
