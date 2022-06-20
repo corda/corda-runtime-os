@@ -11,7 +11,9 @@
         "@r3/r3-tooling-design-system": "file:r3-tooling-design-system-2.1.1.tgz",
         "node-sass": "^7.0.1",
         "react": "^18.0.0",
-        "react-dom": "^18.0.0"
+        "react-dom": "^18.0.0",
+        "react-qr-code": "^2.0.7",
+        "react-router-dom": "^6.3.0"
     },
     "devDependencies": {
         "@types/react": "^18.0.0",
