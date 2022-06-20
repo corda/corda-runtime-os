@@ -88,6 +88,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import org.mockito.kotlin.mock
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
@@ -201,7 +202,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
@@ -238,7 +240,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
@@ -331,7 +334,8 @@ class GatewayIntegrationTest : TestBase() {
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                    SigningMode.STUB
+                    SigningMode.STUB,
+                    mock()
                 ).use { gateway ->
                     gateway.start()
 
@@ -407,7 +411,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             ).use {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
@@ -502,7 +507,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             ).use {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
@@ -610,7 +616,8 @@ class GatewayIntegrationTest : TestBase() {
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                    SigningMode.STUB
+                    SigningMode.STUB,
+                    mock()
                 ),
                 Gateway(
                     createConfigurationServiceFor(
@@ -625,7 +632,8 @@ class GatewayIntegrationTest : TestBase() {
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                    SigningMode.STUB
+                    SigningMode.STUB,
+                    mock()
                 )
             ).onEach {
                 it.startAndWaitForStarted()
@@ -691,7 +699,8 @@ class GatewayIntegrationTest : TestBase() {
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             ).use { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
@@ -819,7 +828,8 @@ class GatewayIntegrationTest : TestBase() {
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             ).use { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory

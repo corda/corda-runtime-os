@@ -1,7 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.impl.CryptoOpsClientComponent
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -9,7 +8,6 @@ import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -58,10 +56,6 @@ class DynamicKeyStoreTest {
         on { createCompactedSubscription(any(), processorForKeystoreWithoutStubs.capture(), eq(nodeConfiguration)) } doReturn subscription
     }
 
-    private val publisherFactory = mock<PublisherFactory> {
-        on { createPublisher(any(), any()) } doReturn mock()
-    }
-    private val configurationReaderService = mock<ConfigurationReadService>()
     private val certificateFactory = mock<CertificateFactory>()
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java)
     private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
@@ -73,7 +67,7 @@ class DynamicKeyStoreTest {
         }
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
-    private val cryptoOpsClient = mockConstruction(CryptoOpsClientComponent::class.java)
+    private val cryptoOpsClient = mock<CryptoOpsClient>()
     private var futures: MutableList<CompletableFuture<Unit>> = mutableListOf()
     private val blockingDominoTile = mockConstruction(BlockingDominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
@@ -84,20 +78,18 @@ class DynamicKeyStoreTest {
     private val dynamicKeyStoreWithStubs = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystoreWithStubs,
-        publisherFactory,
         nodeConfiguration,
-        configurationReaderService,
         SigningMode.STUB,
+        cryptoOpsClient,
         certificateFactory,
     )
 
     private val dynamicKeystoreWithoutStubs = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystoreWithoutStubs,
-        publisherFactory,
         nodeConfiguration,
-        configurationReaderService,
         SigningMode.REAL,
+        cryptoOpsClient,
         certificateFactory
     )
 
@@ -251,7 +243,7 @@ class DynamicKeyStoreTest {
             dynamicKeyStoreWithStubs.sign(publicKeyOne, spec, data)
 
             verify(signer.constructed().first()).sign(tenantIdOne, publicKeyOne, spec, data)
-            verify(cryptoOpsClient.constructed().first(), never()).sign(anyString(), any(), any<SignatureSpec>(), any(), any())
+            verify(cryptoOpsClient, never()).sign(anyString(), any(), any<SignatureSpec>(), any(), any())
         }
 
         @Test
@@ -266,11 +258,11 @@ class DynamicKeyStoreTest {
         fun `when keystore is not using stubs, sign with known publicKey will send the correct data`() {
             val returnedData = "ok".toByteArray()
             val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
-            whenever(cryptoOpsClient.constructed().first().sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
+            whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
             dynamicKeystoreWithoutStubs.sign(publicKeyOne, spec, data)
 
-            verify(cryptoOpsClient.constructed().first()).sign(tenantIdOne, publicKeyOne, spec, data)
+            verify(cryptoOpsClient).sign(tenantIdOne, publicKeyOne, spec, data)
             verify(signer.constructed().first(), never()).sign(any(), any(), any(), any())
         }
 
@@ -278,7 +270,7 @@ class DynamicKeyStoreTest {
         fun `when keystore is not using stubs, sign with known publicKey will return the correct data`() {
             val returnedData = "ok".toByteArray()
             val signatureWithKey = DigitalSignature.WithKey(publicKeyOne, returnedData, emptyMap())
-            whenever(cryptoOpsClient.constructed().first().sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
+            whenever(cryptoOpsClient.sign(anyString(), any(), any<SignatureSpec>(), any(), any()))
                 .doReturn(signatureWithKey)
 
             assertThat(dynamicKeystoreWithoutStubs.sign(publicKeyOne, spec, data)).isEqualTo(returnedData)

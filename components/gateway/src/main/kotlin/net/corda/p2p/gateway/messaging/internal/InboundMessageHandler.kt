@@ -4,6 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import java.nio.ByteBuffer
 import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
@@ -41,7 +42,8 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-    signingMode: SigningMode
+    signingMode: SigningMode,
+    cryptoOpsClient: CryptoOpsClient
 ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
@@ -65,9 +67,9 @@ internal class InboundMessageHandler(
         configurationReaderService,
         this,
         subscriptionFactory,
-        publisherFactory,
         messagingConfiguration,
-        signingMode
+        signingMode,
+        cryptoOpsClient
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

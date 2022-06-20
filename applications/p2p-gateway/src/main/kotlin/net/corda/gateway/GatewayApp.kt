@@ -3,6 +3,7 @@ package net.corda.gateway
 import com.typesafe.config.ConfigFactory
 import kotlin.concurrent.thread
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -34,6 +35,8 @@ class GatewayApp @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -66,7 +69,8 @@ class GatewayApp @Activate constructor(
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 configMerger.getMessagingConfig(bootConfig),
-                signingMode
+                signingMode,
+                cryptoOpsClient
             ).also { gateway ->
                 gateway.start()
 

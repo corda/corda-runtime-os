@@ -94,7 +94,8 @@ class InboundMessageHandlerTest {
         publisherFactory,
         subscriptionFactory,
         SmartConfigImpl.empty(),
-        SigningMode.STUB
+        SigningMode.STUB,
+        mock()
     )
 
     @AfterEach

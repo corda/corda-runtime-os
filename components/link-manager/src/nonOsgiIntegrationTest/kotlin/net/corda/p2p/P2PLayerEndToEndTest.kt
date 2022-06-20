@@ -82,6 +82,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 
 class P2PLayerEndToEndTest {
 
@@ -420,7 +421,8 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
-                SigningMode.STUB
+                SigningMode.STUB,
+                mock()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {

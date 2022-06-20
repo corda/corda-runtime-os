@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -31,7 +32,8 @@ class Gateway(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
-    signingMode: SigningMode
+    signingMode: SigningMode,
+    cryptoOpsClient: CryptoOpsClient
 ) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
@@ -40,7 +42,8 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         messagingConfiguration,
-        signingMode
+        signingMode,
+        cryptoOpsClient
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,

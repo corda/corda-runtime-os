@@ -41,6 +41,7 @@ dependencies {
     implementation project(':components:domino-logic')
     implementation project(':components:p2p-test:stub-crypto-processor')
     implementation "net.corda:corda-cipher-suite"
+    implementation project(":components:crypto:crypto-client")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
