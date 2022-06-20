@@ -20,7 +20,6 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -138,7 +137,7 @@ class ConfigurationReadServiceImplTest {
 
         // Register and verify everything gets delivered
         val emptyConfig = SmartConfigImpl.empty()
-        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG, DB_CONFIG, CRYPTO_CONFIG)
+        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, MESSAGING_CONFIG, DB_CONFIG)
         val expectedConfig = mutableMapOf(
             BOOT_CONFIG to bootConfig, FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig,
             DB_CONFIG to emptyConfig
