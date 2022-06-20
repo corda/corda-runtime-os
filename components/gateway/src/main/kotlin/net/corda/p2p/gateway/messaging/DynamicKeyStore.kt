@@ -1,5 +1,8 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.impl.CryptoOpsClientComponent
 import java.io.ByteArrayInputStream
 import java.security.InvalidKeyException
 import java.security.PublicKey
@@ -10,13 +13,17 @@ import net.corda.crypto.delegated.signing.Alias
 import net.corda.crypto.delegated.signing.CertificateChain
 import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.crypto.delegated.signing.DelegatedSigner
+import net.corda.crypto.impl.components.CipherSchemeMetadataImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -26,10 +33,14 @@ import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 
+@Suppress("LongParameterList")
 internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
+    publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
+    private val configurationReaderService: ConfigurationReadService,
+    private val signingMode: SigningMode,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
     companion object {
@@ -59,11 +70,20 @@ internal class DynamicKeyStore(
 
     private val ready = CompletableFuture<Unit>()
 
-    private val signer = StubCryptoProcessor(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration,
-    )
+    private val stubSigner = if (signingMode == SigningMode.STUB) {
+        StubCryptoProcessor(
+            lifecycleCoordinatorFactory,
+            subscriptionFactory,
+            messagingConfiguration,
+        )
+    } else {
+        null
+    }
+    private val cryptoOpsClient: CryptoOpsClient? = if (signingMode == SigningMode.REAL) {
+        CryptoOpsClientComponent(lifecycleCoordinatorFactory, publisherFactory, CipherSchemeMetadataImpl(), configurationReaderService)
+    } else {
+        null
+    }
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -71,17 +91,28 @@ internal class DynamicKeyStore(
         ready
     )
 
+    private val signerCoordinatorName = if (signingMode == SigningMode.REAL) {
+        LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+    } else {
+        stubSigner!!.dominoTile.coordinatorName
+    }
+    private val signerNamedLifecycle = if (signingMode == SigningMode.REAL) {
+        NamedLifecycle(cryptoOpsClient!!, signerCoordinatorName)
+    } else {
+        stubSigner!!.dominoTile.toNamedLifecycle()
+    }
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
             subscriptionTile.coordinatorName,
-            signer.dominoTile.coordinatorName,
+            signerCoordinatorName,
             blockingDominoTile.coordinatorName
         ),
         managedChildren = listOf(
             subscriptionTile.toNamedLifecycle(),
-            signer.dominoTile.toNamedLifecycle(),
+            signerNamedLifecycle,
             blockingDominoTile.toNamedLifecycle()
         ),
     )
@@ -138,6 +169,26 @@ internal class DynamicKeyStore(
 
     override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
         val tenantId = publicKeyToTenantId[publicKey] ?: throw InvalidKeyException("Unknown public key")
-        return signer.sign(tenantId, publicKey, spec, data)
+        return if (signingMode == SigningMode.REAL) {
+            cryptoOpsClient!!.sign(tenantId, publicKey, spec, data).bytes
+        } else {
+            stubSigner!!.sign(tenantId, publicKey, spec, data)
+        }
     }
+}
+
+/**
+ * This switch will exist temporarily until we complete migration with the membership components (and dynamic networks).
+ * After that point, it can be removed as only the real crypto processor will be used.
+ */
+enum class SigningMode {
+    /**
+     * In this mode, signing is delegated to a real crypto processor.
+     */
+    REAL,
+
+    /**
+     * In this mode, signing is delegated to a stub crypto processor (that reads cryptographic material directly from Kafka)
+     */
+    STUB
 }

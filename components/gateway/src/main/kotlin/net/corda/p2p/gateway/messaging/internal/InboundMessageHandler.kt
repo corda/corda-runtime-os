@@ -23,6 +23,7 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -40,6 +41,7 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    signingMode: SigningMode
 ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
@@ -63,7 +65,9 @@ internal class InboundMessageHandler(
         configurationReaderService,
         this,
         subscriptionFactory,
+        publisherFactory,
         messagingConfiguration,
+        signingMode
     )
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -30,6 +31,7 @@ class Gateway(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
+    signingMode: SigningMode
 ) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
@@ -38,6 +40,7 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         messagingConfiguration,
+        signingMode
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,

@@ -29,6 +29,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
@@ -92,7 +93,8 @@ class InboundMessageHandlerTest {
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
-        SmartConfigImpl.empty()
+        SmartConfigImpl.empty(),
+        SigningMode.STUB
     )
 
     @AfterEach

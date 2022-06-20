@@ -8,10 +8,12 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
@@ -26,7 +28,9 @@ class ReconfigurableHttpServer(
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpServerListener,
     subscriptionFactory: SubscriptionFactory,
+    publisherFactory: PublisherFactory,
     nodeConfiguration: SmartConfig,
+    signingMode: SigningMode
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -36,7 +40,10 @@ class ReconfigurableHttpServer(
     private val dynamicKeyStore = DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
+        publisherFactory,
         nodeConfiguration,
+        configurationReaderService,
+        signingMode
     )
 
     override val dominoTile = ComplexDominoTile(

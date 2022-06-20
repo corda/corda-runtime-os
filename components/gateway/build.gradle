@@ -22,6 +22,10 @@ dependencies {
     api project(':components:domino-logic')
     api project(':libs:crypto:delegated-signing')
     implementation project(':components:p2p-test:stub-crypto-processor')
+    implementation project(":components:crypto:crypto-client")
+    implementation project(":components:crypto:crypto-client-impl")
+    implementation project(":components:crypto:crypto-component-core-impl")
+    implementation project(":libs:crypto:crypto-impl")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
