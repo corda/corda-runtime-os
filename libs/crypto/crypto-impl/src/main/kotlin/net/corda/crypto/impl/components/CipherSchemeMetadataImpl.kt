@@ -126,10 +126,10 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata {
         providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
 
     override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
-        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.values?.toList() ?: emptyList()
+        providerMap.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.values?.toList() ?: emptyList()
 
     override fun inferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
-        providerMap.keySchemeInfoMap[scheme]?.signatureSpecMap?.keys?.toList() ?: emptyList()
+        providerMap.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.keys?.toList() ?: emptyList()
 
     @Suppress("UNCHECKED_CAST")
     override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {

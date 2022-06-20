@@ -16,7 +16,7 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.exceptions.CryptoException
 import java.time.Duration
 
 class CryptoServiceDecorator(
@@ -57,28 +57,41 @@ class CryptoServiceDecorator(
         (cryptoService as? AutoCloseable)?.close()
     }
 
-    override val extensions: List<CryptoServiceExtensions> get() = try {
-        cryptoService.extensions
-    } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService extensions failed", e, isRecoverable = false)
-    }
+    override val extensions: List<CryptoServiceExtensions>
+        get() = try {
+            cryptoService.extensions
+        } catch (e: Throwable) {
+            if(e is CryptoException && !e.isRecoverable) {
+                throw e
+            } else {
+                throw CryptoException("CryptoService extensions failed", e)
+            }
+        }
 
-    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = try {
-        cryptoService.supportedSchemes
-    } catch (e: Throwable) {
-        throw CryptoServiceException("CryptoService supportedSchemes failed", e, isRecoverable = false)
-    }
+    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
+        get() = try {
+            cryptoService.supportedSchemes
+        } catch (e: Throwable) {
+            if(e is CryptoException && !e.isRecoverable) {
+                throw e
+            } else {
+                throw CryptoException("CryptoService supportedSchemes failed", e)
+            }
+        }
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         withTimeout.executeWithRetry {
             cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
         }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
+        if(e is CryptoException && !e.isRecoverable) {
+            throw e
+        } else {
+            throw CryptoException(
                 "CryptoService createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
-                e,
-                isRecoverable = false
+                e
             )
+        }
     }
 
     override fun generateKeyPair(
@@ -89,11 +102,11 @@ class CryptoServiceDecorator(
             cryptoService.generateKeyPair(spec, context)
         }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "CryptoService generateKeyPair failed (spec=$spec)",
-            e,
-            isRecoverable = false
-        )
+        if(e is CryptoException && !e.isRecoverable) {
+            throw e
+        } else {
+            throw CryptoException("CryptoService generateKeyPair failed (spec=$spec)", e)
+        }
     }
 
     override fun sign(
@@ -105,11 +118,11 @@ class CryptoServiceDecorator(
             cryptoService.sign(spec, data, context)
         }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "CryptoService sign failed (spec=$spec,data.size=${data.size})",
-            e,
-            isRecoverable = false
-        )
+        if(e is CryptoException && !e.isRecoverable) {
+            throw e
+        } else {
+            throw CryptoException("CryptoService sign failed (spec=$spec,data.size=${data.size})", e)
+        }
     }
 
     override fun delete(alias: String, context: Map<String, String>) = try {
@@ -117,10 +130,10 @@ class CryptoServiceDecorator(
             cryptoService.delete(alias, context)
         }
     } catch (e: Throwable) {
-        throw CryptoServiceException(
-            "CryptoService delete failed (alias=$alias)",
-            e,
-            isRecoverable = false
-        )
+        if(e is CryptoException && !e.isRecoverable) {
+            throw e
+        } else {
+            throw CryptoException("CryptoService delete failed (alias=$alias)", e)
+        }
     }
 }

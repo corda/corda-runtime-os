@@ -8,8 +8,8 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CSLThrottlingException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.exceptions.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoThrottlingException
 import java.util.UUID
 
 class CryptoServiceThrottlingDecorator(
@@ -34,16 +34,15 @@ class CryptoServiceThrottlingDecorator(
                     logger.info("Retrying after backing off succeeded (opId={},attempt={})", opId, attempt)
                 }
                 return result
-            } catch (e: CSLThrottlingException) {
+            } catch (e: CryptoThrottlingException) {
                 if(attempt == 1) {
                     opId = UUID.randomUUID().toString()
                 }
                 backOffTime = e.getBackoff(attempt, backOffTime)
                 if (backOffTime < 0 || attempt >= MAX_RETRY_GUARD) {
-                    throw CryptoServiceException(
+                    throw CryptoException(
                         "Failed all backoff attempts (opId=$opId, attempt=$attempt, backOffTime=$backOffTime).",
-                        e,
-                        isRecoverable = false
+                        e
                     )
                 } else {
                     logger.warn(

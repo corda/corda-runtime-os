@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.exceptions.CryptoException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -30,33 +30,43 @@ class ExecuteUtilsTests {
             ClassCastException(),
             NotImplementedError(),
             UnsupportedOperationException(),
-            CryptoServiceLibraryException("error", isRecoverable = false),
-            CryptoServiceLibraryException(
+            CryptoException("error"),
+            CryptoException(
                 "error",
-                CryptoServiceLibraryException("error", isRecoverable = true),
-                isRecoverable = false
+                CryptoException("error", true)
             ),
-            CryptoServiceLibraryException(
+            CryptoException(
                 "error",
-                TimeoutException(),
-                isRecoverable = false
+                TimeoutException()
             ),
             PersistenceException()
         )
 
         @JvmStatic
         fun retryableExceptions(): List<Throwable> = listOf(
-            CryptoServiceLibraryException("error", isRecoverable = true),
+            CryptoException("error", true),
             TimeoutException(),
             LockTimeoutException(),
             QueryTimeoutException(),
             OptimisticLockException(),
             PessimisticLockException(),
+            java.sql.SQLTransientException(),
+            java.sql.SQLTimeoutException(),
+            org.hibernate.exception.LockAcquisitionException("error", java.sql.SQLException()),
+            org.hibernate.exception.LockTimeoutException("error", java.sql.SQLException()),
             RuntimeException("error", TimeoutException()),
             PersistenceException("error", LockTimeoutException()),
             PersistenceException("error", QueryTimeoutException()),
             PersistenceException("error", OptimisticLockException()),
-            PersistenceException("error", PessimisticLockException())
+            PersistenceException("error", PessimisticLockException()),
+            PersistenceException("error", java.sql.SQLTransientException()),
+            PersistenceException("error", java.sql.SQLTimeoutException()),
+            PersistenceException("error", org.hibernate.exception.LockAcquisitionException(
+                "error", java.sql.SQLException()
+            )),
+            PersistenceException("error", org.hibernate.exception.LockTimeoutException(
+                "error", java.sql.SQLException()
+            ))
         )
     }
 
@@ -111,10 +121,10 @@ class ExecuteUtilsTests {
     @Test
     fun `WithTimeout should not retry unrecoverable crypto library exception`() {
         var called = 0
-        assertThrows<CryptoServiceLibraryException> {
+        assertThrows<CryptoException> {
             CryptoRetryingExecutorWithTimeout(logger, 3, Duration.ofMillis(10)).executeWithRetry {
                 called++
-                throw CryptoServiceLibraryException("error", isRecoverable = false)
+                throw CryptoException("error")
             }
         }
         assertEquals(1, called)
@@ -152,7 +162,7 @@ class ExecuteUtilsTests {
         val result = CryptoRetryingExecutor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
             called++
             if (called <= 2) {
-                throw CryptoServiceLibraryException("error", isRecoverable = true)
+                throw CryptoException("error", true)
             }
             "Hello World!"
         }
@@ -166,7 +176,7 @@ class ExecuteUtilsTests {
         val result = CryptoRetryingExecutor(logger, 3, Duration.ofMillis(10)).executeWithRetry {
             called++
             if (called <= 2) {
-                throw CryptoServiceLibraryException("error", isRecoverable = true)
+                throw CryptoException("error", true)
             }
             "Hello World!"
         }

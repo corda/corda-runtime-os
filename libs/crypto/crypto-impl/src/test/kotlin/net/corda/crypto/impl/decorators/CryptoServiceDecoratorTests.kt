@@ -11,8 +11,8 @@ import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CSLExponentialThrottlingException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.exceptions.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoExponentialThrottlingException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,7 +31,6 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.TimeoutException
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -51,7 +50,8 @@ class CryptoServiceDecoratorTests {
         )
     }
 
-    private interface CryptoServiceStub: CryptoService, AutoCloseable
+    private interface CryptoServiceStub : CryptoService, AutoCloseable
+
     private lateinit var cryptoService: CryptoServiceStub
 
     @BeforeEach
@@ -80,28 +80,28 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    fun `Should throw non recoverable CryptoServiceException when executing extensions method`() {
+    fun `Should throw same non recoverable CryptoException when executing extensions method`() {
         val decorator = createDecorator()
-        val expected = CryptoServiceException("error", isRecoverable = false)
+        val expected = CryptoException("error")
         whenever(
             cryptoService.extensions
         ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.extensions
         }
-        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual)
     }
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `Should throw common exceptions wrapped in CryptoServiceException when executing extensions method`(
+    fun `Should throw common exceptions wrapped in CryptoException when executing extensions method`(
         e: Throwable
     ) {
         val decorator = createDecorator()
         whenever(
             cryptoService.extensions
         ).thenThrow(e)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.extensions
         }
         assertSame(e, actual.cause)
@@ -118,28 +118,28 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    fun `Should throw non recoverable CryptoServiceException when executing supportedSchemes`() {
+    fun `Should throw same non recoverable CryptoException when executing supportedSchemes`() {
         val decorator = createDecorator()
-        val expected = CryptoServiceException("error", isRecoverable = false)
+        val expected = CryptoException("error")
         whenever(
             cryptoService.supportedSchemes
         ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.supportedSchemes
         }
-        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual)
     }
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `Should throw common exceptions wrapped in CryptoServiceException when executing supportedSchemes`(
+    fun `Should throw common exceptions wrapped in CryptoException when executing supportedSchemes`(
         e: Throwable
     ) {
         val decorator = createDecorator()
         whenever(
             cryptoService.supportedSchemes
         ).thenThrow(e)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.supportedSchemes
         }
         assertSame(e, actual.cause)
@@ -165,22 +165,22 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    fun `Should throw non recoverable CryptoServiceException when executing createWrappingKey`() {
+    fun `Should throw same non recoverable CryptoException when executing createWrappingKey`() {
         val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
-        val expected = CryptoServiceException("error", isRecoverable = false)
+        val expected = CryptoException("error")
         whenever(
             cryptoService.createWrappingKey(alias, true, emptyMap())
         ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.createWrappingKey(alias, true, emptyMap())
         }
-        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual)
     }
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `Should throw common exceptions wrapped in CryptoServiceException when executing createWrappingKey`(
+    fun `Should throw common exceptions wrapped in CryptoException when executing createWrappingKey`(
         e: Throwable
     ) {
         val decorator = createDecorator()
@@ -188,7 +188,7 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.createWrappingKey(alias, true, emptyMap())
         ).thenThrow(e)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.createWrappingKey(alias, true, emptyMap())
         }
         assertSame(e, actual.cause)
@@ -218,7 +218,8 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.generateKeyPair(
                 spec,
-                context)
+                context
+            )
         ).thenReturn(expected)
         assertSame(expected, decorator.generateKeyPair(spec, context))
         Mockito.verify(cryptoService, times(1)).generateKeyPair(
@@ -230,21 +231,21 @@ class CryptoServiceDecoratorTests {
             },
             argThat {
                 size == 2 &&
-                this[CRYPTO_TENANT_ID] == tenantId &&
-                this[CRYPTO_CATEGORY] == CryptoConsts.Categories.LEDGER
+                        this[CRYPTO_TENANT_ID] == tenantId &&
+                        this[CRYPTO_CATEGORY] == CryptoConsts.Categories.LEDGER
             }
         )
     }
 
     @Test
-    fun `Should throw non recoverable CryptoServiceException when executing generateKeyPair`() {
+    fun `Should throw same non recoverable CryptoException when executing generateKeyPair`() {
         val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val masterKeyAlias = UUID.randomUUID().toString()
         val scheme = RSA_TEMPLATE.makeScheme(
             providerName = "Sun"
         )
-        val expected = CryptoServiceException("error", isRecoverable = false)
+        val expected = CryptoException("error")
         val context = emptyMap<String, String>()
         val spec = KeyGenerationSpec(
             alias = alias,
@@ -255,15 +256,15 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.generateKeyPair(spec, context)
         ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.generateKeyPair(spec, context)
         }
-        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual)
     }
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `Should throw common exceptions wrapped in CryptoServiceException when executing generateKeyPair`(
+    fun `Should throw common exceptions wrapped in CryptoException when executing generateKeyPair`(
         e: Throwable
     ) {
         val decorator = createDecorator()
@@ -282,7 +283,7 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.generateKeyPair(spec, context)
         ).thenThrow(e)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.generateKeyPair(spec, context)
         }
         assertSame(e, actual.cause)
@@ -302,24 +303,24 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    fun `Should throw non recoverable CryptoServiceException when executing sign`() {
+    fun `Should throw same non recoverable CryptoException when executing sign`() {
         val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
-        val expected = CryptoServiceException("error", isRecoverable = false)
+        val expected = CryptoException("error")
         val context = emptyMap<String, String>()
         val spec = mock<SigningSpec>()
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.sign(spec, data, context)
         }
-        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual)
     }
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `Should throw common exceptions wrapped in CryptoServiceException when executing sign`(e: Throwable) {
+    fun `Should throw common exceptions wrapped in CryptoException when executing sign`(e: Throwable) {
         val decorator = createDecorator()
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
@@ -327,7 +328,7 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenThrow(e)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.sign(spec, data, context)
         }
         assertSame(e, actual.cause)
@@ -343,37 +344,37 @@ class CryptoServiceDecoratorTests {
     }
 
     @Test
-    fun `Should throw non recoverable CryptoServiceException when executing delete`() {
+    fun `Should throw same non recoverable CryptoException when executing delete`() {
         val decorator = createDecorator()
-        val expected = CryptoServiceException("error", isRecoverable = false)
+        val expected = CryptoException("error")
         val alias = UUID.randomUUID().toString()
         val context = emptyMap<String, String>()
         whenever(
             cryptoService.delete(alias, context)
         ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.delete(alias, context)
         }
-        assertFalse(actual.isRecoverable)
+        assertSame(expected, actual)
     }
 
     @ParameterizedTest
     @MethodSource("mostCommonUnrecoverableExceptions")
-    fun `Should throw common exceptions wrapped in CryptoServiceException when executing delete`(e: Throwable) {
+    fun `Should throw common exceptions wrapped in CryptoException when executing delete`(e: Throwable) {
         val decorator = createDecorator()
         val alias = UUID.randomUUID().toString()
         val context = emptyMap<String, String>()
         whenever(
             cryptoService.delete(alias, context)
         ).thenThrow(e)
-        val actual = assertThrows<CryptoServiceException> {
+        val actual = assertThrows<CryptoException> {
             decorator.delete(alias, context)
         }
         assertSame(e, actual.cause)
     }
 
     @Test
-    fun `Should throw TimeoutException wrapped into CryptoServiceException on timeout`() {
+    fun `Should throw TimeoutException wrapped into CryptoException on timeout`() {
         val decorator = createDecorator(0)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
@@ -382,14 +383,14 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         ).thenAnswer(AnswersWithDelay(500, Returns(expected)))
-        val e = assertThrows<CryptoServiceException> {
+        val e = assertThrows<CryptoException> {
             decorator.sign(spec, data, context)
         }
         assertThat(e.cause).isInstanceOf(TimeoutException::class.java)
     }
 
     @Test
-    fun `Should throw CryptoServiceException on exceeding number of retries`() {
+    fun `Should throw CryptoException on exceeding number of retries`() {
         val decorator = createDecorator(1)
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
@@ -398,9 +399,9 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         )
-        .thenAnswer(AnswersWithDelay(500, Returns(expected)))
-        .thenAnswer(AnswersWithDelay(500, Returns(expected)))
-        val e = assertThrows<CryptoServiceException> {
+            .thenAnswer(AnswersWithDelay(500, Returns(expected)))
+            .thenAnswer(AnswersWithDelay(500, Returns(expected)))
+        val e = assertThrows<CryptoException> {
             decorator.sign(spec, data, context)
         }
         assertThat(e.cause).isInstanceOf(TimeoutException::class.java)
@@ -417,8 +418,8 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         )
-        .thenAnswer(AnswersWithDelay(500, Returns(expected1)))
-        .thenReturn(expected2, expected1)
+            .thenAnswer(AnswersWithDelay(500, Returns(expected1)))
+            .thenReturn(expected2, expected1)
         assertSame(expected2, decorator.sign(spec, data, context))
         assertSame(expected1, decorator.sign(spec, data, context))
     }
@@ -434,13 +435,15 @@ class CryptoServiceDecoratorTests {
         whenever(
             cryptoService.sign(spec, data, context)
         )
-            .thenThrow(CSLExponentialThrottlingException(
-                message = "error",
-                initialBackoff =100,
-                backoffMultiplier = 2,
-                maxAttempts = 3,
-                cause = IllegalStateException()
-            ))
+            .thenThrow(
+                CryptoExponentialThrottlingException(
+                    message = "error",
+                    initialBackoff = 100,
+                    backoffMultiplier = 2,
+                    maxAttempts = 3,
+                    cause = IllegalStateException()
+                )
+            )
             .thenReturn(expected2, expected1)
         assertSame(expected2, decorator.sign(spec, data, context))
         assertSame(expected1, decorator.sign(spec, data, context))
@@ -452,9 +455,9 @@ class CryptoServiceDecoratorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         val context = emptyMap<String, String>()
         val spec = mock<SigningSpec>()
-        val e = CSLExponentialThrottlingException(
+        val e = CryptoExponentialThrottlingException(
             message = "error",
-            initialBackoff =100,
+            initialBackoff = 100,
             backoffMultiplier = 2,
             maxAttempts = 3,
             cause = IllegalStateException()
@@ -463,7 +466,7 @@ class CryptoServiceDecoratorTests {
             cryptoService.sign(spec, data, context)
         )
             .thenThrow(e, e, e)
-        assertThrows<CryptoServiceException> {
+        assertThrows<CryptoException> {
             decorator.sign(spec, data, context)
         }
     }

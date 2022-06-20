@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.exceptions.CryptoException
 import org.slf4j.Logger
 import java.lang.Integer.max
 import java.lang.Integer.min
@@ -23,7 +23,11 @@ open class CryptoRetryingExecutor(
             "javax.persistence.LockTimeoutException",
             "javax.persistence.QueryTimeoutException",
             "javax.persistence.OptimisticLockException",
-            "javax.persistence.PessimisticLockException"
+            "javax.persistence.PessimisticLockException",
+            "java.sql.SQLTransientException",
+            "java.sql.SQLTimeoutException",
+            "org.hibernate.exception.LockAcquisitionException",
+            "org.hibernate.exception.LockTimeoutException"
         )
     }
 
@@ -72,7 +76,7 @@ open class CryptoRetryingExecutor(
     private fun Throwable.isRecoverable(): Boolean =
         when (this) {
             is TimeoutException -> true
-            is CryptoServiceLibraryException -> isRecoverable
+            is CryptoException -> isRecoverable
             else -> when {
                 RETRYABLE_EXCEPTIONS.contains(this::class.java.name) -> true
                 cause != null -> cause!!.isRecoverable()
