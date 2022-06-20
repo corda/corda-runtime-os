@@ -50,7 +50,7 @@ fun Config.toConfigurationRecord(
     componentName: String,
     topic: String = Schemas.Config.CONFIG_TOPIC
 ): Record<String, Configuration> {
-    val content = Configuration(this.root().render(ConfigRenderOptions.concise()), "1", ConfigurationSchemaVersion(1,0))
+    val content = Configuration(this.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1,0))
     val recordKey = "$packageName.$componentName"
     return Record(topic, recordKey, content)
 }

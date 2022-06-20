@@ -39,11 +39,11 @@ internal class InboundLinkManager(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
         dependentChildren = listOf(
-            groups.dominoTile,
-            members.dominoTile,
+            groups.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            commonComponents.inboundAssignmentListener.dominoTile,
+            commonComponents.inboundAssignmentListener.dominoTile.toNamedLifecycle(),
         )
     )
 }

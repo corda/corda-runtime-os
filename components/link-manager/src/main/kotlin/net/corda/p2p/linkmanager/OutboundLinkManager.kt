@@ -63,10 +63,10 @@ internal class OutboundLinkManager(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
         dependentChildren = listOf(
-            deliveryTracker.dominoTile,
-            commonComponents.dominoTile,
-            commonComponents.inboundAssignmentListener.dominoTile,
+            deliveryTracker.dominoTile.coordinatorName,
+            commonComponents.dominoTile.coordinatorName,
+            commonComponents.inboundAssignmentListener.dominoTile.coordinatorName,
         ),
-        managedChildren = setOf(deliveryTracker.dominoTile)
+        managedChildren = setOf(deliveryTracker.dominoTile.toNamedLifecycle())
     )
 }

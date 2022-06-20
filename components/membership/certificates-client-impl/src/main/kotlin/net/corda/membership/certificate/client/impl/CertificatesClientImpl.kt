@@ -130,8 +130,8 @@ class CertificatesClientImpl @Activate constructor(
 
     private fun handleConfigChangedEvent(event: ConfigChangedEvent) {
         logger.info("Handling config changed event.")
-        sender?.close()
         senderRegistrationHandle?.close()
+        sender?.close()
         senderRegistrationHandle = null
         sender = publisherFactory.createRPCSender(
             rpcConfig = RPCConfig(

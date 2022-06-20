@@ -1,7 +1,7 @@
 package net.corda.p2p.setup
 
 import net.corda.messaging.api.records.Record
-import net.corda.schema.TestSchema
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.util.concurrent.Callable
@@ -23,7 +23,7 @@ class RemoveIdentity : Callable<Collection<Record<String, *>>> {
             "Topic to write the locally hosted identity information records to."
         ]
     )
-    private var memberInfoTopic: String = TestSchema.HOSTED_MAP_TOPIC
+    private var memberInfoTopic: String = P2P_HOSTED_IDENTITIES_TOPIC
 
     @Option(
         names = ["-x", "--x500", "--x500-name"],

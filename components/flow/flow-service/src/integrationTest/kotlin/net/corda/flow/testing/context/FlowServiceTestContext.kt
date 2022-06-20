@@ -109,7 +109,8 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                emptyUUID
+                emptyUUID,
+                timestamp = Instant.now()
             )
         )
     }

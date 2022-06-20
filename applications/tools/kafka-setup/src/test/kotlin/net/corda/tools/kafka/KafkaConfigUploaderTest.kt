@@ -40,13 +40,11 @@ class KafkaConfigUploaderTest {
         assertThat(records.map { it.topic }).containsOnly(Schemas.Config.CONFIG_TOPIC)
         assertThat(records.map { it.key }).containsExactlyInAnyOrder("corda.foo", "corda.bar")
         val fooRecord = records.single { it.key == "corda.foo" }
-        assertThat(fooRecord.value!!.version).isEqualTo("1.3")
         val fooConfig = ConfigFactory.parseString(fooRecord.value!!.value)
         assertThat(fooConfig.getString("name")).isEqualTo("Car")
         assertThat(fooConfig.getInt("age")).isEqualTo(43)
 
         val barRecord = records.single { it.key == "corda.bar" }
-        assertThat(barRecord.value!!.version).isEqualTo("11.55")
         val barConfig = ConfigFactory.parseString(barRecord.value!!.value)
         assertThat(barConfig.getString("name")).isEqualTo("Bus")
     }

@@ -10,6 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 import java.util.UUID
 
 /** Testing AVRO objects, so be sure to add `toAvro()`  (but using corda objects)
@@ -28,14 +29,26 @@ class VirtualNodeInfoMapTest {
         map = VirtualNodeInfoMap()
     }
 
+    /** Convenience method to quickly create a new vnode-info instance for the tests */
+    private fun newVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
+        holdingIdentity,
+        cpiIdentifier,
+        null,
+        UUID.randomUUID(),
+        null,
+        UUID.randomUUID(),
+        timestamp = Instant.now()
+    )
+
     @Test
     fun `put one VirtualNodeInfo`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(
+            holdingIdentity, cpiIdentifier
+        )
 
         map.put(
-            VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash),
-            virtualNodeInfo.toAvro()
+            VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash), virtualNodeInfo.toAvro()
         )
 
         assertThat(map.get(holdingIdentity.toAvro())).isEqualTo(virtualNodeInfo.toAvro())
@@ -46,17 +59,17 @@ class VirtualNodeInfoMapTest {
     @Test
     fun `put two VirtualNodeInfo`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(
+            holdingIdentity, cpiIdentifier
+        )
         map.put(
-            VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash),
-            virtualNodeInfo.toAvro()
+            VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash), virtualNodeInfo.toAvro()
         )
 
         val otherHoldingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val otherVirtualNode = VirtualNodeInfo(otherHoldingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val otherVirtualNode = newVirtualNodeInfo(otherHoldingIdentity, cpiIdentifier)
         map.put(
-            VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), otherShortHash),
-            otherVirtualNode.toAvro()
+            VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), otherShortHash), otherVirtualNode.toAvro()
         )
 
         assertThat(map.get(holdingIdentity.toAvro())).isEqualTo(virtualNodeInfo.toAvro())
@@ -71,19 +84,17 @@ class VirtualNodeInfoMapTest {
     @Test
     fun `put two VirtualNodeInfo with clashing ids`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
         map.put(
-            VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash),
-            virtualNodeInfo.toAvro()
+            VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash), virtualNodeInfo.toAvro()
         )
 
         val otherHoldingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val otherVirtualNodeInfo = VirtualNodeInfo(otherHoldingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val otherVirtualNodeInfo = newVirtualNodeInfo(otherHoldingIdentity, cpiIdentifier)
         // Put with same short hash
         assertThrows<IllegalArgumentException> {
             map.put(
-                VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), fakeShortHash),
-                otherVirtualNodeInfo.toAvro()
+                VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), fakeShortHash), otherVirtualNodeInfo.toAvro()
             )
         }
 
@@ -98,12 +109,11 @@ class VirtualNodeInfoMapTest {
     fun `putting mismatched HoldingIdentity throws`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
         val differentHoldingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(differentHoldingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(differentHoldingIdentity, cpiIdentifier)
         assertThrows<IllegalArgumentException> {
             map.put(
                 VirtualNodeInfoMap.Key(
-                    holdingIdentity.toAvro(),
-                    fakeShortHash
+                    holdingIdentity.toAvro(), fakeShortHash
                 ), virtualNodeInfo.toAvro()
             )
         }
@@ -112,7 +122,7 @@ class VirtualNodeInfoMapTest {
     @Test
     fun `put one and remove one VirtualNodeInfo`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
 
         val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash)
         map.put(key, virtualNodeInfo.toAvro())
@@ -126,15 +136,14 @@ class VirtualNodeInfoMapTest {
     @Test
     fun `put two and remove two VirtualNodeInfo`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
         val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash)
         map.put(key, virtualNodeInfo.toAvro())
 
         val otherHoldingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val otherVirtualNodeInfo = VirtualNodeInfo(otherHoldingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val otherVirtualNodeInfo = newVirtualNodeInfo(otherHoldingIdentity, cpiIdentifier)
         val otherFakeShortHash = "F000000D"
-        val otherKey =
-            VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), otherFakeShortHash)
+        val otherKey = VirtualNodeInfoMap.Key(otherHoldingIdentity.toAvro(), otherFakeShortHash)
         map.put(otherKey, otherVirtualNodeInfo.toAvro())
 
         assertThat(map.getById(fakeShortHash))?.isEqualTo(virtualNodeInfo.toAvro())
@@ -158,7 +167,7 @@ class VirtualNodeInfoMapTest {
     @Test
     fun `second remove returns null`() {
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+        val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
         val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), fakeShortHash)
         map.put(key, virtualNodeInfo.toAvro())
 
@@ -180,7 +189,7 @@ class VirtualNodeInfoMapTest {
         // Add a number of VirtualNodeInfo objects to the map, and keep a copy of the keys
         for (i in 0..count) {
             val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+            val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
             // Actually use the real short hash/id of the holding identity
             val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), holdingIdentity.id)
             keys.add(key)
@@ -236,7 +245,7 @@ class VirtualNodeInfoMapTest {
 
         for (i in 0..count) {
             val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
-            val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID())
+            val virtualNodeInfo = newVirtualNodeInfo(holdingIdentity, cpiIdentifier)
             // Actually use the real short hash/id of the holding identity
             val key = VirtualNodeInfoMap.Key(holdingIdentity.toAvro(), holdingIdentity.id)
             map.put(key, virtualNodeInfo.toAvro())
@@ -255,8 +264,7 @@ class VirtualNodeInfoMapTest {
         allVirtualNodeInfos.forEach { (k, _) ->
             map.remove(
                 VirtualNodeInfoMap.Key(
-                    k.toAvro(),
-                    k.id
+                    k.toAvro(), k.id
                 )
             )
         }

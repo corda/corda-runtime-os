@@ -35,7 +35,7 @@ class ConfigWriterProcessorTests {
             section to
                     Configuration(
                         config,
-                        version.toString(),
+                        version,
                         ConfigurationSchemaVersion(
                             schemaVersion.majorVersion,
                             schemaVersion.minorVersion

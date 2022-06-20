@@ -121,12 +121,39 @@ Kafka client image
 {{- end }}
 
 {{/*
+Resources for the bootstrapper
+*/}}
+{{- define "corda.bootstrapResources" }}
+
+resources:
+  requests:
+  {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
+    cpu: {{ default .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
+  {{- end }}
+  {{- if or .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
+    memory: {{ default .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
+  {{- end}}
+  limits:
+  {{- if or .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
+    cpu: {{ default .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
+  {{- end }}
+  {{- if or .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
+    memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
+  {{- end }}
+{{- end }}
+
+{{/*
 Worker JAVA_TOOL_OPTIONS
 */}}
 {{- define "corda.workerJavaToolOptions" -}}
 {{- if ( get .Values.workers .worker ).debug.enabled -}}
 - name: JAVA_TOOL_OPTIONS
-  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
+  value: -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}{{- if .Values.kafka.sasl.enabled -}} -Djava.security.auth.login.config=/etc/config/jaas.conf {{ end }}
+{{- else -}}
+{{- if .Values.kafka.sasl.enabled -}}
+- name: JAVA_TOOL_OPTIONS
+  value: -Djava.security.auth.login.config=/etc/config/jaas.conf 
+{{- end }}
 {{- end }}
 {{- end }}
 
@@ -141,16 +168,26 @@ Kafka bootstrap servers
 Worker Kafka arguments
 */}}
 {{- define "corda.workerKafkaArgs" -}}
-- -mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}
-- --topicPrefix={{ .Values.kafka.topicPrefix }}
+- "-mbootstrap.servers={{ include "corda.kafkaBootstrapServers" . }}"
+- "--topicPrefix={{ .Values.kafka.topicPrefix }}"
 {{- if .Values.kafka.tls.enabled }}
-- -msecurity.protocol=SSL
-{{- if .Values.kafka.tls.truststore.secretRef.name }}
-- -mssl.truststore.location=/certs/ca.crt
-- -mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}
-{{- if .Values.kafka.tls.truststore.password }}
-- -mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}
+{{- if .Values.kafka.sasl.enabled }}
+- "-msecurity.protocol=SASL_SSL"
+- "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
+{{- else }}
+- "-msecurity.protocol=SSL"
 {{- end }}
+{{- if .Values.kafka.tls.truststore.secretRef.name }}
+- "-mssl.truststore.location=/certs/ca.crt"
+- "-mssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}"
+{{- if .Values.kafka.tls.truststore.password }}
+- "-mssl.truststore.password={{ .Values.kafka.tls.truststore.password }}"
+{{- end }}
+{{- end }}
+{{- else }}
+{{- if .Values.kafka.sasl.enabled }}
+- "-msecurity.protocol=SASL_PLAINTEXT"
+- "-msasl.mechanism={{ .Values.kafka.sasl.mechanism }}"
 {{- end }}
 {{- end }}
 {{- end }}
@@ -164,7 +201,6 @@ resources:
   requests:
   {{- if or .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
     cpu: {{ default .Values.resources.requests.cpu ( get .Values.workers .worker ).resources.requests.cpu }}
-
   {{- end }}
   {{- if or .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
     memory: {{ default .Values.resources.requests.memory ( get .Values.workers .worker ).resources.requests.memory }}
@@ -172,7 +208,6 @@ resources:
   limits:
   {{- if or .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
-
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
@@ -183,24 +218,34 @@ resources:
 Volume mounts for corda workers
 */}}
 {{- define "corda.workerVolumeMounts" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - mountPath: "/certs"
   name: "certs"
+  readOnly: true
+{{- end }}
+{{- if .Values.kafka.sasl.enabled  }}
+- mountPath: "/etc/config"
+  name: "jaas-conf"
   readOnly: true
 {{- end }}
 {{- end }}
 
 {{/*
-Volume mounts for corda workers
+Volumes for corda workers
 */}}
 {{- define "corda.workerVolumes" }}
-{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name -}}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - name: certs
   secret:
     secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
     items:
       - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
         path: "ca.crt"
+{{- end -}}
+{{- if .Values.kafka.sasl.enabled  }}
+- name: jaas-conf
+  secret:
+    secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
 {{- end }}
 

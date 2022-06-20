@@ -21,11 +21,11 @@ imagePullSecrets: []
 # -- the image policy
 imagePullPolicy: Always
 
-# resource limits and requests configuration for the Corda worker containers
+# default resource limits and requests configuration for the Corda containers
 resources:
-  # -- the CPU/memory resource limits for the Corda worker containers
+  # -- the default CPU/memory resource limits for the Corda containers
   limits: {}
-  # -- the CPU/memory resource request for the Corda worker containers
+  # -- the default CPU/memory resource request for the Corda containers
   requests: {}
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
@@ -67,6 +67,8 @@ kafka:
   replicas: 3
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
+  # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
+  cleanup: false
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
@@ -83,6 +85,17 @@ kafka:
       type: "PEM"
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
       password: ""
+  # SASL configuration for client connection to Kafka
+  sasl:
+    # -- SASL username for client connection to Kafka 
+    username: "user"
+    # -- SASL password for client connection to Kafka 
+    password: ""
+    # -- SASL mechanism for client connection to Kafka 
+    mechanism: "SCRAM-SHA-256"
+    # -- enable/disable SASL for client connection to Kafka 
+    enabled: false
+
   clientImage:
     # -- registry for image containing a Kafka client, used to set up Kafka
     registry: ""
@@ -101,6 +114,12 @@ bootstrap:
     repository: "corda-os-plugins"
     # -- cli default tag
     tag: ""
+  # resource limits and requests configuration for the bootstrapper
+  resources:
+    # -- the CPU/memory resource requests for the bootstrapper
+    requests: { }
+    # -- the CPU/memory resource limits for the bootstrapper
+    limits: { }
 
 # worker configuration
 workers:

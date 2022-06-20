@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
-import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 
@@ -44,7 +44,7 @@ class StartConnectFourGameFlow : RPCStartableFlow {
                 lastMove = Move(player1, startingSlot)
             )
             log.info("Game Started for player 1 = '${player1}' player 2 ='${player2}'.")
-            return jsonMarshallingService.formatJson(gameState)
+            return jsonMarshallingService.format(gameState)
         } catch (e: Exception) {
             log.error("Failed to start game for '${requestBody.getRequestBody()}' because '${e.message}'")
             throw e

@@ -9,7 +9,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
  */
 interface CpiUploadManagerFactory {
     fun create(
-        config: SmartConfig,
+        messagingConfig: SmartConfig,
         publisherFactory: PublisherFactory,
         subscriptionFactory: SubscriptionFactory
     ): CpiUploadManager

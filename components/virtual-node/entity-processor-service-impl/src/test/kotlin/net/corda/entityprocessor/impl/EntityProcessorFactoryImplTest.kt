@@ -8,7 +8,8 @@ import java.nio.ByteBuffer
 internal class EntityProcessorFactoryImplTest {
     @Test
     fun `payload check throws if max bytes exceeded`() {
-        val bytes = ByteBuffer.wrap(ByteArray(10 * 1024 * 1024))
-        assertThrows<KafkaMessageSizeException> { EntityProcessorFactoryImpl.payloadSizeCheck(bytes) }
+        val maxSize = 1024 * 10
+        val bytes = ByteBuffer.wrap(ByteArray(maxSize + 1))
+        assertThrows<KafkaMessageSizeException> { EntityProcessorFactoryImpl.PayloadChecker(maxSize).checkSize(bytes) }
     }
 }

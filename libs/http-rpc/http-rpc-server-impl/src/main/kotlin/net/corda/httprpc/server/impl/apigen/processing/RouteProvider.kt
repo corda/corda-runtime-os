@@ -9,7 +9,6 @@ import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.httprpc.tools.annotations.validation.utils.pathParamRegex
 import net.corda.httprpc.tools.isStaticallyExposedGet
 import java.lang.reflect.InvocationTargetException
 
@@ -55,14 +54,11 @@ internal class JavalinRouteProviderImpl(
         log.trace { "Map resources to routes by http method." }
         return resources.flatMap { resource ->
             resource.endpoints.filter { it.method == httpMethod }
-                .map { it.copy(path = replacePathParametersInEndpointPath(it.path)) }
                 .map { RouteInfo(basePath, resource.path, apiVersion, it) }
 
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
 
-    private fun replacePathParametersInEndpointPath(path: String?): String? =
-        path?.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
 }
 
 internal enum class ParameterType {

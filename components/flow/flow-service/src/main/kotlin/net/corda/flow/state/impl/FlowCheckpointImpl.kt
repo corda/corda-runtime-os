@@ -16,6 +16,7 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -253,7 +254,7 @@ class FlowCheckpointImpl(
 
         override val size: Int get() = flowStackItems.size
 
-        override fun push(flow: Any): FlowStackItem {
+        override fun push(flow: Flow): FlowStackItem {
             val stackItem = FlowStackItem(flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf())
             flowStackItems.add(stackItem)
             return stackItem

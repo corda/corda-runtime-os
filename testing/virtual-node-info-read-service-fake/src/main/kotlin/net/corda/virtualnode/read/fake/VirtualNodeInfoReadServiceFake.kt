@@ -2,11 +2,14 @@ package net.corda.virtualnode.read.fake
 
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.reconciliation.VersionedRecord
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -17,6 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.File
+import java.util.stream.Stream
 
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -119,6 +123,13 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         listener.onUpdate(map.keys, map)
         return AutoCloseable { callbacks.remove(listener) }
     }
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+        throw CordaRuntimeException("Not yet implemented")
+    }
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = coordinator.name
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

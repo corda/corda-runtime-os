@@ -22,11 +22,13 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -107,9 +109,11 @@ class CpiUploadRPCOpsServiceHandlerTest {
 
     @Test
     fun `on ConfigChangedEvent creates new RPCSender and CpiUploadManager and updates coordinator to UP`() {
+        val msgConfigMock = mock<SmartConfig>() {
+            on { getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) }.doReturn(500)
+        }
         val config = mock<Map<String, SmartConfig>>()
-        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
-        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(mock())
+        whenever(config[ConfigKeys.MESSAGING_CONFIG]).thenReturn(msgConfigMock)
         whenever(config[ConfigKeys.BOOT_CONFIG]).thenReturn(mock())
         whenever(config[ConfigKeys.RPC_CONFIG]).thenReturn(mock())
 
@@ -123,7 +127,8 @@ class CpiUploadRPCOpsServiceHandlerTest {
                 Schemas.VirtualNode.CPI_UPLOAD_TOPIC,
                 publisher,
                 subscription,
-                processor
+                processor,
+                500
             )
         )
 
@@ -140,7 +145,7 @@ class CpiUploadRPCOpsServiceHandlerTest {
         val ackProcessor = UploadStatusProcessor()
         val publisher: Publisher = mock()
         val subscription: Subscription<UploadStatusKey, UploadStatus> = mock()
-        val cpiUploadManager = CpiUploadManagerImpl("some topic", publisher, subscription, ackProcessor)
+        val cpiUploadManager = CpiUploadManagerImpl("some topic", publisher, subscription, ackProcessor, 500)
 
         cpiUploadRPCOpsServiceHandler.configReadServiceRegistrationHandle = configReadServiceRegistrationHandle
         cpiUploadRPCOpsServiceHandler.cpiUploadManager = cpiUploadManager
