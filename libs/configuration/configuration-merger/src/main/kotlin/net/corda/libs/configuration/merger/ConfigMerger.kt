@@ -25,8 +25,7 @@ interface ConfigMerger {
      */
     fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig
 
-    //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
-    // exist to preserve defaulting logic present
+    //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
     /**
      * Merge values from the [bootConfig] into the [cryptoConfig] received from the config topic and return the resulting crypto
      * config.
