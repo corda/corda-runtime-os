@@ -92,7 +92,6 @@ kafka:
     # -- SASL mechanism for client connection to Kafka 
     mechanism: "SCRAM-SHA-256"
     # -- enable/disable SASL for client connection to Kafka 
-
     enabled: false
 
   clientImage:
