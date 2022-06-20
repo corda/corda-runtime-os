@@ -4,17 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import java.io.StringWriter
-import java.nio.ByteBuffer
-import java.security.Key
-import java.security.KeyFactory
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.spec.PKCS8EncodedKeySpec
-import java.time.Duration
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -57,7 +46,6 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.test.GroupPolicyEntry
-import net.corda.p2p.test.HostedIdentityEntry
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
@@ -81,6 +69,17 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import java.io.StringWriter
+import java.nio.ByteBuffer
+import java.security.Key
+import java.security.KeyFactory
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.spec.PKCS8EncodedKeySpec
+import java.time.Duration
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 class P2PLayerEndToEndTest {
 
@@ -238,7 +237,6 @@ class P2PLayerEndToEndTest {
             hostMarkerReader.stop()
         }
     }
-
 
     @Test
     @Timeout(60)
@@ -492,7 +490,8 @@ class P2PLayerEndToEndTest {
 
             val hostingMapRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(
-                    P2P_HOSTED_IDENTITIES_TOPIC, "hosting-1", HostedIdentityEntry(
+                    P2P_HOSTED_IDENTITIES_TOPIC, "hosting-1",
+                    HostedIdentityEntry(
                         HoldingIdentity(identity.x500Name, GROUP_ID),
                         GROUP_ID,
                         identity.x500Name,
@@ -515,8 +514,8 @@ class P2PLayerEndToEndTest {
             publisherForHost.use { publisher ->
                 publisher.start()
                 publisher.publish(
-                    memberInfoRecords + otherHostMemberInfoRecords
-                            + hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
+                    memberInfoRecords + otherHostMemberInfoRecords +
+                        hostingMapRecords + cryptoKeyRecords + groupPolicyRecord
                 ).forEach { it.get() }
             }
         }
@@ -551,7 +550,6 @@ class P2PLayerEndToEndTest {
                 publisher.publish(records).forEach { it.get() }
             }
         }
-
 
         fun startWith(otherHost: Host? = null) {
             configReadService.start()
