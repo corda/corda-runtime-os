@@ -10,7 +10,7 @@ const Home = () => {
     return (
         <PageContentWrapper>
             <PageHeader>Hometown Hero</PageHeader>
-            <div className="flex gap-4 mt-8 ml-4">
+            <div className="flex gap-4 mt-8 ml-4 flex-wrap">
                 <Button isLink to={LOGIN} iconLeft={'LoginVariant'} size={'large'} variant={'primary'}>
                     Sign in
                 </Button>

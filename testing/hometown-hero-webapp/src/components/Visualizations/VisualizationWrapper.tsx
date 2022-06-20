@@ -1,3 +1,5 @@
+import { useDesktopMediaQuery } from '../../hooks/useMediaQueries';
+
 type Props = {
     //An optional prop for width, height is calculated automatically
     width?: number;
@@ -6,12 +8,14 @@ type Props = {
 };
 
 const VisualizationWrapper: React.FC<Props> = ({ children, isBlurred, width = 500 }) => {
+    const isDesktop = useDesktopMediaQuery();
+    const vizWidth = isDesktop ? width : '90%';
     return (
         <div
             style={{
                 position: 'absolute',
                 height: 'auto',
-                width: width,
+                width: vizWidth,
                 bottom: '10%',
                 right: '2%',
                 zIndex: -2,
