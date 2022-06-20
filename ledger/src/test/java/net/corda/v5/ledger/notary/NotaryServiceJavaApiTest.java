@@ -1,9 +1,11 @@
 package net.corda.v5.ledger.notary;
 
 
-import net.corda.v5.application.flows.Flow;
+import net.corda.v5.application.flows.ResponderFlow;
+import net.corda.v5.application.flows.SubFlow;
 import net.corda.v5.application.messaging.FlowSession;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.security.PublicKey;
@@ -36,7 +38,7 @@ public class NotaryServiceJavaApiTest {
     public void createServiceFlow() {
         when(notaryService.createServiceFlow(flowSession)).thenReturn(testClass);
 
-        Flow<Void> result = notaryService.createServiceFlow(flowSession);
+        ResponderFlow result = notaryService.createServiceFlow(flowSession);
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(testClass);
@@ -66,11 +68,11 @@ public class NotaryServiceJavaApiTest {
         verify(notaryService, times(1)).stop();
     }
 
-    static class TestClass implements Flow<Void> {
+    static class TestClass implements ResponderFlow {
 
         @Override
-        public Void call() {
-            return null;
+        public void call(@NotNull FlowSession session) {
+
         }
     }
 }

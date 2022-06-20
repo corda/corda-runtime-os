@@ -15,7 +15,7 @@ import net.corda.v5.base.annotations.Suspendable
  * Flows implementing this interface must have a no-arg constructor. The flow invocation will fail if this constructor
  * does not exist.
  */
-interface ResponderFlow {
+interface ResponderFlow : Flow {
 
     /**
      * The business logic for the flow should be written here.
