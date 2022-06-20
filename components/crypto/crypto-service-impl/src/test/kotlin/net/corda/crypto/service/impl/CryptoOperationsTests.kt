@@ -61,7 +61,6 @@ import kotlin.test.*
  * of permutations when especially running tests for customized signature specs (over 70) it makes sense
  * trying to generate keys once and run all related tests
  */
-@Ignore
 class CryptoOperationsTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata
