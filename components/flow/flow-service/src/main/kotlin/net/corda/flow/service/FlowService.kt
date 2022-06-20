@@ -17,6 +17,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -42,7 +43,7 @@ class FlowService @Activate constructor(
         private val logger = contextLogger()
 
         //Hack: Removed FLOW_CONFIG from the list for now, needs to be reviewed as part of CORE-3780
-        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
     }
 
     private var registration: RegistrationHandle? = null
