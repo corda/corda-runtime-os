@@ -69,14 +69,14 @@ internal class InboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
-            sessionPartitionMapper.dominoTile,
-            p2pInPublisher.dominoTile,
-            server.dominoTile,
+            sessionPartitionMapper.dominoTile.coordinatorName,
+            p2pInPublisher.dominoTile.coordinatorName,
+            server.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            sessionPartitionMapper.dominoTile,
-            p2pInPublisher.dominoTile,
-            server.dominoTile,
+            sessionPartitionMapper.dominoTile.toNamedLifecycle(),
+            p2pInPublisher.dominoTile.toNamedLifecycle(),
+            server.dominoTile.toNamedLifecycle(),
         )
     )
 

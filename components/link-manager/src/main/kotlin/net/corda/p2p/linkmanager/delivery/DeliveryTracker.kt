@@ -72,19 +72,22 @@ internal class DeliveryTracker(
         coordinatorFactory,
         messageTrackerSubscription,
         setOf(
-            replayScheduler.dominoTile,
-            groups.dominoTile,
-            members.dominoTile,
-            cryptoProcessor.dominoTile,
-            sessionManager.dominoTile,
-            appMessageReplayer.dominoTile
+            replayScheduler.dominoTile.coordinatorName,
+            groups.dominoTile.coordinatorName,
+            members.dominoTile.coordinatorName,
+            cryptoProcessor.dominoTile.coordinatorName,
+            sessionManager.dominoTile.coordinatorName,
+            appMessageReplayer.dominoTile.coordinatorName
         ),
-        setOf(replayScheduler.dominoTile, appMessageReplayer.dominoTile)
+        setOf(
+            replayScheduler.dominoTile.toNamedLifecycle(),
+            appMessageReplayer.dominoTile.toNamedLifecycle()
+        )
     )
 
     override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
-        dependentChildren = setOf(messageTrackerSubscriptionTile),
-        managedChildren = setOf(messageTrackerSubscriptionTile)
+        dependentChildren = setOf(messageTrackerSubscriptionTile.coordinatorName),
+        managedChildren = setOf(messageTrackerSubscriptionTile.toNamedLifecycle())
     )
 
     private class AppMessageReplayer(
@@ -102,14 +105,14 @@ internal class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
+                PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, false),
             messagingConfiguration
         )
 
         override val dominoTile = publisher.dominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            dominoTile.withLifecycleLock {
+            publisher.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }

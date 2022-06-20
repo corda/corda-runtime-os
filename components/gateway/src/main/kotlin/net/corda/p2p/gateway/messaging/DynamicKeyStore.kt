@@ -12,9 +12,9 @@ import net.corda.crypto.delegated.signing.DelegatedCertificateStore
 import net.corda.crypto.delegated.signing.DelegatedSigner
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.GatewayTlsCertificates
 import net.corda.p2p.test.stub.crypto.processor.StubCryptoProcessor
 import net.corda.schema.Schemas
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 
 internal class DynamicKeyStore(
@@ -33,6 +34,7 @@ internal class DynamicKeyStore(
 ) : DelegatedCertificateStore, LifecycleWithDominoTile, DelegatedSigner {
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_certificates_truststores_reader"
+        private val logger = contextLogger()
     }
     override val aliasToCertificates = ConcurrentHashMap<Alias, CertificateChain>()
 
@@ -55,21 +57,34 @@ internal class DynamicKeyStore(
         emptyList(),
     )
 
+    private val ready = CompletableFuture<Unit>()
+
     private val signer = StubCryptoProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         messagingConfiguration,
     )
 
+    private val blockingDominoTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        ready
+    )
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        createResources = ::createResources,
-        managedChildren = listOf(subscriptionTile, signer.dominoTile),
-        dependentChildren = listOf(subscriptionTile, signer.dominoTile),
+        dependentChildren = listOf(
+            subscriptionTile.coordinatorName,
+            signer.dominoTile.coordinatorName,
+            blockingDominoTile.coordinatorName
+        ),
+        managedChildren = listOf(
+            subscriptionTile.toNamedLifecycle(),
+            signer.dominoTile.toNamedLifecycle(),
+            blockingDominoTile.toNamedLifecycle()
+        ),
     )
-
-    private val ready = CompletableFuture<Unit>()
 
     private inner class Processor : CompactedProcessor<String, GatewayTlsCertificates> {
         override val keyClass = String::class.java
@@ -89,7 +104,7 @@ internal class DynamicKeyStore(
                     }
                 }
             )
-
+            logger.info("Received initial set of TLS certificates for the following identities: ${currentData.keys}.")
             ready.complete(Unit)
         }
 
@@ -105,6 +120,7 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId.remove(publicKey)
                     }
                 }
+                logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
                 aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
@@ -115,15 +131,9 @@ internal class DynamicKeyStore(
                         publicKeyToTenantId[publicKey] = chain.tenantId
                     }
                 }
+                logger.info("TLS certificate updated for the following identities: ${currentData.keys}")
             }
         }
-    }
-
-    private fun createResources(
-        @Suppress("UNUSED_PARAMETER")
-        resources: ResourcesHolder
-    ): CompletableFuture<Unit> {
-        return ready
     }
 
     override fun sign(publicKey: PublicKey, spec: SignatureSpec, data: ByteArray): ByteArray {
