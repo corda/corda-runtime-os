@@ -131,7 +131,8 @@ class MemberProcessorTestUtils {
                 holdingIdentity = holdingIdentity,
                 cpiIdentifier = cpiMetadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = cryptoConnectionId
+                cryptoDmlConnectionId = cryptoConnectionId,
+                timestamp = clock.instant()
             )
 
             // Publish test data

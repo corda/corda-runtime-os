@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -32,7 +31,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.io.IOException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -44,9 +42,18 @@ class ComplexDominoTileTest {
 
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
+        on { start() } doAnswer {
+            handler.lastValue.processEvent(StartEvent(), mock)
+        }
+        on { stop() } doAnswer {
+            handler.lastValue.processEvent(StopEvent(), mock)
+        }
         on { postEvent(any()) } doAnswer {
             handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
+        var currentStatus: LifecycleStatus = LifecycleStatus.DOWN
+        on { updateStatus(any(), any()) } doAnswer { currentStatus =  it.getArgument(0) }
+        on { status } doAnswer { currentStatus }
     }
     private val factory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
@@ -60,15 +67,6 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `start will update the status to started`() {
-            val tile = tile()
-
-            tile.start()
-
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
-        }
-
-        @Test
         fun `start will start the coordinator if not started`() {
             val tile = tile()
 
@@ -78,21 +76,39 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `stop will update the status to stopped`() {
+        fun `start will update the coordinator status to UP`() {
             val tile = tile()
-            tile.stop()
 
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedByParent)
+            tile.start()
+
+            verify(coordinator).updateStatus(LifecycleStatus.UP)
         }
 
         @Test
-        fun `stop will update the status the tile is started`() {
+        fun `start will set is running to true`() {
+            val tile = tile()
+
+            tile.start()
+
+            assertThat(tile.isRunning).isTrue
+        }
+
+        @Test
+        fun `stop will set is running to false`() {
+            val tile = tile()
+            tile.stop()
+
+            assertThat(tile.isRunning).isFalse
+        }
+
+        @Test
+        fun `start and then stop will set is running to false`() {
             val tile = tile()
             tile.start()
 
             tile.stop()
 
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedByParent)
+            assertThat(tile.isRunning).isFalse
         }
 
         @Test
@@ -114,13 +130,23 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `processEvent will set as error if the event is error`() {
+        fun `processEvent update the coordinator state to ERROR if the event is error`() {
             val tile = tile()
             tile.start()
 
             handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
 
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToError)
+            verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+        }
+
+        @Test
+        fun `processEvent will set as ERROR if the event is error`() {
+            val tile = tile()
+            tile.start()
+
+            handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
+
+            assertThat(tile.status).isEqualTo(LifecycleStatus.ERROR)
         }
 
         @Test
@@ -162,12 +188,12 @@ class ComplexDominoTileTest {
         }
 
         @Test
-        fun `close will not change the tiles state`() {
+        fun `close will not set isRunning to false`() {
             val tile = tile()
-
+            tile.start()
             tile.close()
 
-            assertThat(tile.state).isEqualTo(DominoTileState.Created)
+            assertThat(tile.isRunning).isTrue
         }
 
         @Test
@@ -197,180 +223,32 @@ class ComplexDominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isNotEqualTo(DominoTileState.Started)
+            assertThat(tile.isRunning).isFalse
         }
     }
 
     @Nested
-    inner class LeafTileWithResourcesTests {
+    inner class LeafTileWithOnStartTests {
 
         @Test
-        fun `startTile called createResource`() {
-            var createResourceCalled = 0
+        fun `startTile called onStart`() {
+            var onStartCalled = 0
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                createResourceCalled++
-                return CompletableFuture()
+            fun onStart() {
+                onStartCalled++
             }
 
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
+            val tile = ComplexDominoTile(TILE_NAME, factory, ::onStart)
             tile.start()
 
-            assertThat(createResourceCalled).isEqualTo(1)
-        }
-
-        @Test
-        fun `startTile will set error if created resource failed`() {
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                val future = CompletableFuture<Unit>()
-                future.completeExceptionally(IOException(""))
-                return future
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-            tile.start()
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToError)
-        }
-
-        @Test
-        fun `startTile will not set started until resources are created`() {
-            val future: CompletableFuture<Unit> = CompletableFuture<Unit>()
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                return future
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-            tile.start()
-
-            assertThat(tile.state).isEqualTo(DominoTileState.Created)
-            future.complete(Unit)
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
-        }
-
-        @Test
-        fun `if an error occurs when resources are created the the the tile will error`() {
-            val future: CompletableFuture<Unit> = CompletableFuture<Unit>()
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                return future
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-            tile.start()
-
-            assertThat(tile.state).isEqualTo(DominoTileState.Created)
-            future.completeExceptionally(RuntimeException("Ohh no"))
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToError)
-        }
-
-        @Test
-        fun `startTile, stopTile, startTile will not restart the tile until resources are created`() {
-            val future: CompletableFuture<Unit> = CompletableFuture<Unit>()
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                return future
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-            tile.start()
-            tile.stop()
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedByParent)
-            tile.start()
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedByParent)
-            future.complete(Unit)
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
-        }
-
-        @Test
-        fun `stopTile will close all the resources`() {
-            val actions = mutableListOf<Int>()
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                resources.keep {
-                    actions.add(1)
-                }
-                resources.keep {
-                    actions.add(2)
-                }
-                resources.keep {
-                    actions.add(3)
-                }
-                return CompletableFuture()
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-            tile.start()
-            tile.stop()
-
-            assertThat(actions).isEqualTo(listOf(3, 2, 1))
-        }
-
-        @Test
-        fun `stopTile will ignore error during stop`() {
-            val actions = mutableListOf<Int>()
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                resources.keep {
-                    actions.add(1)
-                }
-                resources.keep {
-                    throw IOException("")
-                }
-                resources.keep {
-                    actions.add(3)
-                }
-                return CompletableFuture()
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-            tile.start()
-            tile.stop()
-
-            assertThat(actions).isEqualTo(listOf(3, 1))
-        }
-
-        @Test
-        fun `stopTile will not run the same actions again`() {
-            val actions = mutableListOf<Int>()
-            @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-                resources.keep {
-                    actions.add(1)
-                }
-                return CompletableFuture()
-            }
-            val tile = ComplexDominoTile(TILE_NAME, factory, ::createResources)
-
-            tile.start()
-            tile.stop()
-            tile.stop()
-            tile.stop()
-
-            assertThat(actions).isEqualTo(listOf(1))
+            assertThat(onStartCalled).isEqualTo(1)
         }
 
         @Test
         fun `second start will not restart anything`() {
             val called = AtomicInteger(0)
-            val tile = ComplexDominoTile(TILE_NAME, factory, createResources = {
+            val tile = ComplexDominoTile(TILE_NAME, factory, onStart = {
                 called.incrementAndGet()
-                val future = CompletableFuture<Unit>()
-                future.complete(Unit)
-                future
-            })
-            tile.start()
-
-            tile.start()
-
-            assertThat(called).hasValue(1)
-        }
-
-        @Test
-        fun `second start will not recreate the resources if it had errors`() {
-            val called = AtomicInteger(0)
-            val tile = ComplexDominoTile(TILE_NAME, factory, createResources = {
-                called.incrementAndGet()
-                val future = CompletableFuture<Unit>()
-                future.completeExceptionally(RuntimeException("Ohh no"))
-                future
             })
             tile.start()
 
@@ -382,9 +260,8 @@ class ComplexDominoTileTest {
         @Test
         fun `second start will recreate the resources if it was stopped`() {
             val called = AtomicInteger(0)
-            val tile = ComplexDominoTile(TILE_NAME, factory, createResources = {
+            val tile = ComplexDominoTile(TILE_NAME, factory, onStart = {
                 called.incrementAndGet()
-                CompletableFuture()
             })
 
             tile.start()
@@ -392,30 +269,6 @@ class ComplexDominoTileTest {
             tile.start()
 
             assertThat(called).hasValue(2)
-        }
-
-        @Test
-        fun `resourcesStarted will start tile if possible`() {
-            val tile = ComplexDominoTile(TILE_NAME, factory, createResources = {
-                val future = CompletableFuture<Unit>()
-                future.complete(Unit)
-                future
-            })
-            tile.start()
-
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
-        }
-
-        @Test
-        fun `resourcesStarted will start tile stopped`() {
-            val outerFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(TILE_NAME, factory, createResources = { outerFuture })
-            tile.start()
-            tile.stop()
-
-            outerFuture.complete(Unit)
-
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
         }
     }
 
@@ -457,7 +310,7 @@ class ComplexDominoTileTest {
         }
 
         private fun tile(): ComplexDominoTile {
-            return ComplexDominoTile(TILE_NAME, factory, configurationChangeHandler = TileConfigurationChangeHandler())
+            return ComplexDominoTile(TILE_NAME, factory, mock(), configurationChangeHandler = TileConfigurationChangeHandler())
         }
 
         @Test
@@ -480,7 +333,7 @@ class ComplexDominoTileTest {
         @Test
         fun `stop empty last configuration`() {
             val handler = TileConfigurationChangeHandler()
-            val tile = ComplexDominoTile(TILE_NAME, factory, configurationChangeHandler = handler)
+            val tile = ComplexDominoTile(TILE_NAME, factory, mock(), configurationChangeHandler = handler)
             tile.start()
             handler.lastConfiguration = mock()
 
@@ -492,7 +345,7 @@ class ComplexDominoTileTest {
         @Test
         fun `close empty last configuration`() {
             val handler = TileConfigurationChangeHandler()
-            val tile = ComplexDominoTile(TILE_NAME, factory, configurationChangeHandler = handler)
+            val tile = ComplexDominoTile(TILE_NAME, factory, mock(), configurationChangeHandler = handler)
             tile.start()
             handler.lastConfiguration = mock()
 
@@ -539,10 +392,9 @@ class ComplexDominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
             outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
 
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
+            assertThat(tile.isRunning).isFalse
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
             assertThat(tile.isRunning).isFalse
         }
 
@@ -571,11 +423,10 @@ class ComplexDominoTileTest {
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
-            assertThat(tile.state).isEqualTo(DominoTileState.Created)
+            assertThat(tile.isRunning).isFalse
 
             outerConfigUpdateResult!!.complete(Unit)
 
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
             assertThat(tile.isRunning).isTrue
         }
 
@@ -647,11 +498,11 @@ class ComplexDominoTileTest {
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
             outerConfigUpdateResult!!.completeExceptionally(RuntimeException("Bad config"))
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
+            assertThat(tile.isRunning).isFalse
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to goodConfig))
             outerConfigUpdateResult!!.complete(Unit)
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
+            assertThat(tile.isRunning).isTrue
 
             assertThat(calledNewConfigurations).contains(Configuration(17) to Configuration(5))
         }
@@ -719,12 +570,12 @@ class ComplexDominoTileTest {
 
             tile.start()
 
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
+            assertThat(tile.isRunning).isFalse
         }
 
         @Test
-        fun `second start will not restart if the configuration had error`() {
-            val resourceCreated = AtomicInteger(0)
+        fun `start will not call on start if configuration had error`() {
+            val onStartCalls = AtomicInteger(0)
             whenever(configFactory.invoke(any())).thenThrow(RuntimeException("Bad configuration"))
             val config = mock<SmartConfig>()
             whenever(service.registerForUpdates(any())).doAnswer {
@@ -736,28 +587,26 @@ class ComplexDominoTileTest {
                 TILE_NAME,
                 factory,
                 configurationChangeHandler = TileConfigurationChangeHandler(),
-                createResources = {
-                    resourceCreated.incrementAndGet()
-                    CompletableFuture()
+                onStart = {
+                    onStartCalls.incrementAndGet()
                 }
             )
             tile.start()
 
-            tile.start()
-
-            assertThat(resourceCreated).hasValue(1)
+            assertThat(onStartCalls).hasValue(0)
         }
     }
 
     @Nested
     inner class InternalTileTest {
-        private fun tile(dependentChildren: Collection<ComplexDominoTile>,
+        private fun tile(dependentChildren: Collection<LifecycleCoordinatorName>,
                          managedChildren: Collection<ComplexDominoTile>): ComplexDominoTile =
             ComplexDominoTile(
                 TILE_NAME,
                 factory,
+                mock(),
                 dependentChildren = dependentChildren,
-                managedChildren = managedChildren
+                managedChildren = managedChildren.map { it.toNamedLifecycle() }
             )
 
         @Nested
@@ -770,7 +619,7 @@ class ComplexDominoTileTest {
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
 
                 tile.start()
 
@@ -786,7 +635,7 @@ class ComplexDominoTileTest {
                     StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
                     StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
                 )
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
 
                 tile.start()
                 tile.start()
@@ -825,22 +674,17 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 // simulate children starting
-                children[0].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
-                children[1].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
-                children[2].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[2].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
-
+                children[0].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[0].second, LifecycleStatus.UP), coordinator)
+                children[1].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[1].second, LifecycleStatus.UP), coordinator)
+                children[2].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[2].second, LifecycleStatus.UP), coordinator)
                 assertThat(tile.isRunning).isTrue
-                assertThat(tile.state).isEqualTo(DominoTileState.Started)
             }
 
             @Test
@@ -852,18 +696,15 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 // simulate only 2 out of 3 children starting
-                children[0].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
-                children[1].first.setState(DominoTileState.Started)
-                handler.lastValue.processEvent(CustomEvent(children[1].second,
-                    StatusChangeEvent(DominoTileState.Started)), coordinator)
+                children[0].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[0].second, LifecycleStatus.UP), coordinator)
+                children[1].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[1].second, LifecycleStatus.UP), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTileState.Created)
                 assertThat(tile.isRunning).isFalse
             }
 
@@ -876,15 +717,22 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 // simulate children starting
-                children[0].first.setState(DominoTileState.StoppedByParent)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.StoppedByParent)), coordinator)
+                children[0].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[0].second, LifecycleStatus.UP), coordinator)
+                children[1].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[1].second, LifecycleStatus.UP), coordinator)
+                children[2].first.setState(LifecycleStatus.UP)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[2].second, LifecycleStatus.UP), coordinator)
 
-                assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
+                //Simulate child stopping
+                children[0].first.setState(LifecycleStatus.DOWN)
+                handler.lastValue.processEvent(RegistrationStatusChangeEvent(children[0].second, LifecycleStatus.DOWN), coordinator)
+
+                assertThat(tile.isRunning).isFalse
             }
         }
 
@@ -896,7 +744,7 @@ class ComplexDominoTileTest {
                 val children = listOf<ComplexDominoTile>(
                     mock(),
                 )
-                tile(children, emptyList())
+                tile(children.map { it.coordinatorName }, emptyList())
                 class Event : LifecycleEvent
 
                 assertDoesNotThrow {
@@ -905,25 +753,6 @@ class ComplexDominoTileTest {
                         coordinator
                     )
                 }
-            }
-
-            @Test
-            fun `when a dependent child goes down with error, the parent will stop`() {
-                val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
-                    StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component", "2")) to mock(),
-                    StubDominoTile(LifecycleCoordinatorName("component", "3")) to mock(),
-                )
-                registerChildren(coordinator, children)
-
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
-                tile.start()
-
-                children[0].first.setState(DominoTileState.StoppedDueToError)
-                handler.lastValue.processEvent(CustomEvent(children[0].second,
-                    StatusChangeEvent(DominoTileState.StoppedDueToError)), coordinator)
-
-                assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToChildStopped)
             }
         }
 
@@ -957,7 +786,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.start()
 
                 tile.close()
@@ -971,7 +800,7 @@ class ComplexDominoTileTest {
                 )
                 registerChildren(coordinator, children)
 
-                val tile = tile(children.map { it.first.dominoTile }, emptyList())
+                val tile = tile(children.map { it.first.dominoTile.coordinatorName }, emptyList())
                 tile.close()
 
                 verify(coordinator).close()
@@ -997,6 +826,7 @@ class ComplexDominoTileTest {
                     mock {
                         on { close() } doThrow RuntimeException("")
                         on { coordinatorName } doReturn LifecycleCoordinatorName("component", "1")
+                        on { toNamedLifecycle() } doReturn NamedLifecycle(this.mock, mock())
                     }
                 )
                 val registration = mock<RegistrationHandle>()
@@ -1009,174 +839,18 @@ class ComplexDominoTileTest {
         }
     }
 
-    @Nested
-    inner class LeafTileWithConfigAndResourcesTests {
-
-        private lateinit var outerConfigUpdateResult: CompletableFuture<Unit>
-        private val calledNewConfigurations = mutableListOf<Pair<Configuration, Configuration?>>()
-        private val registration = mock<AutoCloseable>()
-        private val configurationHandler = argumentCaptor<ConfigurationHandler>()
-        private val service = mock<ConfigurationReadService> {
-            on { registerForUpdates(configurationHandler.capture()) } doReturn registration
-        }
-        private val configFactory = mock<(Config)-> Configuration> {
-            on { invoke(any()) } doAnswer {
-                Configuration((it.arguments[0] as Config).getInt(""))
-            }
-        }
-        private val key = "key"
-
-        private inner class TileConfigurationChangeHandler : ConfigurationChangeHandler<Configuration>(
-            service,
-            key,
-            configFactory,
-        ) {
-            override fun applyNewConfiguration(
-                newConfiguration: Configuration,
-                oldConfiguration: Configuration?,
-                resources: ResourcesHolder
-            ): CompletableFuture<Unit> {
-                val future = CompletableFuture<Unit>()
-                calledNewConfigurations.add(newConfiguration to oldConfiguration)
-                outerConfigUpdateResult = future
-                return future
-            }
-        }
-
-        @Test
-        fun `onNewConfiguration will start the tile if resources started`() {
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = {
-                    val future = CompletableFuture<Unit>()
-                    future.complete(Unit)
-                    future
-                },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.complete(Unit)
-
-            assertThat(tile.state).isEqualTo(DominoTileState.Started)
-        }
-
-        @Test
-        fun `createResources then onNewConfiguration will not start the tile if configuration was bad`() {
-            val resourceFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = { resourceFuture },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            resourceFuture.complete(Unit)
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.completeExceptionally(IOException())
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
-        }
-
-        @Test
-        fun `onNewConfiguration then createResources will not start the tile if configuration was bad`() {
-            val resourceFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = { resourceFuture },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.completeExceptionally(IOException())
-            resourceFuture.complete(Unit)
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
-        }
-
-        @Test
-        fun `createResources then onNewConfiguration will not start the tile if resources fail`() {
-            val resourceFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = { resourceFuture },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            resourceFuture.completeExceptionally(IOException())
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.complete(Unit)
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToError)
-        }
-
-        @Test
-        fun `onNewConfiguration then createResources will not start the tile if resources fail`() {
-            val resourceFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = { resourceFuture },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.complete(Unit)
-            resourceFuture.completeExceptionally(IOException())
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToError)
-        }
-
-        @Test
-        fun `createResources then onNewConfiguration will not start the tile if resources and config fail`() {
-            val resourceFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = { resourceFuture },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            resourceFuture.completeExceptionally(IOException())
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.completeExceptionally(IOException())
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToBadConfig)
-        }
-
-        @Test
-        fun `onNewConfiguration then createResources will not start the tile if resources and config fail`() {
-            val resourceFuture = CompletableFuture<Unit>()
-            val tile = ComplexDominoTile(
-                TILE_NAME,
-                factory,
-                createResources = { resourceFuture },
-                configurationChangeHandler = TileConfigurationChangeHandler()
-            )
-            tile.start()
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.completeExceptionally(IOException())
-            resourceFuture.completeExceptionally(IOException())
-
-            assertThat(tile.state).isEqualTo(DominoTileState.StoppedDueToError)
-        }
-    }
-
     private class StubDominoTile(coordinatorName: LifecycleCoordinatorName) {
 
         val dominoTile by lazy {
             mock<ComplexDominoTile> {
-                on { state } doAnswer { currentState }
                 on { this.coordinatorName } doReturn coordinatorName
-                on { isRunning } doAnswer { currentState == DominoTileState.Started }
+                on { isRunning } doAnswer { currentState == LifecycleStatus.UP }
+                on { toNamedLifecycle() } doReturn NamedLifecycle(this.mock, mock())
             }
         }
-        private var currentState: DominoTileState = DominoTileState.Created
+        private var currentState: LifecycleStatus = LifecycleStatus.DOWN
 
-        fun setState(state: DominoTileState) {
+        fun setState(state: LifecycleStatus) {
             currentState = state
         }
 

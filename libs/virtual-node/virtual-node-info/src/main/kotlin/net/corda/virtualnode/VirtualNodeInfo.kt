@@ -1,6 +1,7 @@
 package net.corda.virtualnode
 
 import net.corda.libs.packaging.core.CpiIdentifier
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -26,23 +27,32 @@ data class VirtualNodeInfo(
     /** Crypto DML DB connection ID */
     val cryptoDmlConnectionId: UUID,
     /** HSM connection ID */
-    val hsmConnectionId: UUID? = null)
+    val hsmConnectionId: UUID? = null,
+    /** Version of this vnode */
+    val version: Int = -1,
+    /** Creation timestamp */
+    val timestamp: Instant,
+)
 
 
-fun VirtualNodeInfo.toAvro(): net.corda.data.virtualnode.VirtualNodeInfo =
+typealias VirtualNodeInfoAvro = net.corda.data.virtualnode.VirtualNodeInfo
+
+fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
     with (holdingIdentity) {
-        net.corda.data.virtualnode.VirtualNodeInfo(
+        VirtualNodeInfoAvro(
             toAvro(),
             cpiIdentifier.toAvro(),
             vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() },
             vaultDmlConnectionId.toString(),
             cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
             cryptoDmlConnectionId.toString(),
-            hsmConnectionId?.let { hsmConnectionId.toString() }
+            hsmConnectionId?.let { hsmConnectionId.toString() },
+            version,
+            timestamp
         )
     }
 
-fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
+fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
     val holdingIdentity = holdingIdentity.toCorda()
     return VirtualNodeInfo(
         holdingIdentity,
@@ -52,5 +62,7 @@ fun net.corda.data.virtualnode.VirtualNodeInfo.toCorda(): VirtualNodeInfo {
         cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
         UUID.fromString(cryptoDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
+        version,
+        timestamp
     )
 }

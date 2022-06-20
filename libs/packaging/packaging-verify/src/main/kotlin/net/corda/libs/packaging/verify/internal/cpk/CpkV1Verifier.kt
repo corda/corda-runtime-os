@@ -2,16 +2,13 @@ package net.corda.libs.packaging.verify.internal.cpk
 
 import net.corda.libs.packaging.JarReader
 import net.corda.libs.packaging.PackagingConstants
+import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_NAME_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPK_BUNDLE_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER
-import net.corda.libs.packaging.PackagingConstants.CPK_LICENCE_ATTRIBUTE
-import net.corda.libs.packaging.PackagingConstants.CPK_NAME_ATTRIBUTE
-import net.corda.libs.packaging.PackagingConstants.CPK_VENDOR_ATTRIBUTE
-import net.corda.libs.packaging.PackagingConstants.CPK_VERSION_ATTRIBUTE
 import net.corda.libs.packaging.certSummaryHash
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.verify.internal.requireAttribute
 import net.corda.libs.packaging.verify.internal.requireAttributeValueIn
 import net.corda.libs.packaging.verify.internal.singleOrThrow
 import java.util.jar.JarEntry
@@ -20,20 +17,20 @@ import java.util.jar.JarEntry
  * Verifies CPK format 1.0
  */
 class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
-    private val name = jarReader.jarName
+    val name = jarReader.jarName
     private val manifest = jarReader.manifest
-    private val codeSigners = jarReader.codeSigners
+    val codeSigners = jarReader.codeSigners
     private val libraries: List<CpkLibrary>
     private val mainBundle: CpkV1MainBundle
-    override val id: CpkIdentifier
+    val id: CpkIdentifier
         get() {
             val certificates = codeSigners.map { it.signerCertPath.certificates.first() }.toSet()
             val cpkSummaryHash = certificates.asSequence().certSummaryHash()
-            with (manifest.mainAttributes) {
-                return CpkIdentifier(getValue(CPK_NAME_ATTRIBUTE), getValue(CPK_VERSION_ATTRIBUTE), cpkSummaryHash)
+            with (mainBundle.manifest.mainAttributes) {
+                return CpkIdentifier(getValue(CPK_BUNDLE_NAME_ATTRIBUTE), getValue(CPK_BUNDLE_VERSION_ATTRIBUTE), cpkSummaryHash)
             }
         }
-    override val dependencies: CpkDependencies
+    val dependencies: CpkDependencies
         get() = mainBundle.cpkDependencies
 
     init {
@@ -43,6 +40,9 @@ class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
                 PackagingException("CorDapp JAR not found in CPK \"$name\""),
                 PackagingException("Multiple CorDapp JARs found in CPK \"$name\""))
     }
+
+    fun bundleName(): String = mainBundle.manifest.mainAttributes.getValue(CPK_BUNDLE_NAME_ATTRIBUTE)
+    fun bundleVersion(): String = mainBundle.manifest.mainAttributes.getValue(CPK_BUNDLE_VERSION_ATTRIBUTE)
 
     private fun isMainBundle(entry: JarReader.Entry): Boolean {
         return entry.name.let {
@@ -64,10 +64,6 @@ class CpkV1Verifier(jarReader: JarReader): CpkVerifier {
     private fun verifyManifest() {
         with (manifest) {
             requireAttributeValueIn(CPK_FORMAT_ATTRIBUTE, "1.0")
-            requireAttribute(CPK_NAME_ATTRIBUTE)
-            requireAttribute(CPK_VERSION_ATTRIBUTE)
-            requireAttribute(CPK_LICENCE_ATTRIBUTE)
-            requireAttribute(CPK_VENDOR_ATTRIBUTE)
         }
     }
 

@@ -1,15 +1,18 @@
-package net.corda.libs.packaging.verify
+package net.corda.libs.packaging.verify.internal.cpb
 
 import net.corda.libs.packaging.JarReader
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyResolutionException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
-import net.corda.libs.packaging.verify.TestCpbV1Builder.Companion.POLICY_FILE
+import net.corda.libs.packaging.verify.InMemoryZipFile
+import net.corda.libs.packaging.verify.TestUtils
 import net.corda.libs.packaging.verify.TestUtils.ALICE
 import net.corda.libs.packaging.verify.TestUtils.BOB
 import net.corda.libs.packaging.verify.TestUtils.ROOT_CA
 import net.corda.libs.packaging.verify.TestUtils.signedBy
-import net.corda.libs.packaging.verify.internal.cpb.CpbV1Verifier
+import net.corda.libs.packaging.verify.internal.cpb.TestCpbV1Builder.Companion.POLICY_FILE
+import net.corda.libs.packaging.verify.internal.cpk.TestCpkV1Builder
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -180,9 +183,79 @@ class CpbV1VerifierTest {
     }
 
     @Test
-    fun `throws if CPK dependencies not satisfied`() {
+    fun `throws if CPK dependencies not satisfied (missing CPK)`() {
         val cpb = TestCpbV1Builder()
             .cpks(TestCpkV1Builder().dependencies(TestUtils.Dependency("notExisting.cpk", "1.0.0.0")))
+            .signers(ALICE)
+            .build()
+
+        assertThrows<DependencyResolutionException> {
+            verify(cpb)
+        }
+    }
+
+    @Test
+    fun `throws if CPK signer dependency not satisfied (lower version)`() {
+        val cpb = TestCpbV1Builder()
+            .cpks(
+                TestCpkV1Builder()
+                    .name("test-1.0.0.0.cpk")
+                    .bundleName("test.cpk")
+                    .bundleVersion("2.0.0.0")
+                    .dependencies(TestUtils.Dependency("dependency.cpk", "1.0.0.0")),
+                TestCpkV1Builder()
+                    .name("dependency-1.1.0.0.cpk")
+                    .bundleName("dependency.cpk")
+                    .bundleVersion("0.9.0.0"))
+            .signers(ALICE)
+            .build()
+
+        assertThrows<DependencyResolutionException> {
+            verify(cpb)
+        }
+    }
+
+    @Test
+    fun `throws if CPK signer dependency not satisfied (different signer)`() {
+        val cpb = TestCpbV1Builder()
+            .cpks(
+                TestCpkV1Builder()
+                    .name("test-1.0.0.0.cpk")
+                    .bundleName("test.cpk")
+                    .bundleVersion("2.0.0.0")
+                    .dependencies(TestUtils.Dependency("dependency.cpk", "1.0.0.0"))
+                    .signers(ALICE),
+                TestCpkV1Builder()
+                    .name("dependency-1.0.0.0.cpk")
+                    .bundleName("dependency.cpk")
+                    .bundleVersion("1.0.0.0")
+                    .signers(BOB))
+            .signers(ALICE)
+            .build()
+
+        assertThrows<DependencyResolutionException> {
+            verify(cpb)
+        }
+    }
+
+    @Test
+    fun `throws if CPK hash dependency not satisfied (invalid signers hash)`() {
+        val cpb = TestCpbV1Builder()
+            .cpks(
+                TestCpkV1Builder()
+                    .name("test-1.0.0.0.cpk")
+                    .bundleName("test.cpk")
+                    .bundleVersion("2.0.0.0")
+                    .dependencies(
+                        TestUtils.Dependency(
+                            "dependency.cpk",
+                            "1.0.0.0",
+                            SecureHash("SHA-256", TestUtils.base64ToBytes("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="))
+                        )),
+                TestCpkV1Builder()
+                    .name("dependency-1.0.0.0.cpk")
+                    .bundleName("dependency.cpk")
+                    .bundleVersion("1.0.0.0"))
             .signers(ALICE)
             .build()
 

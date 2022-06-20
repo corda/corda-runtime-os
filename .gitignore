@@ -130,3 +130,6 @@ node_modules/
 /testing/soak/GroupPolicy.json
 /testing/soak/*.cpi
 /testing/soak/*.csv
+
+values.yaml
+debug.yaml

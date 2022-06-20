@@ -16,4 +16,8 @@ interface LifecycleWithDominoTile : Lifecycle {
     override fun stop() {
         dominoTile.stop()
     }
+
+    override fun close() {
+        dominoTile.close()
+    }
 }

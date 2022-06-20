@@ -5,15 +5,19 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 class SimpleDominoTileTest {
-    private val coordinator = mock< LifecycleCoordinator>()
+    private val coordinator = mock< LifecycleCoordinator>() {
+        var currentStatus: LifecycleStatus = LifecycleStatus.DOWN
+        on { updateStatus(any(), any()) } doAnswer { currentStatus =  it.getArgument(0) }
+        on { status } doAnswer { currentStatus }
+    }
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
@@ -31,7 +35,7 @@ class SimpleDominoTileTest {
     fun `stop will change the status to stop by parent`() {
         tile.stop()
 
-        assertThat(tile.state).isEqualTo(DominoTileState.StoppedByParent)
+        assertThat(tile.status).isEqualTo(LifecycleStatus.DOWN)
     }
 
     @Test
@@ -52,14 +56,14 @@ class SimpleDominoTileTest {
 
     @Test
     fun `updateState change the state`() {
-        tile.updateState(DominoTileState.Started)
+        tile.updateState(LifecycleStatus.UP)
 
-        assertThat(tile.state).isEqualTo(DominoTileState.Started)
+        assertThat(tile.status).isEqualTo(LifecycleStatus.UP)
     }
 
     @Test
     fun `isRunning return true if tile was started`() {
-        tile.updateState(DominoTileState.Started)
+        tile.updateState(LifecycleStatus.UP)
 
         assertThat(tile.isRunning).isTrue
     }
@@ -71,53 +75,40 @@ class SimpleDominoTileTest {
 
     @Test
     fun `isRunning return false if tile had error`() {
-        tile.updateState(DominoTileState.StoppedDueToError)
+        tile.updateState(LifecycleStatus.DOWN)
 
         assertThat(tile.isRunning).isFalse
     }
 
     @Test
-    fun `update status invoke postCustomEventToFollowers when status had changed`() {
-        tile.updateState(DominoTileState.StoppedByParent)
-
-        verify(coordinator).postCustomEventToFollowers(StatusChangeEvent(DominoTileState.StoppedByParent))
-    }
-
-    @Test
-    fun `update status won't invoke postCustomEventToFollowers when status had not changed`() {
-        tile.updateState(DominoTileState.StoppedDueToChildStopped)
-        tile.updateState(DominoTileState.StoppedDueToChildStopped)
-        tile.updateState(DominoTileState.StoppedDueToChildStopped)
-
-        verify(coordinator, times(1)).postCustomEventToFollowers(StatusChangeEvent(DominoTileState.StoppedDueToChildStopped))
-    }
-
-    @Test
-    fun `update state to started will send update state with UP`() {
-        tile.updateState(DominoTileState.Started)
-
-        verify(coordinator).updateStatus(LifecycleStatus.UP)
-    }
-
-    @Test
-    fun `update state to stopped will send update state with DOWN`() {
-        tile.updateState(DominoTileState.StoppedByParent)
+    fun `update status invoke updateStatus when status had changed`() {
+        tile.updateState(LifecycleStatus.UP)
+        tile.updateState(LifecycleStatus.DOWN)
 
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test
-    fun `update state to error will send update state with ERROR`() {
-        tile.updateState(DominoTileState.StoppedDueToError)
+    fun `update status won't invoke updateStatus when status had not changed`() {
+        tile.updateState(LifecycleStatus.UP)
+        tile.updateState(LifecycleStatus.DOWN)
+        tile.updateState(LifecycleStatus.DOWN)
+        tile.updateState(LifecycleStatus.DOWN)
 
-        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+        verify(coordinator, times(1)).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test
-    fun `update state to created will not send update state`() {
-        tile.updateState(DominoTileState.Started)
-        tile.updateState(DominoTileState.Created)
+    fun `update state to started will send update state with UP`() {
+        tile.updateState(LifecycleStatus.UP)
 
-        verify(coordinator, times(1)).updateStatus(any(), anyString())
+        verify(coordinator).updateStatus(LifecycleStatus.UP)
+    }
+
+    @Test
+    fun `update state to error will send update state with ERROR`() {
+        tile.updateState(LifecycleStatus.ERROR)
+
+        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
     }
 }

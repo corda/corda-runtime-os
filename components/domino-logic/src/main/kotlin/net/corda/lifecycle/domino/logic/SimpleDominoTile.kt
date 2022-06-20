@@ -6,12 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.domino.logic.DominoTileState.Created
-import net.corda.lifecycle.domino.logic.DominoTileState.Started
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedByParent
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
-import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
+import net.corda.lifecycle.StopEvent
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -29,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 class SimpleDominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-) : DominoTile {
+) : DominoTile() {
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
@@ -48,48 +43,28 @@ class SimpleDominoTile(
     private val logger by lazy {
         LoggerFactory.getLogger(coordinatorName.toString())
     }
-    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
-    private val currentState = AtomicReference(Created)
+    private val currentState = AtomicReference(LifecycleStatus.DOWN)
 
-    override val state: DominoTileState
-        get() = currentState.get()
+    override val dependentChildren: Collection<LifecycleCoordinatorName> = emptyList()
+    override val managedChildren: Collection<NamedLifecycle> = emptyList()
 
-    override val isRunning: Boolean
-        get() = state == Started
-
-    override val dependentChildren: Collection<DominoTile> = emptyList()
-    override val managedChildren: Collection<DominoTile> = emptyList()
-
-    fun updateState(newState: DominoTileState) {
+    fun updateState(newState: LifecycleStatus) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
-            val status = when (newState) {
-                Started -> LifecycleStatus.UP
-                StoppedDueToBadConfig, StoppedByParent, StoppedDueToChildStopped -> LifecycleStatus.DOWN
-                StoppedDueToError -> LifecycleStatus.ERROR
-                Created -> null
-            }
-            status?.let { coordinator.updateStatus(it) }
-            coordinator.postCustomEventToFollowers(StatusChangeEvent(newState))
+            coordinator.updateStatus(newState)
             logger.info("State updated from $oldState to $newState")
         }
     }
 
-    override fun start() {
-        coordinator.start()
-    }
-
-    override fun stop() {
-        updateState(StoppedByParent)
-    }
-
-    override fun close() {
-        coordinator.close()
-    }
-    private class EventHandler : LifecycleEventHandler {
+    private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-            // Nothing to do
+            when (event) {
+                is StopEvent -> {
+                    updateState(LifecycleStatus.DOWN)
+                }
+            }
         }
     }
 }
