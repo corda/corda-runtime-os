@@ -107,7 +107,6 @@ class ConfigurationReadServiceImplTest {
     @Test
     fun `when a client registers all current configuration is delivered to the client`() {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(BOOT_CONFIG_STRING))
-        val messagingConfig = smartConfigFactory.create(ConfigFactory.parseString(MESSAGING_CONFIG_STRING))
 
         val latch = CountDownLatch(1)
         val prepareLatch = CountDownLatch(1)
