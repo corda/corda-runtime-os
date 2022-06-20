@@ -8,6 +8,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -36,6 +37,7 @@ class FlowOpsResponses(
 
     override fun onNext(events: List<Record<String, FlowOpsResponse>>): List<Record<*, *>> {
         events.forEach {
+            contextLogger().info("received event on key ${it.key}")
             receivedEvents[it.key] = it.value
         }
         return emptyList()
