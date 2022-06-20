@@ -1,5 +1,7 @@
 package net.corda.membership.impl.persistence.service.dummy
 
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -8,6 +10,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Stream
 
 interface TestVirtualNodeInfoReadService : VirtualNodeInfoReadService {
     fun putVNodeInfo(vnodeInfo: VirtualNodeInfo)
@@ -44,6 +47,16 @@ class TestVirtualNodeInfoReadServiceImpl : TestVirtualNodeInfoReadService {
             throw UnsupportedOperationException(this)
         }
     }
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+        with(UNIMPLEMENTED_FUNCTION){
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = LifecycleCoordinatorName.forComponent<TestVirtualNodeInfoReadServiceImpl>()
 
     override fun start() {
         isRunning = true

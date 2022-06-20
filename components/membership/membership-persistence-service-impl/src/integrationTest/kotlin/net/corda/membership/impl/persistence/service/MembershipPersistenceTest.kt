@@ -51,6 +51,7 @@ import net.corda.orm.utils.use
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -69,6 +70,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID.randomUUID
 import javax.persistence.EntityManagerFactory
 
@@ -161,6 +163,8 @@ class MembershipPersistenceTest {
         private const val MEMBER_CONTEXT_KEY = "key"
         private const val MEMBER_CONTEXT_VALUE = "value"
 
+        private val clock = TestClock(Instant.now())
+
         private val groupId = randomUUID().toString()
         private val x500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
         private val viewOwningHoldingIdentity = HoldingIdentity(x500Name.toString(), groupId)
@@ -242,7 +246,8 @@ class MembershipPersistenceTest {
                 viewOwningHoldingIdentity,
                 CpiIdentifier("PLACEHOLDER", "PLACEHOLDER", null),
                 vaultDmlConnectionId = connectionID,
-                cryptoDmlConnectionId = connectionID
+                cryptoDmlConnectionId = connectionID,
+                timestamp = clock.instant()
             )
             virtualNodeReadService.putVNodeInfo(vnodeInfo)
         }
