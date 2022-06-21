@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.nio.ByteBuffer
@@ -234,6 +235,27 @@ internal class AvroSchemaRegistryImplTest {
             val decoded = registry.deserialize(encoded, reusable)
             assertThat(secureHash).isEqualTo(decoded)
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `encoder exception is propagated`(compressed: Boolean) {
+        val registry = AvroSchemaRegistryImpl(
+            options = AvroSchemaRegistryImpl.Options(
+                compressed = compressed
+            )
+        )
+        val message = TestMessage(1)
+
+        registry.addSchema(
+            message.schema,
+            TestMessage::class.java,
+            { throw IllegalStateException() },
+            message::decode
+        )
+
+        registry.initialiseSchemas(avroGeneratedMessages)
+        assertThrows<java.lang.IllegalStateException> { registry.serialize(message) }
     }
 
     class TestMessage(var something: Int = 0) : GenericContainer {
