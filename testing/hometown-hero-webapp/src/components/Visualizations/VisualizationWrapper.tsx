@@ -1,4 +1,4 @@
-import { useDesktopMediaQuery } from '../../hooks/useMediaQueries';
+import { useDesktopMediaQuery, useMobileMediaQuery, useTabletMediaQuery } from '../../hooks/useMediaQueries';
 
 type Props = {
     //An optional prop for width, height is calculated automatically
@@ -8,15 +8,16 @@ type Props = {
 };
 
 const VisualizationWrapper: React.FC<Props> = ({ children, isBlurred, width = 500 }) => {
-    const isDesktop = useDesktopMediaQuery();
-    const vizWidth = isDesktop ? width : '90%';
+    const isMobile = useMobileMediaQuery();
+    const isTablet = useTabletMediaQuery();
+    const vizWidth = isMobile ? '90%' : isTablet ? width * 0.8 : width;
     return (
         <div
             style={{
                 position: 'absolute',
                 height: 'auto',
                 width: vizWidth,
-                bottom: '10%',
+                bottom: isMobile ? '2%' : '10%',
                 right: '2%',
                 zIndex: -2,
                 opacity: 0.6,
