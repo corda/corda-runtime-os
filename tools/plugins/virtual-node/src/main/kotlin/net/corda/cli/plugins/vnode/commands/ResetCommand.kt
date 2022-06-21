@@ -33,19 +33,39 @@ class ResetCommand : Runnable {
     )
     lateinit var targetUrl: String
 
-    @Option(names = ["-u", "--user"], description = ["User name"], required = true)
+    @Option(
+        names = ["-u", "--user"],
+        description = ["User name"],
+        required = true
+    )
     lateinit var username: String
 
-    @Option(names = ["-p", "--password"], description = ["Password"], required = true)
+    @Option(
+        names = ["-p", "--password"],
+        description = ["Password"],
+        required = true
+    )
     lateinit var password: String
 
-    @Option(names = ["-pv", "--protocol-version"], required = false, description = ["Minimum protocol version."])
+    @Option(
+        names = ["-pv", "--protocol-version"],
+        required = false,
+        description = ["Minimum protocol version."]
+    )
     var minimumServerProtocolVersion: Int = 1
 
-    @Option(names = ["-c", "--cpi"], required = true, description = ["The path to the CPI file to reset the virtual node with."])
+    @Option(
+        names = ["-c", "--cpi"],
+        required = true,
+        description = ["The path to the CPI file to reset the virtual node with."]
+    )
     lateinit var cpiFileName: String
 
-    @Option(names = ["-w", "--wait"], required = false, description = ["polls for result"])
+    @Option(
+        names = ["-w", "--wait"],
+        required = false,
+        description = ["polls for result"]
+    )
     var wait: Boolean = false
 
     override fun run() {
@@ -98,8 +118,6 @@ class ResetCommand : Runnable {
             println("CPI Successfully Uploaded and applied. ")
         }
     }
-
-
 
     private fun <I : RpcOps> createHttpRpcClient(rpcOps: KClass<I>): HttpRpcClient<I> {
         return HttpRpcClient(
