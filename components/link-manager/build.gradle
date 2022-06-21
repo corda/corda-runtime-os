@@ -82,7 +82,7 @@ dependencies {
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
     testRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    testRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    testRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

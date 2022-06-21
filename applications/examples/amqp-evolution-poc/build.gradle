@@ -50,7 +50,7 @@ dependencies {
 
     cpks project(path: ':applications:examples:amqp-evolution-poc:evolution-cpk', configuration: 'cordaCPK')
 
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
