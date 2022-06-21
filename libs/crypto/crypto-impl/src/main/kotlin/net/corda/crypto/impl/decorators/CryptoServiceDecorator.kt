@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.crypto.impl.CryptoRetryingExecutorWithTimeout
+import net.corda.crypto.core.isRecoverable
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutorWithTimeout
+import net.corda.crypto.impl.retrying.LinearRetryStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
@@ -16,7 +18,7 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoException
+import net.corda.v5.crypto.failures.CryptoException
 import java.time.Duration
 
 class CryptoServiceDecorator(
@@ -51,7 +53,11 @@ class CryptoServiceDecorator(
         )
     }
 
-    private val withTimeout = CryptoRetryingExecutorWithTimeout(logger, maxAttempts, attemptTimeout)
+    private val withTimeout = CryptoRetryingExecutorWithTimeout(
+        logger,
+        LinearRetryStrategy(maxAttempts),
+        attemptTimeout
+    )
 
     override fun close() {
         (cryptoService as? AutoCloseable)?.close()
@@ -60,38 +66,47 @@ class CryptoServiceDecorator(
     override val extensions: List<CryptoServiceExtensions>
         get() = try {
             cryptoService.extensions
-        } catch (e: Throwable) {
-            if(e is CryptoException && !e.isRecoverable) {
-                throw e
+        } catch (e: RuntimeException) {
+            if(e.isRecoverable()) {
+                throw CryptoException("Calling extensions failed", e)
             } else {
-                throw CryptoException("CryptoService extensions failed", e)
+                throw e
             }
+        } catch (e: Throwable) {
+            throw CryptoException("Calling extensions failed", e)
         }
 
     override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
         get() = try {
             cryptoService.supportedSchemes
-        } catch (e: Throwable) {
-            if(e is CryptoException && !e.isRecoverable) {
-                throw e
+        } catch (e: RuntimeException) {
+            if(e.isRecoverable()) {
+                throw CryptoException("Calling supportedSchemes failed", e)
             } else {
-                throw CryptoException("CryptoService supportedSchemes failed", e)
+                throw e
             }
+        } catch (e: Throwable) {
+            throw CryptoException("Calling supportedSchemes failed", e)
         }
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) = try {
         withTimeout.executeWithRetry {
             cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
         }
-    } catch (e: Throwable) {
-        if(e is CryptoException && !e.isRecoverable) {
-            throw e
-        } else {
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
             throw CryptoException(
-                "CryptoService createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
+                "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
                 e
             )
+        } else {
+            throw e
         }
+    } catch (e: Throwable) {
+        throw CryptoException(
+            "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
+            e
+        )
     }
 
     override fun generateKeyPair(
@@ -101,12 +116,14 @@ class CryptoServiceDecorator(
         withTimeout.executeWithRetry {
             cryptoService.generateKeyPair(spec, context)
         }
-    } catch (e: Throwable) {
-        if(e is CryptoException && !e.isRecoverable) {
-            throw e
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling generateKeyPair failed (spec=$spec)", e)
         } else {
-            throw CryptoException("CryptoService generateKeyPair failed (spec=$spec)", e)
+            throw e
         }
+    } catch (e: Throwable) {
+        throw CryptoException("Calling generateKeyPair failed (spec=$spec)", e)
     }
 
     override fun sign(
@@ -117,23 +134,27 @@ class CryptoServiceDecorator(
         withTimeout.executeWithRetry {
             cryptoService.sign(spec, data, context)
         }
-    } catch (e: Throwable) {
-        if(e is CryptoException && !e.isRecoverable) {
-            throw e
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling sign failed (spec=$spec,data.size=${data.size})", e)
         } else {
-            throw CryptoException("CryptoService sign failed (spec=$spec,data.size=${data.size})", e)
+            throw e
         }
+    } catch (e: Throwable) {
+        throw CryptoException("Calling sign failed (spec=$spec,data.size=${data.size})", e)
     }
 
-    override fun delete(alias: String, context: Map<String, String>) = try {
+    override fun delete(alias: String, context: Map<String, String>): Boolean = try {
         withTimeout.executeWithRetry {
             cryptoService.delete(alias, context)
         }
-    } catch (e: Throwable) {
-        if(e is CryptoException && !e.isRecoverable) {
-            throw e
+    } catch (e: RuntimeException) {
+        if(e.isRecoverable()) {
+            throw CryptoException("Calling delete failed (alias=$alias)", e)
         } else {
-            throw CryptoException("CryptoService delete failed (alias=$alias)", e)
+            throw e
         }
+    } catch (e: Throwable) {
+        throw CryptoException("Calling delete failed (alias=$alias)", e)
     }
 }

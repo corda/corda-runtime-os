@@ -8,7 +8,7 @@ import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLIC
 import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.CryptoRetryingExecutor
+import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.config.hsmPersistence
 import net.corda.crypto.impl.config.rootEncryptor
 import net.corda.crypto.impl.config.softPersistence
