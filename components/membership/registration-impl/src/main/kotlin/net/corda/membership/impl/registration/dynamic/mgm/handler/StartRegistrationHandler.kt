@@ -105,7 +105,7 @@ class StartRegistrationHandler(
                 ) { "Registering member has not specified any endpoints" }
 
                 // Persist pending member info
-                membershipPersistenceClient.persistMemberInfo(mgmHoldingId, pendingMemberInfo).also {
+                membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
                     require(it as? MembershipPersistenceResult.Failure == null) {
                         "Failed to persist pending member info. Reason: " +
                                 (it as MembershipPersistenceResult.Failure).errorMsg

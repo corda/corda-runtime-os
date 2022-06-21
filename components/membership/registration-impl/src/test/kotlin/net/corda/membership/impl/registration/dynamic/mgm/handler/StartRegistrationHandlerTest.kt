@@ -133,7 +133,7 @@ class StartRegistrationHandlerTest {
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
-            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult.Success()
+            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success()
         }
         membershipQueryClient = mock {
             on {
@@ -345,7 +345,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member info fails to persist`() {
-        whenever(membershipPersistenceClient.persistMemberInfo(any(), any<MemberInfo>())).thenReturn(
+        whenever(membershipPersistenceClient.persistMemberInfo(any(), any())).thenReturn(
             MembershipPersistenceResult.Failure("error")
         )
         with(handler.invoke(Record(testTopic, testTopicKey, startRegistrationCommand))) {
@@ -413,6 +413,6 @@ class StartRegistrationHandlerTest {
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
 
         verify(membershipPersistenceClient, getVerificationMode(persistMemberInfo))
-            .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any<MemberInfo>())
+            .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
     }
 }

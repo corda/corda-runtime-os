@@ -125,14 +125,6 @@ class MembershipPersistenceTest {
             }
 
 
-            override fun persistMemberInfo(
-                viewOwningIdentity: HoldingIdentity,
-                memberInfo: MemberInfo
-            ) = safeCall {
-                membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfo)
-            }
-
-
             override fun persistRegistrationRequest(
                 viewOwningIdentity: HoldingIdentity,
                 registrationRequest: RegistrationRequest
@@ -341,9 +333,11 @@ class MembershipPersistenceTest {
 
         val result = membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
-            memberInfoFactory.create(
-                memberContext.toSortedMap(),
-                mgmContext.toSortedMap()
+            listOf(
+                memberInfoFactory.create(
+                    memberContext.toSortedMap(),
+                    mgmContext.toSortedMap()
+                )
             )
         )
 

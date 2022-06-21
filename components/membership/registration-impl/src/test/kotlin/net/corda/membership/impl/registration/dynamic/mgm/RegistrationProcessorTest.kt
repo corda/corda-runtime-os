@@ -123,7 +123,7 @@ class RegistrationProcessorTest {
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.Success()
-            on { persistMemberInfo(any(), any<MemberInfo>()) } doReturn MembershipPersistenceResult.Success()
+            on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success()
         }
         membershipQueryClient = mock {
             on {
