@@ -7,6 +7,8 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -46,10 +48,15 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.service.MembershipPersistenceService
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.use
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
@@ -78,6 +85,10 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipPersistenceTest {
     companion object {
+
+        @InjectService(timeout = 5000)
+        lateinit var publisherFactory: PublisherFactory
+
         @InjectService(timeout = 5000)
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
 
@@ -146,7 +157,7 @@ class MembershipPersistenceTest {
 
         }
 
-        val logger = contextLogger()
+        private val logger = contextLogger()
 
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
@@ -215,8 +226,7 @@ class MembershipPersistenceTest {
 
             entitiesRegistry.register(CordaDb.Vault.persistenceUnitName, MembershipEntities.classes)
 
-            configurationReadService.startAndWait()
-            configurationReadService.bootstrapConfig(bootConfig)
+            setupConfig()
             dbConnectionManager.startAndWait()
             dbConnectionManager.bootstrap(dbConfig)
             virtualNodeReadService.startAndWait()
@@ -254,12 +264,37 @@ class MembershipPersistenceTest {
             }
         }
 
+        private fun setupConfig() {
+            val publisher = publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig)
+            publisher.publish(listOf(Record(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))))
+            configurationReadService.startAndWait()
+            configurationReadService.bootstrapConfig(bootConfig)
+        }
+
         private fun Lifecycle.startAndWait() {
             start()
             eventually(5.seconds) {
                 assertTrue(isRunning)
             }
         }
+
+        private val schemaVersion = ConfigurationSchemaVersion(1,0)
+        private const val messagingConf = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+      """
     }
 
     @Test
