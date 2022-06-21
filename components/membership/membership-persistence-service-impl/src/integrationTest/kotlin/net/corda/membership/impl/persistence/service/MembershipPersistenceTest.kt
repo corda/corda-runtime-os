@@ -227,6 +227,7 @@ class MembershipPersistenceTest {
             configurationReadService.bootstrapConfig(bootConfig)
             dbConnectionManager.startAndWait()
             dbConnectionManager.bootstrap(dbConfig)
+            virtualNodeReadService.startAndWait()
 
             membershipPersistenceService.startAndWait()
             membershipPersistenceClientWrapper.startAndWait()

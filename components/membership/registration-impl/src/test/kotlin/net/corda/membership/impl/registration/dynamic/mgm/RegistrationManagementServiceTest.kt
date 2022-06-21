@@ -45,7 +45,13 @@ class RegistrationManagementServiceTest {
     @Captor
     val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
 
-    private val configServiceName = setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
+    private val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+    private val dependencyServices = setOf(
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+        LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+    )
     private val registrationHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
     private val subscription: StateAndEventSubscription<String, RegistrationState, RegistrationCommand> = mock()
@@ -84,8 +90,6 @@ class RegistrationManagementServiceTest {
 
     private fun postEvent(event: LifecycleEvent) = lifecycleEventHandler.firstValue.processEvent(event, coordinator)
 
-    private val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-
     @BeforeEach
     fun setUp() {
         registrationManagementService = RegistrationManagementServiceImpl(
@@ -115,7 +119,7 @@ class RegistrationManagementServiceTest {
     @Test
     fun `start event follows config read service`() {
         postStartEvent()
-        verify(coordinator).followStatusChangesByName(eq(configServiceName))
+        verify(coordinator).followStatusChangesByName(eq(dependencyServices))
         verify(registrationHandle, never()).close()
     }
 
@@ -123,7 +127,7 @@ class RegistrationManagementServiceTest {
     fun `start event follows config read service and closes registration handle if it already exists`() {
         postStartEvent()
         postStartEvent()
-        verify(coordinator, times(2)).followStatusChangesByName(eq(configServiceName))
+        verify(coordinator, times(2)).followStatusChangesByName(eq(dependencyServices))
         verify(registrationHandle).close()
     }
 
@@ -162,6 +166,7 @@ class RegistrationManagementServiceTest {
 
     @Test
     fun `registration status lifecycle status up event`() {
+        postStartEvent()
         postRegistrationStatusChangeEvent()
 
         verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
@@ -179,6 +184,7 @@ class RegistrationManagementServiceTest {
 
     @Test
     fun `registration status lifecycle status up event additional times closes existing config handle`() {
+        postStartEvent()
         postRegistrationStatusChangeEvent()
         postRegistrationStatusChangeEvent()
         verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
@@ -188,9 +194,10 @@ class RegistrationManagementServiceTest {
 
     @Test
     fun `stop event closes config handle`() {
+        postStartEvent()
         postRegistrationStatusChangeEvent()
         postStopEvent()
-        verify(configHandle, times(2)).close()
+        verify(configHandle).close()
     }
 
     @Test
@@ -201,14 +208,15 @@ class RegistrationManagementServiceTest {
         verify(subscriptionFactory)
             .createStateAndEventSubscription(any(), any<RegistrationProcessor>(), any(), eq(null))
         verify(subscription).start()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(coordinator).followStatusChangesByName(eq(setOf(subscription.subscriptionName)))
 
         postConfigChangedEvent()
         verify(subscription).close()
         verify(subscriptionFactory, times(2))
             .createStateAndEventSubscription(any(), any<RegistrationProcessor>(), any(), eq(null))
         verify(subscription, times(2)).start()
-        verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(coordinator, times(2)).followStatusChangesByName(eq(setOf(subscription.subscriptionName)))
 
         postStopEvent()
         verify(subscription, times(2)).close()

@@ -15,7 +15,7 @@ import java.lang.reflect.Constructor
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
-internal class MembershipP2PProcessor(
+class MembershipP2PProcessor(
     private val avroSchemaRegistry: AvroSchemaRegistry
 ) : DurableProcessor<String, AppMessage> {
     override val keyClass = String::class.java

@@ -44,7 +44,11 @@ class MembershipPersistenceServiceImplTest {
 
     private lateinit var membershipPersistenceService: MembershipPersistenceService
 
-    private val rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock()
+    private val subscriptionCoordinatorName = LifecycleCoordinatorName("SUB")
+    private val rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock {
+        on { subscriptionName } doReturn subscriptionCoordinatorName
+    }
+    private val subRegistrationHandle: RegistrationHandle = mock()
     private val registrationHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
 
@@ -54,10 +58,12 @@ class MembershipPersistenceServiceImplTest {
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
     )
 
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependentComponents)) } doReturn registrationHandle
+        on { followStatusChangesByName(eq(setOf(subscriptionCoordinatorName))) } doReturn subRegistrationHandle
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn coordinator
@@ -120,10 +126,13 @@ class MembershipPersistenceServiceImplTest {
         lifecycleHandlerCaptor.firstValue.processEvent(StopEvent(), coordinator)
     }
 
-    fun postRegistrationStatusChangeEvent(status: LifecycleStatus) {
+    fun postRegistrationStatusChangeEvent(
+        status: LifecycleStatus,
+        handle: RegistrationHandle = registrationHandle
+    ) {
         lifecycleHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle,
+                handle,
                 status
             ),
             coordinator
@@ -170,6 +179,7 @@ class MembershipPersistenceServiceImplTest {
 
     @Test
     fun `registration status UP create config handle and closes it first if it exists`() {
+        postStartEvent()
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
 
         val configArgs = argumentCaptor<Set<String>>()
@@ -214,7 +224,8 @@ class MembershipPersistenceServiceImplTest {
             any()
         )
         verify(rpcSubscription).start()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(rpcSubscription).subscriptionName
+        verify(coordinator).followStatusChangesByName(eq(setOf(rpcSubscription.subscriptionName)))
 
         with(configCaptor.firstValue) {
             assertThat(requestTopic).isEqualTo(MEMBERSHIP_DB_RPC_TOPIC)
@@ -230,9 +241,19 @@ class MembershipPersistenceServiceImplTest {
             any()
         )
         verify(rpcSubscription, times(2)).start()
-        verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
+        verify(rpcSubscription, times(3)).subscriptionName
+        verify(coordinator, times(2)).followStatusChangesByName(eq(setOf(rpcSubscription.subscriptionName)))
 
         postStopEvent()
         verify(rpcSubscription, times(2)).close()
+    }
+
+    @Test
+    fun `service starts when subscription handle status is UP`() {
+        postConfigChangedEvent()
+
+        postRegistrationStatusChangeEvent(LifecycleStatus.UP, subRegistrationHandle)
+
+        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
     }
 }
