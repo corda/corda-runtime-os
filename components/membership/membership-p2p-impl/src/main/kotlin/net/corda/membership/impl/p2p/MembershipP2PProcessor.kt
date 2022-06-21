@@ -11,9 +11,7 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import java.lang.reflect.Constructor
 import java.nio.ByteBuffer
-import java.util.concurrent.ConcurrentHashMap
 
 class MembershipP2PProcessor(
     private val avroSchemaRegistry: AvroSchemaRegistry
