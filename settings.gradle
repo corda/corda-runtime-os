@@ -212,6 +212,8 @@ include 'libs:kotlin-reflection:kotlin-reflection-test-example'
 include 'libs:layered-property-map'
 include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
+include 'libs:ledger:ledger-common-impl'
+include 'libs:ledger:ledger-consensual-impl'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
@@ -356,7 +358,9 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
-            substitute module('net.corda:corda-ledger') using project(':ledger')
+            substitute module('net.corda:corda-ledger-obsolete') using project(':ledger-obsolete')
+            substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
+            substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')
