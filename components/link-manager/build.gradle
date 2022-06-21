@@ -53,6 +53,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(":components:membership:group-policy")
 
     testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
