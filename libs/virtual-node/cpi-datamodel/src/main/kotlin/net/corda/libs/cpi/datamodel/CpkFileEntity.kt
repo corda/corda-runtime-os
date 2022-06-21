@@ -40,6 +40,18 @@ data class CpkFileEntity(
     @Column(name = "insert_ts", insertable = false, updatable = false)
     val insertTimestamp: Instant? = null
 
+    fun update(
+        fileChecksum: String,
+        data: ByteArray,
+        isDeleted: Boolean = false
+    ): CpkFileEntity {
+        return this.copy(
+            fileChecksum = fileChecksum,
+            data = data,
+            isDeleted = isDeleted
+        )
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

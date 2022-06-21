@@ -47,12 +47,14 @@ class CpkDbChangeLogEntityTest {
         val (cpi, cpk) = TestObject.createCpiWithCpk()
 
         val changeLog1 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk.id.cpkName, cpk.id.cpkVersion, cpk.id.cpkSignerSummaryHash, "master"),
+            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
             "master-content"
         )
         val changeLog2 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk.id.cpkName, cpk.id.cpkVersion, cpk.id.cpkSignerSummaryHash, "other"),
+            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                cpk.metadata.id.cpkSignerSummaryHash, "other"),
             "other-checksum",
             "other-content"
         )
@@ -77,7 +79,8 @@ class CpkDbChangeLogEntityTest {
         ).use {
             val loadedDbLogEntity = it.find(
                 CpkDbChangeLogEntity::class.java,
-                CpkDbChangeLogKey(cpk.id.cpkName, cpk.id.cpkVersion, cpk.id.cpkSignerSummaryHash, "master")
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master")
             )
 
             assertThat(changeLog1.content).isEqualTo(loadedDbLogEntity.content)
@@ -89,7 +92,7 @@ class CpkDbChangeLogEntityTest {
         val (cpi, cpk) = TestObject.createCpiWithCpk()
 
         val changeLog1 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk.id.cpkName, cpk.id.cpkVersion, cpk.id.cpkSignerSummaryHash, "master"),
+            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion, cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
             "master-content"
         )
@@ -123,7 +126,7 @@ class CpkDbChangeLogEntityTest {
         ).use {
             val loadedDbLogEntity = it.find(
                 CpkDbChangeLogEntity::class.java,
-                CpkDbChangeLogKey(cpk.id.cpkName, cpk.id.cpkVersion, cpk.id.cpkSignerSummaryHash, "master")
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion, cpk.metadata.id.cpkSignerSummaryHash, "master")
             )
 
             assertThat(changeLog1.content).isEqualTo(loadedDbLogEntity.content)
@@ -136,17 +139,17 @@ class CpkDbChangeLogEntityTest {
         val (cpi2, cpk2) = TestObject.createCpiWithCpk()
 
         val changeLog1 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk1.id.cpkName, cpk1.id.cpkVersion, cpk1.id.cpkSignerSummaryHash, "master"),
+            CpkDbChangeLogKey(cpk1.metadata.id.cpkName, cpk1.metadata.id.cpkVersion, cpk1.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
             "master-content"
         )
         val changeLog2 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk1.id.cpkName, cpk1.id.cpkVersion, cpk1.id.cpkSignerSummaryHash, "other"),
+            CpkDbChangeLogKey(cpk1.metadata.id.cpkName, cpk1.metadata.id.cpkVersion, cpk1.metadata.id.cpkSignerSummaryHash, "other"),
             "other-checksum",
             "other-content"
         )
         val changeLog3 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk2.id.cpkName, cpk2.id.cpkVersion, cpk2.id.cpkSignerSummaryHash, "master"),
+            CpkDbChangeLogKey(cpk2.metadata.id.cpkName, cpk2.metadata.id.cpkVersion, cpk2.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
             "master-content"
         )
@@ -171,7 +174,7 @@ class CpkDbChangeLogEntityTest {
             CpiEntities.classes.toList(),
             dbConfig
         ).use { em ->
-            em.findCpkDbChangeLog(cpk1.id.cpkName, cpk1.id.cpkVersion, cpk1.id.cpkSignerSummaryHash)
+            em.findCpkDbChangeLog(cpk1.metadata.id.cpkName, cpk1.metadata.id.cpkVersion, cpk1.metadata.id.cpkSignerSummaryHash)
         }
 
         assertThat(changeLogs.size).isEqualTo(2)
