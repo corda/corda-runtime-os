@@ -15,6 +15,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
+import kotlin.random.Random
 
 // The CPB we're using in this test
 const val CALCULATOR_CPB = "/META-INF/calculator.cpb"
@@ -230,8 +231,6 @@ class VirtualNodeRpcTest {
             val vnJson = vNodeList().toJson()["virtualNodes"].first()
             val id = vnJson["holdingIdentity"]["id"].textValue()
 
-            val counter = 1
-
             val a = 10
             val b = 20
             val requestBody = """{ "requestBody":  "{ \"a\":$a, \"b\":$b }" }"""
@@ -242,13 +241,14 @@ class VirtualNodeRpcTest {
 
             // Depends on the flows in the cpi
             val className = "net.cordapp.testing.calculator.CalculatorFlow"
+            val clientRequestId = Random.nextInt()
             assertWithRetry {
-                command { flowStart(id, 1, className, requestBody) }
+                command { flowStart(id, clientRequestId, className, requestBody) }
                 condition { it.code == 200 }
             }
 
             val json = assertWithRetry {
-                command { flowStatus(id, counter) }
+                command { flowStatus(id, clientRequestId) }
                 timeout(Duration.ofSeconds(10))
                 condition { it.code == 200 && it.toJson()["flowStatus"].textValue() == "COMPLETED" }
             }.toJson()

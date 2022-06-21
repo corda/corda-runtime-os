@@ -17,8 +17,8 @@ import net.corda.flow.state.impl.FlowCheckpointImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.flows.SubFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -614,15 +614,58 @@ class FlowCheckpointImplTest {
         // Defaults to configured value
         assertThat(flowCheckpoint.toAvro()!!.maxFlowSleepDuration).isEqualTo(60000)
     }
+
+    @Test
+    fun `checkpoint can be read after markDeleted called`() {
+        val fiber = ByteBuffer.wrap(byteArrayOf(1))
+        val flow = NonInitiatingFlowExample()
+        val session1 = SessionState().apply { sessionId = "S1" }
+        val waitingFor = WaitingFor(Any())
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+        }
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        flowCheckpoint.suspendedOn = "A"
+        flowCheckpoint.waitingFor = waitingFor
+        val flowStackItem = flowCheckpoint.flowStack.push(flow)
+        flowCheckpoint.putSessionState(session1)
+        flowCheckpoint.serializedFiber = fiber
+
+        flowCheckpoint.markDeleted()
+
+        assertThat(flowCheckpoint.suspendedOn).isEqualTo("A")
+        assertThat(flowCheckpoint.waitingFor).isEqualTo(waitingFor)
+        assertThat(flowCheckpoint.flowStack.pop()).isEqualTo(flowStackItem)
+        assertThat(flowCheckpoint.sessions.first()).isEqualTo(session1)
+        assertThat(flowCheckpoint.serializedFiber).isEqualTo(fiber)
+    }
+
+    @Test
+    fun `checkpoint cannot be modified after markDeleted called`() {
+        val checkpoint = Checkpoint().apply {
+            flowState = StateMachineState()
+            flowStartContext = FlowStartContext()
+        }
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        flowCheckpoint.markDeleted()
+
+        assertThrows<IllegalStateException> { flowCheckpoint.putSessionState(SessionState()) }
+        assertThrows<IllegalStateException> { flowCheckpoint.markForRetry(FlowEvent(), RuntimeException()) }
+        assertThrows<IllegalStateException> { flowCheckpoint.markRetrySuccess() }
+        assertThrows<IllegalStateException> { flowCheckpoint.setFlowSleepDuration(1) }
+    }
 }
 
 @InitiatingFlow("valid-example")
-class InitiatingFlowExample : Flow<Unit> {
+class InitiatingFlowExample : SubFlow<Unit> {
     override fun call() {
     }
 }
 
-class NonInitiatingFlowExample : Flow<Unit> {
+class NonInitiatingFlowExample : SubFlow<Unit> {
     override fun call() {
     }
 }

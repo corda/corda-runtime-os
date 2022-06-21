@@ -56,6 +56,6 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
 
         val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
         assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
-        assertEquals(""""Pong for str = stringdata"""", pingResponse.body)
+        assertEquals("Pong for str = stringdata", pingResponse.body)
     }
 }

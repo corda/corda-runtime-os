@@ -104,7 +104,7 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
     }
 
     class FakeSandboxDependencyInjector : SandboxDependencyInjector {
-        override fun injectServices(flow: Flow<*>) {
+        override fun injectServices(flow: Flow) {
         }
 
         override fun getRegisteredSingletons(): Set<SingletonSerializeAsToken> {

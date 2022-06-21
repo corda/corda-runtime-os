@@ -1,6 +1,6 @@
 package net.corda.ledger.notary
 
-import net.corda.v5.ledger.NotaryInfo
+import net.corda.v5.ledger.obsolete.NotaryInfo
 import net.corda.v5.membership.MemberInfo
 
 /**

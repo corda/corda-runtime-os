@@ -6,5 +6,6 @@ object CpiEntities {
         CpkFileEntity::class.java,
         CpiCpkEntity::class.java,
         CpkMetadataEntity::class.java,
+        CpkDbChangeLogEntity::class.java,
     )
 }

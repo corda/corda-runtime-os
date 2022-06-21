@@ -12,18 +12,18 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_TRANSIENT_EXCEPTION
-import net.corda.flow.state.FlowStack
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.Instant
 import kotlin.math.min
 import kotlin.math.pow
 
+@Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
     private var nullableCheckpoint: Checkpoint?,
     private val config: SmartConfig,
@@ -64,6 +64,8 @@ class FlowCheckpointImpl(
         get() = checkNotNull(nullableSessionsMap)
         { "Attempt to access checkpoint before initialisation" }
 
+    private var deleted = false
+
     override val flowId: String
         get() = checkpoint.flowId
 
@@ -102,7 +104,7 @@ class FlowCheckpointImpl(
         get() = sessionMap.values.toList()
 
     override val doesExist: Boolean
-        get() = nullableCheckpoint != null
+        get() = nullableCheckpoint != null && !deleted
 
     override val currentRetryCount: Int
         get() = checkpoint.retryState?.retryCount ?: -1
@@ -149,11 +151,12 @@ class FlowCheckpointImpl(
     }
 
     override fun putSessionState(sessionState: SessionState) {
+        checkFlowNotDeleted()
         sessionMap[sessionState.sessionId] = sessionState
     }
 
     override fun markDeleted() {
-        nullableCheckpoint = null
+        deleted = true
     }
 
     override fun rollback() {
@@ -161,6 +164,7 @@ class FlowCheckpointImpl(
     }
 
     override fun markForRetry(flowEvent: FlowEvent, exception: Exception) {
+        checkFlowNotDeleted()
         if (checkpoint.retryState == null) {
             checkpoint.retryState = RetryState().apply {
                 retryCount = 1
@@ -181,15 +185,17 @@ class FlowCheckpointImpl(
     }
 
     override fun markRetrySuccess() {
+        checkFlowNotDeleted()
         checkpoint.retryState = null
     }
 
     override fun setFlowSleepDuration(sleepTimeMs: Int) {
+        checkFlowNotDeleted()
         checkpoint.maxFlowSleepDuration = min(sleepTimeMs, checkpoint.maxFlowSleepDuration)
     }
 
     override fun toAvro(): Checkpoint? {
-        if (nullableCheckpoint == null) {
+        if (nullableCheckpoint == null || deleted) {
             return null
         }
 
@@ -239,12 +245,17 @@ class FlowCheckpointImpl(
         }
     }
 
+    private fun checkFlowNotDeleted() {
+        // Does not prevent changes to the Avro objects, but will give us some protection from bugs moving forward.
+        check(!deleted) { "Flow has been marked for deletion but is currently being modified" }
+    }
+
     private class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack {
 
         override val size: Int get() = flowStackItems.size
 
-        override fun push(flow: Flow<*>): FlowStackItem {
-            val stackItem = FlowStackItem(flow.javaClass.name, flow.getIsInitiatingFlow(), mutableListOf())
+        override fun push(flow: Flow): FlowStackItem {
+            val stackItem = FlowStackItem(flow::class.java.name, flow::class.java.getIsInitiatingFlow(), mutableListOf())
             flowStackItems.add(stackItem)
             return stackItem
         }
@@ -271,8 +282,8 @@ class FlowCheckpointImpl(
             return stackEntry
         }
 
-        private fun Flow<*>.getIsInitiatingFlow(): Boolean {
-            return this.javaClass.getDeclaredAnnotation(InitiatingFlow::class.java) != null
+        private fun Class<*>.getIsInitiatingFlow(): Boolean {
+            return this.getDeclaredAnnotation(InitiatingFlow::class.java) != null
         }
     }
 }

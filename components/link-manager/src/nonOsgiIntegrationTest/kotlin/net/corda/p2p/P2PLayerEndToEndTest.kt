@@ -50,6 +50,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.markers.AppMessageMarker
@@ -62,13 +63,13 @@ import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.MemberInfoEntry
 import net.corda.p2p.test.TenantKeys
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.GROUP_POLICIES_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.MEMBER_INFO_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
-import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
-import net.corda.schema.TestSchema.Companion.GROUP_POLICIES_TOPIC
-import net.corda.schema.TestSchema.Companion.HOSTED_MAP_TOPIC
-import net.corda.schema.TestSchema.Companion.MEMBER_INFO_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
@@ -81,6 +82,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 
 class P2PLayerEndToEndTest {
 
@@ -419,6 +421,8 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
+                SigningMode.STUB,
+                mock()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
@@ -427,7 +431,7 @@ class P2PLayerEndToEndTest {
                     Record(
                         CONFIG_TOPIC,
                         key,
-                        Configuration(config.root().render(ConfigRenderOptions.concise()), "0", ConfigurationSchemaVersion(1, 0))
+                        Configuration(config.root().render(ConfigRenderOptions.concise()), 0, ConfigurationSchemaVersion(1, 0))
                     )
                 )
             ).forEach { it.get() }
@@ -492,7 +496,7 @@ class P2PLayerEndToEndTest {
 
             val hostingMapRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(
-                    HOSTED_MAP_TOPIC, "hosting-1", HostedIdentityEntry(
+                    P2P_HOSTED_IDENTITIES_TOPIC, "hosting-1", HostedIdentityEntry(
                         HoldingIdentity(identity.x500Name, GROUP_ID),
                         GROUP_ID,
                         identity.x500Name,

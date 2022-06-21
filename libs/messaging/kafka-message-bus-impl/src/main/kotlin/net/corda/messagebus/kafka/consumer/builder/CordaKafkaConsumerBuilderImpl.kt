@@ -8,11 +8,14 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
+import net.corda.messagebus.kafka.utils.OsgiDelegatedClassLoader
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.common.KafkaException
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -60,8 +63,12 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
     ): KafkaConsumer<K, V> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
 
+        val currentBundle = FrameworkUtil.getBundle(KafkaProducer::class.java)
+
         return try {
-            Thread.currentThread().contextClassLoader = null
+            if (currentBundle != null) {
+                Thread.currentThread().contextClassLoader = OsgiDelegatedClassLoader(currentBundle)
+            }
             KafkaConsumer(
                 kafkaProperties,
                 CordaAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),

@@ -45,7 +45,7 @@ class ReconcilerImpl<K : Any, V : Any>(
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ReconcileEvent -> onReconcileEvent(coordinator)
+            is ReconcileEvent -> reconcileAndScheduleNext(coordinator)
             is UpdateIntervalEvent -> onUpdateIntervalEvent(event)
             is StopEvent -> onStopEvent(coordinator)
         }
@@ -65,7 +65,7 @@ class ReconcilerImpl<K : Any, V : Any>(
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
             logger.info("Starting reconciliations")
-            setReconciliationTimerEvent(coordinator)
+            reconcileAndScheduleNext(coordinator)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
             logger.warn(
@@ -79,14 +79,14 @@ class ReconcilerImpl<K : Any, V : Any>(
         }
     }
 
-    private fun onReconcileEvent(coordinator: LifecycleCoordinator) {
+    private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
         logger.info("Initiating reconciliation")
         try {
             val startTime = System.currentTimeMillis()
             reconcile()
             val endTime = System.currentTimeMillis()
             logger.info("Reconciliation completed in ${endTime - startTime} ms")
-            setReconciliationTimerEvent(coordinator)
+            scheduleNextReconciliation(coordinator)
         } catch (e: Exception) {
             // An error here could be a transient or not exception. We should transition to `DOWN` and wait
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
@@ -94,6 +94,11 @@ class ReconcilerImpl<K : Any, V : Any>(
             coordinator.updateStatus(LifecycleStatus.DOWN)
             closeResources()
         }
+    }
+
+    private fun scheduleNextReconciliation(coordinator: LifecycleCoordinator) {
+        logger.debug { "Registering new ${ReconcileEvent::class.simpleName}" }
+        coordinator.setTimer(name, reconciliationIntervalMs) { ReconcileEvent(it) }
     }
 
     private fun onUpdateIntervalEvent(event: UpdateIntervalEvent) {
@@ -139,11 +144,6 @@ class ReconcilerImpl<K : Any, V : Any>(
                 }
             }
         }
-    }
-
-    private fun setReconciliationTimerEvent(coordinator: LifecycleCoordinator) {
-        logger.debug { "Registering new ${ReconcileEvent::class.simpleName}" }
-        coordinator.setTimer(name, reconciliationIntervalMs) { ReconcileEvent(it) }
     }
 
     override fun updateInterval(intervalMs: Long) {

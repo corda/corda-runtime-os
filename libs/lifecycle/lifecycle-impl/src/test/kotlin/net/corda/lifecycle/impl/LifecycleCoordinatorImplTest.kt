@@ -18,6 +18,7 @@ import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,6 +29,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -58,6 +60,15 @@ internal class LifecycleCoordinatorImplTest {
     interface PostEvent : LifecycleEvent
 
     interface ThrowException : LifecycleEvent
+
+    private val timerExecutor = Executors.newSingleThreadScheduledExecutor()
+    private val executor = Executors.newSingleThreadExecutor()
+
+    @AfterEach
+    fun done() {
+        timerExecutor.shutdown()
+        executor.shutdown()
+    }
 
     @Test
     fun burstEvents() {
@@ -1158,7 +1169,7 @@ internal class LifecycleCoordinatorImplTest {
 
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),
-        scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(),
+        scheduler: LifecycleCoordinatorScheduler = LifecycleCoordinatorSchedulerImpl(executor, timerExecutor),
         processor: LifecycleEventHandler
     ): LifecycleCoordinator {
         return LifecycleCoordinatorImpl(

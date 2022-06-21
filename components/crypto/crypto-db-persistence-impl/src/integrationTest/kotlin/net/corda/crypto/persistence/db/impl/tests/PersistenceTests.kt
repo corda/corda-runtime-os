@@ -49,12 +49,14 @@ import net.corda.db.testkit.DbUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -85,6 +87,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.UUID
+import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
@@ -238,8 +241,8 @@ class PersistenceTests {
         masterKeyPolicy = masterKeyPolicy,
         masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.SHARED) "some-alias" else null,
         supportedSchemes = "CORDA.RSA,CORDA.ECDSA.SECP256K1,CORDA.ECDSA.SECP256R1,CORDA.EDDSA.ED25519",
-        retries = 0,
-        timeoutMills = 5000,
+        maxAttempts = 0,
+        attemptTimeoutMills = 5000,
         serviceName = serviceName,
         serviceConfig = "{}".toByteArray(),
         capacity = capacity
@@ -294,8 +297,8 @@ class PersistenceTests {
         assertEquals(expected.masterKeyAlias, actual.masterKeyAlias)
         assertEquals(expected.workerLabel, actual.workerLabel)
         assertEquals(expected.description, actual.description)
-        assertEquals(expected.retries, actual.retries)
-        assertEquals(expected.timeoutMills, actual.timeoutMills)
+        assertEquals(expected.maxAttempts, actual.maxAttempts)
+        assertEquals(expected.attemptTimeoutMills, actual.attemptTimeoutMills)
         val expectedList = expected.supportedSchemes.split(",")
         assertTrue(actual.supportedSchemes.isNotEmpty())
         assertEquals(expectedList.size, actual.supportedSchemes.size)
@@ -442,10 +445,20 @@ class PersistenceTests {
                         signerSummaryHash = null
                     ),
                     vaultDmlConnectionId = UUID.randomUUID(),
-                    cryptoDmlConnectionId = UUID.randomUUID()
+                    cryptoDmlConnectionId = UUID.randomUUID(),
+                    timestamp = Instant.now()
                 )
+
             override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
                 throw NotImplementedError()
+
+            override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+                TODO("Not yet implemented")
+            }
+
+            override val lifecycleCoordinatorName: LifecycleCoordinatorName
+                get() = TODO("Not yet implemented")
+
             override val isRunning: Boolean = true
             override fun start() {}
             override fun stop() {}
@@ -630,8 +643,8 @@ class PersistenceTests {
             assertEquals(config.masterKeyAlias, retrieved.hsm.config.masterKeyAlias)
             assertEquals(config.workerLabel, retrieved.hsm.config.workerLabel)
             assertEquals(config.description, retrieved.hsm.config.description)
-            assertEquals(config.retries, retrieved.hsm.config.retries)
-            assertEquals(config.timeoutMills, retrieved.hsm.config.timeoutMills)
+            assertEquals(config.maxAttempts, retrieved.hsm.config.maxAttempts)
+            assertEquals(config.attemptTimeoutMills, retrieved.hsm.config.attemptTimeoutMills)
             assertEquals(config.supportedSchemes, retrieved.hsm.config.supportedSchemes)
             assertEquals(config.serviceName, retrieved.hsm.config.serviceName)
             assertArrayEquals(config.serviceConfig, retrieved.hsm.config.serviceConfig)

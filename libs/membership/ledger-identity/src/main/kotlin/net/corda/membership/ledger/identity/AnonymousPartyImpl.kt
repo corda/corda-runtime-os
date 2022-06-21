@@ -2,9 +2,9 @@ package net.corda.membership.ledger.identity
 
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.ledger.identity.AbstractParty
-import net.corda.v5.ledger.identity.AnonymousParty
-import net.corda.v5.ledger.identity.PartyAndReference
+import net.corda.v5.ledger.obsolete.identity.AbstractParty
+import net.corda.v5.ledger.obsolete.identity.AnonymousParty
+import net.corda.v5.ledger.obsolete.identity.PartyAndReference
 import java.security.PublicKey
 
 class AnonymousPartyImpl(override val owningKey: PublicKey) : AnonymousParty {

@@ -6,7 +6,7 @@ import java.io.InputStream
 import java.nio.file.Path
 
 /** Represents a Cpk file in the filesystem */
-interface Cpk : AutoCloseable {
+interface Cpk {
 
     /**
      * Stores the metadata associated with this Cpk file

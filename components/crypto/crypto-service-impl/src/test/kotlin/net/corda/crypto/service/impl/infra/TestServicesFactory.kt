@@ -13,7 +13,7 @@ import net.corda.crypto.service.SoftCryptoServiceProvider
 import net.corda.crypto.service.impl.hsm.service.HSMServiceImpl
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoService
 import net.corda.crypto.service.impl.hsm.soft.SoftCryptoServiceProviderImpl
-import net.corda.crypto.service.impl.signing.CryptoServiceFactoryImpl
+import net.corda.crypto.service.impl.hsm.soft.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.signing.SigningServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -23,12 +23,14 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -50,6 +52,8 @@ class TestServicesFactory {
         createDefaultCryptoConfig(KeyCredentials("salt", "passphrase"))
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
+
+    val softHSMSupportedSchemas = SoftCryptoService.produceSupportedSchemes(schemeMetadata).map { it.key.codeName }
 
     val coordinatorFactory: LifecycleCoordinatorFactory = TestLifecycleCoordinatorFactoryImpl()
 
@@ -250,6 +254,10 @@ class TestServicesFactory {
         private val impl: CryptoService,
         private val recordedCryptoContexts: ConcurrentHashMap<String, Map<String, String>>
     ) : CryptoService {
+        override val extensions: List<CryptoServiceExtensions> get() = impl.extensions
+
+        override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = impl.supportedSchemes
+
         override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
@@ -264,9 +272,6 @@ class TestServicesFactory {
             return impl.generateKeyPair(spec, context)
         }
 
-        override fun requiresWrappingKey(): Boolean =
-            impl.requiresWrappingKey()
-
         override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
@@ -274,7 +279,7 @@ class TestServicesFactory {
             return impl.sign(spec, data, context)
         }
 
-        override fun supportedSchemes(): List<KeyScheme> =
-            impl.supportedSchemes()
+        override fun delete(alias: String, context: Map<String, String>) =
+            impl.delete(alias, context)
     }
 }

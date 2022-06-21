@@ -17,6 +17,8 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     api project(':libs:lifecycle:lifecycle')
+    api project(":components:reconciliation:reconciliation")
+
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 

@@ -68,9 +68,7 @@ class CpkReadServiceImpl @Activate constructor(
             CpiReader.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.cpiId
-            cpis.putIfAbsent(cpiId, newCpi)?.also {
-                newCpi.close()
-            } ?: newCpi
+            cpis.putIfAbsent(cpiId, newCpi) ?: newCpi
         }
     }
 
@@ -80,7 +78,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun removeCpiMetadata(id: CpiIdentifier) {
         logger.info("Removing CPI {}", id)
-        cpis.remove(id)?.close()
+        cpis.remove(id)
     }
 
     override fun getAllCpiMetadata(): CompletableFuture<List<CpiMetadata>> {

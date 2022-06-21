@@ -5,7 +5,6 @@ import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
-import net.corda.libs.packaging.internal.jarSignatureVerificationEnabledByDefault
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path

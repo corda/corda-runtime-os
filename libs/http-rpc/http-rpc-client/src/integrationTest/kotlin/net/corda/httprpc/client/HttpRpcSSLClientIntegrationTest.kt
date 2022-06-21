@@ -78,7 +78,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with (connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
-                assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
             }
@@ -124,7 +124,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
             with (connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
-                assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
+                assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
                 assertThatThrownBy { this.laterAddedCall() }.isInstanceOf(UnsupportedOperationException::class.java)

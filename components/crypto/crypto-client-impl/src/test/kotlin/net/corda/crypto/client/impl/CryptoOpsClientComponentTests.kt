@@ -44,11 +44,11 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SHA256_SIGNATURE_SPEC
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
@@ -71,7 +71,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -894,7 +894,7 @@ class CryptoOpsClientComponentTests {
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val data = UUID.randomUUID().toString().toByteArray()
         val signature = signData(schemeMetadata, ECDSA_SHA256_SIGNATURE_SPEC, keyPair, data)
-        val spec = SignatureSpec(
+        val spec = CustomSignatureSpec(
             signatureName = "NONEwithECDSA",
             customDigestName = DigestAlgorithmName.SHA2_256
         )
@@ -919,7 +919,7 @@ class CryptoOpsClientComponentTests {
         assertNotNull(command)
         assertEquals(spec.signatureName, command.signatureSpec.signatureName)
         assertNotNull(command.signatureSpec.customDigestName)
-        assertEquals(spec.customDigestName!!.name, command.signatureSpec.customDigestName)
+        assertEquals(spec.customDigestName.name, command.signatureSpec.customDigestName)
         assertNull(command.signatureSpec.params)
         assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), command.publicKey.array())
         assertArrayEquals(data, command.bytes.array())
@@ -1088,7 +1088,7 @@ class CryptoOpsClientComponentTests {
             kotlin.test.assertEquals(LifecycleStatus.DOWN, component.lifecycleCoordinator.status)
         }
         assertInstanceOf(CryptoOpsClientComponent.InactiveImpl::class.java, component.impl)
-        Mockito.verify(sender, times(1)).stop()
+        Mockito.verify(sender, times(1)).close()
     }
 
     @Test
@@ -1116,6 +1116,6 @@ class CryptoOpsClientComponentTests {
         }
         assertInstanceOf(CryptoOpsClientComponent.ActiveImpl::class.java, component.impl)
         assertNotNull(component.impl.ops)
-        Mockito.verify(sender, atLeast(1)).stop()
+        Mockito.verify(sender, atLeast(1)).close()
     }
 }

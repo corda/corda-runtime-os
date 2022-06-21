@@ -77,15 +77,15 @@ class FlowMapperListener(
      * Set up a cleanup timer for this key
      */
     private fun setupCleanupTimer(eventKey: String, expiryTime: Long) {
-        scheduledTasks[eventKey] = executorService.schedule(
-            {
-                log.debug { "Clearing up mapper state for key $eventKey" }
-                publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(
-                    ExecuteCleanup()
-                ))))
-            },
-            expiryTime - clock.millis(),
-            TimeUnit.MILLISECONDS
-        )
+        scheduledTasks.computeIfAbsent(eventKey) {
+            executorService.schedule(
+                {
+                    log.debug { "Clearing up mapper state for key $eventKey" }
+                    publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup()))))
+                },
+                expiryTime - clock.millis(),
+                TimeUnit.MILLISECONDS
+            )
+        }
     }
 }

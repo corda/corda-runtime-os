@@ -7,7 +7,7 @@ import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.ledger.identity.Party
+import net.corda.v5.ledger.obsolete.identity.Party
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

@@ -52,7 +52,7 @@ dependencies {
     cpks project(path: ':applications:examples:amqp-custom-serializer-poc:cpk-a', configuration: 'cordaCPK')
     cpks project(path: ':applications:examples:amqp-custom-serializer-poc:cpk-b', configuration: 'cordaCPK')
 
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

@@ -39,7 +39,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
             logger.error(message, e)
             throw ConfigurationSchemaFetchException(message, e)
         }
-        val configAsJSONNode = validateConfigAndGetJSONNode( key, config, schemaInput, version, applyDefaults)
+        val configAsJSONNode = validateConfigAndGetJSONNode(key, config, schemaInput, version, applyDefaults)
         return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
     }
 

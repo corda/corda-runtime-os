@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -36,7 +36,7 @@ internal class InboundAssignmentListener(
 
         if (partitions.isEmpty()) {
             logger.warn("No partitions assigned to $observedTopic.")
-            dominoTile.updateState(DominoTileState.StoppedDueToBadConfig)
+            dominoTile.updateState(LifecycleStatus.DOWN)
         } else {
             callCallbacks()
         }
@@ -54,7 +54,7 @@ internal class InboundAssignmentListener(
             }
         }
         if (partitions.isNotEmpty()) {
-            dominoTile.updateState(DominoTileState.Started)
+            dominoTile.updateState(LifecycleStatus.UP)
             callCallbacks()
         }
     }

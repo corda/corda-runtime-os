@@ -1,8 +1,8 @@
 package net.corda.flow.pipeline.sandbox
 
 import net.corda.serialization.checkpoint.NonSerializable
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
@@ -14,7 +14,7 @@ interface SandboxDependencyInjector : AutoCloseable, NonSerializable {
      * Set any property on the flow marked with @[CordaInject] with an instance of the type specified.
      * @param flow The flow to receive the injected services.
      */
-    fun injectServices(flow: Flow<*>)
+    fun injectServices(flow: Flow)
 
     /**
      * @return A list of singletons registered with the injector.

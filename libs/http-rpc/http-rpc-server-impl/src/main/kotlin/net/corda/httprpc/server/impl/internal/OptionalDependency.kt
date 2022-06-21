@@ -5,15 +5,14 @@ package net.corda.httprpc.server.impl.internal
  */
 enum class OptionalDependency(
     val displayName: String,
-    val testClass: String,
-    val groupId: String,
-    val artifactId: String,
+    groupId: String,
+    artifactId: String,
     val version: String
 ) {
     /**
      * Note: [version] must be aligned with [swaggeruiVersion] in Gradle properties
      */
-    SWAGGERUI("Swagger UI", "STATIC-FILES", "org.webjars", "swagger-ui", "4.1.3");
+    SWAGGERUI("Swagger UI", "org.webjars", "swagger-ui", "4.10.3");
 
     val symbolicName: String = "$groupId.$artifactId"
 }

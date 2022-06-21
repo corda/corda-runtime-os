@@ -25,6 +25,7 @@ class StartFlowExecutorTest {
             "cpi id",
             identity,
             "className",
+            null,
             Instant.MIN
         ), null
     )

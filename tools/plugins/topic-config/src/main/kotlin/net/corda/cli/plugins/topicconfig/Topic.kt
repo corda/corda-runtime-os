@@ -24,6 +24,6 @@ class Topic(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "topic", subcommands = [Create::class], description = ["Does Topic Bootstrapping"])
+    @CommandLine.Command(name = "topic", subcommands = [Create::class, Delete::class], description = ["Does Topic Bootstrapping"])
     class PluginEntryPoint : CordaCliPlugin
 }

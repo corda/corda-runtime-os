@@ -17,7 +17,6 @@ import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.BootConfig.BOOT_RPC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -61,11 +60,10 @@ class CombinedWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val rpcConfig = PathAndConfig(BOOT_RPC, params.rpcParams)
         val config = getBootstrapConfig(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, rpcConfig)
+            listOf(databaseConfig)
         )
 
         cryptoProcessor.start(config)

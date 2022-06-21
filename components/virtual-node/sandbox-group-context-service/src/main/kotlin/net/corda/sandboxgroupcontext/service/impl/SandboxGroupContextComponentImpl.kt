@@ -28,6 +28,7 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.Collections.unmodifiableList
@@ -68,7 +69,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
-                "org.apache.aries.spifly.dynamic.bundle",
+                "org.apache.aries.spifly.dynamic.framework.extension",
                 "org.apache.felix.framework",
                 "org.apache.felix.scr",
                 "org.hibernate.orm.core",
@@ -127,11 +128,12 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override fun stop() = coordinator.stop()
 
+    @Deactivate
     override fun close() {
         stop()
         coordinator.close()
         sandboxGroupContextService?.close()
-        cpkReadService.stop()
+        cpkReadService.close()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -157,13 +159,15 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 SANDBOX_CACHE_SIZE_DEFAULT
             }
 
-            if(null == sandboxGroupContextService)
+            val service = sandboxGroupContextService ?: run {
                 initCache(cacheSize)
-            else if (sandboxGroupContextService!!.cache.cacheSize != cacheSize) {
+                sandboxGroupContextService ?: throw IllegalStateException("SandboxGroupContextService not initialized")
+            }
+            if (service.cache.cacheSize != cacheSize) {
                 // this means the cache size has been reconfigured, which means we need to recreate the cache
                 logger.info("Re-creating Sandbox cache with size: $cacheSize")
-                val oldCache = sandboxGroupContextService!!.cache
-                sandboxGroupContextService!!.cache = SandboxGroupContextCacheImpl(cacheSize)
+                val oldCache = service.cache
+                service.cache = SandboxGroupContextCacheImpl(cacheSize)
                 oldCache.close()
             }
 

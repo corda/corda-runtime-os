@@ -21,12 +21,13 @@ import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponse
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordService
+import java.util.concurrent.atomic.AtomicReference
 
 class PermissionUserManagerImpl(
     config: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
-    private val permissionManagementCache: PermissionManagementCache,
-    private val permissionValidationCache: PermissionValidationCache,
+    private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
+    private val permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>,
     private val passwordService: PasswordService
 ) : PermissionUserManager {
 
@@ -59,6 +60,9 @@ class PermissionUserManagerImpl(
     }
 
     override fun getUser(userRequestDto: GetUserRequestDto): UserResponseDto? {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
         val cachedUser: User = permissionManagementCache.getUser(userRequestDto.loginName) ?: return null
         return cachedUser.convertToResponseDto()
     }
@@ -98,6 +102,10 @@ class PermissionUserManagerImpl(
     }
 
     override fun getPermissionSummary(permissionSummaryRequestDto: GetPermissionSummaryRequestDto): UserPermissionSummaryResponseDto? {
+
+        val permissionValidationCache = checkNotNull(permissionValidationCacheRef.get()) {
+            "Permission validation cache is null."
+        }
 
         val cachedPermissionSummary = permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
 

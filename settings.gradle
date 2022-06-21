@@ -46,11 +46,11 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
-        id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
+        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
     }
 }
 
@@ -212,6 +212,8 @@ include 'libs:kotlin-reflection:kotlin-reflection-test-example'
 include 'libs:layered-property-map'
 include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
+include 'libs:ledger:ledger-common-impl'
+include 'libs:ledger:ledger-consensual-impl'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
@@ -248,6 +250,7 @@ include 'libs:packaging:packaging'
 include 'libs:packaging:packaging-core'
 include 'libs:packaging:packaging:test:contract-cpk'
 include 'libs:packaging:packaging:test:workflow-cpk'
+include 'libs:packaging:packaging-verify'
 include 'libs:permissions:permission-datamodel'
 include 'libs:permissions:permission-validation'
 include 'libs:permissions:permission-validation-impl'
@@ -305,6 +308,7 @@ include 'testing:db-message-bus-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
 include 'testing:cpbs:calculator'
+include 'testing:cpbs:chat'
 include 'testing:cpbs:crypto-custom-digest-one-cpk'
 include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
@@ -354,7 +358,9 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
-            substitute module('net.corda:corda-ledger') using project(':ledger')
+            substitute module('net.corda:corda-ledger-obsolete') using project(':ledger-obsolete')
+            substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
+            substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')

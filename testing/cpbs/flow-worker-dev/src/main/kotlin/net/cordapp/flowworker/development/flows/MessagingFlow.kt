@@ -1,11 +1,13 @@
 package net.cordapp.flowworker.development.flows
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.StartableByRPC
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
@@ -17,8 +19,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
 @InitiatingFlow(protocol = "flowDevProtocol")
-@StartableByRPC
-class MessagingFlow(private val jsonArg: String) : Flow<String> {
+class MessagingFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -31,7 +32,7 @@ class MessagingFlow(private val jsonArg: String) : Flow<String> {
     lateinit var flowMessaging: FlowMessaging
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Hello world is starting... [${flowEngine.flowId}]")
         val session = flowMessaging.initiateFlow(
             MemberX500Name(
@@ -66,7 +67,7 @@ class MessagingFlow(private val jsonArg: String) : Flow<String> {
 }
 
 @InitiatedBy(protocol = "flowDevProtocol")
-class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
+class MessagingInitiatedFlow : ResponderFlow {
 
     private companion object {
         val log = contextLogger()
@@ -76,7 +77,7 @@ class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
     private lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(): String {
+    override fun call(session: FlowSession) {
         log.info("I have been called [${flowEngine.flowId}]")
 
         val received = session.receive<MyClass>().unwrap { it }
@@ -107,19 +108,14 @@ class MessagingInitiatedFlow(private val session: FlowSession) : Flow<String> {
         log.info("Closed session 4")
         session.close()
         log.info("Closed session 5")
-
-        return "finished top level initiated flow"
     }
 }
 
-class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
+class InlineSubFlow(private val session: FlowSession) : SubFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var flowMessaging: FlowMessaging
 
     @Suspendable
     override fun call() {
@@ -131,7 +127,7 @@ class InlineSubFlow(private val session: FlowSession) : Flow<Unit> {
 }
 
 @InitiatingFlow(protocol = "subFlowDevProtocol")
-class InitiatingSubFlow : Flow<Unit> {
+class InitiatingSubFlow : SubFlow<Unit> {
 
     private companion object {
         val log = contextLogger()
@@ -159,7 +155,7 @@ class InitiatingSubFlow : Flow<Unit> {
 }
 
 @InitiatedBy(protocol = "subFlowDevProtocol")
-class InitiatingSubFlowInitiatedFlow(private val session: FlowSession) : Flow<String> {
+class InitiatingSubFlowInitiatedFlow : ResponderFlow {
 
     private companion object {
         val log = contextLogger()
@@ -169,7 +165,7 @@ class InitiatingSubFlowInitiatedFlow(private val session: FlowSession) : Flow<St
     private lateinit var flowEngine: FlowEngine
 
     @Suspendable
-    override fun call(): String {
+    override fun call(session: FlowSession) {
         log.info("I have been called [${flowEngine.flowId}]")
 
         val received = session.receive<MyClass>().unwrap { it }
@@ -180,8 +176,6 @@ class InitiatingSubFlowInitiatedFlow(private val session: FlowSession) : Flow<St
 
         // should explode when we implement more close logic
 //        session.receive<MyClass>().unwrap { it }
-
-        return "finished initiated subflow flow"
     }
 }
 
