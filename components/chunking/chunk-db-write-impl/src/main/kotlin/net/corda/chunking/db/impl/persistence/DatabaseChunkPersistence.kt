@@ -234,7 +234,7 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         groupId: String
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
-            val cpkMetadataEntities = createOrUpdateCpkMetadataEntities(cpi, findExistingCpiCpks(em, cpi))
+            val cpkMetadataEntities = createOrUpdateCpkMetadataEntities(cpi, emptyMap())
 
             val cpiMetadataEntity = createCpiMetadataEntity(cpi, cpiFileName, checksum, requestId, groupId, cpkMetadataEntities)
             
@@ -352,16 +352,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
         )
     }
 
-    private fun findExistingCpiCpks(em: EntityManager, cpi: Cpi): Map<CpkKey, CpiCpkEntity> {
-        val query = """
-                FROM ${CpiCpkEntity::class.java.simpleName}
-                WHERE id IN :cpiCpkKeys
-            """.trimIndent()
-        return em.createQuery(query, CpiCpkEntity::class.java)
-            .setParameter("cpiCpkKeys", cpi.getCpiCpkKeys())
-            .resultList.associateBy { it.metadata.id }
-    }
-
     private fun createOrUpdateCpkMetadataEntities(cpi: Cpi, existingCpks: Map<CpkKey, CpiCpkEntity>): List<Pair<String, CpiCpkEntity>> {
         return cpi.cpks.map { cpk ->
             val cpkKey = cpk.metadata.cpkId.toCpkKey()
@@ -441,15 +431,4 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
     }
 
     private fun CpkIdentifier.toCpkKey() = CpkKey(name, version, signerSummaryHash.toString())
-
-    private fun Cpi.getCpiCpkKeys() = this.cpks.map { cpk ->
-        CpiCpkKey(
-            metadata.cpiId.name,
-            metadata.cpiId.version,
-            metadata.cpiId.signerSummaryHash.toString(),
-            cpk.metadata.cpkId.name,
-            cpk.metadata.cpkId.version,
-            cpk.metadata.cpkId.signerSummaryHash.toString()
-        )
-    }
 }
