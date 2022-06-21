@@ -1,6 +1,6 @@
-package net.corda.ledger.models
+package net.corda.ledger.consensual
 
-import net.corda.v5.ledger.models.ConsensualLedgerService
+import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate

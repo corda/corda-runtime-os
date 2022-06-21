@@ -1,9 +1,19 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
 description 'Corda consensual ledger - implementation'
+
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -13,6 +23,39 @@ dependencies {
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-ledger-consensual"
 
+    implementation project(':libs:sandbox')
+
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:virtual-node')
+    integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
+    // integrationTestImplementation project(':components:virtual-node:entity-processor-service-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
+    integrationTestImplementation "net.corda:corda-application"
+    integrationTestImplementation "net.corda:corda-ledger-consensual"
+    // integrationTestImplementation project(':components:security-manager')
+    // integrationTestImplementation project(':testing:security-manager-utilities')
+    // integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:ledger:ledger-consensual-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

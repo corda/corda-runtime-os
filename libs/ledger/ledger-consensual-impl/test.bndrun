@@ -25,7 +25,8 @@
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='org.apache.felix.framework.security',\
     bnd.identity;id='net.corda.application',\
-    bnd.identity;id='net.corda.consensual',\
+    bnd.identity;id='net.corda.ledger-consensual',\
+    bnd.identity;id='net.corda.ledger-consensual-impl',\
     bnd.identity;id='slf4j.simple'
 
 -runstartlevel: \

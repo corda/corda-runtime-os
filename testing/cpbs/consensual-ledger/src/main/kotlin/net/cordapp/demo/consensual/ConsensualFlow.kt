@@ -1,11 +1,10 @@
 package net.cordapp.demo.consensual
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.StartableByRPC
-import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
+import net.corda.v5.application.flows.RPCRequestData
+import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
@@ -15,8 +14,8 @@ import net.corda.v5.ledger.consensual.ConsensualLedgerService
  * we can inject the ledger service. Eventually it should do a two-party IOUState
  * agreement.
  */
-@StartableByRPC
-class ConsensualFlow(private val jsonArg: String) : Flow<String> {
+
+class ConsensualFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
     data class ResultMessage(val number: Int)
 
@@ -34,18 +33,18 @@ class ConsensualFlow(private val jsonArg: String) : Flow<String> {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     @Suspendable
-    override fun call(): String {
+    override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val inputs = jsonMarshallingService.parseJson<InputMessage>(jsonArg)
+            val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
             log.info("Consensual state demo. Inputs: $inputs")
             log.info("flowEngine: $flowEngine")
             // val resultMessage = flowEngine.subFlow(inputs)
             val resultMessage = ResultMessage(number = consensualLedgerService.double(inputs.number))
             log.info("Success! Response: $resultMessage")
-            return jsonMarshallingService.formatJson(resultMessage)
+            return jsonMarshallingService.format(resultMessage)
         } catch (e: Exception) {
-            log.warn("Failed to process consensual flow for inputs '$jsonArg' because:'${e.message}'")
+            log.warn("Failed to process consensual flow for request body '$requestBody' because:'${e.message}'")
             throw e
         }
     }

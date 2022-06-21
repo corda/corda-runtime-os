@@ -1,4 +1,4 @@
 @Export
-package net.corda.ledger.common;
+package net.corda.ledger.consensual;
 
 import org.osgi.annotation.bundle.Export;

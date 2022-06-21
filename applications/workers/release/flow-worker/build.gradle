@@ -20,7 +20,7 @@ dependencies {
 
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "net.corda:corda-application"
-    runtimeOnly "net.corda:corda-ledger"
+    runtimeOnly "net.corda:corda-ledger-consensual"
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
