@@ -9,7 +9,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     api "net.corda:corda-crypto"
-    api "net.corda:corda-ledger"
+    api "net.corda:corda-ledger-obsolete"
 
     api project(':libs:lifecycle:lifecycle')
 
