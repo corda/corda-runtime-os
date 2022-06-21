@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'HTTP RPC Gateway component'
@@ -29,4 +30,8 @@ dependencies {
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
+    integrationTestImplementation project(':libs:http-rpc:http-rpc')
+    integrationTestRuntimeOnly 'org.osgi:osgi.core'
 }

@@ -1,7 +1,6 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-app'
-    id 'corda.osgi-test-conventions'
 }
 
 description 'RPC Worker'
@@ -47,10 +46,6 @@ dependencies {
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
     e2eTestImplementation project(":testing:test-utilities")
-
-    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    integrationTestImplementation project(':libs:http-rpc:http-rpc')
-    integrationTestRuntimeOnly 'org.osgi:osgi.core'
 }
 
 tasks.register('e2eTest', Test) {
