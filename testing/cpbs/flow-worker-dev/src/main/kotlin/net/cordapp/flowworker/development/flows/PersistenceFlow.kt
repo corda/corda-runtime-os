@@ -2,13 +2,12 @@ package net.cordapp.flowworker.development.flows
 
 import java.time.Instant
 import java.util.UUID
-import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.persistence.PersistenceService
-import net.corda.v5.application.serialization.JsonMarshallingService
-import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.persistence.CordaPersistenceException
@@ -34,7 +33,7 @@ class PersistenceFlow(private val jsonArg: String) : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = jsonMarshallingService.parseJson<TestFlowInput>(jsonArg)
+            val inputs = jsonMarshallingService.parse<TestFlowInput>(jsonArg)
 
             val id = UUID.randomUUID()
             val dog = Dog(id, "Penny", Instant.now(), "Alice")
