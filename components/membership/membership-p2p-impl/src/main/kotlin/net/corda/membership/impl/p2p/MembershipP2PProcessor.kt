@@ -27,11 +27,9 @@ class MembershipP2PProcessor(
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
     }
 
-    private val messageProcessors = mapOf<Class<*>, Class<out MessageHandler>>(
-        MembershipRegistrationRequest::class.java to RegistrationRequestHandler::class.java
+    private val messageProcessorFactories: Map<Class<MembershipRegistrationRequest>, () -> MessageHandler> = mapOf(
+        MembershipRegistrationRequest::class.java to { RegistrationRequestHandler(avroSchemaRegistry) }
     )
-
-    private val constructors = ConcurrentHashMap<Class<*>, Constructor<*>>()
 
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
         return events.mapNotNull { it.value?.message }
@@ -65,17 +63,13 @@ class MembershipP2PProcessor(
             }
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun getHandler(requestClass: Class<*>): MessageHandler {
-        return constructors.computeIfAbsent(requestClass) {
-            val type = messageProcessors[requestClass] ?: throw MembershipP2PException(
+        val factory = messageProcessorFactories[requestClass]
+            ?: throw MembershipP2PException(
                 "No handler has been registered to handle the p2p request received." +
                         "Request received: [$requestClass]"
             )
-            type.constructors.first {
-                it.parameterCount == 1 && it.parameterTypes[0].isAssignableFrom(AvroSchemaRegistry::class.java)
-            }.apply { isAccessible = true }
-        }.newInstance(avroSchemaRegistry) as MessageHandler
+        return factory.invoke()
     }
 
     class MembershipP2PException(msg: String) : CordaRuntimeException(msg)

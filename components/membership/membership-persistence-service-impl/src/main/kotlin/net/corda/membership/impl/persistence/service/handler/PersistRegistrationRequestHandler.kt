@@ -7,8 +7,8 @@ import net.corda.virtualnode.toCorda
 
 class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<PersistRegistrationRequest>(persistenceHandlerServices) {
-    override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest): Any? {
+) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
+    override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         logger.info("Persisting registration request with ID [${request.registrationRequest.registrationId}].")
         transaction(context.holdingIdentity.toCorda().id) { em ->
             val now = clock.instant()
@@ -23,6 +23,5 @@ class PersistRegistrationRequestHandler(
                 )
             )
         }
-        return null
     }
 }

@@ -15,13 +15,13 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-interface PersistenceHandler<REQUEST> {
-    fun invoke(context: MembershipRequestContext, request: REQUEST): Any?
+interface PersistenceHandler<REQUEST, RESPONSE> {
+    fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
 
-abstract class BasePersistenceHandler<REQUEST>(
+abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     private val persistenceHandlerServices: PersistenceHandlerServices
-) : PersistenceHandler<REQUEST> {
+) : PersistenceHandler<REQUEST, RESPONSE> {
 
     companion object {
         val logger = contextLogger()

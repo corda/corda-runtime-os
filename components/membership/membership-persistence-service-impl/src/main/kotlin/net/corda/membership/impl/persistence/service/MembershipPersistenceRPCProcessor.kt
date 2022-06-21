@@ -22,9 +22,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.lang.reflect.Constructor
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 internal class MembershipPersistenceRPCProcessor(
@@ -40,12 +38,6 @@ internal class MembershipPersistenceRPCProcessor(
         val logger = contextLogger()
     }
 
-    private val handlers: Map<Class<*>, Class<out PersistenceHandler<out Any>>> = mapOf(
-        PersistRegistrationRequest::class.java to PersistRegistrationRequestHandler::class.java,
-        PersistMemberInfo::class.java to PersistMemberInfoHandler::class.java,
-        QueryMemberInfo::class.java to QueryMemberInfoHandler::class.java,
-    )
-    private val constructors = ConcurrentHashMap<Class<*>, Constructor<*>>()
     private val persistenceHandlerServices = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -54,6 +46,11 @@ internal class MembershipPersistenceRPCProcessor(
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService
     )
+    private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
+        PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
+        PersistMemberInfo::class.java to { PersistMemberInfoHandler(persistenceHandlerServices) },
+        QueryMemberInfo::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
+    )
 
     override fun onNext(
         request: MembershipPersistenceRequest,
@@ -61,7 +58,12 @@ internal class MembershipPersistenceRPCProcessor(
     ) {
         logger.info("Processor received new RPC persistence request. Selecting handler.")
         val result = try {
-            getHandler(request.request::class.java).invoke(request.context, request.request)
+            val result = getHandler(request.request::class.java).invoke(request.context, request.request)
+            if (result is Unit) {
+                null
+            } else {
+                result
+            }
         } catch (e: Exception) {
             val error = "Exception thrown while processing membership persistence request: ${e.message}"
             logger.warn(error)
@@ -76,16 +78,12 @@ internal class MembershipPersistenceRPCProcessor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any> {
-        return constructors.computeIfAbsent(requestClass) {
-            val type = handlers[requestClass] ?: throw MembershipPersistenceException(
-                "No handler has been registered to handle the persistence request received." +
-                        "Request received: [$requestClass]"
-            )
-            type.constructors.first {
-                it.parameterCount == 1 && it.parameterTypes[0].isAssignableFrom(PersistenceHandlerServices::class.java)
-            }.apply { isAccessible = true }
-        }.newInstance(persistenceHandlerServices) as PersistenceHandler<Any>
+    private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
+        val factory = handlerFactories[requestClass] ?: throw MembershipPersistenceException(
+            "No handler has been registered to handle the persistence request received." +
+                    "Request received: [$requestClass]"
+        )
+        return factory.invoke() as PersistenceHandler<Any, Any>
     }
 
     private fun buildResponseContext(requestContext: MembershipRequestContext): MembershipResponseContext {

@@ -139,7 +139,7 @@ class PersistMemberInfoHandlerTest {
             getPersistMemberInfo(emptyList())
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isInstanceOf(Unit::class.java)
         verify(memberInfoFactory, never()).create(any())
         verify(virtualNodeInfoReadService, never()).getById(any())
         verify(dbConnectionManager, never()).createEntityManagerFactory(any(), any())
@@ -154,7 +154,7 @@ class PersistMemberInfoHandlerTest {
             getPersistMemberInfo(listOf(memberInfo))
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isInstanceOf(Unit::class.java)
         with(argumentCaptor<String>()) {
             verify(virtualNodeInfoReadService).getById(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)

@@ -121,7 +121,7 @@ class PersistRegistrationRequestHandlerTest {
             getPersistRegistrationRequest()
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isInstanceOf(Unit::class.java)
         with(argumentCaptor<String>()) {
             verify(virtualNodeInfoReadService).getById(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.id)

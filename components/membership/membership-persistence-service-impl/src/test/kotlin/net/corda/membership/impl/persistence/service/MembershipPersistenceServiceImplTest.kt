@@ -60,13 +60,14 @@ class MembershipPersistenceServiceImplTest {
         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
     )
+    private val lifecycleHandlerCaptor: KArgumentCaptor<LifecycleEventHandler> = argumentCaptor()
 
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependentComponents)) } doReturn registrationHandle
         on { followStatusChangesByName(eq(setOf(subscriptionCoordinatorName))) } doReturn subRegistrationHandle
     }
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
-        on { createCoordinator(any(), any()) } doReturn coordinator
+        on { createCoordinator(any(), lifecycleHandlerCaptor.capture()) } doReturn coordinator
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
@@ -87,8 +88,6 @@ class MembershipPersistenceServiceImplTest {
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
 
-    private lateinit var lifecycleHandlerCaptor: KArgumentCaptor<LifecycleEventHandler>
-
     @BeforeEach
     fun setUp() {
         membershipPersistenceService = MembershipPersistenceServiceImpl(
@@ -101,9 +100,7 @@ class MembershipPersistenceServiceImplTest {
             cordaAvroSerializationFactory,
             virtualNodeInfoReadService
         )
-
-        lifecycleHandlerCaptor = argumentCaptor()
-        verify(coordinatorFactory).createCoordinator(any(), lifecycleHandlerCaptor.capture())
+        verify(coordinatorFactory).createCoordinator(any(), any())
     }
 
     @Test

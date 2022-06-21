@@ -12,7 +12,7 @@ import net.corda.virtualnode.toCorda
 
 class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<PersistMemberInfo>(persistenceHandlerServices) {
+) : BasePersistenceHandler<PersistMemberInfo, Unit>(persistenceHandlerServices) {
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
@@ -25,7 +25,7 @@ class PersistMemberInfoHandler(
         )
     }
 
-    override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo): Any? {
+    override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo) {
         if (request.members.isNotEmpty()) {
             logger.info("Persisting member information.")
             transaction(context.holdingIdentity.toCorda().id) { em ->
@@ -44,6 +44,5 @@ class PersistMemberInfoHandler(
                 }
             }
         }
-        return null
     }
 }
