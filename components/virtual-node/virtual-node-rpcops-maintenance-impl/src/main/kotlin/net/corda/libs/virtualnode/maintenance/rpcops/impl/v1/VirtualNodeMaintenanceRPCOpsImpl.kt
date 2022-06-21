@@ -25,6 +25,13 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
 
     companion object {
         val logger = contextLogger()
+        init {
+            println("VirtualNodeMaintenanceRPCOpsImpl init static")
+        }
+    }
+
+    init {
+        println("VirtualNodeMaintenanceRPCOpsImpl init")
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<VirtualNodeMaintenanceRPCOps>(
