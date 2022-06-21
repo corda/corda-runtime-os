@@ -40,11 +40,13 @@ class MemberListProcessor(
         oldValue: PersistentMemberInfo?,
         currentData: Map<String, PersistentMemberInfo>
     ) {
-        memberInfoFactory.create(newRecord.value!!).apply {
-            membershipGroupReadCache.memberListCache.put(
-                newRecord.value!!.viewOwningMember.toCorda(),
-                this
-            )
+        newRecord.value?.let { newMemberInfo ->
+            memberInfoFactory.create(newMemberInfo).apply {
+                membershipGroupReadCache.memberListCache.put(
+                    newMemberInfo.viewOwningMember.toCorda(),
+                    this
+                )
+            }
         }
     }
 }

@@ -51,7 +51,7 @@ dependencies {
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
