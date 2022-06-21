@@ -11,6 +11,7 @@ import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.PublicKeySerializer
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
+import net.corda.kryoserialization.serializers.X500PrincipalSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
@@ -23,6 +24,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
 import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import java.security.PrivateKey
 import java.security.PublicKey
+import javax.security.auth.x500.X500Principal
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
@@ -66,18 +68,19 @@ class KryoCheckpointSerializerBuilderImpl(
         val classResolver = CordaClassResolver(sandboxGroup)
         val classSerializer = ClassSerializer(sandboxGroup)
 
-        val singletonSerializeAsTokenSerializer = mapOf(
-            SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(singletonInstances.toMap())
-        )
-
         val publicKeySerializers = listOf(
             PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
             BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
         ).associateWith { PublicKeySerializer(keyEncodingService) }
 
+        val otherCustomSerializers = mapOf(
+            SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(singletonInstances.toMap()),
+            X500Principal::class.java to X500PrincipalSerializer()
+        )
+
         val kryo = DefaultKryoCustomizer.customize(
             kryoFromQuasar,
-            serializers + singletonSerializeAsTokenSerializer + publicKeySerializers,
+            serializers + publicKeySerializers + otherCustomSerializers,
             classResolver,
             classSerializer,
         )

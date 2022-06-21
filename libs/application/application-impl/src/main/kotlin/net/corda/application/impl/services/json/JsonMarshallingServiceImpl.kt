@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.v5.application.serialization.JsonMarshallingService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -38,17 +38,17 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         registerModule(KotlinModule.Builder().build())
     }
 
-    override fun formatJson(input: Any): String {
+    override fun format(data: Any): String {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                mapper.writeValueAsString(input)
+                mapper.writeValueAsString(data)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
     }
 
-    override fun <T> parseJson(input: String, clazz: Class<T>): T {
+    override fun <T> parse(input: String, clazz: Class<T>): T {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 mapper.readValue(input, clazz)
@@ -58,7 +58,7 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         }
     }
 
-    override fun <T> parseJsonList(input: String, clazz: Class<T>): List<T> {
+    override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
                 mapper.readValue(input, mapper.typeFactory.constructCollectionType(List::class.java, clazz))

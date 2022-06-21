@@ -1,5 +1,6 @@
 package net.corda.flow.service
 
+import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.EMPTY_SMART_CONFIG
@@ -18,7 +19,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import java.util.stream.Stream
 
 class FlowServiceTest {
 
@@ -39,7 +39,8 @@ class FlowServiceTest {
 
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to EMPTY_SMART_CONFIG,
-        ConfigKeys.MESSAGING_CONFIG to EMPTY_SMART_CONFIG
+        ConfigKeys.MESSAGING_CONFIG to EMPTY_SMART_CONFIG,
+        ConfigKeys.FLOW_CONFIG to EMPTY_SMART_CONFIG
     )
 
     @Test
@@ -65,7 +66,7 @@ class FlowServiceTest {
 
             verify(this.configReadService).registerComponentForUpdates(
                 eq(flowServiceCoordinator),
-                eq(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
+                eq(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.FLOW_CONFIG))
             )
         }
     }

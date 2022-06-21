@@ -8,6 +8,7 @@ import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -28,6 +29,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
@@ -62,9 +64,24 @@ class InboundMessageHandlerTest {
         on { createPublisher(any(), any()) } doReturn mock()
     }
     private val subscriptionFactory = mock<SubscriptionFactory>()
-    private val server = mockConstruction(ReconfigurableHttpServer::class.java)
-    private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java)
-    private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
+    private val server = mockConstruction(ReconfigurableHttpServer::class.java) {mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
+    private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
+    private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
 
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         @Suppress("UNCHECKED_CAST")
@@ -76,7 +93,9 @@ class InboundMessageHandlerTest {
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
-        SmartConfigImpl.empty()
+        SmartConfigImpl.empty(),
+        SigningMode.STUB,
+        mock()
     )
 
     @AfterEach

@@ -37,6 +37,7 @@ dependencies {
     implementation project(":libs:permissions:permission-datamodel")
     implementation project(':libs:virtual-node:cpi-datamodel')
     implementation project(":libs:virtual-node:virtual-node-datamodel")
+    implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:virtual-node:cpi-datamodel")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
@@ -73,7 +74,7 @@ dependencies {
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 

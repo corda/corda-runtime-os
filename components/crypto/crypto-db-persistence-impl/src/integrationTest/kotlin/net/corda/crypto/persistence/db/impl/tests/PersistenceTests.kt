@@ -49,12 +49,14 @@ import net.corda.db.testkit.DbUtils
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.toHex
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.GeneratedPublicKey
@@ -85,6 +87,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.UUID
+import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
@@ -442,10 +445,20 @@ class PersistenceTests {
                         signerSummaryHash = null
                     ),
                     vaultDmlConnectionId = UUID.randomUUID(),
-                    cryptoDmlConnectionId = UUID.randomUUID()
+                    cryptoDmlConnectionId = UUID.randomUUID(),
+                    timestamp = Instant.now()
                 )
+
             override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable =
                 throw NotImplementedError()
+
+            override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+                TODO("Not yet implemented")
+            }
+
+            override val lifecycleCoordinatorName: LifecycleCoordinatorName
+                get() = TODO("Not yet implemented")
+
             override val isRunning: Boolean = true
             override fun start() {}
             override fun stop() {}

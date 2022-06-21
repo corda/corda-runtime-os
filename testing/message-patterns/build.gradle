@@ -68,7 +68,7 @@ dependencies {
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-topic-admin-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-message-bus-impl")

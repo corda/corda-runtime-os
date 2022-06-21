@@ -4,8 +4,8 @@ import net.corda.data.flow.FlowStackItem
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -44,24 +44,24 @@ class FlowEngineImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <R> subFlow(subLogic: Flow<R>): R {
+    override fun <R> subFlow(subFlow: SubFlow<R>): R {
 
-        val subFlowClassName = subLogic.javaClass.name
+        val subFlowClassName = subFlow.javaClass.name
 
         log.debug { "Starting sub-flow ('$subFlowClassName')..." }
 
         try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subLogic)
+                getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subFlow)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        getFiberExecutionContext().flowStackService.push(subLogic)
+        getFiberExecutionContext().flowStackService.push(subFlow)
 
         try {
             log.debug { "Calling sub-flow('$subFlowClassName')..." }
-            val result = subLogic.call()
+            val result = subFlow.call()
             log.debug { "Sub-flow('$subFlowClassName') call completed ..." }
             /*
              * TODOs:
@@ -72,7 +72,7 @@ class FlowEngineImpl @Activate constructor(
 
             finishSubFlow()
 
-            log.debug { "Sub-flow('${subLogic.javaClass.name}') resumed ." }
+            log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed ." }
             return result
         } catch (t: Throwable) {
             failSubFlow(t)

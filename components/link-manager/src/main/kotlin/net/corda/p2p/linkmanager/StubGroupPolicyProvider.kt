@@ -2,8 +2,8 @@ package net.corda.p2p.linkmanager
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -80,17 +80,18 @@ internal class StubGroupPolicyProvider(
     private val listeners = ConcurrentHashMap.newKeySet<GroupPolicyListener>()
 
     private val readyFuture = CompletableFuture<Unit>()
+    private val blockingTile = BlockingDominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        readyFuture
+    )
+
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        ::createResources,
-        setOf(groupSubscriptionTile),
-        setOf(groupSubscriptionTile)
+        dependentChildren = setOf(groupSubscriptionTile.coordinatorName, blockingTile.coordinatorName),
+        managedChildren = setOf(groupSubscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
-
-    private fun createResources(@Suppress("UNUSED_PARAMETER") resources: ResourcesHolder): CompletableFuture<Unit> {
-        return readyFuture
-    }
 
     private val groups = ConcurrentHashMap<String, GroupPolicyListener.GroupInfo>()
 

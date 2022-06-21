@@ -3,6 +3,7 @@ package net.corda.cpiinfo.write.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,7 +15,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.common.ConfigChangedEvent
 import net.corda.virtualnode.common.MessagingConfigEventHandler
 import org.osgi.service.component.annotations.Activate
@@ -23,7 +23,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
-import net.corda.libs.packaging.core.CpiIdentifier
 
 /**
  * CPI Info Service writer so that we can [put] and [remove]
@@ -54,13 +53,11 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     private var publisher: Publisher? = null
 
-    override fun put(cpiIdentifier: CpiIdentifier, cpiMetadata: CpiMetadata) {
+    override fun put(cpiIdentifier: CpiIdentifier, cpiMetadata: CpiMetadata) =
         publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), cpiMetadata.toAvro())))
-    }
 
-    override fun remove(cpiIdentifier: CpiIdentifier) {
+    override fun remove(cpiIdentifier: CpiIdentifier) =
         publish(listOf(Record(CPI_INFO_TOPIC, cpiIdentifier.toAvro(), null)))
-    }
 
     /** Synchronous publish */
     @Suppress("ForbiddenComment")
@@ -80,15 +77,9 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    override fun start() {
-        log.debug { "Cpi Info Writer Service component starting" }
-        coordinator.start()
-    }
+    override fun start() = coordinator.start()
 
-    override fun stop() {
-        log.debug { "Cpi Info Writer Service component stopping" }
-        coordinator.stop()
-    }
+    override fun stop() = coordinator.stop()
 
     /** Post a [ConfigChangedEvent]  */
     private fun onConfigChangeEvent(event: ConfigChangedEvent) = coordinator.postEvent(event)

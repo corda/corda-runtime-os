@@ -68,13 +68,13 @@ class ConfigProcessorTest {
     }
 
     @Test
-    fun `messaging config is forwarded if the snapshot is empty`() {
+    fun `No config is forwarded if the snapshot is empty`() {
         val coordinator = mock<LifecycleCoordinator>()
         val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
         val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
         configProcessor.onSnapshot(mapOf())
-        verify(coordinator).postEvent(capture(eventCaptor))
-        verify(configMerger, times(1)).getMessagingConfig(bootconfig, null)
+        verify(coordinator, times(0)).postEvent(capture(eventCaptor))
+        verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
     }
 
     @Test

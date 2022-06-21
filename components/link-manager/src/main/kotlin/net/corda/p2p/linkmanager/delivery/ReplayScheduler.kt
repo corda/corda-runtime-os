@@ -12,7 +12,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.lifecycle.domino.logic.util.AutoClosableExecutorService
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.utilities.time.Clock
@@ -31,19 +30,18 @@ internal class ReplayScheduler<M>(
     private val configReadService: ConfigurationReadService,
     private val limitTotalReplays: Boolean,
     private val replayMessage: (message: M) -> Unit,
-    private val executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
     private val clock: Clock
     ) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        ::createResources,
+        onClose = { executorService.shutdownNow() },
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )
 
-    @Volatile
-    private lateinit var executorService: ScheduledExecutorService
+    private val executorService = executorServiceFactory()
 
     private val replayCalculator = AtomicReference<ReplayCalculator>()
     data class ReplayInfo(val currentReplayPeriod: Duration, val future: ScheduledFuture<*>)
@@ -192,14 +190,6 @@ internal class ReplayScheduler<M>(
                 "${LinkManagerConfiguration.ReplayAlgorithm.values().map { it.configKeyName() }}.")
     }
 
-    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        executorService = executorServiceFactory()
-        resources.keep(AutoClosableExecutorService(executorService))
-        val future = CompletableFuture<Unit>()
-        future.complete(Unit)
-        return future
-    }
-
     /**
      * Add a [message] to be replayed at certain points in the future. The number of messages replaying is capped per [counterparties],
      * if this is exceeded then messages are queued in the order they are added.
@@ -273,22 +263,38 @@ internal class ReplayScheduler<M>(
     }
 
     private fun replay(message: M, messageId: MessageId) {
-        try {
-            replayMessage(message)
+        val sentReplay = try {
+            if (dominoTile.isRunning) {
+                replayMessage(message)
+                true
+            } else {
+                false
+            }
         } catch (exception: Exception) {
-            val nextReplayInterval =
-                replayInfoPerMessageId[messageId]?.let { replayCalculator.get().calculateReplayInterval(it.currentReplayPeriod).toMillis() }
-            logger.error("An exception was thrown when replaying a message. The task will be retried again in $nextReplayInterval ms." +
-                "\nException:",
-                exception
-            )
+            val nextReplayInterval = replayInfoPerMessageId[messageId]?.currentReplayPeriod?.toMillis()
+            if (nextReplayInterval != null) {
+                logger.error("An exception was thrown when replaying a message. The task will be retried again in $nextReplayInterval ms." +
+                    "\nException:",
+                    exception
+                )
+            } else {
+                logger.error("An exception was thrown when replaying a message. The task had already been removed from the replay " +
+                    "scheduler, so won't be retried.\nException:",
+                    exception
+                )
+            }
+            false
         }
-        reschedule(message, messageId)
+        reschedule(message, messageId, sentReplay)
     }
 
-    private fun reschedule(message: M, messageId: MessageId) {
+    private fun reschedule(message: M, messageId: MessageId, replayedBefore: Boolean) {
         replayInfoPerMessageId.computeIfPresent(messageId) { _, oldReplayInfo ->
-            val delay = replayCalculator.get().calculateReplayInterval(oldReplayInfo.currentReplayPeriod)
+            val delay = if (replayedBefore) {
+                replayCalculator.get().calculateReplayInterval(oldReplayInfo.currentReplayPeriod)
+            } else {
+                oldReplayInfo.currentReplayPeriod
+            }
             ReplayInfo(
                 delay,
                 executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)

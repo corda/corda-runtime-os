@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.DominoTileState
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -68,7 +68,7 @@ class InboundAssignmentListenerTest {
                 )
             )
 
-            verify(tile.constructed().first()).updateState(DominoTileState.StoppedDueToBadConfig)
+            verify(tile.constructed().first()).updateState(LifecycleStatus.DOWN)
         }
 
         @Test
@@ -88,7 +88,7 @@ class InboundAssignmentListenerTest {
                 )
             )
 
-            verify(tile.constructed().first(), never()).updateState(DominoTileState.StoppedDueToBadConfig)
+            verify(tile.constructed().first(), never()).updateState(LifecycleStatus.DOWN)
         }
 
         @Test
@@ -141,7 +141,7 @@ class InboundAssignmentListenerTest {
                 )
             )
 
-            verify(tile.constructed().first()).updateState(DominoTileState.Started)
+            verify(tile.constructed().first()).updateState(LifecycleStatus.UP)
         }
 
         @Test

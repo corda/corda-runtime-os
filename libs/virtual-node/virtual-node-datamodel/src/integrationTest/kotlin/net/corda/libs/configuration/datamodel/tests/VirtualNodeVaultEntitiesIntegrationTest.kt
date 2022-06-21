@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -56,15 +57,13 @@ class VirtualNodeVaultEntitiesIntegrationTest {
 
     @Test
     fun `can persist and read back Vault entity`() {
-        val vault = VaultEntity("123456789012")
+        val key = Generator.randomHex()
+        val vault = VaultEntity(key)
 
         entityManagerFactory.createEntityManager().transaction { em ->
             em.persist(vault)
         }
 
-        assertEquals(
-            vault,
-            entityManagerFactory.createEntityManager().find(VaultEntity::class.java, vault.holdingIdentityId)
-        )
+        assertEquals(vault, entityManagerFactory.createEntityManager().find(VaultEntity::class.java, key))
     }
 }
