@@ -98,7 +98,6 @@ class DynamicKeyStoreTest {
         subscriptionDominoTile.close()
         dominoTile.close()
         signer.close()
-        cryptoOpsClient.close()
         blockingDominoTile.close()
     }
 
