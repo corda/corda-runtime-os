@@ -18,12 +18,12 @@ interface NetworkRpcOps : RpcOps {
      *
      * @param holdingIdentityId ID of the holding identity to set up.
      * @param certificateChainAlias The certificates chain alias.
-     * @param tlsTenantId The TLS tenant ID (either p2p ot the holdingIdentityId, default to the holdingIdentityId).
+     * @param tlsTenantId The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).
      * @param sessionKeyAlias The session key alias (will use the first one if null).
      */
     @HttpRpcPUT(
         path = "setup/{holdingIdentityId}",
-        description = "Set up holding identity network."
+        description = "Set up the holding identity on the network."
     )
     fun setupHostedIdentities(
         @HttpRpcPathParameter(description = "ID of the holding identity to set up.")
@@ -34,7 +34,7 @@ interface NetworkRpcOps : RpcOps {
         )
         certificateChainAlias: String,
         @HttpRpcRequestBodyParameter(
-            description = "The TLS tenant ID (either p2p ot the holdingIdentityId, default to the holdingIdentityId).",
+            description = "The TLS tenant ID (either 'p2p' or the holdingIdentityId, default to the holdingIdentityId).",
             required = false,
         )
         tlsTenantId: String?,
