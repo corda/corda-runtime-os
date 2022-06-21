@@ -2,6 +2,7 @@ package net.cordapp.flowworker.development.flows
 
 import java.time.Instant
 import java.util.UUID
+import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
