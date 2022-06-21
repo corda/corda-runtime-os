@@ -77,7 +77,7 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     private fun retrieveCertificates(tenantId: String, alias: String): String? {
-        return send<CertificateRetrievalRpcResponse>(tenantId, RetrieveCertificateRpcRequest(alias))?.certificate
+        return send<CertificateRetrievalRpcResponse>(tenantId, RetrieveCertificateRpcRequest(alias))?.certificates
     }
 
     override fun setupLocallyHostedIdentity(

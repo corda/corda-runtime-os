@@ -31,7 +31,7 @@ internal class CertificatesProcessor(
             val processor = getCertificateProcessor(request.tenantId)
             val payload = when (val requestPayload = request.request) {
                 is ImportCertificateRpcRequest -> {
-                    processor.saveCertificates(requestPayload.alias, requestPayload.certificate)
+                    processor.saveCertificates(requestPayload.alias, requestPayload.certificates)
                     CertificateImportedRpcResponse()
                 }
                 is RetrieveCertificateRpcRequest -> {
