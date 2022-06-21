@@ -2,6 +2,7 @@
 -runfw: org.apache.felix.framework
 -runee: JavaSE-11
 -runtrace: true
+-resolve.effective: resolve,active
 # -runjdb: 5005
 
 -runsystempackages: \
@@ -12,8 +13,7 @@
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='net.corda.rpc-processor',\
-    bnd.identity;id='rpc-processor-tests',\
-    bnd.identity;id='net.corda.virtual-node-rpcops-maintenance-impl'
+    bnd.identity;id='rpc-processor-tests'
 
 -runstartlevel: \
     order=sortbynameversion,\
