@@ -252,11 +252,6 @@ class MembershipPersistenceTest {
             if (Companion::vnodeEmf.isInitialized) {
                 vnodeEmf.close()
             }
-            configurationReadService.stop()
-            dbConnectionManager.stop()
-            membershipPersistenceService.stop()
-            membershipPersistenceClientWrapper.stop()
-            virtualNodeReadService.stop()
         }
 
         private fun Lifecycle.startAndWait() {
