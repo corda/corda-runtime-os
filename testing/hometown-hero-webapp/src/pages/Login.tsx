@@ -38,7 +38,7 @@ const Login = () => {
         } else {
             NotificationService.notify(`Successfully Signed in!`, 'Success!', 'success');
 
-            // TODO: Update some sort of user Context state here
+            // TODO: Update some sort of UserContext state here, saving the username and password for "basic auth"?
 
             // TODO: Redirect to the V-Node Home
         }
@@ -46,15 +46,25 @@ const Login = () => {
 
     return (
         <PageContentWrapper>
-            <PageHeader>Login to V-Node</PageHeader>
+            <PageHeader lowerOnMobile={false} withBackButton>
+                Login to V-Node
+            </PageHeader>
             <FormContentWrapper>
-                <TextInput required name="username" label={'Username'} value={username} onChange={handleInputChange} />
+                <TextInput
+                    required
+                    name="username"
+                    label={'Username'}
+                    value={username}
+                    onChange={handleInputChange}
+                    invalid={username.length === 0}
+                />
                 <PasswordInput
                     required
                     name="password"
                     label={'Password*'}
                     value={password}
                     onChange={handleInputChange}
+                    invalid={password.length === 0}
                 />
                 <Button
                     className="h-12 w-32"

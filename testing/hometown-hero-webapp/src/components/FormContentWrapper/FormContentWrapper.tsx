@@ -6,7 +6,13 @@ type Props = {
 
 const FormContentWrapper: React.FC<Props> = ({ children }) => {
     const isMobile = useMobileMediaQuery();
-    return <div className={`max-w-md ${isMobile ? 'pl-4' : 'pl-8'} pr-6 mt-6 flex flex-col gap-8`}>{children}</div>;
+    return (
+        <div
+            className={`max-w-md ${isMobile ? 'pl-4' : 'pl-8'} pr-6 mt-6 flex flex-col ${isMobile ? 'gap-6' : 'gap-8'}`}
+        >
+            {children}
+        </div>
+    );
 };
 
 export default FormContentWrapper;

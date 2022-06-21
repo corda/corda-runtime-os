@@ -4,19 +4,20 @@ import { useNavigate } from 'react-router-dom';
 
 type Props = {
     withBackButton?: boolean;
+    lowerOnMobile?: boolean;
     children?: React.ReactNode;
 };
-const PageHeader: React.FC<Props> = ({ withBackButton, children }) => {
+const PageHeader: React.FC<Props> = ({ lowerOnMobile = true, withBackButton, children }) => {
     const navigate = useNavigate();
     const isMobile = useMobileMediaQuery();
     return (
-        <div className={`flex flex-row ${isMobile ? 'mt-24' : ''}`}>
+        <div className={`flex flex-row ${isMobile && lowerOnMobile ? 'mt-24' : ''}`}>
             {withBackButton && (
                 <IconButton
                     onClick={() => {
                         navigate(-1);
                     }}
-                    className="h-8 mt-auto mb-2 -ml-4"
+                    className="h-8 mt-auto mb-2 -ml-2"
                     style={{ opacity: 0.5 }}
                     icon="ArrowLeft"
                     size="medium"
