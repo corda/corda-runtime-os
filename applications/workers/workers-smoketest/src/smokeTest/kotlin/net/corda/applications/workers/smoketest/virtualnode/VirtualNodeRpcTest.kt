@@ -2,18 +2,20 @@ package net.corda.applications.workers.smoketest.virtualnode
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.net.URI
-import java.time.Duration
-import java.time.Instant
-import kotlin.random.Random
+import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
 import net.corda.applications.workers.smoketest.virtualnode.helpers.SimpleResponse
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.net.URI
+import java.time.Duration
+import java.time.Instant
+import kotlin.random.Random
 
 // The CPB we're using in this test
 const val CALCULATOR_CPB = "/META-INF/calculator.cpb"
@@ -107,7 +109,7 @@ class VirtualNodeRpcTest {
     /**
      * Runs second to ensure that we reject this with a correct message
      */
-/*    @Test
+    @Test
     @Order(20)
     fun `cannot upload CPI without group policy file aka CPB`() {
         cluster {
@@ -124,9 +126,9 @@ class VirtualNodeRpcTest {
             val titleJson = ObjectMapper().readTree(json["title"].textValue())
             assertThat(titleJson["errorMessage"].textValue()).isEqualTo(EXPECTED_ERROR_NO_GROUP_POLICY)
         }
-    }*/
+    }
 
-/*    @Test
+    @Test
     @Order(30)
     fun `cannot upload same CPI`() {
         cluster {
@@ -142,9 +144,9 @@ class VirtualNodeRpcTest {
             val titleJson = ObjectMapper().readTree(json["title"].textValue())
             assertThat(titleJson["errorMessage"].textValue().startsWith(EXPECTED_ERROR_ALREADY_UPLOADED)).isTrue()
         }
-    }*/
+    }
 
-   /* @Test
+    @Test
     @Order(33)
     fun `list cpis`() {
         cluster {
@@ -172,7 +174,7 @@ class VirtualNodeRpcTest {
             assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(groupId)
         }
     }
-*/
+
     @Test
     @Order(40)
     fun `can create virtual node with holding id and CPI`() {
@@ -191,7 +193,6 @@ class VirtualNodeRpcTest {
             assertThat(vNodeJson["holdingIdHash"].textValue()).isNotNull.isNotEmpty
         }
     }
-/*
 
     @Test
     @Order(50)
@@ -220,7 +221,6 @@ class VirtualNodeRpcTest {
             assertThat(actualX500Name).isEqualTo(X500_ALICE)
         }
     }
-*/
 
     @Test
     @Order(70)
@@ -259,7 +259,7 @@ class VirtualNodeRpcTest {
         }
     }
 
-/*    @Test
+    @Test
     @Order(80)
     fun `can force upload same CPI`() {
 
@@ -293,5 +293,5 @@ class VirtualNodeRpcTest {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
-    }*/
+    }
 }
