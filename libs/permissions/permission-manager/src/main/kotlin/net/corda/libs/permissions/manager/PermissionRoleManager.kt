@@ -8,6 +8,12 @@ import net.corda.libs.permissions.manager.response.RoleResponseDto
  * The [PermissionRoleManager] provides functionality for managing roles within the permission system.
  */
 interface PermissionRoleManager {
+
+    /**
+     * Get all the roles available in RBAC Permission System
+     */
+    fun getRoles(): Set<RoleResponseDto>
+
     /**
      * Create a role in the RBAC Permission System.
      */

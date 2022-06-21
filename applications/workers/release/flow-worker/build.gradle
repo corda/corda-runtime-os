@@ -18,7 +18,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
 
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "net.corda:corda-application"
     runtimeOnly "net.corda:corda-ledger"
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"

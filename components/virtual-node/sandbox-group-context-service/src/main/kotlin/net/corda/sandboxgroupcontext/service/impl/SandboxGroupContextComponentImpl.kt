@@ -71,7 +71,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.membership",
                 "net.corda.persistence",
                 "net.corda.serialization",
-                "org.apache.aries.spifly.dynamic.bundle",
+                "org.apache.aries.spifly.dynamic.framework.extension",
                 "org.apache.felix.framework",
                 "org.apache.felix.scr",
                 "org.hibernate.orm.core",

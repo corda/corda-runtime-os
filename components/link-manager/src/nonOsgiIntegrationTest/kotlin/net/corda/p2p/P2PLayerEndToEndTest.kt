@@ -50,6 +50,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
+import net.corda.p2p.gateway.messaging.SigningMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.markers.AppMessageMarker
@@ -81,6 +82,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 
 class P2PLayerEndToEndTest {
 
@@ -419,6 +421,8 @@ class P2PLayerEndToEndTest {
                 publisherFactory,
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
+                SigningMode.STUB,
+                mock()
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {

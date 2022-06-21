@@ -3,6 +3,7 @@ package net.corda.gateway
 import com.typesafe.config.ConfigFactory
 import kotlin.concurrent.thread
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -11,6 +12,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.messaging.SigningMode
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -33,6 +35,8 @@ class GatewayApp @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -54,12 +58,19 @@ class GatewayApp @Activate constructor(
             configurationReadService.bootstrapConfig(bootConfig)
 
             consoleLogger.info("Starting gateway")
+            val signingMode = if (arguments.withoutStubs) {
+                SigningMode.REAL
+            } else {
+                SigningMode.STUB
+            }
             gateway = Gateway(
                 configurationReadService,
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                configMerger.getMessagingConfig(bootConfig)
+                configMerger.getMessagingConfig(bootConfig),
+                signingMode,
+                cryptoOpsClient
             ).also { gateway ->
                 gateway.start()
 

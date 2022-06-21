@@ -213,6 +213,8 @@ include 'libs:layered-property-map'
 include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:models'
 include 'libs:ledger:notary'
+include 'libs:ledger:ledger-common-impl'
+include 'libs:ledger:ledger-consensual-impl'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
@@ -343,6 +345,7 @@ include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
+include 'tools:plugins:virtual-node'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
@@ -359,8 +362,9 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
-            substitute module('net.corda:corda-ledger') using project(':ledger')
-            // substitute module('net.corda:corda-ledger-models') using project(':ledger:models')
+            substitute module('net.corda:corda-ledger-obsolete') using project(':ledger-obsolete')
+            substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
+            substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')

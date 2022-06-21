@@ -46,10 +46,6 @@ internal class ConfigProcessor(
 
             val config = mergeConfigs(currentData)
             coordinator.postEvent(NewConfigReceived(config))
-        } else {
-            logger.debug { "No initial data to read from configuration topic" }
-            val config = mapOf(MESSAGING_CONFIG to configMerger.getMessagingConfig(bootConfig, null))
-            coordinator.postEvent(NewConfigReceived(config))
         }
     }
 
@@ -84,11 +80,15 @@ internal class ConfigProcessor(
                     )
                 }
             }.toMutableMap()
-            config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+
+            if (currentData.containsKey(MESSAGING_CONFIG)) {
+                config[MESSAGING_CONFIG] = configMerger.getMessagingConfig(bootConfig, config[MESSAGING_CONFIG])
+            }
             config[DB_CONFIG] = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
-            //TODO - remove the following three calls when defaulting via reconciliation process is possible. The following calls only
-            // exist to preserve defaulting logic present
-            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
+            if (currentData.containsKey(CRYPTO_CONFIG)) {
+                config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
+            }
             config
         } else {
             mutableMapOf()
