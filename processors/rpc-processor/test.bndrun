@@ -13,6 +13,7 @@
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='net.corda.rpc-processor',\
+    bnd.identity;id='net.corda.virtual-node-rpcops-maintenance-impl',\
     bnd.identity;id='rpc-processor-tests'
 
 -runstartlevel: \
