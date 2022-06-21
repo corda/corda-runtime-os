@@ -10,7 +10,7 @@ const PageHeader: React.FC<Props> = ({ withBackButton, children }) => {
     const navigate = useNavigate();
     const isMobile = useMobileMediaQuery();
     return (
-        <div className="flex flex-row">
+        <div className={`flex flex-row ${isMobile ? 'mt-24' : ''}`}>
             {withBackButton && (
                 <IconButton
                     onClick={() => {
