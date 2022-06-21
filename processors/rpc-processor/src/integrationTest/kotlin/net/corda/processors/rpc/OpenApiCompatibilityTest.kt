@@ -16,11 +16,8 @@ class OpenApiCompatibilityTest {
     companion object {
         private val logger = contextLogger()
 
-//        @InjectService(service = PluggableRPCOps::class, cardinality = 10, timeout = 10_000)
-//        lateinit var dynamicRpcOps: List<RpcOps>
-
-        @InjectService(service = PluggableRPCOps::class, timeout = 10_000)
-        lateinit var singleRpcOps: RpcOps
+        @InjectService(service = PluggableRPCOps::class, cardinality = 4, timeout = 10_000)
+        lateinit var dynamicRpcOps: List<RpcOps>
 
         @Suppress("unused")
         @JvmStatic
@@ -39,7 +36,6 @@ class OpenApiCompatibilityTest {
 
     @Test
     fun test() {
-//        logger.info("RPC Ops discovered: $dynamicRpcOps")
-        logger.info("RPC Ops: $singleRpcOps")
+        logger.info("RPC Ops discovered: ${dynamicRpcOps.joinToString()}")
     }
 }
