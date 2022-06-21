@@ -71,8 +71,8 @@ class GroupPolicyParser @Activate constructor(
                 it.value != null
             }
             .mapValues {
-            it.value?.toString()
-        }
+                it.value?.toString()
+            }
         try {
             val now = clock.instant().toString()
             return MemberInfoImpl(
