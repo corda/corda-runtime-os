@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.verify
+package net.corda.test.util
 
 import jdk.security.jarsigner.JarSigner
 import java.io.ByteArrayInputStream
