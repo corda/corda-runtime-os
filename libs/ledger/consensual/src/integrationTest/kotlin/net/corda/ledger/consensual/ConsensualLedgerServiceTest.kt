@@ -1,10 +1,11 @@
-package net.corda.ledger.models
+package net.corda.ledger.consensual
 
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.sandboxgroupcontext.test.VirtualNodeService
-import net.corda.v5.ledger.models.ConsensualStatesLedger
+import net.corda.testing.sandboxes.groupcontext.VirtualNodeService
+import net.corda.v5.ledger.consensual.ConsensualLedgerService
+import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -25,12 +26,20 @@ import java.nio.file.Path
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 @Suppress("FunctionName")
-class ConsensualStatesLedgerTest {
+class ConsensualLedgerServiceTest {
     companion object {
-        private const val TIMEOUT_MILLIS = 1000L
+        private const val TIMEOUT_MILLIS = 20000L // TODO: temporary high timeout; reduce this to 1s or less
         private const val CPB = "META-INF/consensual-ledger.cpb"
         private const val CPK_FLOWS_PACKAGE = "net.cordapp.demo.consensual"
         private const val CPK_BASIC_FLOW = "$CPK_FLOWS_PACKAGE.ConsensualFlow"
+        val logger = contextLogger()
+        init {
+            println("ConsensualLedgerServiceTest init static")
+        }
+    }
+
+    init {
+        println("ConsensualLedgerServiceTest init")
     }
 
     @RegisterExtension
@@ -38,9 +47,8 @@ class ConsensualStatesLedgerTest {
 
     private lateinit var virtualNode: VirtualNodeService
 
-    @InjectService(timeout = TIMEOUT_MILLIS)
-    // lateinit var securityManagerService: SecurityManagerService
-    lateinit var consensualStatesService: ConsensualStatesLedger
+     @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var consensualLedgerService: ConsensualLedgerService
 
     @BeforeAll
     fun setup(

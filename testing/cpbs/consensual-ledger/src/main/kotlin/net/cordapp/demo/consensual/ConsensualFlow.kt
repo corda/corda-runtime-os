@@ -8,7 +8,7 @@ import net.corda.v5.application.serialization.JsonMarshallingService
 import net.corda.v5.application.serialization.parseJson
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.ledger.models.ConsensualStatesLedger
+import net.corda.v5.ledger.consensual.ConsensualLedgerService
 
 /**
  * Example consensual flow. Currently does almost nothing other than verify that
@@ -28,7 +28,7 @@ class ConsensualFlow(private val jsonArg: String) : Flow<String> {
     lateinit var flowEngine: FlowEngine
 
     @CordaInject
-    lateinit var consensualStatesLedger: ConsensualStatesLedger
+    lateinit var consensualLedgerService: ConsensualLedgerService
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -41,7 +41,7 @@ class ConsensualFlow(private val jsonArg: String) : Flow<String> {
             log.info("Consensual state demo. Inputs: $inputs")
             log.info("flowEngine: $flowEngine")
             // val resultMessage = flowEngine.subFlow(inputs)
-            val resultMessage = ResultMessage(number = consensualStatesLedger.double(inputs.number))
+            val resultMessage = ResultMessage(number = consensualLedgerService.double(inputs.number))
             log.info("Success! Response: $resultMessage")
             return jsonMarshallingService.formatJson(resultMessage)
         } catch (e: Exception) {

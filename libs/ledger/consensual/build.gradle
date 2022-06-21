@@ -1,0 +1,67 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-publishing'
+}
+
+description 'Corda ledger models'
+
+// TODO: what's this for and can I delete it?
+configurations {
+    cpis {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    // TODO: see which can be eliminated
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    // TODO: maybe integrationTestCompileOnly?
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-ledger-consensual"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:packaging:packaging")
+    implementation project(':libs:sandbox')
+    implementation project(":components:virtual-node:virtual-node-common")
+    implementation project(":components:configuration:configuration-read-service")
+    api project(":libs:lifecycle:lifecycle")
+
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:virtual-node')
+    integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
+    // integrationTestImplementation project(':components:virtual-node:entity-processor-service-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
+    integrationTestImplementation "net.corda:corda-application"
+    integrationTestImplementation "net.corda:corda-ledger-consensual"
+    // integrationTestImplementation project(':components:security-manager')
+    // integrationTestImplementation project(':testing:security-manager-utilities')
+    // integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from(configurations.cpis) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
+    }
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
+}
