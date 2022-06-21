@@ -37,7 +37,7 @@ spec:
             {{- end }}
       initContainers:
         - name: create-trust-store
-          image: {{ include "corda.kafkaClientImage" . }}
+          image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           command:
