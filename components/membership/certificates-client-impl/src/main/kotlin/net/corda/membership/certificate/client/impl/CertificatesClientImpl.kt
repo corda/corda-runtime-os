@@ -20,6 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -50,6 +51,8 @@ class CertificatesClientImpl @Activate constructor(
     cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
     keyEncodingService: KeyEncodingService,
+    @Reference(service = GroupPolicyProvider::class)
+    groupPolicyProvider: GroupPolicyProvider,
 ) : CertificatesClient {
     private companion object {
         val logger = contextLogger()
@@ -69,6 +72,7 @@ class CertificatesClientImpl @Activate constructor(
         virtualNodeInfoReadService = virtualNodeInfoReadService,
         cryptoOpsClient = cryptoOpsClient,
         keyEncodingService = keyEncodingService,
+        groupPolicyProvider = groupPolicyProvider,
         retrieveCertificates = ::retrieveCertificates,
     )
 
@@ -130,6 +134,7 @@ class CertificatesClientImpl @Activate constructor(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             )
         )
     }

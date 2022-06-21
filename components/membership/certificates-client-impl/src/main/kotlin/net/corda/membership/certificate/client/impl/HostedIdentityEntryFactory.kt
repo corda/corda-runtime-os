@@ -4,11 +4,13 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -22,7 +24,8 @@ internal class HostedIdentityEntryFactory(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
-    private val retrieveCertificates: (String, String) -> String?
+    private val groupPolicyProvider: GroupPolicyProvider,
+    private val retrieveCertificates: (String, String) -> String?,
 ) {
 
     private fun getNode(holdingIdentityId: String): VirtualNodeInfo {
@@ -92,7 +95,7 @@ internal class HostedIdentityEntryFactory(
         val tlsCertificates = getCertificates(
             actualTlsTenantId, certificateChainAlias,
         )
-        validateCertificates(actualTlsTenantId, tlsCertificates)
+        validateCertificates(actualTlsTenantId, nodeInfo.holdingIdentity, tlsCertificates)
 
         val hostedIdentityEntry = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
@@ -109,7 +112,11 @@ internal class HostedIdentityEntryFactory(
     }
 
     @Suppress("ThrowsCount", "ForbiddenComment")
-    private fun validateCertificates(tenantId: String, tlsCertificates: List<String>) {
+    private fun validateCertificates(
+        tenantId: String,
+        holdingIdentity: HoldingIdentity,
+        tlsCertificates: List<String>,
+    ) {
         val firstCertificate = tlsCertificates.firstOrNull()
             ?: throw CordaRuntimeException("No certificate")
 
@@ -121,6 +128,15 @@ internal class HostedIdentityEntryFactory(
             .firstOrNull()
             ?: throw CordaRuntimeException("This certificate public key is unknown to $tenantId")
 
-        // TODO: verify certificate with the root certificate public key
+        val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
+        val p2pParameters = policy["p2pParameters"] as? Map<*, *>
+            ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} has no p2pParameters")
+        val tlsTrustRoots = p2pParameters["tlsTrustRoots"] as? Collection<*>
+            ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters has no tlsTrustRoots")
+        val tlsRootCertificateStr = tlsTrustRoots.firstOrNull()?.toString()
+            ?: throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
+        val tlsRootCertificate = CertificateFactory.getInstance("X.509")
+            .generateCertificate(tlsRootCertificateStr.byteInputStream())
+        certificate.verify(tlsRootCertificate.publicKey)
     }
 }

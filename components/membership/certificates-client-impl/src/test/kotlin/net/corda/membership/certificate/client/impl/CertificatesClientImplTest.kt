@@ -17,9 +17,9 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -61,10 +61,18 @@ class CertificatesClientImplTest {
     private var retrieveCertificates: ((String, String) -> String?)? = null
     private val mockHostedIdentityEntryFactory = mockConstruction(HostedIdentityEntryFactory::class.java) { _, settings ->
         @Suppress("UNCHECKED_CAST")
-        retrieveCertificates = settings.arguments()[3] as? ((String, String) -> String?)
+        retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
     }
 
-    private val client = CertificatesClientImpl(coordinatorFactory, publisherFactory, configurationReadService, mock(), mock(), mock())
+    private val client = CertificatesClientImpl(
+        coordinatorFactory,
+        publisherFactory,
+        configurationReadService,
+        mock(),
+        mock(),
+        mock(),
+        mock(),
+    )
 
     @AfterEach
     fun cleanUp() {
@@ -270,6 +278,7 @@ class CertificatesClientImplTest {
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                        LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                     )
                 )
             }

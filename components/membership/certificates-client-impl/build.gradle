@@ -19,6 +19,7 @@ dependencies {
     implementation project(':components:crypto:crypto-client')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':components:membership:group-policy')
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
