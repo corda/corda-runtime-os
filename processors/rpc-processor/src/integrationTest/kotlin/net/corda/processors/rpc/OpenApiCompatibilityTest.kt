@@ -1,4 +1,4 @@
-package net.corda.components.rpc
+package net.corda.processors.rpc
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
