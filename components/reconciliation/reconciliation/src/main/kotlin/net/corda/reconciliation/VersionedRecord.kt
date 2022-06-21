@@ -2,7 +2,7 @@ package net.corda.reconciliation
 
 /**
  * Versioned records are returned by DB and Kafka [ReconcilerReader]s. They are used to determine
- * which records need updating on Kafka. A DB versioned record needs to be published on Kafka when:
+ * which records need updating on Kafka. A DB versioned record needs to be updated on Kafka when:
  *
  * * It does not exist on Kafka.
  * * It's DB version is higher than it's Kafka version.
