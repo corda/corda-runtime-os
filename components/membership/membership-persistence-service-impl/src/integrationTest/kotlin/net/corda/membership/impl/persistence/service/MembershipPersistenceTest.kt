@@ -86,6 +86,32 @@ import javax.persistence.EntityManagerFactory
 class MembershipPersistenceTest {
     companion object {
 
+        private val logger = contextLogger()
+
+        private const val BOOT_CONFIG_STRING = """
+            $INSTANCE_ID = 1
+            $BUS_TYPE = INMEMORY
+        """
+        private const val MEMBER_CONTEXT_KEY = "key"
+        private const val MEMBER_CONTEXT_VALUE = "value"
+        private const val messagingConf = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+        """
+        private val schemaVersion = ConfigurationSchemaVersion(1, 0)
+
         @InjectService(timeout = 5000)
         lateinit var publisherFactory: PublisherFactory
 
@@ -157,16 +183,6 @@ class MembershipPersistenceTest {
 
         }
 
-        private val logger = contextLogger()
-
-        private const val BOOT_CONFIG_STRING = """
-            $INSTANCE_ID = 1
-            $BUS_TYPE = INMEMORY
-        """
-
-        private const val MEMBER_CONTEXT_KEY = "key"
-        private const val MEMBER_CONTEXT_VALUE = "value"
-
         private val clock = TestClock(Instant.now())
 
         private val groupId = randomUUID().toString()
@@ -177,10 +193,7 @@ class MembershipPersistenceTest {
         private val registeringX500Name = MemberX500Name.parse("O=Bob, C=GB, L=London")
         private val registeringHoldingIdentity = HoldingIdentity(registeringX500Name.toString(), groupId)
 
-        private val vnodeDbInfo = TestDbInfo(
-            name = "vnode_vault_$holdingIdentityId",
-            schemaName = DbSchema.VNODE
-        )
+        private val vnodeDbInfo = TestDbInfo("vnode_vault_$holdingIdentityId", DbSchema.VNODE)
         private val clusterDbInfo = TestDbInfo.createConfig()
 
         private val smartConfigFactory = SmartConfigFactory.create(ConfigFactory.empty())
@@ -266,7 +279,15 @@ class MembershipPersistenceTest {
 
         private fun setupConfig() {
             val publisher = publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig)
-            publisher.publish(listOf(Record(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG, Configuration(messagingConf, 0, schemaVersion))))
+            publisher.publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.MESSAGING_CONFIG,
+                        Configuration(messagingConf, 0, schemaVersion)
+                    )
+                )
+            )
             configurationReadService.startAndWait()
             configurationReadService.bootstrapConfig(bootConfig)
         }
@@ -277,24 +298,6 @@ class MembershipPersistenceTest {
                 assertTrue(isRunning)
             }
         }
-
-        private val schemaVersion = ConfigurationSchemaVersion(1,0)
-        private const val messagingConf = """
-            componentVersion="5.1"
-            subscription {
-                consumer {
-                    close.timeout = 6000
-                    poll.timeout = 6000
-                    thread.stop.timeout = 6000
-                    processor.retries = 3
-                    subscribe.retries = 3
-                    commit.retries = 3
-                }
-                producer {
-                    close.timeout = 6000
-                }
-            }
-      """
     }
 
     @Test

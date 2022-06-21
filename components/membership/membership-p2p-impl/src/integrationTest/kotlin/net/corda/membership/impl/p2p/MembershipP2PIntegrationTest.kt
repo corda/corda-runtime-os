@@ -7,6 +7,8 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -36,6 +38,7 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
@@ -89,6 +92,23 @@ class MembershipP2PIntegrationTest {
                 """
                 )
             )
+        private const val messagingConf = """
+            componentVersion="5.1"
+            subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
+                producer {
+                    close.timeout = 6000
+                }
+            }
+        """
+        private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
         lateinit var p2pSender: Publisher
         lateinit var registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest>
@@ -118,7 +138,7 @@ class MembershipP2PIntegrationTest {
             keyValuePairListDeserializer =
                 cordaAvroSerializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
 
-            configurationReadService.start()
+            setupConfig()
             membershipP2PReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
@@ -132,6 +152,21 @@ class MembershipP2PIntegrationTest {
                 assertThat(coordinator.status).isEqualTo(LifecycleStatus.UP)
                 logger.info("Required services started.")
             }
+        }
+
+        private fun setupConfig() {
+            val publisher = publisherFactory.createPublisher(PublisherConfig("clientId"), bootConfig)
+            publisher.publish(
+                listOf(
+                    Record(
+                        Schemas.Config.CONFIG_TOPIC,
+                        ConfigKeys.MESSAGING_CONFIG,
+                        Configuration(messagingConf, 0, schemaVersion)
+                    )
+                )
+            )
+            configurationReadService.start()
+            configurationReadService.bootstrapConfig(bootConfig)
         }
     }
 
