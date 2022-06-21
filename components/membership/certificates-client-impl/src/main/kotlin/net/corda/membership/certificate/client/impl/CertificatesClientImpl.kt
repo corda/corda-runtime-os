@@ -210,7 +210,9 @@ class CertificatesClientImpl @Activate constructor(
                 transactional = false,
             ),
             messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
-        )
+        ).also {
+            it.start()
+        }
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

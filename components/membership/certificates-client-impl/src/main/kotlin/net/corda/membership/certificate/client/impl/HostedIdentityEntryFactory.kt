@@ -103,7 +103,7 @@ internal class HostedIdentityEntryFactory(
             .build()
         return Record(
             topic = Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
-            key = "${nodeInfo.holdingIdentity.x500Name}-${nodeInfo.holdingIdentity.groupId}",
+            key = nodeInfo.holdingIdentity.id,
             value = hostedIdentityEntry,
         )
     }

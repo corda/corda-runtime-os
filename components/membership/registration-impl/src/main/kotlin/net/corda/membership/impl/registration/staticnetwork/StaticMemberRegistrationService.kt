@@ -220,7 +220,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            "$memberName-$groupId",
+            registeringMember.id,
             hostedIdentity
 
         )

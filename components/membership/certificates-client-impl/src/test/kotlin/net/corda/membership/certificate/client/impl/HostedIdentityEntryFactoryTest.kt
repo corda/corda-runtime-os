@@ -110,7 +110,7 @@ class HostedIdentityEntryFactoryTest {
 
         assertSoftly { softly ->
             softly.assertThat(record.topic).isEqualTo(P2P_HOSTED_IDENTITIES_TOPIC)
-            softly.assertThat(record.key).isEqualTo("${validHoldingId.x500Name}-${validHoldingId.groupId}")
+            softly.assertThat(record.key).isEqualTo(validHoldingId.id)
             softly.assertThat(record.value).isEqualTo(
                 HostedIdentityEntry(
                     validHoldingId.toAvro(),

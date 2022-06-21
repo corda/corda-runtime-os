@@ -19,6 +19,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -444,6 +445,27 @@ class CertificatesClientImplTest {
                 )
                 verify(sender).start()
                 verify(coordinator).followStatusChangesByName(setOf(name))
+            }
+
+            @Test
+            fun `ConfigChangedEvent will create a publisher start it`() {
+                val config = mock<SmartConfig>()
+                val name = mock<LifecycleCoordinatorName>()
+                whenever(sender.subscriptionName).doReturn(name)
+
+                handler.firstValue.processEvent(
+                    ConfigChangedEvent(
+                        emptySet(),
+                        mapOf(ConfigKeys.MESSAGING_CONFIG to config)
+                    ),
+                    coordinator
+                )
+
+                verify(publisherFactory).createPublisher(
+                    any(),
+                    eq(config)
+                )
+                verify(publisher).start()
             }
 
             @Test
