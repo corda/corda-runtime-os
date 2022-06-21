@@ -24,7 +24,7 @@ dependencies {
     implementation project(":membership")
     implementation project(":serialization")
     implementation project(":persistence")
-    implementation project(":ledger:common")
+    implementation project(":ledger:ledger-common")
 
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
