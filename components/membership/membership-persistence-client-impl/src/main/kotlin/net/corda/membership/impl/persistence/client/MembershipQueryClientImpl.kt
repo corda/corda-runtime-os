@@ -54,7 +54,9 @@ class MembershipQueryClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         queryFilter: Collection<HoldingIdentity>
     ): MembershipQueryResult<Collection<MemberInfo>> {
-        logger.info("Querying for member infos represented by ${queryFilter.size} holding identities")
+        if(queryFilter.isNotEmpty()) {
+            logger.info("Querying for member infos represented by ${queryFilter.size} holding identities")
+        }
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryMemberInfo(queryFilter.map { it.toAvro() })

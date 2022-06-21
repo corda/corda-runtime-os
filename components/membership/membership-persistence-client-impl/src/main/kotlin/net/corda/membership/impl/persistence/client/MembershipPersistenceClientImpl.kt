@@ -52,7 +52,7 @@ class MembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>
     ): MembershipPersistenceResult<Unit> {
-        logger.info("Persisting the ${memberInfos.size} member info(s).")
+        logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
@@ -71,13 +71,6 @@ class MembershipPersistenceClientImpl @Activate constructor(
             null -> MembershipPersistenceResult.Success()
             else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
-    }
-
-    override fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfo: MemberInfo
-    ): MembershipPersistenceResult<Unit> {
-        return persistMemberInfo(viewOwningIdentity, listOf(memberInfo))
     }
 
     override fun persistRegistrationRequest(

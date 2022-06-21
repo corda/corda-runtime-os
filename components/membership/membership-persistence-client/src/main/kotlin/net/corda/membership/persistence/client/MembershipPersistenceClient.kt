@@ -26,21 +26,6 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceResult<Unit>
 
     /**
-     * Persists a single member info record as viewed by a specific holding identity.
-     * Member Info is updated if it already exists.
-     *
-     * @param viewOwningIdentity The holding identity of the owner of the view of data.
-     * @param memberInfo The member info to persist.
-     *
-     * @return membership persistence result to indicate the result of the persistence operation.
-     *  No payload is returned in the case of success.
-     */
-    fun persistMemberInfo(
-        viewOwningIdentity: HoldingIdentity,
-        memberInfo: MemberInfo
-    ): MembershipPersistenceResult<Unit>
-
-    /**
      * Persists a registration request record as viewed by a specific holding identity.
      * The registration request is updated if it already exists.
      *

@@ -143,13 +143,6 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `persist member info before starting component`() {
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
-
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
     fun `persist list of member info before starting component`() {
         val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
 
@@ -291,35 +284,6 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `request to persistence single member info is as expected`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(true)
-
-        membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
-
-        with(argumentCaptor<MembershipPersistenceRequest>()) {
-            verify(rpcSender).sendRequest(capture())
-
-            assertThat(firstValue.context.requestTimestamp).isBeforeOrEqualTo(clock.instant())
-            assertThat(firstValue.context.holdingIdentity)
-                .isEqualTo(ourHoldingIdentity.toAvro())
-
-            assertThat(firstValue.request).isInstanceOf(PersistMemberInfo::class.java)
-            assertThat((firstValue.request as PersistMemberInfo).members)
-                .isNotEmpty
-                .isEqualTo(
-                    listOf(
-                        PersistentMemberInfo(
-                            ourHoldingIdentity.toAvro(),
-                            KeyValuePairList(emptyList()),
-                            KeyValuePairList(emptyList())
-                        )
-                    )
-                )
-        }
-    }
-
-    @Test
     fun `request to persistence list of member infos is as expected`() {
         postConfigChangedEvent()
         mockPersistenceResponse(true)
@@ -373,24 +337,6 @@ class MembershipPersistenceClientImplTest {
     }
 
     @Test
-    fun `successful response for single member info is correct`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(true)
-
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-    }
-
-    @Test
-    fun `failed response for single member info is correct`() {
-        postConfigChangedEvent()
-        mockPersistenceResponse(false, null)
-
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
-    }
-
-    @Test
     fun `successful response for list of member info is correct`() {
         postConfigChangedEvent()
         mockPersistenceResponse(true)
@@ -415,7 +361,7 @@ class MembershipPersistenceClientImplTest {
             true,
             holdingIdentityOverride = net.corda.data.identity.HoldingIdentity("O=BadName,L=London,C=GB", "BAD_ID")
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -426,7 +372,7 @@ class MembershipPersistenceClientImplTest {
             true,
             reqTimestampOverride = clock.instant().plusSeconds(5)
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -437,7 +383,7 @@ class MembershipPersistenceClientImplTest {
             true,
             reqIdOverride = UUID.randomUUID().toString()
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 
@@ -448,7 +394,7 @@ class MembershipPersistenceClientImplTest {
             true,
             rsTimestampOverride = clock.instant().minusSeconds(10)
         )
-        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, ourMemberInfo)
+        val result = membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberInfo))
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
     }
 }

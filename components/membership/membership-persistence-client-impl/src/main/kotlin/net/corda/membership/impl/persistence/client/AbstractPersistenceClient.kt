@@ -95,7 +95,7 @@ abstract class AbstractPersistenceClient(
                     "Request timestamp in the response received does not match what was sent in the request."
                 }
                 require(requestId == response.context.requestId) {
-                    "Holding identity in the response received does not match what was sent in the request."
+                    "Request ID in the response received does not match what was sent in the request."
                 }
                 require(requestTimestamp <= response.context.responseTimestamp) {
                     "Response timestamp is before the request timestamp"
