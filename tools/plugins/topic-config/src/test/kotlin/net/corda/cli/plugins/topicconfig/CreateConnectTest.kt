@@ -10,6 +10,14 @@ import org.apache.kafka.common.resource.ResourcePattern
 import org.apache.kafka.common.resource.ResourceType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+<<<<<<< HEAD
+=======
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import java.net.URL
+import java.util.jar.JarEntry
+import java.util.jar.JarFile
+>>>>>>> CORE-5191 Connect directly to broker for topic creation
 
 class CreateConnectTest {
 
@@ -34,10 +42,15 @@ class CreateConnectTest {
     fun `validate acls with consumer and producer`() {
         assertThat(command().getAclBindings(listOf(Create.TopicConfig("topic", listOf("consumer"), listOf("producer")))))
             .containsExactly(
+<<<<<<< HEAD
                 AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
                     AccessControlEntry("User:consumer", "*", AclOperation.READ, AclPermissionType.ALLOW)),
                 AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
                     AccessControlEntry("User:producer", "*", AclOperation.WRITE, AclPermissionType.ALLOW))
+=======
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL), AccessControlEntry("User:consumer", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL), AccessControlEntry("User:producer", "*", AclOperation.WRITE, AclPermissionType.ALLOW))
+>>>>>>> CORE-5191 Connect directly to broker for topic creation
             )
     }
 
