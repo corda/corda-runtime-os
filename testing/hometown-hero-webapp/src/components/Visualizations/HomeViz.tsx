@@ -1,6 +1,6 @@
 import QRCode from 'react-qr-code';
 import React from 'react';
-import { useMobileMediaQuery } from '../../hooks/useMediaQueries';
+import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
 
 type Props = {
     qrContent: string;

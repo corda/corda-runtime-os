@@ -1,4 +1,4 @@
-import { useDesktopMediaQuery, useMobileMediaQuery, useTabletMediaQuery } from '../../hooks/useMediaQueries';
+import { useMobileMediaQuery, useTabletMediaQuery } from '@/hooks/useMediaQueries';
 
 type Props = {
     //An optional prop for width, height is calculated automatically

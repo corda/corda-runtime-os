@@ -1,9 +1,9 @@
 import { NotificationService } from '@r3/r3-tooling-design-system/exports';
-import apiCall from '../api/apiCall';
-import { axiosInstance } from '../api/axiosConfig';
+import apiCall from '@/api/apiCall';
+import { axiosInstance } from '@/api/axiosConfig';
 import createCtx from './createCtx';
 import { useEffect } from 'react';
-import { useSessionStorage } from '../hooks/useSessionStorage';
+import { useSessionStorage } from '@/hooks/useSessionStorage';
 
 type UserContextProps = {
     username: string;

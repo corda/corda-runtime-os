@@ -1,15 +1,14 @@
 import { Button, NotificationService, PasswordInput, TextInput } from '@r3/r3-tooling-design-system/exports';
 
-import FormContentWrapper from '../components/FormContentWrapper/FormContentWrapper';
-import LoginViz from '../components/Visualizations/LoginViz';
-import PageContentWrapper from '../components/PageContentWrapper/PageContentWrapper';
-import PageHeader from '../components/PageHeader/PageHeader';
-import { VNODE_HOME } from '../constants/routes';
-import VisualizationWrapper from '../components/Visualizations/VisualizationWrapper';
-import apiCall from '../api/apiCall';
+import FormContentWrapper from '@/components/FormContentWrapper/FormContentWrapper';
+import LoginViz from '@/components/Visualizations/LoginViz';
+import PageContentWrapper from '@/components/PageContentWrapper/PageContentWrapper';
+import PageHeader from '@/components/PageHeader/PageHeader';
+import { VNODE_HOME } from '@/constants/routes';
+import VisualizationWrapper from '@/components/Visualizations/VisualizationWrapper';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import useUserContext from '../contexts/userContext';
+import useUserContext from '@/contexts/userContext';
 
 const Login = () => {
     const { username: savedUsername, password: savedPassword, login } = useUserContext();

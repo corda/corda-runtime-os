@@ -1,5 +1,5 @@
 import { Container } from '@r3/r3-tooling-design-system/exports';
-import { useMobileMediaQuery } from '../../hooks/useMediaQueries';
+import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
 
 type Props = {
     children?: React.ReactNode;
