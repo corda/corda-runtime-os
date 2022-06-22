@@ -8,17 +8,13 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 
-@Component(immediate = true, service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor() : ConsensualLedgerService, SingletonSerializeAsToken {
-    companion object {
+    private companion object {
         val logger = contextLogger()
         init {
             println("ConsensualLedgerServiceImpl init static")
         }
-    }
-
-    init {
-        println("ConsensualLedgerServiceImpl init")
     }
 
     override fun double(n: Int): Int {

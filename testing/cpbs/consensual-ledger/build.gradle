@@ -15,6 +15,5 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'net.corda:corda-ledger'
-    cordaProvided 'net.corda:corda-ledger:models'
+    cordaProvided 'net.corda:corda-ledger-consensual'
 }
