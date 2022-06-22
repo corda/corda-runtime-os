@@ -19,7 +19,7 @@ const Home = () => {
                     Register
                 </Button>
             </div>
-            <VisualizationWrapper width={1000}>
+            <VisualizationWrapper width={1200}>
                 <HomeViz qrContent={document.location.href} />
             </VisualizationWrapper>
         </PageContentWrapper>

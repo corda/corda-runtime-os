@@ -1,0 +1,16 @@
+export const TEMP_PARTICIPANTS = [
+    'O=EvgenyTimsoshinLongName, L=Dublin, C=Ireland',
+    'O=JohnDoe, L=Dublin, C=Ireland',
+    'O=PJLadd, L=Dublin, C=Ireland',
+    'O=JohnMary, L=Dublin, C=Ireland',
+    'O=SomeGuy, L=Dublin, C=Ireland',
+    'O=AnotherGuy, L=Dublin, C=Ireland',
+    'O=Unique1, L=Dublin, C=Ireland',
+    'O=Unique2, L=Dublin, C=Ireland',
+    'O=Unique3, L=Dublin, C=Ireland',
+    'O=Unique4, L=Dublin, C=Ireland',
+    'O=Unique5, L=Dublin, C=Ireland',
+    'O=Unique6, L=Dublin, C=Ireland',
+    'O=Unique7, L=Dublin, C=Ireland',
+    'O=Unique8, L=Dublin, C=Ireland',
+];
