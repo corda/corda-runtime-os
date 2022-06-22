@@ -27,13 +27,23 @@ class CreateConnect : Runnable {
 
     override fun run() {
         val client = Admin.create(create!!.topic!!.getKafkaProperties())
-        val topicConfigs = create!!.getTopicConfigs()
+        val topicConfigs = create!!.getTopicConfigs().map { it.copy(name = create!!.getTopicName(it)) }
 
         try {
-            val topics = getTopics(topicConfigs)
-            println("Creating topics: ${topics.joinToString { it.name() }}")
-            client.createTopics(topics).all().get(wait, TimeUnit.SECONDS)
-            client.createAcls(getAclBindings(topicConfigs)).all().get()
+            val existingTopicNames = client.listTopics().names().get(wait, TimeUnit.SECONDS)
+                .filter { it.startsWith(create!!.topic!!.namePrefix) }
+            val existingTopicsToIgnore = topicConfigs.map { it.name }.filter { existingTopicNames.contains(it) }
+            if (existingTopicsToIgnore.isNotEmpty()) {
+                println("Ignoring existing topics: ${existingTopicsToIgnore.joinToString { it }}")
+            }
+
+            val topicConfigsToProcess = topicConfigs.filterNot { existingTopicsToIgnore.contains(it.name) }
+            if (topicConfigsToProcess.isNotEmpty()) {
+                val topics = getTopics(topicConfigsToProcess)
+                println("Creating topics: ${topics.joinToString { it.name() }}")
+                client.createTopics(topics).all().get(wait, TimeUnit.SECONDS)
+                client.createAcls(getAclBindings(topicConfigsToProcess)).all().get()
+            }
         } catch (e: ExecutionException) {
             throw e.cause ?: e
         }
@@ -42,7 +52,7 @@ class CreateConnect : Runnable {
 
     fun getAclBindings(topicConfigs: List<Create.TopicConfig>) =
         topicConfigs.flatMap { topicConfig: Create.TopicConfig ->
-            val pattern = ResourcePattern(ResourceType.TOPIC, create!!.getTopicName(topicConfig), PatternType.LITERAL)
+            val pattern = ResourcePattern(ResourceType.TOPIC, topicConfig.name, PatternType.LITERAL)
             val consumerEntries = topicConfig.consumers.map { consumer ->
                 AccessControlEntry("User:$consumer", "*", AclOperation.READ, AclPermissionType.ALLOW)
             }
@@ -54,7 +64,7 @@ class CreateConnect : Runnable {
 
     fun getTopics(topicConfigs: List<Create.TopicConfig>) =
         topicConfigs.map { topicConfig: Create.TopicConfig ->
-            NewTopic(create!!.getTopicName(topicConfig), create!!.partitionOverride, create!!.replicaOverride)
+            NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
                 .configs(topicConfig.config)
         }
 
