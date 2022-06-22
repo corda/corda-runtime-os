@@ -25,7 +25,9 @@ spec:
             'create',
             '-r', '{{ .Values.kafka.replicas }}',
             '-p', '{{ .Values.kafka.partitions }}',
-            'connect'
+            'connect'{{- if .Values.kafka.cleanup }},
+            '-d'
+            {{- end }}
           ]
           volumeMounts:
             - mountPath: /tmp/working_dir
