@@ -2,7 +2,7 @@ package net.corda.membership.impl
 
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
-import net.corda.membership.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.impl.MemberInfoExtension.Companion.certificate
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.isMgm
