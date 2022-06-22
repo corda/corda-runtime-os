@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { Message } from '@/models/Message';
 import { TEMP_MESSAGES } from '@/tempData/tempMessages';
+import { TEMP_USER_500 } from '@/tempData/user';
 import apiCall from '@/api/apiCall';
 import { axiosInstance } from '@/api/axiosConfig';
 
@@ -13,6 +14,8 @@ type Props = {
 const Chat: React.FC<Props> = ({ selectedParticipants }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [messageValue, setMessageValue] = useState<string>('');
+
+    const currentUserX500 = TEMP_USER_500;
 
     const fetchMessages = useCallback(async () => {
         const response = await apiCall({ method: 'get', path: '/api/messages', axiosInstance: axiosInstance });
@@ -71,12 +74,24 @@ const Chat: React.FC<Props> = ({ selectedParticipants }) => {
 
             {!isChatDisabled && (
                 <div className="h-full flex flex-col gap-6 pt-6 ">
-                    <div className="border border-light-gray border-opacity-25 rounded-xl shadow-lg overflow-y-scroll p4">
-                        {messages.map((message) => (
-                            <div className="m-2 rounded shadow-md p-4" style={{ maxWidth: '70%' }}>
-                                {message.message}
-                            </div>
-                        ))}
+                    <div className="border border-light-gray border-opacity-25 overflow-y-scroll p4">
+                        {messages.map((message) => {
+                            const myMessage = message.x500name === currentUserX500;
+                            return (
+                                <div className={`m-2 ${myMessage ? 'ml-auto' : 'mr-auto'}`} style={{ maxWidth: '70%' }}>
+                                    <p className={`text-xs ${myMessage ? 'font-bold' : 'font-semibold opacity-50'}`}>
+                                        {myMessage ? 'Me' : `${message.x500name.substring(0, 40)}...`}
+                                    </p>
+                                    <div
+                                        className={`mt-0 rounded-xl border border-blue shadow-md p-4 ${
+                                            myMessage ? 'bg-blue-100' : ''
+                                        }`}
+                                    >
+                                        <p className="leading-5">{message.message}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <div className="flex justify-center align-center gap-4">

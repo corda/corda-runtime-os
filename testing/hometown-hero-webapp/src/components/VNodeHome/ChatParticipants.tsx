@@ -41,7 +41,7 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
     };
 
     return (
-        <div className="pt-6" style={{ width: 380, height: 550 }}>
+        <div className="pt-6" style={{ width: 380, height: 450 }}>
             <p
                 className={`mb-4 ml-2 text-xl ${
                     selectedParticipants.length === 0 ? 'text-red opacity-75' : 'text-blue'
@@ -51,7 +51,7 @@ const ChatParticipants: React.FC<Props> = ({ selectedParticipants, setSelectedPa
                     selectedParticipants.length === 0 ? 'Please select at least one!' : selectedParticipants.length
                 }`}
             </p>
-            <div className="overflow-y-scroll" style={{ height: 450 }}>
+            <div className="overflow-y-scroll" style={{ height: '90%' }}>
                 {networkParticipants.map((nP) => {
                     const selected = selectedParticipants.includes(nP);
                     return (
