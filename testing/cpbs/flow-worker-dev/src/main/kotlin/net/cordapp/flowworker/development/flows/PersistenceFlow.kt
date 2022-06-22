@@ -6,8 +6,8 @@ import net.corda.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
+import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
@@ -18,7 +18,7 @@ import net.cordapp.flowworker.development.messages.TestFlowInput
  * The PersistenceFlow exercises various basic db interactions in a flow.
  */
 @Suppress("unused")
-class PersistenceFlow(private val jsonArg: String) : RPCStartableFlow {
+class PersistenceFlow : RPCStartableFlow {
 
     private companion object {
         val log = contextLogger()
@@ -34,7 +34,7 @@ class PersistenceFlow(private val jsonArg: String) : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Starting Test Flow...")
         try {
-            val inputs = jsonMarshallingService.parse<TestFlowInput>(jsonArg)
+            val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
 
             val id = UUID.randomUUID()
             val dog = Dog(id, "Penny", Instant.now(), "Alice")
@@ -47,7 +47,7 @@ class PersistenceFlow(private val jsonArg: String) : RPCStartableFlow {
                     log.error("Persisted second Dog incorrectly: $dog")
 
                 } catch (e: CordaPersistenceException) {
-                    return "Dog operations failed successfully!"
+                    return jsonMarshallingService.format("Dog operations failed successfully!")
                 }
             }
 
@@ -69,7 +69,7 @@ class PersistenceFlow(private val jsonArg: String) : RPCStartableFlow {
                 log.info("Query for deleted dog returned: $dogFindNull")
             }
 
-            return "Dog operations are complete"
+            return jsonMarshallingService.format("Dog operations are complete")
 
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow",e )
