@@ -114,6 +114,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         )
         dependencyServiceHandle?.close()
         dependencyServiceHandle = null
+        subHandle?.close()
+        subHandle = null
         configHandle?.close()
         configHandle = null
         rpcSubscription?.close()
@@ -165,6 +167,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         ).also {
             it.start()
+            subHandle?.close()
             subHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
         }
     }

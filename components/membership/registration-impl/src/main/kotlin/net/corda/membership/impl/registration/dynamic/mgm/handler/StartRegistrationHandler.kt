@@ -85,13 +85,13 @@ class StartRegistrationHandler(
                 ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
                 // The MemberX500Name is not a duplicate
-                val queryExistingMemberInfo = membershipQueryClient.queryMemberInfo(
+                val existingMemberInfo = membershipQueryClient.queryMemberInfo(
                     mgmHoldingId,
                     listOf(pendingMemberHoldingId)
                 )
                 validateRegistrationRequest(
-                    queryExistingMemberInfo is MembershipQueryResult.Success
-                            && queryExistingMemberInfo.payload.isNullOrEmpty()
+                    existingMemberInfo is MembershipQueryResult.Success
+                            && existingMemberInfo.payload.isNullOrEmpty()
                 ) { "Member Info already exists for applying member" }
 
                 // The group ID matches the group ID of the MGM
@@ -115,10 +115,10 @@ class StartRegistrationHandler(
                 logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
                 VerifyMember()
             } catch (ex: InvalidRegistrationRequestException) {
-                logger.warn("Declined registration.", ex.originalMessage)
+                logger.warn("Declined registration.", ex)
                 DeclineRegistration(ex.originalMessage)
             } catch (ex: Exception) {
-                logger.warn("Declined registration.", ex.message)
+                logger.warn("Declined registration.", ex)
                 DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
             }
         )

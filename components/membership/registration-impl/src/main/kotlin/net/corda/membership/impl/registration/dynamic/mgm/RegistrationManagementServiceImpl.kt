@@ -104,6 +104,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.DOWN, "Received stop event.")
                 dependencyServiceRegistration?.close()
                 dependencyServiceRegistration = null
+                subRegistration?.close()
+                subRegistration = null
                 configHandle?.close()
                 configHandle = null
                 subscription?.close()
@@ -148,6 +150,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                     messagingConfig
                 ).also {
                     it.start()
+                    subRegistration?.close()
                     subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
             }

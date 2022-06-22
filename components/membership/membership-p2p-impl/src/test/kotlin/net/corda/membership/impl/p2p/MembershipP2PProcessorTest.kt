@@ -42,7 +42,7 @@ class MembershipP2PProcessorTest {
     )
     private val validMsgPayload = registrationRequest.toByteBuffer()
 
-    private val groupId = UUID.randomUUID().toString()
+    private val groupId = "1f5e558c-dd87-438f-a57f-21e69c1e0b88"
     private val source = HoldingIdentity("C=GB, L=London, O=Alice", groupId)
     private val destination = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
 

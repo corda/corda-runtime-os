@@ -6,10 +6,10 @@ plugins {
 description 'Membership persistence service'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:lifecycle:lifecycle')
 }

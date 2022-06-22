@@ -29,7 +29,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.time.UTCClock
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -61,7 +61,7 @@ class MembershipPersistenceClientImplTest {
 
     private val expectedConfigs = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
 
-    private val clock = UTCClock()
+    private val clock = TestClock(Instant.ofEpochSecond(0))
 
     private val registrationHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
@@ -266,6 +266,7 @@ class MembershipPersistenceClientImplTest {
         holdingIdentityOverride: net.corda.data.identity.HoldingIdentity? = null,
     ) {
         whenever(rpcSender.sendRequest(any())).thenAnswer {
+            clock.setTime(Instant.now().plusMillis(1))
             val rsContext = with((it.arguments.first() as MembershipPersistenceRequest).context) {
                 MembershipResponseContext(
                     reqTimestampOverride ?: requestTimestamp,

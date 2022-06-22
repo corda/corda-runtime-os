@@ -15,11 +15,11 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-interface PersistenceHandler<REQUEST, RESPONSE> {
+internal interface PersistenceHandler<REQUEST, RESPONSE> {
     fun invoke(context: MembershipRequestContext, request: REQUEST): RESPONSE?
 }
 
-abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
+internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     private val persistenceHandlerServices: PersistenceHandlerServices
 ) : PersistenceHandler<REQUEST, RESPONSE> {
 
@@ -55,7 +55,7 @@ abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 }
 
-data class PersistenceHandlerServices(
+internal data class PersistenceHandlerServices(
     val clock: Clock,
     val dbConnectionManager: DbConnectionManager,
     val jpaEntitiesRegistry: JpaEntitiesRegistry,

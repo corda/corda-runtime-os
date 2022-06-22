@@ -49,6 +49,7 @@ class MembershipP2PReadServiceImpl @Activate constructor(
         .createCoordinator<MembershipP2PReadService>(::handleEvent)
 
     private var registrationHandle: RegistrationHandle? = null
+    private var subRegistrationHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
     private var subscription: Subscription<String, AppMessage>? = null
@@ -81,17 +82,27 @@ class MembershipP2PReadServiceImpl @Activate constructor(
             is StopEvent -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN, "Received stop event.")
                 registrationHandle?.close()
+                registrationHandle = null
+                subRegistrationHandle?.close()
+                subRegistrationHandle = null
                 configHandle?.close()
+                configHandle = null
                 subscription?.close()
+                subscription = null
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Dependency services are UP. Registering to receive configuration.")
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        setOf(MESSAGING_CONFIG, BOOT_CONFIG)
-                    )
+                    if (event.registration == registrationHandle) {
+                        logger.info("Dependency services are UP. Registering to receive configuration.")
+                        configHandle?.close()
+                        configHandle = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                        )
+                    } else if (event.registration == subRegistrationHandle) {
+                        logger.info("Subscription is UP. Component started.")
+                        coordinator.updateStatus(LifecycleStatus.UP, "Started subscription for incoming P2P messages.")
+                    }
                 } else {
                     logger.info("Setting deactive state due to receiving registration status ${event.status}")
                     coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -111,8 +122,9 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     null
                 ).also {
                     it.start()
+                    subRegistrationHandle?.close()
+                    subRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
-                coordinator.updateStatus(LifecycleStatus.UP, "Started subscription for incoming P2P messages.")
             }
         }
     }

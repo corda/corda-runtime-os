@@ -47,7 +47,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private lateinit var processor: MembershipPersistenceRPCProcessor
 
-    private val clock: Clock = TestClock(Instant.now())
+    private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
 
     private val requestId = UUID.randomUUID().toString()
     private val ourX500Name = MemberX500Name.parse("O=Alice, L=London, C=GB").toString()

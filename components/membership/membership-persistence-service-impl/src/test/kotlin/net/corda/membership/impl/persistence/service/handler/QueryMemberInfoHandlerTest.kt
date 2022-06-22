@@ -51,7 +51,7 @@ class QueryMemberInfoHandlerTest {
         ourGroupId
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
-    private val clock = TestClock(Instant.now())
+    private val clock = TestClock(Instant.ofEpochSecond(0))
 
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val cryptoDmlConnectionId = UUID.randomUUID()

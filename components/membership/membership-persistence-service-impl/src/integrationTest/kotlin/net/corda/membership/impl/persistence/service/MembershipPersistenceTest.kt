@@ -183,7 +183,7 @@ class MembershipPersistenceTest {
 
         }
 
-        private val clock = TestClock(Instant.now())
+        private val clock = TestClock(Instant.ofEpochSecond(0))
 
         private val groupId = randomUUID().toString()
         private val x500Name = MemberX500Name.parse("O=Alice, C=GB, L=London")
@@ -275,6 +275,11 @@ class MembershipPersistenceTest {
             if (Companion::vnodeEmf.isInitialized) {
                 vnodeEmf.close()
             }
+            configurationReadService.stop()
+            dbConnectionManager.stop()
+            membershipPersistenceService.stop()
+            membershipPersistenceClientWrapper.stop()
+            virtualNodeReadService.stop()
         }
 
         private fun setupConfig() {

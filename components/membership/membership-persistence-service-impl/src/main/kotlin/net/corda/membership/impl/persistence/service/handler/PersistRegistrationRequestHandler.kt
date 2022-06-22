@@ -5,7 +5,7 @@ import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.virtualnode.toCorda
 
-class PersistRegistrationRequestHandler(
+internal class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {

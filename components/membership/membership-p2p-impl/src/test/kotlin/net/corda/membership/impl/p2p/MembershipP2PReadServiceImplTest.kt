@@ -37,11 +37,17 @@ class MembershipP2PReadServiceImplTest {
 
     private var eventHandlerCaptor = argumentCaptor<LifecycleEventHandler>()
     private val registrationHandle: RegistrationHandle = mock()
+    private val subRegistrationHandle: RegistrationHandle = mock()
     private val configHandle: AutoCloseable = mock()
     private val subscription: Subscription<String, AppMessage> = mock()
 
     private val coordinator: LifecycleCoordinator = mock {
-        on { followStatusChangesByName(any()) } doReturn registrationHandle
+        on { followStatusChangesByName(any()) } doReturn subRegistrationHandle
+        on {
+            followStatusChangesByName(
+                eq(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
+            )
+        } doReturn registrationHandle
     }
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
@@ -244,7 +250,7 @@ class MembershipP2PReadServiceImplTest {
     }
 
     @Test
-    fun `Config changed event creates subscription and sets status to UP`() {
+    fun `Config changed event creates subscription`() {
         eventHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
                 setOf(BOOT_CONFIG, MESSAGING_CONFIG),
@@ -256,7 +262,6 @@ class MembershipP2PReadServiceImplTest {
         )
 
         verify(subscription, never()).stop()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
         verify(subscriptionFactory).createDurableSubscription(
             any(),
             any<DurableProcessor<String, AppMessage>>(),
@@ -264,6 +269,29 @@ class MembershipP2PReadServiceImplTest {
             eq(null)
         )
         verify(subscription).start()
+        verify(coordinator).followStatusChangesByName(any())
+    }
+
+    @Test
+    fun `Component starts after subscription is UP`() {
+        eventHandlerCaptor.firstValue.processEvent(
+            ConfigChangedEvent(
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG),
+                mapOf(
+                    BOOT_CONFIG to testConfig,
+                    MESSAGING_CONFIG to testConfig
+                )
+            ), coordinator
+        )
+
+        eventHandlerCaptor.firstValue.processEvent(
+            RegistrationStatusChangeEvent(
+                subRegistrationHandle,
+                LifecycleStatus.UP
+            ), coordinator
+        )
+
+        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
     }
 
     @Test
@@ -288,7 +316,6 @@ class MembershipP2PReadServiceImplTest {
         )
 
         verify(subscription).close()
-        verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
         verify(subscriptionFactory, times(2)).createDurableSubscription(
             any(),
             any<DurableProcessor<String, AppMessage>>(),
@@ -296,5 +323,6 @@ class MembershipP2PReadServiceImplTest {
             eq(null)
         )
         verify(subscription, times(2)).start()
+        verify(coordinator, times(2)).followStatusChangesByName(any())
     }
 }

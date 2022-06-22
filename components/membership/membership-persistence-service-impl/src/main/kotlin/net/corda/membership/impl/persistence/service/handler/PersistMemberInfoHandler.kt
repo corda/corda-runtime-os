@@ -10,7 +10,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 
-class PersistMemberInfoHandler(
+internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistMemberInfo, Unit>(persistenceHandlerServices) {
 

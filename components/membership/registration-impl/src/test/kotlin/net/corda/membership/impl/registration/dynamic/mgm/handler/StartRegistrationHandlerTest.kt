@@ -48,7 +48,7 @@ import java.util.*
 class StartRegistrationHandlerTest {
 
     private companion object {
-        val clock = TestClock(Instant.now())
+        val clock = TestClock(Instant.ofEpochSecond(0))
         val registrationId = UUID.randomUUID().toString()
         val x500Name = MemberX500Name.parse("O=Tester,L=London,C=GB")
         val groupId = UUID.randomUUID().toString()
