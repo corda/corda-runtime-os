@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 
-@Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(immediate = true, service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor() : ConsensualLedgerService, SingletonSerializeAsToken {
     companion object {
         val logger = contextLogger()
