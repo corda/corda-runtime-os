@@ -67,9 +67,7 @@ const Register = () => {
 
     return (
         <PageContentWrapper>
-            <PageHeader lowerOnMobile={false} withBackButton>
-                Register V-Node
-            </PageHeader>
+            <PageHeader withBackButton>Register V-Node</PageHeader>
             <FormContentWrapper>
                 {/* Maybe by fetching all of the node names we can check if the "username" is available to make things smoother */}
                 <TextInput

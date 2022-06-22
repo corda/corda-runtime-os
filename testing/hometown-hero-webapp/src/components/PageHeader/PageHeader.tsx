@@ -1,17 +1,15 @@
 import { IconButton } from '@r3/r3-tooling-design-system/exports';
-import { useMobileMediaQuery } from '@/hooks/useMediaQueries';
 import { useNavigate } from 'react-router-dom';
 
 type Props = {
     withBackButton?: boolean;
-    lowerOnMobile?: boolean;
     children?: React.ReactNode;
 };
-const PageHeader: React.FC<Props> = ({ lowerOnMobile = true, withBackButton, children }) => {
+const PageHeader: React.FC<Props> = ({ withBackButton, children }) => {
     const navigate = useNavigate();
-    const isMobile = useMobileMediaQuery();
+
     return (
-        <div className={`flex flex-row ${isMobile && lowerOnMobile ? 'mt-24' : ''}`}>
+        <div className={`flex flex-row`}>
             {withBackButton && (
                 <IconButton
                     onClick={() => {
@@ -24,7 +22,7 @@ const PageHeader: React.FC<Props> = ({ lowerOnMobile = true, withBackButton, chi
                     variant="secondary"
                 />
             )}
-            <h1 className="mt-8 ml-4 text-left w-fit" style={{ opacity: 0.9, fontSize: isMobile ? 34 : undefined }}>
+            <h1 className="mt-8 ml-4 text-left w-fit text-4xl lg:text-5xl" style={{ opacity: 0.9 }}>
                 {children}
             </h1>
         </div>

@@ -45,9 +45,7 @@ const Login = () => {
 
     return (
         <PageContentWrapper>
-            <PageHeader lowerOnMobile={false} withBackButton>
-                Login to V-Node
-            </PageHeader>
+            <PageHeader withBackButton>Login to V-Node</PageHeader>
             <FormContentWrapper>
                 <TextInput
                     required

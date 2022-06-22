@@ -9,6 +9,7 @@ import VisualizationWrapper from '../components/Visualizations/VisualizationWrap
 const Home = () => {
     return (
         <PageContentWrapper>
+            <div className="mt-24 sm:mt-0 md:mt-0 lg:mt-0" />
             <PageHeader>Hometown Hero</PageHeader>
             <div className="flex gap-4 mt-8 ml-4 flex-wrap">
                 <Button isLink to={LOGIN} iconLeft={'LoginVariant'} size={'large'} variant={'primary'}>
