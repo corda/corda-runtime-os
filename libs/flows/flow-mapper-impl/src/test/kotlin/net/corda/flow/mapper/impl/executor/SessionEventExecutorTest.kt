@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -112,7 +111,8 @@ class SessionEventExecutorTest {
         assertThat(appMessageFactoryCaptor.sessionEvent!!.payload::class.java).isEqualTo(SessionError::class.java)
         val error = appMessageFactoryCaptor.sessionEvent!!.payload as SessionError
         assertThat(error.errorMessage.errorType).isEqualTo("FlowMapper-SessionExpired")
-        assertThat(error.errorMessage.errorMessage).isEqualTo("Tried to process session event for expired session with sessionId $sessionId")
+        assertThat(error.errorMessage.errorMessage)
+            .isEqualTo("Tried to process session event for expired session with sessionId $sessionId")
 
         assertThat(appMessageFactoryCaptor.sessionEventSerializer).isEqualTo(sessionEventSerializer)
     }
